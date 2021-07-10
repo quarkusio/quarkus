@@ -31,7 +31,7 @@ public abstract class QuarkusConsole {
             && "xterm".equals(System.getenv("TERM"));
     protected final ArrayDeque<InputHolder> inputHandlers = new ArrayDeque<>();
 
-    public static volatile QuarkusConsole INSTANCE = new BasicConsole(false, false, System.out);
+    public static volatile QuarkusConsole INSTANCE = new BasicConsole(hasColorSupport(), false, System.out::print);
 
     public static volatile boolean installed;
 

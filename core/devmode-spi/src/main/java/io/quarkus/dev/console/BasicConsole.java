@@ -1,8 +1,10 @@
 package io.quarkus.dev.console;
 
 import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -17,22 +19,36 @@ public class BasicConsole extends QuarkusConsole {
             return false;
         }
     };
-    final PrintStream printStream;
+    final Consumer<String> output;
+    final Supplier<Integer> input;
     final boolean inputSupport;
-    final boolean noColor;
+    final boolean color;
+
     volatile boolean readingLine;
 
-    public BasicConsole(boolean noColor, boolean inputSupport, PrintStream printStream) {
-        this.noColor = noColor;
+    public BasicConsole(boolean color, boolean inputSupport, Consumer<String> output) {
+        this(color, inputSupport, output, () -> {
+            try {
+                return System.in.read();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public BasicConsole(boolean color, boolean inputSupport, Consumer<String> output, Supplier<Integer> inputProvider) {
+        this.color = color;
         this.inputSupport = inputSupport;
-        this.printStream = printStream;
+        this.output = output;
+        this.input = inputProvider;
         if (inputSupport) {
+            Objects.requireNonNull(inputProvider);
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     while (true) {
                         try {
-                            int val = System.in.read();
+                            int val = input.get();
                             if (val == -1) {
                                 return;
                             }
@@ -48,7 +64,7 @@ public class BasicConsole extends QuarkusConsole {
                             if (handler != null) {
                                 handler.handler.handleInput(new int[] { val });
                             }
-                        } catch (IOException e) {
+                        } catch (Exception e) {
                             log.log(Level.SEVERE, "Failed to read user input", e);
                             return;
                         }
@@ -67,7 +83,7 @@ public class BasicConsole extends QuarkusConsole {
             @Override
             public void doReadLine() {
                 readingLine = true;
-                System.out.print(">");
+                output.accept(">");
             }
 
             @Override
@@ -137,17 +153,17 @@ public class BasicConsole extends QuarkusConsole {
                 }
             }
         }
-        if (noColor || !hasColorSupport()) {
-            printStream.print(stripAnsiCodes(s));
+        if (!color) {
+            output.accept(stripAnsiCodes(s));
         } else {
-            printStream.print(s);
+            output.accept(s);
         }
 
     }
 
     @Override
     public void write(byte[] buf, int off, int len) {
-        write(new String(buf, off, len, Charset.defaultCharset()));
+        write(new String(buf, off, len, StandardCharsets.UTF_8));
     }
 
 }

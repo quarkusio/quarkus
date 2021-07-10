@@ -427,20 +427,19 @@ WARNING: For validation to work, the `quarkus-hibernate-validator` extension is 
 === Mocking
 
 A mapping interface implementation is not a proxy, so it cannot be mocked directly with `@InjectMock` like other CDI
-beans. One trick is to make it a proxyable implementation:
+beans. One trick is to make it proxyable with a producer method:
 
 [source,java]
 ----
-@ApplicationScoped
-@io.quarkus.test.Mock
-public class ServerMock implements Server {
-    public String host() {
-        // Mockito will provide the mocking code, so this is never called
-        throw new IllegalStateException();
-    }
+public class ServerMockProducer {
+    @Inject
+    Config config;
 
-    public int port() {
-        throw new IllegalStateException();
+    @Produces
+    @ApplicationScoped
+    @io.quarkus.test.Mock
+    AppConfig appConfig() {
+        return config.unwrap(SmallRyeConfig.class).getConfigMapping(ServerMock.class);
     }
 }
 ----

@@ -5,6 +5,7 @@ import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import javax.json.Json;
 import javax.json.JsonBuilderFactory;
@@ -189,6 +190,8 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
         return null;
     }
 
+    private static final Pattern PATTERN_NEWLINE_OR_TAB = Pattern.compile("\\n|\\t");
+
     /**
      * Strip away unescaped tabs and line breaks from the incoming JSON document so that it can be
      * successfully parsed by a JSON parser.
@@ -197,12 +200,12 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
      * but we want to seamlessly support queries from Java text blocks, for example,
      * which preserve line breaks and tab characters.
      */
-    private String stripNewlinesAndTabs(String input) {
+    private static String stripNewlinesAndTabs(final String input) {
         if (input == null || input.isEmpty()) {
             return input;
         }
-        return input.replaceAll("\\n", " ")
-                .replaceAll("\\t", " ");
+
+        return PATTERN_NEWLINE_OR_TAB.matcher(input).replaceAll(" ");
     }
 
     private boolean hasQueryParameters(RoutingContext ctx) {

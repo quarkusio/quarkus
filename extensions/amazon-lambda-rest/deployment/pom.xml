@@ -39,6 +39,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-amazon-lambda-rest</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-amazon-lambda-rest-event-server</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

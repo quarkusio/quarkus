@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jboss.logging.Logger;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -15,7 +17,9 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 
+@Deprecated
 public class LambdaClient {
+    protected static final Logger log = Logger.getLogger(LambdaClient.class);
 
     private static final AtomicInteger REQUEST_ID_GENERATOR = new AtomicInteger();
     public static final ConcurrentHashMap<String, CompletableFuture<String>> REQUESTS;
@@ -47,7 +51,10 @@ public class LambdaClient {
 
     }
 
+    @Deprecated
     public static void invoke(InputStream inputStream, OutputStream outputStream) {
+        log.warn(
+                "LambdaClient has been deprecated and will be removed in future Quarkus versions.  You can now invoke using a built in test http server.  See docs for more details");
         if (problem != null) {
             throw new RuntimeException(problem);
         }
@@ -99,10 +106,12 @@ public class LambdaClient {
      * @param <T>
      * @return
      */
+    @Deprecated
     public static <T> T invoke(Class<T> returnType, Object input) {
         return invoke(returnType, input, Duration.ofNanos(Long.MAX_VALUE));
     }
 
+    @Deprecated
     public static <T> T invoke(Class<T> returnType, Object input, Duration timeout) {
         try {
             return invokeAsync(returnType, input).get(timeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -117,7 +126,10 @@ public class LambdaClient {
         }
     }
 
+    @Deprecated
     public static <T> CompletableFuture<T> invokeAsync(Class<T> returnType, Object input) {
+        log.warn(
+                "LambdaClient has been deprecated and will be removed in future Quarkus versions.  You can now invoke using a built in test http server.  See docs for more details");
         if (problem != null) {
             CompletableFuture<T> failed = new CompletableFuture<>();
             failed.completeExceptionally(problem);
@@ -151,7 +163,10 @@ public class LambdaClient {
      * @param <T>
      * @return
      */
+    @Deprecated
     public static <T> T invokeJson(Class<T> returnType, String json) {
+        log.warn(
+                "LambdaClient has been deprecated and will be removed in future Quarkus versions.  You can now invoke using a built in test http server.  See docs for more details");
         if (problem != null) {
             throw new RuntimeException(problem);
         }

@@ -290,8 +290,8 @@ class VertxHttpProcessor {
             reflectiveClass
                     .produce(new ReflectiveClassBuildItem(true, false, false, VirtualServerChannel.class));
         }
-        // start http socket in dev/test mode even if virtual http is required
-        boolean startSocket = !startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL;
+        boolean startSocket = (!startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL)
+                && (requireVirtual.isEmpty() || !requireVirtual.get().isAlwaysVirtual());
         recorder.startServer(vertx.getVertx(), shutdown,
                 httpBuildTimeConfig, httpConfiguration, launchMode.getLaunchMode(), startVirtual, startSocket,
                 eventLoopCount.getEventLoopCount(),

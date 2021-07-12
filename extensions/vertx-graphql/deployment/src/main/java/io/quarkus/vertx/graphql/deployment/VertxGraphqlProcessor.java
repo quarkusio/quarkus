@@ -16,8 +16,8 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceDirectoryB
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.graphql.runtime.VertxGraphqlRecorder;
+import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.WebsocketSubProtocolsBuildItem;
 import io.vertx.core.Handler;
@@ -48,13 +48,13 @@ class VertxGraphqlProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
+    @Record(ExecutionTime.RUNTIME_INIT)
     void registerVertxGraphqlUI(VertxGraphqlRecorder recorder,
             BuildProducer<NativeImageResourceDirectoryBuildItem> nativeResourcesProducer, VertxGraphqlConfig config,
             LaunchModeBuildItem launchMode,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<RouteBuildItem> routes,
-            BuildProducer<RequireBodyHandlerBuildItem> body) {
+            BodyHandlerBuildItem bodyHandler) {
 
         boolean includeVertxGraphqlUi = launchMode.getLaunchMode().isDevOrTest() || config.ui.alwaysInclude;
         if (!includeVertxGraphqlUi) {
@@ -77,11 +77,9 @@ class VertxGraphqlProcessor {
                 .build());
         routes.produce(
                 nonApplicationRootPathBuildItem.routeBuilder()
-                        .route(path + "/*")
+                        .routeFunction(path + "/*", recorder.routeFunction(bodyHandler.getHandler()))
                         .handler(handler)
                         .build());
-        // Body handler required in Vert.x 4, to avoid DDOS attack.
-        body.produce(new RequireBodyHandlerBuildItem());
 
         nativeResourcesProducer.produce(new NativeImageResourceDirectoryBuildItem("io/vertx/ext/web/handler/graphiql"));
     }

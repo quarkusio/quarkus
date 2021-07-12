@@ -1,16 +1,16 @@
 package io.quarkus.smallrye.openapi.runtime;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import io.quarkus.arc.Arc;
 import io.smallrye.openapi.runtime.io.Format;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -21,14 +21,14 @@ public class OpenApiHandler implements Handler<RoutingContext> {
     private volatile OpenApiDocumentService openApiDocumentService;
     private static final String ALLOWED_METHODS = "GET, HEAD, OPTIONS";
     private static final String QUERY_PARAM_FORMAT = "format";
-    private static final Map<String, String> RESPONSE_HEADERS = new HashMap<>();
+    private static final MultiMap RESPONSE_HEADERS = new HeadersMultiMap();
 
     static {
-        RESPONSE_HEADERS.put("Access-Control-Allow-Origin", "*");
-        RESPONSE_HEADERS.put("Access-Control-Allow-Credentials", "true");
-        RESPONSE_HEADERS.put("Access-Control-Allow-Methods", ALLOWED_METHODS);
-        RESPONSE_HEADERS.put("Access-Control-Allow-Headers", "Content-Type, Authorization");
-        RESPONSE_HEADERS.put("Access-Control-Max-Age", "86400");
+        RESPONSE_HEADERS.add("access-control-allow-origin", "*");
+        RESPONSE_HEADERS.add("access-control-allow-credentials", "true");
+        RESPONSE_HEADERS.add("access-control-allow-methods", ALLOWED_METHODS);
+        RESPONSE_HEADERS.add("access-control-allow-headers", "Content-Type, Authorization");
+        RESPONSE_HEADERS.add("access-control-max-age", "86400");
     }
 
     @Override

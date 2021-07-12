@@ -466,6 +466,8 @@ public class Endpoint {
 The use of link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/MultipartForm.html[`@MultipartForm`] as
 method parameter makes RESTEasy Reactive handle the request as a multipart form request.
 
+TIP: The use of `@MultipartForm` is actually unnecessary as RESTEasy Reactive can infer this information from the use of `@Consumes(MediaType.MULTIPART_FORM_DATA)`
+
 WARNING: When handling file uploads, it is very important to move the file to permanent storage (like a database, a dedicated file system or a cloud storage) in your code that handles the POJO.
 Otherwise, the file will no longer be accessible when the request terminates.
 Moreoever if `quarkus.http.body.delete-uploaded-files-on-end` is set to true, Quarkus will delete the uploaded file when the HTTP response is sent. If the setting is disabled,

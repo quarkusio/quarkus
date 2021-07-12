@@ -191,7 +191,7 @@ public class ServerEndpointIndexer
                     additionalReaders,
                     annotations, field.type(), field.toString(), true, hasRuntimeConverters,
                     // We don't support annotation-less path params in injectable beans: only annotations
-                    Collections.emptySet(), field.name(), new HashMap<>());
+                    Collections.emptySet(), field.name(), EMPTY_STRING_ARRAY, new HashMap<>());
             if ((result.getType() != null) && (result.getType() != ParameterType.BEAN)) {
                 //BODY means no annotation, so for fields not injectable
                 fieldExtractors.put(field, result);

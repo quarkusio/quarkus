@@ -40,6 +40,7 @@ public class TestResource {
         testDynamicVersionProvider();
         testUnmatched();
         testI18s();
+        testCompletionReflection();
         return "OK";
     }
 
@@ -110,4 +111,8 @@ public class TestResource {
         Assertions.assertThat(cmdTwo.getCommandSpec().findOption("first").description()).containsExactly("First in CommandTwo");
     }
 
+    private void testCompletionReflection() {
+        CommandLine completionReflectionCommand = new CommandLine(CompletionReflectionCommand.class, factory);
+        completionReflectionCommand.execute("one");
+    }
 }

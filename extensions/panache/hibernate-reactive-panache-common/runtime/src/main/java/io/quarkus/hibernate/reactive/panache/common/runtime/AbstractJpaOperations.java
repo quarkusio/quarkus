@@ -27,13 +27,35 @@ import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
 public abstract class AbstractJpaOperations<PanacheQueryType> {
 
     // FIXME: make it configurable?
     static final long TIMEOUT_MS = 5000;
+
+    private static void executeInVertxEventLoop(Runnable runnable) {
+        Vertx vertx = Arc.container().instance(Vertx.class).get();
+        // this needs to be sync
+        CompletableFuture<Void> cf = new CompletableFuture<>();
+        vertx.runOnContext(v -> {
+            try {
+                runnable.run();
+                cf.complete(null);
+            } catch (Throwable t) {
+                cf.completeExceptionally(t);
+            }
+        });
+        try {
+            cf.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static Session lookupSessionFromArc() {
+        return Arc.container().instance(Session.class).get();
+    }
 
     protected abstract PanacheQueryType createPanacheQuery(Uni<Mutiny.Session> session, String query, String orderBy,
             Object paramsArrayOrMap);
@@ -88,7 +110,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     public boolean isPersistent(Object entity) {
         // only attempt to look up the request context session if it's already there: do not
         // run the producer method otherwise, before we know which thread we're on
-        Session requestSession = isInRequestContext(Mutiny.Session.class) ? Arc.container().instance(Mutiny.Session.class).get()
+        Session requestSession = isInRequestContext(Mutiny.Session.class) ? lookupSessionFromArc()
                 : null;
         if (requestSession != null) {
             return requestSession.contains(entity);
@@ -105,45 +127,14 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     // Private stuff
 
     public static Uni<Mutiny.Session> getSession() {
-        // only attempt to look up the request context session if it's already there: do not
-        // run the producer method otherwise, before we know which thread we're on
-        Session requestSession = isInRequestContext(Mutiny.Session.class) ? Arc.container().instance(Mutiny.Session.class).get()
-                : null;
-        if (requestSession != null) {
-            return Uni.createFrom().item(requestSession);
-        }
-
-        if (io.vertx.core.Context.isOnVertxThread()) {
-            return Uni.createFrom().item(Arc.container().instance(Mutiny.Session.class).get());
+        // Always check if we're running on the event loop: if not,
+        // we need to delegate the execution of all tasks on it.
+        if (io.vertx.core.Context.isOnEventLoopThread()) {
+            return Uni.createFrom().item(lookupSessionFromArc());
         } else {
             // FIXME: we may need context propagation
-            Vertx vertx = Arc.container().instance(Vertx.class).get();
-            Executor executor = runnable -> {
-                // this will be the context for a VertxThread, or a ThreadLocal context otherwise, but not null
-                Context context = vertx.getOrCreateContext();
-                // currentContext() returns null for non-VertxThread
-                if (Vertx.currentContext() == context) {
-                    runnable.run();
-                } else {
-                    // this needs to be sync
-                    CompletableFuture<Void> cf = new CompletableFuture<>();
-                    vertx.runOnContext(v -> {
-                        try {
-                            runnable.run();
-                            cf.complete(null);
-                        } catch (Throwable t) {
-                            cf.completeExceptionally(t);
-                        }
-                    });
-                    try {
-                        cf.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
-                    } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-
-            };
-            return Uni.createFrom().item(() -> Arc.container().instance(Mutiny.Session.class).get())
+            final Executor executor = AbstractJpaOperations::executeInVertxEventLoop;
+            return Uni.createFrom().item(AbstractJpaOperations::lookupSessionFromArc)
                     .runSubscriptionOn(executor);
         }
     }

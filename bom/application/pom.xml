@@ -96,7 +96,7 @@
         <hibernate-search.version>6.0.5.Final</hibernate-search.version>
         <narayana.version>5.12.0.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
-        <agroal.version>1.11</agroal.version>
+        <agroal.version>1.12</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
         <elasticsearch-rest-client.version>7.10.0</elasticsearch-rest-client.version>
         <rxjava.version>2.2.21</rxjava.version>

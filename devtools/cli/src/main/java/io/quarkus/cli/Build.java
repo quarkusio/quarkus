@@ -64,10 +64,7 @@ public class Build extends BaseBuildCommand implements Callable<Integer> {
 
     @Override
     public String toString() {
-        return "Build [clean=" + buildOptions.clean
-                + ", buildNative=" + buildOptions.buildNative
-                + ", offline=" + buildOptions.offline
-                + ", runTests=" + buildOptions.runTests
+        return "Build [buildOptions=" + buildOptions
                 + ", properties=" + propertiesOptions.properties
                 + ", output=" + output
                 + ", params=" + params + "]";

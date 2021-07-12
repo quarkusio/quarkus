@@ -115,6 +115,50 @@ public class CliProjectMavenTest {
     }
 
     @Test
+    public void testBuildOptions() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "-e", "-B", "--verbose");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        // 1 --clean --tests --native --offline
+        result = CliDriver.execute(project, "build", "-e", "-B", "--dry-run",
+                "--clean", "--tests", "--native", "--offline");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains(" clean"),
+                "mvn command should specify 'clean'\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("-DskipTests"),
+                "mvn command should not specify -DskipTests\n" + result);
+        Assertions.assertFalse(result.stdout.contains("-Dmaven.test.skip=true"),
+                "mvn command should not specify -Dmaven.test.skip=true\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains("-Dnative"),
+                "mvn command should specify -Dnative\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains("--offline"),
+                "mvn command should specify --offline\n" + result);
+
+        // 2 --no-clean --no-tests
+        result = CliDriver.execute(project, "build", "-e", "-B", "--dry-run",
+                "--no-clean", "--no-tests");
+
+        Assertions.assertFalse(result.stdout.contains(" clean"),
+                "mvn command should not specify 'clean'\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains("-DskipTests"),
+                "mvn command should specify -DskipTests\n" + result);
+        Assertions.assertTrue(result.stdout.contains("-Dmaven.test.skip=true"),
+                "mvn command should specify -Dmaven.test.skip=true\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("-Dnative"),
+                "mvn command should not specify -Dnative\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("--offline"),
+                "mvn command should not specify --offline\n" + result);
+    }
+
+    @Test
     public void testCreateCliDefaults() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "cli", "-e", "-B", "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);

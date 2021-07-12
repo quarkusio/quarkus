@@ -539,6 +539,26 @@ Or have the listener’s name be the same as the group id:
 
 Setting the consumer re-balance listener’s name takes precedence over using the group id.
 
+==== Using unique consumer groups
+
+If you want to process all the records from a topic (from its beginning), you need:
+
+1. to set `auto.offset.reset = earliest`
+2. assign your consumer to a consumer group not used by any other application.
+
+Quarkus generates a UUID that changes between two executions (including in dev mode).
+So, you are sure no other consumer uses it, and you receive a new unique group id every time your application starts.
+
+You can use that generated UUID as the consumer group as follows:
+
+[source, properties]
+----
+mp.messaging.incoming.your-channel.auto.offset.reset=earliest
+mp.messaging.incoming.your-channel.group.id=${quarkus.uuid}
+----
+
+IMPORTANT: If the `group.id` attribute is not set, it defaults the `quarkus.application.name` configuration property.
+
 
 == Sending messages to Kafka
 

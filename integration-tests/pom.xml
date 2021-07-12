@@ -36,6 +36,7 @@
         <module>common-jpa-entities</module>
         <module>infinispan-client</module>
         <module>devtools</module>
+        <module>devtools-registry-client</module>
         <module>gradle</module>
         <module>main</module>
         <module>kafka</module>

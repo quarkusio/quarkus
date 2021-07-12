@@ -24,6 +24,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBui
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import picocli.CommandLine;
 
@@ -31,10 +32,14 @@ public class PicocliNativeImageProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(PicocliNativeImageProcessor.class);
 
+    private static final DotName PARAMETERS = DotName.createSimple(CommandLine.Parameters.class.getName());
+    private static final String PARAMETERS_COMPLETION_CANDIDATES = "completionCandidates";
+
     @BuildStep(onlyIf = NativeBuild.class)
     void reflectionConfiguration(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies,
             BuildProducer<NativeImageProxyDefinitionBuildItem> nativeImageProxies) {
         IndexView index = combinedIndexBuildItem.getIndex();
 
@@ -43,7 +48,7 @@ public class PicocliNativeImageProcessor {
                 DotName.createSimple(CommandLine.Command.class.getName()),
                 DotName.createSimple(CommandLine.Mixin.class.getName()),
                 DotName.createSimple(CommandLine.Option.class.getName()),
-                DotName.createSimple(CommandLine.Parameters.class.getName()),
+                PARAMETERS,
                 DotName.createSimple(CommandLine.ParentCommand.class.getName()),
                 DotName.createSimple(CommandLine.Spec.class.getName()),
                 DotName.createSimple(CommandLine.Unmatched.class.getName()));
@@ -92,6 +97,22 @@ public class PicocliNativeImageProcessor {
             }
         });
         foundFields.forEach(fieldInfo -> reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo)));
+
+        // register @Parameters(completionCandidates = ...) for reflection
+        Collection<AnnotationInstance> parametersAnnotationInstances = index
+                .getAnnotations(PARAMETERS);
+        for (AnnotationInstance parametersAnnotationInstance : parametersAnnotationInstances) {
+            AnnotationValue completionCandidates = parametersAnnotationInstance.value(PARAMETERS_COMPLETION_CANDIDATES);
+
+            if (completionCandidates == null) {
+                continue;
+            }
+
+            reflectiveHierarchies.produce(new ReflectiveHierarchyBuildItem.Builder()
+                    .type(completionCandidates.asClass())
+                    .source(PicocliNativeImageProcessor.class.getSimpleName() + " > " + parametersAnnotationInstance.target())
+                    .build());
+        }
     }
 
     @BuildStep(onlyIf = NativeBuild.class)

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -31,7 +32,8 @@ public class FSWatchUtil {
      */
     public void observe(Collection<Watcher> watchers,
             long intervalMs) {
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        ThreadFactory tf = (Runnable r) -> new Thread(r, "FSWatchUtil");
+        ExecutorService executorService = Executors.newSingleThreadExecutor(tf);
         executorService.execute(
                 () -> doObserve(watchers, intervalMs));
         executors.add(executorService);

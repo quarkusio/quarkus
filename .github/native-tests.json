@@ -99,7 +99,7 @@
         {
             "category": "Misc1",
             "timeout": 65,
-            "test-modules": "maven, jackson, jsonb, jsch, jgit, quartz, qute, consul-config, logging-min-level-unset, logging-min-level-set, simple with space",
+            "test-modules": "maven, jackson, jsonb, kotlin-serialization, jsch, jgit, quartz, qute, consul-config, logging-min-level-unset, logging-min-level-set, simple with space",
             "os-name": "ubuntu-latest"
         },
         {

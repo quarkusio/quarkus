@@ -150,6 +150,7 @@
         <azure-functions-java-library.version>1.4.2</azure-functions-java-library.version>
         <kotlin.version>1.5.30</kotlin.version>
         <kotlin.coroutine.version>1.5.2</kotlin.coroutine.version>
+        <kotlin-serialization.version>1.2.2</kotlin-serialization.version>
         <dekorate.version>2.5.0</dekorate.version>
         <maven-artifact-transfer.version>0.10.0</maven-artifact-transfer.version>
         <maven-invoker.version>3.0.1</maven-invoker.version>
@@ -508,6 +509,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jsonp-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-kotlin-serialization</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-kotlin-serialization-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -4914,6 +4925,11 @@
                 <groupId>org.jetbrains.kotlinx</groupId>
                 <artifactId>kotlinx-coroutines-reactive</artifactId>
                 <version>${kotlin.coroutine.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains.kotlinx</groupId>
+                <artifactId>kotlinx-serialization-json</artifactId>
+                <version>${kotlin-serialization.version}</version>
             </dependency>
 
             <dependency>

@@ -438,28 +438,89 @@ public class ServerMockProducer {
     @Produces
     @ApplicationScoped
     @io.quarkus.test.Mock
-    AppConfig appConfig() {
-        return config.unwrap(SmallRyeConfig.class).getConfigMapping(ServerMock.class);
+    Server server() {
+        return config.unwrap(SmallRyeConfig.class).getConfigMapping(Server.class);
     }
 }
 ----
 
-The `ServerMock` can be injected as a mock into a Quarkus test class:
+The `Server` can be injected as a mock into a Quarkus test class with `@InjectMock`:
 
 [source,java]
 ----
 @QuarkusTest
 class ServerMockTest {
     @InjectMock
-    ServerMock serverMock;
+    Server server;
 
     @Test
     void localhost() {
-        Mockito.when(serverMock.host()).thenReturn("localhost");
-        assertEquals("localhost", serverMock.host());
+        Mockito.when(server.host()).thenReturn("localhost");
+        assertEquals("localhost", server.host());
     }
 }
 ----
+
+NOTE: The mock is just an empty shell without any actual configuration values.
+
+If the goal is to only mock certain configuration values and retain the original configuration, the mocking instance
+requires a spy:
+
+[source,java]
+----
+@ConfigMapping(prefix = "app")
+public interface AppConfig {
+    @WithDefault("app")
+    String name();
+
+    Info info();
+
+    interface Info {
+        @WithDefault("alias")
+        String alias();
+        @WithDefault("10")
+        Integer count();
+    }
+}
+
+public static class AppConfigProducer {
+    @Inject
+    Config config;
+
+    @Produces
+    @ApplicationScoped
+    @Mock
+    AppConfig appConfig() {
+        AppConfig appConfig = config.unwrap(SmallRyeConfig.class).getConfigMapping(AppConfig.class);
+        AppConfig appConfigSpy = Mockito.spy(appConfig);
+        AppConfig.Info infoSpy = Mockito.spy(appConfig.info());
+        Mockito.when(appConfigSpy.info()).thenReturn(infoSpy);
+        return appConfigSpy;
+    }
+}
+----
+
+The `AppConfig` can be injected as a mock into a Quarkus test class with `@Inject`:
+
+[source,java]
+----
+@QuarkusTest
+class AppConfigTest {
+    @InjectMock
+    AppConfig appConfig;
+
+    @Test
+    void localhost() {
+        Mockito.when(appConfig.name()).thenReturn("mocked-app");
+        assertEquals("mocked-app", server.host());
+
+        Mockito.when(appConfig.info().alias()).thenReturn("mocked-alias");
+        assertEquals("mocked-alias", server.info().alias());
+    }
+}
+----
+
+NOTE: Nested elements need to be spied individually by Mockito.
 
 [[config-properties]]
 == [.line-through]#`@ConfigProperties`# (Deprecated)

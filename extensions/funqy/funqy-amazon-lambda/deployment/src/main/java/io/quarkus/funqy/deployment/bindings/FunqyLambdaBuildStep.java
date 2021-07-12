@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.amazon.lambda.deployment.LambdaObjectMapperInitializedBuildItem;
-import io.quarkus.amazon.lambda.runtime.LambdaBuildTimeConfig;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -67,14 +66,13 @@ public class FunqyLambdaBuildStep {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public void enableNativeEventLoop(LambdaBuildTimeConfig config,
-            RuntimeComplete ignored,
+    public void startPoolLoopDevOrTest(RuntimeComplete ignored,
             FunqyLambdaBindingRecorder recorder,
             List<ServiceStartBuildItem> orderServicesFirst, // force some ordering of recorders
             ShutdownContextBuildItem shutdownContextBuildItem,
             LaunchModeBuildItem launchModeBuildItem) {
         LaunchMode mode = launchModeBuildItem.getLaunchMode();
-        if (config.enablePollingJvmMode && mode.isDevOrTest()) {
+        if (mode.isDevOrTest()) {
             recorder.startPollLoop(shutdownContextBuildItem);
         }
     }

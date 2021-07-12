@@ -89,8 +89,13 @@ public class RestAssuredURLManager {
 
     }
 
-    private static int getPortFromConfig(String key, int defaultValue) {
-        return ConfigProvider.getConfig().getOptionalValue(key, Integer.class).orElse(defaultValue);
+    private static int getPortFromConfig(int defaultValue, String... keys) {
+        for (String key : keys) {
+            Optional<Integer> port = ConfigProvider.getConfig().getOptionalValue(key, Integer.class);
+            if (port.isPresent())
+                return port.get();
+        }
+        return defaultValue;
     }
 
     public static void setURL(boolean useSecureConnection) {
@@ -110,8 +115,9 @@ public class RestAssuredURLManager {
             try {
                 oldPort = (Integer) portField.get(null);
                 if (port == null) {
-                    port = useSecureConnection ? getPortFromConfig("quarkus.https.test-port", DEFAULT_HTTPS_PORT)
-                            : getPortFromConfig("quarkus.http.test-port", DEFAULT_HTTP_PORT);
+                    port = useSecureConnection ? getPortFromConfig(DEFAULT_HTTPS_PORT, "quarkus.https.test-port")
+                            : getPortFromConfig(DEFAULT_HTTP_PORT, "quarkus.http.test-port",
+                                    "quarkus.lambda.mock-event-server.test-port");
                 }
                 portField.set(null, port);
             } catch (IllegalAccessException e) {

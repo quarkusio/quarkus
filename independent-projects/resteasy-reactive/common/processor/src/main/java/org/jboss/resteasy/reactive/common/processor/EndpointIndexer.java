@@ -424,6 +424,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                         existingConverters, additionalReaders,
                         anns, paramType, errorLocation, false, hasRuntimeConverters, pathParameters,
                         currentMethodInfo.parameterName(i),
+                        consumes,
                         methodContext);
                 suspended |= parameterResult.isSuspended();
                 sse |= parameterResult.isSse();
@@ -806,6 +807,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             Map<String, String> existingConverters, AdditionalReaders additionalReaders,
             Map<DotName, AnnotationInstance> anns, Type paramType, String errorLocation, boolean field,
             boolean hasRuntimeConverters, Set<String> pathParameters, String sourceName,
+            String[] declaredConsumes,
             Map<String, Object> methodContext) {
         PARAM builder = createIndexedParam()
                 .setCurrentClassInfo(currentClassInfo)
@@ -933,7 +935,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 if (field) {
                     return builder;
                 }
-                builder.setType(ParameterType.BODY);
+                if ((declaredConsumes != null) && (declaredConsumes.length == 1)
+                        && (MediaType.MULTIPART_FORM_DATA.equals(declaredConsumes[0]))) {
+                    // in this case it is safe to assume that we are consuming multipart data
+                    // we already don't allow multipart to be used along with body in the same method,
+                    // so this is completely safe
+                    builder.setType(ParameterType.MULTI_PART_FORM);
+                } else {
+                    builder.setType(ParameterType.BODY);
+                }
             }
         }
         builder.setSingle(true);

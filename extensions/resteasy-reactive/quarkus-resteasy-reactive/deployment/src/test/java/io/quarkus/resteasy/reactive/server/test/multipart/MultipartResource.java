@@ -39,7 +39,7 @@ public class MultipartResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Path("/blocking")
-    public Response blocking(@DefaultValue("1") @RestQuery Integer times, @MultipartForm FormData formData) throws IOException {
+    public Response blocking(@DefaultValue("1") @RestQuery Integer times, FormData formData) throws IOException {
         if (!BlockingOperationControl.isBlockingAllowed()) {
             throw new RuntimeException("should not have dispatched");
         }
@@ -57,7 +57,7 @@ public class MultipartResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Path("/same-name")
-    public String sameName(@MultipartForm FormDataSameFileName formData) {
+    public String sameName(FormDataSameFileName formData) {
         if (BlockingOperationControl.isBlockingAllowed()) {
             throw new RuntimeException("should not have dispatched");
         }

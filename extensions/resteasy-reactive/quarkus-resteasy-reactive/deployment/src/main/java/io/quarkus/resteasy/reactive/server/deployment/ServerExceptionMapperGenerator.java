@@ -61,6 +61,8 @@ import io.vertx.ext.web.RoutingContext;
 
 final class ServerExceptionMapperGenerator {
 
+    private static final DotName THROWABLE = DotName.createSimple(Throwable.class.getName());
+
     private ServerExceptionMapperGenerator() {
     }
 
@@ -136,7 +138,9 @@ final class ServerExceptionMapperGenerator {
                     MethodDescriptor rrToResponseDescriptor = toResponseDescriptor(handledExceptionType, generatedClassName);
 
                     // bridge toResponse(Throwable, ServerRequestContext) method
-                    generateRRResponseBridge(handledExceptionType, cc, rrToResponseDescriptor);
+                    if (!THROWABLE.equals(handledExceptionType.name())) {
+                        generateRRResponseBridge(handledExceptionType, cc, rrToResponseDescriptor);
+                    }
 
                     // RESTEasy Reactive toResponse(...) method
                     generateRRResponse(targetMethod, targetClass, handledExceptionType, cc, rrToResponseDescriptor,
@@ -151,7 +155,9 @@ final class ServerExceptionMapperGenerator {
                             generatedClassName);
 
                     // bridge asyncResponse(Throwable, AsyncExceptionMapperContext) method
-                    generateRRUniResponseBridge(handledExceptionType, cc, rrAsyncResponseDescriptor);
+                    if (!THROWABLE.equals(handledExceptionType.name())) {
+                        generateRRUniResponseBridge(handledExceptionType, cc, rrAsyncResponseDescriptor);
+                    }
 
                     // RESTEasy Reactive asyncResponse(...) method
                     generateRRUniResponse(targetMethod, targetClass, handledExceptionType, cc, rrAsyncResponseDescriptor,
@@ -261,7 +267,9 @@ final class ServerExceptionMapperGenerator {
                     MethodDescriptor rrToResponseDescriptor = toResponseDescriptor(handledExceptionType, generatedClassName);
 
                     // bridge toResponse(Throwable, ServerRequestContext) method
-                    generateRRResponseBridge(handledExceptionType, cc, rrToResponseDescriptor);
+                    if (!THROWABLE.equals(handledExceptionType.name())) {
+                        generateRRResponseBridge(handledExceptionType, cc, rrToResponseDescriptor);
+                    }
 
                     // RESTEasy Reactive toResponse(...) method
                     generateRRResponse(targetMethod, targetClass, handledExceptionType, cc, rrToResponseDescriptor,
@@ -271,7 +279,9 @@ final class ServerExceptionMapperGenerator {
                             generatedClassName);
 
                     // bridge asyncResponse(Throwable, AsyncExceptionMapperContext) method
-                    generateRRUniResponseBridge(handledExceptionType, cc, rrAsyncResponseDescriptor);
+                    if (!THROWABLE.equals(handledExceptionType.name())) {
+                        generateRRUniResponseBridge(handledExceptionType, cc, rrAsyncResponseDescriptor);
+                    }
 
                     // RESTEasy Reactive asyncResponse(...) method
                     generateRRUniResponse(targetMethod, targetClass, handledExceptionType, cc, rrAsyncResponseDescriptor,

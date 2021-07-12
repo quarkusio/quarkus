@@ -516,7 +516,7 @@ final class Methods {
 
             List<Type> parameters = method.parameters();
             if (!parameters.isEmpty() && (beanArchiveIndex != null)) {
-                String originalClassPackage = determinePackage(originalClazz.name());
+                String originalClassPackage = DotNames.packageName(originalClazz.name());
                 for (Type type : parameters) {
                     ClassInfo parameterClassInfo = beanArchiveIndex.getClassByName(type.name());
                     if (parameterClassInfo == null) {
@@ -526,25 +526,15 @@ final class Methods {
                         return true; // parameters whose class is private can not be loaded, as we would end up with IllegalAccessError when trying to access the use the load the class
                     }
                     if (!Modifier.isPublic(parameterClassInfo.flags())) {
-                        if (determinePackage(parameterClassInfo.name()).equals(originalClassPackage)) {
-                            return false;
-                        }
                         // parameters whose class is package-private and the package is not the same as the package of the method for which we are checking can not be loaded,
                         // as we would end up with IllegalAccessError when trying to access the use the load the class
-                        return true;
+                        return !DotNames.packageName(parameterClassInfo.name()).equals(originalClassPackage);
                     }
                 }
             }
 
             // Note that we intentionally do not skip final methods here - these are handled later
             return false;
-        }
-
-        private String determinePackage(DotName dotName) {
-            if (dotName.isInner()) {
-                dotName = dotName.prefix();
-            }
-            return dotName.prefix() == null ? "" : dotName.prefix().toString();
         }
 
         private boolean hasImplementation(MethodInfo bridge) {

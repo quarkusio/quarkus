@@ -1,0 +1,16 @@
+name: Feature request / Enhancement
+description: Request or propose a new feature/enhancement
+labels: kind/enhancement
+body:
+  - type: textarea
+    validations:
+      required: true
+    attributes:
+      label: Description
+      description: >-
+        Describe the feature here.
+  - type: textarea
+    attributes:
+      label: Implementation ideas
+      description: >-
+        If you have any implementation ideas, they can go here, however please note that all design change proposals should be posted to [the Quarkus developer mailing list](mailto:quarkus-dev@googlegroups.com) (or [the corresponding Google Group](https://groups.google.com/group/quarkus-dev); see [the decisions process document](https://github.com/quarkusio/quarkus/blob/main/DECISIONS.adoc) for more information

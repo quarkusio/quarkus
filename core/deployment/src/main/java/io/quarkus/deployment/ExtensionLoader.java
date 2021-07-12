@@ -41,6 +41,7 @@ import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 import org.wildfly.common.function.Functions;
 
@@ -89,12 +90,10 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
-import io.smallrye.config.KeyMap;
-import io.smallrye.config.KeyMapBackedConfigSource;
-import io.smallrye.config.NameIterator;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.common.MapBackedConfigSource;
 
 /**
  * Utility class to load build steps, runtime recorders, and configuration roots from a given extension class.
@@ -107,9 +106,17 @@ public final class ExtensionLoader {
     private static final Logger cfgLog = Logger.getLogger("io.quarkus.configuration");
     private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
 
-    @SuppressWarnings("deprecation")
     private static boolean isRecorder(AnnotatedElement element) {
         return element.isAnnotationPresent(Recorder.class);
+    }
+
+    static class PlatformPropertiesConfigSource extends MapBackedConfigSource {
+        PlatformPropertiesConfigSource(Map<String, String> properties) {
+            super("Quarkus platform",
+                    // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
+                    // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
+                    properties, Integer.MIN_VALUE + 1000);
+        }
     }
 
     /**
@@ -117,7 +124,6 @@ public final class ExtensionLoader {
      *
      * @param classLoader the class loader
      * @param buildSystemProps the build system properties to use
-     * @param platformProperties Quarkus platform properties
      * @param launchMode launch mode
      * @param configCustomizer configuration customizer
      * @return a consumer which adds the steps to the given chain builder
@@ -153,14 +159,7 @@ public final class ExtensionLoader {
         if (platformProperties.isEmpty()) {
             builder.withSources(ds1, ds2, pcs);
         } else {
-            final KeyMap<String> props = new KeyMap<>(platformProperties.size());
-            for (Map.Entry<String, String> prop : platformProperties.entrySet()) {
-                props.findOrAdd(new NameIterator(prop.getKey())).putRootValue(prop.getValue());
-            }
-            final KeyMapBackedConfigSource platformConfigSource = new KeyMapBackedConfigSource("Quarkus platform",
-                    // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
-                    // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
-                    Integer.MIN_VALUE + 1000, props);
+            final ConfigSource platformConfigSource = new PlatformPropertiesConfigSource(platformProperties);
             builder.withSources(ds1, ds2, platformConfigSource, pcs);
         }
 
@@ -230,7 +229,6 @@ public final class ExtensionLoader {
      * @param clazz the class to load from (must not be {@code null})
      * @param readResult the build time configuration read result (must not be {@code null})
      * @param runTimeProxies the map of run time proxy objects to populate for recorders (must not be {@code null})
-     * @param launchMode the launch mode
      * @return a consumer which adds the steps to the given chain builder
      */
     private static Consumer<BuildChainBuilder> loadStepsFromClass(Class<?> clazz,
@@ -857,7 +855,7 @@ public final class ExtensionLoader {
                 element);
     }
 
-    protected static List<Method> getMethods(Class<?> clazz) {
+    static List<Method> getMethods(Class<?> clazz) {
         List<Method> declaredMethods = new ArrayList<>();
         if (!clazz.getName().equals(Object.class.getName())) {
             declaredMethods.addAll(getMethods(clazz.getSuperclass()));

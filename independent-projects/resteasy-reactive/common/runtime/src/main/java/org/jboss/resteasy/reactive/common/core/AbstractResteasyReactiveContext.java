@@ -11,6 +11,7 @@ import java.util.concurrent.Executor;
 import javax.ws.rs.container.CompletionCallback;
 import javax.ws.rs.container.ConnectionCallback;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.PreserveTargetException;
 import org.jboss.resteasy.reactive.spi.RestHandler;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
@@ -164,7 +165,11 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                     }
                 } catch (Throwable t) {
                     boolean over = handlers == abortHandlerChain;
-                    handleException(t);
+                    if (t instanceof PreserveTargetException) {
+                        handleException(t.getCause(), true);
+                    } else {
+                        handleException(t);
+                    }
                     if (over) {
                         running = false;
                         return;

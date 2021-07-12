@@ -7,5 +7,7 @@ metadata:
   - "graphql"
   - "graphql-client"
   - "microprofile-graphql"
+  categories:
+  - "web"
   guide: "https://quarkus.io/guides/smallrye-graphql-client"
   status: "preview"

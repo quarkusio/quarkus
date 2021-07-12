@@ -46,7 +46,14 @@ public class JsonCatalogMerger {
             catalog.getDerivedFrom().forEach(o -> derivedFrom.putIfAbsent(o.getId(), o));
 
             catalog.getCategories().forEach(c -> categories.putIfAbsent(c.getId(), c));
-            catalog.getExtensions().forEach(e -> extensions.putIfAbsent(e.getArtifact().getKey(), e));
+            catalog.getExtensions().forEach(e -> {
+                final Extension copy = extensions.get(e.getArtifact().getKey());
+                if (copy == null) {
+                    extensions.put(e.getArtifact().getKey(), JsonExtension.copy(e));
+                } else {
+                    copy.getOrigins().addAll(e.getOrigins());
+                }
+            });
             catalog.getMetadata().entrySet().forEach(entry -> metadata.putIfAbsent(entry.getKey(), entry.getValue()));
 
             if (combined.getQuarkusCoreVersion() == null && catalog.getQuarkusCoreVersion() != null) {

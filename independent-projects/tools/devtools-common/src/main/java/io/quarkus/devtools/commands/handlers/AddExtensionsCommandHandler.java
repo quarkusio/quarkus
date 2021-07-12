@@ -18,10 +18,15 @@ import io.quarkus.platform.catalog.predicate.ExtensionPredicate;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.ExtensionOrigin;
+import io.quarkus.registry.union.ElementCatalog;
+import io.quarkus.registry.union.ElementCatalogBuilder;
+import io.quarkus.registry.union.Member;
+import io.quarkus.registry.union.Union;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
@@ -97,6 +102,34 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
         final String quarkusCore = catalog.getQuarkusCoreVersion();
         final Collection<ArtifactCoords> importedPlatforms = invocation.getQuarkusProject().getExtensionManager()
                 .getInstalledPlatforms();
+        ElementCatalog<ExtensionCatalog> elementCatalog = ElementCatalogBuilder.getElementCatalog(catalog,
+                ExtensionCatalog.class);
+        Set<ArtifactCoords> preferredBoms = Collections.emptySet();
+        if (elementCatalog != null) {
+            final Collection<Union<ExtensionCatalog>> unions = elementCatalog.unions();
+            if (unions.size() > 1) {
+                for (Union<ExtensionCatalog> release : unions) {
+                    boolean preferredRelease = false;
+                    for (Member<ExtensionCatalog> m : release.members()) {
+                        if (m.getInstance().isPlatform() && importedPlatforms.contains(m.getInstance().getBom())) {
+                            if (preferredBoms.isEmpty()) {
+                                preferredBoms = new HashSet<>();
+                            }
+                            preferredRelease = true;
+                            break;
+                        }
+                    }
+                    if (preferredRelease) {
+                        for (Member<ExtensionCatalog> m : release.members()) {
+                            if (m.getInstance().isPlatform()) {
+                                preferredBoms.add(m.getInstance().getBom());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         ExtensionInstallPlan.Builder builder = ExtensionInstallPlan.builder();
         for (String keyword : keywords) {
             int countColons = StringUtils.countMatches(keyword, ":");
@@ -128,35 +161,38 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
 
                 boolean managed = false;
                 ExtensionOrigin firstPlatform = null;
+                ExtensionOrigin preferredOrigin = null;
                 for (ExtensionOrigin origin : e.getOrigins()) {
                     if (!origin.isPlatform()) {
                         continue;
                     }
-                    if (importedPlatforms.contains(new ArtifactCoords(origin.getBom().getGroupId(),
-                            origin.getBom().getArtifactId(), null, "pom", origin.getBom().getVersion()))) {
+                    if (importedPlatforms.contains(origin.getBom())) {
                         managed = true;
                         builder.addManagedExtension(extensionCoords);
                         break;
                     }
-                    if (firstPlatform == null) {
-                        firstPlatform = origin;
+                    if (preferredOrigin == null) {
+                        if (preferredBoms.contains(origin.getBom())) {
+                            preferredOrigin = origin;
+                        } else if (firstPlatform == null) {
+                            firstPlatform = origin;
+                        }
                     }
                 }
-                if (!managed && firstPlatform != null) {
-                    // TODO this is not properly picking the platform BOMs
+
+                if (preferredOrigin == null) {
+                    preferredOrigin = firstPlatform;
+                }
+
+                if (!managed && preferredOrigin != null) {
                     builder.addManagedExtension(extensionCoords);
-                    builder.addPlatform(firstPlatform.getBom());
+                    builder.addPlatform(preferredOrigin.getBom());
                     managed = true;
                 }
                 if (!managed) {
                     builder.addIndependentExtension(extensionCoords);
                 }
             }
-            // TODO
-            //if (!listed.isEmpty()) {
-            //    builder.addPlatform(new ArtifactCoords(catalog.getBomGroupId(), catalog.getBomArtifactId(), null, "pom",
-            //            catalog.getBomVersion()));
-            //}
         }
         return builder.build();
     }

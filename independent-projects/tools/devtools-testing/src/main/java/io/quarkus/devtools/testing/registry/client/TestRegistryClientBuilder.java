@@ -21,6 +21,7 @@ import io.quarkus.registry.config.json.JsonRegistryConfig;
 import io.quarkus.registry.config.json.JsonRegistryDescriptorConfig;
 import io.quarkus.registry.config.json.JsonRegistryNonPlatformExtensionsConfig;
 import io.quarkus.registry.config.json.JsonRegistryPlatformsConfig;
+import io.quarkus.registry.config.json.JsonRegistryQuarkusVersionsConfig;
 import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
 import io.quarkus.registry.util.PlatformArtifacts;
 import java.io.IOException;
@@ -102,6 +103,7 @@ public class TestRegistryClientBuilder {
         private final String registryGroupId;
         private JsonRegistryConfig config;
         private JsonRegistryDescriptorConfig descrConfig = new JsonRegistryDescriptorConfig();
+        private JsonRegistryQuarkusVersionsConfig quarkusVersions;
         private boolean external;
         private PlatformCatalog platformCatalog;
 
@@ -163,6 +165,19 @@ public class TestRegistryClientBuilder {
             return builder;
         }
 
+        public TestRegistryBuilder recognizedQuarkusVersions(String expr) {
+            return recognizedQuarkusVersions(expr, true);
+        }
+
+        public TestRegistryBuilder recognizedQuarkusVersions(String expr, boolean exclusiveProvider) {
+            if (quarkusVersions == null) {
+                quarkusVersions = new JsonRegistryQuarkusVersionsConfig();
+            }
+            quarkusVersions.setRecognizedVersionsExpression(expr);
+            quarkusVersions.setExclusiveProvider(exclusiveProvider);
+            return this;
+        }
+
         public TestRegistryClientBuilder clientBuilder() {
             return parent;
         }
@@ -198,6 +213,9 @@ public class TestRegistryClientBuilder {
             final JsonRegistryConfig registryConfig = new JsonRegistryConfig();
             registryConfig.setId(config.getId());
             registryConfig.setDescriptor(descrConfig);
+            if (quarkusVersions != null) {
+                registryConfig.setQuarkusVersions(quarkusVersions);
+            }
 
             final JsonRegistryPlatformsConfig platformConfig = new JsonRegistryPlatformsConfig();
             platformConfig

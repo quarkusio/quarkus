@@ -2,60 +2,27 @@ package io.quarkus.devtools.project.create;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
-import io.quarkus.bootstrap.util.IoUtils;
-import io.quarkus.devtools.commands.AddExtensions;
-import io.quarkus.devtools.commands.CreateProject;
-import io.quarkus.devtools.commands.data.QuarkusCommandException;
-import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
-import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
 import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.registry.config.RegistriesConfigLocator;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.Repository;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class MavenProjectImportingMultipleBomsFromSinglePlatformTest {
+public class MavenProjectImportingMultipleBomsFromSinglePlatformTest extends MultiplePlatformBomsTestBase {
 
-    private static final String PLATFORM_GROUP_ID_POM_PROP = "quarkus.platform.group-id";
-    private static final String PLATFORM_GROUP_ID_POM_EXPR = "${" + PLATFORM_GROUP_ID_POM_PROP + "}";
-
-    private static final String PLATFORM_ARTIFACT_ID_POM_PROP = "quarkus.platform.artifact-id";
-    private static final String PLATFORM_ARTIFACT_ID_POM_EXPR = "${" + PLATFORM_ARTIFACT_ID_POM_PROP + "}";
-
-    private static final String PLATFORM_VERSION_POM_PROP = "quarkus.platform.version";
-    private static final String PLATFORM_VERSION_POM_EXPR = "${" + PLATFORM_VERSION_POM_PROP + "}";
-
-    private static final String PLATFORM_KEY = "org.acme.platform";
-
-    private static Path configDir;
-    private static String prevConfigPath;
-    private static String prevRegistryClient;
+    private static final String MAIN_PLATFORM_KEY = "org.acme.platform";
 
     @BeforeAll
     public static void setup() throws Exception {
-        configDir = getProjectDir("registry-client");
         TestRegistryClientBuilder.newInstance()
                 //.debug()
-                .baseDir(configDir)
+                .baseDir(configDir())
                 // registry
                 .newRegistry("registry.acme.org")
                 // platform key
-                .newPlatform(PLATFORM_KEY)
+                .newPlatform(MAIN_PLATFORM_KEY)
                 // 2.0 STREAM
                 .newStream("2.0")
                 // 2.0.4 release
@@ -101,24 +68,11 @@ public class MavenProjectImportingMultipleBomsFromSinglePlatformTest {
                 .clientBuilder()
                 .build();
 
-        prevConfigPath = System.setProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY,
-                configDir.resolve("config.yaml").toString());
-        prevRegistryClient = System.setProperty("quarkusRegistryClient", "true");
-        QuarkusProjectHelper.reset();
+        enableRegistryClient();
     }
 
-    @AfterAll
-    public static void cleanup() throws Exception {
-        resetProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY, prevConfigPath);
-        resetProperty("quarkusRegistryClient", prevRegistryClient);
-    }
-
-    private static void resetProperty(String name, String value) {
-        if (value == null) {
-            System.clearProperty(name);
-        } else {
-            System.setProperty(name, value);
-        }
+    protected String getMainPlatformKey() {
+        return MAIN_PLATFORM_KEY;
     }
 
     @Test
@@ -215,108 +169,5 @@ public class MavenProjectImportingMultipleBomsFromSinglePlatformTest {
                 "1.0.1");
 
         assertThat(addExtensions(projectDir, Arrays.asList("acme-bar")).isSuccess()).isFalse();
-    }
-
-    private QuarkusCommandOutcome addExtensions(Path projectDir, List<String> extensions)
-            throws IOException, QuarkusCommandException {
-
-        final Path pomXml = projectDir.resolve("pom.xml");
-        final Model model = ModelUtils.readModel(pomXml);
-        if (model.getRepositories().isEmpty()) {
-            final Repository r = new Repository();
-            r.setId("devtools-registry-client-test-repo");
-            r.setUrl(TestRegistryClientBuilder.getMavenRepoDir(configDir).toAbsolutePath().toUri().toURL().toString());
-            model.getRepositories().add(r);
-            ModelUtils.persistModel(pomXml, model);
-        }
-
-        return new AddExtensions(getQuarkusProject(projectDir))
-                .extensions(new HashSet<>(extensions))
-                .execute();
-    }
-
-    private QuarkusCommandOutcome createProject(Path projectDir, List<String> extensions)
-            throws Exception {
-        return new CreateProject(getQuarkusProject(projectDir))
-                .groupId("org.acme")
-                .artifactId("acme-app")
-                .version("0.0.1-SNAPSHOT")
-                .extensions(new HashSet<>(extensions))
-                .execute();
-    }
-
-    private List<ArtifactCoords> toPlatformExtensionCoords(String... artifactIds) {
-        return toPlatformExtensionCoords(Arrays.asList(artifactIds));
-    }
-
-    private List<ArtifactCoords> toPlatformExtensionCoords(final List<String> extraExtensions) {
-        final List<ArtifactCoords> expectedExtensions = new ArrayList<>(extraExtensions.size());
-        for (String artifactId : extraExtensions) {
-            expectedExtensions.add(platformExtensionCoords(artifactId));
-        }
-        return expectedExtensions;
-    }
-
-    private List<ArtifactCoords> toPlatformBomCoords(String... artifactIds) {
-        return toPlatformBomCoords(Arrays.asList(artifactIds));
-    }
-
-    private List<ArtifactCoords> toPlatformBomCoords(final List<String> extraBoms) {
-        final List<ArtifactCoords> expectedBoms = new ArrayList<>(extraBoms.size() + 1);
-        expectedBoms.add(new ArtifactCoords(PLATFORM_GROUP_ID_POM_EXPR, PLATFORM_ARTIFACT_ID_POM_EXPR, null, "pom",
-                PLATFORM_VERSION_POM_EXPR));
-        for (String artifactId : extraBoms) {
-            expectedBoms.add(platformMemberBomCoords(artifactId));
-        }
-        return expectedBoms;
-    }
-
-    private void assertModel(final Path projectDir, final List<ArtifactCoords> expectedBoms,
-            final List<ArtifactCoords> expectedExtensions, String platformVersion) throws IOException {
-        final Model model = ModelUtils.readModel(projectDir.resolve("pom.xml"));
-        assertThat(model.getProperties().getProperty(PLATFORM_GROUP_ID_POM_PROP)).isEqualTo(PLATFORM_KEY);
-        assertThat(model.getProperties().getProperty(PLATFORM_ARTIFACT_ID_POM_PROP)).isEqualTo("quarkus-bom");
-        assertThat(model.getProperties().getProperty(PLATFORM_VERSION_POM_PROP)).isEqualTo(platformVersion);
-
-        // TODO the order should be predictable
-        assertThat(model.getDependencyManagement().getDependencies().stream()
-                .map(d -> new ArtifactCoords(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(),
-                        d.getVersion()))
-                .collect(Collectors.toList())).containsAll(expectedBoms);
-        assertThat(model.getDependencyManagement().getDependencies().size()).isEqualTo(expectedBoms.size());
-
-        // TODO the order should be predictable
-        assertThat(model.getDependencies().stream()
-                .map(d -> new ArtifactCoords(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()))
-                .collect(Collectors.toSet())).containsAll(expectedExtensions);
-    }
-
-    private static ArtifactCoords platformExtensionCoords(String artifactId) {
-        return new ArtifactCoords(PLATFORM_KEY, artifactId, "jar", null);
-    }
-
-    private static ArtifactCoords platformMemberBomCoords(String artifactId) {
-        return new ArtifactCoords(PLATFORM_GROUP_ID_POM_EXPR, artifactId, "pom", PLATFORM_VERSION_POM_EXPR);
-    }
-
-    private QuarkusProject getQuarkusProject(Path projectDir) {
-        return QuarkusProjectHelper.getProject(projectDir, BuildTool.MAVEN);
-    }
-
-    private static Path newProjectDir(String name) {
-        Path projectDir = getProjectDir(name);
-        if (Files.exists(projectDir)) {
-            IoUtils.recursiveDelete(projectDir);
-        }
-        try {
-            Files.createDirectories(projectDir);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create directory " + projectDir, e);
-        }
-        return projectDir;
-    }
-
-    private static Path getProjectDir(String name) {
-        return Paths.get("target").resolve("generated-test-projects").resolve(name);
     }
 }

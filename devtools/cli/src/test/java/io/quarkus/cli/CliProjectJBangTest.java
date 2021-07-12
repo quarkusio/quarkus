@@ -45,6 +45,8 @@ public class CliProjectJBangTest {
                 "Generated source should reference resteasy. Found:\n" + source);
 
         result = CliDriver.invokeValidateDryRunBuild(project);
+        Assertions.assertTrue(result.stdout.contains("-Dproperty=value1 -Dproperty2=value2"),
+                "result should contain '-Dproperty=value1 -Dproperty2=value2':\n" + result.stdout);
 
         CliDriver.invokeValidateBuild(project);
     }
@@ -111,6 +113,45 @@ public class CliProjectJBangTest {
                 "-Dproperty=value1", "-Dproperty2=value2");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
+    }
+
+    @Test
+    public void testBuildOptions() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang", "-e", "-B", "--verbose");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        // 1 --clean --tests --native --offline
+        result = CliDriver.execute(project, "build", "-e", "-B", "--dry-run",
+                "--clean", "--tests", "--native", "--offline");
+
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains("--fresh"),
+                "jbang command should specify '--fresh'\n" + result);
+
+        // presently no support for --tests or --no-tests
+
+        Assertions.assertTrue(result.stdout.contains("--native"),
+                "jbang command should specify --native\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains("--offline"),
+                "jbang command should specify --offline\n" + result);
+
+        // 2 --no-clean --no-tests
+        result = CliDriver.execute(project, "build", "-e", "-B", "--dry-run",
+                "--no-clean", "--no-tests");
+
+        Assertions.assertFalse(result.stdout.contains("--fresh"),
+                "jbang command should not specify '--fresh'\n" + result);
+
+        // presently no support for --tests or --no-tests
+
+        Assertions.assertFalse(result.stdout.contains("native"),
+                "jbang command should not specify native\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("offline"),
+                "jbang command should not specify offline\n" + result);
     }
 
     void validateBasicIdentifiers(Path project, String group, String artifact, String version) throws Exception {

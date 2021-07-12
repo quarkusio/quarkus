@@ -58,7 +58,6 @@ public class CliNonProjectTest {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "build", "-e");
         Assertions.assertEquals(CommandLine.ExitCode.USAGE, result.exitCode,
                 "'quarkus build' should fail outside of a quarkus project directory:\n" + result);
-        System.out.println(result);
     }
 
     @Test
@@ -66,7 +65,6 @@ public class CliNonProjectTest {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "dev", "-e");
         Assertions.assertEquals(CommandLine.ExitCode.USAGE, result.exitCode,
                 "'quarkus dev' should fail outside of a quarkus project directory:\n" + result);
-        System.out.println(result);
     }
 
     @Test

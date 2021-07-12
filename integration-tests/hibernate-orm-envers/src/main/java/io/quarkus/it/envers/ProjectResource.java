@@ -13,11 +13,10 @@ import javax.ws.rs.core.MediaType;
 import org.hibernate.envers.AuditReaderFactory;
 import org.hibernate.envers.query.AuditEntity;
 
+import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.StartupEvent;
-import io.smallrye.common.annotation.Blocking;
 
 @Path("/project")
-@Blocking
 public class ProjectResource {
 
     @Inject
@@ -35,6 +34,9 @@ public class ProjectResource {
     @Transactional
     @Path("/{id}")
     public String getProjectAtLastRevision(@PathParam("id") final Long id) {
+        if (!BlockingOperationControl.isBlockingAllowed()) {
+            throw new RuntimeException("On IO Thread");
+        }
         final Project projectAudited = (Project) AuditReaderFactory.get(em)
                 .createQuery()
                 .forRevisionsOfEntity(

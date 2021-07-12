@@ -48,6 +48,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SORTED_SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SUSPENDED;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.TRANSACTIONAL;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 
 import java.lang.reflect.Modifier;
@@ -565,10 +566,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 // the most specific annotation was the @NonBlocking annotation on the method
                 return false;
             }
-        } else if ((blockingAnnotation != null) && (nonBlockingAnnotation == null)) {
+        } else if ((blockingAnnotation != null)) {
             return true;
-        } else if ((nonBlockingAnnotation != null) && (blockingAnnotation == null)) {
+        } else if ((nonBlockingAnnotation != null)) {
             return false;
+        }
+        Map.Entry<AnnotationTarget, AnnotationInstance> transactional = getInheritableAnnotation(info, TRANSACTIONAL); //we treat this the same as blocking, as JTA is blocking, but it is lower priority
+        if (transactional != null) {
+            return true;
         }
         return defaultValue;
     }

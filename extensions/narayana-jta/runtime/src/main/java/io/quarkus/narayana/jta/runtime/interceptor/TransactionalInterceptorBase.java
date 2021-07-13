@@ -2,10 +2,14 @@ package io.quarkus.narayana.jta.runtime.interceptor;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 import javax.inject.Inject;
 import javax.interceptor.InvocationContext;
@@ -15,6 +19,8 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
 import org.jboss.tm.usertx.client.ServerVMClientUserTransaction;
 import org.reactivestreams.Publisher;
 
@@ -27,13 +33,11 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.converters.ReactiveTypeConverter;
 import io.smallrye.reactive.converters.Registry;
 
-/**
- * @author paul.robinson@redhat.com 02/05/2013
- */
-
 public abstract class TransactionalInterceptorBase implements Serializable {
 
     private static final long serialVersionUID = 1L;
+    private static final Logger log = Logger.getLogger(TransactionalInterceptorBase.class);
+    private final Map<Method, Integer> methodTransactionTimeoutDefinedByPropertyCache = new ConcurrentHashMap<>();
 
     @Inject
     TransactionManager transactionManager;
@@ -66,8 +70,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
      * Method handles CDI types to cover cases where extensions are used. In
      * case of EE container uses reflection.
      *
-     * @param ic
-     *        invocation context of the interceptor
+     * @param ic invocation context of the interceptor
      * @return instance of {@link Transactional} annotation or null
      */
     private Transactional getTransactional(InvocationContext ic) {
@@ -104,18 +107,20 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     protected Object invokeInOurTx(InvocationContext ic, TransactionManager tm, RunnableWithException afterEndTransaction)
             throws Exception {
 
-        TransactionConfiguration configAnnotation = getTransactionConfiguration(ic);
+        int timeoutConfiguredForMethod = getTransactionTimeoutFromAnnotation(ic);
+
         int currentTmTimeout = ((CDIDelegatingTransactionManager) transactionManager).getTransactionTimeout();
-        if (configAnnotation != null && configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT) {
-            tm.setTransactionTimeout(configAnnotation.timeout());
+
+        if (timeoutConfiguredForMethod > 0) {
+            tm.setTransactionTimeout(timeoutConfiguredForMethod);
         }
+
         Transaction tx;
         try {
             tm.begin();
             tx = tm.getTransaction();
         } finally {
-            if (configAnnotation != null && configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT) {
-                //restore the default behaviour
+            if (timeoutConfiguredForMethod > 0) {
                 tm.setTransactionTimeout(currentTmTimeout);
             }
         }
@@ -165,6 +170,51 @@ public abstract class TransactionalInterceptorBase implements Serializable {
             }
         }
         return ret;
+    }
+
+    private int getTransactionTimeoutFromAnnotation(InvocationContext ic) {
+        TransactionConfiguration configAnnotation = getTransactionConfiguration(ic);
+
+        if (configAnnotation == null) {
+            return -1;
+        }
+
+        int transactionTimeout = -1;
+
+        if (!configAnnotation.timeoutFromConfigProperty().equals(TransactionConfiguration.UNSET_TIMEOUT_CONFIG_PROPERTY)) {
+            Integer timeoutForMethod = methodTransactionTimeoutDefinedByPropertyCache.get(ic.getMethod());
+            if (timeoutForMethod != null) {
+                transactionTimeout = timeoutForMethod;
+            } else {
+                transactionTimeout = methodTransactionTimeoutDefinedByPropertyCache.computeIfAbsent(ic.getMethod(),
+                        new Function<Method, Integer>() {
+                            @Override
+                            public Integer apply(Method m) {
+                                return TransactionalInterceptorBase.this.getTransactionTimeoutPropertyValue(configAnnotation);
+                            }
+                        });
+            }
+        }
+
+        if (transactionTimeout == -1 && (configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT)) {
+            transactionTimeout = configAnnotation.timeout();
+        }
+
+        return transactionTimeout;
+    }
+
+    private Integer getTransactionTimeoutPropertyValue(TransactionConfiguration configAnnotation) {
+        Optional<Integer> configTimeout = ConfigProvider.getConfig()
+                .getOptionalValue(configAnnotation.timeoutFromConfigProperty(), Integer.class);
+        if (configTimeout.isEmpty()) {
+            if (log.isDebugEnabled()) {
+                log.debugf("Configuration property '%s' was not provided, so it will not affect the transaction's timeout.",
+                        configAnnotation.timeoutFromConfigProperty());
+            }
+            return -1;
+        }
+
+        return configTimeout.get();
     }
 
     protected Object handleAsync(TransactionManager tm, Transaction tx, InvocationContext ic, Object ret,
@@ -263,7 +313,9 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     private void checkConfiguration(InvocationContext ic) {
         TransactionConfiguration configAnnotation = getTransactionConfiguration(ic);
-        if (configAnnotation != null && configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT) {
+        if (configAnnotation != null && ((configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT)
+                || !TransactionConfiguration.UNSET_TIMEOUT_CONFIG_PROPERTY
+                        .equals(configAnnotation.timeoutFromConfigProperty()))) {
             throw new RuntimeException("Changing timeout via @TransactionConfiguration can only be done " +
                     "at the entry level of a transaction");
         }
@@ -333,7 +385,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
      * An utility method to throw any exception as a {@link RuntimeException}.
      * We may throw a checked exception (subtype of {@code Throwable} or {@code Exception}) as un-checked exception.
      * This considers the Java 8 inference rule that states that a {@code throws E} is inferred as {@code RuntimeException}.
-     *
+     * <p>
      * This method can be used in {@code throw} statement such as: {@code throw sneakyThrow(exception);}.
      */
     @SuppressWarnings("unchecked")

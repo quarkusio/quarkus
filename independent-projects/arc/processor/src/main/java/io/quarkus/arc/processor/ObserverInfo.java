@@ -104,8 +104,9 @@ public class ObserverInfo implements InjectionTargetInfo {
             } else {
                 info = beanClass.toString();
             }
-            LOGGER.warnf("The observer %s makes use of %s transactional observers but no " +
-                    "JTA capabilities were detected.", info, transactionPhase);
+            LOGGER.warnf(
+                    "The observer %s makes use of %s transactional observers but no JTA capabilities were detected. Transactional observers will be notified at the same time as other observers.",
+                    info, transactionPhase);
         }
         return new ObserverInfo(id, beanDeployment, beanClass, declaringBean, observerMethod, injection, eventParameter,
                 isAsync, priority, reception, transactionPhase, observedType, qualifiers, notify);

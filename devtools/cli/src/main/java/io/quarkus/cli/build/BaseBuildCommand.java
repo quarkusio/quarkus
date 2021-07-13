@@ -6,7 +6,7 @@ import java.nio.file.Paths;
 import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
-import io.quarkus.cli.common.RegistryClientMixin;
+import io.quarkus.cli.common.ToggleRegistryClientMixin;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import picocli.CommandLine;
@@ -19,7 +19,7 @@ public class BaseBuildCommand {
     protected OutputOptionMixin output;
 
     @CommandLine.Mixin
-    protected RegistryClientMixin registryClient;
+    protected ToggleRegistryClientMixin registryClient;
 
     @CommandLine.Mixin
     protected HelpOption helpOption;

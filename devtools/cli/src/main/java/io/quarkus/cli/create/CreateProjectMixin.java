@@ -7,8 +7,8 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import io.quarkus.cli.common.OutputOptionMixin;
-import io.quarkus.cli.common.RegistryClientMixin;
 import io.quarkus.cli.common.TargetQuarkusVersionGroup;
+import io.quarkus.cli.common.ToggleRegistryClientMixin;
 import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.project.BuildTool;
@@ -37,7 +37,7 @@ public class CreateProjectMixin {
     String targetDirectory;
 
     @Mixin
-    RegistryClientMixin registryClient;
+    ToggleRegistryClientMixin registryClient;
 
     public void setTestOutputDirectory(Path testOutputDirectory) {
         if (testOutputDirectory != null && targetDirectory == null) {
@@ -54,7 +54,7 @@ public class CreateProjectMixin {
 
     /**
      * Resolve and remember the configured project directory.
-     * 
+     *
      * @param log Output Mixin that will be used to emit error messages
      * @return true IFF configured project root directory already exists
      */

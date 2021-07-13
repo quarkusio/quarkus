@@ -12,15 +12,24 @@ public class RegistryClientDispatcher implements RegistryClient {
     private final RegistryPlatformsResolver platforms;
     private final RegistryPlatformExtensionsResolver platformExtensions;
     private final RegistryNonPlatformExtensionsResolver nonPlatformExtensions;
+    private final RegistryCache registryCache;
     protected RegistryConfig config;
 
     public RegistryClientDispatcher(RegistryConfig config, RegistryPlatformsResolver platforms,
             RegistryPlatformExtensionsResolver platformExtensions,
             RegistryNonPlatformExtensionsResolver nonPlatformExtensions) {
+        this(config, platforms, platformExtensions, nonPlatformExtensions, null);
+    }
+
+    public RegistryClientDispatcher(RegistryConfig config, RegistryPlatformsResolver platforms,
+            RegistryPlatformExtensionsResolver platformExtensions,
+            RegistryNonPlatformExtensionsResolver nonPlatformExtensions,
+            RegistryCache registryCache) {
         this.config = config;
         this.platforms = platforms;
         this.platformExtensions = Objects.requireNonNull(platformExtensions);
         this.nonPlatformExtensions = nonPlatformExtensions;
+        this.registryCache = registryCache;
     }
 
     @Override
@@ -43,5 +52,12 @@ public class RegistryClientDispatcher implements RegistryClient {
     @Override
     public RegistryConfig resolveRegistryConfig() throws RegistryResolutionException {
         return config;
+    }
+
+    @Override
+    public void clearCache() throws RegistryResolutionException {
+        if (registryCache != null) {
+            registryCache.clearCache();
+        }
     }
 }

@@ -145,15 +145,14 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
             config = complete;
         }
 
-        MavenRegistryArtifactResolver defaultResolver = null;
+        final MavenRegistryArtifactResolver defaultResolver = defaultResolver(resolver, cleanupTimestampedArtifacts);
         final RegistryNonPlatformExtensionsResolver nonPlatformExtensionsResolver;
         final RegistryNonPlatformExtensionsConfig nonPlatformExtensions = config.getNonPlatformExtensions();
         if (nonPlatformExtensions == null || nonPlatformExtensions.isDisabled()) {
             log.debug("Non-platform extension catalogs were disabled for registry %s", config.getId());
             nonPlatformExtensionsResolver = null;
         } else {
-            nonPlatformExtensionsResolver = new MavenNonPlatformExtensionsResolver(nonPlatformExtensions,
-                    defaultResolver = defaultResolver(resolver, cleanupTimestampedArtifacts), log);
+            nonPlatformExtensionsResolver = new MavenNonPlatformExtensionsResolver(nonPlatformExtensions, defaultResolver, log);
         }
 
         final RegistryPlatformsResolver platformsResolver;
@@ -162,21 +161,16 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
             log.debug("Platform catalogs were disabled for registry %s", config.getId());
             platformsResolver = null;
         } else {
-            platformsResolver = new MavenPlatformsResolver(platformsConfig,
-                    defaultResolver == null ? defaultResolver = defaultResolver(resolver, cleanupTimestampedArtifacts)
-                            : defaultResolver,
-                    log);
+            platformsResolver = new MavenPlatformsResolver(platformsConfig, defaultResolver, log);
         }
 
         return new RegistryClientDispatcher(config, platformsResolver,
                 Boolean.TRUE.equals(config.getPlatforms().getExtensionCatalogsIncluded())
-                        ? new MavenPlatformExtensionsResolver(
-                                defaultResolver == null ? defaultResolver(resolver, cleanupTimestampedArtifacts)
-                                        : defaultResolver,
-                                log)
+                        ? new MavenPlatformExtensionsResolver(defaultResolver, log)
                         : new MavenPlatformExtensionsResolver(defaultResolver(originalResolver, cleanupTimestampedArtifacts),
                                 log),
-                nonPlatformExtensionsResolver);
+                nonPlatformExtensionsResolver,
+                new MavenRegistryCache(config, defaultResolver, log));
     }
 
     private static boolean isCleanupTimestampedArtifacts(RegistryConfig config) {

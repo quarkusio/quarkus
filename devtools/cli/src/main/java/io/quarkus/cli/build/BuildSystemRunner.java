@@ -68,6 +68,12 @@ public interface BuildSystemRunner {
         return cmd;
     }
 
+    default void paramsToQuarkusArgs(List<String> params, ArrayDeque<String> args) {
+        if (!params.isEmpty()) {
+            args.add("-Dquarkus.args='" + String.join(" ", params) + "'");
+        }
+    }
+
     default List<String> flattenMappedProperties(Map<String, String> props) {
         List<String> result = new ArrayList<>();
         props.entrySet().forEach(x -> {

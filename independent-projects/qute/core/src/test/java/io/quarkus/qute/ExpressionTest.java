@@ -68,6 +68,8 @@ public class ExpressionTest {
         verify("hero.name.isBlank ? 'Hulk' : hero.name", null, null, name("hero"), name("name"), name("isBlank"),
                 virtualMethod("?", ExpressionImpl.literalFrom(-1, "'Hulk'")),
                 virtualMethod(":", ExpressionImpl.from("hero.name")));
+        verify("hero.name??", null, null, name("hero"), name("name"),
+                virtualMethod("or", ExpressionImpl.literalFrom(-1, "null")));
     }
 
     @Test

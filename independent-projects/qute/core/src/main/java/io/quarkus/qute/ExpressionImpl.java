@@ -29,9 +29,6 @@ final class ExpressionImpl implements Expression {
             return EMPTY;
         }
         Object literalValue = LiteralSupport.getLiteralValue(literal);
-        if (literalValue == null) {
-            throw new IllegalArgumentException("Not a literal value: " + literal);
-        }
         return literal(id, literal, literalValue, Parser.SYNTHETIC_ORIGIN);
     }
 

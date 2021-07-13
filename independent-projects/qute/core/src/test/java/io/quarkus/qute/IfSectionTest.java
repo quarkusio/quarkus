@@ -207,6 +207,21 @@ public class IfSectionTest {
                 engine.parse("FOO\n\n{#if false}\nBAZ\n{/if}\n").render());
     }
 
+    @Test
+    public void testSafeExpression() {
+        Engine engine = Engine.builder().strictRendering(true).addDefaults().build();
+        try {
+            engine.parse("{#if val.is.not.there}NOK{#else}OK{/if}").render();
+            fail();
+        } catch (TemplateException expected) {
+            assertEquals("Entry \"val\" not found in the data map in expression {val.is.not.there} in template 1 on line 1",
+                    expected.getMessage());
+        }
+        assertEquals("OK", engine.parse("{#if val.is.not.there??}NOK{#else}OK{/if}").render());
+        assertEquals("OK", engine.parse("{#if hero??}NOK{#else}OK{/if}").render());
+        assertEquals("OK", engine.parse("{#if hero??}OK{#else}NOK{/if}").data("hero", true).render());
+    }
+
     private void assertParserError(String template, String message, int line) {
         Engine engine = Engine.builder().addDefaultSectionHelpers().build();
         try {

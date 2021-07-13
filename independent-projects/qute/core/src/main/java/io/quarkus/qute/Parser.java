@@ -718,6 +718,16 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 }
             }
         }
+
+        // Safe expressions
+        int lastIdx = strParts.size() - 1;
+        String last = strParts.get(lastIdx);
+        if (last.endsWith("??")) {
+            // foo.val?? -> foo.val.or(null)
+            strParts = ImmutableList.<String> builder().addAll(strParts.subList(0, lastIdx))
+                    .add(last.substring(0, last.length() - 2)).add("or(null)").build();
+        }
+
         List<Part> parts = new ArrayList<>(strParts.size());
         Part first = null;
         Iterator<String> strPartsIterator = strParts.iterator();

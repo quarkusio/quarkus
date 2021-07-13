@@ -100,9 +100,9 @@ public class CliProjectGradleTest {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B",
                 "--package-name=custom.pkg",
                 "--output-directory=" + nested,
-                "--group-id=silly", "--artifact-id=my-project", "--version=0.1.0",
                 "--app-config=" + String.join(",", configs),
-                "resteasy-reactive");
+                "-x resteasy-reactive",
+                "silly:my-project:0.1.0");
 
         // TODO: would love a test that doesn't use a wrapper, but CI path..
 
@@ -180,6 +180,47 @@ public class CliProjectGradleTest {
     }
 
     @Test
+    public void testBuildOptions() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "-e", "-B", "--verbose");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        // 1 --clean --tests --native --offline
+        result = CliDriver.execute(project, "build", "-e", "-B", "--dry-run",
+                "--clean", "--tests", "--native", "--offline");
+
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains(" clean"),
+                "gradle command should specify 'clean'\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("-x test"),
+                "gradle command should not specify '-x test'\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains("-Dquarkus.package.type=native"),
+                "gradle command should specify -Dquarkus.package.type=native\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains("--offline"),
+                "gradle command should specify --offline\n" + result);
+
+        // 2 --no-clean --no-tests
+        result = CliDriver.execute(project, "build", "-e", "-B", "--dry-run",
+                "--no-clean", "--no-tests");
+
+        Assertions.assertFalse(result.stdout.contains(" clean"),
+                "gradle command should not specify 'clean'\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains("-x test"),
+                "gradle command should specify '-x test'\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("native"),
+                "gradle command should not specify native\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("offline"),
+                "gradle command should not specify offline\n" + result);
+    }
+
+    @Test
     public void testCreateArgPassthrough() throws Exception {
         Path nested = workspaceRoot.resolve("cli-nested");
         project = nested.resolve("my-project");
@@ -188,7 +229,7 @@ public class CliProjectGradleTest {
                 "--verbose", "-e", "-B",
                 "--dryrun", "--no-wrapper", "--package-name=custom.pkg",
                 "--output-directory=" + nested,
-                "--group-id=silly", "--artifact-id=my-project", "--version=0.1.0");
+                "silly:my-project:0.1.0");
 
         // We don't need to retest this, just need to make sure all of the arguments were passed through
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);

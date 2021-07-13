@@ -21,10 +21,10 @@ public class SubclassSkipPredicateTest {
     public void testPredicate() throws IOException {
         IndexView index = Basics.index(Base.class, Submarine.class, Long.class, Number.class);
         AssignabilityCheck assignabilityCheck = new AssignabilityCheck(index, null);
-        SubclassSkipPredicate predicate = new SubclassSkipPredicate(assignabilityCheck::isAssignableFrom);
+        SubclassSkipPredicate predicate = new SubclassSkipPredicate(assignabilityCheck::isAssignableFrom, null);
 
         ClassInfo submarineClass = index.getClassByName(DotName.createSimple(Submarine.class.getName()));
-        predicate.startProcessing(submarineClass);
+        predicate.startProcessing(submarineClass, submarineClass);
 
         List<MethodInfo> echos = submarineClass.methods().stream().filter(m -> m.name().equals("echo"))
                 .collect(Collectors.toList());

@@ -8,7 +8,7 @@ import picocli.CommandLine;
 public class PropertiesOptions {
     public Map<String, String> properties = new HashMap<>();
 
-    @CommandLine.Option(order = 5, names = "-D", mapFallbackValue = "", description = "Java properties")
+    @CommandLine.Option(names = "-D", mapFallbackValue = "", description = "Java properties")
     void setProperty(Map<String, String> props) {
         this.properties = props;
     }

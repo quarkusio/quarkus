@@ -82,7 +82,12 @@ public class JBangRunner implements BuildSystemRunner {
         if (buildOptions.buildNative) {
             args.add("--native");
         }
+        if (buildOptions.clean) {
+            args.add("--fresh");
+        }
+
         args.add("build");
+        args.addAll(flattenMappedProperties(propertiesOptions.properties));
         args.addAll(params);
         args.add(getMainPath());
         return prependExecutable(args);

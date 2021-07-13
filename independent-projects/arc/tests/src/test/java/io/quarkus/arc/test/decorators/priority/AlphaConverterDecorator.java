@@ -1,6 +1,5 @@
 package io.quarkus.arc.test.decorators.priority;
 
-import io.quarkus.arc.test.decorators.priority.MultipleDecoratorsTest.Converter;
 import javax.annotation.Priority;
 import javax.decorator.Decorator;
 import javax.decorator.Delegate;
@@ -17,7 +16,7 @@ class AlphaConverterDecorator implements Converter<String> {
     @Override
     public String convert(String value) {
         // skip first char
-        return value.substring(1);
+        return delegate.convert(value).substring(1);
     }
 
 }

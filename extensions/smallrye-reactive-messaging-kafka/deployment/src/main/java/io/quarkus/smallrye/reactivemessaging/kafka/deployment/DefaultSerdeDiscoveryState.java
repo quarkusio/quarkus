@@ -19,6 +19,7 @@ class DefaultSerdeDiscoveryState {
     private final IndexView index;
 
     private final Map<String, Boolean> isKafkaConnector = new HashMap<>();
+    private final Map<String, String> serdeConfigMap = new HashMap<>();
 
     private Boolean hasConfluent;
     private Boolean hasApicurio1;
@@ -38,6 +39,13 @@ class DefaultSerdeDiscoveryState {
                     .orElse("ignored");
             return KafkaConnector.CONNECTOR_NAME.equals(connector);
         });
+    }
+
+    void runIfConfigIsAbsent(String key, String value, Runnable runnable) {
+        if (value != null && !serdeConfigMap.containsKey(key)) {
+            serdeConfigMap.put(key, value);
+            runnable.run();
+        }
     }
 
     boolean isAvroGenerated(DotName className) {

@@ -662,7 +662,8 @@ This is also called **dynamic instantiation** or **constructor expression**, mor
 link:https://docs.jboss.org/hibernate/orm/current/userguide/html_single/Hibernate_User_Guide.html#hql-select-clause[hql select clause]
 
 The projection class needs to be a valid Java Bean and have a constructor that contains all its attributes, this constructor will be used to
-instantiate the projection DTO instead of using the entity class. This must be the only constructor of the class.
+instantiate the projection DTO instead of using the entity class. This class must have a matching constructor with all the class attributes as parameters.
+
 
 [source,java]
 ----
@@ -1115,7 +1116,7 @@ That's all there is to it: with Panache, Hibernate ORM has never looked so trim 
 
 Hibernate ORM with Panache relies on compile-time bytecode enhancements to your entities.
 
-It attempts to identity archives with Panache entities (and consumers of Panache entities)
+It attempts to identify archives with Panache entities (and consumers of Panache entities)
 by the presence of the marker file `META-INF/panache-archive.marker`. Panache includes an
 annotation processor that will automatically create this file in archives that depend on
 Panache (even indirectly). If you have disabled annotation processors you may need to create

@@ -306,11 +306,12 @@ public class CliDriver {
     }
 
     public static Result invokeValidateDryRunBuild(Path projectRoot) throws Exception {
-        Result result = execute(projectRoot, "build", "-e", "-B", "--clean", "--dryrun",
+        Result result = execute(projectRoot, "build", "-e", "-B", "--dryrun",
                 "-Dproperty=value1", "-Dproperty2=value2");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
-        System.out.println(result.stdout);
+        Assertions.assertTrue(result.stdout.contains("Command line"),
+                "--dry-run should echo command line");
         return result;
     }
 

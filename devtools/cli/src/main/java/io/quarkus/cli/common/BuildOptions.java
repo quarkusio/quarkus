@@ -13,10 +13,17 @@ public class BuildOptions {
     @CommandLine.Option(order = 5, names = { "--offline" }, description = "Work offline.", defaultValue = "false")
     public boolean offline = false;
 
-    @CommandLine.Option(order = 6, names = { "--tests" }, description = "Run tests.", negatable = true)
-    public boolean runTests = true;
+    @CommandLine.Option(order = 6, names = {
+            "--no-tests" }, description = "Run tests.", negatable = true, defaultValue = "false")
+    public boolean skipTests = false;
 
     public boolean skipTests() {
-        return !runTests;
+        return skipTests;
+    }
+
+    @Override
+    public String toString() {
+        return "BuildOptions [buildNative=" + buildNative + ", clean=" + clean + ", offline=" + offline + ", skipTests="
+                + skipTests + "]";
     }
 }

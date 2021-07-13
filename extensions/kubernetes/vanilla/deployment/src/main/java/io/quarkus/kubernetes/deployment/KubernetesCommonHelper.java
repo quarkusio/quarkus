@@ -170,11 +170,8 @@ public class KubernetesCommonHelper {
         result.addAll(createMountAndVolumeDecorators(project, target, name, config));
         result.addAll(createAppConfigVolumeAndEnvDecorators(project, target, name, config));
 
-        //Handle Command and arguments
-        command.ifPresent(c -> {
-            result.add(new DecoratorBuildItem(new ApplyCommandDecorator(name, new String[] { c.getCommand() })));
-            result.add(new DecoratorBuildItem(new ApplyArgsDecorator(name, c.getArgs())));
-        });
+        result.addAll(createCommandDecorator(project, target, name, config, command));
+        result.addAll(createArgsDecorator(project, target, name, config, command));
 
         //Handle Probes
         result.addAll(createProbeDecorators(name, target, config.getLivenessProbe(), config.getReadinessProbe(),
@@ -189,6 +186,55 @@ public class KubernetesCommonHelper {
                     new AddRoleBindingResourceDecorator(rb.getName(), null, rb.getRole(), rb.isClusterWide()
                             ? AddRoleBindingResourceDecorator.RoleKind.ClusterRole
                             : AddRoleBindingResourceDecorator.RoleKind.Role))));
+        }
+
+        return result;
+    }
+
+    /**
+     * If user defines a custom command via configuration, this is used.
+     * If not, it will use the one from other extensions.
+     *
+     * @param target The deployment target (e.g. kubernetes, openshift, knative)
+     * @param name The name of the resource to accept the configuration
+     * @param config The {@link PlatformConfiguration} instance
+     * @param command Optional command item from other extensions
+     */
+    private static List<DecoratorBuildItem> createCommandDecorator(Optional<Project> project, String target, String name,
+            PlatformConfiguration config, Optional<KubernetesCommandBuildItem> command) {
+        List<DecoratorBuildItem> result = new ArrayList<>();
+        if (config.getCommand().isPresent()) {
+            // If command has been set in configuration, we use it
+            result.add(new DecoratorBuildItem(target,
+                    new ApplyCommandDecorator(name, config.getCommand().get().toArray(new String[0]))));
+        } else if (command.isPresent()) {
+            // If not, we use the command that has been provided in other extensions (if any).
+            result.add(new DecoratorBuildItem(target,
+                    new ApplyCommandDecorator(name, command.get().getCommand().toArray(new String[0]))));
+        }
+
+        return result;
+    }
+
+    /**
+     * If user defines arguments via configuration, then these will be merged to the ones from other extensions.
+     * If not, then only the arguments from other extensions will be used if any.
+     *
+     * @param target The deployment target (e.g. kubernetes, openshift, knative)
+     * @param name The name of the resource to accept the configuration
+     * @param config The {@link PlatformConfiguration} instance
+     * @param command Optional command item from other extensions
+     */
+    private static List<DecoratorBuildItem> createArgsDecorator(Optional<Project> project, String target, String name,
+            PlatformConfiguration config, Optional<KubernetesCommandBuildItem> command) {
+        List<DecoratorBuildItem> result = new ArrayList<>();
+
+        List<String> args = new ArrayList<>();
+        command.ifPresent(cmd -> args.addAll(cmd.getArgs()));
+        config.getArguments().ifPresent(args::addAll);
+
+        if (!args.isEmpty()) {
+            result.add(new DecoratorBuildItem(target, new ApplyArgsDecorator(name, args.toArray(new String[args.size()]))));
         }
 
         return result;
@@ -211,14 +257,6 @@ public class KubernetesCommonHelper {
 
         config.getWorkingDir().ifPresent(w -> {
             result.add(new DecoratorBuildItem(target, new ApplyWorkingDirDecorator(name, w)));
-        });
-
-        config.getCommand().ifPresent(c -> {
-            result.add(new DecoratorBuildItem(target, new ApplyCommandDecorator(name, c.toArray(new String[0]))));
-        });
-
-        config.getArguments().ifPresent(a -> {
-            result.add(new DecoratorBuildItem(target, new ApplyArgsDecorator(name, a.toArray(new String[0]))));
         });
 
         return result;

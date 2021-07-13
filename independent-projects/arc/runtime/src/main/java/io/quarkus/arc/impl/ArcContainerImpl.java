@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -68,8 +67,8 @@ public class ArcContainerImpl implements ArcContainer {
 
     private final AtomicBoolean running;
 
-    private final List<InjectableBean<?>> beans;
-    private final List<RemovedBean> removedBeans;
+    private final ArrayList<InjectableBean<?>> beans;
+    private final ArrayList<RemovedBean> removedBeans;
     private final List<InjectableInterceptor<?>> interceptors;
     private final List<InjectableObserverMethod<?>> observers;
     private final Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings;
@@ -84,7 +83,7 @@ public class ArcContainerImpl implements ArcContainer {
     private final ComputingCache<String, InjectableBean<?>> beansById;
     private final ComputingCache<String, Set<InjectableBean<?>>> beansByName;
 
-    private final List<ResourceReferenceProvider> resourceProviders;
+    private final ArrayList<ResourceReferenceProvider> resourceProviders;
 
     final InstanceImpl<Object> instance;
 
@@ -118,6 +117,7 @@ public class ArcContainerImpl implements ArcContainer {
                 }
             }
             removedBeans.addAll(components.getRemovedBeans());
+            removedBeans.trimToSize();
             observers.addAll(components.getObservers());
             // Add custom contexts
             for (InjectableContext context : components.getContexts()) {
@@ -135,7 +135,8 @@ public class ArcContainerImpl implements ArcContainer {
             qualifierNonbindingMembers.putAll(components.getQualifierNonbindingMembers());
         }
         // register built-in beans
-        addBuiltInBeans();
+        addBuiltInBeans(beans);
+        beans.trimToSize();
 
         Collections.sort(interceptors, (i1, i2) -> Integer.compare(i2.getPriority(), i1.getPriority()));
 
@@ -146,6 +147,7 @@ public class ArcContainerImpl implements ArcContainer {
         for (ResourceReferenceProvider resourceProvider : ServiceLoader.load(ResourceReferenceProvider.class)) {
             resourceProviders.add(resourceProvider);
         }
+        resourceProviders.trimToSize();
 
         instance = InstanceImpl.of(Object.class, Collections.emptySet());
     }
@@ -155,13 +157,14 @@ public class ArcContainerImpl implements ArcContainer {
         if (values == null) {
             contexts.put(context.getScope(), Collections.singleton(context));
         } else {
-            List<InjectableContext> multi = new LinkedList<>(values);
+            List<InjectableContext> multi = new ArrayList<>(values.size() + 1);
+            multi.addAll(values);
             multi.add(context);
             contexts.put(context.getScope(), Collections.unmodifiableList(multi));
         }
     }
 
-    private void addBuiltInBeans() {
+    private static void addBuiltInBeans(List<InjectableBean<?>> beans) {
         // BeanManager, Event<?>, Instance<?>
         beans.add(new BeanManagerBean());
         beans.add(new EventBean());
@@ -460,7 +463,7 @@ public class ArcContainerImpl implements ArcContainer {
         }
         Qualifiers.verify(qualifiers);
         // This method does not cache the results
-        return new HashSet<>(getMatchingBeans(new Resolvable(requiredType, qualifiers)));
+        return Set.of(getMatchingBeans(new Resolvable(requiredType, qualifiers)).toArray(new Bean<?>[] {}));
     }
 
     Set<Bean<?>> getBeans(String name) {
@@ -530,7 +533,7 @@ public class ArcContainerImpl implements ArcContainer {
         } else {
             // Try to resolve the ambiguity
             if (beans.stream().allMatch(b -> b instanceof InjectableBean)) {
-                List<InjectableBean<?>> matching = new ArrayList<>();
+                List<InjectableBean<?>> matching = new ArrayList<>(beans.size());
                 for (Bean<? extends X> bean : beans) {
                     matching.add((InjectableBean<? extends X>) bean);
                 }
@@ -610,14 +613,14 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     List<InjectableBean<?>> getMatchingBeans(Resolvable resolvable) {
-        List<InjectableBean<?>> matching = new LinkedList<>();
+        List<InjectableBean<?>> matching = new ArrayList<>();
         for (InjectableBean<?> bean : beans) {
             if (matches(bean, resolvable.requiredType, resolvable.qualifiers)) {
                 matching.add(bean);
             }
         }
         if (matching.isEmpty() && !removedBeans.isEmpty()) {
-            List<RemovedBean> removedMatching = new LinkedList<>();
+            List<RemovedBean> removedMatching = new ArrayList<>();
             for (RemovedBean removedBean : removedBeans) {
                 if (matches(removedBean.getTypes(), removedBean.getQualifiers(), resolvable.requiredType,
                         resolvable.qualifiers)) {

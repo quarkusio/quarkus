@@ -387,16 +387,26 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         private final ResultHandle removedBeansHandle;
         private final ClassOutput classOutput;
         private ResultHandle tccl;
+        // Shared annotation literals for an individual addRemovedBeansX() method
+        private final Map<AnnotationInstanceKey, ResultHandle> sharedQualifers;
+        // Shared java.lang.reflect.Type instances for an individual addRemovedBeansX() method
+        private final Map<org.jboss.jandex.Type, ResultHandle> sharedTypes;
 
         public RemovedBeanAdder(ClassCreator componentsProvider, MethodCreator getComponentsMethod,
                 ResultHandle removedBeansHandle, ClassOutput classOutput) {
             super(getComponentsMethod, componentsProvider);
             this.removedBeansHandle = removedBeansHandle;
             this.classOutput = classOutput;
+            this.sharedQualifers = new HashMap<>();
+            this.sharedTypes = new HashMap<>();
         }
 
         @Override
         MethodCreator newAddMethod() {
+            // Clear the shared maps for each addRemovedBeansX() method
+            sharedQualifers.clear();
+            sharedTypes.clear();
+
             MethodCreator addMethod = componentsProvider.getMethodCreator(ADD_REMOVED_BEANS + group++, void.class, List.class)
                     .setModifiers(ACC_PRIVATE);
             // Get the TCCL - we will use it later
@@ -428,7 +438,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 }
                 ResultHandle typeHandle;
                 try {
-                    typeHandle = Types.getTypeHandle(addMethod, type, tccl);
+                    typeHandle = Types.getTypeHandle(addMethod, type, tccl, sharedTypes);
                 } catch (IllegalArgumentException e) {
                     throw new IllegalStateException(
                             "Unable to construct the type handle for " + removedBean + ": " + e.getMessage());
@@ -438,8 +448,10 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
             // Qualifiers
             ResultHandle qualifiersHandle;
-            if (!removedBean.getQualifiers().isEmpty() && !removedBean.hasDefaultQualifiers()) {
-
+            if (removedBean.hasDefaultQualifiers() || removedBean.getQualifiers().isEmpty()) {
+                // No or default qualifiers (@Any, @Default)
+                qualifiersHandle = addMethod.loadNull();
+            } else {
                 qualifiersHandle = addMethod.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
 
                 for (AnnotationInstance qualifierAnnotation : removedBean.getQualifiers()) {
@@ -449,28 +461,33 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                     }
                     BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
                     if (qualifier != null) {
+                        // Use the literal instance for built-in qualifiers
                         addMethod.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiersHandle,
                                 qualifier.getLiteralInstance(addMethod));
                     } else {
-                        // Create annotation literal first
-                        ClassInfo qualifierClass = removedBean.getDeployment().getQualifier(qualifierAnnotation.name());
-                        addMethod.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiersHandle,
-                                annotationLiterals.process(addMethod, classOutput,
-                                        qualifierClass, qualifierAnnotation,
-                                        Types.getPackageName(componentsProvider.getClassName())));
+                        ResultHandle sharedQualifier = sharedQualifers.get(new AnnotationInstanceKey(qualifierAnnotation));
+                        if (sharedQualifier == null) {
+                            // Create annotation literal first
+                            ClassInfo qualifierClass = removedBean.getDeployment().getQualifier(qualifierAnnotation.name());
+                            ResultHandle qualifierHandle = annotationLiterals.process(addMethod, classOutput,
+                                    qualifierClass, qualifierAnnotation,
+                                    Types.getPackageName(componentsProvider.getClassName()));
+                            addMethod.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiersHandle,
+                                    qualifierHandle);
+                            sharedQualifers.put(new AnnotationInstanceKey(qualifierAnnotation), qualifierHandle);
+                        } else {
+                            addMethod.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiersHandle,
+                                    sharedQualifier);
+                        }
                     }
                 }
-                qualifiersHandle = addMethod
-                        .invokeStaticMethod(MethodDescriptors.COLLECTIONS_UNMODIFIABLE_SET, qualifiersHandle);
-            } else {
-                qualifiersHandle = addMethod.loadNull();
             }
 
             InjectableBean.Kind kind;
             String description = null;
             if (removedBean.isClassBean()) {
+                // This is the default
                 kind = null;
-                description = removedBean.getTarget().get().toString();
             } else if (removedBean.isProducerField()) {
                 kind = InjectableBean.Kind.PRODUCER_FIELD;
                 description = removedBean.getTarget().get().asField().declaringClass().name() + "#"
@@ -651,6 +668,38 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         abstract void invokeAddMethod();
 
         abstract void addComponentInternal(T component);
+
+    }
+
+    // This wrapper is needed because AnnotationInstance#equals() compares the annotation target
+    private static final class AnnotationInstanceKey {
+
+        private final AnnotationInstance annotationInstance;
+
+        AnnotationInstanceKey(AnnotationInstance annotationInstance) {
+            this.annotationInstance = annotationInstance;
+        }
+
+        @Override
+        public int hashCode() {
+            return annotationInstance.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            AnnotationInstanceKey other = (AnnotationInstanceKey) obj;
+            return annotationInstance.name().equals(other.annotationInstance.name())
+                    && annotationInstance.values().equals(other.annotationInstance.values());
+        }
 
     }
 

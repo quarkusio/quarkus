@@ -226,9 +226,11 @@ public class StartupActionImpl implements StartupAction {
         TransformedClassesBuildItem transformers = buildResult.consume(TransformedClassesBuildItem.class);
         for (Set<TransformedClassesBuildItem.TransformedClass> i : transformers.getTransformedClassesByJar().values()) {
             for (TransformedClassesBuildItem.TransformedClass clazz : i) {
-                ret.put(clazz.getFileName(), clazz.getData());
-                if (clazz.isEager()) {
-                    eagerClasses.add(clazz.getClassName());
+                if (clazz.getData() != null) {
+                    ret.put(clazz.getFileName(), clazz.getData());
+                    if (clazz.isEager()) {
+                        eagerClasses.add(clazz.getClassName());
+                    }
                 }
             }
         }

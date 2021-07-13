@@ -19,10 +19,13 @@ import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
@@ -187,13 +190,45 @@ public class QuarkusBootstrap implements Serializable {
                             p.getProperty(selectKey("quarkus.class-loading.reloadable-artifacts", p, mode)));
                     boolean flatClassPath = Boolean.parseBoolean(
                             p.getProperty(selectKey("quarkus.test.flat-class-path", p, mode)));
-                    return new ConfiguredClassLoading(parentFirst, liveReloadable, flatClassPath);
+                    Map<AppArtifactKey, List<String>> removedResources = toArtifactMapList(
+                            "quarkus.class-loading.removed-resources.", p, mode);
+                    return new ConfiguredClassLoading(parentFirst, liveReloadable, removedResources, flatClassPath);
                 } catch (IOException e) {
                     throw new RuntimeException("Failed to load bootstrap classloading config from application.properties", e);
                 }
             }
         }
-        return new ConfiguredClassLoading(Collections.emptySet(), Collections.emptySet(), false);
+        return new ConfiguredClassLoading(Collections.emptySet(), Collections.emptySet(), Collections.emptyMap(), false);
+    }
+
+    private static Map<AppArtifactKey, List<String>> toArtifactMapList(String baseConfigKey, Properties properties, Mode mode) {
+        Properties profileProps = new Properties();
+        String profile = BootstrapProfile.getActiveProfile(mode);
+        for (Map.Entry<Object, Object> i : properties.entrySet()) {
+            String key = i.getKey().toString();
+            if (key.startsWith("%")) {
+                continue;
+            }
+            String profileKey = "%" + profile + "." + key;
+            if (properties.containsKey(profileKey)) {
+                profileProps.put(key, properties.getProperty(profileKey));
+            } else {
+                profileProps.put(key, i.getValue());
+            }
+        }
+        //now we have a 'sanitised' map with the correct props for the profile.
+        Map<AppArtifactKey, List<String>> ret = new HashMap<>();
+        for (Map.Entry<Object, Object> entry : profileProps.entrySet()) {
+            String key = entry.getKey().toString();
+            String value = entry.getValue().toString();
+            if (key.startsWith(baseConfigKey)) {
+                String artifactId = key.substring(baseConfigKey.length());
+                artifactId = artifactId.replace("\"", "");
+                List<String> resources = Arrays.asList(value.split(","));
+                ret.put(new AppArtifactKey(artifactId.split(":")), resources);
+            }
+        }
+        return ret;
     }
 
     private static String selectKey(String base, Properties p, Mode mode) {

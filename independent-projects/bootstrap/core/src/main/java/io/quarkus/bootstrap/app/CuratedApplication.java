@@ -3,6 +3,7 @@ package io.quarkus.bootstrap.app;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.ClassPathResource;
+import io.quarkus.bootstrap.classloading.FilteredClassPathElement;
 import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.AppArtifact;
@@ -144,6 +145,16 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             consumer.accept(ClassPathElement.EMPTY);
             return;
         }
+        List<String> filteredResources = configuredClassLoading.removedResources.get(artifact.getKey());
+        if (filteredResources != null) {
+            Consumer<ClassPathElement> old = consumer;
+            consumer = new Consumer<ClassPathElement>() {
+                @Override
+                public void accept(ClassPathElement classPathElement) {
+                    old.accept(new FilteredClassPathElement(classPathElement, filteredResources));
+                }
+            };
+        }
         List<ClassPathElement> cpeList = augmentationElements.get(artifact);
         if (cpeList != null) {
             for (ClassPathElement cpe : cpeList) {
@@ -194,6 +205,13 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             for (Path i : quarkusBootstrap.getAdditionalDeploymentArchives()) {
                 builder.addElement(ClassPathElement.fromPath(i));
             }
+            Map<String, byte[]> banned = new HashMap<>();
+            for (List<String> i : configuredClassLoading.removedResources.values()) {
+                for (String j : i) {
+                    banned.put(j, new byte[0]);
+                }
+            }
+            builder.addBannedElement(new MemoryClassPathElement(banned));
             augmentClassLoader = builder.build();
         }
         return augmentClassLoader;
@@ -244,6 +262,13 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 }
             }
             builder.setResettableElement(new MemoryClassPathElement(Collections.emptyMap()));
+            Map<String, byte[]> banned = new HashMap<>();
+            for (List<String> i : configuredClassLoading.removedResources.values()) {
+                for (String j : i) {
+                    banned.put(j, new byte[0]);
+                }
+            }
+            builder.addBannedElement(new MemoryClassPathElement(banned));
 
             for (AppDependency dependency : appModel.getUserDependencies()) {
                 if (isHotReloadable(dependency.getArtifact(), hotReloadPaths)) {

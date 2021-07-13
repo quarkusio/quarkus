@@ -258,8 +258,10 @@ public class JarResultBuildStep {
             for (Set<TransformedClassesBuildItem.TransformedClass> transformedClassesSet : transformedClasses
                     .getTransformedClassesByJar().values()) {
                 for (TransformedClassesBuildItem.TransformedClass transformedClass : transformedClassesSet) {
-                    classes.append(transformedClass.getFileName().replace('/', '.').replace(".class", ""))
-                            .append(System.lineSeparator());
+                    if (transformedClass.getData() != null) {
+                        classes.append(transformedClass.getFileName().replace('/', '.').replace(".class", ""))
+                                .append(System.lineSeparator());
+                    }
                 }
             }
 
@@ -592,10 +594,12 @@ public class JarResultBuildStep {
                         .getTransformedClassesByJar().values()) {
                     for (TransformedClassesBuildItem.TransformedClass transformed : transformedSet) {
                         Path target = out.getPath(transformed.getFileName());
-                        if (target.getParent() != null) {
-                            Files.createDirectories(target.getParent());
+                        if (transformed.getData() != null) {
+                            if (target.getParent() != null) {
+                                Files.createDirectories(target.getParent());
+                            }
+                            Files.write(target, transformed.getData());
                         }
-                        Files.write(target, transformed.getData());
                     }
                 }
             }
@@ -653,7 +657,7 @@ public class JarResultBuildStep {
                 jars.addAll(appDep.getArtifact().getPaths().toList());
             } else {
                 copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, mainLib, baseLib, jars, true,
-                        classPath, appDep);
+                        classPath, appDep, transformedClasses);
             }
             if (parentFirstKeys.contains(appDep.getArtifact().getKey())) {
                 parentFirst.addAll(appDep.getArtifact().getPaths().toList());
@@ -711,7 +715,7 @@ public class JarResultBuildStep {
                 for (AppDependency appDep : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
                     copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, deploymentLib, baseLib, jars,
                             false, classPath,
-                            appDep);
+                            appDep, new TransformedClassesBuildItem(Collections.emptyMap())); //we don't care about transformation here, so just pass in an empty item
                 }
 
                 Map<AppArtifactKey, List<String>> relativePaths = new HashMap<>();
@@ -859,7 +863,8 @@ public class JarResultBuildStep {
 
     private void copyDependency(Set<AppArtifactKey> parentFirstArtifacts, OutputTargetBuildItem outputTargetBuildItem,
             Map<AppArtifactKey, List<Path>> runtimeArtifacts, Path libDir, Path baseLib, List<Path> jars,
-            boolean allowParentFirst, StringBuilder classPath, AppDependency appDep)
+            boolean allowParentFirst, StringBuilder classPath, AppDependency appDep,
+            TransformedClassesBuildItem transformedClasses)
             throws IOException {
         final AppArtifact depArtifact = appDep.getArtifact();
 
@@ -890,7 +895,22 @@ public class JarResultBuildStep {
                 // the non-jar dependencies are the Quarkus dependencies picked up on the file system
                 packageClasses(resolvedDep, targetPath);
             } else {
-                Files.copy(resolvedDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                Set<TransformedClassesBuildItem.TransformedClass> transformedFromThisArchive = transformedClasses
+                        .getTransformedClassesByJar().get(resolvedDep);
+                Set<String> removedFromThisArchive = new HashSet<>();
+                if (transformedFromThisArchive != null) {
+                    for (TransformedClassesBuildItem.TransformedClass i : transformedFromThisArchive) {
+                        if (i.getData() == null) {
+                            removedFromThisArchive.add(i.getFileName());
+                        }
+                    }
+                }
+                if (removedFromThisArchive.isEmpty()) {
+                    Files.copy(resolvedDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                } else {
+                    //we have removed classes, we need to handle them correctly
+                    filterZipFile(resolvedDep, targetPath, removedFromThisArchive);
+                }
             }
         }
     }
@@ -1158,12 +1178,14 @@ public class JarResultBuildStep {
         for (Set<TransformedClassesBuildItem.TransformedClass> transformed : transformedClassesBuildItem
                 .getTransformedClassesByJar().values()) {
             for (TransformedClassesBuildItem.TransformedClass i : transformed) {
-                Path target = runnerZipFs.getPath(i.getFileName());
-                handleParent(runnerZipFs, i.getFileName(), seen);
-                try (final OutputStream out = wrapForJDK8232879(Files.newOutputStream(target))) {
-                    out.write(i.getData());
+                if (i.getData() != null) {
+                    Path target = runnerZipFs.getPath(i.getFileName());
+                    handleParent(runnerZipFs, i.getFileName(), seen);
+                    try (final OutputStream out = wrapForJDK8232879(Files.newOutputStream(target))) {
+                        out.write(i.getData());
+                    }
+                    seen.put(i.getFileName(), "Current Application");
                 }
-                seen.put(i.getFileName(), "Current Application");
             }
         }
         for (GeneratedClassBuildItem i : generatedClasses) {

@@ -68,8 +68,6 @@ public class KafkaStreamsProducer {
     private final KafkaStreamsTopologyManager kafkaStreamsTopologyManager;
     private final Admin kafkaAdminClient;
 
-    // TODO Replace @Named with @Identifier when it will be integrated
-
     @Inject
     public KafkaStreamsProducer(KafkaStreamsSupport kafkaStreamsSupport, KafkaStreamsRuntimeConfig runtimeConfig,
             Instance<Topology> topology, Instance<KafkaClientSupplier> kafkaClientSupplier,

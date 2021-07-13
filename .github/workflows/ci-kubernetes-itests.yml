@@ -28,7 +28,7 @@ jobs:
   kubernetes:
     name: Kubernetes Integration Tests
     needs: cache
-    if: github.event.label.name == 'area/kubernetes' &&  ${{ secrets.QUAY_E2E_USERNAME}} != null }} && ${{ secrets.QUAY_E2E_PASSWORD != null }}
+    if: (event = pull_request.labeled && github.event.label.name == 'area/kubernetes') || (event != pull_request.labeled && contains(github.event.pull_request.labels.*.name, 'area/kubernetes') &&  ${{ secrets.QUAY_E2E_USERNAME}} != null }} && ${{ secrets.QUAY_E2E_PASSWORD != null }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -70,7 +70,7 @@ jobs:
   openshift:
     name: Openshift Integration Tests
     needs: cache
-    if: github.event.label.name == 'area/kubernetes' &&  ${{ secrets.QUAY_E2E_USERNAME}} != null }} && ${{ secrets.QUAY_E2E_PASSWORD != null }}
+    if: (event = pull_request.labeled && github.event.label.name == 'area/kubernetes') || (event != pull_request.labeled && contains(github.event.pull_request.labels.*.name, 'area/kubernetes') &&  ${{ secrets.QUAY_E2E_USERNAME}} != null }} && ${{ secrets.QUAY_E2E_PASSWORD != null }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

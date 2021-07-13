@@ -159,6 +159,77 @@ public class CliProjectMavenTest {
     }
 
     @Test
+    public void testDevOptions() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "-e", "-B", "--verbose");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        // 1 --clean --tests --suspend
+        result = CliDriver.execute(project, "dev", "-e", "--dry-run",
+                "--clean", "--tests", "--debug", "--suspend", "--debug-mode=listen");
+
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("MAVEN"),
+                "quarkus command should specify 'MAVEN'\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains(" clean"),
+                "mvn command should specify 'clean'\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("-DskipTests"),
+                "mvn command should not specify -DskipTests\n" + result);
+        Assertions.assertFalse(result.stdout.contains("-Dmaven.test.skip=true"),
+                "mvn command should not specify -Dmaven.test.skip=true\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("-Ddebug"),
+                "mvn command should not specify '-Ddebug'\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains("-Dsuspend"),
+                "mvn command should specify '-Dsuspend'\n" + result);
+
+        // 2 --no-clean --no-tests --no-debug
+        result = CliDriver.execute(project, "dev", "-e", "--dry-run",
+                "--no-clean", "--no-tests", "--no-debug");
+
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("MAVEN"),
+                "quarkus command should specify 'MAVEN'\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains(" clean"),
+                "mvn command should not specify 'clean'\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains("-DskipTests"),
+                "mvn command should specify -DskipTests\n" + result);
+        Assertions.assertTrue(result.stdout.contains("-Dmaven.test.skip=true"),
+                "mvn command should specify -Dmaven.test.skip=true\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains("-Ddebug=false"),
+                "mvn command should specify '-Ddebug=false'\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("-Dsuspend"),
+                "mvn command should not specify '-Dsuspend'\n" + result);
+
+        // 3 --no-suspend --debug-host=0.0.0.0 --debug-port=8008 --debug-mode=connect -- arg1 arg2
+        result = CliDriver.execute(project, "dev", "-e", "--dry-run",
+                "--no-suspend", "--debug-host=0.0.0.0", "--debug-port=8008", "--debug-mode=connect", "--", "arg1", "arg2");
+
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("MAVEN"),
+                "quarkus command should specify 'MAVEN'\n" + result);
+
+        Assertions.assertTrue(
+                result.stdout.contains("-DdebugHost=0.0.0.0 -Ddebug=client"),
+                "mvn command should specify -DdebugHost=0.0.0.0 -Ddebug=client\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("-Dsuspend"),
+                "mvn command should not specify '-Dsuspend'\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains("-Dquarkus.args='arg1 arg2'"),
+                "mvn command should not specify -Dquarkus.args='arg1 arg2'\n" + result);
+    }
+
+    @Test
     public void testCreateCliDefaults() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "cli", "-e", "-B", "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);

@@ -341,10 +341,31 @@ the only way to get the new value would be to restart the application.
 [TIP]
 For more information about the Mailer configuration please refer to the <<configuration-reference, Configuration Reference>>.
 
+== Configuring a trust store
+
+If your SMTP requires a trust store, you can configure the trust store as follows:
+
+[source, properties]
+----
+quarkus.mailer.host=...
+quarkus.mailer.port=...
+quarkus.mailer.ssl=true
+quarkus.mailer.trust-store.paths=truststore.jks # the path to your trust store
+quarkus.mailer.trust-store.password=secret # the trust store password if any
+quarkus.mailer.trust-store.type=JKS # the type of trust store if it can't be deduced from the file extension
+----
+
+Quarkus mailer supports JKS, PCKS#12 and PEM trust stores.
+For PEM, you can configure multiple files.
+For JKS and PCKS#12, you can configure the password if any.
+
+`quarkus.mailer.trust-store.type` is optional and allows configuring the type of trust store (among `JKS`, `PEM` and `PCKS`).
+When not set, Quarkus tries to deduce the type from the file name.
+
+NOTE: You can also configure `quarkus.mailer.trust-all=true` to bypass the verification.
 
 [[configuration-reference]]
 == Mailer Configuration Reference
 
 include::{generated-dir}/config/quarkus-mailer.adoc[opts=optional, leveloffset=+1]
-
 

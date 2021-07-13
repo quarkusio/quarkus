@@ -76,10 +76,9 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             args.addAll(argLine);
         }
         args.add("--rm");
-        args.add("-p");
-        args.add(httpPort + ":" + httpPort);
-        args.add("-p");
-        args.add(httpsPort + ":" + httpsPort);
+        // the only reliable way the application container can talk to services launched via testcontainers, is to use host network
+        // this is because those containers use 'localhost' as their host in the config property they present to Quarkus
+        args.add("--net=host");
         args.addAll(toEnvVar("quarkus.http.port", "" + httpPort));
         args.addAll(toEnvVar("quarkus.http.ssl-port", "" + httpsPort));
         // this won't be correct when using the random port but it's really only used by us for the rest client tests

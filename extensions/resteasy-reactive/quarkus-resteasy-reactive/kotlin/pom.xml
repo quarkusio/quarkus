@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-resteasy-reactive-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>2.0.2.Final</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 

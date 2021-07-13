@@ -53,7 +53,7 @@
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <quarkus.version>999-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>18</maven-model-helper.version>
-        <commons-io.version>2.10.0</commons-io.version>
+        <commons-io.version>2.11.0</commons-io.version>
         <smallrye-common.version>1.6.0</smallrye-common.version>
     </properties>
     <modules>

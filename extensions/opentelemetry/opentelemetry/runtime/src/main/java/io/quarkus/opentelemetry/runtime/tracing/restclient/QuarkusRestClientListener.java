@@ -1,4 +1,4 @@
-package io.quarkus.opentelemetry.restclient;
+package io.quarkus.opentelemetry.runtime.tracing.restclient;
 
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;

@@ -35,6 +35,7 @@ import io.vertx.core.Context;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.HttpVersion;
+import io.vertx.core.http.impl.HttpRequestHead;
 import io.vertx.core.spi.VertxTracerFactory;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
@@ -165,7 +166,7 @@ public class VertxTracingAdapter extends TracingOptions implements VertxTracer<S
 
         span.end();
 
-        Scope spanScope = context.getLocal(RECEIVE_SCOPE_KEY);
+        final Scope spanScope = context.getLocal(RECEIVE_SCOPE_KEY);
         if (spanScope != null) {
             spanScope.close();
             context.removeLocal(RECEIVE_SCOPE_KEY);
@@ -185,6 +186,14 @@ public class VertxTracingAdapter extends TracingOptions implements VertxTracer<S
         io.opentelemetry.context.Context openTelemetryContext = context.getLocal(QuarkusContextStorage.ACTIVE_CONTEXT);
         if (openTelemetryContext == null) {
             openTelemetryContext = io.opentelemetry.context.Context.root();
+        }
+
+        if (request instanceof HttpRequestHead) {
+            HttpRequestHead requestHead = (HttpRequestHead) request;
+            if (requestHead.headers().contains("traceparent")) {
+                // Don't create a new span if we've already got one present for the outgoing request
+                return null;
+            }
         }
 
         // Create new span

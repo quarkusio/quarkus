@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.RuntimeType;
@@ -137,6 +138,8 @@ import io.vertx.ext.web.multipart.MultipartForm;
 public class JaxrsClientReactiveProcessor {
 
     private static final Logger log = Logger.getLogger(JaxrsClientReactiveProcessor.class);
+
+    private static final Pattern MULTIPLE_SLASH_PATTERN = Pattern.compile("//+");
 
     private static final MethodDescriptor WEB_TARGET_RESOLVE_TEMPLATE_METHOD = MethodDescriptor.ofMethod(WebTarget.class,
             "resolveTemplate",
@@ -789,7 +792,8 @@ public class JaxrsClientReactiveProcessor {
                     AssignableResultHandle constructorTarget = createWebTargetForMethod(constructor, baseTarget, method);
                     constructor.writeInstanceField(webTargetForMethod, constructor.getThis(), constructorTarget);
                     if (observabilityIntegrationNeeded) {
-                        String templatePath = restClientInterface.getPath() + method.getPath();
+                        String templatePath = MULTIPLE_SLASH_PATTERN.matcher(restClientInterface.getPath() + method.getPath())
+                                .replaceAll("/");
                         constructor.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(WebTargetImpl.class, "setPreClientSendHandler", void.class,
                                         ClientRestHandler.class),

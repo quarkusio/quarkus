@@ -1,4 +1,4 @@
-package io.quarkus.opentelemetry.restclient;
+package io.quarkus.opentelemetry.runtime.tracing.restclient;
 
 import java.io.IOException;
 
@@ -11,8 +11,6 @@ import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
-import org.jboss.resteasy.client.jaxrs.internal.ClientRequestContextImpl;
-
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -20,6 +18,7 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
@@ -28,8 +27,10 @@ import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 public class ClientTracingFilter implements ClientRequestFilter, ClientResponseFilter {
     private static final TextMapPropagator TEXT_MAP_PROPAGATOR = GlobalOpenTelemetry.getPropagators().getTextMapPropagator();
 
-    private Tracer tracer;
-    private Span clientSpan;
+    private static final String SCOPE_KEY = ClientTracingFilter.class.getName() + ".scope";
+    private static final String SPAN_KEY = ClientTracingFilter.class.getName() + ".span";
+
+    private final Tracer tracer;
 
     public ClientTracingFilter(Tracer tracer) {
         this.tracer = tracer;
@@ -38,17 +39,19 @@ public class ClientTracingFilter implements ClientRequestFilter, ClientResponseF
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
         // Create new span
-        String spanName = getSpanName(requestContext);
         SpanBuilder builder = tracer.spanBuilder(getSpanName(requestContext))
                 .setSpanKind(SpanKind.CLIENT);
 
         // Add attributes
-        builder.setAttribute(SemanticAttributes.HTTP_METHOD,
-                ((ClientRequestContextImpl) requestContext).getInvocation().getMethod());
+        builder.setAttribute(SemanticAttributes.HTTP_METHOD, requestContext.getMethod());
         builder.setAttribute(SemanticAttributes.HTTP_URL, requestContext.getUri().toString());
 
-        clientSpan = builder.startSpan();
-        TEXT_MAP_PROPAGATOR.inject(Context.current().with(clientSpan), requestContext.getHeaders(), SETTER);
+        final Span clientSpan = builder.startSpan();
+
+        requestContext.setProperty(SPAN_KEY, clientSpan);
+        requestContext.setProperty(SCOPE_KEY, clientSpan.makeCurrent());
+
+        TEXT_MAP_PROPAGATOR.inject(Context.current(), requestContext.getHeaders(), SETTER);
     }
 
     private String getSpanName(ClientRequestContext requestContext) {
@@ -57,12 +60,13 @@ public class ClientTracingFilter implements ClientRequestFilter, ClientResponseF
             return uriPath.substring(1);
         } else {
             // Generate span name as we have empty or "/" on @Path
-            return "HTTP " + ((ClientRequestContextImpl) requestContext).getInvocation().getMethod();
+            return "HTTP " + requestContext.getMethod();
         }
     }
 
     @Override
     public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) throws IOException {
+        final Span clientSpan = (Span) requestContext.getProperty(SPAN_KEY);
         if (clientSpan != null) {
             String pathTemplate = (String) requestContext.getProperty("UrlPathTemplate");
             if (pathTemplate != null && pathTemplate.length() > 1) {
@@ -77,6 +81,11 @@ public class ClientTracingFilter implements ClientRequestFilter, ClientResponseF
             }
 
             clientSpan.end();
+
+            final Scope spanScope = (Scope) requestContext.getProperty(SCOPE_KEY);
+            if (spanScope != null) {
+                spanScope.close();
+            }
         }
     }
 

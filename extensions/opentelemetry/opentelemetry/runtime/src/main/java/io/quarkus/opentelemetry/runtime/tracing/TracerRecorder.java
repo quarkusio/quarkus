@@ -143,4 +143,13 @@ public class TracerRecorder {
             lateBoundSampler.setSamplerDelegate(TracerUtil.mapSampler(config.sampler, config.suppressNonApplicationUris));
         }
     }
+
+    public static boolean isClassPresent(String classname) {
+        try {
+            Class.forName(classname, false, Thread.currentThread().getContextClassLoader());
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
 }

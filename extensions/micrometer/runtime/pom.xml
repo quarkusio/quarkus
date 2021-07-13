@@ -76,7 +76,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-orm</artifactId>
+            <artifactId>quarkus-undertow</artifactId>
             <optional>true</optional>
         </dependency>
 

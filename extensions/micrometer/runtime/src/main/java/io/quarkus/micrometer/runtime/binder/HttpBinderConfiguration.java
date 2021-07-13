@@ -35,6 +35,9 @@ public class HttpBinderConfiguration {
     List<Pattern> clientIgnorePatterns = Collections.emptyList();
     Map<Pattern, String> clientMatchPatterns = Collections.emptyMap();
 
+    private HttpBinderConfiguration() {
+    }
+
     @SuppressWarnings("deprecation")
     public HttpBinderConfiguration(boolean httpServerMetrics, boolean httpClientMetrics,
             HttpServerConfig serverConfig, HttpClientConfig clientConfig, VertxConfig vertxConfig) {
@@ -85,9 +88,9 @@ public class HttpBinderConfiguration {
             List<String> input = configInput.get();
             List<Pattern> ignorePatterns = new ArrayList<>(input.size());
             for (String s : input) {
-                ignorePatterns.add(Pattern.compile(s));
+                ignorePatterns.add(Pattern.compile(s.trim()));
             }
-            return ignorePatterns;
+            return Collections.unmodifiableList(ignorePatterns);
         }
         return Collections.emptyList();
     }
@@ -99,8 +102,8 @@ public class HttpBinderConfiguration {
             for (String s : input) {
                 int pos = s.indexOf("=");
                 if (pos > 0 && s.length() > 2) {
-                    String pattern = s.substring(0, pos);
-                    String replacement = s.substring(pos + 1);
+                    String pattern = s.substring(0, pos).trim();
+                    String replacement = s.substring(pos + 1).trim();
                     try {
                         matchPatterns.put(Pattern.compile(pattern), replacement);
                     } catch (PatternSyntaxException pse) {
@@ -110,8 +113,40 @@ public class HttpBinderConfiguration {
                     log.errorf("Invalid pattern in replacement string (%s). Should be pattern=replacement", s);
                 }
             }
-            return matchPatterns;
+            return Collections.unmodifiableMap(matchPatterns);
         }
         return Collections.emptyMap();
+    }
+
+    public String getHttpServerRequestsName() {
+        return "http.server.requests";
+    }
+
+    public String getHttpServerPushName() {
+        return "http.server.push";
+    }
+
+    public String getHttpServerWebSocketConnectionsName() {
+        return "http.server.websocket.connections";
+    }
+
+    public String getHttpClientRequestsName() {
+        return "http.client.requests";
+    }
+
+    public HttpBinderConfiguration unwrap() {
+        HttpBinderConfiguration result = new HttpBinderConfiguration();
+        // not dev-mode changeable
+        result.clientEnabled = this.clientEnabled;
+        result.serverEnabled = this.serverEnabled;
+        return result.update(this);
+    }
+
+    public HttpBinderConfiguration update(HttpBinderConfiguration httpConfig) {
+        this.clientMatchPatterns = httpConfig.clientMatchPatterns;
+        this.serverMatchPatterns = httpConfig.serverMatchPatterns;
+        this.clientIgnorePatterns = httpConfig.clientIgnorePatterns;
+        this.serverIgnorePatterns = httpConfig.serverIgnorePatterns;
+        return this;
     }
 }

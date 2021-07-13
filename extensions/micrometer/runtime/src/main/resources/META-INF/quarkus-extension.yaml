@@ -5,7 +5,7 @@ metadata:
   - "metrics"
   - "metric"
   - "monitoring"
-  guide: "https://quarkus.io/guides/micrometer-metrics"
+  guide: "https://quarkus.io/guides/micrometer"
   categories:
   - "observability"
   status: "stable"

@@ -4,7 +4,7 @@ import org.jboss.logging.Logger;
 
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.binder.http.Outcome;
-import io.quarkus.micrometer.runtime.binder.HttpMetricsCommon;
+import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -20,7 +20,7 @@ public class VertxMetricsTags {
      * @return the method tag whose value is a capitalized method (e.g. GET).
      */
     public static Tag method(HttpMethod method) {
-        return (method != null) ? Tag.of("method", method.toString()) : HttpMetricsCommon.METHOD_UNKNOWN;
+        return (method != null) ? Tag.of("method", method.toString()) : HttpCommonTags.METHOD_UNKNOWN;
     }
 
     /**

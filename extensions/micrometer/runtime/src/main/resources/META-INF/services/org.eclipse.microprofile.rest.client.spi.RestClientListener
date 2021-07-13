@@ -1,1 +1,1 @@
-io.quarkus.micrometer.runtime.binder.RestClientMetrics
+io.quarkus.micrometer.runtime.binder.RestClientMetricsListener

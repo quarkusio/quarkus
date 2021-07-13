@@ -277,7 +277,7 @@ public class DecoratorGenerator extends BeanGenerator {
             ResultHandle delegateQualifiersHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
             for (AnnotationInstance delegateQualifier : decorator.getDelegateQualifiers()) {
                 // Create annotation literal first
-                ClassInfo delegateQualifierClass = decorator.getDeployment().getInterceptorBinding(delegateQualifier.name());
+                ClassInfo delegateQualifierClass = decorator.getDeployment().getQualifier(delegateQualifier.name());
                 constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, delegateQualifiersHandle,
                         annotationLiterals.process(constructor, classOutput, delegateQualifierClass, delegateQualifier,
                                 Types.getPackageName(creator.getClassName())));

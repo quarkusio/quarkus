@@ -464,7 +464,7 @@ public class DevConsoleProcessor {
         // Escape some characters for HTML templates
         builder.addResultMapper(new HtmlEscaper());
 
-        builder.strictRendering(false)
+        builder.strictRendering(true)
                 .addValueResolver(new ReflectionValueResolver())
                 .addValueResolver(new JsonObjectValueResolver())
                 .addValueResolver(new MultiMapValueResolver())

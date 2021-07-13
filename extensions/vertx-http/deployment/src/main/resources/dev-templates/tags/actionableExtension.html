@@ -3,24 +3,24 @@
         <div class="card-header bg-primary text-light guide-padding-right">
             <div class="row">
                 <div class="col-md-10">
-                    {it['name']}
+                    {it.name}
                 </div>
                 <div class="col-md-1">
-                    {#if it['metadata'] && it['metadata']['guide']}
-                    <a href="{it['metadata']['guide']}" class="text-light float-right" title="Guide"><i class="fa fa-book"></i></a>
+                    {#if it.metadata.guide??}
+                    <a href="{it.metadata.guide}" class="text-light float-right" title="Guide"><i class="fa fa-book"></i></a>
                     {/if}
                 </div>
             </div>
         </div>
         <div class="card-body">
             <p class="card-text">
-                {#if it['metadata'] && it['metadata']['status'] == 'experimental'}
+                {#if it.metadata.status?? == 'experimental'}
                 <span class="float-right badge badge-warning">EXPERIMENTAL</span>
                 {/if}
-                <span class="card-subtitle mb-2 text-muted">{it['description']}</span>
+                <span class="card-subtitle mb-2 text-muted">{it.description}</span>
                 <br/>
-                {#if it['_dev']}
-                {it['_dev'].raw}
+                {#if it._dev??}
+                {it._dev.raw}
                 {/if}
             </p>
         </div>

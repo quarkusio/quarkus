@@ -72,9 +72,9 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public Uni<Void> persist(Uni<Mutiny.Session> sessionUni, Object entity) {
-        return sessionUni.flatMap(session -> {
+        return sessionUni.chain(session -> {
             if (!session.contains(entity)) {
-                return session.persist(entity).map(v -> null);
+                return session.persist(entity);
             }
             return Uni.createFrom().nullItem();
         });
@@ -104,7 +104,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public Uni<Void> delete(Object entity) {
-        return getSession().flatMap(session -> session.remove(entity)).map(v -> null);
+        return getSession().chain(session -> session.remove(entity));
     }
 
     public boolean isPersistent(Object entity) {
@@ -120,7 +120,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public Uni<Void> flush() {
-        return getSession().flatMap(session -> session.flush()).map(v -> null);
+        return getSession().chain(Session::flush);
     }
 
     //
@@ -176,12 +176,12 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     // Queries
 
     public Uni<?> findById(Class<?> entityClass, Object id) {
-        return getSession().flatMap(session -> session.find(entityClass, id));
+        return getSession().chain(session -> session.find(entityClass, id));
     }
 
     public Uni<?> findById(Class<?> entityClass, Object id, LockModeType lockModeType) {
         return getSession()
-                .flatMap(session -> session.find(entityClass, id, LockModeConverter.convertToLockMode(lockModeType)));
+                .chain(session -> session.find(entityClass, id, LockModeConverter.convertToLockMode(lockModeType)));
     }
 
     public PanacheQueryType find(Class<?> entityClass, String query, Object... params) {
@@ -303,20 +303,20 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public Uni<Long> count(Class<?> entityClass) {
         return (Uni) getSession()
-                .flatMap(session -> session.createQuery("SELECT COUNT(*) FROM " + PanacheJpaUtil.getEntityName(entityClass))
+                .chain(session -> session.createQuery("SELECT COUNT(*) FROM " + PanacheJpaUtil.getEntityName(entityClass))
                         .getSingleResult());
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public Uni<Long> count(Class<?> entityClass, String query, Object... params) {
-        return (Uni) getSession().flatMap(session -> bindParameters(
+        return (Uni) getSession().chain(session -> bindParameters(
                 session.createQuery(PanacheJpaUtil.createCountQuery(entityClass, query, paramCount(params))),
                 params).getSingleResult());
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public Uni<Long> count(Class<?> entityClass, String query, Map<String, Object> params) {
-        return (Uni) getSession().flatMap(session -> bindParameters(
+        return (Uni) getSession().chain(session -> bindParameters(
                 session.createQuery(PanacheJpaUtil.createCountQuery(entityClass, query, paramCount(params))),
                 params).getSingleResult());
     }
@@ -342,33 +342,33 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public Uni<Long> deleteAll(Class<?> entityClass) {
-        return getSession().flatMap(
+        return getSession().chain(
                 session -> session.createQuery("DELETE FROM " + PanacheJpaUtil.getEntityName(entityClass)).executeUpdate()
-                        .map(i -> i.longValue()));
+                        .map(Integer::longValue));
     }
 
     public Uni<Boolean> deleteById(Class<?> entityClass, Object id) {
         // Impl note : we load the entity then delete it because it's the only implementation generic enough for any model,
         // and correct in all cases (composite key, graph of entities, ...). HQL cannot be directly used for these reasons.
         return findById(entityClass, id)
-                .flatMap(entity -> {
+                .chain(entity -> {
                     if (entity == null) {
                         return Uni.createFrom().item(false);
                     }
-                    return getSession().flatMap(session -> session.remove(entity).map(v -> true));
+                    return getSession().chain(session -> session.remove(entity).map(v -> true));
                 });
     }
 
     public Uni<Long> delete(Class<?> entityClass, String query, Object... params) {
-        return getSession().flatMap(session -> bindParameters(
+        return getSession().chain(session -> bindParameters(
                 session.createQuery(PanacheJpaUtil.createDeleteQuery(entityClass, query, paramCount(params))), params)
-                        .executeUpdate().map(i -> i.longValue()));
+                        .executeUpdate().map(Integer::longValue));
     }
 
     public Uni<Long> delete(Class<?> entityClass, String query, Map<String, Object> params) {
-        return getSession().flatMap(session -> bindParameters(
+        return getSession().chain(session -> bindParameters(
                 session.createQuery(PanacheJpaUtil.createDeleteQuery(entityClass, query, paramCount(params))), params)
-                        .executeUpdate().map(i -> i.longValue()));
+                        .executeUpdate().map(Integer::longValue));
     }
 
     public Uni<Long> delete(Class<?> entityClass, String query, Parameters params) {
@@ -381,7 +381,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public static Uni<Integer> executeUpdate(String query, Object... params) {
-        return getSession().flatMap(session -> {
+        return getSession().chain(session -> {
             Mutiny.Query<?> jpaQuery = session.createQuery(query);
             bindParameters(jpaQuery, params);
             return jpaQuery.executeUpdate();
@@ -389,7 +389,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public static Uni<Integer> executeUpdate(String query, Map<String, Object> params) {
-        return getSession().flatMap(session -> {
+        return getSession().chain(session -> {
             Mutiny.Query<?> jpaQuery = session.createQuery(query);
             bindParameters(jpaQuery, params);
             return jpaQuery.executeUpdate();

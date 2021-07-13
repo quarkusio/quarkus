@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 public final class ExtensionProcessor {
 
     private static final String STABLE_STATS = "stable";
-    public static final String PROVIDES_CODE_TAG = "provides-code";
+    public static final String PROVIDES_CODE_TAG = "code";
 
     public enum CodestartKind {
         CORE,

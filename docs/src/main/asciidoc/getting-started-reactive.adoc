@@ -15,7 +15,7 @@ Since the beginning, _Reactive_ has been an essential tenet of the Quarkus archi
 It includes many reactive features and offers a broad ecosystem.
 
 This guide is not an in-depth article about what _Reactive_ is and how Quarkus enables reactive architectures.
-If you want to read more about these topics, refer to xref:quarkus-reactive-architecture.adoc[], which provides an overview of the Quarkus reactive ecosystem.
+If you want to read more about these topics, refer to the xref:quarkus-reactive-architecture.adoc[Reactive Architecture guide], which provides an overview of the Quarkus reactive ecosystem.
 
 In this guide, we will get you started with some reactive features of Quarkus.
 We are going to implement a simple CRUD application.

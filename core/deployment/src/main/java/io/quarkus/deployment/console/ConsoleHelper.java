@@ -1,4 +1,4 @@
-package io.quarkus.deployment.dev.console;
+package io.quarkus.deployment.console;
 
 import java.io.IOException;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -8,7 +8,6 @@ import java.util.function.Supplier;
 import org.aesh.readline.tty.terminal.TerminalConnection;
 import org.aesh.terminal.Connection;
 
-import io.quarkus.deployment.console.ConsoleConfig;
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.dev.console.BasicConsole;
 import io.quarkus.dev.console.QuarkusConsole;
@@ -19,7 +18,7 @@ import io.quarkus.runtime.util.ColorSupport;
 public class ConsoleHelper {
 
     public static synchronized void installConsole(TestConfig config, ConsoleConfig consoleConfig,
-            ConsoleRuntimeConfig consoleRuntimeConfig, io.quarkus.runtime.logging.ConsoleConfig logConfig) {
+            ConsoleRuntimeConfig consoleRuntimeConfig, io.quarkus.runtime.logging.ConsoleConfig logConfig, boolean test) {
         if (QuarkusConsole.installed) {
             return;
         }
@@ -33,13 +32,16 @@ public class ConsoleHelper {
                 System.console().writer().flush();
             };
         }
+        //note that we never enable input for tests
+        //surefire communicates of stdin, so this can mess with it
+        boolean inputSupport = !test && !config.disableConsoleInput.orElse(consoleConfig.disableInput);
         try {
             new TerminalConnection(new Consumer<Connection>() {
                 @Override
                 public void accept(Connection connection) {
                     if (connection.supportsAnsi() && !config.basicConsole.orElse(consoleConfig.basic)) {
                         QuarkusConsole.INSTANCE = new AeshConsole(connection,
-                                !config.disableConsoleInput.orElse(consoleConfig.disableInput));
+                                inputSupport);
                     } else {
                         LinkedBlockingDeque<Integer> queue = new LinkedBlockingDeque<>();
                         connection.openNonBlocking();
@@ -51,6 +53,21 @@ public class ConsoleHelper {
                                 }
                             }
                         });
+                        connection.setSignalHandler(event -> {
+                            switch (event) {
+                                case INT:
+                                    //todo: why does async exit not work here
+                                    //Quarkus.asyncExit();
+                                    //end(conn);
+                                    new Thread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            System.exit(0);
+                                        }
+                                    }).start();
+                                    break;
+                            }
+                        });
                         connection.setCloseHandler(new Consumer<Void>() {
                             @Override
                             public void accept(Void unused) {
@@ -58,7 +75,7 @@ public class ConsoleHelper {
                             }
                         });
                         QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled,
-                                !config.disableConsoleInput.orElse(consoleConfig.disableInput),
+                                inputSupport,
                                 connection::write, new Supplier<Integer>() {
                                     @Override
                                     public Integer get() {
@@ -74,7 +91,7 @@ public class ConsoleHelper {
             });
         } catch (IOException e) {
             QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled,
-                    !config.disableConsoleInput.orElse(consoleConfig.disableInput), consumer);
+                    inputSupport, consumer);
         }
 
         RedirectPrintStream ps = new RedirectPrintStream();

@@ -58,6 +58,7 @@ public class QuarkusAugmentor {
     private final boolean rebuild;
     private final boolean auxiliaryApplication;
     private final Optional<DevModeType> auxiliaryDevModeType;
+    private final boolean test;
 
     QuarkusAugmentor(Builder builder) {
         this.classLoader = builder.classLoader;
@@ -78,6 +79,7 @@ public class QuarkusAugmentor {
         this.devModeType = builder.devModeType;
         this.auxiliaryApplication = builder.auxiliaryApplication;
         this.auxiliaryDevModeType = Optional.ofNullable(builder.auxiliaryDevModeType);
+        this.test = builder.test;
     }
 
     public BuildResult run() throws Exception {
@@ -139,7 +141,7 @@ public class QuarkusAugmentor {
                     .produce(new RawCommandLineArgumentsBuildItem())
                     .produce(new LaunchModeBuildItem(launchMode,
                             devModeType == null ? Optional.empty() : Optional.of(devModeType), auxiliaryApplication,
-                            auxiliaryDevModeType))
+                            auxiliaryDevModeType, test))
                     .produce(new BuildSystemTargetBuildItem(targetDir, baseName, rebuild,
                             buildSystemProperties == null ? new Properties() : buildSystemProperties))
                     .produce(new AppModelProviderBuildItem(effectiveModel));
@@ -194,6 +196,7 @@ public class QuarkusAugmentor {
         Consumer<ConfigBuilder> configCustomizer;
         ClassLoader deploymentClassLoader;
         DevModeType devModeType;
+        boolean test;
         boolean auxiliaryApplication;
 
         public Builder addBuildChainCustomizer(Consumer<BuildChainBuilder> customizer) {
@@ -240,6 +243,15 @@ public class QuarkusAugmentor {
 
         public Builder setDevModeType(DevModeType devModeType) {
             this.devModeType = devModeType;
+            return this;
+        }
+
+        public boolean isTest() {
+            return test;
+        }
+
+        public Builder setTest(boolean test) {
+            this.test = test;
             return this;
         }
 

@@ -352,7 +352,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         return doScan(userInitiated, false);
     }
 
-    public boolean doScan(boolean userInitiated, boolean forceRestart) throws IOException {
+    public boolean doScan(boolean userInitiated, boolean forceRestart) {
         if (!liveReloadEnabled && !forceRestart) {
             return false;
         }

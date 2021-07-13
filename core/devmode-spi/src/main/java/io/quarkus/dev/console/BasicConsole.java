@@ -11,7 +11,6 @@ import java.util.logging.Logger;
 public class BasicConsole extends QuarkusConsole {
 
     private static final Logger log = Logger.getLogger(BasicConsole.class.getName());
-    private static final Logger statusLogger = Logger.getLogger("quarkus");
 
     private static final ThreadLocal<Boolean> DISABLE_FILTER = new ThreadLocal<>() {
         @Override
@@ -60,9 +59,9 @@ public class BasicConsole extends QuarkusConsole {
                                     continue;
                                 }
                             }
-                            InputHolder handler = inputHandlers.peek();
+                            var handler = inputHandler;
                             if (handler != null) {
-                                handler.handler.handleInput(new int[] { val });
+                                handler.accept(new int[] { val });
                             }
                         } catch (Exception e) {
                             log.log(Level.SEVERE, "Failed to read user input", e);
@@ -78,69 +77,60 @@ public class BasicConsole extends QuarkusConsole {
     }
 
     @Override
-    public InputHolder createHolder(InputHandler inputHandler) {
-        return new InputHolder(inputHandler) {
-            @Override
-            public void doReadLine() {
-                readingLine = true;
-                output.accept(">");
-            }
+    public void doReadLine() {
+        readingLine = true;
+        output.accept(">");
+    }
+
+    public StatusLine registerStatusLine(int priority) {
+        return new StatusLine() {
+
+            boolean closed;
+
+            String old;
 
             @Override
-            protected void setPromptMessage(String prompt) {
-                if (!inputSupport) {
+            public void setMessage(String message) {
+                if (closed) {
                     return;
                 }
-                if (prompt == null) {
+                if (message == null) {
                     return;
                 }
+                if (message.equals(old)) {
+                    return;
+                }
+                old = message;
                 DISABLE_FILTER.set(true);
                 try {
-                    System.out.println(prompt);
+                    System.out.println(message);
                 } finally {
                     DISABLE_FILTER.set(false);
                 }
+
             }
 
             @Override
-            protected void setResultsMessage(String results) {
-                if (results == null) {
-                    return;
-                }
-                DISABLE_FILTER.set(true);
-                try {
-                    System.out.println(results);
-                } finally {
-                    DISABLE_FILTER.set(false);
-                }
-            }
-
-            @Override
-            protected void setCompileErrorMessage(String results) {
-                if (results == null) {
-                    return;
-                }
-                DISABLE_FILTER.set(true);
-                try {
-                    System.out.println(results);
-                } finally {
-                    DISABLE_FILTER.set(false);
-                }
-            }
-
-            @Override
-            protected void setStatusMessage(String status) {
-                if (status == null) {
-                    return;
-                }
-                DISABLE_FILTER.set(true);
-                try {
-                    System.out.println(status);
-                } finally {
-                    DISABLE_FILTER.set(false);
-                }
+            public void close() {
+                closed = true;
             }
         };
+    }
+
+    @Override
+    public void setPromptMessage(String prompt) {
+        if (!inputSupport) {
+            return;
+        }
+        if (prompt == null) {
+            return;
+        }
+        DISABLE_FILTER.set(true);
+        try {
+            System.out.println(prompt);
+        } finally {
+            DISABLE_FILTER.set(false);
+        }
     }
 
     @Override

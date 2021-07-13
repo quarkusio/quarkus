@@ -4,283 +4,143 @@ import static io.quarkus.deployment.dev.testing.MessageFormat.BLUE;
 import static io.quarkus.deployment.dev.testing.MessageFormat.GREEN;
 import static io.quarkus.deployment.dev.testing.MessageFormat.RED;
 import static io.quarkus.deployment.dev.testing.MessageFormat.RESET;
-import static io.quarkus.deployment.dev.testing.MessageFormat.helpOption;
 import static io.quarkus.deployment.dev.testing.MessageFormat.statusFooter;
 import static io.quarkus.deployment.dev.testing.MessageFormat.statusHeader;
-import static org.jboss.logmanager.Level.DEBUG;
-import static org.jboss.logmanager.Level.ERROR;
-import static org.jboss.logmanager.Level.FATAL;
-import static org.jboss.logmanager.Level.INFO;
-import static org.jboss.logmanager.Level.TRACE;
-import static org.jboss.logmanager.Level.WARN;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import java.util.logging.Level;
 
 import org.jboss.logging.Logger;
-import org.jboss.logmanager.LogManager;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.launcher.TestIdentifier;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.console.AeshConsole;
+import io.quarkus.deployment.console.ConsoleCommand;
+import io.quarkus.deployment.console.ConsoleStateManager;
 import io.quarkus.deployment.dev.ClassScanResult;
-import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
-import io.quarkus.deployment.dev.console.AeshConsole;
-import io.quarkus.dev.console.InputHandler;
 import io.quarkus.dev.console.QuarkusConsole;
+import io.quarkus.dev.console.StatusLine;
 import io.quarkus.dev.spi.DevModeType;
 
 public class TestConsoleHandler implements TestListener {
 
     private static final Logger log = Logger.getLogger("io.quarkus.test");
 
-    public static final String PAUSED_PROMPT = "Tests paused, press [" + BLUE + "r" + RESET + "] to resume, [" + BLUE + "w"
-            + RESET + "] to open the browser," + RESET + " [" + BLUE + "h"
-            + RESET + "] for more options>" + RESET;
-    public static final String PAUSED_PROMPT_NO_HTTP = "Tests paused, press [" + BLUE + "r" + RESET + "] to resume, [" + BLUE
-            + "s" + RESET + "] to restart with changes, [" + BLUE + "h"
-            + RESET + "] for more options>" + RESET;
-    public static final String FIRST_RUN_PROMPT = BLUE + "Running tests for the first time" + RESET;
-    public static final String RUNNING_PROMPT = "Press [" + BLUE + "r" + RESET + "] to re-run, [" + BLUE
-            + "v" + RESET + "] to view full results, [" + BLUE + "p" + RESET + "] to pause, [" + BLUE
-            + "h" + RESET + "] for more options>";
-    public static final String RUNNING_PROMPT_NO_HTTP = "Press [" + BLUE + "r" + RESET + "] to re-run, [" + BLUE
-            + "v" + RESET + "] to view full results, [" + BLUE + "p" + RESET + "] to pause, [" + BLUE + "s" + RESET
-            + "] to restart with changes, [" + BLUE
-            + "h" + RESET + "] for more options>";
+    public static final ConsoleCommand TOGGLE_TEST_OUTPUT = new ConsoleCommand('o', "Toggle test output",
+            new ConsoleCommand.HelpState(TestSupport.instance().get()::isDisplayTestOutput),
+            () -> TestSupport.instance().get().toggleTestOutput());
 
     final DevModeType devModeType;
 
     boolean firstRun = true;
     boolean disabled = true;
     boolean currentlyFailing = false;
-    volatile InputHandler.ConsoleStatus promptHandler;
     volatile TestController testController;
     private String lastResults;
-    final Consumer<String> browserOpener;
 
-    private List<Runnable> restoreLogLevelsTasks;
-    private org.jboss.logmanager.Level currentLevel;
+    private volatile ConsoleStateManager.ConsoleContext consoleContext;
+    private volatile StatusLine resultsOutput;
+    private volatile StatusLine testsStatusOutput;
+    private volatile StatusLine testsCompileOutput;
 
-    /**
-     * If HTTP is not present we add the 'press s to reload' option to the prompt
-     * to make it clear to users they can restart their apps.
-     */
-    private final boolean hasHttp;
-
-    public TestConsoleHandler(DevModeType devModeType, Consumer<String> browserOpener, boolean hasHttp) {
+    public TestConsoleHandler(DevModeType devModeType) {
         this.devModeType = devModeType;
-        this.browserOpener = browserOpener;
-        this.hasHttp = hasHttp;
     }
 
     public void install() {
-        QuarkusConsole.INSTANCE.pushInputHandler(inputHandler);
         QuarkusClassLoader classLoader = (QuarkusClassLoader) getClass().getClassLoader();
         classLoader.addCloseTask(new Runnable() {
             @Override
             public void run() {
-                QuarkusConsole.INSTANCE.popInputHandler();
+                if (resultsOutput != null) {
+                    resultsOutput.close();
+                }
+                if (testsStatusOutput != null) {
+                    testsStatusOutput.close();
+                }
+                if (consoleContext != null) {
+                    consoleContext.reset();
+                }
             }
         });
     }
 
-    private final InputHandler inputHandler = new InputHandler() {
-
-        @Override
-        public void handleInput(int[] keys) {
-            //common commands, work every time
-            for (int k : keys) {
-                if (k == 13) {
-                    printBlankLine();
-                } else if (k == 'h') {
-                    printUsage();
-                } else if (k == 'w' && devModeType != DevModeType.TEST_ONLY) {
-                    browserOpener.accept("/");
-                } else if (k == 'd' && devModeType != DevModeType.TEST_ONLY) {
-                    browserOpener.accept("/q/dev");
-                } else if (k == 'l' && devModeType != DevModeType.TEST_ONLY) {
-                    RuntimeUpdatesProcessor.INSTANCE.toggleLiveReloadEnabled();
-                } else if (k == 'j') {
-                    java.util.logging.Logger rootLogger = LogManager.getLogManager().getLogger("");
-                    if (currentLevel == null) {
-                        restoreLogLevelsTasks = new ArrayList<>();
-                        Iterator<String> names = LogManager.getLogManager().getLoggerNames().asIterator();
-                        while (names.hasNext()) {
-                            String name = names.next();
-                            java.util.logging.Logger logger = LogManager.getLogManager().getLogger(name);
-                            Level level = logger.getLevel();
-                            restoreLogLevelsTasks.add(new Runnable() {
-                                @Override
-                                public void run() {
-                                    logger.setLevel(level);
-                                }
-                            });
-                            logger.setLevel(DEBUG);
-                        }
-                        currentLevel = DEBUG;
-                        System.out.println("Set log level to DEBUG");
-                    } else if (currentLevel == DEBUG) {
-                        Iterator<String> names = LogManager.getLogManager().getLoggerNames().asIterator();
-                        while (names.hasNext()) {
-                            String name = names.next();
-                            java.util.logging.Logger logger = LogManager.getLogManager().getLogger(name);
-                            logger.setLevel(TRACE);
-                        }
-                        System.out.println("Set log level to TRACE");
-                        currentLevel = TRACE;
-                    } else {
-                        for (var i : restoreLogLevelsTasks) {
-                            i.run();
-                        }
-                        restoreLogLevelsTasks = null;
-                        currentLevel = null;
-                        System.out.println("Restored log levels to configured values");
-                    }
-
-                } else if (k == 's' && devModeType != DevModeType.TEST_ONLY) {
-                    try {
-                        RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
-                    } catch (IOException e) {
-                        log.error("Live reload scan failed", e);
-                    }
-                } else if (k == 'q') {
-                    //we don't call Quarkus.exit() here as that would just result
-                    //in a 'press any key to restart' prompt
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            System.exit(0);
-                        }
-                    }, "Quarkus exit thread").run();
-                } else if (k == 'o' && devModeType != DevModeType.TEST_ONLY) {
-                    testController.toggleTestOutput();
-                } else {
-                    if (disabled) {
-                        if (k == 'r') {
-                            promptHandler.setStatus(BLUE + "Starting tests" + RESET);
-                            TestSupport.instance().get().start();
-                        }
-                    } else {
-                        //TODO: some of this is a bit yuck, this needs some work
-                        if (k == 'r') {
-                            testController.runAllTests();
-                        } else if (k == 'f') {
-                            testController.runFailedTests();
-                        } else if (k == 'v') {
-                            testController.printFullResults();
-                        } else if (k == 'p') {
-                            TestSupport.instance().get().stop();
-                        } else if (k == 'b') {
-                            testController.toggleBrokenOnlyMode();
-                        }
-                    }
-                }
-            }
-        }
-
-        @Override
-        public void promptHandler(InputHandler.ConsoleStatus promptHandler) {
-            TestConsoleHandler.this.promptHandler = promptHandler;
-        }
-    };
-
     @Override
     public void listenerRegistered(TestController testController) {
         this.testController = testController;
-        promptHandler.setPrompt(hasHttp ? PAUSED_PROMPT : PAUSED_PROMPT_NO_HTTP);
+        this.consoleContext = ConsoleStateManager.INSTANCE.createContext("Continuous Testing");
+        this.resultsOutput = QuarkusConsole.INSTANCE.registerStatusLine(QuarkusConsole.TEST_RESULTS);
+        this.testsStatusOutput = QuarkusConsole.INSTANCE.registerStatusLine(QuarkusConsole.TEST_STATUS);
+        this.testsCompileOutput = QuarkusConsole.INSTANCE.registerStatusLine(QuarkusConsole.COMPILE_ERROR);
+        setupPausedConsole();
     }
 
-    private void printBlankLine() {
-        System.out.println("");
-    }
-
-    public void printUsage() {
-        System.out.println(RESET + "\nThe following commands are available:");
-        if (disabled) {
-            System.out.println(helpOption("r", "Resume testing"));
-        } else {
-            System.out.println(helpOption("r", "Re-run all tests"));
-            System.out.println(helpOption("f", "Re-run failed tests"));
-            System.out.println(helpOption("b", "Toggle 'broken only' mode, where only failing tests are run",
-                    testController.isBrokenOnlyMode()));
-            System.out.println(helpOption("v", "Print failures from the last test run"));
-            System.out.println(helpOption("p", "Pause tests"));
-        }
-        if (devModeType != DevModeType.TEST_ONLY) {
-            System.out.println(helpOption("o", "Toggle test output", testController.isDisplayTestOutput()));
-            System.out
-                    .println(helpOption("i", "Toggle instrumentation based reload", testController.isInstrumentationEnabled()));
-            System.out.println(helpOption("l", "Toggle live reload", testController.isLiveReloadEnabled()));
-            System.out.println(helpOption("s", "Force restart"));
-            if (hasHttp) {
-                System.out.println(helpOption("w", "Open the application in a browser"));
-                System.out.println(helpOption("d", "Open the Dev UI in a browser"));
+    private void setupPausedConsole() {
+        testsStatusOutput.setMessage(BLUE + "Tests paused" + RESET);
+        consoleContext.reset(new ConsoleCommand('r', "Resume testing", "to resume testing", 500, null, new Runnable() {
+            @Override
+            public void run() {
+                testsStatusOutput.setMessage(BLUE + "Starting tests" + RESET);
+                TestSupport.instance().get().start();
             }
-        }
-        System.out.println(helpOption("j", "Toggle log levels",
-                (currentLevel == null ? toLevel(((LogManager) LogManager.getLogManager()).getLogger("").getLevel()).toString()
-                        : currentLevel.toString()),
-                currentLevel == null ? BLUE : RED));
-        System.out.println(helpOption("h", "Display this help"));
-        System.out.println(helpOption("q", "Quit"));
+        }));
+        addTestOutput();
     }
 
-    private org.jboss.logmanager.Level toLevel(Level level) {
-        if (level.intValue() >= FATAL.intValue()) {
-            return FATAL;
-        } else if (level.intValue() >= ERROR.intValue()) {
-            return ERROR;
-        } else if (level.intValue() >= WARN.intValue()) {
-            return WARN;
-        } else if (level.intValue() >= INFO.intValue()) {
-            return INFO;
-        } else if (level.intValue() >= DEBUG.intValue()) {
-            return DEBUG;
+    private void setupFirstRunConsole() {
+        testsStatusOutput.setMessage(BLUE + "Running tests for the first time" + RESET);
+        consoleContext.reset();
+        addTestOutput();
+    }
+
+    void addTestOutput() {
+        if (devModeType != DevModeType.TEST_ONLY) {
+            consoleContext.addCommand(TOGGLE_TEST_OUTPUT);
         }
-        return TRACE;
+    }
+
+    private void setupTestsRunningConsole() {
+        consoleContext.reset(
+                new ConsoleCommand('r', "Re-run all tests", "to re-run", 500, null, () -> {
+                    testController.runAllTests();
+                }), new ConsoleCommand('f', "Re-run failed tests", null, () -> {
+                    testController.runFailedTests();
+                }),
+                new ConsoleCommand('b', "Toggle 'broken only' mode, where only failing tests are run",
+                        new ConsoleCommand.HelpState(testController::isBrokenOnlyMode),
+                        () -> testController.toggleBrokenOnlyMode()),
+                new ConsoleCommand('v', "Print failures from the last test run", null, () -> testController.printFullResults()),
+                new ConsoleCommand('p', "Pause tests", null, () -> TestSupport.instance().get().stop()));
+        addTestOutput();
     }
 
     @Override
     public void testsEnabled() {
         disabled = false;
-        if (firstRun) {
-            promptHandler.setStatus(null);
-            promptHandler.setResults(FIRST_RUN_PROMPT);
-        } else {
-            promptHandler.setResults(lastResults);
-            promptHandler.setStatus(null);
-        }
-        promptHandler.setPrompt(hasHttp ? RUNNING_PROMPT : RUNNING_PROMPT_NO_HTTP);
+        setupFirstRunConsole();
     }
 
     @Override
     public void testsDisabled() {
         disabled = true;
-        promptHandler.setPrompt(hasHttp ? PAUSED_PROMPT : PAUSED_PROMPT_NO_HTTP);
-        promptHandler.setStatus(null);
-        promptHandler.setResults(null);
+        setupPausedConsole();
     }
 
     @Override
     public void testCompileFailed(String message) {
-        promptHandler.setCompileError(message);
+        testsCompileOutput.setMessage(message);
     }
 
     @Override
     public void testCompileSucceeded() {
-        promptHandler.setCompileError(null);
+        testsCompileOutput.setMessage(null);
     }
 
     @Override
@@ -294,7 +154,7 @@ public class TestConsoleHandler implements TestListener {
             @Override
             public void runStarted(long toRun) {
                 totalNoTests.set(toRun);
-                promptHandler.setStatus("Starting test run, " + toRun + " tests to run.");
+                testsStatusOutput.setMessage("Starting test run, " + toRun + " tests to run.");
             }
 
             @Override
@@ -309,6 +169,9 @@ public class TestConsoleHandler implements TestListener {
 
             @Override
             public void runComplete(TestRunResults results) {
+                if (firstRun) {
+                    setupTestsRunningConsole();
+                }
                 firstRun = false;
                 SimpleDateFormat df = new SimpleDateFormat("kk:mm:ss");
 
@@ -376,9 +239,8 @@ public class TestConsoleHandler implements TestListener {
                 }
                 //this will re-print when using the basic console
                 if (!disabled) {
-                    promptHandler.setPrompt(hasHttp ? RUNNING_PROMPT : RUNNING_PROMPT_NO_HTTP);
-                    promptHandler.setResults(lastResults);
-                    promptHandler.setStatus(null);
+                    resultsOutput.setMessage(lastResults);
+                    testsStatusOutput.setMessage(null);
                 }
             }
 
@@ -403,7 +265,7 @@ public class TestConsoleHandler implements TestListener {
                         QuarkusConsole.INSTANCE instanceof AeshConsole) {
                     log.info(status);
                 }
-                promptHandler.setStatus(status);
+                testsStatusOutput.setMessage(status);
             }
         });
 

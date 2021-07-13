@@ -1,10 +1,14 @@
 package io.quarkus.dev.console;
 
-import java.util.ArrayDeque;
 import java.util.Locale;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public abstract class QuarkusConsole {
+
+    public static final int TEST_STATUS = 100;
+    public static final int TEST_RESULTS = 200;
+    public static final int COMPILE_ERROR = 300;
 
     public static final String FORCE_COLOR_SUPPORT = "io.quarkus.force-color-support";
 
@@ -29,7 +33,7 @@ public abstract class QuarkusConsole {
             && System.getenv("MSYSTEM") != null
             && System.getenv("MSYSTEM").startsWith("MINGW")
             && "xterm".equals(System.getenv("TERM"));
-    protected final ArrayDeque<InputHolder> inputHandlers = new ArrayDeque<>();
+    protected volatile Consumer<int[]> inputHandler;
 
     public static volatile QuarkusConsole INSTANCE = new BasicConsole(hasColorSupport(), false, System.out::print);
 
@@ -59,28 +63,6 @@ public abstract class QuarkusConsole {
         }
     }
 
-    public synchronized void pushInputHandler(InputHandler inputHandler) {
-        InputHolder holder = inputHandlers.peek();
-        if (holder != null) {
-            holder.setEnabled(false);
-        }
-        holder = createHolder(inputHandler);
-        if (started) {
-            holder.setEnabled(true);
-        }
-        inputHandlers.push(holder);
-        inputHandler.promptHandler(holder);
-    }
-
-    public synchronized void popInputHandler() {
-        InputHolder holder = inputHandlers.pop();
-        holder.setEnabled(false);
-        holder = inputHandlers.peek();
-        if (holder != null) {
-            holder.setEnabled(true);
-        }
-    }
-
     public static void start() {
         INSTANCE.startInternal();
     }
@@ -90,13 +72,17 @@ public abstract class QuarkusConsole {
             return;
         }
         started = true;
-        InputHolder holder = inputHandlers.peek();
-        if (holder != null) {
-            holder.setEnabled(true);
-        }
     }
 
-    public abstract InputHolder createHolder(InputHandler inputHandler);
+    public void setInputHandler(Consumer<int[]> inputHandler) {
+        this.inputHandler = inputHandler;
+    }
+
+    public abstract void doReadLine();
+
+    public abstract StatusLine registerStatusLine(int priority);
+
+    public abstract void setPromptMessage(String message);
 
     public abstract void write(String s);
 
@@ -114,67 +100,4 @@ public abstract class QuarkusConsole {
         this.outputFilter = logHandler;
     }
 
-    protected static abstract class InputHolder implements InputHandler.ConsoleStatus {
-        public final InputHandler handler;
-        volatile boolean enabled;
-        String prompt;
-        String status;
-        String results;
-        String compileError;
-
-        protected InputHolder(InputHandler handler) {
-            this.handler = handler;
-        }
-
-        public InputHolder setEnabled(boolean enabled) {
-            this.enabled = enabled;
-            if (enabled) {
-                setStatus(status);
-                setPrompt(prompt);
-                setResults(results);
-                setCompileError(compileError);
-            }
-            return this;
-        }
-
-        @Override
-        public void setPrompt(String prompt) {
-            this.prompt = prompt;
-            if (enabled) {
-                setPromptMessage(prompt);
-            }
-        }
-
-        @Override
-        public void setStatus(String status) {
-            this.status = status;
-            if (enabled) {
-                setStatusMessage(status);
-            }
-        }
-
-        @Override
-        public void setResults(String results) {
-            this.results = results;
-            if (enabled) {
-                setResultsMessage(results);
-            }
-        }
-
-        @Override
-        public void setCompileError(String compileError) {
-            this.compileError = compileError;
-            if (enabled) {
-                setCompileErrorMessage(compileError);
-            }
-        }
-
-        protected abstract void setStatusMessage(String status);
-
-        protected abstract void setPromptMessage(String prompt);
-
-        protected abstract void setResultsMessage(String results);
-
-        protected abstract void setCompileErrorMessage(String results);
-    }
 }

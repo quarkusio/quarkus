@@ -147,8 +147,12 @@ public class ConfigGenerationBuildStep {
     }
 
     @BuildStep
-    public SuppressNonRuntimeConfigChangedWarningBuildItem ignoreQuarkusProfileChange() {
-        return new SuppressNonRuntimeConfigChangedWarningBuildItem("quarkus.profile");
+    public void suppressNonRuntimeConfigChanged(
+            BuildProducer<SuppressNonRuntimeConfigChangedWarningBuildItem> suppressNonRuntimeConfigChanged) {
+        suppressNonRuntimeConfigChanged.produce(new SuppressNonRuntimeConfigChangedWarningBuildItem("quarkus.profile"));
+        suppressNonRuntimeConfigChanged.produce(new SuppressNonRuntimeConfigChangedWarningBuildItem("quarkus.uuid"));
+        suppressNonRuntimeConfigChanged.produce(new SuppressNonRuntimeConfigChangedWarningBuildItem("quarkus.default-locale"));
+        suppressNonRuntimeConfigChanged.produce(new SuppressNonRuntimeConfigChangedWarningBuildItem("quarkus.locales"));
     }
 
     /**
@@ -174,7 +178,7 @@ public class ConfigGenerationBuildStep {
                     root.getConfigPhase() == ConfigPhase.BUILD_TIME) {
 
                 Iterable<ClassDefinition.ClassMember> members = root.getMembers();
-                handleMembers(config, values, members, "quarkus." + root.getRootName() + ".", excludedConfigKeys);
+                handleMembers(config, values, members, root.getName() + ".", excludedConfigKeys);
             }
         }
         recorder.handleConfigChange(configurationConfig, values);

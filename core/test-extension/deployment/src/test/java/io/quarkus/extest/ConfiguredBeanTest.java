@@ -2,7 +2,10 @@ package io.quarkus.extest;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -28,13 +31,16 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.extest.runtime.config.AnotherPrefixConfig;
 import io.quarkus.extest.runtime.config.MyEnum;
 import io.quarkus.extest.runtime.config.NestedConfig;
 import io.quarkus.extest.runtime.config.ObjectOfValue;
 import io.quarkus.extest.runtime.config.ObjectValueOf;
 import io.quarkus.extest.runtime.config.OverrideBuildTimeConfigSource;
+import io.quarkus.extest.runtime.config.PrefixConfig;
 import io.quarkus.extest.runtime.config.TestBuildAndRunTimeConfig;
 import io.quarkus.extest.runtime.config.TestRunTimeConfig;
+import io.quarkus.extest.runtime.config.named.PrefixNamedConfig;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -358,5 +364,40 @@ public class ConfiguredBeanTest {
         assertEquals("5678", defaultValues.getValue("%dev.my.prop"));
         assertEquals("1234", defaultValues.getValue("%test.my.prop"));
         assertEquals("1234", config.getValue("my.prop", String.class));
+    }
+
+    @Test
+    void prefixConfig() {
+        PrefixConfig prefixConfig = configuredBean.getPrefixConfig();
+        assertNotNull(prefixConfig);
+        assertEquals("1234", prefixConfig.prop);
+        assertEquals("1234", prefixConfig.map.get("prop"));
+        assertEquals("nested-1234", prefixConfig.nested.nestedValue);
+        assertEquals("nested-1234", prefixConfig.nested.oov.getPart1());
+        assertEquals("nested-5678", prefixConfig.nested.oov.getPart2());
+
+        PrefixNamedConfig prefixNamedConfig = configuredBean.getPrefixNamedConfig();
+        assertNotNull(prefixNamedConfig);
+        assertEquals("1234", prefixNamedConfig.prop);
+        assertEquals("1234", prefixNamedConfig.map.get("prop"));
+        assertEquals("nested-1234", prefixNamedConfig.nested.nestedValue);
+        assertEquals("nested-1234", prefixNamedConfig.nested.oov.getPart1());
+        assertEquals("nested-5678", prefixNamedConfig.nested.oov.getPart2());
+
+        AnotherPrefixConfig anotherPrefixConfig = configuredBean.getAnotherPrefixConfig();
+        assertNotNull(anotherPrefixConfig);
+        assertEquals("5678", anotherPrefixConfig.prop);
+        assertEquals("5678", anotherPrefixConfig.map.get("prop"));
+
+        ConfigSource defaultValues = null;
+        for (ConfigSource configSource : config.getConfigSources()) {
+            if (configSource.getName().contains("PropertiesConfigSource[source=Specified default values]")) {
+                defaultValues = configSource;
+                break;
+            }
+        }
+        assertNotNull(defaultValues);
+        // java.version should not be recorded
+        assertFalse(defaultValues.getPropertyNames().contains("java.version"));
     }
 }

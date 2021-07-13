@@ -19,12 +19,14 @@ import io.quarkus.runtime.annotations.ConfigPhase;
  *
  */
 public final class RootDefinition extends ClassDefinition {
+    private final String prefix;
     private final ConfigPhase configPhase;
     private final String rootName;
     private final FieldDescriptor descriptor;
 
     RootDefinition(final Builder builder) {
         super(builder);
+        this.prefix = builder.prefix;
         this.configPhase = builder.configPhase;
         String rootName = builder.rootName;
         final Class<?> configClass = getConfigurationClass();
@@ -76,6 +78,10 @@ public final class RootDefinition extends ClassDefinition {
         this.descriptor = FieldDescriptor.of(CONFIG_CLASS_NAME, String.join("", segments), configClass);
     }
 
+    public String getPrefix() {
+        return prefix;
+    }
+
     public ConfigPhase getConfigPhase() {
         return configPhase;
     }
@@ -84,15 +90,36 @@ public final class RootDefinition extends ClassDefinition {
         return rootName;
     }
 
+    public String getName() {
+        if (prefix != null && !prefix.isEmpty()) {
+            if (rootName != null && !rootName.isEmpty()) {
+                return prefix + "." + rootName;
+            } else {
+                return prefix;
+            }
+        } else {
+            return rootName;
+        }
+    }
+
     public FieldDescriptor getDescriptor() {
         return descriptor;
     }
 
     public static final class Builder extends ClassDefinition.Builder {
+        private String prefix = "quarkus";
         private ConfigPhase configPhase = ConfigPhase.BUILD_TIME;
         private String rootName = ConfigItem.HYPHENATED_ELEMENT_NAME;
 
         public Builder() {
+        }
+
+        public String getPrefix() {
+            return prefix;
+        }
+
+        public void setPrefix(final String prefix) {
+            this.prefix = prefix;
         }
 
         public ConfigPhase getConfigPhase() {

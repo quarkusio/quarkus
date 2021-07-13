@@ -28,7 +28,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -50,13 +49,15 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.dev.BrowserOpenerBuildItem;
+import io.quarkus.deployment.console.ConsoleCommand;
+import io.quarkus.deployment.console.ConsoleStateManager;
 import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
 import io.quarkus.deployment.ide.Ide;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
@@ -411,47 +412,57 @@ public class DevConsoleProcessor {
         }
     }
 
-    @BuildStep
-    BrowserOpenerBuildItem builder(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np) {
-        return new BrowserOpenerBuildItem(new Consumer<String>() {
-            @Override
-            public void accept(String s) {
-                if (s.startsWith("/q")) {
-                    s = np.resolvePath(s.substring(3));
-                } else {
-                    s = rp.resolvePath(s.substring(1));
-                }
+    static volatile ConsoleStateManager.ConsoleContext context;
 
-                StringBuilder sb = new StringBuilder("http://");
-                Config c = ConfigProvider.getConfig();
-                sb.append(c.getOptionalValue("quarkus.http.host", String.class).orElse("localhost"));
-                sb.append(":");
-                sb.append(c.getOptionalValue("quarkus.http.port", String.class).orElse("8080"));
-                sb.append(s);
-                String url = sb.toString();
+    @Produce(ServiceStartBuildItem.class)
+    @BuildStep()
+    void setupConsole(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, LaunchModeBuildItem launchModeBuildItem) {
+        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
+            return;
+        }
+        if (context == null) {
+            context = ConsoleStateManager.INSTANCE.createContext("HTTP");
+        }
+        context.reset(
+                new ConsoleCommand('w', "Open the application in a browser", null, () -> openBrowser(rp, np, "/")),
+                new ConsoleCommand('d', "Open the Dev UI in a browser", null, () -> openBrowser(rp, np, "/q/dev")));
+    }
 
-                Runtime rt = Runtime.getRuntime();
-                OS os = OS.determineOS();
-                try {
-                    switch (os) {
-                        case MAC:
-                            rt.exec("open " + url);
-                            break;
-                        case LINUX:
-                            rt.exec("xdg-open " + url);
-                            break;
-                        case WINDOWS:
-                            rt.exec("rundll32 url.dll,FileProtocolHandler " + url);
-                            break;
-                        case OTHER:
-                            log.error("Cannot launch browser on this operating system");
-                    }
-                } catch (Exception e) {
-                    log.error("Failed to launch browser", e);
-                }
+    private void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String s) {
+        if (s.startsWith("/q")) {
+            s = np.resolvePath(s.substring(3));
+        } else {
+            s = rp.resolvePath(s.substring(1));
+        }
 
+        StringBuilder sb = new StringBuilder("http://");
+        Config c = ConfigProvider.getConfig();
+        sb.append(c.getOptionalValue("quarkus.http.host", String.class).orElse("localhost"));
+        sb.append(":");
+        sb.append(c.getOptionalValue("quarkus.http.port", String.class).orElse("8080"));
+        sb.append(s);
+        String url = sb.toString();
+
+        Runtime rt = Runtime.getRuntime();
+        OS os = OS.determineOS();
+        try {
+            switch (os) {
+                case MAC:
+                    rt.exec("open " + url);
+                    break;
+                case LINUX:
+                    rt.exec("xdg-open " + url);
+                    break;
+                case WINDOWS:
+                    rt.exec("rundll32 url.dll,FileProtocolHandler " + url);
+                    break;
+                case OTHER:
+                    log.error("Cannot launch browser on this operating system");
             }
-        });
+        } catch (Exception e) {
+            log.error("Failed to launch browser", e);
+        }
+
     }
 
     private Engine buildEngine(List<DevTemplatePathBuildItem> devTemplatePaths,

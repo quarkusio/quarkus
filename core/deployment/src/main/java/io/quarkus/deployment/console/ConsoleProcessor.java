@@ -1,23 +1,18 @@
 package io.quarkus.deployment.console;
 
-import java.util.Optional;
-
 import org.eclipse.microprofile.config.ConfigProvider;
 
-import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.dev.BrowserOpenerBuildItem;
-import io.quarkus.deployment.dev.console.ConsoleHelper;
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.deployment.dev.testing.TestConsoleHandler;
 import io.quarkus.deployment.dev.testing.TestListenerBuildItem;
 import io.quarkus.deployment.dev.testing.TestSetupBuildItem;
 import io.quarkus.deployment.dev.testing.TestSupport;
+import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.runtime.console.ConsoleRuntimeConfig;
 
 public class ConsoleProcessor {
@@ -33,13 +28,8 @@ public class ConsoleProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Produce(TestSetupBuildItem.class)
     void setupConsole(TestConfig config, BuildProducer<TestListenerBuildItem> testListenerBuildItemBuildProducer,
-            LaunchModeBuildItem launchModeBuildItem, Capabilities capabilities, ConsoleConfig consoleConfig,
-            Optional<BrowserOpenerBuildItem> browserOpener) {
-        //note that this bit needs to be refactored so it is no longer tied to continuous testing
-        if (!TestSupport.instance().isPresent() || config.continuousTesting == TestConfig.Mode.DISABLED
-                || config.flatClassPath) {
-            return;
-        }
+            LaunchModeBuildItem launchModeBuildItem, ConsoleConfig consoleConfig) {
+
         if (consoleInstalled) {
             return;
         }
@@ -53,10 +43,15 @@ public class ConsoleProcessor {
             io.quarkus.runtime.logging.ConsoleConfig loggingConsoleConfig = new io.quarkus.runtime.logging.ConsoleConfig();
             loggingConsoleConfig.color = ConfigProvider.getConfig().getOptionalValue("quarkus.log.console.color",
                     Boolean.class);
-            ConsoleHelper.installConsole(config, consoleConfig, consoleRuntimeConfig, loggingConsoleConfig);
-            TestConsoleHandler consoleHandler = new TestConsoleHandler(launchModeBuildItem.getDevModeType().get(),
-                    browserOpener.map(BrowserOpenerBuildItem::getBrowserOpener).orElse(null),
-                    capabilities.isPresent(Capability.VERTX_HTTP));
+            ConsoleHelper.installConsole(config, consoleConfig, consoleRuntimeConfig, loggingConsoleConfig,
+                    launchModeBuildItem.isTest());
+            ConsoleStateManager.init(QuarkusConsole.INSTANCE, launchModeBuildItem.getDevModeType().get());
+            //note that this bit needs to be refactored so it is no longer tied to continuous testing
+            if (!TestSupport.instance().isPresent() || config.continuousTesting == TestConfig.Mode.DISABLED
+                    || config.flatClassPath) {
+                return;
+            }
+            TestConsoleHandler consoleHandler = new TestConsoleHandler(launchModeBuildItem.getDevModeType().get());
             consoleHandler.install();
             testListenerBuildItemBuildProducer.produce(new TestListenerBuildItem(consoleHandler));
         }

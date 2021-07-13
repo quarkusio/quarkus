@@ -31,6 +31,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.FilePart;
 import org.jboss.resteasy.reactive.PathPart;
+import org.jboss.resteasy.reactive.common.PreserveTargetException;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
@@ -234,12 +235,13 @@ public class ServerSerialisers extends Serialisers {
             //and the pre commit listener will interfere with that
             context.serverResponse().setPreCommitListener(null);
             if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
+                throw new PreserveTargetException(e);
             } else if (e instanceof IOException) {
-                throw (IOException) e;
+                throw new PreserveTargetException(e);
             } else {
-                throw new RuntimeException(e);
+                throw new PreserveTargetException(new RuntimeException(e));
             }
+
         }
     }
 

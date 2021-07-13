@@ -381,6 +381,13 @@ public class VaultTestExtension {
         // TOTP
 
         execVault("vault secrets enable totp");
+
+        // PKI
+
+        execVault("vault secrets enable pki");
+        execVault("vault secrets enable -path=pki2 pki");
+        execVault("vault secrets tune -max-lease-ttl=8760h pki");
+        execVault("vault token create -policy=root -id=pkiroot");
     }
 
     private String readResourceContent(String path) throws IOException {

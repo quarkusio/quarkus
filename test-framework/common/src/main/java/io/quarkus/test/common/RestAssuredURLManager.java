@@ -197,7 +197,7 @@ public class RestAssuredURLManager {
         //   .setParam("http.connection.timeout", 30_000)
         //   .setParam("http.socket.timeout", 30_000)
 
-        Object httpClientConfig = httpClientConfigClass.newInstance();
+        Object httpClientConfig = httpClientConfigClass.getDeclaredConstructor().newInstance();
         httpClientConfig = setParamMethod.invoke(httpClientConfig, "http.conn-manager.timeout", d.toMillis());
         httpClientConfig = setParamMethod.invoke(httpClientConfig, "http.connection.timeout", (int) d.toMillis());
         httpClientConfig = setParamMethod.invoke(httpClientConfig, "http.socket.timeout", (int) d.toMillis());

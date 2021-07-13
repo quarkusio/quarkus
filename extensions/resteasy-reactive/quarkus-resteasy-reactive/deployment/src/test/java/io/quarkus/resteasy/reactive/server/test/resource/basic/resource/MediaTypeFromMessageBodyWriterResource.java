@@ -20,7 +20,7 @@ public class MediaTypeFromMessageBodyWriterResource {
     @Path("{type}")
     public Object hello(@PathParam("type") final String type, @HeaderParam("Accept") final String accept)
             throws Exception {
-        return Class.forName(type).newInstance();
+        return Class.forName(type).getDeclaredConstructor().newInstance();
     }
 
     @GET

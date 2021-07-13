@@ -26,7 +26,7 @@ public class ClassLoadingInterruptTestCase {
                     .build();
             Class<?> c = cl.loadClass(InterruptClass.class.getName());
             Assertions.assertNotEquals(c, InterruptClass.class);
-            Runnable runnable = (Runnable) c.newInstance();
+            Runnable runnable = (Runnable) c.getDeclaredConstructor().newInstance();
             runnable.run();
         } finally {
             IoUtils.recursiveDelete(path);

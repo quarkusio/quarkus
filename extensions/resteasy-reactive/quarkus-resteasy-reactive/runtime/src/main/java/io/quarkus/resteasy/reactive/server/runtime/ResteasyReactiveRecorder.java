@@ -3,6 +3,7 @@ package io.quarkus.resteasy.reactive.server.runtime;
 import static io.quarkus.resteasy.reactive.server.runtime.NotFoundExceptionMapper.classMappers;
 
 import java.io.Closeable;
+import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -189,8 +190,9 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             @Override
             public EndpointInvoker get() {
                 try {
-                    return (EndpointInvoker) loadClass(baseName).newInstance();
-                } catch (IllegalAccessException | InstantiationException e) {
+                    return (EndpointInvoker) loadClass(baseName).getDeclaredConstructor().newInstance();
+                } catch (IllegalAccessException | InstantiationException | NoSuchMethodException
+                        | InvocationTargetException e) {
                     throw new RuntimeException("Unable to generate endpoint invoker", e);
                 }
 

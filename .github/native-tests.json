@@ -137,6 +137,12 @@
             "timeout": 20,
             "test-modules": "hibernate-validator",
             "os-name": "windows-latest"
+        },
+        {
+            "category": "DevTools Integration Tests",
+            "timeout": 70,
+            "test-modules": "devtools-registry-client",
+            "os-name": "ubuntu-latest"
         }
     ]
 }

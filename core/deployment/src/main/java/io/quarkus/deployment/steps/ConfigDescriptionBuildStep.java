@@ -48,49 +48,65 @@ public class ConfigDescriptionBuildStep {
         return ret;
     }
 
-    private void processConfig(ConfigPatternMap<Container> patterns, List<ConfigDescriptionBuildItem> ret,
+    private void processConfig(ConfigPatternMap<Container> patterns, List<ConfigDescriptionBuildItem> ret, Properties javadoc,
+            ConfigPhase configPhase) {
+        for (String childName : patterns.childNames()) {
+            ConfigPatternMap<Container> child = patterns.getChild(childName);
+            processConfigChild(childName, child, ret, javadoc, configPhase);
+        }
+    }
+
+    private void processConfigChild(String name, ConfigPatternMap<Container> patterns, List<ConfigDescriptionBuildItem> ret,
             Properties javadoc, ConfigPhase configPhase) {
 
-        patterns.forEach(new Consumer<Container>() {
-            @Override
-            public void accept(Container node) {
-                Field field = node.findField();
-                ConfigItem configItem = field.getAnnotation(ConfigItem.class);
-                final ConfigProperty configProperty = field.getAnnotation(ConfigProperty.class);
-                String defaultDefault;
-                final Class<?> valueClass = field.getType();
-
-                EffectiveConfigTypeAndValues effectiveConfigTypeAndValues = getTypeName(field);
-
-                if (valueClass == boolean.class) {
-                    defaultDefault = "false";
-                } else if (valueClass.isPrimitive() && valueClass != char.class) {
-                    defaultDefault = "0";
-                } else {
-                    defaultDefault = null;
-                }
-                String defVal = defaultDefault;
-                if (configItem != null) {
-                    final String itemDefVal = configItem.defaultValue();
-                    if (!itemDefVal.equals(ConfigItem.NO_DEFAULT)) {
-                        defVal = itemDefVal;
-                    }
-                } else if (configProperty != null) {
-                    final String propDefVal = configProperty.defaultValue();
-                    if (!propDefVal.equals(ConfigProperty.UNCONFIGURED_VALUE)) {
-                        defVal = propDefVal;
-                    }
-                }
-                String javadocKey = field.getDeclaringClass().getName().replace('$', '.') + '.' + field.getName();
-                ret.add(new ConfigDescriptionBuildItem("quarkus." + node.getPropertyName(),
-                        node.findEnclosingClass().getConfigurationClass(),
-                        defVal,
-                        javadoc.getProperty(javadocKey),
-                        effectiveConfigTypeAndValues.getTypeName(),
-                        effectiveConfigTypeAndValues.getAllowedValues(),
-                        configPhase));
+        Iterable<String> childNames = patterns.childNames();
+        if (childNames.iterator().hasNext()) {
+            for (String childName : childNames) {
+                ConfigPatternMap<Container> child = patterns.getChild(childName);
+                processConfigChild(name + "." + childName, child, ret, javadoc, configPhase);
             }
-        });
+        } else {
+            patterns.forEach(new Consumer<Container>() {
+                @Override
+                public void accept(Container node) {
+                    Field field = node.findField();
+                    ConfigItem configItem = field.getAnnotation(ConfigItem.class);
+                    final ConfigProperty configProperty = field.getAnnotation(ConfigProperty.class);
+                    String defaultDefault;
+                    final Class<?> valueClass = field.getType();
+
+                    EffectiveConfigTypeAndValues effectiveConfigTypeAndValues = getTypeName(field);
+
+                    if (valueClass == boolean.class) {
+                        defaultDefault = "false";
+                    } else if (valueClass.isPrimitive() && valueClass != char.class) {
+                        defaultDefault = "0";
+                    } else {
+                        defaultDefault = null;
+                    }
+                    String defVal = defaultDefault;
+                    if (configItem != null) {
+                        final String itemDefVal = configItem.defaultValue();
+                        if (!itemDefVal.equals(ConfigItem.NO_DEFAULT)) {
+                            defVal = itemDefVal;
+                        }
+                    } else if (configProperty != null) {
+                        final String propDefVal = configProperty.defaultValue();
+                        if (!propDefVal.equals(ConfigProperty.UNCONFIGURED_VALUE)) {
+                            defVal = propDefVal;
+                        }
+                    }
+                    String javadocKey = field.getDeclaringClass().getName().replace('$', '.') + '.' + field.getName();
+                    ret.add(new ConfigDescriptionBuildItem(name,
+                            node.findEnclosingClass().getConfigurationClass(),
+                            defVal,
+                            javadoc.getProperty(javadocKey),
+                            effectiveConfigTypeAndValues.getTypeName(),
+                            effectiveConfigTypeAndValues.getAllowedValues(),
+                            configPhase));
+                }
+            });
+        }
     }
 
     private EffectiveConfigTypeAndValues getTypeName(Field field) {

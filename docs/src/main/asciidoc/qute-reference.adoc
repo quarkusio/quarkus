@@ -1029,6 +1029,26 @@ engineBuilder.addParserHook(new ParserHook() {
 ----
 <1> Escape all occurences of `${`.
 
+==== Strict Rendering
+
+The strict rendering enables the developers to catch insidious errors caused by typos and invalid expressions.
+If enabled then any expression that cannot be resolved, i.e. is evaluated to an instance of `io.quarkus.qute.Results.NotFound`, will always result in a `TemplateException` and the rendering is aborted.
+A `NotFound` value is considered an error because it basically means that no value resolver was able to resolve the expression correctly.
+
+NOTE: `null` is a valid value though. It is considered `falsy` as described in the <<if_section>> and does not produce any output.
+
+Strict rendering is enabled by default.
+However, you can disable this functionality via `io.quarkus.qute.EngineBuilder.strictRendering(boolean)`.
+
+TIP: In Quarkus, a dedicated config property can be used instead: `quarkus.qute.strict-rendering`.
+
+If you really need to use an expression which can potentially lead to a "not found" error, you can use _default values_ and _safe expressions_ in order to suppress the error.
+A default value is used if the previous part of an expression cannot be resolved or resolves to `null`. 
+You can use the elvis operator to output the default value: `{foo.bar ?: 'baz'}`, which is effectively the same as the following virtual method: `{foo.bar.or('baz')}`.
+A safe expression ends with the `??` suffix and results in `null` if the expression cannot be resolved.
+It can be very useful e.g. in `{#if}` sections: `{#if valueNotFound??}Only rendered if valueNotFound is truthy!{/if}`.
+In fact, `??` is just a shorthand notation for `.or(null)`, i.e. `{#if valueNotFound??}` becomes `{#if valueNotFound.or(null)}`.
+
 [[quarkus_integration]]
 == Quarkus Integration
 

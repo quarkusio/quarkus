@@ -59,7 +59,7 @@ public class WhenSectionTest {
         try {
             fail(template.data("state", null).render());
         } catch (TemplateException expected) {
-            assertEquals("Property \"ON\" not found in expression {ON} in template <<synthetic>> on line 0",
+            assertEquals("Entry \"ON\" not found in the data map in expression {ON} in template <<synthetic>> on line 0",
                     expected.getMessage());
         }
     }
@@ -75,7 +75,7 @@ public class WhenSectionTest {
         try {
             fail(template.data("state", null).render());
         } catch (TemplateException expected) {
-            assertEquals("Property \"ON\" not found in expression {ON} in template <<synthetic>> on line 0",
+            assertEquals("Entry \"ON\" not found in the data map in expression {ON} in template <<synthetic>> on line 0",
                     expected.getMessage());
         }
     }
@@ -129,7 +129,8 @@ public class WhenSectionTest {
         try {
             fail(template.render());
         } catch (TemplateException expected) {
-            assertEquals("Property \"testMe\" not found in expression {testMe} in template 1 on line 1", expected.getMessage());
+            assertEquals("Entry \"testMe\" not found in the data map in expression {testMe} in template 1 on line 1",
+                    expected.getMessage());
         }
     }
 

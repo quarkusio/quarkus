@@ -157,11 +157,16 @@ public final class Results {
         public String asMessage() {
             String name = getName().orElse(null);
             if (name != null) {
+                Object base = getBase().orElse(null);
+                List<Expression> params = getParams();
+                boolean isDataMap = (base instanceof Map) && ((Map<?, ?>) base).containsKey(TemplateInstanceBase.DATA_MAP_KEY);
+                // Entry "foo" not found in the data map
                 // Property "foo" not found on base object "org.acme.Bar"
                 // Method "getDiscount(value)" not found on base object "org.acme.Item"
-                List<Expression> params = getParams();
                 StringBuilder builder = new StringBuilder();
-                if (params.isEmpty()) {
+                if (isDataMap) {
+                    builder.append("Entry ");
+                } else if (params.isEmpty()) {
                     builder.append("Property ");
                 } else {
                     builder.append("Method ");
@@ -173,10 +178,9 @@ public final class Results {
                     builder.append(")");
                 }
                 builder.append("\" not found");
-                Object base = getBase().orElse(null);
-                if (!(base instanceof Map)
-                        // Just ignore the data map
-                        || !((Map<?, ?>) base).containsKey(TemplateInstanceBase.DATA_MAP_KEY)) {
+                if (isDataMap) {
+                    builder.append(" in the data map");
+                } else {
                     builder.append(" on the base object \"").append(base == null ? "null" : base.getClass().getName())
                             .append("\"");
                 }

@@ -76,7 +76,7 @@ public final class ValueResolvers {
     }
 
     /**
-     * Returns the default value if the base object is null or {@link Result#NOT_FOUND} and the base object otherwise.
+     * Returns the default value if the base object is null or not found and the base object otherwise.
      * 
      * {@code foo.or(bar)}, {@code foo or true}, {@code name ?: 'elvis'}
      */
@@ -103,7 +103,7 @@ public final class ValueResolvers {
     }
 
     /**
-     * Return an empty list if the base object is null or {@link Result#NOT_FOUND}.
+     * Return an empty list if the base object is null or not found.
      */
     public static ValueResolver orEmpty() {
         CompletionStage<Object> empty = CompletedStage.of(Collections.emptyList());
@@ -124,7 +124,7 @@ public final class ValueResolvers {
     }
 
     /**
-     * Returns {@link Result#NOT_FOUND} if the base object is falsy and the base object otherwise.
+     * Returns {@link Results#NotFound} if the base object is falsy and the base object otherwise.
      * <p>
      * Can be used together with {@link #orResolver()} to form a ternary operator.
      * 

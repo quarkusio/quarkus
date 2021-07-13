@@ -144,7 +144,7 @@ public class SimpleTest {
 
     @Test
     public void testNotFound() {
-        assertEquals("Property \"foo\" not found in foo.bar Collection size: 0",
+        assertEquals("Entry \"foo\" not found in the data map in foo.bar Collection size: 0",
                 Engine.builder().strictRendering(false).addDefaultValueResolvers()
                         .addResultMapper(new ResultMapper() {
 

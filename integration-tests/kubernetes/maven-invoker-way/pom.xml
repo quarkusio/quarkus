@@ -119,7 +119,7 @@
                     <cloneClean>true</cloneClean>
                     <postBuildHookScript>verify</postBuildHookScript>
                     <addTestClassPath>true</addTestClassPath>
-                    <skipInvocation>${skipTests}</skipInvocation>
+                    <skipInvocation>true</skipInvocation>
                     <streamLogs>true</streamLogs>
                     <invokerPropertiesFile>invoker.properties</invokerPropertiesFile>
                 </configuration>
@@ -170,7 +170,9 @@
                     <configuration>
                       <pomIncludes>
                         <pomInclude>kubernetes-*/pom.xml</pomInclude>
+                        <pomInclude>minikube-*/pom.xml</pomInclude>
                       </pomIncludes>
+                      <skipInvocation>${skipTests}</skipInvocation>
                     </configuration>
                   </plugin>
                 </plugins>
@@ -186,6 +188,7 @@
                       <pomIncludes>
                         <pomInclude>openshift-*/pom.xml</pomInclude>
                       </pomIncludes>
+                      <skipInvocation>${skipTests}</skipInvocation>
                     </configuration>
                   </plugin>
                 </plugins>
@@ -201,6 +204,7 @@
                       <pomIncludes>
                         <pomInclude>knative-*/pom.xml</pomInclude>
                       </pomIncludes>
+                      <skipInvocation>${skipTests}</skipInvocation>
                     </configuration>
                   </plugin>
                 </plugins>

@@ -24,6 +24,8 @@ import io.quarkus.vault.runtime.VaultCredentialsProvider;
 import io.quarkus.vault.runtime.VaultDbManager;
 import io.quarkus.vault.runtime.VaultKubernetesAuthManager;
 import io.quarkus.vault.runtime.VaultKvManager;
+import io.quarkus.vault.runtime.VaultPKIManager;
+import io.quarkus.vault.runtime.VaultPKIManagerFactory;
 import io.quarkus.vault.runtime.VaultRecorder;
 import io.quarkus.vault.runtime.VaultSystemBackendManager;
 import io.quarkus.vault.runtime.VaultTOTPManager;
@@ -38,6 +40,7 @@ import io.quarkus.vault.runtime.client.dto.VaultModel;
 import io.quarkus.vault.runtime.client.secretengine.VaultInternalDatabaseSecretEngine;
 import io.quarkus.vault.runtime.client.secretengine.VaultInternalKvV1SecretEngine;
 import io.quarkus.vault.runtime.client.secretengine.VaultInternalKvV2SecretEngine;
+import io.quarkus.vault.runtime.client.secretengine.VaultInternalPKISecretEngine;
 import io.quarkus.vault.runtime.client.secretengine.VaultInternalTOPTSecretEngine;
 import io.quarkus.vault.runtime.client.secretengine.VaultInternalTransitSecretEngine;
 import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
@@ -87,6 +90,8 @@ public class VaultProcessor {
                 .addBeanClass(VaultDbManager.class)
                 .addBeanClass(VertxVaultClient.class)
                 .addBeanClass(VaultConfigHolder.class)
+                .addBeanClass(VaultPKIManager.class)
+                .addBeanClass(VaultPKIManagerFactory.class)
                 .addBeanClass(VaultInternalKvV1SecretEngine.class)
                 .addBeanClass(VaultInternalKvV2SecretEngine.class)
                 .addBeanClass(VaultInternalTransitSecretEngine.class)
@@ -97,6 +102,7 @@ public class VaultProcessor {
                 .addBeanClass(VaultInternalTokenAuthMethod.class)
                 .addBeanClass(VaultInternalUserpassAuthMethod.class)
                 .addBeanClass(VaultInternalDatabaseSecretEngine.class)
+                .addBeanClass(VaultInternalPKISecretEngine.class)
                 .build();
     }
 

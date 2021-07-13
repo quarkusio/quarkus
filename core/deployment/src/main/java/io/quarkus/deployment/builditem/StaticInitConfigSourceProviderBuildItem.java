@@ -3,13 +3,12 @@ package io.quarkus.deployment.builditem;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * @deprecated please use {@link StaticInitConfigSourceProviderBuildItem} instead.
+ * Provides a way to register a ConfigSourceProvider in STATIC INIT.
  */
-@Deprecated
-public final class AdditionalStaticInitConfigSourceProviderBuildItem extends MultiBuildItem {
+public final class StaticInitConfigSourceProviderBuildItem extends MultiBuildItem {
     private final String providerClassName;
 
-    public AdditionalStaticInitConfigSourceProviderBuildItem(String providerClassName) {
+    public StaticInitConfigSourceProviderBuildItem(String providerClassName) {
         this.providerClassName = providerClassName;
     }
 

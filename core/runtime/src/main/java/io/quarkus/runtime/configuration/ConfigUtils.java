@@ -187,6 +187,10 @@ public final class ConfigUtils {
         }
     }
 
+    public static void addSourceFactoryProvider(SmallRyeConfigBuilder builder, ConfigSourceFactoryProvider provider) {
+        builder.withSources(provider.getConfigSourceFactory(Thread.currentThread().getContextClassLoader()));
+    }
+
     /**
      * Checks if a property is present in the current Configuration.
      *

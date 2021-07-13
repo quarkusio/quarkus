@@ -115,6 +115,55 @@ in xref:config-reference.adoc#system-properties[System Properties],
 xref:config-reference.adoc#environment-variables[Environment Variables from System] or
 xref:config-reference.adoc#env-file[Environment Variables from .env file] in this order.
 
+=== ConfigSource Init
+
+When a Quarkus application starts, a `ConfigSource` can be initialized twice. One time for _STATIC INIT_ and a second
+time for _RUNTIME INIT_:
+
+==== STATIC INIT
+
+Quarkus starts some of its services during static initialization, and `Config` is usually one of the first things that
+is created. In certain situations it may not be possible to add a custom `ConfigSource`. For instance, if the
+`ConfigSource` requires other services, like a database access, it will not be available at this stage, and cause a
+chicken-egg problem. For this reason, any custom `ConfigSource` requires the annotation
+`@io.quarkus.runtime.configuration.StaticInitSafe` to mark the source as safe to be used at this stage.
+
+===== Example
+
+Consider:
+
+.org.acme.config.InMemoryConfigSource
+[source,java]
+----
+package org.acme.config;
+
+import org.eclipse.microprofile.config.spi.ConfigSource;
+import io.quarkus.runtime.configuration.StaticInitSafe;
+
+@StaticInitSafe
+public class InMemoryConfigSource implements ConfigSource {
+
+}
+----
+
+And registration in:
+
+.META-INF/services/org.eclipse.microprofile.config.spi.ConfigSource
+[source,properties]
+----
+org.acme.config.InMemoryConfigSource
+----
+
+The `InMemoryConfigSource` will be available during _STATIC INIT_.
+
+IMPORTANT: A custom `ConfigSource` is not automatically added during Quarkus _STATIC INIT_. It requires to be marked with
+the `@io.quarkus.runtime.configuration.StaticInitSafe` annotation.
+
+==== RUNTIME INIT
+
+The _RUNTIME INIT_ stage happens after _STATIC INIT_. In this stage a `ConfigSource` can be initialized again. There
+are no restrictions at this stage, and a custom source is added to the `Config` instance as expected.
+
 [[config-source-factory]]
 == `ConfigSourceFactory`
 

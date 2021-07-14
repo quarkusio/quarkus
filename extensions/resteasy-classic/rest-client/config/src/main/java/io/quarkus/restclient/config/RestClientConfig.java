@@ -51,7 +51,7 @@ public class RestClientConfig {
 
     /**
      * The CDI scope to use for injection. This property can contain either a fully qualified class name of a CDI scope
-     * annotation (such as "javax.enterprise.context.ApplicationScoped") or its' simple name (such as
+     * annotation (such as "javax.enterprise.context.ApplicationScoped") or its simple name (such as
      * "ApplicationScoped").
      */
     @ConfigItem
@@ -153,6 +153,8 @@ public class RestClientConfig {
 
     /**
      * The maximum number of redirection a request can follow.
+     *
+     * This property is applicable to reactive REST clients only.
      */
     @ConfigItem
     public Optional<Integer> maxRedirects;

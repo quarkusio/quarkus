@@ -45,11 +45,4 @@ public class RestClientsConfig {
     @ConfigItem
     public Optional<String> multipartPostEncoderMode;
 
-    public Optional<Boolean> getDisableSmartProduces() {
-        return disableSmartProduces;
-    }
-
-    public Optional<String> getMultipartPostEncoderMode() {
-        return multipartPostEncoderMode;
-    }
 }

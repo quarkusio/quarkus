@@ -13,32 +13,32 @@ public final class RestClientConfigUtils {
     private RestClientConfigUtils() {
     }
 
-    public static Optional<String> determineConfiguredScope(Config config, ClassInfo restClientInterface,
-            Optional<String> configKey) {
+    public static Optional<String> findConfiguredScope(Config config, ClassInfo restClientInterface,
+            Optional<String> configKeyOptional) {
         Optional<String> scopeConfig;
-        if (configKey.isPresent()) { // if configKey is defined in the @RestClient annotation
-            // quarkus style config; configKey
-            scopeConfig = config.getOptionalValue(String.format(QUARKUS_REST_SCOPE_FORMAT, configKey.get()),
-                    String.class);
-            if (scopeConfig.isEmpty()) { // microprofile style config; configKey
-                scopeConfig = config.getOptionalValue(String.format(MP_REST_SCOPE_FORMAT, configKey), String.class);
-            }
-        } else {
-            // quarkus style config; fully qualified class name
+
+        // quarkus style config; fully qualified class name
+        scopeConfig = config.getOptionalValue(
+                String.format(QUARKUS_REST_SCOPE_FORMAT, '"' + restClientInterface.name().toString() + '"'),
+                String.class);
+        if (scopeConfig.isEmpty()) { // microprofile style config; fully qualified class name
             scopeConfig = config.getOptionalValue(
-                    String.format(QUARKUS_REST_SCOPE_FORMAT, '"' + restClientInterface.name().toString() + '"'),
+                    String.format(MP_REST_SCOPE_FORMAT, restClientInterface.name().toString()),
                     String.class);
-            if (scopeConfig.isEmpty()) { // quarkus style config; short class name
-                scopeConfig = config.getOptionalValue(
-                        String.format(QUARKUS_REST_SCOPE_FORMAT, restClientInterface.simpleName()),
-                        String.class);
-            }
-            if (scopeConfig.isEmpty()) { // microprofile style config; fully qualified class name
-                scopeConfig = config.getOptionalValue(
-                        String.format(MP_REST_SCOPE_FORMAT, restClientInterface.name().toString()),
-                        String.class);
-            }
+        }
+        if (scopeConfig.isEmpty() && configKeyOptional.isPresent()) { // quarkus style config; configKey
+            scopeConfig = config.getOptionalValue(String.format(QUARKUS_REST_SCOPE_FORMAT, configKeyOptional.get()),
+                    String.class);
+        }
+        if (scopeConfig.isEmpty() && configKeyOptional.isPresent()) { // microprofile style config; configKey
+            scopeConfig = config.getOptionalValue(String.format(MP_REST_SCOPE_FORMAT, configKeyOptional.get()), String.class);
+        }
+        if (scopeConfig.isEmpty()) { // quarkus style config; short class name
+            scopeConfig = config.getOptionalValue(
+                    String.format(QUARKUS_REST_SCOPE_FORMAT, restClientInterface.simpleName()),
+                    String.class);
         }
         return scopeConfig;
     }
+
 }

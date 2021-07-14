@@ -52,6 +52,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.deployment.Capabilities;
@@ -74,6 +75,8 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.restclient.NoopHostnameVerifier;
+import io.quarkus.restclient.config.RestClientConfigUtils;
+import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.runtime.PathFeatureHandler;
 import io.quarkus.restclient.runtime.PathTemplateInjectionFilter;
 import io.quarkus.restclient.runtime.RestClientBase;
@@ -163,6 +166,11 @@ class RestClientProcessor {
     }
 
     @BuildStep
+    UnremovableBeanBuildItem makeConfigUnremovable() {
+        return UnremovableBeanBuildItem.beanTypes(RestClientsConfig.class);
+    }
+
+    @BuildStep
     void processInterfaces(
             CombinedIndexBuildItem combinedIndexBuildItem,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
@@ -230,8 +238,8 @@ class RestClientProcessor {
             // The spec is not clear whether we should add superinterfaces too - let's keep aligned with SmallRye for now
             configurator.addType(restClientName);
             configurator.addQualifier(REST_CLIENT);
-            final String configPrefix = computeConfigPrefix(restClientName.toString(), entry.getValue());
-            final ScopeInfo scope = computeDefaultScope(capabilities, config, entry, configPrefix);
+            final Optional<String> configKey = getConfigKey(entry.getValue());
+            final ScopeInfo scope = computeDefaultScope(capabilities, config, entry, configKey);
             final List<Class<?>> annotationProviders = checkAnnotationProviders(entry.getValue(),
                     restClientAnnotationProviders);
             configurator.scope(scope);
@@ -239,8 +247,8 @@ class RestClientProcessor {
                 // return new RestClientBase(proxyType, baseUri).create();
                 ResultHandle interfaceHandle = m.loadClass(restClientName.toString());
                 ResultHandle baseUriHandle = m.load(getAnnotationParameter(entry.getValue(), "baseUri"));
-                ResultHandle configPrefixHandle = m.load(configPrefix);
-                ResultHandle annotationProvidersHandle = null;
+                ResultHandle configKeyHandle = configKey.isPresent() ? m.load(configKey.get()) : m.loadNull();
+                ResultHandle annotationProvidersHandle;
                 if (!annotationProviders.isEmpty()) {
                     annotationProvidersHandle = m.newArray(Class.class, annotationProviders.size());
                     for (int i = 0; i < annotationProviders.size(); i++) {
@@ -253,7 +261,7 @@ class RestClientProcessor {
                         MethodDescriptor.ofConstructor(RestClientBase.class, Class.class, String.class,
                                 String.class,
                                 Class[].class),
-                        interfaceHandle, baseUriHandle, configPrefixHandle, annotationProvidersHandle);
+                        interfaceHandle, baseUriHandle, configKeyHandle, annotationProvidersHandle);
                 ResultHandle ret = m.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), baseHandle);
                 m.returnValue(ret);
@@ -364,29 +372,28 @@ class RestClientProcessor {
         }
     }
 
-    private String computeConfigPrefix(String interfaceName, ClassInfo classInfo) {
-        String propertyPrefixFromAnnotation = getAnnotationParameter(classInfo, "configKey");
-
-        if (propertyPrefixFromAnnotation != null && !propertyPrefixFromAnnotation.isEmpty()) {
-            return propertyPrefixFromAnnotation;
+    private Optional<String> getConfigKey(ClassInfo classInfo) {
+        String configKey = getAnnotationParameter(classInfo, "configKey");
+        if (configKey.isEmpty()) {
+            return Optional.empty();
         }
-
-        return interfaceName;
+        return Optional.of(configKey);
     }
 
     private ScopeInfo computeDefaultScope(Capabilities capabilities, Config config, Map.Entry<DotName, ClassInfo> entry,
-            String configPrefix) {
+            Optional<String> configKey) {
         ScopeInfo scopeToUse = null;
-        final Optional<String> scopeConfig = config
-                .getOptionalValue(String.format(RestClientBase.REST_SCOPE_FORMAT, configPrefix), String.class);
+
+        ClassInfo classInfo = entry.getValue();
+        Optional<String> scopeConfig = RestClientConfigUtils.findConfiguredScope(config, classInfo, configKey);
 
         if (scopeConfig.isPresent()) {
             final DotName scope = DotName.createSimple(scopeConfig.get());
-            final BuiltinScope builtinScope = BuiltinScope.from(scope);
+            final BuiltinScope builtinScope = builtinScopeFromName(scope);
             if (builtinScope != null) { // override default @Dependent scope with user defined one.
                 scopeToUse = builtinScope.getInfo();
             } else if (capabilities.isPresent(Capability.SERVLET)) {
-                if (scope.equals(SESSION_SCOPED)) {
+                if (scope.equals(SESSION_SCOPED) || scope.toString().equalsIgnoreCase(SESSION_SCOPED.withoutPackagePrefix())) {
                     scopeToUse = new ScopeInfo(SESSION_SCOPED, true);
                 }
             }
@@ -398,7 +405,7 @@ class RestClientProcessor {
                 scopeToUse = BuiltinScope.DEPENDENT.getInfo();
             }
         } else {
-            final Set<DotName> annotations = entry.getValue().annotations().keySet();
+            final Set<DotName> annotations = classInfo.annotations().keySet();
             for (final DotName annotationName : annotations) {
                 final BuiltinScope builtinScope = BuiltinScope.from(annotationName);
                 if (builtinScope != null) {
@@ -512,5 +519,17 @@ class RestClientProcessor {
     private boolean isRestClientInterface(IndexView index, ClassInfo classInfo) {
         return Modifier.isInterface(classInfo.flags())
                 && index.getAllKnownImplementors(classInfo.name()).isEmpty();
+    }
+
+    private static BuiltinScope builtinScopeFromName(DotName scopeName) {
+        BuiltinScope scope = BuiltinScope.from(scopeName);
+        if (scope == null) {
+            for (BuiltinScope builtinScope : BuiltinScope.values()) {
+                if (builtinScope.getName().withoutPackagePrefix().equalsIgnoreCase(scopeName.toString())) {
+                    scope = builtinScope;
+                }
+            }
+        }
+        return scope;
     }
 }

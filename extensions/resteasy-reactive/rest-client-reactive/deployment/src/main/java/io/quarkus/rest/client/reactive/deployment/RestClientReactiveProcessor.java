@@ -453,8 +453,7 @@ class RestClientReactiveProcessor {
             RestClientReactiveConfig mpClientConfig) {
         ScopeInfo scopeToUse = null;
 
-        // quarkus style config; fully qualified class name
-        Optional<String> scopeConfig = RestClientConfigUtils.determineConfiguredScope(config, restClientInterface, configKey);
+        Optional<String> scopeConfig = RestClientConfigUtils.findConfiguredScope(config, restClientInterface, configKey);
 
         BuiltinScope globalDefaultScope = BuiltinScope.from(DotName.createSimple(mpClientConfig.scope));
         if (globalDefaultScope == null) {

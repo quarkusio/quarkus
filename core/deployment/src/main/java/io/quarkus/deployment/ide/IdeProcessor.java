@@ -67,6 +67,9 @@ public class IdeProcessor {
             if ((jbrIndex > -1) && command.endsWith("java")) {
                 String ideaHome = command.substring(0, jbrIndex);
                 return (ideaHome + "bin" + File.separator + "idea") + (IdeUtil.isWindows() ? ".exe" : ".sh");
+            } else if (IdeUtil.isWindows() && (command.endsWith("idea.exe") || command.endsWith("idea64.exe"))) {
+                // based on input from https://github.com/quarkusio/quarkus/issues/18676#issuecomment-879775007
+                return command;
             }
             return null;
         });
@@ -139,6 +142,15 @@ public class IdeProcessor {
                 result.addAll(ides);
             }
         });
+        if (result.isEmpty()) {
+            // hack to try and guess the IDE when using a multi-module project
+            Path parent = projectRoot.getParent();
+            IDE_MARKER_FILES.forEach((file, ides) -> {
+                if (Files.exists(parent.resolve(file))) {
+                    result.addAll(ides);
+                }
+            });
+        }
         return new IdeFileBuildItem(result);
     }
 

@@ -214,7 +214,10 @@ public class GradleRunner implements BuildSystemRunner {
         } else if (output.isAnsiEnabled()) {
             args.add("--console=rich");
         }
-        args.add("--project-dir=" + projectRoot.toAbsolutePath());
+        if (output.isCliTest()) {
+            // Make sure we stay where we should
+            args.add("--project-dir=" + projectRoot.toAbsolutePath());
+        }
 
         // add any other discovered properties
         args.addAll(flattenMappedProperties(propertiesOptions.properties));

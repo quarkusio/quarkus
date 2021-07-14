@@ -230,7 +230,8 @@ public class QuarkusDev extends QuarkusTask {
                 .buildDir(getBuildDir())
                 .outputDir(getBuildDir())
                 .debug(System.getProperty("debug"))
-                .debugHost(System.getProperty("debugHost", "localhost"))
+                .debugHost(System.getProperty("debugHost"))
+                .debugPort(System.getProperty("debugPort"))
                 .suspend(System.getProperty("suspend"));
         if (System.getProperty(IO_QUARKUS_DEVMODE_ARGS) == null) {
             builder.jvmArgs("-Dquarkus.test.basic-console=true")

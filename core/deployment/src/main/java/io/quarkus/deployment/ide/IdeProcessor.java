@@ -26,17 +26,15 @@ public class IdeProcessor {
 
     private static final Logger log = Logger.getLogger(IdeProcessor.class);
 
-    private static Map<String, List<Ide>> IDE_MARKER_FILES = new HashMap<>();
+    private final static Map<String, List<Ide>> IDE_MARKER_FILES = Map.of(
+            ".idea", Collections.singletonList(Ide.IDEA),
+            ".project", Arrays.asList(Ide.VSCODE, Ide.ECLIPSE),
+            "nbactions.xml", Collections.singletonList(Ide.NETBEANS),
+            "nb-configuration.xml", Collections.singletonList(Ide.NETBEANS));
     private static Map<Predicate<ProcessInfo>, Ide> IDE_PROCESSES = new HashMap<>();
-    private static Map<Ide, Function<ProcessInfo, String>> IDE_ARGUMENTS_EXEC_INDICATOR = new HashMap<>();
+    private final static Map<Ide, Function<ProcessInfo, String>> IDE_ARGUMENTS_EXEC_INDICATOR = new HashMap<>();
 
     static {
-        IDE_MARKER_FILES.put(".idea", Collections.singletonList(Ide.IDEA));
-        IDE_MARKER_FILES.put(".project", Arrays.asList(Ide.VSCODE, Ide.ECLIPSE));
-        IDE_MARKER_FILES.put("nbactions.xml", Collections.singletonList(Ide.NETBEANS));
-        IDE_MARKER_FILES.put("nb-configuration.xml", Collections.singletonList(Ide.NETBEANS));
-
-        IDE_MARKER_FILES = Collections.unmodifiableMap(IDE_MARKER_FILES);
 
         IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("idea") && processInfo.command.endsWith("java")),
                 Ide.IDEA);

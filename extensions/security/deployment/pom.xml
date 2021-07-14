@@ -44,6 +44,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-security-test-utils</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

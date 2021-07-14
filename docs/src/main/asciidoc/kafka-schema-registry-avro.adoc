@@ -11,7 +11,7 @@ This guide shows how your Quarkus application can use Apache Kafka, http://avro.
 records, and connect to a schema registry (such as the https://docs.confluent.io/platform/current/schema-registry/index.html[Confluent Schema Registry] or https://www.apicur.io/registry/[Apicurio Registry].
 
 If you are not familiar with Kafka and Kafka in Quarkus in particular, consider
-first going through the link:kafka.adoc[Using Apache Kafka with Reactive Messaging] guide.
+first going through the link:kafka[Using Apache Kafka with Reactive Messaging] guide.
 
 == Prerequisites
 
@@ -530,7 +530,7 @@ To run it, execute `mvn verify -Dnative`, or `mvn clean install -Dnative`
 
 === Manual setup
 
-If we couldn't use Dev Services and wanted to start a Kafka broker and Apicurio Registry instance manually, we would define a link:getting-started-testing.adoc#quarkus-test-resource[QuarkusTestResourceLifecycleManager].
+If we couldn't use Dev Services and wanted to start a Kafka broker and Apicurio Registry instance manually, we would define a link:getting-started-testing#quarkus-test-resource[QuarkusTestResourceLifecycleManager].
 
 [source,xml]
 ----

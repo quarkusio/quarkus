@@ -60,7 +60,7 @@ public class LateBoundBatchSpanProcessor implements SpanProcessor {
     public boolean isEndRequired() {
         if (delegate == null) {
             logDelegateNotFound();
-            return false;
+            return true;
         }
         return delegate.isEndRequired();
     }

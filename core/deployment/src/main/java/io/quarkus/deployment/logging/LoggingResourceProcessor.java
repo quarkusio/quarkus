@@ -26,7 +26,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -62,6 +62,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.console.ConsoleRuntimeConfig;
@@ -192,10 +193,14 @@ public final class LoggingResourceProcessor {
         return new LoggingSetupBuildItem();
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIfNot = IsNormal.class)
     @Produce(TestSetupBuildItem.class)
     @Produce(LogConsoleFormatBuildItem.class)
-    void setupStackTraceFormatter(ApplicationArchivesBuildItem item) {
+    void setupStackTraceFormatter(ApplicationArchivesBuildItem item, LogBuildTimeConfig logBuildTimeConfig,
+            LaunchModeBuildItem launchModeBuildItem) {
+        if (!logBuildTimeConfig.highlightAppCode && !logBuildTimeConfig.trimStackTraces) {
+            return;
+        }
         List<IndexView> indexList = new ArrayList<>();
         for (ApplicationArchive i : item.getAllApplicationArchives()) {
             if (Files.isDirectory(i.getArchiveLocation())) {
@@ -213,17 +218,27 @@ public final class LoggingResourceProcessor {
                 Throwable c = logRecord.getThrown();
                 while (c != null) {
                     StackTraceElement[] stackTrace = c.getStackTrace();
+                    int cutPoint = -1;
                     for (int i = 0; i < stackTrace.length; ++i) {
                         var elem = stackTrace[i];
                         if (index.getClassByName(DotName.createSimple(elem.getClassName())) != null) {
-                            stackTrace[i] = new StackTraceElement(elem.getClassLoaderName(), elem.getModuleName(),
-                                    elem.getModuleVersion(),
-                                    MessageFormat.UNDERLINE + MessageFormat.BOLD + elem.getClassName()
-                                            + MessageFormat.NO_UNDERLINE + MessageFormat.NO_BOLD,
-                                    elem.getMethodName(), elem.getFileName(), elem.getLineNumber());
+                            if (logBuildTimeConfig.highlightAppCode
+                                    && launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT) {
+                                stackTrace[i] = new StackTraceElement(elem.getClassLoaderName(), elem.getModuleName(),
+                                        elem.getModuleVersion(),
+                                        MessageFormat.UNDERLINE + MessageFormat.BOLD + elem.getClassName()
+                                                + MessageFormat.NO_UNDERLINE + MessageFormat.NO_BOLD,
+                                        elem.getMethodName(), elem.getFileName(), elem.getLineNumber());
+                            }
+                            cutPoint = i;
                         }
                     }
                     restore.put(c, c.getStackTrace());
+                    if (cutPoint != -1 && logBuildTimeConfig.trimStackTraces) {
+                        StackTraceElement[] cutDownStack = new StackTraceElement[cutPoint + 1];
+                        System.arraycopy(stackTrace, 0, cutDownStack, 0, cutDownStack.length);
+                        stackTrace = cutDownStack;
+                    }
                     c.setStackTrace(stackTrace);
                     c = c.getCause();
                 }

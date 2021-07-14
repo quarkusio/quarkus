@@ -33,4 +33,22 @@ public class LogBuildTimeConfig {
     @ConfigItem(name = "category")
     @ConfigDocSection
     public Map<String, CategoryBuildTimeConfig> categories;
+
+    /**
+     * If this is true then in development mode classes from the current application will be underlined
+     * in stack traces, to make it easier to differentiate between framework and application code.
+     *
+     * This only applies to the console log.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean highlightAppCode;
+
+    /**
+     * If this is true then in development and test mode stack traces will be trimmed to start at the point
+     * that application code starts executing, to reduce noise.
+     *
+     * This only applies to the console log.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean trimStackTraces;
 }

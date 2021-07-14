@@ -244,7 +244,8 @@ public final class BeanArchives {
 
     static boolean index(Indexer indexer, String className, ClassLoader classLoader) {
         boolean result = false;
-        if (Types.isPrimitiveClassName(className)) {
+        if (Types.isPrimitiveClassName(className) || className.startsWith("[")) {
+            // Ignore primitives and arrays
             return false;
         }
         try (InputStream stream = classLoader

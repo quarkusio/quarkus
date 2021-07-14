@@ -137,7 +137,9 @@ class InfinispanClientProcessor {
 
                         while (protoFiles.hasNext()) {
                             Path path = protoFiles.next();
-                            System.out.println("  " + path.toAbsolutePath());
+                            if (log.isDebugEnabled()) {
+                                log.debug("  " + path.toAbsolutePath());
+                            }
                             byte[] bytes = Files.readAllBytes(path);
                             // This uses the default file encoding - should we enforce UTF-8?
                             properties.put(InfinispanClientProducer.PROTOBUF_FILE_PREFIX + path.getFileName().toString(),

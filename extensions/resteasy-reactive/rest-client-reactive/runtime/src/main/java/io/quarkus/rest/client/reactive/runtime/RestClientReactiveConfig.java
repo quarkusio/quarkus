@@ -1,9 +1,16 @@
 package io.quarkus.rest.client.reactive.runtime;
 
+import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
+/**
+ * Legacy REST client reactive config.
+ *
+ * @deprecated use {@link RestClientsConfig} instead
+ */
+@Deprecated
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class RestClientReactiveConfig {
 

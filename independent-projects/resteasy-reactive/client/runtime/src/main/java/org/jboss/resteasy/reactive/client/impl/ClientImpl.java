@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECTION_POOL_SIZE;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECTION_TTL;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECT_TIMEOUT;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MAX_REDIRECTS;
 
@@ -57,12 +59,15 @@ import javax.ws.rs.client.Invocation.Builder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.UriBuilder;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.spi.ClientContext;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
 import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 
 public class ClientImpl implements Client {
+
+    private static final Logger log = Logger.getLogger(ClientImpl.class); // TODO: remove
 
     private static final int DEFAULT_CONNECT_TIMEOUT = 15000;
 
@@ -112,6 +117,17 @@ public class ClientImpl implements Client {
         Object maxRedirects = configuration.getProperty(MAX_REDIRECTS);
         if (maxRedirects != null) {
             options.setMaxRedirects((Integer) maxRedirects);
+        }
+
+        Object connectionTTL = configuration.getProperty(CONNECTION_TTL);
+        if (connectionTTL != null) {
+            options.setKeepAliveTimeout((int) connectionTTL);
+        }
+
+        Object connectionPoolSize = configuration.getProperty(CONNECTION_POOL_SIZE);
+        if (connectionPoolSize != null) {
+            log.infof("Setting connectionPoolSize to %d s", connectionPoolSize);
+            options.setMaxPoolSize((int) connectionPoolSize);
         }
         this.httpClient = this.vertx.createHttpClient(options);
         handlerChain = new HandlerChain(followRedirects);

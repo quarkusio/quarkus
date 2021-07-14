@@ -1,15 +1,25 @@
 package io.quarkus.vertx.core.deployment;
 
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.logging.Filter;
+import java.util.logging.LogRecord;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.inject.Singleton;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.logging.Logger;
+import org.jboss.logmanager.LogManager;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -35,9 +45,12 @@ import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.impl.BlockedThreadChecker;
 import io.vertx.core.spi.resolver.ResolverProvider;
 
 class VertxCoreProcessor {
+
+    private static final Logger log = Logger.getLogger(VertxCoreProcessor.class);
 
     @BuildStep
     NativeImageConfigBuildItem build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
@@ -93,6 +106,9 @@ class VertxCoreProcessor {
         // Event loops are only usable after the core vertx instance is configured
         eventLoops.produce(new EventLoopSupplierBuildItem(recorder.mainSupplier(), recorder.bossSupplier()));
 
+        if (launchMode.getLaunchMode().isDevOrTest()) {
+            handleBlockingWarningsInDevOrTestMode();
+        }
         return new CoreVertxBuildItem(vertx);
     }
 
@@ -121,5 +137,124 @@ class VertxCoreProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     ContextHandlerBuildItem createVertxContextHandlers(VertxCoreRecorder recorder) {
         return new ContextHandlerBuildItem(recorder.executionContextHandler());
+    }
+
+    private void handleBlockingWarningsInDevOrTestMode() {
+        try {
+            Filter debuggerFilter = createDebuggerFilter();
+            LogManager logManager = (LogManager) LogManager.getLogManager();
+            logManager.getLogger(BlockedThreadChecker.class.getName()).setFilter(new Filter() {
+
+                volatile StackTraceElement last;
+
+                @Override
+                public boolean isLoggable(LogRecord record) {
+                    if (debuggerFilter != null && !debuggerFilter.isLoggable(record)) {
+                        return false;
+                    }
+                    //even if there is no debugger attached we might not want to log it
+                    if (record.getThrown() == null) {
+                        //no huge exception, so I guess this is ok
+                        return true;
+                    }
+                    StackTraceElement element = record.getThrown().getStackTrace()[0];
+                    if (last != null) {
+                        //we don't want to just keep putting out the same warnings over and over
+                        //it pollutes the logs and makes a big mess
+                        if (element.equals(last)) {
+                            return false;
+                        }
+                    }
+                    last = element;
+                    return true;
+                }
+            });
+        } catch (Throwable t) {
+            log.debug("Failed to filter blocked thread checker", t);
+        }
+    }
+
+    /**
+     * Creates a filter that will filter out log messages if a debugger is attached, or null if
+     * one can't be created (e.g. the JVM is not in debug mode).
+     */
+    private Filter createDebuggerFilter() {
+
+        try {
+            //we don't want breakpoints to trigger the vert.x blocked thread warning
+            //no easy way to do this, so we do it the hard way
+            var runtime = ManagementFactory.getRuntimeMXBean();
+            if (runtime == null) {
+                return null;
+            }
+            int debugPort = -1;
+            InetAddress bindAddress = null;
+            boolean alwaysFilter = false;
+            var args = runtime.getInputArguments();
+            for (var arg : args) {
+                if (arg.startsWith("-Xrunjdwp") || arg.startsWith("-agentlib:jdwp")) {
+                    boolean client = true;
+                    if (!arg.contains("transport=dt_socket")) {
+                        //we can only handle socket transport
+                        return null;
+                    }
+                    Pattern server = Pattern.compile("server=(.)");
+                    Matcher m = server.matcher(arg);
+                    if (m.find()) {
+                        if (m.group(1).equals("y")) {
+                            client = false;
+                        }
+                    }
+                    if (client) {
+                        //for client mode we assume the debugger is always attached
+                        //this is how IDE's run tests etc, so the debugger is attached right from the start
+                        //in this mode we will never print the blocked thread warnings
+                        alwaysFilter = true;
+                        break;
+                    }
+                    Pattern port = Pattern.compile("address=(.*?):(\\d+)");
+                    m = port.matcher(arg);
+                    if (m.find()) {
+                        debugPort = Integer.parseInt(m.group(2));
+                        String host = m.group(1);
+                        if (host.equals("*")) {
+                            host.equals("localhost");
+                        }
+                        bindAddress = InetAddress.getByName(host);
+                    }
+                }
+            }
+            if (debugPort == -1 && !alwaysFilter) {
+                return null;
+            }
+
+            Filter filter;
+            LogManager logManager = (LogManager) LogManager.getLogManager();
+            if (alwaysFilter) {
+                filter = s -> false;
+            } else {
+                int port = debugPort;
+                InetAddress bind = bindAddress;
+                filter = new Filter() {
+                    @Override
+                    public boolean isLoggable(LogRecord record) {
+                        try (ServerSocket s = new ServerSocket(port, 1, bind)) {
+
+                        } catch (IOException e) {
+                            //if we fail to bind the JVM is still waiting for a debugger to attach
+                            //no debugger means log the warning
+                            return true;
+                        }
+                        //if we get here we know the JVM is no longer binding the port
+                        //which means a debugger has attached, and we disable the warning
+                        return false;
+                    }
+                };
+            }
+            return filter;
+        } catch (Throwable t) {
+            log.debug("Failed to filter blocked thread checker", t);
+            return null;
+        }
     }
 }

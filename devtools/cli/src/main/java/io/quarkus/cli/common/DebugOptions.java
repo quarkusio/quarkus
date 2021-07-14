@@ -26,12 +26,19 @@ public class DebugOptions {
     public DebugMode mode = DebugMode.listen;
 
     @CommandLine.Option(order = 10, names = {
-            "--debug-port" }, description = "Debug port.", defaultValue = "" + DEFAULT_PORT)
+            "--debug-port" }, description = "Debug port (must be a number > 0).", defaultValue = "" + DEFAULT_PORT)
     public int port = DEFAULT_PORT;
 
     @CommandLine.Option(order = 11, names = {
             "--suspend" }, description = "In listen mode, suspend until a debugger is attached. Disabled by default.", negatable = true)
     public boolean suspend = false;
+
+    public String getJvmDebugParameter() {
+        return "-agentlib:jdwp=transport=dt_socket"
+                + ",address=" + host + ":" + port
+                + ",server=" + (mode == DebugMode.listen ? "y" : "n")
+                + ",suspend=" + (suspend ? "y" : "n");
+    }
 
     public void addDebugArguments(Collection<String> args, Collection<String> jvmArgs) {
         if (debug) {
@@ -41,11 +48,11 @@ public class DebugOptions {
             if (!LOCALHOST.equals(host)) {
                 args.add("-DdebugHost=" + host);
             }
-            if (mode != DebugMode.listen) {
+            if (mode == DebugMode.connect) {
                 args.add("-Ddebug=client");
-                // TODO: can't set port to listen on in this case.
-            } else if (port != DEFAULT_PORT) {
-                args.add("-Ddebug=" + port);
+            }
+            if (port != DEFAULT_PORT) {
+                args.add("-DdebugPort=" + port);
             }
         } else {
             args.add("-Ddebug=false");

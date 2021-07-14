@@ -219,8 +219,8 @@ public class CliProjectMavenTest {
                 "quarkus command should specify 'MAVEN'\n" + result);
 
         Assertions.assertTrue(
-                result.stdout.contains("-DdebugHost=0.0.0.0 -Ddebug=client"),
-                "mvn command should specify -DdebugHost=0.0.0.0 -Ddebug=client\n" + result);
+                result.stdout.contains("-DdebugHost=0.0.0.0 -Ddebug=client -DdebugPort=8008"),
+                "mvn command should specify -DdebugHost=0.0.0.0 -Ddebug=client -DdebugPort=8008\n" + result);
 
         Assertions.assertFalse(result.stdout.contains("-Dsuspend"),
                 "mvn command should not specify '-Dsuspend'\n" + result);

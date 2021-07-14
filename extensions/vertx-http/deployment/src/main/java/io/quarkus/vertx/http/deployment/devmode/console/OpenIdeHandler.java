@@ -2,7 +2,6 @@ package io.quarkus.vertx.http.deployment.devmode.console;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -20,11 +19,7 @@ import io.vertx.ext.web.RoutingContext;
 public class OpenIdeHandler extends DevConsolePostHandler {
 
     private static final Logger log = Logger.getLogger(OpenIdeHandler.class);
-    private static final Map<String, String> LANG_TO_EXT = new HashMap<>();
-    static {
-        LANG_TO_EXT.put("java", "java");
-        LANG_TO_EXT.put("kotlin", "kt");
-    }
+    private static final Map<String, String> LANG_TO_EXT = Map.of("java", "java", "kotlin", "kt");
 
     private final Ide ide;
 

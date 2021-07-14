@@ -14,7 +14,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
@@ -419,9 +419,14 @@ public class LoggingSetupRecorder {
             handler = new Handler() {
                 @Override
                 public void publish(LogRecord record) {
-                    BiConsumer<LogRecord, Consumer<LogRecord>> formatter = CurrentAppExceptionHighlighter.THROWABLE_FORMATTER;
-                    if (formatter != null) {
-                        formatter.accept(record, delegate::publish);
+                    BiFunction<Throwable, CurrentAppExceptionHighlighter.Target, AutoCloseable> formatter = CurrentAppExceptionHighlighter.THROWABLE_FORMATTER;
+                    if (formatter != null && record.getThrown() != null) {
+                        try (AutoCloseable ignore = formatter.apply(record.getThrown(),
+                                CurrentAppExceptionHighlighter.Target.ANSI)) {
+                            delegate.publish(record);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
                     } else {
                         delegate.publish(record);
                     }

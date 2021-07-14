@@ -5,6 +5,9 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
+
+import io.quarkus.dev.console.CurrentAppExceptionHighlighter;
 
 /**
  *
@@ -41,39 +44,53 @@ public class ExceptionUtil {
         if (exception == null) {
             return null;
         }
-        // create an exception chain with the root cause being at element 0
-        final List<Throwable> exceptionChain = new ArrayList<>();
-        Throwable curr = exception;
-        while (curr != null) {
-            exceptionChain.add(0, curr);
-            curr = curr.getCause();
-        }
-        Throwable prevStrippedCause = null;
-        Throwable modifiedRoot = null;
-        // We reverse the stacktrace as follows:
-        // - Iterate the exception chain that we created, which has the root cause at element 0
-        // - for each exception in this chain
-        //      - create a new "copy" C1 of that exception
-        //      - create a new copy C2 of the "next" exception in the chain with its cause stripped off
-        //      - C1.initCause(C2)
-        //      - keep track of the copy C1 of the first element in the exception chain. That C1, lets call
-        //        it RC1, will be the modified representation of the root cause on which if printStackTrace()
-        //        is called, then it will end up printing stacktrace in reverse order (because of the way we
-        //        fiddled around with its causes and other details)
-        // - Finally, replace the occurrences of "Caused by:" string the in the stacktrace to "Resulted in:"
-        //   to better phrase the reverse stacktrace representation.
-        for (int i = 0; i < exceptionChain.size(); i++) {
-            final Throwable x = prevStrippedCause == null ? stripCause(exceptionChain.get(0)) : prevStrippedCause;
-            if (i != exceptionChain.size() - 1) {
-                final Throwable strippedCause = stripCause(exceptionChain.get(i + 1));
-                x.initCause(strippedCause);
-                prevStrippedCause = strippedCause;
+        AutoCloseable closeable = null;
+        try {
+            BiFunction<Throwable, CurrentAppExceptionHighlighter.Target, AutoCloseable> formatter = CurrentAppExceptionHighlighter.THROWABLE_FORMATTER;
+            if (formatter != null) {
+                formatter.apply(exception, CurrentAppExceptionHighlighter.Target.HTML);
             }
-            if (i == 0) {
-                modifiedRoot = x;
+            // create an exception chain with the root cause being at element 0
+            final List<Throwable> exceptionChain = new ArrayList<>();
+            Throwable curr = exception;
+            while (curr != null) {
+                exceptionChain.add(0, curr);
+                curr = curr.getCause();
+            }
+            Throwable prevStrippedCause = null;
+            Throwable modifiedRoot = null;
+            // We reverse the stacktrace as follows:
+            // - Iterate the exception chain that we created, which has the root cause at element 0
+            // - for each exception in this chain
+            //      - create a new "copy" C1 of that exception
+            //      - create a new copy C2 of the "next" exception in the chain with its cause stripped off
+            //      - C1.initCause(C2)
+            //      - keep track of the copy C1 of the first element in the exception chain. That C1, lets call
+            //        it RC1, will be the modified representation of the root cause on which if printStackTrace()
+            //        is called, then it will end up printing stacktrace in reverse order (because of the way we
+            //        fiddled around with its causes and other details)
+            // - Finally, replace the occurrences of "Caused by:" string the in the stacktrace to "Resulted in:"
+            //   to better phrase the reverse stacktrace representation.
+            for (int i = 0; i < exceptionChain.size(); i++) {
+                final Throwable x = prevStrippedCause == null ? stripCause(exceptionChain.get(0)) : prevStrippedCause;
+                if (i != exceptionChain.size() - 1) {
+                    final Throwable strippedCause = stripCause(exceptionChain.get(i + 1));
+                    x.initCause(strippedCause);
+                    prevStrippedCause = strippedCause;
+                }
+                if (i == 0) {
+                    modifiedRoot = x;
+                }
+            }
+            return generateStackTrace(modifiedRoot).replace("Caused by:", "Resulted in:");
+        } finally {
+            if (closeable != null) {
+                try {
+                    closeable.close();
+                } catch (Exception ignore) {
+                }
             }
         }
-        return generateStackTrace(modifiedRoot).replace("Caused by:", "Resulted in:");
     }
 
     public static Throwable getRootCause(Throwable exception) {

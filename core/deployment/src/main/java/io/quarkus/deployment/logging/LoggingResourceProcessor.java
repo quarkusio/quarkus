@@ -7,13 +7,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Handler;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.CompositeIndex;
@@ -26,7 +24,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -63,6 +61,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.console.ConsoleRuntimeConfig;
@@ -206,10 +205,16 @@ public final class LoggingResourceProcessor {
         return new LoggingSetupBuildItem();
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIfNot = IsNormal.class)
     @Produce(TestSetupBuildItem.class)
     @Produce(LogConsoleFormatBuildItem.class)
-    void setupStackTraceFormatter(ApplicationArchivesBuildItem item) {
+    void setupStackTraceFormatter(ApplicationArchivesBuildItem item, LogBuildTimeConfig logBuildTimeConfig,
+            LaunchModeBuildItem launchModeBuildItem) {
+        if (!logBuildTimeConfig.highlightAppCode && !logBuildTimeConfig.trimStackTraces) {
+            return;
+        }
+        boolean devMode = launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT
+                || launchModeBuildItem.isAuxiliaryApplication();
         List<IndexView> indexList = new ArrayList<>();
         for (ApplicationArchive i : item.getAllApplicationArchives()) {
             if (Files.isDirectory(i.getArchiveLocation())) {
@@ -217,45 +222,65 @@ public final class LoggingResourceProcessor {
             }
         }
         CompositeIndex index = CompositeIndex.create(indexList);
+        if (CurrentAppExceptionHighlighter.THROWABLE_FORMATTER == null) {
+            //only add the close task the first time
+            ((QuarkusClassLoader) getClass().getClassLoader()).addCloseTask(new Runnable() {
+                @Override
+                public void run() {
+                    CurrentAppExceptionHighlighter.THROWABLE_FORMATTER = null;
+                }
+            });
+        }
         //awesome/horrible hack
         //we know from the index which classes are part of the current application
         //we add ANSI codes for bold and underline to their names to display them more prominently
-        CurrentAppExceptionHighlighter.THROWABLE_FORMATTER = new BiConsumer<LogRecord, Consumer<LogRecord>>() {
+        CurrentAppExceptionHighlighter.THROWABLE_FORMATTER = new BiFunction<Throwable, CurrentAppExceptionHighlighter.Target, AutoCloseable>() {
             @Override
-            public void accept(LogRecord logRecord, Consumer<LogRecord> logRecordConsumer) {
+            public AutoCloseable apply(Throwable throwable, CurrentAppExceptionHighlighter.Target target) {
                 Map<Throwable, StackTraceElement[]> restore = new HashMap<>();
-                Throwable c = logRecord.getThrown();
+                Throwable c = throwable;
                 while (c != null) {
                     StackTraceElement[] stackTrace = c.getStackTrace();
+                    int cutPoint = -1;
                     for (int i = 0; i < stackTrace.length; ++i) {
                         var elem = stackTrace[i];
                         if (index.getClassByName(DotName.createSimple(elem.getClassName())) != null) {
-                            stackTrace[i] = new StackTraceElement(elem.getClassLoaderName(), elem.getModuleName(),
-                                    elem.getModuleVersion(),
-                                    MessageFormat.UNDERLINE + MessageFormat.BOLD + elem.getClassName()
-                                            + MessageFormat.NO_UNDERLINE + MessageFormat.NO_BOLD,
-                                    elem.getMethodName(), elem.getFileName(), elem.getLineNumber());
+                            if (logBuildTimeConfig.highlightAppCode && devMode
+                                    && target == CurrentAppExceptionHighlighter.Target.ANSI) {
+                                stackTrace[i] = new StackTraceElement(elem.getClassLoaderName(), elem.getModuleName(),
+                                        elem.getModuleVersion(),
+                                        MessageFormat.UNDERLINE + MessageFormat.BOLD + elem.getClassName()
+                                                + MessageFormat.NO_UNDERLINE + MessageFormat.NO_BOLD,
+                                        elem.getMethodName(), elem.getFileName(), elem.getLineNumber());
+                            }
+                            //TODO: add 'launch IDE' code here for HTML target
+                            cutPoint = i;
                         }
                     }
                     restore.put(c, c.getStackTrace());
+                    if (cutPoint != -1 && logBuildTimeConfig.trimStackTraces) {
+                        StackTraceElement[] cutDownStack = new StackTraceElement[cutPoint + 2];
+                        System.arraycopy(stackTrace, 0, cutDownStack, 0, cutDownStack.length);
+                        stackTrace = cutDownStack;
+                        stackTrace[stackTrace.length - 1] = new StackTraceElement("Trimmed Library Internals", "..", "-", 0);
+                    } else if (cutPoint == -1 && c.getCause() != null) {
+                        stackTrace = new StackTraceElement[1];
+                        stackTrace[stackTrace.length - 1] = new StackTraceElement("Trimmed Library Internals", "..", "-", 0);
+                    }
                     c.setStackTrace(stackTrace);
                     c = c.getCause();
                 }
-                try {
-                    logRecordConsumer.accept(logRecord);
-                } finally {
-                    for (Map.Entry<Throwable, StackTraceElement[]> entry : restore.entrySet()) {
-                        entry.getKey().setStackTrace(entry.getValue());
+                return new AutoCloseable() {
+                    @Override
+                    public void close() throws Exception {
+                        for (Map.Entry<Throwable, StackTraceElement[]> entry : restore.entrySet()) {
+                            entry.getKey().setStackTrace(entry.getValue());
+                        }
                     }
-                }
+                };
             }
         };
-        ((QuarkusClassLoader) getClass().getClassLoader()).addCloseTask(new Runnable() {
-            @Override
-            public void run() {
-                CurrentAppExceptionHighlighter.THROWABLE_FORMATTER = null;
-            }
-        });
+
     }
 
     @BuildStep

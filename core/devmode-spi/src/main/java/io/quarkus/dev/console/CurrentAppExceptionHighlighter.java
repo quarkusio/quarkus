@@ -1,8 +1,6 @@
 package io.quarkus.dev.console;
 
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.logging.LogRecord;
+import java.util.function.BiFunction;
 
 /**
  * A bit of a hack, but currently there is no other way to do this.
@@ -13,6 +11,11 @@ import java.util.logging.LogRecord;
  */
 public class CurrentAppExceptionHighlighter {
 
-    public static volatile BiConsumer<LogRecord, Consumer<LogRecord>> THROWABLE_FORMATTER;
+    public static volatile BiFunction<Throwable, Target, AutoCloseable> THROWABLE_FORMATTER;
+
+    public enum Target {
+        ANSI,
+        HTML
+    }
 
 }

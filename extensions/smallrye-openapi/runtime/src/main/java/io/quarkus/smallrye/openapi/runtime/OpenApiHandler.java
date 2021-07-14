@@ -31,13 +31,22 @@ public class OpenApiHandler implements Handler<RoutingContext> {
         RESPONSE_HEADERS.put("Access-Control-Max-Age", "86400");
     }
 
+    final boolean corsEnabled;
+
+    public OpenApiHandler(boolean corsEnabled) {
+        this.corsEnabled = corsEnabled;
+    }
+
     @Override
     public void handle(RoutingContext event) {
         HttpServerRequest req = event.request();
         HttpServerResponse resp = event.response();
 
         if (req.method().equals(HttpMethod.OPTIONS)) {
-            resp.headers().setAll(RESPONSE_HEADERS);
+            if (!corsEnabled) {
+                //if the cors filter is enabled we let it set the headers
+                resp.headers().setAll(RESPONSE_HEADERS);
+            }
             resp.headers().set("Allow", ALLOWED_METHODS);
             event.next();
         } else {
@@ -55,7 +64,10 @@ public class OpenApiHandler implements Handler<RoutingContext> {
                 format = Format.JSON;
             }
 
-            resp.headers().setAll(RESPONSE_HEADERS);
+            if (!corsEnabled) {
+                //if the cors filter is enabled we let it set the headers
+                resp.headers().setAll(RESPONSE_HEADERS);
+            }
             resp.headers().set("Content-Type", format.getMimeType() + ";charset=UTF-8");
             byte[] schemaDocument = getOpenApiDocumentService().getDocument(format);
             resp.end(Buffer.buffer(schemaDocument));

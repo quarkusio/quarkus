@@ -9,15 +9,16 @@ import org.eclipse.microprofile.openapi.spi.OASFactoryResolver;
 
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class OpenApiRecorder {
 
-    public Handler<RoutingContext> handler(OpenApiRuntimeConfig runtimeConfig) {
+    public Handler<RoutingContext> handler(OpenApiRuntimeConfig runtimeConfig, HttpConfiguration configuration) {
         if (runtimeConfig.enable) {
-            return new OpenApiHandler();
+            return new OpenApiHandler(configuration.corsEnabled);
         } else {
             return new OpenApiNotFoundHandler();
         }

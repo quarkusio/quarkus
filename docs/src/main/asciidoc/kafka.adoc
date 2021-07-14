@@ -71,7 +71,7 @@ mp.messaging.incoming.prices.connector=smallrye-kafka <2>
 ----
 
 <1> Configure the broker location for the production profile. You can configure it globally or per channel using `mp.messaging.incoming.$channel.bootstrap.servers` property.
-In dev mode and when running tests, link:kafka-dev-services.adoc[Dev Services for Kafka] automatically starts a Kafka broker.
+In dev mode and when running tests, link:kafka-dev-services[Dev Services for Kafka] automatically starts a Kafka broker.
 When not provided this property defaults to `localhost:9092`.
 <2> Configure the connector to manage the prices channel. By default the topic name is same as the channel name. You can configure the topic attribute to override it.
 
@@ -552,7 +552,7 @@ mp.messaging.outgoing.prices-out.topic=prices <3>
 ----
 
 <1> Configure the broker location for the production profile. You can configure it globally or per channel using `mp.messaging.outgoing.$channel.bootstrap.servers` property.
-In dev mode and when running tests, link:kafka-dev-services.adoc[Dev Services for Kafka] automatically starts a Kafka broker.
+In dev mode and when running tests, link:kafka-dev-services[Dev Services for Kafka] automatically starts a Kafka broker.
 When not provided this property defaults to `localhost:9092`.
 <2> Configure the connector to manage the prices channel.
 <3> By default the topic name is same as the channel name. You can configure the topic attribute to override it.
@@ -1162,7 +1162,7 @@ that will deserialize to a `io.vertx.core.json.JsonObject`. The corresponding se
 
 == Avro Serialization
 
-This is described in a dedicated guide: link:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro].
+This is described in a dedicated guide: link:kafka-schema-registry-avro[Using Apache Kafka with Schema Registry and Avro].
 
 [[serialization-autodetection]]
 == Serializer/deserializer autodetection
@@ -1221,7 +1221,7 @@ The full set of types supported by the serializer/deserializer autodetection is:
 * `io.vertx.core.json.JsonObject`
 * `io.vertx.core.json.JsonArray`
 * classes generated from Avro schemas, if Confluent or Apicurio _serde_ is present
-** see link:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro] for more information about using Confluent or Apicurio libraries
+** see link:kafka-schema-registry-avro[Using Apache Kafka with Schema Registry and Avro] for more information about using Confluent or Apicurio libraries
 * classes for which a subclass of `ObjectMapperSerializer` / `ObjectMapperDeserializer` is present, as described in <<jackson-serialization>>
 ** it is technically not needed to subclass `ObjectMapperSerializer`, but in such case, autodetection isn't possible
 * classes for which a subclass of `JsonbSerializer` / `JsonbDeserializer` is present, as described in <<jsonb-serialization>>
@@ -1233,7 +1233,7 @@ If you find you need to do this, please file a bug in the link:https://github.co
 
 == Using Schema Registry
 
-This is described in a dedicated guide: link:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro].
+This is described in a dedicated guide: link:kafka-schema-registry-avro[Using Apache Kafka with Schema Registry and Avro].
 
 [[kafka-health-check]]
 == Health Checks
@@ -1279,7 +1279,7 @@ Note that, to achieve this, an _admin connection_ is required.
 
 == Kafka Streams
 
-This is described in a dedicated guide: link:kafka-streams.adoc[Using Apache Kafka Streams].
+This is described in a dedicated guide: link:kafka-streams[Using Apache Kafka Streams].
 
 == Using Snappy for message compression
 
@@ -1447,7 +1447,7 @@ include::kafka-dev-services.adoc[leveloffset=+1]
 == Kubernetes Service Bindings
 
 Quarkus Kafka extension supports
-link:deploying-to-kubernetes.adoc[Service Binding Specification for Kubernetes].
+link:deploying-to-kubernetes[Service Binding Specification for Kubernetes].
 You can enable this by adding the `quarkus-kubernetes-service-binding` extension to your application.
 
 When running in appropriately configured Kubernetes clusters, Kafka extension will pull its Kafka broker connection configuration from the service binding available inside the cluster, without the need for user configuration.

@@ -24,6 +24,6 @@ It:
 
 Quarkus gRPC is based on https://vertx.io/docs/vertx-grpc/java/[Vert.x gRPC].
 
-* link:./grpc-getting-started.adoc[Getting Started]
-* link:./grpc-service-implementation.adoc[Implementing a gRPC Service]
-* link:./grpc-service-consumption.adoc[Consuming a gRPC Service]
+* link:grpc-getting-started[Getting Started]
+* link:grpc-service-implementation[Implementing a gRPC Service]
+* link:grpc-service-consumption[Consuming a gRPC Service]

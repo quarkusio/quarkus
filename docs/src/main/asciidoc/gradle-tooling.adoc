@@ -163,7 +163,7 @@ You can install all extensions which match a globbing pattern:
 [[dev-mode]]
 == Development mode
 
-Quarkus comes with a built-in development mode. The best way to run this is via the link:cli-tooling.adoc[Quarkus CLI]
+Quarkus comes with a built-in development mode. The best way to run this is via the link:cli-tooling[Quarkus CLI]
 Run your application with:
 
 [source,bash]

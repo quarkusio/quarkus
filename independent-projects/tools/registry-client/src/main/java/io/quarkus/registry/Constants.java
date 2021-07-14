@@ -11,8 +11,6 @@ public interface Constants {
 
     String DEFAULT_REGISTRY_REST_URL = "https://registry.quarkus.io/api/1";
     String DEFAULT_REGISTRY_MAVEN_REPO_URL = "https://registry.quarkus.io/maven";
-    String DEFAULT_REGISTRY_BACKUP_MAVEN_REPO_ID = "oss.sonatype.org";
-    String DEFAULT_REGISTRY_BACKUP_MAVEN_REPO_URL = "https://oss.sonatype.org/content/repositories/snapshots";
 
     String PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX = "-quarkus-platform-descriptor";
     String PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX = "-quarkus-platform-properties";

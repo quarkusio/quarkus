@@ -5,7 +5,6 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.registry.Constants;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.client.RegistryClient;
 import io.quarkus.registry.client.RegistryClientDispatcher;
@@ -27,12 +26,11 @@ import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.ArrayList;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
@@ -50,7 +48,6 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
 
     private MessageWriter log;
     private MavenArtifactResolver originalResolver;
-    private List<RemoteRepository> singleRegistryRepos = new ArrayList<RemoteRepository>();
 
     public MavenRegistryClientFactory(MavenArtifactResolver resolver, MessageWriter log) {
         this.originalResolver = Objects.requireNonNull(resolver);
@@ -61,24 +58,22 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
     public RegistryClient buildRegistryClient(RegistryConfig config) throws RegistryResolutionException {
         Objects.requireNonNull(config, "The registry config is null");
 
-        final RegistryDescriptorConfig descriptorConfig = Objects.requireNonNull(config.getDescriptor(),
-                "The registry descriptor configuration is missing");
+        final RegistryDescriptorConfig descriptorConfig = config.getDescriptor();
+        if (descriptorConfig == null) {
+            throw new IllegalArgumentException("The registry descriptor configuration is missing for " + config.getId());
+        }
 
         MavenArtifactResolver resolver = originalResolver;
 
-        singleRegistryRepos.clear();
-        determineExtraRepos(config, resolver.getRepositories());
-
+        final List<RemoteRepository> registryRepos = determineExtraRepos(config, resolver.getRepositories());
         List<RemoteRepository> aggregatedRepos = resolver.getRepositories();
-        if (!singleRegistryRepos.isEmpty()) {
+        if (!registryRepos.isEmpty()) {
             aggregatedRepos = resolver.getRemoteRepositoryManager().aggregateRepositories(resolver.getSession(),
-                    Collections.emptyList(), singleRegistryRepos, true);
+                    Collections.emptyList(), registryRepos, true);
             aggregatedRepos = resolver.getRemoteRepositoryManager().aggregateRepositories(resolver.getSession(),
                     aggregatedRepos, resolver.getRepositories(), false);
-            resolver = newResolver(resolver, aggregatedRepos, config, log);
-        } else {
-            resolver = newResolver(resolver, resolver.getRepositories(), config, log);
         }
+        resolver = newResolver(resolver, aggregatedRepos, config, log);
 
         final boolean cleanupTimestampedArtifacts = isCleanupTimestampedArtifacts(config);
 
@@ -112,7 +107,7 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
 
         final String srcRepoId = result.getRepository() == null ? "n/a" : result.getRepository().getId();
         log.debug("Resolved registry descriptor %s from %s", registryDescriptorCoords, srcRepoId);
-        if (!singleRegistryRepos.isEmpty()) {
+        if (!registryRepos.isEmpty()) {
             if (srcRepoId != null && !"local".equals(srcRepoId)) {
                 String srcRepoUrl = null;
                 for (RemoteRepository repo : resolver.getRepositories()) {
@@ -401,40 +396,38 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
         return newSession;
     }
 
-    private void determineExtraRepos(RegistryConfig config,
-            List<RemoteRepository> configuredRepos) {
+    private List<RemoteRepository> determineExtraRepos(RegistryConfig config, List<RemoteRepository> configuredRepos) {
         final RegistryMavenConfig mavenConfig = config.getMaven() == null ? null : config.getMaven();
         final RegistryMavenRepoConfig repoConfig = mavenConfig == null ? null : mavenConfig.getRepository();
-        final String repoUrl = repoConfig == null || repoConfig.getUrl() == null
-                ? Constants.DEFAULT_REGISTRY_BACKUP_MAVEN_REPO_URL
-                : repoConfig.getUrl();
-        addRegistryRepo(repoUrl, repoConfig == null || repoConfig.getId() == null ? config.getId() : repoConfig.getId(),
-                config.getUpdatePolicy(),
-                configuredRepos);
-    }
-
-    private void addRegistryRepo(final String repoUrl, String defaultRepoId, String updatePolicy,
-            List<RemoteRepository> configuredRepos) {
-        final Set<String> ids = new HashSet<>(configuredRepos.size());
-        for (RemoteRepository repo : configuredRepos) {
-            if (repo.getUrl().equals(repoUrl)) {
-                return;
+        final String repoId = repoConfig == null || repoConfig.getId() == null ? config.getId() : repoConfig.getId();
+        String repoUrl = repoConfig == null ? null : repoConfig.getUrl();
+        if (repoUrl == null || repoUrl.isBlank()) {
+            // if the repo URL wasn't configured and there is a repository in the Maven config
+            // whose ID matches the registry ID, this is what we are going to use
+            for (RemoteRepository r : configuredRepos) {
+                if (r.getId().equals(repoId)) {
+                    return Collections.emptyList();
+                }
             }
-            ids.add(repo.getId());
-        }
-
-        String repoId = defaultRepoId;
-        if (ids.contains(repoId)) {
-            int i = 2;
-            String tmp;
-            do {
-                tmp = repoId + "-" + i++;
-            } while (!ids.contains(tmp));
-            repoId = tmp;
+            // derive the repo URL from the registry ID
+            try {
+                repoUrl = new URL("https", config.getId(), "/maven").toExternalForm();
+            } catch (MalformedURLException e) {
+                throw new IllegalStateException("Failed to derive the Maven repository URL for registry " + config.getId(), e);
+            }
+        } else {
+            // if the configured registry URL is already present in the Maven config
+            // we are going use it
+            for (RemoteRepository repo : configuredRepos) {
+                if (repo.getUrl().equals(repoUrl)) {
+                    return Collections.emptyList();
+                }
+            }
         }
 
         final RemoteRepository.Builder repoBuilder = new RemoteRepository.Builder(repoId, "default", repoUrl);
 
+        final String updatePolicy = config.getUpdatePolicy();
         if (updatePolicy != null) {
             if (updatePolicy.equalsIgnoreCase(RepositoryPolicy.UPDATE_POLICY_DAILY)
                     || updatePolicy.equalsIgnoreCase(RepositoryPolicy.UPDATE_POLICY_ALWAYS)
@@ -446,6 +439,6 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
             }
         }
 
-        singleRegistryRepos.add(repoBuilder.build());
+        return Collections.singletonList(repoBuilder.build());
     }
 }

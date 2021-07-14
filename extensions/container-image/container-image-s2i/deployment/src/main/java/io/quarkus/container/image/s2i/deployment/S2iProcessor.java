@@ -285,8 +285,6 @@ public class S2iProcessor {
                     } catch (IllegalArgumentException e) {
                         // We should ignore that, as its expected to be thrown when item is actually
                         // deleted.
-                    } catch (InterruptedException e) {
-                        s2iException(e);
                     }
                 } else if (i instanceof ImageStream) {
                     ImageStream is = (ImageStream) i;
@@ -361,8 +359,6 @@ public class S2iProcessor {
             try {
                 client.builds().withName(buildName).waitUntilCondition(b -> !RUNNING.equalsIgnoreCase(b.getStatus().getPhase()),
                         s2iConfig.buildTimeout.toMillis(), TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                s2iException(e);
             } finally {
                 try {
                     watch.close();

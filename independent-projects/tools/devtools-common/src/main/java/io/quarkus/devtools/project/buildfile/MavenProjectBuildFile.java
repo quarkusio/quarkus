@@ -69,16 +69,19 @@ public class MavenProjectBuildFile extends BuildFile {
             Supplier<String> defaultQuarkusVersion) {
         final List<ArtifactCoords> managedDeps;
         final Supplier<List<ArtifactCoords>> deps;
+        final List<ArtifactCoords> importedPlatforms;
         final String quarkusVersion;
         if (projectPom == null) {
             managedDeps = Collections.emptyList();
             deps = () -> Collections.emptyList();
+            importedPlatforms = Collections.emptyList();
             // TODO allow multiple streams in the same catalog for now
             quarkusVersion = null;// defaultQuarkusVersion.get();
         } else {
             final ArtifactDescriptorResult descriptor = describe(mvnResolver, projectPom);
             managedDeps = toArtifactCoords(descriptor.getManagedDependencies());
             deps = () -> toArtifactCoords(descriptor.getDependencies());
+            importedPlatforms = collectPlatformDescriptors(managedDeps, log);
             quarkusVersion = getQuarkusVersion(managedDeps);
         }
 
@@ -88,13 +91,16 @@ public class MavenProjectBuildFile extends BuildFile {
                 : ExtensionCatalogResolver.empty();
         if (catalogResolver.hasRegistries()) {
             try {
-                extensionCatalog = quarkusVersion == null ? catalogResolver.resolveExtensionCatalog()
-                        : catalogResolver.resolveExtensionCatalog(quarkusVersion);
+                if (!importedPlatforms.isEmpty()) {
+                    extensionCatalog = catalogResolver.resolveExtensionCatalog(importedPlatforms);
+                } else {
+                    extensionCatalog = quarkusVersion == null ? catalogResolver.resolveExtensionCatalog()
+                            : catalogResolver.resolveExtensionCatalog(quarkusVersion);
+                }
             } catch (RegistryResolutionException e) {
                 throw new RuntimeException("Failed to resolve extension catalog", e);
             }
         } else {
-            final List<ArtifactCoords> importedPlatforms = collectPlatformDescriptors(managedDeps, log);
             if (importedPlatforms.isEmpty()) {
                 extensionCatalog = ToolsUtils.resolvePlatformDescriptorDirectly(null, null, quarkusVersion, mvnResolver, log);
             } else {

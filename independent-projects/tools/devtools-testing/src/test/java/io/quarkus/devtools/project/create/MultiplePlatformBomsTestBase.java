@@ -140,12 +140,14 @@ public abstract class MultiplePlatformBomsTestBase {
         assertThat(model.getProperties().getProperty(PLATFORM_ARTIFACT_ID_POM_PROP)).isEqualTo("quarkus-bom");
         assertThat(model.getProperties().getProperty(PLATFORM_VERSION_POM_PROP)).isEqualTo(platformVersion);
 
-        // TODO the order should be predictable
-        assertThat(model.getDependencyManagement().getDependencies().stream()
+        final List<ArtifactCoords> actualBoms = model.getDependencyManagement().getDependencies().stream()
                 .map(d -> new ArtifactCoords(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(),
                         d.getVersion()))
-                .collect(Collectors.toList())).containsAll(expectedBoms);
-        assertThat(model.getDependencyManagement().getDependencies().size()).isEqualTo(expectedBoms.size());
+                .collect(Collectors.toList());
+        // TODO the order should be predictable
+        assertThat(actualBoms).containsAll(expectedBoms);
+        assertThat(expectedBoms).containsAll(actualBoms);
+        //assertThat(model.getDependencyManagement().getDependencies().size()).isEqualTo(expectedBoms.size());
 
         // TODO the order should be predictable
         assertThat(model.getDependencies().stream()

@@ -1,12 +1,15 @@
 package io.quarkus.opentelemetry.exporter.otlp.runtime;
 
+import java.util.Map;
 import java.util.Optional;
 
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.spi.CDI;
 
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporterBuilder;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
+import io.quarkus.opentelemetry.runtime.OpenTelemetryUtil;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -18,14 +21,17 @@ public class OtlpRecorder {
             // Default the endpoint for development only
             runtimeConfig.endpoint = Optional.of("http://localhost:4317");
         }
-
         // Only create the OtlpGrpcSpanExporter if an endpoint was set in runtime config
         if (runtimeConfig.endpoint.isPresent() && runtimeConfig.endpoint.get().trim().length() > 0) {
             try {
-                OtlpGrpcSpanExporter otlpSpanExporter = OtlpGrpcSpanExporter.builder()
+                OtlpGrpcSpanExporterBuilder otlpGrpcSpanExporterBuilder = OtlpGrpcSpanExporter.builder()
                         .setEndpoint(runtimeConfig.endpoint.get())
-                        .setTimeout(runtimeConfig.exportTimeout)
-                        .build();
+                        .setTimeout(runtimeConfig.exportTimeout);
+                if (runtimeConfig.headers.isPresent()) {
+                    Map<String, String> headers = OpenTelemetryUtil.convertKeyValueListToMap(runtimeConfig.headers.get());
+                    headers.forEach(otlpGrpcSpanExporterBuilder::addHeader);
+                }
+                OtlpGrpcSpanExporter otlpSpanExporter = otlpGrpcSpanExporterBuilder.build();
 
                 // Create BatchSpanProcessor for OTLP and install into LateBoundBatchSpanProcessor
                 LateBoundBatchSpanProcessor delayedProcessor = CDI.current()

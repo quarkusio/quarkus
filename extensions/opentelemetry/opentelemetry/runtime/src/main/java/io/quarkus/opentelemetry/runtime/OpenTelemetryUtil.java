@@ -1,5 +1,7 @@
 package io.quarkus.opentelemetry.runtime;
 
+import java.util.AbstractMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -47,5 +49,25 @@ public final class OpenTelemetryUtil {
                 .collect(Collectors.toSet());
 
         return ContextPropagators.create(TextMapPropagator.composite(selectedPropagators));
+    }
+
+    /**
+     * Converts a list of "key=value" pairs into a map.
+     * Empty entries will be removed.
+     * In case of duplicate keys, the latest takes precedence.
+     *
+     * @param headers nullable list of "key=value" pairs
+     * @return non null map of key-value pairs
+     */
+    public static Map<String, String> convertKeyValueListToMap(List<String> headers) {
+        if (headers == null) {
+            return new LinkedHashMap();
+        }
+
+        return headers.stream()
+                .filter(header -> !header.isEmpty())
+                .map(keyValuePair -> keyValuePair.split("=", 2))
+                .map(keyValuePair -> new AbstractMap.SimpleImmutableEntry<>(keyValuePair[0].trim(), keyValuePair[1].trim()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (first, next) -> next, LinkedHashMap::new));
     }
 }

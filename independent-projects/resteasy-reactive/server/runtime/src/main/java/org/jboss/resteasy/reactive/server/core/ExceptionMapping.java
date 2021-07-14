@@ -75,7 +75,7 @@ public class ExceptionMapping {
             log.debugf(throwable,
                     "IOError processing HTTP request to %s failed, the client likely terminated the connection.",
                     context.serverRequest().getRequestAbsoluteUri());
-        } else {
+        } else if (context.handlesUnmappedException()) {
             log.error("Request failed ", throwable);
         }
         logBlockingErrorIfRequired(throwable, context);

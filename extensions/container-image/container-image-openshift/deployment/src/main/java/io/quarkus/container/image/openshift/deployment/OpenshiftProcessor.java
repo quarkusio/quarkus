@@ -372,8 +372,6 @@ public class OpenshiftProcessor {
                     } catch (IllegalArgumentException e) {
                         // We should ignore that, as its expected to be thrown when item is actually
                         // deleted.
-                    } catch (InterruptedException e) {
-                        openshiftException(e);
                     }
                 } else if (i instanceof ImageStream) {
                     ImageStream is = (ImageStream) i;
@@ -469,8 +467,6 @@ public class OpenshiftProcessor {
             try {
                 client.builds().withName(buildName).waitUntilCondition(b -> !RUNNING.equalsIgnoreCase(b.getStatus().getPhase()),
                         openshiftConfig.buildTimeout.toMillis(), TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                openshiftException(e);
             } finally {
                 try {
                     watch.close();

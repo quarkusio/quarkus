@@ -1,5 +1,9 @@
 package io.quarkus.runtime;
 
+import java.util.Collections;
+import java.util.List;
+
+import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.runtime.util.ExceptionUtil;
 
 public class TemplateHtmlBuilder {
@@ -186,12 +190,59 @@ public class TemplateHtmlBuilder {
             "    color: #555;\n" +
             "}\n";
 
+    private static final String CONFIG_EDITOR_HEAD = "<b>Config Editor</b>" +
+            "<form method=\"post\" enctype=\"application/x-www-form-urlencoded\"  action=\"/io.quarkus.vertx-http.devmode.config.fix\">"
+            +
+            "<input type=\"hidden\" name=\"redirect\" value=\"%s\"/>\n" +
+            "<table class=\"table table-striped\">\n" +
+            "    <thead class=\"thead-dark\">\n" +
+            "    <tr>\n" +
+            "        <th scope=\"col\">Property</th>\n" +
+            "        <th scope=\"col\">Value</th>\n" +
+            "        <th scope=\"col\">Default Value</th>\n" +
+            "        <th scope=\"col\">Description</th>\n" +
+            "    </tr>\n" +
+            "    </thead>\n" +
+            "    <tbody>\n";
+
+    private static final String CONFIG_EDITOR_ROW = "    <tr>\n" +
+            "            <td>\n" +
+            "                %s\n" +
+            "            </td>\n" +
+            "            <td>\n" +
+            "                <input type=\"text\" name=\"key.%s\" value=\"%s\"/>\n" +
+            "            </td>\n" +
+            "            <td>\n" +
+            "                %s\n" +
+            "            </td>\n" +
+            "            <td>\n" +
+            "                %s\n" +
+            "            </td>\n" +
+            "    </tr>\n";
+
+    private static final String CONFIG_EDITOR_TAIL = "    </tbody>\n" +
+            "</table>" +
+            "<input type=\"submit\" value=\"Update\" >" +
+            "</form>";
     private StringBuilder result;
 
     public TemplateHtmlBuilder(String title, String subTitle, String details) {
+        this(title, subTitle, details, null, Collections.emptyList());
+    }
+
+    public TemplateHtmlBuilder(String title, String subTitle, String details, String redirect, List<CurrentConfig> config) {
         result = new StringBuilder(String.format(HTML_TEMPLATE_START, escapeHtml(title),
                 subTitle == null || subTitle.isEmpty() ? "" : " - " + escapeHtml(subTitle), ERROR_CSS));
         result.append(String.format(HEADER_TEMPLATE, escapeHtml(title), escapeHtml(details)));
+        if (!config.isEmpty()) {
+            result.append(String.format(CONFIG_EDITOR_HEAD, redirect));
+            for (CurrentConfig i : config) {
+                result.append(String.format(CONFIG_EDITOR_ROW, escapeHtml(i.getPropertyName()), escapeHtml(i.getPropertyName()),
+                        escapeHtml(i.getAppPropertiesValue()),
+                        escapeHtml(i.getDefaultValue()), escapeHtml(i.getDescription())));
+            }
+            result.append(CONFIG_EDITOR_TAIL);
+        }
     }
 
     public TemplateHtmlBuilder stack(final Throwable throwable) {

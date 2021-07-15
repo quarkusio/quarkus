@@ -133,6 +133,7 @@ public class DevConsoleProcessor {
         if (virtualBootstrap != null) {
             return;
         }
+        DevConsoleManager.registerHandler(new DevConsoleHttpHandler());
         devConsoleVertx = Vertx.vertx();
         VertxInternal vertx = (VertxInternal) devConsoleVertx;
         QuarkusClassLoader ccl = (QuarkusClassLoader) DevConsoleProcessor.class.getClassLoader();

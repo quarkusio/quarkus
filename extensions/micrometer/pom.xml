@@ -22,7 +22,7 @@
     <parent>
         <artifactId>quarkus-extensions-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>2.1.0.CR1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 

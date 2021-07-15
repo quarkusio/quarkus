@@ -6,7 +6,7 @@
     <parent>
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>2.1.0.CR1</version>
     </parent>
 
     <artifactId>quarkus-integration-test-hibernate-orm-rest-data-panache</artifactId>

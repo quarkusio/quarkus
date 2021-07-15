@@ -5,12 +5,22 @@ import java.util.function.Supplier;
 import io.quarkus.arc.Arc;
 import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.reactive.ReactiveRedisClient;
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.redis.client.Redis;
 import io.vertx.redis.client.RedisAPI;
 
 @Recorder
 public class RedisClientRecorder {
+
+    public void closeOnShutdown(ShutdownContext context) {
+        context.addShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                RedisAPIProducer.close();
+            }
+        });
+    }
 
     public Supplier<RedisClient> redisClientSupplier(String clientName) {
         return new Supplier<RedisClient>() {

@@ -176,7 +176,7 @@ public class FruitResourceTest {
 Quarkus provides the https://github.com/smallrye/smallrye-open-api/[Smallrye OpenAPI] extension compliant with the
 https://github.com/eclipse/microprofile-open-api/[MicroProfile OpenAPI]
 specification in order to generate your API
-https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md[OpenAPI v3 specification].
+https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.0.md[OpenAPI v3 specification].
 
 You just need to add the `openapi` extension to your Quarkus application:
 

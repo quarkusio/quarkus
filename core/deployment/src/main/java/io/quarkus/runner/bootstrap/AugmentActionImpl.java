@@ -333,7 +333,8 @@ public class AugmentActionImpl implements AugmentAction {
                             auxiliaryApplication,
                             Optional.ofNullable(curatedApplication.getQuarkusBootstrap().isHostApplicationIsTestOnly()
                                     ? DevModeType.TEST_ONLY
-                                    : (auxiliaryApplication ? DevModeType.LOCAL : null))))
+                                    : (auxiliaryApplication ? DevModeType.LOCAL : null)),
+                            curatedApplication.getQuarkusBootstrap().isTest()))
                     .produce(new ShutdownContextBuildItem())
                     .produce(new RawCommandLineArgumentsBuildItem())
                     .produce(new LiveReloadBuildItem());
@@ -383,6 +384,7 @@ public class AugmentActionImpl implements AugmentAction {
                             : (auxiliaryApplication ? DevModeType.LOCAL : null));
             builder.setLaunchMode(launchMode);
             builder.setDevModeType(devModeType);
+            builder.setTest(curatedApplication.getQuarkusBootstrap().isTest());
             builder.setRebuild(quarkusBootstrap.isRebuild());
             if (firstRun) {
                 builder.setLiveReloadState(

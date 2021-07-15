@@ -369,6 +369,10 @@ public class QuarkusBootstrap implements Serializable {
         return flatClassPath;
     }
 
+    public boolean isTest() {
+        return test;
+    }
+
     public static class Builder {
         public List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
         public boolean hostApplicationIsTestOnly;

@@ -1,7 +1,5 @@
 package io.quarkus.oidc.runtime;
 
-import java.util.concurrent.Executor;
-
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
@@ -179,7 +177,4 @@ public class DefaultTenantConfigResolver {
         return enableHttpForwardedPrefix;
     }
 
-    public Executor getBlockingExecutor() {
-        return tenantConfigBean.getBlockingExecutor();
-    }
 }

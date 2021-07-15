@@ -19,7 +19,6 @@ import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.OidcTenantConfig.TokenStateManager.Strategy;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
-import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.TlsConfig;
@@ -60,13 +59,7 @@ public class OidcRecorder {
                         new Function<OidcTenantConfig, Uni<TenantConfigContext>>() {
                             @Override
                             public Uni<TenantConfigContext> apply(OidcTenantConfig config) {
-                                return createDynamicTenantContext(vertxValue, config, tlsConfig, config.getTenantId().get())
-                                        .plug(u -> {
-                                            if (!BlockingOperationControl.isBlockingAllowed()) {
-                                                return u.runSubscriptionOn(ExecutorRecorder.getCurrent());
-                                            }
-                                            return u;
-                                        });
+                                return createDynamicTenantContext(vertxValue, config, tlsConfig, config.getTenantId().get());
                             }
                         },
                         ExecutorRecorder.getCurrent());

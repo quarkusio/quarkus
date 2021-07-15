@@ -28,7 +28,6 @@ import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
-import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
@@ -546,13 +545,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private Uni<AuthorizationCodeTokens> refreshTokensUni(TenantConfigContext configContext, String refreshToken) {
-
-        return configContext.provider.refreshTokens(refreshToken).plug(u -> {
-            if (!BlockingOperationControl.isBlockingAllowed()) {
-                return u.runSubscriptionOn(resolver.getBlockingExecutor());
-            }
-            return u;
-        });
+        return configContext.provider.refreshTokens(refreshToken);
     }
 
     private Uni<AuthorizationCodeTokens> getCodeFlowTokensUni(RoutingContext context, TenantConfigContext configContext,
@@ -563,12 +556,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         String redirectUriParam = buildUri(context, isForceHttps(configContext), redirectPath);
         LOG.debugf("Token request redirect_uri parameter: %s", redirectUriParam);
 
-        return configContext.provider.getCodeFlowTokens(code, redirectUriParam).plug(u -> {
-            if (!BlockingOperationControl.isBlockingAllowed()) {
-                return u.runSubscriptionOn(resolver.getBlockingExecutor());
-            }
-            return u;
-        });
+        return configContext.provider.getCodeFlowTokens(code, redirectUriParam);
     }
 
     private String buildLogoutRedirectUri(TenantConfigContext configContext, String idToken, RoutingContext context) {

@@ -194,7 +194,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
     @Override
     public <F, T> void registerSubstitution(Class<F> from, Class<T> to,
-            Class<? extends ObjectSubstitution<F, T>> substitution) {
+            Class<? extends ObjectSubstitution<? super F, ? super T>> substitution) {
         substitutions.put(from, new SubstitutionHolder(from, to, substitution));
     }
 

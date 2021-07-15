@@ -49,43 +49,52 @@ The solution is located in the `kafka-quickstart` {quickstarts-tree-url}/kafka-q
 
 == Creating the Maven Project
 
-First, we need to create two projects.
+First, we need to create two projects: the _producer_ and the _processor_.
 
-To create the _producer_ project, open https://code.quarkus.io/?a=producer&nc=true&e=resteasy-reactive-jackson&e=smallrye-reactive-messaging-kafka[code.quarkus.io].
-The link already configures the application to select the two extensions we need to the _producer_:
+To create the _producer_ project, in a terminal run:
 
-* The Kafka connector for reactive messaging
-* RESTEasy Reactive and its Jackson support (to handle JSON) to serve the HTTP endpoint.
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=kafka-quickstart-producer \
+    -DnoCode=true \
+    -Dextensions=resteasy-reactive-jackson,smallrye-reactive-messaging-kafka
+----
 
-Click on the "Generate your application" button and download the zip.
-Once downloaded, unzip the file on your file system.
+This command creates the project structure and selects two Quarkus extensions we will be using:
 
-Now, let's create the _processor_ project.
-Open https://code.quarkus.io/?a=processor&nc=true&e=smallrye-reactive-messaging-kafka[code.quarkus.io].
-This link only select a single extension, the Kafka connector.
-Click on the "Generate your application" button and download the zip.
-Once downloaded, unzip the file on your file system alongside the _producer_ project.
+1. RESTEasy Reactive and its Jackson support (to handle JSON) to serve the HTTP endpoint.
+2. The Kafka connector for reactive messaging
 
-At that point, you should have the following structure:
+To create the _processor_ project, from the same directory, run:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=kafka-quickstart-processor \
+    -DnoCode=true \
+    -Dextensions=smallrye-reactive-messaging-kafka
+----
+
+At that point you should have the following structure:
 
 [source, text]
 ----
 .
-├── processor
+├── kafka-quickstart-processor
 │  ├── README.md
-│  │  ├── pom.xml
-│  │  ├── src
-│  │  │  ├── main
-│  │  │  │  ├── docker
-│  │  │  │  │  └── ...
-│  │  │  │  ├── java
-│  │  │  │  └── resources
-│  │  │  │     └── application.properties
-│  │  │  └── test
 │  ├── mvnw
 │  ├── mvnw.cmd
 │  ├── pom.xml
-└── producer
+│  └── src
+│     └── main
+│        ├── docker
+│        ├── java
+│        └── resources
+│           └── application.properties
+└── kafka-quickstart-producer
    ├── README.md
    ├── mvnw
    ├── mvnw.cmd
@@ -93,11 +102,12 @@ At that point, you should have the following structure:
    └── src
       └── main
          ├── docker
-         │  └── ...
          ├── java
          └── resources
             └── application.properties
 ----
+
+Open the two projects in your favorite IDE.
 
 [TIP]
 .Dev Services
@@ -142,7 +152,8 @@ public class Quote {
 }
 ----
 
-JSON representation of `Quote` objects will be used in messages sent to the Kafka topic  and also in the server-sent events sent to web browsers.
+JSON representation of `Quote` objects will be used in messages sent to the Kafka topic
+and also in the server-sent events sent to web browsers.
 
 Quarkus has built-in capabilities to deal with JSON Kafka messages.
 In a following section we will create serializer/deserializer classes for Jackson.
@@ -422,14 +433,14 @@ In a first terminal, run:
 
 [source,bash]
 ----
-> mvn -f producer quarkus:dev
+mvn -f kafka-quickstart-producer quarkus:dev
 ----
 
 In a separate terminal, run:
 
 [source, bash]
 ----
-> mvn -f processor quarkus:dev
+mvn -f kafka-quickstart-processor quarkus:dev
 ----
 
 Quarkus starts a Kafka broker automatically, configures the application and shares the Kafka broker instance between different applications.
@@ -510,8 +521,8 @@ Make sure you first build both applications in JVM mode with:
 
 [source, bash]
 ----
-> mvn -f producer package
-> mvn -f processor package
+mvn -f kafka-quickstart-producer package
+mvn -f kafka-quickstart-processor package
 ----
 
 Once packaged, run `docker compose up`.
@@ -523,16 +534,16 @@ First, compile both applications as native:
 
 [source, bash]
 ----
-> mvn -f producer package -Pnative -Dquarkus.native.container-build=true
-> mvn -f processor package -Pnative -Dquarkus.native.container-build=true
+mvn -f kafka-quickstart-producer package -Pnative -Dquarkus.native.container-build=true
+mvn -f kafka-quickstart-processor package -Pnative -Dquarkus.native.container-build=true
 ----
 
 Run the system with:
 
 [source, bash]
 ----
-> export QUARKUS_MODE=native
-> docker compose up
+export QUARKUS_MODE=native
+docker compose up --build
 ----
 
 == Going further

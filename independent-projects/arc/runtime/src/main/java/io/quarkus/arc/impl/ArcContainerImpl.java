@@ -200,7 +200,7 @@ public class ArcContainerImpl implements ArcContainer {
                 if (context.isActive()) {
                     if (selected != null) {
                         throw new IllegalArgumentException(
-                                "More than one context object for the given scope: " + selected + ' ' + context);
+                                "More than one context object for the given scope: " + selected + " " + context);
                     }
                     selected = context;
                 }
@@ -338,7 +338,7 @@ public class ArcContainerImpl implements ArcContainer {
     public String toString() {
         return "ArcContainerImpl [id=" + id + ", running=" + running + ", beans=" + beans.size() + ", observers="
                 + observers.size() + ", scopes="
-                + getScopes() + ']';
+                + getScopes() + "]";
     }
 
     public synchronized void shutdown() {
@@ -570,9 +570,7 @@ public class ArcContainerImpl implements ArcContainer {
             return Collections.singleton(resolved.get(0));
         }
 
-        // Remove non-alternatives
-        resolved.removeIf(bean -> bean.getAlternativePriority() == null
-                && (bean.getDeclaringBean() == null || bean.getDeclaringBean().getAlternativePriority() == null));
+        resolved.removeIf(not(ArcContainerImpl::isAlternativeOrDeclaredOnAlternative));
         if (resolved.size() == 1) {
             return Collections.singleton(resolved.get(0));
         } else if (resolved.size() > 1) {
@@ -585,6 +583,11 @@ public class ArcContainerImpl implements ArcContainer {
             }
         }
         return new HashSet<>(matching);
+    }
+
+    private static boolean isAlternativeOrDeclaredOnAlternative(InjectableBean<?> bean) {
+        return bean.getAlternativePriority() != null
+                || bean.getDeclaringBean() != null && bean.getDeclaringBean().getAlternativePriority() != null;
     }
 
     private static Integer getAlternativePriority(InjectableBean<?> bean) {

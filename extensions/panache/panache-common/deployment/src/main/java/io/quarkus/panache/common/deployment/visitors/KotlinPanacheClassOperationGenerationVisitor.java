@@ -537,6 +537,9 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                 .orElse(null);
         if (methodInfo != null && !methodInfo.hasAnnotation(DOTNAME_GENERATE_BRIDGE)) {
             return super.visitMethod(access, name, descriptor, signature, exceptions);
+        } else if (name.contains("$")) {
+            //some agents such as jacoco add new methods, they generally have $ in the name
+            return super.visitMethod(access, name, descriptor, signature, exceptions);
         }
         return null;
     }

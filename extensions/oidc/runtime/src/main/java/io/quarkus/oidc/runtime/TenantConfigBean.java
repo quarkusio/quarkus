@@ -13,7 +13,6 @@ public class TenantConfigBean {
     private final Map<String, TenantConfigContext> dynamicTenantsConfig;
     private final TenantConfigContext defaultTenant;
     private final Function<OidcTenantConfig, Uni<TenantConfigContext>> tenantConfigContextFactory;
-    private final Executor blockingExecutor;
 
     public TenantConfigBean(
             Map<String, TenantConfigContext> staticTenantsConfig,
@@ -25,7 +24,6 @@ public class TenantConfigBean {
         this.dynamicTenantsConfig = dynamicTenantsConfig;
         this.defaultTenant = defaultTenant;
         this.tenantConfigContextFactory = tenantConfigContextFactory;
-        this.blockingExecutor = blockingExecutor;
     }
 
     public Map<String, TenantConfigContext> getStaticTenantsConfig() {
@@ -42,9 +40,5 @@ public class TenantConfigBean {
 
     public Map<String, TenantConfigContext> getDynamicTenantsConfig() {
         return dynamicTenantsConfig;
-    }
-
-    public Executor getBlockingExecutor() {
-        return blockingExecutor;
     }
 }

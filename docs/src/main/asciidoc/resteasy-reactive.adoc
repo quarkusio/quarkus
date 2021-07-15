@@ -1904,4 +1904,4 @@ In addition to the Server side, RESTEasy Reactive comes with a new MicroProfile 
 
 Please note that the `quarkus-rest-client` extension may not work properly with RESTEasy Reactive.
 
-See link:rest-client-reactive.adoc[REST Client Reactive Guide] for more information about the reactive client.
+See link:rest-client-reactive[REST Client Reactive Guide] for more information about the reactive client.

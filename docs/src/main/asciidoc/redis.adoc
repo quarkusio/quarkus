@@ -593,7 +593,7 @@ The client to be created are configured using the usual <<config-reference,Redis
 
 [NOTE]
 ====
-This is useful to create a client dynamically in a non-CDI bean e.g a link:hibernate-orm-panache.adoc[Panache entity].
+This is useful to create a client dynamically in a non-CDI bean e.g a link:hibernate-orm-panache[Panache entity].
 Or to create a different client when running in pub/sub mode. This mode requires two different connections
 because once a connection invokes a subscriber mode then it cannot be used for running other commands
 than the command to leave that mode.

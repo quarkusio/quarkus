@@ -287,7 +287,7 @@ The default priority, used if the interceptor does not implement the `Prioritize
 == Testing your services
 
 The easiest way to test a gRPC service is to use a gRPC client as described
-in link:./grpc-service-consumption.adoc[Consuming a gRPC Service].
+in link:grpc-service-consumption[Consuming a gRPC Service].
 
 Please note that in the case of using a client to test an exposed service that does not use TLS,
 there is no need to provide any configuration. E.g. to test the `HelloService`

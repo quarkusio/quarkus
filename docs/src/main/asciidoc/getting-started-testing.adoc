@@ -993,10 +993,67 @@ A test suite is also free to utilize multiple `@QuarkusTestResource` annotations
 NOTE: test resources are global, even if they are defined on a test class or custom profile, which means they will all be activated for all tests, even though we do
 remove duplicates. If you want to only enable a test resource on a single test class or test profile, you can use `@QuarkusTestResource(restrictToAnnotatedClass = true)`.
 
-Quarkus provides a few implementations of `QuarkusTestResourceLifecycleManager` out of the box (see `io.quarkus.test.h2.H2DatabaseTestResource` which starts an H2 database, or `io.quarkus.test.kubernetes.client.KubernetesMockServerTestResource` which starts a mock Kubernetes API server),
+Quarkus provides a few implementations of `QuarkusTestResourceLifecycleManager` out of the box (see `io.quarkus.test.h2.H2DatabaseTestResource` which starts an H2 database, or `io.quarkus.test.kubernetes.client.KubernetesServerTestResource` which starts a mock Kubernetes API server),
 but it is common to create custom implementations to address specific application needs.
 Common cases include starting docker containers using https://www.testcontainers.org/[Testcontainers] (an example of which can be found https://github.com/quarkusio/quarkus-quickstarts/blob/main/kafka-quickstart/src/test/java/org/acme/kafka/KafkaResource.java[here]),
 or starting a mock HTTP server using http://wiremock.org/[Wiremock] (an example of which can be found https://github.com/geoand/quarkus-test-demo/blob/main/src/test/java/org/acme/getting/started/country/WiremockCountries.java[here]).
+
+
+=== Altering the test class
+When creating a custom `QuarkusTestResourceLifecycleManager` that needs to inject the something into the test class, the `inject` methods can be used.
+If for example you have a test like the following:
+
+[source,java]
+----
+@QuarkusTest
+@QuarkusTestResource(MyWireMockResource.class)
+public class MyTest {
+
+    @InjectWireMock // this a custom annotation you are defining in your own application
+    WireMockServer wireMockServer;
+
+    @Test
+    public someTest() {
+        // control wiremock in some way and perform test
+    }
+}
+----
+
+Making `MyWireMockResource` inject the `wireMockServer` field can be done as shown in the `inject` method of the following code snippet:
+
+[source,java]
+----
+public class MyWireMockResource implements QuarkusTestResourceLifecycleManager {
+
+    WireMockServer wireMockServer;
+
+    @Override
+    public Map<String, String> start() {
+        wireMockServer = new WireMockServer(8090);
+        wireMockServer.start();
+
+        // create some stubs
+
+        return Map.of("some.service.url", "localhost:" + wireMockServer.port());
+    }
+
+    @Override
+    public synchronized void stop() {
+        if (wireMockServer != null) {
+            wireMockServer.stop();
+            wireMockServer = null;
+        }
+    }
+
+    @Override
+    public void inject(TestInjector testInjector) {
+        testInjector.injectIntoFields(wireMockServer, new TestInjector.AnnotatedAndMatchesType(InjectWireMock.class, WireMockServer.class));
+    }
+}
+----
+
+IMPORTANT: It is worth mentioning that this injection into the test class is not under the control of CDI and happens after CDI has performed
+any necessary injections into the test class.
 
 === Annotation-based test resources
 

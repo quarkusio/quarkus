@@ -266,8 +266,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             props.setProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES, buf.toString());
         }
 
-        final Path output = outputDirectory.toPath().resolve(BootstrapConstants.META_INF);
-
         if (parentFirstArtifacts != null && !parentFirstArtifacts.isEmpty()) {
             String val = String.join(",", parentFirstArtifacts);
             props.put(AppModel.PARENT_FIRST_ARTIFACTS, val);
@@ -288,6 +286,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             props.put(AppModel.LESSER_PRIORITY_ARTIFACTS, val);
         }
 
+        final Path output = outputDirectory.toPath().resolve(BootstrapConstants.META_INF);
         try {
             Files.createDirectories(output);
             try (BufferedWriter writer = Files

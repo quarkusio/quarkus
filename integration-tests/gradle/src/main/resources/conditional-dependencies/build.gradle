@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'io.quarkus' apply false
+    id 'io.quarkus.extension' apply false
 }
 
 repositories {

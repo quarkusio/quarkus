@@ -1,0 +1,17 @@
+dependencies {
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
+}
+
+group = "io.quarkus.extension"
+
+gradlePlugin {
+    plugins {
+        quarkusBootstrapPlugin {
+            id = 'io.quarkus.extension'
+            implementationClass = 'io.quarkus.extension.gradle.QuarkusExtensionPlugin'
+            displayName = 'Quarkus Extension Plugin'
+            description = 'Builds a Quarkus extension'
+        }
+    }
+}

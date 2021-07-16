@@ -7,8 +7,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -23,11 +24,13 @@ import picocli.CommandLine;
  */
 @Tag("failsOnJDK16")
 public class CliProjectGradleTest {
-    static Path workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-            .resolve("target/test-project/CliProjectGradleTest");
+    static final Path testProjectRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
+            .resolve("target/test-project/");
+    static final Path workspaceRoot = testProjectRoot.resolve("CliProjectGradleTest");
+    static final Path wrapperRoot = testProjectRoot.resolve("gradle-wrapper");
 
     Path project;
-    File gradle;
+    static File gradle;
 
     @BeforeEach
     public void setupTestDirectories() throws Exception {
@@ -35,37 +38,52 @@ public class CliProjectGradleTest {
         project = workspaceRoot.resolve("code-with-quarkus");
     }
 
-    void startGradleDaemon(boolean useWrapper) throws Exception {
-        if (useWrapper) {
-            gradle = ExecuteUtil.findWrapper(project, GradleRunner.windowsWrapper, GradleRunner.otherWrapper);
-        } else {
-            gradle = ExecuteUtil.findExecutableFile("gradle");
-        }
+    @BeforeAll
+    static void startGradleDaemon() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B",
+                "--no-code",
+                "-o", testProjectRoot.toString(),
+                "gradle-wrapper");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertTrue(result.stdout.contains("SUCCESS"),
+                "Expected confirmation that the project has been created." + result);
+
+        gradle = ExecuteUtil.findWrapper(wrapperRoot, GradleRunner.windowsWrapper, GradleRunner.otherWrapper);
 
         List<String> args = new ArrayList<>();
         args.add(gradle.getAbsolutePath());
         args.add("--daemon");
-        args.add("-q");
-        args.add("--project-dir=" + project.toAbsolutePath());
         CliDriver.preserveLocalRepoSettings(args);
 
-        CliDriver.Result result = CliDriver.executeArbitraryCommand(project, args.toArray(new String[0]));
+        result = CliDriver.executeArbitraryCommand(wrapperRoot, args.toArray(new String[0]));
         Assertions.assertEquals(0, result.exitCode, "Gradle daemon should start properly");
     }
 
-    @AfterEach
-    void stopGradleDaemon() throws Exception {
+    @AfterAll
+    static void stopGradleDaemon() throws Exception {
         if (gradle != null) {
-
             List<String> args = new ArrayList<>();
             args.add(gradle.getAbsolutePath());
             args.add("--stop");
-            args.add("--project-dir=" + project.toAbsolutePath());
             CliDriver.preserveLocalRepoSettings(args);
 
-            CliDriver.Result result = CliDriver.executeArbitraryCommand(project, args.toArray(new String[0]));
+            CliDriver.Result result = CliDriver.executeArbitraryCommand(wrapperRoot, args.toArray(new String[0]));
             Assertions.assertEquals(0, result.exitCode, "Gradle daemon should stop properly");
         }
+    }
+
+    @Test
+    public void testNoCode() throws Exception {
+        // Inspect the no-code project created to hold the gradle wrapper
+        Assertions.assertTrue(gradle.exists(), "Wrapper should exist");
+
+        Path packagePath = wrapperRoot.resolve("src/main/java/");
+        Assertions.assertTrue(packagePath.toFile().isDirectory(),
+                "Source directory should exist: " + packagePath.toAbsolutePath());
+
+        String[] files = packagePath.toFile().list();
+        Assertions.assertEquals(0, files.length,
+                "Source directory should be empty: " + Arrays.toString(files));
     }
 
     @Test
@@ -85,7 +103,6 @@ public class CliProjectGradleTest {
 
         CliDriver.valdiateGeneratedSourcePackage(project, "org/acme");
 
-        startGradleDaemon(true);
         CliDriver.invokeValidateBuild(project);
     }
 
@@ -119,8 +136,6 @@ public class CliProjectGradleTest {
         CliDriver.valdiateGeneratedSourcePackage(project, "custom/pkg");
         CliDriver.validateApplicationProperties(project, configs);
 
-        startGradleDaemon(true);
-
         result = CliDriver.invokeValidateDryRunBuild(project);
         Assertions.assertTrue(result.stdout.contains("-Dproperty=value1 -Dproperty2=value2"),
                 "result should contain '-Dproperty=value1 -Dproperty2=value2':\n" + result.stdout);
@@ -147,7 +162,6 @@ public class CliProjectGradleTest {
 
         CliDriver.valdiateGeneratedSourcePackage(project, "org/acme");
 
-        startGradleDaemon(true);
         CliDriver.invokeValidateBuild(project);
     }
 
@@ -155,8 +169,6 @@ public class CliProjectGradleTest {
     public void testExtensionList() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
-
-        startGradleDaemon(true);
 
         Path buildGradle = project.resolve("build.gradle");
         String buildGradleContent = CliDriver.readFileAsString(project, buildGradle);
@@ -277,8 +289,8 @@ public class CliProjectGradleTest {
                 "gradle command should specify 'GRADLE'\n" + result);
 
         Assertions.assertTrue(
-                result.stdout.contains("-DdebugHost=0.0.0.0 -Ddebug=client"),
-                "gradle command should specify -DdebugHost=0.0.0.0 -Ddebug=client\n" + result);
+                result.stdout.contains("-DdebugHost=0.0.0.0 -Ddebug=client -DdebugPort=8008"),
+                "gradle command should specify -DdebugHost=0.0.0.0 -Ddebug=client -DdebugPort=8008\n" + result);
 
         Assertions.assertFalse(result.stdout.contains("-Dsuspend"),
                 "gradle command should not specify '-Dsuspend'\n" + result);
@@ -305,14 +317,17 @@ public class CliProjectGradleTest {
                 "Should contain 'Creating an app', found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("GRADLE"),
                 "Should contain MAVEN, found: " + result.stdout);
-        Assertions.assertTrue(result.stdout.contains("Omit build tool wrapper   true"),
+
+        // strip spaces to avoid fighting with column whitespace
+        String noSpaces = result.stdout.replaceAll("[\\s\\p{Z}]", "");
+        Assertions.assertTrue(noSpaces.contains("Omitbuildtoolwrappertrue"),
                 "Should contain 'Omit build tool wrapper   true', found: " + result.stdout);
-        Assertions.assertTrue(result.stdout.contains("Package Name              custom.pkg"),
-                "Should contain 'Package Name              custom.pkg', found: " + result.stdout);
-        Assertions.assertTrue(result.stdout.contains("Project ArtifactId        my-project"),
-                "Output should contain 'Project ArtifactId        my-project', found: " + result.stdout);
-        Assertions.assertTrue(result.stdout.contains("Project GroupId           silly"),
-                "Output should contain 'Project GroupId           silly', found: " + result.stdout);
+        Assertions.assertTrue(noSpaces.contains("PackageNamecustom.pkg"),
+                "Should contain 'Package Name   custom.pkg', found: " + result.stdout);
+        Assertions.assertTrue(noSpaces.contains("ProjectArtifactIdmy-project"),
+                "Output should contain 'Project ArtifactId   my-project', found: " + result.stdout);
+        Assertions.assertTrue(noSpaces.contains("ProjectGroupIdsilly"),
+                "Output should contain 'Project GroupId   silly', found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("JAVA"),
                 "Should contain JAVA, found: " + result.stdout);
     }

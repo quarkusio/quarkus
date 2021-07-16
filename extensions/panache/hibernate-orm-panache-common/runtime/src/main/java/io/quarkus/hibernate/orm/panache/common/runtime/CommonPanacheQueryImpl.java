@@ -19,7 +19,7 @@ import org.hibernate.Filter;
 import org.hibernate.Session;
 import org.hibernate.engine.spi.RowSelection;
 
-import io.quarkus.hibernate.orm.panache.ProjectedFieldName;
+import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
 import io.quarkus.panache.common.exception.PanacheQueryException;
@@ -95,13 +95,20 @@ public class CommonPanacheQueryImpl<Entity> {
             String parameterName;
             if (parameter.isAnnotationPresent(ProjectedFieldName.class)) {
                 final String name = parameter.getAnnotation(ProjectedFieldName.class).value();
-                if (name.isEmpty())
+                if (name.isEmpty()) {
                     throw new PanacheQueryException("The annotation ProjectedFieldName must have a non-empty value.");
+                }
+                parameterName = name;
+            } else if (parameter.isAnnotationPresent(io.quarkus.hibernate.orm.panache.ProjectedFieldName.class)) {
+                final String name = parameter.getAnnotation(io.quarkus.hibernate.orm.panache.ProjectedFieldName.class).value();
+                if (name.isEmpty()) {
+                    throw new PanacheQueryException("The annotation ProjectedFieldName must have a non-empty value.");
+                }
                 parameterName = name;
             } else if (!parameter.isNamePresent()) {
                 throw new PanacheQueryException(
                         "Your application must be built with parameter names, this should be the default if" +
-                                " using Quarkus artifacts. Check the maven or gradle compiler configuration to include '-parameters'.");
+                                " using Quarkus project generation. Check the Maven or Gradle compiler configuration to include '-parameters'.");
             } else {
                 parameterName = parameter.getName();
             }

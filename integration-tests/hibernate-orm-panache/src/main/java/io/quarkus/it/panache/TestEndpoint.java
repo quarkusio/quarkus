@@ -1147,6 +1147,17 @@ public class TestEndpoint {
         Assertions.assertEquals("stef", dogDto.ownerName);
         owner.delete();
 
+        CatOwner catOwner = new CatOwner("Julie");
+        catOwner.persist();
+        Cat bubulle = new Cat("Bubulle", catOwner);
+        bubulle.persist();
+
+        CatDto catDto = Cat.findAll().project(CatDto.class).firstResult();
+        Assertions.assertEquals("Julie", catDto.ownerName);
+
+        Cat.deleteAll();
+        CatOwner.deleteAll();
+
         return "OK";
     }
 
@@ -1317,9 +1328,9 @@ public class TestEndpoint {
     public String testBug8254() {
         CatOwner owner = new CatOwner("8254");
         owner.persist();
-        new Cat(owner).persist();
-        new Cat(owner).persist();
-        new Cat(owner).persist();
+        new Cat("Cat 1", owner).persist();
+        new Cat("Cat 2", owner).persist();
+        new Cat("Cat 3", owner).persist();
 
         // This used to fail with an invalid query "SELECT COUNT(*) SELECT DISTINCT cat.owner FROM Cat cat WHERE cat.owner = ?1"
         // Should now result in a valid query "SELECT COUNT(DISTINCT cat.owner) FROM Cat cat WHERE cat.owner = ?1"
@@ -1337,6 +1348,9 @@ public class TestEndpoint {
         assertEquals(3L, Cat.find("FROM Cat WHERE owner = ?1", owner).count());
         assertEquals(3L, Cat.find("owner", owner).count());
         assertEquals(1L, CatOwner.find("name = ?1", "8254").count());
+
+        Cat.deleteAll();
+        CatOwner.deleteAll();
 
         return "OK";
     }

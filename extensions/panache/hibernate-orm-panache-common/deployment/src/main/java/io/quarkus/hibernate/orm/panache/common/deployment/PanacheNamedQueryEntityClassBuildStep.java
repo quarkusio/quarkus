@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.panache.deployment;
+package io.quarkus.hibernate.orm.panache.common.deployment;
 
 import java.util.Set;
 

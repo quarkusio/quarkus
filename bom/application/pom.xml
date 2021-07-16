@@ -128,7 +128,7 @@
         <junit.jupiter.version>5.7.2</junit.jupiter.version>
         <testng.version>6.14.2</testng.version>
         <assertj.version>3.20.2</assertj.version>
-        <infinispan.version>12.1.6.Final</infinispan.version>
+        <infinispan.version>12.1.7.Final</infinispan.version>
         <infinispan.protostream.version>4.4.1.Final</infinispan.protostream.version>
         <caffeine.version>2.9.2</caffeine.version>
         <netty.version>4.1.65.Final</netty.version>

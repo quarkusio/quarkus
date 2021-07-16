@@ -1,7 +1,6 @@
 package io.quarkus.test.kubernetes.client;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -57,28 +56,9 @@ public abstract class AbstractKubernetesTestResource<T> implements QuarkusTestRe
     }
 
     @Override
-    public void inject(Object testInstance) {
-        Class<?> c = testInstance.getClass();
-        Class<? extends Annotation> annotation = getInjectionAnnotation();
-        Class<?> injectedClass = getInjectedClass();
-        while (c != Object.class) {
-            for (Field f : c.getDeclaredFields()) {
-                if (f.getAnnotation(annotation) != null) {
-                    if (!injectedClass.isAssignableFrom(f.getType())) {
-                        throw new RuntimeException(annotation + " can only be used on fields of type " + injectedClass);
-                    }
-
-                    f.setAccessible(true);
-                    try {
-                        f.set(testInstance, server);
-                        return;
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-            c = c.getSuperclass();
-        }
+    public void inject(TestInjector testInjector) {
+        testInjector.injectIntoFields(server,
+                new TestInjector.AnnotatedAndMatchesType(getInjectionAnnotation(), getInjectedClass()));
     }
 
     protected abstract Class<?> getInjectedClass();

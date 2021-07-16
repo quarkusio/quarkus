@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.logging.Logger;
@@ -48,12 +50,13 @@ public class SplitPackageProcessor {
         }
         // for each split package, create something like
         // - "com.me.app.sub" found in [archiveA, archiveB]
-        StringBuilder splitPackages = new StringBuilder();
+        StringBuilder splitPackagesWarning = new StringBuilder();
         for (String packageName : packageToArchiveMap.keySet()) {
             Set<ApplicationArchive> applicationArchives = packageToArchiveMap.get(packageName);
             if (applicationArchives.size() > 1) {
-                splitPackages.append("\n- \"" + packageName + "\" found in " + "[");
+                splitPackagesWarning.append("\n- \"" + packageName + "\" found in ");
                 Iterator<ApplicationArchive> iterator = applicationArchives.iterator();
+                Set<String> splitPackages = new TreeSet<>();
                 while (iterator.hasNext()) {
                     ApplicationArchive next = iterator.next();
                     AppArtifactKey a = next.getArtifactKey();
@@ -61,33 +64,28 @@ public class SplitPackageProcessor {
                     if (a == null) {
                         if (archivesBuildItem.getRootArchive().equals(next)) {
                             // the archive we found is a root archive, e.g. application classes
-                            splitPackages.append("application classes");
+                            splitPackages.add("application classes");
                         } else {
                             // as next best effort, we try to take first path from archive paths collection
                             Iterator<Path> pathIterator = next.getPaths().iterator();
                             if (pathIterator.hasNext()) {
-                                splitPackages.append(pathIterator.next().toString());
+                                splitPackages.add(pathIterator.next().toString());
                             } else {
                                 // if all else fails, we mark it as unknown archive
-                                splitPackages.append("unknown archive");
+                                splitPackages.add("unknown archive");
                             }
                         }
-
                     } else {
-                        splitPackages.append(a.getGroupId() + ":" + a.getArtifactId());
-                    }
-                    if (iterator.hasNext()) {
-                        splitPackages.append(", ");
-                    } else {
-                        splitPackages.append("]");
+                        splitPackages.add(a.getGroupId() + ":" + a.getArtifactId());
                     }
                 }
+                splitPackagesWarning.append(splitPackages.stream().collect(Collectors.joining(", ", "[", "]")));
             }
         }
         // perform logging if needed
-        if (splitPackages.length() > 0) {
+        if (splitPackagesWarning.length() > 0) {
             LOGGER.warnf("Detected a split package usage which is considered a bad practice and should be avoided. " +
-                    "Following packages were detected in multiple archives: %s", splitPackages.toString());
+                    "Following packages were detected in multiple archives: %s", splitPackagesWarning.toString());
         }
     }
 }

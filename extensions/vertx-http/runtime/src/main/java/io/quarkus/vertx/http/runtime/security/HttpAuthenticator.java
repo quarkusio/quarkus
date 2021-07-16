@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime.security;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,22 @@ public class HttpAuthenticator {
         if (mechanisms.isEmpty()) {
             this.mechanisms = new HttpAuthenticationMechanism[] { new NoAuthenticationMechanism() };
         } else {
+            final String basicMech = "Basic";
+            Collections.sort(mechanisms, new Comparator<HttpAuthenticationMechanism>() {
+
+                @Override
+                public int compare(HttpAuthenticationMechanism mech1, HttpAuthenticationMechanism mech2) {
+                    HttpCredentialTransport credTransport1 = mech1.getCredentialTransport();
+                    if (credTransport1 != null && basicMech.equalsIgnoreCase(credTransport1.getTypeTarget())) {
+                        return -1;
+                    }
+                    HttpCredentialTransport credTransport2 = mech2.getCredentialTransport();
+                    if (credTransport2 != null && basicMech.equalsIgnoreCase(credTransport2.getTypeTarget())) {
+                        return 1;
+                    }
+                    return 0;
+                }
+            });
             this.mechanisms = mechanisms.toArray(new HttpAuthenticationMechanism[mechanisms.size()]);
             //validate that we don't have multiple incompatible mechanisms
             Map<HttpCredentialTransport, HttpAuthenticationMechanism> map = new HashMap<>();

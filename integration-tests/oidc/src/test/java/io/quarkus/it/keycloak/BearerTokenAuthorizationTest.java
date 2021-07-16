@@ -70,6 +70,16 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testBasicAuthWrongPassword() {
+        RestAssured.given().auth()
+                .preemptive().basic("alice", "wrongpassword")
+                .when().get("/api/users/me")
+                .then()
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("basic realm=\"Quarkus\""));
+    }
+
+    @Test
     public void testSecureAccessSuccessPreferredUsername() {
         for (String username : Arrays.asList("alice", "jdoe", "admin")) {
             RestAssured.given().auth().oauth2(getAccessToken(username))
@@ -131,11 +141,11 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
-    public void testVerificationFailedNoBearerToken() {
+    public void testVerificationFailedNoBearerTokenAndBasicCreds() {
         RestAssured.given()
                 .when().get("/api/users/me").then()
                 .statusCode(401)
-                .header("WWW-Authenticate", equalTo("Bearer"));
+                .header("WWW-Authenticate", equalTo("basic realm=\"Quarkus\""));
     }
 
     @Test
@@ -161,7 +171,8 @@ public class BearerTokenAuthorizationTest {
         RestAssured.given().auth().oauth2(getAccessToken("alice"))
                 .when().get("/basic-only")
                 .then()
-                .statusCode(401);
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("basic realm=\"Quarkus\""));
     }
 
     @Test
@@ -179,11 +190,12 @@ public class BearerTokenAuthorizationTest {
         RestAssured.given().auth().preemptive().basic("alice", "password")
                 .when().get("/bearer-only")
                 .then()
-                .statusCode(401);
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("Bearer"));
     }
 
     @Test
-    public void testBearerAuthWhereBasicIsRequired() {
+    public void testBearerAuthWhereBearerIsRequired() {
         RestAssured.given().auth().oauth2(getAccessToken("alice"))
                 .when().get("/bearer-only")
                 .then()

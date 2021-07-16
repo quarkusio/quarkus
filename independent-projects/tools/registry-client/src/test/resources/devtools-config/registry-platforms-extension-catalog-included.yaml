@@ -1,6 +1,5 @@
----
 registries:
-- registry.acme.org:
+  registry.acme.org:
     platforms:
       artifact: "org.acme:acme-quarkus-platforms::json:2.0"
       extension-catalogs-included: true

@@ -21,7 +21,7 @@ public class RegistriesConfigLocatorTest {
 
         final RegistriesConfig completeConfig = serializeDeserialize(config);
         assertThat(completeConfig.getRegistries().size()).isEqualTo(1);
-        final RegistryConfig completeRegistry = completeConfig.getRegistries().get(0);
+        final RegistryConfig completeRegistry = completeConfig.getRegistries().iterator().next();
         assertThat(completeRegistry.getId()).isEqualTo("registry.acme.org");
         assertThat(completeRegistry.getUpdatePolicy()).isEqualTo("always");
         final RegistryMavenConfig mavenConfig = completeRegistry.getMaven();

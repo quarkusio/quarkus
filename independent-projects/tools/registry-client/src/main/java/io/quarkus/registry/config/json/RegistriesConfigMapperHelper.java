@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.catalog.json.JsonArtifactCoordsMixin;
 import java.io.BufferedReader;
@@ -22,7 +23,9 @@ public class RegistriesConfigMapperHelper {
     private static ObjectMapper jsonMapper;
 
     public static ObjectMapper yamlMapper() {
-        return yamlMapper == null ? yamlMapper = initMapper(new ObjectMapper(new YAMLFactory())) : yamlMapper;
+        return yamlMapper == null ? yamlMapper = initMapper(new ObjectMapper(new YAMLFactory()
+                .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
+                .disable(YAMLGenerator.Feature.CANONICAL_OUTPUT))) : yamlMapper;
     }
 
     public static ObjectMapper jsonMapper() {

@@ -1,4 +1,3 @@
----
 debug: true
 registries:
-- "registry.quarkus.io"
+  registry.quarkus.io:

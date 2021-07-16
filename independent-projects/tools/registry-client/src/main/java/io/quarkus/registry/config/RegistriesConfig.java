@@ -1,6 +1,6 @@
 package io.quarkus.registry.config;
 
-import java.util.List;
+import java.util.Collection;
 
 /**
  * Registry client configuration. Consists of a list of registry configurations that will be
@@ -20,5 +20,5 @@ public interface RegistriesConfig {
      *
      * @return list of registries that should queried when generating catalogs of platforms and extensions
      */
-    List<RegistryConfig> getRegistries();
+    Collection<RegistryConfig> getRegistries();
 }

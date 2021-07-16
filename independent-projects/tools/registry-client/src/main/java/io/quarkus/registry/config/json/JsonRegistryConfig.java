@@ -11,6 +11,8 @@ import io.quarkus.registry.config.RegistryMavenConfig;
 import io.quarkus.registry.config.RegistryNonPlatformExtensionsConfig;
 import io.quarkus.registry.config.RegistryPlatformsConfig;
 import io.quarkus.registry.config.RegistryQuarkusVersionsConfig;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +35,7 @@ public class JsonRegistryConfig implements RegistryConfig {
     }
 
     public JsonRegistryConfig(String id) {
-        this.id = Objects.requireNonNull(id, "QER ID can't be null");
+        setId(id);
     }
 
     @JsonIgnore
@@ -43,7 +45,7 @@ public class JsonRegistryConfig implements RegistryConfig {
     }
 
     public void setId(String id) {
-        this.id = Objects.requireNonNull(id);
+        this.id = Objects.requireNonNull(id, "Quarkus Extension Registry ID can't be null");
     }
 
     @Override
@@ -94,6 +96,7 @@ public class JsonRegistryConfig implements RegistryConfig {
         this.nonPlatformExtensions = nonPlatformExtensions;
     }
 
+    @JsonIgnore
     boolean isIdOnly() {
         return this.mavenConfig == null
                 && !this.disabled
@@ -131,10 +134,6 @@ public class JsonRegistryConfig implements RegistryConfig {
         return extra == null ? Collections.emptyMap() : extra;
     }
 
-    public void setExtra(Map<String, Object> extra) {
-        this.extra = extra;
-    }
-
     @JsonAnySetter
     public void setAny(String name, Object value) {
         if (extra == null) {
@@ -143,16 +142,19 @@ public class JsonRegistryConfig implements RegistryConfig {
         extra.put(name, value);
     }
 
+    @Override
     public String toString() {
-        final StringBuilder buf = new StringBuilder();
-        buf.append('[').append(id);
-        if (mavenConfig != null) {
-            buf.append(" maven=").append(mavenConfig);
-        }
-        if (extra != null && !extra.isEmpty()) {
-            buf.append(" extra=").append(extra);
-        }
-        return buf.append(']').toString();
+        return "JsonRegistryConfig{" +
+                "id='" + id + '\'' +
+                ", disabled=" + disabled +
+                ", updatePolicy='" + updatePolicy + '\'' +
+                ", descriptor=" + descriptor +
+                ", platforms=" + platforms +
+                ", nonPlatformExtensions=" + nonPlatformExtensions +
+                ", mavenConfig=" + mavenConfig +
+                ", versionsConfig=" + versionsConfig +
+                ", extra=" + extra +
+                '}';
     }
 
     @Override
@@ -171,10 +173,43 @@ public class JsonRegistryConfig implements RegistryConfig {
             return false;
         JsonRegistryConfig other = (JsonRegistryConfig) obj;
         return Objects.equals(descriptor, other.descriptor) && disabled == other.disabled
-                && Objects.equals(extra, other.extra) && Objects.equals(id, other.id)
+                && Objects.equals(id, other.id)
                 && Objects.equals(mavenConfig, other.mavenConfig)
                 && Objects.equals(nonPlatformExtensions, other.nonPlatformExtensions)
-                && Objects.equals(platforms, other.platforms) && Objects.equals(updatePolicy, other.updatePolicy)
-                && Objects.equals(versionsConfig, other.versionsConfig);
+                && Objects.equals(platforms, other.platforms)
+                && Objects.equals(updatePolicy, other.updatePolicy)
+                && Objects.equals(versionsConfig, other.versionsConfig)
+                && Objects.equals(extra, other.extra);
+    }
+
+    JsonRegistryConfig completeRequiredConfig(String id) {
+        setId(id);
+
+        //        if (descriptor != null && descriptor.getArtifact() != null) {
+        //            return this;
+        //        }
+        //
+        //        final String[] parts = id.split("\\.");
+        //        final StringBuilder buf = new StringBuilder(id.length());
+        //        int i = parts.length;
+        //        buf.append(parts[--i]);
+        //        while (--i >= 0) {
+        //            buf.append('.').append(parts[i]);
+        //        }
+        //
+        //        JsonRegistryDescriptorConfig dCfg = new JsonRegistryDescriptorConfig();
+        //        dCfg.setArtifact(
+        //                new ArtifactCoords(buf.toString(), Constants.DEFAULT_REGISTRY_DESCRIPTOR_ARTIFACT_ID, null, Constants.JSON,
+        //                        Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION));
+        //        setDescriptor(dCfg);
+        return this;
+    }
+
+    private static URL toUrlOrNull(String str) {
+        try {
+            return new URL(str);
+        } catch (MalformedURLException e) {
+        }
+        return null;
     }
 }

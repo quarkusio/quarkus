@@ -1,4 +1,5 @@
 registries:
+  registry.quarkus.io: {}
   registry.acme.org:
     maven:
       repository:

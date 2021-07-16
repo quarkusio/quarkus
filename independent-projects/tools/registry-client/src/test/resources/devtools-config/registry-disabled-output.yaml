@@ -1,0 +1,4 @@
+registries:
+  registry.acme.org:
+    disabled: true
+  registry.quarkus.io: {}

@@ -1,5 +1,6 @@
 registries:
-  registry.acme.org:
+- "registry.quarkus.io"
+- registry.acme.org:
     maven:
       repository:
         url: "https://repo.acme.org/maven"

@@ -22,14 +22,23 @@ import org.junit.jupiter.api.Test;
 public class DevToolsConfigSerializationTest {
 
     @Test
+    public void testReadListWriteMap() throws Exception {
+        final String inputConfig = "registry-mixed-input-list.yaml";
+        final String outputConfig = "registry-mixed-output-map.yaml";
+
+        final JsonRegistriesConfig config = RegistriesConfigMapperHelper.deserialize(resolveConfigPath(inputConfig),
+                JsonRegistriesConfig.class);
+        assertSerializedMatches(config, outputConfig);
+    }
+
+    @Test
     public void testIdOnly() throws Exception {
         final JsonRegistriesConfig config = new JsonRegistriesConfig();
         config.addRegistry(new JsonRegistryConfig("registry.quarkus.io"));
         config.addRegistry(new JsonRegistryConfig("registry.other.org"));
 
-        final String configName = "registry-id-only.yaml";
-        assertDeserializedMatches(configName, config);
-        assertSerializedMatches(config, configName);
+        assertDeserializedMatches("registry-id-only.yaml", config);
+        assertSerializedMatches(config, "registry-id-only-output.yaml");
     }
 
     @Test
@@ -38,9 +47,8 @@ public class DevToolsConfigSerializationTest {
         config.setDebug(true);
         config.addRegistry(new JsonRegistryConfig("registry.quarkus.io"));
 
-        final String configName = "registry-id-only-debug.yaml";
-        assertDeserializedMatches(configName, config);
-        assertSerializedMatches(config, configName);
+        assertDeserializedMatches("registry-id-only-debug.yaml", config);
+        assertSerializedMatches(config, "registry-id-only-debug-output.yaml");
     }
 
     @Test
@@ -61,11 +69,10 @@ public class DevToolsConfigSerializationTest {
         final JsonRegistryConfig registry = new JsonRegistryConfig("registry.acme.org");
         config.addRegistry(registry);
         registry.setDisabled(true);
-        config.addRegistry(new JsonRegistryConfig("registry.quarkus.io"));
+        config.completeRequiredConfig();
 
-        final String configName = "registry-disabled.yaml";
-        assertDeserializedMatches(configName, config);
-        assertSerializedMatches(config, configName);
+        assertDeserializedMatches("registry-disabled.yaml", config);
+        assertSerializedMatches(config, "registry-disabled-output.yaml");
     }
 
     @Test
@@ -246,14 +253,18 @@ public class DevToolsConfigSerializationTest {
         JsonRegistryConfig registry = new JsonRegistryConfig("registry.acme.org");
         config.addRegistry(registry);
 
+        // TODO: WHY DO WE DO THIS?
+        // What are we testing?!
+        // Also: there is an asymmetry with regard to the descriptor -- should we write it or not?
         registry.setAny("custom", new Custom("value"));
 
         final String configName = "registry-any-custom-object.yaml";
         assertSerializedMatches(config, configName);
 
         config = new JsonRegistriesConfig();
-        registry = new JsonRegistryConfig("registry.acme.org");
+        registry = new JsonRegistryConfig().completeRequiredConfig("registry.acme.org");
         config.addRegistry(registry);
+        // TODO: We know it will come back as a map... (see above)
         registry.setAny("custom", Collections.singletonMap("prop", "value"));
 
         assertDeserializedMatches(configName, config);
@@ -276,8 +287,10 @@ public class DevToolsConfigSerializationTest {
     }
 
     private static void assertDeserializedMatches(String configName, RegistriesConfig config) throws Exception {
-        assertThat(RegistriesConfigMapperHelper.deserialize(resolveConfigPath(configName), JsonRegistriesConfig.class))
-                .isEqualTo(config);
+        JsonRegistriesConfig parsedConfig = RegistriesConfigMapperHelper.deserialize(resolveConfigPath(configName),
+                JsonRegistriesConfig.class);
+        parsedConfig.completeRequiredConfig(); // this happens w/ RegistryConfig.load
+        assertThat(parsedConfig).isEqualTo(config);
     }
 
     private static Path resolveConfigPath(String configName) throws URISyntaxException {

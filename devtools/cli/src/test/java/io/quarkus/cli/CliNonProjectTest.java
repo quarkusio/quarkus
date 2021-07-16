@@ -80,4 +80,12 @@ public class CliNonProjectTest {
         Assertions.assertEquals(result.stdout, result2.stdout,
                 "Invoking the command with --dryrun should produce the same result");
     }
+
+    @Test
+    public void testRegistryRefresh() throws Exception {
+        // List extensions of a specified platform version
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "registry", "--refresh", "-e");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+    }
 }

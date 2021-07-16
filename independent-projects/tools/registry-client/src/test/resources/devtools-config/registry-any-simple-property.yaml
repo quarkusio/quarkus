@@ -1,4 +1,3 @@
----
 registries:
-- registry.acme.org:
+  registry.acme.org:
     client-factory-artifact: "org.acme:acme-registry-client-factory::jar:2.0"

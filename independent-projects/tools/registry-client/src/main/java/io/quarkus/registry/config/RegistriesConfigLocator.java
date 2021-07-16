@@ -1,24 +1,13 @@
 package io.quarkus.registry.config;
 
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.registry.Constants;
 import io.quarkus.registry.config.json.JsonRegistriesConfig;
-import io.quarkus.registry.config.json.JsonRegistryConfig;
-import io.quarkus.registry.config.json.JsonRegistryDescriptorConfig;
-import io.quarkus.registry.config.json.JsonRegistryMavenConfig;
-import io.quarkus.registry.config.json.JsonRegistryMavenRepoConfig;
-import io.quarkus.registry.config.json.JsonRegistryNonPlatformExtensionsConfig;
-import io.quarkus.registry.config.json.JsonRegistryPlatformsConfig;
 import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Objects;
 
 /**
  * A helper class with utility methods to locate the registry client configuration file
@@ -49,7 +38,7 @@ public class RegistriesConfigLocator {
     public static RegistriesConfig resolveConfig() {
         final Path configYaml = locateConfigYaml();
         if (configYaml == null) {
-            return completeRequiredConfig(new JsonRegistriesConfig());
+            return new JsonRegistriesConfig().completeRequiredConfig();
         }
         return load(configYaml);
     }
@@ -62,7 +51,7 @@ public class RegistriesConfigLocator {
      */
     public static RegistriesConfig load(Path configYaml) {
         try {
-            return completeRequiredConfig(RegistriesConfigMapperHelper.deserialize(configYaml, JsonRegistriesConfig.class));
+            return RegistriesConfigMapperHelper.deserialize(configYaml, JsonRegistriesConfig.class).completeRequiredConfig();
         } catch (IOException e) {
             throw new IllegalStateException("Failed to parse config file " + configYaml, e);
         }
@@ -76,7 +65,8 @@ public class RegistriesConfigLocator {
      */
     public static RegistriesConfig load(InputStream configYaml) {
         try {
-            return completeRequiredConfig(RegistriesConfigMapperHelper.deserializeYaml(configYaml, JsonRegistriesConfig.class));
+            return RegistriesConfigMapperHelper.deserializeYaml(configYaml, JsonRegistriesConfig.class)
+                    .completeRequiredConfig();
         } catch (IOException e) {
             throw new IllegalStateException("Failed to parse config file " + configYaml, e);
         }
@@ -90,7 +80,8 @@ public class RegistriesConfigLocator {
      */
     public static RegistriesConfig load(Reader configYaml) {
         try {
-            return completeRequiredConfig(RegistriesConfigMapperHelper.deserializeYaml(configYaml, JsonRegistriesConfig.class));
+            return RegistriesConfigMapperHelper.deserializeYaml(configYaml, JsonRegistriesConfig.class)
+                    .completeRequiredConfig();
         } catch (IOException e) {
             throw new IllegalStateException("Failed to parse config file " + configYaml, e);
         }
@@ -115,129 +106,4 @@ public class RegistriesConfigLocator {
         return Files.exists(configYaml) ? configYaml : null;
     }
 
-    private static RegistriesConfig completeRequiredConfig(RegistriesConfig original) {
-        final JsonRegistriesConfig config = new JsonRegistriesConfig();
-        config.setDebug(original.isDebug());
-        if (original.getRegistries().isEmpty()) {
-            config.addRegistry(getDefaultRegistry());
-        } else {
-            for (RegistryConfig qerConfig : original.getRegistries()) {
-                if (!qerConfig.isDisabled()) {
-                    config.addRegistry(completeRequiredConfig(qerConfig));
-                }
-            }
-            if (config.isEmpty()) {
-                config.addRegistry(getDefaultRegistry());
-            }
-        }
-        return config;
-    }
-
-    private static RegistryConfig completeRequiredConfig(RegistryConfig original) {
-        if (hasRequiredConfig(original)) {
-            return original;
-        }
-        final String id = original.getId();
-        final JsonRegistryConfig config = new JsonRegistryConfig(id);
-        config.setUpdatePolicy(original.getUpdatePolicy());
-        config.setDescriptor(completeDescriptor(original));
-        if (original != null) {
-            if (original.getMaven() != null) {
-                config.setMaven(original.getMaven());
-            }
-            if (original.getNonPlatformExtensions() != null) {
-                config.setNonPlatformExtensions(original.getNonPlatformExtensions());
-            }
-            if (original.getPlatforms() != null) {
-                config.setPlatforms(original.getPlatforms());
-            }
-            if (!original.getExtra().isEmpty()) {
-                config.setExtra(original.getExtra());
-            }
-        }
-        return config;
-    }
-
-    private static RegistryDescriptorConfig completeDescriptor(RegistryConfig config) {
-        if (config.getDescriptor() != null && config.getDescriptor().getArtifact() != null) {
-            return config.getDescriptor();
-        }
-        final JsonRegistryDescriptorConfig descriptor = new JsonRegistryDescriptorConfig();
-        String host = config.getId();
-        if (host == null) {
-            final RegistryMavenRepoConfig repo = config.getMaven() == null ? null : config.getMaven().getRepository();
-            if (repo != null && repo.getUrl() != null) {
-                throw new IllegalStateException(
-                        "Failed to determine the descriptor coordinates for a registry with no ID and no Maven configuration");
-            }
-            host = Objects.requireNonNull(toUrlOrNull(repo.getUrl()), "REST endpoint is not a valid URL").getHost();
-        }
-        final String[] parts = host.split("\\.");
-        final StringBuilder buf = new StringBuilder(host.length());
-        int i = parts.length;
-        buf.append(parts[--i]);
-        while (--i >= 0) {
-            buf.append('.').append(parts[i]);
-        }
-        descriptor.setArtifact(
-                new ArtifactCoords(buf.toString(), Constants.DEFAULT_REGISTRY_DESCRIPTOR_ARTIFACT_ID, null, Constants.JSON,
-                        Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION));
-        return descriptor;
-    }
-
-    private static URL toUrlOrNull(String str) {
-        try {
-            return new URL(str);
-        } catch (MalformedURLException e) {
-        }
-        return null;
-    }
-
-    private static boolean hasRequiredConfig(RegistryConfig qerConfig) {
-        if (qerConfig.getId() == null) {
-            return false;
-        }
-        if (qerConfig.getDescriptor() == null) {
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Returns the default registry client configuration which should be used in case
-     * no configuration file was found in the user's environment.
-     *
-     * @return default registry client configuration
-     */
-    public static RegistryConfig getDefaultRegistry() {
-        final JsonRegistryConfig qer = new JsonRegistryConfig();
-        qer.setId(Constants.DEFAULT_REGISTRY_ID);
-
-        final JsonRegistryDescriptorConfig descriptor = new JsonRegistryDescriptorConfig();
-        qer.setDescriptor(descriptor);
-        descriptor.setArtifact(
-                new ArtifactCoords(Constants.DEFAULT_REGISTRY_GROUP_ID, Constants.DEFAULT_REGISTRY_DESCRIPTOR_ARTIFACT_ID, null,
-                        Constants.JSON, Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION));
-
-        final JsonRegistryMavenConfig mavenConfig = new JsonRegistryMavenConfig();
-        qer.setMaven(mavenConfig);
-
-        final JsonRegistryPlatformsConfig platformsConfig = new JsonRegistryPlatformsConfig();
-        qer.setPlatforms(platformsConfig);
-        platformsConfig.setArtifact(new ArtifactCoords(Constants.DEFAULT_REGISTRY_GROUP_ID,
-                Constants.DEFAULT_REGISTRY_PLATFORMS_CATALOG_ARTIFACT_ID, null, Constants.JSON,
-                Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION));
-
-        final JsonRegistryNonPlatformExtensionsConfig nonPlatformExtensionsConfig = new JsonRegistryNonPlatformExtensionsConfig();
-        qer.setNonPlatformExtensions(nonPlatformExtensionsConfig);
-        nonPlatformExtensionsConfig.setArtifact(new ArtifactCoords(Constants.DEFAULT_REGISTRY_GROUP_ID,
-                Constants.DEFAULT_REGISTRY_NON_PLATFORM_EXTENSIONS_CATALOG_ARTIFACT_ID, null, Constants.JSON,
-                Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION));
-
-        final JsonRegistryMavenRepoConfig mavenRepo = new JsonRegistryMavenRepoConfig();
-        mavenConfig.setRepository(mavenRepo);
-        mavenRepo.setId(Constants.DEFAULT_REGISTRY_ID);
-        mavenRepo.setUrl(Constants.DEFAULT_REGISTRY_MAVEN_REPO_URL);
-        return qer;
-    }
 }

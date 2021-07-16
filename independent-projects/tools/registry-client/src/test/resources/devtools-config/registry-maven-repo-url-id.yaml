@@ -1,6 +1,5 @@
----
 registries:
-- registry.acme.org:
+  registry.acme.org:
     maven:
       repository:
         id: "acme-repo"

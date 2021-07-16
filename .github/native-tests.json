@@ -111,7 +111,7 @@
         {
             "category": "Misc3",
             "timeout": 65,
-            "test-modules": "kubernetes-client, openshift-client, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-metrics",
+            "test-modules": "kubernetes-client, openshift-client, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-metrics, smallrye-opentracing",
             "os-name": "ubuntu-latest"
         },
         {

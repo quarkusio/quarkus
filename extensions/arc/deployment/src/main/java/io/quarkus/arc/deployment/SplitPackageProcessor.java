@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.ClassInfo;
@@ -31,6 +32,17 @@ public class SplitPackageProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(SplitPackageProcessor.class);
 
+    private static final Predicate<String> IGNORE_PACKAGE = new Predicate<>() {
+
+        @Override
+        public boolean test(String packageName) {
+            // Remove the elements from this list when the original issue is fixed
+            // so that we can detect further issues.
+            return packageName.startsWith("io.fabric8.kubernetes")
+                    || packageName.equals("io.quarkus.hibernate.orm.panache");
+        }
+    };
+
     @BuildStep
     void splitPackageDetection(ApplicationArchivesBuildItem archivesBuildItem,
             // Dummy producer to make sure the build step executes
@@ -52,6 +64,10 @@ public class SplitPackageProcessor {
         // - "com.me.app.sub" found in [archiveA, archiveB]
         StringBuilder splitPackagesWarning = new StringBuilder();
         for (String packageName : packageToArchiveMap.keySet()) {
+            if (IGNORE_PACKAGE.test(packageName)) {
+                continue;
+            }
+
             Set<ApplicationArchive> applicationArchives = packageToArchiveMap.get(packageName);
             if (applicationArchives.size() > 1) {
                 splitPackagesWarning.append("\n- \"" + packageName + "\" found in ");

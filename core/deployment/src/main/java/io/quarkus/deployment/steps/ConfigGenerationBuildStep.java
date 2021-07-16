@@ -47,10 +47,10 @@ import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.quarkus.runtime.configuration.ConfigChangeRecorder;
 import io.quarkus.runtime.configuration.ConfigurationRuntimeConfig;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
-import io.quarkus.runtime.configuration.StaticInitSafe;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.PropertiesLocationConfigSourceFactory;
 

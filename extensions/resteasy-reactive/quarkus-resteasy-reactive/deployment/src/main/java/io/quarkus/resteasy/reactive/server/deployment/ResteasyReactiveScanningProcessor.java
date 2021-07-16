@@ -24,6 +24,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
 import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
@@ -45,6 +46,8 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -96,11 +99,18 @@ public class ResteasyReactiveScanningProcessor {
     public ExceptionMappersBuildItem scanForExceptionMappers(CombinedIndexBuildItem combinedIndexBuildItem,
             ApplicationResultBuildItem applicationResultBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
-            List<ExceptionMapperBuildItem> mappers) {
+            List<ExceptionMapperBuildItem> mappers, Capabilities capabilities) {
         AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
         ExceptionMapping exceptions = ResteasyReactiveExceptionMappingScanner
                 .scanForExceptionMappers(combinedIndexBuildItem.getComputingIndex(), applicationResultBuildItem.getResult());
+
         exceptions.addBlockingProblem(BlockingOperationNotAllowedException.class);
+        exceptions.addBlockingProblem(BlockingNotAllowedException.class);
+        if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
+            exceptions.addNonBlockingProblem(
+                    new ExceptionMapping.ExceptionTypeAndMessageContainsPredicate(IllegalStateException.class, "HR000068"));
+        }
+
         for (Map.Entry<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> i : exceptions.getMappers()
                 .entrySet()) {
             beanBuilder.addBeanClass(i.getValue().getClassName());

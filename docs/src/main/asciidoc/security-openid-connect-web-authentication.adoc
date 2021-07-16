@@ -888,6 +888,17 @@ In such cases an issuer verification failure may be reported by the endpoint and
 In such cases, if you work with Keycloak then please start it with a `KEYCLOAK_FRONTEND_URL` system property set to the externally accessible base URL.
 If you work with other Openid Connect providers then please check your provider's documentation.
 
+== Customize authentication requests
+
+By default, only the `response_type` (set to `code`), `scope` (set to 'openid'), `client_id`, `redirect_uri` and `state` properties are passed as HTTP query parameters to the OpenId Connect provider's authorization endpoint when the user is redirected to it to authenticate.
+
+You can add more properties to it with `quarkus.oidc.authentication.extra-params`. For example, some OpenId Connect providers may choose to return the authorization code as part of the redirect URI's fragment which would break the authentication process - it can be fixed as follows:
+
+[source,properties]
+----
+quarkus.oidc.authentication.extra-params.response_mode=query
+----
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]

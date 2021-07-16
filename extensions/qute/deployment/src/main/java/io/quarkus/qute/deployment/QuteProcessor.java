@@ -1072,8 +1072,17 @@ public class QuteProcessor {
             throws IOException {
         ApplicationArchive applicationArchive = applicationArchivesBuildItem.getRootArchive();
         String basePath = "templates";
-        Path templatesPath = applicationArchive.getChildPath(basePath);
-
+        Path templatesPath = null;
+        for (Path rootDir : applicationArchive.getRootDirs()) {
+            // Note that we cannot use ApplicationArchive.getChildPath(String) here because we would not be able to detect 
+            // a wrong directory name on case-insensitive file systems 
+            templatesPath = Files.list(rootDir).filter(p -> p.getFileName().toString().equals(basePath)).findFirst()
+                    .orElse(null);
+            if (templatesPath != null) {
+                break;
+            }
+        }
+        LOGGER.debugf("Found templates dir: %s", templatesPath);
         if (templatesPath != null) {
             scan(templatesPath, templatesPath, basePath + "/", watchedPaths, templatePaths, nativeImageResources);
         }

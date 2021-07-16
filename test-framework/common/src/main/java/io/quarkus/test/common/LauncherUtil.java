@@ -62,6 +62,8 @@ public final class LauncherUtil {
      * If the wait time is exceeded an {@code IllegalStateException} is thrown.
      */
     static ListeningAddress waitForCapturedListeningData(Process quarkusProcess, Path logFile, long waitTimeSeconds) {
+        ensureProcessIsAlive(quarkusProcess);
+
         CountDownLatch signal = new CountDownLatch(1);
         AtomicReference<ListeningAddress> resultReference = new AtomicReference<>();
         CaptureListeningDataReader captureListeningDataReader = new CaptureListeningDataReader(logFile,
@@ -79,6 +81,19 @@ public final class LauncherUtil {
                     "Unable to determine the status of the running process. See the above logs for details");
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted while waiting to capture listening process port and protocol");
+        }
+    }
+
+    private static void ensureProcessIsAlive(Process quarkusProcess) {
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException ignored) {
+            throw new RuntimeException(
+                    "Interrupted while waiting to determine the status of process '" + quarkusProcess.pid() + "'.");
+        }
+        if (!quarkusProcess.isAlive()) {
+            throw new RuntimeException("Unable to successfully launch process '" + quarkusProcess.pid() + "'. Exit code is: '"
+                    + quarkusProcess.exitValue() + "'.");
         }
     }
 
@@ -191,6 +206,7 @@ public final class LauncherUtil {
         @Override
         public void run() {
             if (!ensureProcessOutputFileExists()) {
+                unableToDetermineData("Log file '" + processOutput.toAbsolutePath() + "' was not created.");
                 return;
             }
 
@@ -234,7 +250,7 @@ public final class LauncherUtil {
 
         private boolean ensureProcessOutputFileExists() {
             int i = 0;
-            while (i++ < 25) {
+            while (i++ < 50) {
                 if (Files.exists(processOutput)) {
                     return true;
                 } else {

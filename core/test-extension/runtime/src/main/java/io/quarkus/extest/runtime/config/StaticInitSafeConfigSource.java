@@ -3,7 +3,7 @@ package io.quarkus.extest.runtime.config;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.quarkus.runtime.configuration.StaticInitSafe;
+import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.smallrye.config.common.MapBackedConfigSource;
 
 @StaticInitSafe

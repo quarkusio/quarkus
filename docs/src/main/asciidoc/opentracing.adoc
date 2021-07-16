@@ -282,6 +282,27 @@ Following the link:mongodb[MongoDB guide], the command listener will be register
 quarkus.mongodb.tracing.enabled=true
 ----
 
+=== Zipkin compatibility mode
+
+To enable it, add the following dependency to your pom.xml:
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.jaegertracing</groupId>
+    <artifactId>jaeger-zipkin</artifactId>
+</dependency>
+----
+
+It contains the dependencies to convert the request to zipkin format.
+The zipkin compatibility mode will be activated after defining the config property as follows:
+
+[source, properties]
+----
+# Enable zipkin compatibility mode 
+quarkus.jaeger.zipkin.compatibility-mode=true 
+----
+
 [[configuration-reference]]
 == Jaeger Configuration Reference
 

@@ -21,6 +21,7 @@
                     <systemPropertyVariables>
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
+                        <smallrye.faulttolerance.mp-compatibility>true</smallrye.faulttolerance.mp-compatibility>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->
@@ -32,6 +33,9 @@
                     <excludes>
                         <!-- We do not support enablement via beans.xml -->
                         <exclude>org.eclipse.microprofile.fault.tolerance.tck.interceptor.xmlInterceptorEnabling.FaultToleranceInterceptorEnableByXmlTest</exclude>
+                        <!-- Jandex bug: https://github.com/wildfly/jandex/pull/114 -->
+                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.invalidParameters.InvalidCircuitBreakerFailureRatioNegTest</exclude>
+                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.invalidParameters.InvalidCircuitBreakerFailureRatioPosTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>

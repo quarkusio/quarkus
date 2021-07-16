@@ -8,6 +8,7 @@ import io.quarkus.deployment.builditem.AdditionalBootstrapConfigSourceProviderBu
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigSourceProviderBuildItem;
+import io.quarkus.runtime.configuration.ProfileManager;
 
 public final class ConfigYamlProcessor {
 
@@ -34,5 +35,9 @@ public final class ConfigYamlProcessor {
     void watchYamlConfig(BuildProducer<HotDeploymentWatchedFileBuildItem> items) {
         items.produce(new HotDeploymentWatchedFileBuildItem("application.yaml"));
         items.produce(new HotDeploymentWatchedFileBuildItem("application.yml"));
+
+        String activeProfile = ProfileManager.getActiveProfile();
+        items.produce(new HotDeploymentWatchedFileBuildItem(String.format("application-%s.yml", activeProfile)));
+        items.produce(new HotDeploymentWatchedFileBuildItem(String.format("application-%s.yaml", activeProfile)));
     }
 }

@@ -75,7 +75,7 @@ Here we include all the XML files and JSON files into the native executable.
 
 [NOTE]
 ====
-You can find more information about this topic in https://github.com/oracle/graal/blob/master/substratevm/Resources.md[the GraalVM documentation].
+You can find more information about this topic in https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/Resources.md[the GraalVM documentation].
 ====
 
 The final order of business is to make the configuration file known to the `native-image` executable by adding the proper configuration to `application.properties`:
@@ -244,7 +244,7 @@ As an example, in order to register all methods of class `com.acme.MyClass` for 
 
 [NOTE]
 ====
-For more details on the format of this file, please refer to https://github.com/oracle/graal/blob/master/substratevm/Reflection.md[the GraalVM documentation].
+For more details on the format of this file, please refer to https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/Reflection.md[the GraalVM documentation].
 ====
 
 The final order of business is to make the configuration file known to the `native-image` executable by adding the proper configuration to `application.properties`:
@@ -309,7 +309,7 @@ It should be added to the `native-image` configuration using the `quarkus.native
 
 [NOTE]
 ====
-You can find more information about all this in https://github.com/oracle/graal/blob/master/substratevm/ClassInitialization.md[the GraalVM documentation].
+You can find more information about all this in https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/ClassInitialization.md[the GraalVM documentation].
 ====
 
 [NOTE]
@@ -342,7 +342,7 @@ com.oracle.svm.core.jdk.UnsupportedFeatureError: Proxy class defined by interfac
 ----
 
 Solving this issue requires adding the `-H:DynamicProxyConfigurationResources=<comma-separated-config-resources>` option and to provide a dynamic proxy configuration file.
-You can find all the information about the format of this file in https://github.com/oracle/graal/blob/master/substratevm/DynamicProxy.md#manual-configuration[the GraalVM documentation].
+You can find all the information about the format of this file in https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/DynamicProxy.md#manual-configuration[the GraalVM documentation].
 
 [[native-in-extension]]
 == Supporting native in a Quarkus extension
@@ -375,7 +375,7 @@ public class SaxParserProcessor {
 
 [NOTE]
 ====
-More information about reflection in GraalVM can be found https://github.com/oracle/graal/blob/master/substratevm/Reflection.md[here].
+More information about reflection in GraalVM can be found https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/Reflection.md[here].
 ====
 
 === Including resources
@@ -396,7 +396,7 @@ public class ResourcesProcessor {
 
 [NOTE]
 ====
-For more information about GraalVM resource handling in native executables please refer to https://github.com/oracle/graal/blob/master/substratevm/Resources.md[the GraalVM documentation].
+For more information about GraalVM resource handling in native executables please refer to https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/Resources.md[the GraalVM documentation].
 ====
 
 
@@ -420,7 +420,7 @@ Using such a construct means that a `--initialize-at-run-time` option will autom
 
 [NOTE]
 ====
-For more information about `--initialize-at-run-time`, please read https://github.com/oracle/graal/blob/master/substratevm/ClassInitialization.md[the GraalVM documentation].
+For more information about `--initialize-at-run-time`, please read https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/ClassInitialization.md[the GraalVM documentation].
 ====
 
 === Managing Proxy Classes
@@ -444,7 +444,7 @@ Using such a construct means that a `-H:DynamicProxyConfigurationResources` opti
 
 [NOTE]
 ====
-For more information about Proxy Classes you can read https://github.com/oracle/graal/blob/master/substratevm/DynamicProxy.md[the GraalVM documentation].
+For more information about Proxy Classes you can read https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/DynamicProxy.md[the GraalVM documentation].
 ====
 
 === Logging with Native Image

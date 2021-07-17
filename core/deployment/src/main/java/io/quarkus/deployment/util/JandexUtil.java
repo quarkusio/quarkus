@@ -1,5 +1,6 @@
 package io.quarkus.deployment.util;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -373,6 +374,58 @@ public final class JandexUtil {
 
         public ClassNotIndexedException(DotName dotName) {
             this.dotName = dotName;
+        }
+    }
+
+    public static Class<?> loadRawType(Type type) {
+        switch (type.kind()) {
+            case VOID:
+                return void.class;
+            case PRIMITIVE:
+                switch (type.asPrimitiveType().primitive()) {
+                    case BOOLEAN:
+                        return boolean.class;
+                    case CHAR:
+                        return char.class;
+                    case BYTE:
+                        return byte.class;
+                    case SHORT:
+                        return short.class;
+                    case INT:
+                        return int.class;
+                    case LONG:
+                        return long.class;
+                    case FLOAT:
+                        return float.class;
+                    case DOUBLE:
+                        return double.class;
+                    default:
+                        throw new IllegalArgumentException("Unknown primitive type: " + type);
+                }
+            case CLASS:
+                return load(type.asClassType().name());
+            case PARAMETERIZED_TYPE:
+                return load(type.asParameterizedType().name());
+            case ARRAY:
+                Class<?> component = loadRawType(type.asArrayType().component());
+                int dimensions = type.asArrayType().dimensions();
+                return Array.newInstance(component, new int[dimensions]).getClass();
+            case WILDCARD_TYPE:
+                return loadRawType(type.asWildcardType().extendsBound());
+            case TYPE_VARIABLE:
+                return load(type.asTypeVariable().name());
+            case UNRESOLVED_TYPE_VARIABLE:
+                return Object.class; // can't do better here
+            default:
+                throw new IllegalArgumentException("Unknown type: " + type);
+        }
+    }
+
+    private static Class<?> load(DotName name) {
+        try {
+            return Thread.currentThread().getContextClassLoader().loadClass(name.toString());
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 }

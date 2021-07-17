@@ -11,7 +11,6 @@ import org.eclipse.microprofile.faulttolerance.ExecutionContext;
 import org.eclipse.microprofile.faulttolerance.FallbackHandler;
 
 import io.smallrye.faulttolerance.FallbackHandlerProvider;
-import io.smallrye.faulttolerance.config.FallbackConfig;
 import io.smallrye.faulttolerance.config.FaultToleranceOperation;
 
 @Dependent
@@ -30,7 +29,7 @@ public class QuarkusFallbackHandlerProvider implements FallbackHandlerProvider {
                 @SuppressWarnings("unchecked")
                 @Override
                 public T handle(ExecutionContext context) {
-                    Class<? extends FallbackHandler<?>> clazz = operation.getFallback().get(FallbackConfig.VALUE);
+                    Class<? extends FallbackHandler<?>> clazz = operation.getFallback().value();
                     FallbackHandler<T> fallbackHandlerInstance = (FallbackHandler<T>) instance.select(clazz).get();
                     try {
                         return fallbackHandlerInstance.handle(context);

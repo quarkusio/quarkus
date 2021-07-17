@@ -50,7 +50,7 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
 
         boolean done = p.waitFor(5, TimeUnit.MINUTES);
         if (!done) {
-            p.destroy();
+            destroyProcess(p);
         }
         try (InputStream is = new FileInputStream(logOutput)) {
             final BuildResult commandResult = BuildResult.of(is);
@@ -108,5 +108,28 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         System.err.println(
                 "Command: " + String.join(" ", command) + " failed with exit code: " + exitCode + " and the following output:");
         System.err.println(commandResult.getOutput());
+    }
+
+    /**
+     * Try to destroy the process normally a few times
+     * and resort to forceful destruction if necessary
+     */
+    private static void destroyProcess(Process wrapperProcess) {
+        wrapperProcess.destroy();
+        int i = 0;
+        while (i++ < 10) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ignored) {
+
+            }
+            if (!wrapperProcess.isAlive()) {
+                break;
+            }
+        }
+
+        if (wrapperProcess.isAlive()) {
+            wrapperProcess.destroyForcibly();
+        }
     }
 }

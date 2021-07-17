@@ -1,18 +1,20 @@
-package io.quarkus.deployment.dev.console;
+package io.quarkus.deployment.console;
 
+import java.util.TreeMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.aesh.terminal.Attributes;
 import org.aesh.terminal.Connection;
 import org.aesh.terminal.tty.Size;
-import org.aesh.terminal.utils.ANSI;
 
-import io.quarkus.dev.console.InputHandler;
 import io.quarkus.dev.console.QuarkusConsole;
+import io.quarkus.dev.console.StatusLine;
 
 public class AeshConsole extends QuarkusConsole {
 
@@ -51,6 +53,10 @@ public class AeshConsole extends QuarkusConsole {
 
     static final Pattern ESCAPE = Pattern.compile("\u001b\\[(\\d\\d?)[\\d;]*m");
 
+    static final TreeMap<Integer, StatusLineImpl> statusMap = new TreeMap<>();
+    private final ReadWriteLock positionLock = new ReentrantReadWriteLock();
+    private volatile boolean closed;
+
     public AeshConsole(Connection connection, boolean inputSupport) {
         this.inputSupport = inputSupport;
         INSTANCE = this;
@@ -85,16 +91,30 @@ public class AeshConsole extends QuarkusConsole {
         writeQueue.add(buffer.toString());
     }
 
-    public AeshInputHolder createHolder(InputHandler inputHandler) {
-        return new AeshInputHolder(inputHandler);
+    @Override
+    public StatusLine registerStatusLine(int priority) {
+        try {
+            positionLock.writeLock().lock();
+            while (statusMap.containsKey(priority)) {
+                //this kinda sucks, but it means that if multiple extensions try and
+                //use this and happen to pick the same priority things don't blow up
+                priority++;
+            }
+            StatusLineImpl value = new StatusLineImpl(priority);
+            statusMap.put(priority, value);
+            rebalance();
+            return value;
+        } finally {
+            positionLock.writeLock().unlock();
+        }
     }
 
-    private AeshConsole setPromptMessage(String promptMessage) {
+    @Override
+    public void setPromptMessage(String promptMessage) {
         if (!inputSupport) {
-            return this;
+            return;
         }
         setMessage(0, promptMessage);
-        return this;
     }
 
     private AeshConsole setMessage(int position, String message) {
@@ -128,11 +148,10 @@ public class AeshConsole extends QuarkusConsole {
     private void end(Connection conn) {
         conn.setAttributes(attributes);
         StringBuilder sb = new StringBuilder();
-        sb.append(ANSI.MAIN_BUFFER);
-        sb.append(ANSI.CURSOR_SHOW);
-        sb.append("\u001B[0m");
+        sb.append("\u001B[0m\n");
         writeQueue.add(sb.toString());
         deadlockSafeWrite();
+        closed = true;
     }
 
     private void deadlockSafeWrite() {
@@ -163,27 +182,27 @@ public class AeshConsole extends QuarkusConsole {
     private void setup(Connection conn) {
         synchronized (this) {
             size = conn.size();
+            conn.setSignalHandler(event -> {
+                switch (event) {
+                    case INT:
+                        //todo: why does async exit not work here
+                        //Quarkus.asyncExit();
+                        //end(conn);
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                System.exit(0);
+                            }
+                        }).start();
+                        break;
+                }
+            });
             if (inputSupport) {
-                conn.setSignalHandler(event -> {
-                    switch (event) {
-                        case INT:
-                            //todo: why does async exit not work here
-                            //Quarkus.asyncExit();
-                            //end(conn);
-                            new Thread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    System.exit(0);
-                                }
-                            }).start();
-                            break;
-                    }
-                });
                 // Keyboard handling
                 conn.setStdinHandler(keys -> {
-                    InputHolder handler = inputHandlers.peek();
+                    var handler = inputHandler;
                     if (handler != null) {
-                        handler.handler.handleInput(keys);
+                        handler.accept(keys);
                     }
                     if (doingReadline) {
                         for (var k : keys) {
@@ -221,7 +240,7 @@ public class AeshConsole extends QuarkusConsole {
      * @param buffer
      */
     private void printStatusAndPrompt(StringBuilder buffer) {
-        if (totalStatusLines == 0) {
+        if (totalStatusLines == 0 || closed) {
             return;
         } else if (totalStatusLines < size.getHeight()) {
             //if the console is tiny we don't do this
@@ -282,6 +301,10 @@ public class AeshConsole extends QuarkusConsole {
 
     public void write(String s) {
         if (IN_WRITE.get()) {
+            return;
+        }
+        if (closed) {
+            connection.write(s);
             return;
         }
         if (lastColorCode != null) {
@@ -368,44 +391,56 @@ public class AeshConsole extends QuarkusConsole {
         write(new String(buf, off, len, connection.outputEncoding()));
     }
 
-    class AeshInputHolder extends InputHolder {
+    @Override
+    public void doReadLine() {
+        if (!inputSupport) {
+            return;
+        }
+        setPromptMessage("");
+        connection.setAttributes(attributes);
+        doingReadline = true;
 
-        protected AeshInputHolder(InputHandler handler) {
-            super(handler);
+    }
+
+    void rebalance() {
+        int count = 1;
+        for (var val : statusMap.values()) {
+            val.position = count;
+            setMessage(count++, val.message);
+        }
+    }
+
+    class StatusLineImpl implements StatusLine {
+
+        final int priority;
+        int position;
+        String message;
+
+        StatusLineImpl(int priority) {
+            this.priority = priority;
         }
 
         @Override
-        protected void setPromptMessage(String prompt) {
-            if (!inputSupport) {
-                return;
+        public void setMessage(String message) {
+            this.message = message;
+            try {
+                positionLock.readLock().lock();
+                AeshConsole.this.setMessage(position, message);
+            } finally {
+                positionLock.readLock().unlock();
             }
-            setMessage(0, prompt);
         }
 
         @Override
-        protected void setResultsMessage(String results) {
-            setMessage(1, results);
-        }
-
-        @Override
-        protected void setCompileErrorMessage(String results) {
-            setMessage(3, results);
-        }
-
-        @Override
-        protected void setStatusMessage(String status) {
-            setMessage(2, status);
-        }
-
-        @Override
-        public void doReadLine() {
-            if (!inputSupport) {
-                return;
+        public void close() {
+            positionLock.writeLock().lock();
+            try {
+                AeshConsole.this.setMessage(position, null);
+                statusMap.remove(priority);
+                rebalance();
+            } finally {
+                positionLock.writeLock().unlock();
             }
-            setPrompt("");
-            connection.setAttributes(attributes);
-            doingReadline = true;
-
         }
     }
 }

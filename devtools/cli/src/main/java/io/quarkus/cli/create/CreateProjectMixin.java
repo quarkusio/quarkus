@@ -100,6 +100,7 @@ public class CreateProjectMixin {
         setValue(ProjectGenerator.PACKAGE_NAME, codeGeneration.packageName);
         setValue(ProjectGenerator.APP_CONFIG, codeGeneration.getAppConfig());
 
+        setValue(CreateProject.NO_CODE, !codeGeneration.includeCode);
         setValue(CreateProject.NO_BUILDTOOL_WRAPPER, !codeGeneration.includeWrapper);
     }
 

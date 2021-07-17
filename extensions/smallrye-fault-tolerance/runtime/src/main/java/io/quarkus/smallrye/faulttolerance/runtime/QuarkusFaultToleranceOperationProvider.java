@@ -13,6 +13,7 @@ import javax.inject.Singleton;
 import org.jboss.logging.Logger;
 
 import io.smallrye.faulttolerance.FaultToleranceOperationProvider;
+import io.smallrye.faulttolerance.config.FaultToleranceMethods;
 import io.smallrye.faulttolerance.config.FaultToleranceOperation;
 
 @Singleton
@@ -45,7 +46,7 @@ public class QuarkusFaultToleranceOperationProvider implements FaultToleranceOpe
 
     private FaultToleranceOperation createAtRuntime(CacheKey key) {
         LOG.debugf("FaultToleranceOperation not found in the cache for %s creating it at runtime", key);
-        return FaultToleranceOperation.of(key.beanClass, key.method);
+        return FaultToleranceOperation.create(FaultToleranceMethods.create(key.beanClass, key.method));
     }
 
     static class CacheKey {

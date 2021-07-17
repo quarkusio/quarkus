@@ -219,8 +219,8 @@ public class CliProjectMavenTest {
                 "quarkus command should specify 'MAVEN'\n" + result);
 
         Assertions.assertTrue(
-                result.stdout.contains("-DdebugHost=0.0.0.0 -Ddebug=client"),
-                "mvn command should specify -DdebugHost=0.0.0.0 -Ddebug=client\n" + result);
+                result.stdout.contains("-DdebugHost=0.0.0.0 -Ddebug=client -DdebugPort=8008"),
+                "mvn command should specify -DdebugHost=0.0.0.0 -Ddebug=client -DdebugPort=8008\n" + result);
 
         Assertions.assertFalse(result.stdout.contains("-Dsuspend"),
                 "mvn command should not specify '-Dsuspend'\n" + result);
@@ -273,14 +273,17 @@ public class CliProjectMavenTest {
                 "Should contain 'Creating an app', found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("MAVEN"),
                 "Should contain MAVEN, found: " + result.stdout);
-        Assertions.assertTrue(result.stdout.contains("Omit build tool wrapper   true"),
+
+        // strip spaces to avoid fighting with column whitespace
+        String noSpaces = result.stdout.replaceAll("[\\s\\p{Z}]", "");
+        Assertions.assertTrue(noSpaces.contains("Omitbuildtoolwrappertrue"),
                 "Should contain 'Omit build tool wrapper   true', found: " + result.stdout);
-        Assertions.assertTrue(result.stdout.contains("Package Name              custom.pkg"),
-                "Should contain 'Package Name              custom.pkg', found: " + result.stdout);
-        Assertions.assertTrue(result.stdout.contains("Project ArtifactId        my-project"),
-                "Output should contain 'Project ArtifactId        my-project', found: " + result.stdout);
-        Assertions.assertTrue(result.stdout.contains("Project GroupId           silly"),
-                "Output should contain 'Project GroupId           silly', found: " + result.stdout);
+        Assertions.assertTrue(noSpaces.contains("PackageNamecustom.pkg"),
+                "Should contain 'Package Name   custom.pkg', found: " + result.stdout);
+        Assertions.assertTrue(noSpaces.contains("ProjectArtifactIdmy-project"),
+                "Output should contain 'Project ArtifactId   my-project', found: " + result.stdout);
+        Assertions.assertTrue(noSpaces.contains("ProjectGroupIdsilly"),
+                "Output should contain 'Project GroupId   silly', found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("JAVA"),
                 "Should contain JAVA, found: " + result.stdout);
     }

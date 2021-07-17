@@ -221,6 +221,73 @@ public class CliProjectGradleTest {
     }
 
     @Test
+    public void testDevOptions() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "-e", "-B", "--verbose");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        // 1 --clean --tests --suspend
+        result = CliDriver.execute(project, "dev", "-e", "--dry-run",
+                "--clean", "--tests", "--debug", "--suspend", "--debug-mode=listen");
+
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("GRADLE"),
+                "gradle command should specify 'GRADLE'\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains(" clean"),
+                "gradle command should specify 'clean'\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("-x test"),
+                "gradle command should not specify '-x test'\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("-Ddebug"),
+                "gradle command should not specify '-Ddebug'\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains("-Dsuspend"),
+                "gradle command should specify '-Dsuspend'\n" + result);
+
+        // 2 --no-clean --no-tests --no-debug
+        result = CliDriver.execute(project, "dev", "-e", "--dry-run",
+                "--no-clean", "--no-tests", "--no-debug");
+
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("GRADLE"),
+                "gradle command should specify 'GRADLE'\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains(" clean"),
+                "gradle command should not specify 'clean'\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains("-x test"),
+                "gradle command should specify '-x test'\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains("-Ddebug=false"),
+                "gradle command should specify '-Ddebug=false'\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("-Dsuspend"),
+                "gradle command should not specify '-Dsuspend'\n" + result);
+
+        // 3 --no-suspend --debug-host=0.0.0.0 --debug-port=8008 --debug-mode=connect -- arg1 arg2
+        result = CliDriver.execute(project, "dev", "-e", "--dry-run",
+                "--no-suspend", "--debug-host=0.0.0.0", "--debug-port=8008", "--debug-mode=connect", "--", "arg1", "arg2");
+
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("GRADLE"),
+                "gradle command should specify 'GRADLE'\n" + result);
+
+        Assertions.assertTrue(
+                result.stdout.contains("-DdebugHost=0.0.0.0 -Ddebug=client"),
+                "gradle command should specify -DdebugHost=0.0.0.0 -Ddebug=client\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("-Dsuspend"),
+                "gradle command should not specify '-Dsuspend'\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains("-Dquarkus.args='arg1 arg2'"),
+                "gradle command should not specify -Dquarkus.args='arg1 arg2'\n" + result);
+    }
+
+    @Test
     public void testCreateArgPassthrough() throws Exception {
         Path nested = workspaceRoot.resolve("cli-nested");
         project = nested.resolve("my-project");

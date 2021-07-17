@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 This guide explains how to use the REST Client Reactive in order to interact with REST APIs.
 REST Client Reactive is a non-blocking counterpart of the RESTEasy REST Client.
 
-If your application uses a client and exposes REST endpoints, please use link:resteasy-reactive.adoc[RESTEasy Reactive]
+If your application uses a client and exposes REST endpoints, please use link:resteasy-reactive[RESTEasy Reactive]
 for the server part.
 
 == Prerequisites
@@ -622,7 +622,7 @@ You can also generate the native executable with `./mvnw clean package -Pnative`
 == Using a Mock HTTP Server for tests
 
 For tests, you can easily mock the HTTP server with Wiremock.
-The link:rest-client.adoc#using-a-mock-http-server-for-tests[Wiremock section of the Quarkus - Using the REST Client]
+The link:rest-client#using-a-mock-http-server-for-tests[Wiremock section of the Quarkus - Using the REST Client]
 describes how to set it up in detail.
 
 == Known limitations

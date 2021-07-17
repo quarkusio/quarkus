@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -63,10 +64,18 @@ public class CliDriver {
         List<String> newArgs = new ArrayList<>();
         newArgs.addAll(Arrays.asList(args));
 
+        List<String> looseArgs = Collections.emptyList();
+        int index = newArgs.indexOf("--");
+        if (index >= 0) {
+            looseArgs = new ArrayList<>(newArgs.subList(index, newArgs.size()));
+            newArgs.subList(index, newArgs.size()).clear();
+        }
+
         preserveLocalRepoSettings(newArgs);
         newArgs.add("--cli-test");
         newArgs.add("--cli-test-dir");
         newArgs.add(startingDir.toString());
+        newArgs.addAll(looseArgs); // re-add arguments
 
         System.out.println("$ quarkus " + String.join(" ", newArgs));
 

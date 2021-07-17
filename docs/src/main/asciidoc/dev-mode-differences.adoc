@@ -19,7 +19,7 @@ during development but should *NEVER* be used in production.
 
 Feature sets aside, the Quarkus application that is run under dev-mode differs architecturally from the production application (i.e. the one that is run using `java -jar ...`).
 
-In dev-mode, Quarkus uses a ClassLoader hierarchy (explained in detail link:class-loading-reference.adoc[here]) that enables the live reload of user code
+In dev-mode, Quarkus uses a ClassLoader hierarchy (explained in detail link:class-loading-reference[here]) that enables the live reload of user code
 without requiring a rebuild and restart of the application.
 
 In a production application, the aforementioned class loading infrastructure is entirely absent - there is a single, purpose built ClassLoader that loads (almost) all classes and dependencies.
@@ -34,7 +34,7 @@ This mightily important feature needs no introduction and has already been menti
 
 === Dev UI
 
-Quarkus provides a very useful link:dev-ui.adoc[UI] accessible from the browser at `/q/dev`. This UI allows a developer to see the state of the application, but
+Quarkus provides a very useful link:dev-ui[UI] accessible from the browser at `/q/dev`. This UI allows a developer to see the state of the application, but
 also provides access to various actions that can change that state (depending on the extensions that are present).
 Examples of such operations are:
 

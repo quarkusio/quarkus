@@ -41,7 +41,7 @@
                 <executions>
                     <execution>
                         <id>unpack-suite-files</id>
-                        <phase>process-test-classes</phase>
+                        <phase>generate-test-resources</phase>
                         <goals>
                             <goal>unpack</goal>
                         </goals>
@@ -163,5 +163,45 @@
             </exclusions>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>jdk17-workarounds</id>
+            <activation>
+                <jdk>[17,)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- Adds exclusions to tck-base-suite.xml (note: exclusions in surefire don't work if using a suiteXmlFile)-->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>xml-maven-plugin</artifactId>
+                        <version>1.0.2</version>
+                        <executions>
+                            <execution>
+                                <id>jdk17-add-exclusions</id>
+                                <phase>process-test-resources</phase>
+                                <goals>
+                                    <goal>transform</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <transformationSets>
+                                <transformationSet>
+                                    <dir>${project.build.directory}/tck-suite/suites</dir>
+                                    <outputDir>${project.build.directory}/tck-suite/suites</outputDir>
+                                    <stylesheet>src/test/xml/exclusions-jdk17.xsl</stylesheet>
+                                </transformationSet>
+                            </transformationSets>
+                            <catalogs>
+                                <catalog>src/test/xml/catalog.xml</catalog>
+                            </catalogs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

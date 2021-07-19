@@ -11,6 +11,7 @@ import javax.inject.Inject;
 
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
+import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import picocli.CommandLine;
@@ -46,6 +47,12 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
     @CommandLine.ArgGroup(exclusive = false, validate = false)
     protected PropertiesOptions propertiesOptions = new PropertiesOptions();
+
+    @CommandLine.Option(names = {
+            "--tools-config" }, description = "Quarkus Tools configuration file", hidden = true, scope = CommandLine.ScopeType.INHERIT)
+    void setToolsConfig(String toolsConfig) {
+        System.setProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY, toolsConfig);
+    }
 
     @Override
     public int run(String... args) throws Exception {

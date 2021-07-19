@@ -1,8 +1,10 @@
-package io.quarkus.cli.common;
+package io.quarkus.cli.registry;
 
 import java.nio.file.Path;
 
 import io.quarkus.cli.Version;
+import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;

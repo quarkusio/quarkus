@@ -58,7 +58,7 @@ public class CreateApp extends BaseCreateCommand {
 
             createProject.setSingleProjectGAV(gav);
             createProject.setTestOutputDirectory(output.getTestDirectory());
-            if (createProject.checkProjectRootAlreadyExists(output)) {
+            if (createProject.checkProjectRootAlreadyExists(output, runMode.isDryRun())) {
                 return CommandLine.ExitCode.USAGE;
             }
 

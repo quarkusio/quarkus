@@ -1,5 +1,9 @@
 package io.quarkus.cli;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -10,6 +14,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.registry.config.RegistriesConfigLocator;
 import picocli.CommandLine;
 
 public class CliNonProjectTest {
@@ -30,6 +35,7 @@ public class CliNonProjectTest {
                 "Directory list operation should succeed");
         Assertions.assertEquals(0, files.length,
                 "Directory should be empty. Found: " + Arrays.toString(files));
+        System.clearProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY);
     }
 
     @Test
@@ -79,5 +85,45 @@ public class CliNonProjectTest {
         CliDriver.Result result2 = CliDriver.execute(workspaceRoot, "create", "--dryrun", "-e");
         Assertions.assertEquals(result.stdout, result2.stdout,
                 "Invoking the command with --dryrun should produce the same result");
+    }
+
+    @Test
+    public void testRegistryRefresh() throws Exception {
+
+        // List extensions of a specified platform version
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "registry", "--refresh", "-e");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+
+        Path configPath = resolveConfigPath("enabledConfig.yml");
+        result = CliDriver.execute(workspaceRoot, "registry", "--refresh", "-e",
+                "--tools-config", configPath.toAbsolutePath().toString());
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+        Assertions.assertTrue(result.stdout.contains(configPath.toString()),
+                "Should contain path to config file, found: " + result.stdout);
+        Assertions.assertTrue(result.stdout.contains("- registry.test.local"),
+                "Should contain '- registry.test.local', found: " + result.stdout);
+        Assertions.assertFalse(result.stdout.contains("- registry.quarkus.io"),
+                "Should not contain '- registry.quarkus.io', found: " + result.stdout);
+
+        configPath = resolveConfigPath("disabledConfig.yml");
+        result = CliDriver.execute(workspaceRoot, "registry", "--refresh", "-e",
+                "--tools-config", configPath.toAbsolutePath().toString());
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+        Assertions.assertTrue(result.stdout.contains(configPath.toString()),
+                "Should contain path to config file, found: " + result.stdout);
+        Assertions.assertTrue(result.stdout.contains("- registry.test.local (disabled)"),
+                "Should contain '- registry.test.local (disabled)', found: " + result.stdout);
+        Assertions.assertTrue(result.stdout.contains("- registry.quarkus.io"),
+                "Should contain '- registry.quarkus.io', found: " + result.stdout);
+    }
+
+    private static Path resolveConfigPath(String configName) throws URISyntaxException {
+        final URL configUrl = Thread.currentThread().getContextClassLoader().getResource(configName);
+        assertThat(configUrl).isNotNull();
+        final Path path = Paths.get(configUrl.toURI());
+        return path;
     }
 }

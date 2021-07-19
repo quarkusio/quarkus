@@ -5,6 +5,6 @@
 {/if}
 {#if it.delay > 0}
   (with delay {it.delay} {it.delayUnit.toString.toLowerCase})
-{#else if !schedule.delayed.empty}
+{#else if !it.delayed.empty}
   (delayed for {it.delayed})
 {/if}

@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.devconsole;
+package io.quarkus.test.devconsole;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -10,9 +10,10 @@ import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
 /**
- * This needs to be an integration test so the pom.properties has already been created
+ * Note that this test cannot be placed under the relevant {@code -deployment} module because then the DEV UI processor would
+ * not be able to locate the template resources correctly.
  */
-public class DevConsoleSmokeIT {
+public class DevConsoleSmokeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()

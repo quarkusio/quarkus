@@ -146,9 +146,7 @@ function changeBackgroundColor(color, element){
                         {/if}
                     </td>
                     <td>
-                        {#if item.description.fmtJavadoc && item.description.fmtJavadoc != 'NOT_FOUND'}
-                            {item.description.fmtJavadoc}
-                        {/if}    
+                       {item.description.fmtJavadoc??}
                     </td>
                 </tr>
                 {/for}

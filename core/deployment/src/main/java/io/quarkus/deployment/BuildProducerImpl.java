@@ -22,6 +22,7 @@ public class BuildProducerImpl<T extends BuildItem> implements BuildProducer<T> 
 
     @Override
     public void produce(T item) {
+        var someVariable = "value";
         buildContext.produce(type, item);
     }
 }

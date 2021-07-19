@@ -11,6 +11,9 @@ http:
       login-page: login.html
       error-page: error.html
       landing-page: index.html
+      positions:
+        - 10
+        - 20
 
     ssl:
       port: 8443

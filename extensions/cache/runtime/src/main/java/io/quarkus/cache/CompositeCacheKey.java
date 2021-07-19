@@ -1,12 +1,11 @@
-package io.quarkus.cache.runtime;
+package io.quarkus.cache;
 
 import java.util.Arrays;
 
 /**
- * A composite cache key is used by the annotations caching API when a method annotated with
- * {@link io.quarkus.cache.CacheResult CacheResult} or {@link io.quarkus.cache.CacheInvalidate CacheInvalidate} is invoked and
- * when the cache key is composed of several of the method arguments (annotated with {@link io.quarkus.cache.CacheKey CacheKey}
- * or not).
+ * A composite cache key is used by the annotations caching API when a method annotated with {@link CacheResult} or
+ * {@link CacheInvalidate} is invoked and when the cache key is composed of several of the method arguments (annotated with
+ * {@link CacheKey} or not). This class can also be used with the programmatic caching API.
  */
 public class CompositeCacheKey {
 

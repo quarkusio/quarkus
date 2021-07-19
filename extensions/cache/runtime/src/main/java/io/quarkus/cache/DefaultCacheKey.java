@@ -1,10 +1,10 @@
-package io.quarkus.cache.runtime;
+package io.quarkus.cache;
 
 import java.util.Objects;
 
 /**
- * A default cache key is used by the annotations caching API when a no-args method annotated with
- * {@link io.quarkus.cache.CacheResult CacheResult} or {@link io.quarkus.cache.CacheInvalidate CacheInvalidate} is invoked.
+ * A default cache key is used by the annotations caching API when a no-args method annotated with {@link CacheResult} or
+ * {@link CacheInvalidate} is invoked. This class can also be used with the programmatic caching API.
  */
 public class DefaultCacheKey {
 

@@ -252,7 +252,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.cache.runtime.caffeine.CaffeineCache;
+import io.quarkus.cache.CaffeineCache;
 
 public class CaffeineCacheSupplier implements Supplier<Collection<CaffeineCache>> {
 
@@ -355,8 +355,8 @@ link:building-my-first-extension#description-of-a-quarkus-extension[`runtime mod
 ----
 package io.quarkus.cache.runtime.devconsole;
 
+import io.quarkus.cache.CaffeineCache;
 import io.quarkus.cache.runtime.CaffeineCacheSupplier;
-import io.quarkus.cache.runtime.caffeine.CaffeineCache;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
 import io.quarkus.vertx.http.runtime.devmode.devconsole.FlashScopeUtil.FlashMessageStatus;

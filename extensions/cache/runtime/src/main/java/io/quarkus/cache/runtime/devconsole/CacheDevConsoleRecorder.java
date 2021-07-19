@@ -4,8 +4,9 @@ import java.util.Optional;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.cache.Cache;
+import io.quarkus.cache.CaffeineCache;
 import io.quarkus.cache.runtime.CaffeineCacheSupplier;
-import io.quarkus.cache.runtime.caffeine.CaffeineCache;
+import io.quarkus.cache.runtime.caffeine.CaffeineCacheImpl;
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.devmode.Json;
@@ -25,7 +26,7 @@ public class CacheDevConsoleRecorder {
                 String cacheName = form.get("name");
                 Optional<Cache> cache = CaffeineCacheSupplier.cacheManager().getCache(cacheName);
                 if (cache.isPresent() && cache.get() instanceof CaffeineCache) {
-                    CaffeineCache caffeineCache = (CaffeineCache) cache.get();
+                    CaffeineCacheImpl caffeineCache = (CaffeineCacheImpl) cache.get();
 
                     String action = form.get("action");
                     if (action.equalsIgnoreCase("clearCache")) {
@@ -47,7 +48,7 @@ public class CacheDevConsoleRecorder {
                 event.response().end(this.message);
             }
 
-            private String createResponseMessage(CaffeineCache cache) {
+            private String createResponseMessage(CaffeineCacheImpl cache) {
                 Json.JsonObjectBuilder object = Json.object();
                 object.put("name", cache.getName());
                 object.put("size", cache.getSize());

@@ -11,6 +11,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheManager;
+import io.quarkus.cache.CaffeineCache;
 import io.quarkus.cache.runtime.CacheManagerImpl;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -36,7 +37,7 @@ public class CaffeineCacheBuildRecorder {
                                     cacheInfo.name, cacheInfo.initialCapacity, cacheInfo.maximumSize,
                                     cacheInfo.expireAfterWrite, cacheInfo.expireAfterAccess);
                         }
-                        CaffeineCache cache = new CaffeineCache(cacheInfo);
+                        CaffeineCache cache = new CaffeineCacheImpl(cacheInfo);
                         caches.put(cacheInfo.name, cache);
                     }
                     return new CacheManagerImpl(caches);

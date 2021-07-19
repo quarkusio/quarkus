@@ -192,6 +192,9 @@ public class ConfigBuildStep {
                 actualTypeArgumentNames = new ArrayList<>(argumentTypes.size());
                 for (Type argumentType : argumentTypes) {
                     actualTypeArgumentNames.add(argumentType.name().toString());
+                    if (argumentType.kind() != Kind.PRIMITIVE) {
+                        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, argumentType.name().toString()));
+                    }
                 }
 
             }

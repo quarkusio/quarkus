@@ -255,7 +255,7 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
     }
 
     private static boolean isComplete(RegistryConfig client, RegistryConfig descriptor) {
-        if (client.isDisabled()) {
+        if (!client.isEnabled()) {
             return true;
         }
         if (client.getDescriptor() == null) {

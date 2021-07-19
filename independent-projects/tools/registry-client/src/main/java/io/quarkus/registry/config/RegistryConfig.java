@@ -16,12 +16,12 @@ public interface RegistryConfig {
     String getId();
 
     /**
-     * Whether this registry should be excluded from the active registry list, in which case
-     * the client won't be sending any requests to the registry.
+     * Whether this registry should be included in the active registry list.
+     * If the registry is disabled the client won't be sending any requests to it.
      *
-     * @return true, if the registry should be disabled, otherwise - false
+     * @return true, if the registry is enabled, otherwise - false
      */
-    boolean isDisabled();
+    boolean isEnabled();
 
     /**
      * How often (if ever) the locally cached catalogs provided by the registry

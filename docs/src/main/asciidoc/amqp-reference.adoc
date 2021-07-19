@@ -16,7 +16,7 @@ Refer to the https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive M
 The AMQP connector allows Quarkus applications to send and receive messages using the AMQP 1.0 protocol.
 More details about the protocol can be found in http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-overview-v1.0-os.html[the AMQP 1.0 specification].
 It's important to note that AMQP 1.0 and AMQP 0.9.1 (implemented by RabbitMQ) are incompatible.
-Check <<using-rabbitmq Using RabbitMQ>> to get more details.
+Check <<using-rabbitmq,Using RabbitMQ>> to get more details.
 
 == AMQP connector extension
 
@@ -435,7 +435,7 @@ As a consequence, it’s not possible to change the destination dynamically (usi
 
 === Quarkus specific configuration
 
-include::{generated-dir}/config/quarkus-smallrye-reactive-messaging-amqp.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-amqp.adoc[opts=optional, leveloffset=+1]
 
 === Incoming channel configuration
 

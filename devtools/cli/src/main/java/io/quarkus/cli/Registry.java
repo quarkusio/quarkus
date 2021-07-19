@@ -3,7 +3,6 @@ package io.quarkus.cli;
 import java.util.List;
 
 import io.quarkus.cli.registry.BaseRegistryCommand;
-import io.quarkus.cli.registry.RegistryListCommand;
 import picocli.CommandLine;
 import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.Unmatched;

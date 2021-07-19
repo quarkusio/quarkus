@@ -60,7 +60,7 @@ public class CreateCli extends BaseCreateCommand {
 
             createProject.setSingleProjectGAV(gav);
             createProject.setTestOutputDirectory(output.getTestDirectory());
-            if (createProject.checkProjectRootAlreadyExists(output)) {
+            if (createProject.checkProjectRootAlreadyExists(output, false)) {
                 return CommandLine.ExitCode.USAGE;
             }
 

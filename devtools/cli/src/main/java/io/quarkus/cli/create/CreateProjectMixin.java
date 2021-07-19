@@ -8,7 +8,7 @@ import java.util.TreeMap;
 
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.TargetQuarkusVersionGroup;
-import io.quarkus.cli.common.ToggleRegistryClientMixin;
+import io.quarkus.cli.registry.ToggleRegistryClientMixin;
 import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.project.BuildTool;
@@ -56,18 +56,24 @@ public class CreateProjectMixin {
      * Resolve and remember the configured project directory.
      *
      * @param log Output Mixin that will be used to emit error messages
+     * @param dryRun
      * @return true IFF configured project root directory already exists
      */
-    public boolean checkProjectRootAlreadyExists(OutputOptionMixin log) {
+    public boolean checkProjectRootAlreadyExists(OutputOptionMixin log, boolean dryRun) {
         if (projectRootPath == null) {
             try {
-                projectRootPath = CreateProjectHelper.checkProjectRootPath(outputDirectory(), projectDirName);
+                projectRootPath = CreateProjectHelper.checkProjectRootPath(outputDirectory(), projectDirName, dryRun);
                 return false;
             } catch (IllegalArgumentException iex) {
-                log.error(iex.getMessage());
-                log.out().printf("Use '-a' or '--artifactId' to choose a new artifactId and directory name.%n");
-                log.out().printf("See '%s --help' for more information.%n", mixee.qualifiedName());
-                return true;
+                if (dryRun) {
+                    log.warn("A directory named '" + projectDirName + "' already exists.");
+                    projectRootPath = outputDirectory().resolve(projectDirName);
+                } else {
+                    log.error(iex.getMessage());
+                    log.out().printf("Specify a different artifactId / directory name.%n");
+                    log.out().printf("See '%s --help' for more information.%n", mixee.qualifiedName());
+                    return true;
+                }
             }
         }
         return false;
@@ -75,7 +81,7 @@ public class CreateProjectMixin {
 
     public Path projectRoot() {
         if (projectRootPath == null) {
-            projectRootPath = CreateProjectHelper.checkProjectRootPath(outputDirectory(), projectDirName);
+            projectRootPath = CreateProjectHelper.checkProjectRootPath(outputDirectory(), projectDirName, false);
         }
         return projectRootPath;
     }

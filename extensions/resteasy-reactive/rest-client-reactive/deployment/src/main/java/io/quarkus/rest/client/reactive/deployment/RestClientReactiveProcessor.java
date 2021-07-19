@@ -58,6 +58,8 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
@@ -107,6 +109,20 @@ class RestClientReactiveProcessor {
         produces.produce(new RestClientDefaultProducesBuildItem(MediaType.APPLICATION_JSON, 10));
         if (config.disableSmartProduces) {
             disableSmartProduces.produce(new RestClientDisableSmartDefaultProduces());
+        }
+    }
+
+    @BuildStep
+    void registerRestClientListenerForTracing(
+            Capabilities capabilities,
+            BuildProducer<NativeImageResourceBuildItem> resource,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        if (capabilities.isPresent(Capability.SMALLRYE_OPENTRACING)) {
+            resource.produce(new NativeImageResourceBuildItem(
+                    "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
+            reflectiveClass
+                    .produce(new ReflectiveClassBuildItem(true, false, false,
+                            "io.smallrye.opentracing.SmallRyeRestClientListener"));
         }
     }
 

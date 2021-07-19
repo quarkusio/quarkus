@@ -74,7 +74,7 @@ public class MavenRunner implements BuildSystemRunner {
         return BuildTool.MAVEN;
     }
 
-    QuarkusProject quarkusProject() {
+    QuarkusProject quarkusProject() throws Exception {
         return MavenProjectBuildFile.getProject(projectRoot, output, Version::clientVersion);
     }
 

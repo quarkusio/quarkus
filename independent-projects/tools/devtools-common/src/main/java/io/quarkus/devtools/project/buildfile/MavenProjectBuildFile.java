@@ -46,7 +46,8 @@ public class MavenProjectBuildFile extends BuildFile {
 
     private static final Pattern PROPERTY_PATTERN = Pattern.compile("\\$\\{(.+)}");
 
-    public static QuarkusProject getProject(Path projectDir, MessageWriter log, Supplier<String> defaultQuarkusVersion) {
+    public static QuarkusProject getProject(Path projectDir, MessageWriter log, Supplier<String> defaultQuarkusVersion)
+            throws RegistryResolutionException {
         final MavenArtifactResolver mvnResolver = getMavenResolver(projectDir);
         final LocalProject currentProject = mvnResolver.getMavenContext().getCurrentProject();
         final Model projectModel;
@@ -66,7 +67,7 @@ public class MavenProjectBuildFile extends BuildFile {
 
     public static QuarkusProject getProject(Artifact projectPom, Model projectModel, Path projectDir,
             Properties projectProps, MavenArtifactResolver mvnResolver, MessageWriter log,
-            Supplier<String> defaultQuarkusVersion) {
+            Supplier<String> defaultQuarkusVersion) throws RegistryResolutionException {
         final List<ArtifactCoords> managedDeps;
         final Supplier<List<ArtifactCoords>> deps;
         final List<ArtifactCoords> importedPlatforms;

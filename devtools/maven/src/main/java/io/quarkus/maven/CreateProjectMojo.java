@@ -207,9 +207,14 @@ public class CreateProjectMojo extends AbstractMojo {
             throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
         }
         final MojoMessageWriter log = new MojoMessageWriter(getLog());
-        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
-                ? QuarkusProjectHelper.getCatalogResolver(mvn, log)
-                : ExtensionCatalogResolver.empty();
+        ExtensionCatalogResolver catalogResolver;
+        try {
+            catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
+                    ? QuarkusProjectHelper.getCatalogResolver(mvn, log)
+                    : ExtensionCatalogResolver.empty();
+        } catch (RegistryResolutionException e) {
+            throw new MojoExecutionException("Failed to initialize Quarkus extension catalog resolver", e);
+        }
 
         final ExtensionCatalog catalog = resolveExtensionsCatalog(
                 StringUtils.defaultIfBlank(bomGroupId, null),

@@ -36,7 +36,9 @@ public class IdeProcessor {
 
     static {
 
-        IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("idea") && processInfo.command.endsWith("java")),
+        IDE_PROCESSES.put(
+                (processInfo -> (processInfo.containInCommand("idea") || processInfo.containInCommand("IDEA"))
+                        && (processInfo.command.endsWith("java") || processInfo.command.endsWith("java.exe"))),
                 Ide.IDEA);
         IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("code")), Ide.VSCODE);
         IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("eclipse")), Ide.ECLIPSE);
@@ -62,9 +64,9 @@ public class IdeProcessor {
             // into '/home/test/software/idea/ideaIU-203.5981.114/idea-IU-203.5981.114/bin/idea.sh'
             String command = processInfo.getCommand();
             int jbrIndex = command.indexOf("jbr");
-            if ((jbrIndex > -1) && command.endsWith("java")) {
+            if ((jbrIndex > -1) && (command.endsWith("java") || command.endsWith("java.exe"))) {
                 String ideaHome = command.substring(0, jbrIndex);
-                return (ideaHome + "bin" + File.separator + "idea") + (IdeUtil.isWindows() ? ".exe" : ".sh");
+                return (ideaHome + "bin" + File.separator + "idea") + (IdeUtil.isWindows() ? ".bat" : ".sh");
             }
             return null;
         });
@@ -130,13 +132,26 @@ public class IdeProcessor {
         if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
             return null;
         }
+
         Set<Ide> result = new HashSet<>(2);
-        Path projectRoot = buildSystemTarget.getOutputDirectory().getParent();
-        IDE_MARKER_FILES.forEach((file, ides) -> {
-            if (Files.exists(projectRoot.resolve(file))) {
-                result.addAll(ides);
+        Path root = buildSystemTarget.getOutputDirectory();
+
+        // hack to try and guess the IDE when using a multi-module project
+        for (int i = 0; i < 3; i++) {
+            root = root.getParent();
+            if (root == null || !result.isEmpty()) {
+                break;
             }
-        });
+
+            for (Map.Entry<String, List<Ide>> entry : IDE_MARKER_FILES.entrySet()) {
+                String file = entry.getKey();
+                List<Ide> ides = entry.getValue();
+                if (Files.exists(root.resolve(file))) {
+                    result.addAll(ides);
+                }
+            }
+        }
+
         return new IdeFileBuildItem(result);
     }
 

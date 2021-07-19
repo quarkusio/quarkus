@@ -1,4 +1,4 @@
-package io.quarkus.cli.common;
+package io.quarkus.cli.registry;
 
 import picocli.CommandLine;
 

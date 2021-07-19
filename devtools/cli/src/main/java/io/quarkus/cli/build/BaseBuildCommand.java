@@ -6,7 +6,7 @@ import java.nio.file.Paths;
 import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
-import io.quarkus.cli.common.ToggleRegistryClientMixin;
+import io.quarkus.cli.registry.ToggleRegistryClientMixin;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import picocli.CommandLine;

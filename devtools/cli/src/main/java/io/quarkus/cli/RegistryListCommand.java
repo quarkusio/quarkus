@@ -1,8 +1,9 @@
-package io.quarkus.cli.registry;
+package io.quarkus.cli;
 
 import java.nio.file.Path;
 
-import io.quarkus.cli.common.RegistryClientMixin;
+import io.quarkus.cli.registry.BaseRegistryCommand;
+import io.quarkus.cli.registry.RegistryClientMixin;
 import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.registry.config.RegistryConfig;
@@ -19,14 +20,15 @@ public class RegistryListCommand extends BaseRegistryCommand {
     public Integer call() throws Exception {
 
         registryClient.refreshRegistryCache(output);
-
-        output.info("Available Quarkus extension registries:");
         final RegistriesConfig config = RegistriesConfigLocator.resolveConfig();
+
+        output.info("Configured Quarkus extension registries:");
         for (RegistryConfig r : config.getRegistries()) {
             if (r.isDisabled()) {
-                continue;
+                output.info("- " + r.getId() + " (disabled)");
+            } else {
+                output.info("- " + r.getId());
             }
-            output.info("- " + r.getId());
         }
 
         final Path configYaml = RegistriesConfigLocator.locateConfigYaml();

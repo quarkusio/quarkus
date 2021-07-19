@@ -18,6 +18,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
         io.quarkus.registry.catalog.json.JsonPlatformReleaseVersionSerializer.class,
         io.quarkus.registry.catalog.json.JsonPlatformStream.class,
 
+        io.quarkus.registry.config.json.JsonBooleanTrueFilter.class,
         io.quarkus.registry.config.json.JsonRegistriesConfig.class,
         io.quarkus.registry.config.json.JsonRegistryArtifactConfig.class,
         io.quarkus.registry.config.json.JsonRegistryConfig.class,

@@ -116,7 +116,7 @@ public class ExtensionCatalogResolver {
         private void buildRegistryClients() {
             registries = new ArrayList<>(config.getRegistries().size());
             for (RegistryConfig config : config.getRegistries()) {
-                if (config.isDisabled()) {
+                if (!config.isEnabled()) {
                     continue;
                 }
                 final RegistryClientFactory clientFactory = getClientFactory(config);

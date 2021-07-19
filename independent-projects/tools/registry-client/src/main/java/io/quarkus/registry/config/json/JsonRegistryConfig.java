@@ -20,7 +20,7 @@ import java.util.Objects;
 public class JsonRegistryConfig implements RegistryConfig {
 
     private String id;
-    private boolean disabled;
+    private boolean enabled = true;
     private String updatePolicy;
     private RegistryDescriptorConfig descriptor;
     private RegistryPlatformsConfig platforms;
@@ -46,13 +46,14 @@ public class JsonRegistryConfig implements RegistryConfig {
         this.id = Objects.requireNonNull(id);
     }
 
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = JsonBooleanTrueFilter.class)
     @Override
-    public boolean isDisabled() {
-        return disabled;
+    public boolean isEnabled() {
+        return enabled;
     }
 
-    public void setDisabled(boolean disabled) {
-        this.disabled = disabled;
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 
     @Override
@@ -96,7 +97,7 @@ public class JsonRegistryConfig implements RegistryConfig {
 
     boolean isIdOnly() {
         return this.mavenConfig == null
-                && !this.disabled
+                && this.enabled
                 && this.descriptor == null
                 && this.nonPlatformExtensions == null
                 && this.platforms == null
@@ -157,7 +158,7 @@ public class JsonRegistryConfig implements RegistryConfig {
 
     @Override
     public int hashCode() {
-        return Objects.hash(descriptor, disabled, extra, id, mavenConfig, nonPlatformExtensions, platforms,
+        return Objects.hash(descriptor, enabled, extra, id, mavenConfig, nonPlatformExtensions, platforms,
                 updatePolicy, versionsConfig);
     }
 
@@ -170,7 +171,7 @@ public class JsonRegistryConfig implements RegistryConfig {
         if (getClass() != obj.getClass())
             return false;
         JsonRegistryConfig other = (JsonRegistryConfig) obj;
-        return Objects.equals(descriptor, other.descriptor) && disabled == other.disabled
+        return Objects.equals(descriptor, other.descriptor) && enabled == other.enabled
                 && Objects.equals(extra, other.extra) && Objects.equals(id, other.id)
                 && Objects.equals(mavenConfig, other.mavenConfig)
                 && Objects.equals(nonPlatformExtensions, other.nonPlatformExtensions)

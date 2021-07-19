@@ -122,10 +122,12 @@ public class RegistriesConfigLocator {
         if (original.getRegistries().isEmpty()) {
             config.addRegistry(getDefaultRegistry());
         } else {
+            boolean sawEnabled = false;
             for (RegistryConfig qerConfig : original.getRegistries()) {
                 config.addRegistry(completeRequiredConfig(qerConfig));
+                sawEnabled |= qerConfig.isEnabled();
             }
-            if (config.getRegistries().stream().filter(x -> !x.isDisabled()).count() == 0) {
+            if (!sawEnabled) {
                 config.addRegistry(getDefaultRegistry());
             }
         }
@@ -139,7 +141,7 @@ public class RegistriesConfigLocator {
         final String id = original.getId();
         final JsonRegistryConfig config = new JsonRegistryConfig(id);
         config.setUpdatePolicy(original.getUpdatePolicy());
-        config.setDisabled(original.isDisabled());
+        config.setEnabled(original.isEnabled());
         config.setDescriptor(completeDescriptor(original));
         if (original != null) {
             if (original.getMaven() != null) {

@@ -24,10 +24,10 @@ public class RegistryListCommand extends BaseRegistryCommand {
 
         output.info("Configured Quarkus extension registries:");
         for (RegistryConfig r : config.getRegistries()) {
-            if (r.isDisabled()) {
-                output.info("- " + r.getId() + " (disabled)");
-            } else {
+            if (r.isEnabled()) {
                 output.info("- " + r.getId());
+            } else {
+                output.info("- " + r.getId() + " (disabled)");
             }
         }
 

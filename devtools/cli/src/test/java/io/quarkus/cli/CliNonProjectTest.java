@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.registry.config.RegistriesConfigLocator;
 import picocli.CommandLine;
 
 public class CliNonProjectTest {
@@ -35,7 +34,7 @@ public class CliNonProjectTest {
                 "Directory list operation should succeed");
         Assertions.assertEquals(0, files.length,
                 "Directory should be empty. Found: " + Arrays.toString(files));
-        System.clearProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY);
+        CliDriver.afterEachCleanup();
     }
 
     @Test
@@ -57,6 +56,45 @@ public class CliNonProjectTest {
                 "Should contain 'Jackson' in the list of extensions, found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("2.0.0.CR3"),
                 "Should contain '2.0.0.CR3' in the list of extensions (origin), found: " + result.stdout);
+    }
+
+    @Test
+    public void testListPlatformExtensionsRegistryClient() throws Exception {
+        // Dry run: Make sure registry-client system property is true
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "ext", "list", "-e",
+                "--dry-run", "--registry-client");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+
+        String noSpaces = result.stdout.replaceAll("[\\s\\p{Z}]", "");
+        Assertions.assertTrue(noSpaces.contains("RegistryClienttrue"),
+                "Should contain 'Registry Client true', found: " + result.stdout);
+        Assertions.assertTrue(Boolean.getBoolean("quarkusRegistryClient"),
+                "Registry Client property should be set to true");
+
+        // Dry run: Make sure registry-client system property is false
+        result = CliDriver.execute(workspaceRoot, "ext", "list", "-e",
+                "--dry-run", "--no-registry-client");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+
+        noSpaces = result.stdout.replaceAll("[\\s\\p{Z}]", "");
+        Assertions.assertTrue(noSpaces.contains("RegistryClientfalse"),
+                "Should contain 'Registry Client false', found: " + result.stdout);
+        Assertions.assertFalse(Boolean.getBoolean("quarkusRegistryClient"),
+                "Registry Client property should be set to false");
+
+        // Dry run: Make sure registry client property is set (default = false) TODO
+        result = CliDriver.execute(workspaceRoot, "ext", "list", "-e",
+                "--dry-run");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+
+        noSpaces = result.stdout.replaceAll("[\\s\\p{Z}]", "");
+        Assertions.assertTrue(noSpaces.contains("RegistryClientfalse"),
+                "Should contain 'Registry Client false', found: " + result.stdout);
+        Assertions.assertFalse(Boolean.getBoolean("quarkusRegistryClient"),
+                "Registry Client property should be set to false");
     }
 
     @Test
@@ -89,7 +127,6 @@ public class CliNonProjectTest {
 
     @Test
     public void testRegistryRefresh() throws Exception {
-
         // List extensions of a specified platform version
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "registry", "--refresh", "-e");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,

@@ -152,7 +152,7 @@ public class OidcProvider {
                             throw new AuthenticationFailedException(t);
                         }
                         if (!Boolean.TRUE.equals(jsonObject.getBoolean(OidcConstants.INTROSPECTION_TOKEN_ACTIVE))) {
-                            LOG.debugf("Token issued to client %s is not active: %s", oidcConfig.clientId.get());
+                            LOG.debugf("Token issued to client %s is not active", oidcConfig.clientId.get());
                             throw new AuthenticationFailedException();
                         }
                         Long exp = jsonObject.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP);
@@ -161,7 +161,7 @@ public class OidcProvider {
                                     ? client.getOidcConfig().token.lifespanGrace.getAsInt()
                                     : 0;
                             if (System.currentTimeMillis() / 1000 > exp + lifespanGrace) {
-                                LOG.debugf("Token issued to client %s has expired %s", oidcConfig.clientId.get());
+                                LOG.debugf("Token issued to client %s has expired", oidcConfig.clientId.get());
                                 throw new AuthenticationFailedException();
                             }
                         }

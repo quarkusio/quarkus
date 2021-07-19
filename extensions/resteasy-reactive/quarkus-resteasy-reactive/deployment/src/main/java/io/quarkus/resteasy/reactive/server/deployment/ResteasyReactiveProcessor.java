@@ -10,10 +10,13 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -86,6 +89,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
@@ -136,6 +140,10 @@ import io.vertx.ext.web.RoutingContext;
 public class ResteasyReactiveProcessor {
 
     private static final String QUARKUS_INIT_CLASS = "io.quarkus.rest.runtime.__QuarkusInit";
+
+    private static final Logger log = Logger.getLogger("io.quarkus.resteasy.reactive.server");
+
+    private static final Predicate<Object[]> isEmpty = array -> array == null || array.length == 0;
 
     @BuildStep
     public FeatureBuildItem buildSetup() {
@@ -416,6 +424,7 @@ public class ResteasyReactiveProcessor {
             }
             serverEndpointIndexer = serverEndpointIndexerBuilder.build();
 
+            Map<String, List<EndpointConfig>> allMethods = new HashMap<>();
             for (ClassInfo i : scannedResources.values()) {
                 if (!appResult.keepClass(i.name().toString())) {
                     continue;
@@ -426,8 +435,14 @@ public class ResteasyReactiveProcessor {
                 }
                 if (endpoints != null) {
                     resourceClasses.add(endpoints);
+                    for (ResourceMethod rm : endpoints.getMethods()) {
+                        addRessourceMethodByPath(allMethods, endpoints.getPath(), i, rm);
+                    }
                 }
             }
+
+            checkForDuplicateEndpoint(config, allMethods);
+
             //now index possible sub resources. These are all classes that have method annotations
             //that are not annotated @Path
             Deque<ClassInfo> toScan = new ArrayDeque<>();
@@ -575,6 +590,75 @@ public class ResteasyReactiveProcessor {
                                 .handler(handler).build());
             }
         }
+    }
+
+    private void checkForDuplicateEndpoint(ResteasyReactiveConfig config, Map<String, List<EndpointConfig>> allMethods) {
+        String message = allMethods.values().stream()
+                .map(this::getDuplicateEndpointMessage)
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining());
+        if (message.length() > 0) {
+            if (config.failOnDuplicate) {
+                throw new ConfigurationError(message);
+            }
+            log.warning(message);
+        }
+    }
+
+    private void addRessourceMethodByPath(Map<String, List<EndpointConfig>> allMethods, String path, ClassInfo info,
+            ResourceMethod rm) {
+        allMethods.computeIfAbsent(getEndpointClassifier(rm, path), key -> new ArrayList<>())
+                .addAll(getEndpointConfigs(path, info, rm));
+    }
+
+    private String getEndpointClassifier(ResourceMethod resourceMethod, String path) {
+        return resourceMethod.getHttpMethod() + " " + (path.equals("/") ? "" : path)
+                + resourceMethod.getPath();
+    }
+
+    private String getDuplicateEndpointMessage(List<EndpointConfig> endpoints) {
+        StringBuilder message = new StringBuilder();
+        if (endpoints.size() < 2) {
+            return null;
+        }
+        Map<String, List<EndpointConfig>> duplicatesByMimeTypes = endpoints.stream()
+                .collect(Collectors.groupingBy(EndpointConfig::toString));
+        for (Map.Entry<String, List<EndpointConfig>> duplicates : duplicatesByMimeTypes.entrySet()) {
+            if (duplicates.getValue().size() < 2) {
+                continue;
+            }
+            message.append(endpoints.get(0).getExposedEndpoint())
+                    .append(" is declared by :")
+                    .append(System.lineSeparator());
+            for (EndpointConfig config : duplicates.getValue()) {
+                message.append(config.toCompleteString())
+                        .append(System.lineSeparator());
+            }
+        }
+        return message.toString();
+    }
+
+    private List<EndpointConfig> getEndpointConfigs(String path, ClassInfo info, ResourceMethod rm) {
+        List<EndpointConfig> result = new ArrayList<>();
+        String exposingMethod = info.name().toString() + "#" + rm.getName();
+        if (isEmpty.test(rm.getConsumes()) && isEmpty.test(rm.getProduces()))
+            result.add(new EndpointConfig(path, rm.getHttpMethod(), null, null, exposingMethod));
+        else if (isEmpty.negate().test(rm.getConsumes()) && isEmpty.test(rm.getProduces())) {
+            for (String consume : rm.getConsumes()) {
+                result.add(new EndpointConfig(path, rm.getHttpMethod(), consume, null, exposingMethod));
+            }
+        } else if (isEmpty.test(rm.getConsumes()) && isEmpty.negate().test(rm.getProduces())) {
+            for (String produce : rm.getProduces()) {
+                result.add(new EndpointConfig(path, rm.getHttpMethod(), null, produce, exposingMethod));
+            }
+        } else {
+            for (String consume : rm.getConsumes()) {
+                for (String produce : rm.getProduces()) {
+                    result.add(new EndpointConfig(path, rm.getHttpMethod(), consume, produce, exposingMethod));
+                }
+            }
+        }
+        return result;
     }
 
     private org.jboss.resteasy.reactive.common.ResteasyReactiveConfig createRestReactiveConfig(ResteasyReactiveConfig config) {

@@ -47,4 +47,10 @@ public class ResteasyReactiveConfig {
      */
     @ConfigItem(name = "deny-unannotated-endpoints")
     public boolean denyJaxRs;
+
+    /**
+     * Whether or not duplicate endpoints should trigger error at startup
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean failOnDuplicate;
 }

@@ -1,5 +1,6 @@
 package io.quarkus.devtools.commands;
 
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.PROJECT_PARENT_PATH;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.APP_CONFIG;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.CLASS_NAME;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.EXTENSIONS;
@@ -64,6 +65,11 @@ public class CreateProject {
 
     public CreateProject version(String version) {
         setValue(PROJECT_VERSION, version);
+        return this;
+    }
+
+    public CreateProject parentProject(String parentPath) {
+        values.put(PROJECT_PARENT_PATH.key(), parentPath);
         return this;
     }
 

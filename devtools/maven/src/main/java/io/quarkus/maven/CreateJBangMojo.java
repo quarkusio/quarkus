@@ -30,6 +30,7 @@ import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.maven.MojoMessageWriter;
+import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 
 @Mojo(name = "create-jbang", requiresProject = false)
@@ -98,11 +99,16 @@ public class CreateJBangMojo extends AbstractMojo {
         }
 
         final MessageWriter log = new MojoMessageWriter(getLog());
-        final ExtensionCatalog catalog = CreateProjectMojo.resolveExtensionsCatalog(
-                StringUtils.defaultIfBlank(bomGroupId, null),
-                StringUtils.defaultIfBlank(bomArtifactId, null),
-                StringUtils.defaultIfBlank(bomVersion, null),
-                QuarkusProjectHelper.getCatalogResolver(mvn, log), mvn, log);
+        ExtensionCatalog catalog;
+        try {
+            catalog = CreateProjectMojo.resolveExtensionsCatalog(
+                    StringUtils.defaultIfBlank(bomGroupId, null),
+                    StringUtils.defaultIfBlank(bomArtifactId, null),
+                    StringUtils.defaultIfBlank(bomVersion, null),
+                    QuarkusProjectHelper.getCatalogResolver(mvn, log), mvn, log);
+        } catch (RegistryResolutionException e) {
+            throw new MojoExecutionException("Failed to resolve Quarkus extension catalog", e);
+        }
 
         final List<ResourceLoader> codestartsResourceLoader = codestartLoadersBuilder()
                 .catalog(catalog)

@@ -102,7 +102,11 @@ public class QuarkusProjectHelper {
 
     public static QuarkusProject getProject(Path projectDir, BuildTool buildTool) {
         if (BuildTool.MAVEN.equals(buildTool)) {
-            return MavenProjectBuildFile.getProject(projectDir, messageWriter(), null);
+            try {
+                return MavenProjectBuildFile.getProject(projectDir, messageWriter(), null);
+            } catch (RegistryResolutionException e) {
+                throw new RuntimeException("Failed to initialize the Quarkus Maven extension manager", e);
+            }
         }
         final ExtensionCatalog catalog;
         try {
@@ -138,16 +142,17 @@ public class QuarkusProjectHelper {
                 log, extManager);
     }
 
-    public static ExtensionCatalogResolver getCatalogResolver() {
+    public static ExtensionCatalogResolver getCatalogResolver() throws RegistryResolutionException {
         return catalogResolver == null ? catalogResolver = getCatalogResolver(true, messageWriter())
                 : catalogResolver;
     }
 
-    public static ExtensionCatalogResolver getCatalogResolver(MessageWriter log) {
+    public static ExtensionCatalogResolver getCatalogResolver(MessageWriter log) throws RegistryResolutionException {
         return getCatalogResolver(true, log);
     }
 
-    public static ExtensionCatalogResolver getCatalogResolver(boolean enableRegistryClient, MessageWriter log) {
+    public static ExtensionCatalogResolver getCatalogResolver(boolean enableRegistryClient, MessageWriter log)
+            throws RegistryResolutionException {
         if (catalogResolver == null) {
             if (enableRegistryClient) {
                 catalogResolver = getCatalogResolver(artifactResolver(), log);
@@ -158,7 +163,8 @@ public class QuarkusProjectHelper {
         return catalogResolver;
     }
 
-    public static ExtensionCatalogResolver getCatalogResolver(MavenArtifactResolver resolver, MessageWriter log) {
+    public static ExtensionCatalogResolver getCatalogResolver(MavenArtifactResolver resolver, MessageWriter log)
+            throws RegistryResolutionException {
         return ExtensionCatalogResolver.builder()
                 .artifactResolver(resolver)
                 .config(toolsConfig())

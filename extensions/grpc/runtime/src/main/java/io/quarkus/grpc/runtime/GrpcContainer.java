@@ -31,7 +31,7 @@ public class GrpcContainer {
             return Collections.emptyList();
         }
 
-        return interceptors.stream().sorted(new Comparator<ServerInterceptor>() { // NOSONAR
+        return interceptors.stream().sorted(new Comparator<>() { // NOSONAR
             @Override
             public int compare(ServerInterceptor si1, ServerInterceptor si2) {
                 int p1 = 0;

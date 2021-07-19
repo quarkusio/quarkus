@@ -69,6 +69,10 @@ public interface Server extends Alias {
 
         @JsonProperty
         Optional<String> cookie();
+
+        @JsonProperty
+        @WithDefault("1")
+        List<Integer> positions();
     }
 
     interface Proxy {

@@ -20,6 +20,7 @@ import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.cli.registry.RegistryClientMixin;
 import io.quarkus.devtools.project.BuildTool;
 
 public class GradleRunner implements BuildSystemRunner {
@@ -27,15 +28,18 @@ public class GradleRunner implements BuildSystemRunner {
     public static final String otherWrapper = "gradlew";
 
     final OutputOptionMixin output;
+    final RegistryClientMixin registryClient;
     final Path projectRoot;
     final BuildTool buildTool;
     final PropertiesOptions propertiesOptions;
 
-    public GradleRunner(OutputOptionMixin output, PropertiesOptions propertiesOptions, Path projectRoot, BuildTool buildTool) {
+    public GradleRunner(OutputOptionMixin output, PropertiesOptions propertiesOptions, RegistryClientMixin registryClient,
+            Path projectRoot, BuildTool buildTool) {
         this.output = output;
         this.projectRoot = projectRoot;
         this.buildTool = buildTool;
         this.propertiesOptions = propertiesOptions;
+        this.registryClient = registryClient;
         verifyBuildFile();
     }
 
@@ -218,6 +222,7 @@ public class GradleRunner implements BuildSystemRunner {
             // Make sure we stay where we should
             args.add("--project-dir=" + projectRoot.toAbsolutePath());
         }
+        args.add(registryClient.getRegistryClientProperty());
 
         // add any other discovered properties
         args.addAll(flattenMappedProperties(propertiesOptions.properties));

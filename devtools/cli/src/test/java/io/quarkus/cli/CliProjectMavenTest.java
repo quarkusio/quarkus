@@ -5,6 +5,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,11 @@ public class CliProjectMavenTest {
     public void setupTestDirectories() throws Exception {
         CliDriver.deleteDir(workspaceRoot);
         project = workspaceRoot.resolve("code-with-quarkus");
+    }
+
+    @AfterEach
+    public void afterEachCleanup() throws Exception {
+        CliDriver.afterEachCleanup();
     }
 
     @Test

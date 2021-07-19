@@ -18,6 +18,7 @@ import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.cli.registry.RegistryClientMixin;
 import io.quarkus.devtools.commands.AddExtensions;
 import io.quarkus.devtools.commands.ListCategories;
 import io.quarkus.devtools.commands.ListExtensions;
@@ -33,13 +34,16 @@ public class MavenRunner implements BuildSystemRunner {
     static final String otherWrapper = "mvnw";
 
     final OutputOptionMixin output;
+    final RegistryClientMixin registryClient;
     final PropertiesOptions propertiesOptions;
     final Path projectRoot;
 
-    public MavenRunner(OutputOptionMixin output, PropertiesOptions propertiesOptions, Path projectRoot) {
+    public MavenRunner(OutputOptionMixin output, PropertiesOptions propertiesOptions, RegistryClientMixin registryClient,
+            Path projectRoot) {
         this.output = output;
         this.projectRoot = projectRoot;
         this.propertiesOptions = propertiesOptions;
+        this.registryClient = registryClient;
         verifyBuildFile();
     }
 
@@ -199,6 +203,7 @@ public class MavenRunner implements BuildSystemRunner {
 
         // add specified properties
         args.addAll(flattenMappedProperties(propertiesOptions.properties));
+        args.add(registryClient.getRegistryClientProperty());
     }
 
     void verifyBuildFile() {

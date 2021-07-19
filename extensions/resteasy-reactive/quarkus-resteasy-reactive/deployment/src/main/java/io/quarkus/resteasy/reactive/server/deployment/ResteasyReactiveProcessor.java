@@ -1,90 +1,5 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
-import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_REQUEST;
-import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_RESPONSE;
-import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.ROUTING_CONTEXT;
-import static java.util.stream.Collectors.toList;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DATE_FORMAT;
-
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
-
-import javax.ws.rs.Priorities;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.MediaType;
-
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type;
-import org.jboss.resteasy.reactive.common.core.Serialisers;
-import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
-import org.jboss.resteasy.reactive.common.model.InjectableBean;
-import org.jboss.resteasy.reactive.common.model.ResourceClass;
-import org.jboss.resteasy.reactive.common.model.ResourceDynamicFeature;
-import org.jboss.resteasy.reactive.common.model.ResourceFeature;
-import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
-import org.jboss.resteasy.reactive.common.model.ResourceReader;
-import org.jboss.resteasy.reactive.common.model.ResourceWriter;
-import org.jboss.resteasy.reactive.common.processor.AdditionalReaderWriter;
-import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
-import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
-import org.jboss.resteasy.reactive.common.processor.DefaultProducesHandler;
-import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
-import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
-import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
-import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
-import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
-import org.jboss.resteasy.reactive.common.util.Encode;
-import org.jboss.resteasy.reactive.server.core.Deployment;
-import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
-import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
-import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
-import org.jboss.resteasy.reactive.server.model.ContextResolvers;
-import org.jboss.resteasy.reactive.server.model.DynamicFeatures;
-import org.jboss.resteasy.reactive.server.model.Features;
-import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
-import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
-import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
-import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
-import org.jboss.resteasy.reactive.server.processor.generation.converters.GeneratedConverterIndexerExtension;
-import org.jboss.resteasy.reactive.server.processor.generation.exceptionmappers.ServerExceptionMapperGenerator;
-import org.jboss.resteasy.reactive.server.processor.generation.injection.TransformedFieldInjectionIndexerExtension;
-import org.jboss.resteasy.reactive.server.processor.generation.multipart.GeneratedHandlerMultipartReturnTypeIndexerExtension;
-import org.jboss.resteasy.reactive.server.processor.generation.multipart.GeneratedMultipartParamIndexerExtension;
-import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
-import org.jboss.resteasy.reactive.server.processor.scanning.ResponseHeaderMethodScanner;
-import org.jboss.resteasy.reactive.server.processor.scanning.ResponseStatusMethodScanner;
-import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
-import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyAsyncFileMessageBodyWriter;
-import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyBufferMessageBodyWriter;
-import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxAsyncFileMessageBodyWriter;
-import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxBufferMessageBodyWriter;
-import org.jboss.resteasy.reactive.spi.BeanFactory;
-import org.objectweb.asm.ClassVisitor;
-
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
@@ -111,6 +26,7 @@ import io.quarkus.deployment.builditem.RecordableConstructorBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
@@ -156,14 +72,103 @@ import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
+import org.jboss.resteasy.reactive.common.model.InjectableBean;
+import org.jboss.resteasy.reactive.common.model.ResourceClass;
+import org.jboss.resteasy.reactive.common.model.ResourceDynamicFeature;
+import org.jboss.resteasy.reactive.common.model.ResourceFeature;
+import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
+import org.jboss.resteasy.reactive.common.model.ResourceMethod;
+import org.jboss.resteasy.reactive.common.model.ResourceReader;
+import org.jboss.resteasy.reactive.common.model.ResourceWriter;
+import org.jboss.resteasy.reactive.common.processor.AdditionalReaderWriter;
+import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
+import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
+import org.jboss.resteasy.reactive.common.processor.DefaultProducesHandler;
+import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
+import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
+import org.jboss.resteasy.reactive.common.util.Encode;
+import org.jboss.resteasy.reactive.server.core.Deployment;
+import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
+import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
+import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
+import org.jboss.resteasy.reactive.server.model.ContextResolvers;
+import org.jboss.resteasy.reactive.server.model.DynamicFeatures;
+import org.jboss.resteasy.reactive.server.model.Features;
+import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
+import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
+import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
+import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
+import org.jboss.resteasy.reactive.server.processor.generation.converters.GeneratedConverterIndexerExtension;
+import org.jboss.resteasy.reactive.server.processor.generation.exceptionmappers.ServerExceptionMapperGenerator;
+import org.jboss.resteasy.reactive.server.processor.generation.injection.TransformedFieldInjectionIndexerExtension;
+import org.jboss.resteasy.reactive.server.processor.generation.multipart.GeneratedHandlerMultipartReturnTypeIndexerExtension;
+import org.jboss.resteasy.reactive.server.processor.generation.multipart.GeneratedMultipartParamIndexerExtension;
+import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
+import org.jboss.resteasy.reactive.server.processor.scanning.ResponseHeaderMethodScanner;
+import org.jboss.resteasy.reactive.server.processor.scanning.ResponseStatusMethodScanner;
+import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
+import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyAsyncFileMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyBufferMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxAsyncFileMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxBufferMessageBodyWriter;
+import org.jboss.resteasy.reactive.spi.BeanFactory;
+import org.objectweb.asm.ClassVisitor;
+
+import javax.ws.rs.Priorities;
+import javax.ws.rs.RuntimeType;
+import javax.ws.rs.core.Application;
+import javax.ws.rs.core.MediaType;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_REQUEST;
+import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_RESPONSE;
+import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.ROUTING_CONTEXT;
+import static java.util.stream.Collectors.toList;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DATE_FORMAT;
 
 public class ResteasyReactiveProcessor {
 
     private static final String QUARKUS_INIT_CLASS = "io.quarkus.rest.runtime.__QuarkusInit";
+
+    private static final Logger log = Logger.getLogger("io.quarkus.resteasy.reactive.server");
+
+    private static final Predicate<Object[]> isEmpty = array -> array == null || array.length == 0;
 
     private static final Set<DotName> CONTEXT_TYPES = Set.of(
             DotName.createSimple(HttpServerRequest.class.getName()),
@@ -506,6 +511,7 @@ public class ResteasyReactiveProcessor {
                     bytecodeTransformerBuildItemBuildProducer));
             serverEndpointIndexer = serverEndpointIndexerBuilder.build();
 
+            Map<String, List<EndpointConfig>> allMethods = new HashMap<>();
             for (ClassInfo i : scannedResources.values()) {
                 Optional<ResourceClass> endpoints = serverEndpointIndexer.createEndpoints(i, true);
                 if (endpoints.isPresent()) {
@@ -513,8 +519,14 @@ public class ResteasyReactiveProcessor {
                         endpoints.get().setFactory(new SingletonBeanFactory<>(i.name().toString()));
                     }
                     resourceClasses.add(endpoints.get());
+                    for (ResourceMethod rm : endpoints.get().getMethods()) {
+                        addResourceMethodByPath(allMethods, endpoints.get().getPath(), i, rm);
+                    }
                 }
             }
+
+            checkForDuplicateEndpoint(config, allMethods);
+
             //now index possible sub resources. These are all classes that have method annotations
             //that are not annotated @Path
             Deque<ClassInfo> toScan = new ArrayDeque<>();
@@ -786,6 +798,75 @@ public class ResteasyReactiveProcessor {
                     RouteBuildItem.builder().orderedRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + orderAdd)
                             .handler(handler).build());
         }
+    }
+
+    private void checkForDuplicateEndpoint(ResteasyReactiveConfig config, Map<String, List<EndpointConfig>> allMethods) {
+        String message = allMethods.values().stream()
+                .map(this::getDuplicateEndpointMessage)
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining());
+        if (message.length() > 0) {
+            if (config.failOnDuplicate) {
+                throw new ConfigurationError(message);
+            }
+            log.warning(message);
+        }
+    }
+
+    private void addResourceMethodByPath(Map<String, List<EndpointConfig>> allMethods, String path, ClassInfo info,
+            ResourceMethod rm) {
+        allMethods.computeIfAbsent(getEndpointClassifier(rm, path), key -> new ArrayList<>())
+                .addAll(getEndpointConfigs(path, info, rm));
+    }
+
+    private String getEndpointClassifier(ResourceMethod resourceMethod, String path) {
+        return resourceMethod.getHttpMethod() + " " + (path.equals("/") ? "" : path)
+                + resourceMethod.getPath();
+    }
+
+    private String getDuplicateEndpointMessage(List<EndpointConfig> endpoints) {
+        StringBuilder message = new StringBuilder();
+        if (endpoints.size() < 2) {
+            return null;
+        }
+        Map<String, List<EndpointConfig>> duplicatesByMimeTypes = endpoints.stream()
+                .collect(Collectors.groupingBy(EndpointConfig::toString));
+        for (Map.Entry<String, List<EndpointConfig>> duplicates : duplicatesByMimeTypes.entrySet()) {
+            if (duplicates.getValue().size() < 2) {
+                continue;
+            }
+            message.append(endpoints.get(0).getExposedEndpoint())
+                    .append(" is declared by :")
+                    .append(System.lineSeparator());
+            for (EndpointConfig config : duplicates.getValue()) {
+                message.append(config.toCompleteString())
+                        .append(System.lineSeparator());
+            }
+        }
+        return message.toString();
+    }
+
+    private List<EndpointConfig> getEndpointConfigs(String path, ClassInfo info, ResourceMethod rm) {
+        List<EndpointConfig> result = new ArrayList<>();
+        String exposingMethod = info.name().toString() + "#" + rm.getName();
+        if (isEmpty.test(rm.getConsumes()) && isEmpty.test(rm.getProduces()))
+            result.add(new EndpointConfig(path, rm.getHttpMethod(), null, null, exposingMethod));
+        else if (isEmpty.negate().test(rm.getConsumes()) && isEmpty.test(rm.getProduces())) {
+            for (String consume : rm.getConsumes()) {
+                result.add(new EndpointConfig(path, rm.getHttpMethod(), consume, null, exposingMethod));
+            }
+        } else if (isEmpty.test(rm.getConsumes()) && isEmpty.negate().test(rm.getProduces())) {
+            for (String produce : rm.getProduces()) {
+                result.add(new EndpointConfig(path, rm.getHttpMethod(), null, produce, exposingMethod));
+            }
+        } else {
+            for (String consume : rm.getConsumes()) {
+                for (String produce : rm.getProduces()) {
+                    result.add(new EndpointConfig(path, rm.getHttpMethod(), consume, produce, exposingMethod));
+                }
+            }
+        }
+        return result;
     }
 
     private org.jboss.resteasy.reactive.common.ResteasyReactiveConfig createRestReactiveConfig(ResteasyReactiveConfig config) {

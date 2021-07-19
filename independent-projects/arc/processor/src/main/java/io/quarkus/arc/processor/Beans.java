@@ -697,10 +697,7 @@ final class Beans {
                         }
 
                     } else {
-                        errors.add(new DeploymentException(
-                                "It's not possible to add a synthetic constructor with no parameters to the unproxyable bean class: "
-                                        +
-                                        beanClass));
+                        errors.add(cannotAddSyntheticNoArgsConstructor(beanClass));
                     }
                 } else {
                     errors.add(new DeploymentException(String
@@ -764,9 +761,7 @@ final class Beans {
                                 classesReceivingNoArgsCtor.add(returnTypeClass.name());
                             }
                         } else {
-                            errors.add(new DeploymentException(String
-                                    .format("It's not possible to add a synthetic constructor with no parameters to the unproxyable return type of "
-                                            + bean)));
+                            errors.add(cannotAddSyntheticNoArgsConstructor(returnTypeClass));
                         }
                     } else {
                         errors.add(new DefinitionException(String
@@ -810,10 +805,7 @@ final class Beans {
                             classesReceivingNoArgsCtor.add(beanClass.name());
                         }
                     } else {
-                        errors.add(new DeploymentException(
-                                "It's not possible to add a synthetic constructor with no parameters to the unproxyable bean class: "
-                                        +
-                                        beanClass));
+                        errors.add(cannotAddSyntheticNoArgsConstructor(beanClass));
                     }
                 } else {
                     errors.add(new DeploymentException(String
@@ -822,6 +814,11 @@ final class Beans {
                 }
             }
         }
+    }
+
+    private static DeploymentException cannotAddSyntheticNoArgsConstructor(ClassInfo beanClass) {
+        String message = "It's not possible to automatically add a synthetic no-args constructor to an unproxyable bean class. You need to manually add a non-private no-args constructor to %s in order to fulfill the requirements for normal scoped/intercepted/decorated beans.";
+        return new DeploymentException(String.format(message, beanClass));
     }
 
     private static void fetchType(Type type, BeanDeployment beanDeployment) {

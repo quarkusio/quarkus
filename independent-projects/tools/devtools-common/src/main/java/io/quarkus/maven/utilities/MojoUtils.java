@@ -15,10 +15,8 @@ import java.util.*;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
-import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
-import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
@@ -186,21 +184,6 @@ public class MojoUtils {
 
     public static String credentials(final Dependency d) {
         return String.format("%s:%s", d.getGroupId(), d.getArtifactId());
-    }
-
-    public static Plugin checkProjectForMavenBuildPlugin(MavenProject project) {
-        for (Plugin plugin : project.getBuildPlugins()) {
-            if (plugin.getGroupId().equals("io.quarkus")
-                    && plugin.getArtifactId().equals("quarkus-maven-plugin")) {
-                for (PluginExecution pluginExecution : plugin.getExecutions()) {
-                    if (pluginExecution.getGoals().contains("build")) {
-                        return plugin;
-                    }
-                }
-            }
-        }
-
-        return null;
     }
 
     /**

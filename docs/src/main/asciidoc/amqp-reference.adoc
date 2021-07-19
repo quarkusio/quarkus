@@ -1,0 +1,655 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Reactive Messaging AMQP 1.0 Connector Reference Documentation
+
+include::./attributes.adoc[]
+
+This guide is the companion from the xref:amqp.adoc[Getting Started with AMQP 1.0].
+It explains in more details the configuration and usage of the AMQP connector for reactive messaging.
+
+TIP: This documentation does not cover all the details of the connector.
+Refer to the https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging website] for further details.
+
+The AMQP connector allows Quarkus applications to send and receive messages using the AMQP 1.0 protocol.
+More details about the protocol can be found in http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-overview-v1.0-os.html[the AMQP 1.0 specification].
+It's important to note that AMQP 1.0 and AMQP 0.9.1 (implemented by RabbitMQ) are incompatible.
+Check <<using-rabbitmq,Using RabbitMQ>> to get more details.
+
+== AMQP connector extension
+
+To use the connector, you need to add the `quarkus-smallrye-reactive-messaging-amqp` extension.
+
+You can add the extension to your project using:
+
+[source, bash]
+----
+> ./mvnw quarkus:add-extensions -Dextensions="quarkus-smallrye-reactive-messaging-amqp"
+----
+
+Or just add the following dependency to your project:
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-quarkus-smallrye-reactive-messaging-amqp</artifactId>
+</dependency>
+----
+
+Once added to your project, you can map _channels_ to AMQP addresses by configuring the `connector` attribute:
+
+[source, properties]
+----
+# Inbound
+mp.messaging.incoming.[channel-name].connector=smallrye-amqp
+
+# Outbound
+mp.messaging.outgoing.[channel-name].connector=smallrye-amqp
+----
+
+== Configuring the AMQP Broker access
+
+The AMQP connector connects to AMQP 1.0 brokers such as Apache ActiveMQ or Artemis.
+To configure the location and credentials of the broker, add the following properties in the `application.properties`:
+
+[source, properties]
+----
+amqp-host=amqp # <1>
+amqp-port=5672 # <2>
+amqp-username=my-username # <3>
+amqp-password=my-password # <4>
+
+mp.messaging.incoming.prices.connector=smallrye-amqp #5
+----
+1. Configures the broker/router host name. You can do it per channel (using the `host` attribute) or globally using `amqp-host`
+2. Configures the broker/router port. You can do it per channel (using the `port` attribute) or globally using `amqp-port`. The default is `5672`.
+3. Configures the broker/router username if required. You can do it per channel (using the `username` attribute) or globally using `amqp-username`.
+4. Configures the broker/router password if required. You can do it per channel (using the `password` attribute) or globally using `amqp-password`.
+5. Instructs the prices channel to be managed by the AMQP connector
+
+In dev mode and when running tests, link:amqp-dev-services.adoc[Dev Services for AMQP] automatically starts an AMQP broker.
+
+== Receiving AMQP messages
+
+Let's imagine your application receives `Message<Double>`.
+You can consume the payload directly:
+
+[source, java]
+----
+package inbound;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class AmqpPriceConsumer {
+
+    @Incoming("prices")
+    public void consume(double price) {
+        // process your price.
+    }
+
+}
+----
+
+Or, you can retrieve the Message<Double>:
+
+[source, java]
+----
+package inbound;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message;
+
+import javax.enterprise.context.ApplicationScoped;
+import java.util.concurrent.CompletionStage;
+
+@ApplicationScoped
+public class AmqpPriceMessageConsumer {
+
+    @Incoming("prices")
+    public CompletionStage<Void> consume(Message<Double> price) {
+        // process your price.
+
+        // Acknowledge the incoming message, marking the AMQP message as `accepted`.
+        return price.ack();
+    }
+
+}
+----
+
+=== Inbound Metadata
+Messages coming from AMQP contain an instance of `IncomingAmqpMetadata` in the metadata.
+
+[source, java]
+----
+Optional<IncomingAmqpMetadata> metadata = incoming.getMetadata(IncomingAmqpMetadata.class);
+metadata.ifPresent(meta -> {
+    String address = meta.getAddress();
+    String subject = meta.getSubject();
+    boolean durable = meta.isDurable();
+    // Use io.vertx.core.json.JsonObject
+    JsonObject properties = meta.getProperties();
+    // ...
+});
+----
+
+=== Deserialization
+
+The connector converts incoming AMQP Messages into Reactive Messaging `Message<T>` instances.
+`T` depends on the _body_ of the received AMQP Message.
+
+The http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-types-v1.0-os.html[AMQP Type System] defines the supported types.
+
+[options="header"]
+|===
+| AMQP Body Type | `<T>`
+| AMQP Value containing a http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-types-v1.0-os.html#section-primitive-type-definitions[AMQP Primitive Type] | the corresponding Java type
+| AMQP Value using the `Binary` type | `byte[]`
+| AMQP Sequence | `List`
+| AMQP Data (with binary content) and the `content-type` is set to `application/json` | https://vertx.io/docs/apidocs/io/vertx/core/json/JsonObject.html[`JsonObject`]
+| AMQP Data with a different `content-type` | `byte[]`
+|===
+
+If you send objects with this AMQP connector (outbound connector), it gets encoded as JSON and sent as binary.
+The `content-type` is set to `application/json`.
+So, you can rebuild the object as follows:
+
+[source, java]
+----
+import io.vertx.core.json.JsonObject;
+//
+@ApplicationScoped
+public static class Consumer {
+
+    List<Price> prices = new CopyOnWriteArrayList<>();
+
+    @Incoming("from-amqp")
+    public void consume(JsonObject p) {   // <2>
+        Price price = p.mapTo(Price.class);  // <3>
+        prices.add(price);
+    }
+
+    public List<Price> list() {
+        return prices;
+    }
+}
+----
+1. The `Price` instances are automatically encoded to JSON by the connector
+2. You can receive it using a `JsonObject`
+3. Then, you can reconstruct the instance using the `mapTo` method
+
+NOTE: The `mapTo` method uses the Quarkus Jackson mapper. Check xref:rest-json.adoc#json[this guide] to learn more about the mapper configuration.
+
+=== Acknowledgement
+
+When a Reactive Messaging Message associated with an AMQP Message is acknowledged, it informs the broker that the message has been http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-accepted[accepted].
+
+=== Failure Management
+
+If a message produced from an AMQP message is _nacked_, a failure strategy is applied.
+The AMQP connector supports six strategies:
+
+* `fail` - fail the application; no more AMQP messages will be processed (default).
+The AMQP message is marked as rejected.
+* `accept` - this strategy marks the AMQP message as _accepted_. The processing continues ignoring the failure.
+Refer to the http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-accepted[accepted delivery state documentation].
+* `release` - this strategy marks the AMQP message as _released_. The processing continues with the next message. The broker can redeliver the message.
+Refer to the http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-released[released delivery state documentation].
+* `reject` - this strategy marks the AMQP message as rejected. The processing continues with the next message.
+Refer to the http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-rejected[rejected delivery state documentation].
+* `modified-failed` - this strategy marks the AMQP
+message as _modified_ and indicates that it failed (with the `delivery-failed` attribute). The processing continues with the next message, but the broker may attempt to redeliver the message.
+Refer to the http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-modified[modified delivery state documentation]
+* `modified-failed-undeliverable-here` - this strategy marks the AMQP message as _modified_ and indicates that it failed (with the `delivery-failed` attribute). It also indicates that the application cannot process the message, meaning that the broker will not attempt to redeliver the message to this node. The processing continues with the next message.
+Refer to the http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-modified[modified delivery state documentation]
+
+== Sending AMQP messages
+
+=== Serialization
+
+When sending a `Message<T>`, the connector converts the message into an AMQP Message.
+The payload is converted to the AMQP Message _body_.
+
+[options=header]
+|===
+| `T` | AMQP Message Body
+| primitive types or `String` | AMQP Value with the payload
+| `Instant` or `UUID` | AMQP Value using the corresponding AMQP Type
+| https://vertx.io/docs/apidocs/io/vertx/core/json/JsonObject.html[`JsonObject`] or https://vertx.io/docs/apidocs/io/vertx/core/json/JsonArray.html[`JsonArray`] | AMQP Data using a binary content. The `content-type` is set to `application/json`
+| `io.vertx.mutiny.core.buffer.Buffer` | AMQP Data using a binary content. No `content-type` set
+| Any other class | The payload is converted to JSON (using a Json Mapper). The result is wrapped into AMQP Data using a **binary** content. The `content-type` is set to `application/json`
+|===
+
+If the message payload cannot be serialized to JSON, the message is _nacked_.
+
+=== Outbound Metadata
+
+When sending `Messages`, you can add an instance of `OutgoingAmqpMetadata` to influence how the message is going to be sent to AMQP.
+For example, you can configure the subjects, properties:
+
+[source, java]
+----
+ OutgoingAmqpMetadata metadata = OutgoingAmqpMetadata.builder()
+    .withDurable(true)
+    .withSubject("my-subject")
+    .build();
+
+// Create a new message from the `incoming` message
+// Add `metadata` to the metadata from the `incoming` message.
+return incoming.addMetadata(metadata);
+----
+
+=== Dynamic address names
+
+Sometimes it is desirable to select the destination of a message dynamically.
+In this case, you should not configure the address inside your application configuration file, but instead, use the outbound metadata to set the address.
+
+For example, you can send to a dynamic address based on the incoming message:
+
+[source, java]
+----
+String addressName = selectAddressFromIncommingMessage(incoming);
+OutgoingAmqpMetadata metadata = OutgoingAmqpMetadata.builder()
+    .withAddress(addressName)
+    .withDurable(true)
+    .build();
+
+// Create a new message from the `incoming` message
+// Add `metadata` to the metadata from the `incoming` message.
+return incoming.addMetadata(metadata);
+----
+
+NOTE: To be able to set the address per message, the connector is using an _anonymous sender_.
+
+=== Acknowledgement
+
+By default, the Reactive Messaging `Message` is acknowledged when the broker acknowledged the message.
+When using routers, this acknowledgement may not be enabled.
+In this case, configure the `auto-acknowledgement` attribute to acknowledge the message as soon as it has been sent to the router.
+
+If an AMQP message is rejected/released/modified by the broker (or cannot be sent successfully), the message is nacked.
+
+=== Back Pressure and Credits
+
+The back-pressure is handled by AMQP _credits_.
+The outbound connector only requests the amount of allowed credits.
+When the amount of credits reaches 0, it waits (in a non-blocking fashion) until the broker grants more credits to the AMQP sender.
+
+== Configuring the AMQP address
+
+You can configure the AMQP address using the `address` attribute:
+
+[source, properties]
+----
+mp.messaging.incoming.prices.connector=smallrye-amqp
+mp.messaging.incoming.prices.address=my-queue
+
+mp.messaging.outgoing.orders.connector=smallrye-amqp
+mp.messaging.outgoing.orders.address=my-order-queue
+----
+
+If the `address` attribute is not set, the connector uses the channel name.
+
+To use an existing queue, you need to configure the `address`, `container-id` and, optionally, the `link-name` attributes.
+For example, if you have an Apache Artemis broker configured with:
+
+[source, xml]
+----
+<queues>
+    <queue name="people">
+        <address>people</address>
+        <durable>true</durable>
+        <user>artemis</user>
+    </queue>
+</queues>
+----
+
+You need the following configuration:
+[source, properties]
+----
+mp.messaging.outgoing.people.connector=smallrye-amqp
+mp.messaging.outgoing.people.durable=true
+mp.messaging.outgoing.people.address=people
+mp.messaging.outgoing.people.container-id=people
+----
+
+You may need to configure the `link-name` attribute, if the queue name is not the channel name:
+
+[source, properties]
+----
+mp.messaging.outgoing.people-out.connector=smallrye-amqp
+mp.messaging.outgoing.people-out.durable=true
+mp.messaging.outgoing.people-out.address=people
+mp.messaging.outgoing.people-out.container-id=people
+mp.messaging.outgoing.people-out.link-name=people
+----
+
+To use a `MULTICAST` queue, you need to provide the _FQQN_ (fully-qualified queue name) instead of just the name of the queue:
+
+[source, properties]
+----
+mp.messaging.outgoing.people-out.connector=smallrye-amqp
+mp.messaging.outgoing.people-out.durable=true
+mp.messaging.outgoing.people-out.address=foo
+mp.messaging.outgoing.people-out.container-id=foo
+
+mp.messaging.incoming.people-out.connector=smallrye-amqp
+mp.messaging.incoming.people-out.durable=true
+mp.messaging.incoming.people-out.address=foo::bar # Note the syntax: address-name::queue-name
+mp.messaging.incoming.people-out.container-id=bar
+mp.messaging.incoming.people-out.link-name=people
+----
+
+More details about the AMQP Address model can be found in the https://activemq.apache.org/components/artemis/documentation/2.0.0/address-model.html[Artemis documentation].
+
+== Customizing the underlying AMQP client
+
+The connector uses the Vert.x AMQP client underneath.
+More details about this client can be found in the https://vertx.io/docs/vertx-amqp-client/java/[Vert.x website].
+
+You can customize the underlying client configuration by producing an instance of `AmqpClientOptions` as follows:
+
+[source, java]
+----
+@Produces
+@Identifier("my-named-options")
+public AmqpClientOptions getNamedOptions() {
+  // You can use the produced options to configure the TLS connection
+  PemKeyCertOptions keycert = new PemKeyCertOptions()
+    .addCertPath("./tls/tls.crt")
+    .addKeyPath("./tls/tls.key");
+  PemTrustOptions trust = new PemTrustOptions().addCertPath("./tlc/ca.crt");
+  return new AmqpClientOptions()
+        .setSsl(true)
+        .setPemKeyCertOptions(keycert)
+        .setPemTrustOptions(trust)
+        .addEnabledSaslMechanism("EXTERNAL")
+        .setHostnameVerificationAlgorithm("")
+        .setConnectTimeout(30000)
+        .setReconnectInterval(5000)
+        .setContainerId("my-container");
+}
+----
+
+This instance is retrieved and used to configure the client used by the connector.
+You need to indicate the name of the client using the `client-options-name` attribute:
+
+[source, properties]
+----
+mp.messaging.incoming.prices.client-options-name=my-named-options
+----
+
+== Health reporting
+
+If you use the AMQP connector with the `quarkus-smallrye-health` extension, it contributes to the readiness and liveness probes.
+The AMQP connector reports the readiness and liveness of each channel managed by the connector.
+At the moment, the AMQP connector uses the same logic for the readiness and liveness checks.
+
+To disable health reporting, set the `health-enabled` attribute for the channel to false.
+On the inbound side (receiving messages from AMQP), the check verifies that the receiver is attached to the broker.
+On the outbound side (sending records to AMQP), the check verifies that the sender is attached to the broker.
+
+Note that a message processing failures nacks the message, which is then handled by the `failure-strategy`.
+It the responsibility of the `failure-strategy` to report the failure and influence the outcome of the checks.
+The `fail` failure strategy reports the failure, and so the check will report the fault.
+
+== Using RabbitMQ
+This connector is for AMQP 1.0. RabbitMQ implements AMQP 0.9.1.
+RabbitMQ does not provide AMQP 1.0 by default, but there is a plugin for it.
+To use RabbitMQ with this connector, enable and configure the AMQP 1.0 plugin.
+
+Despite the existence of the plugin, a few AMQP 1.0 features won’t work with RabbitMQ.
+Thus, we recommend the following configurations.
+
+To receive messages from RabbitMQ:
+
+* Set durable to false
+
+[source, properties]
+----
+mp.messaging.incoming.prices.connector=smallrye-amqp
+mp.messaging.incoming.prices.durable=false
+----
+
+To send messages to RabbitMQ:
+
+* set the destination address (anonymous sender are not supported)
+* set `use-anonymous-sender` to false
+
+[source, properties]
+----
+mp.messaging.outgoing.generated-price.connector=smallrye-amqp
+mp.messaging.outgoing.generated-price.address=prices
+mp.messaging.outgoing.generated-price.use-anonymous-sender=false
+----
+
+As a consequence, it’s not possible to change the destination dynamically (using message metadata) when using RabbitMQ.
+
+[[configuration-reference]]
+== AMQP Connector Configuration Reference
+
+=== Quarkus specific configuration
+
+include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-amqp.adoc[opts=optional, leveloffset=+1]
+
+=== Incoming channel configuration
+
+[cols="25, 30, 15, 20",options="header"]
+|===
+|Attribute (_alias_) | Description | Mandatory | Default
+
+| *username*
+
+_(amqp-username)_ | The username used to authenticate to the broker
+
+Type: _string_ | false |
+
+| *password*
+
+_(amqp-password)_ | The password used to authenticate to the broker
+
+Type: _string_ | false |
+
+| *host*
+
+_(amqp-host)_ | The broker hostname
+
+Type: _string_ | false | `localhost`
+
+| *port*
+
+_(amqp-port)_ | The broker port
+
+Type: _int_ | false | `5672`
+
+| *use-ssl*
+
+_(amqp-use-ssl)_ | Whether the AMQP connection uses SSL/TLS
+
+Type: _boolean_ | false | `false`
+
+| *virtual-host*
+
+_(amqp-virtual-host)_ | If set, configure the hostname value used for the connection AMQP Open frame and TLS SNI server name (if TLS is in use)
+
+Type: _string_ | false |
+
+| *sni-server-name*
+
+_(amqp-sni-server-name)_ | If set, explicitly override the hostname to use for the TLS SNI server name
+
+Type: _string_ | false |
+
+| *reconnect-attempts*
+
+_(amqp-reconnect-attempts)_ | The number of reconnection attempts
+
+Type: _int_ | false | `100`
+
+| *reconnect-interval*
+
+_(amqp-reconnect-interval)_ | The interval in second between two reconnection attempts
+
+Type: _int_ | false | `10`
+
+| *connect-timeout*
+
+_(amqp-connect-timeout)_ | The connection timeout in milliseconds
+
+Type: _int_ | false | `1000`
+
+| *container-id* | The AMQP container id
+
+Type: _string_ | false |
+
+| *address* | The AMQP address. If not set, the channel name is used
+
+Type: _string_ | false |
+
+| *link-name* | The name of the link. If not set, the channel name is used.
+
+Type: _string_ | false |
+
+| *client-options-name*
+
+_(amqp-client-options-name)_ | The name of the AMQP Client Option bean used to customize the AMQP client configuration
+
+Type: _string_ | false |
+
+| *tracing-enabled* | Whether tracing is enabled (default) or disabled
+
+Type: _boolean_ | false | `true`
+
+| *broadcast* | Whether the received AMQP messages must be dispatched to multiple _subscribers_
+
+Type: _boolean_ | false | `false`
+
+| *durable* | Whether AMQP subscription is durable
+
+Type: _boolean_ | false | `false`
+
+| *auto-acknowledgement* | Whether the received AMQP messages must be acknowledged when received
+
+Type: _boolean_ | false | `false`
+
+| *failure-strategy* | Specify the failure strategy to apply when a message produced from an AMQP message is nacked. Accepted values are `fail` (default), `accept`, `release`, `reject`, `modified-failed`, `modified-failed-undeliverable-here`
+
+Type: _string_ | false | `fail`
+
+|===
+
+
+=== Outgoing channel configuration
+
+[cols="25, 30, 15, 20",options="header"]
+|===
+|Attribute (_alias_) | Description | Mandatory | Default
+
+| *address* | The AMQP address. If not set, the channel name is used
+
+Type: _string_ | false |
+
+| *client-options-name*
+
+_(amqp-client-options-name)_ | The name of the AMQP Client Option bean used to customize the AMQP client configuration
+
+Type: _string_ | false |
+
+| *connect-timeout*
+
+_(amqp-connect-timeout)_ | The connection timeout in milliseconds
+
+Type: _int_ | false | `1000`
+
+| *container-id* | The AMQP container id
+
+Type: _string_ | false |
+
+| *credit-retrieval-period* | The period (in milliseconds) between two attempts to retrieve the credits granted by the broker. This time is used when the sender run out of credits.
+
+Type: _int_ | false | `2000`
+
+| *durable* | Whether sent AMQP messages are marked durable
+
+Type: _boolean_ | false | `false`
+
+| *host*
+
+_(amqp-host)_ | The broker hostname
+
+Type: _string_ | false | `localhost`
+
+| *link-name* | The name of the link. If not set, the channel name is used.
+
+Type: _string_ | false |
+
+| *merge* | Whether the connector should allow multiple upstreams
+
+Type: _boolean_ | false | `false`
+
+| *password*
+
+_(amqp-password)_ | The password used to authenticate to the broker
+
+Type: _string_ | false |
+
+| *port*
+
+_(amqp-port)_ | The broker port
+
+Type: _int_ | false | `5672`
+
+| *reconnect-attempts*
+
+_(amqp-reconnect-attempts)_ | The number of reconnection attempts
+
+Type: _int_ | false | `100`
+
+| *reconnect-interval*
+
+_(amqp-reconnect-interval)_ | The interval in second between two reconnection attempts
+
+Type: _int_ | false | `10`
+
+| *sni-server-name*
+
+_(amqp-sni-server-name)_ | If set, explicitly override the hostname to use for the TLS SNI server name
+
+Type: _string_ | false |
+
+| *tracing-enabled* | Whether tracing is enabled (default) or disabled
+
+Type: _boolean_ | false | `true`
+
+| *ttl* | The time-to-live of the send AMQP messages. 0 to disable the TTL
+
+Type: _long_ | false | `0`
+
+| *use-anonymous-sender* | Whether or not the connector should use an anonymous sender.
+
+Type: _boolean_ | false | `true`
+
+| *use-ssl*
+
+_(amqp-use-ssl)_ | Whether the AMQP connection uses SSL/TLS
+
+Type: _boolean_ | false | `false`
+
+| *username*
+
+_(amqp-username)_ | The username used to authenticate to the broker
+
+Type: _string_ | false |
+
+| *virtual-host*
+
+_(amqp-virtual-host)_ | If set, configure the hostname value used for the connection AMQP Open frame and TLS SNI server name (if TLS is in use)
+
+Type: _string_ | false |
+
+|===

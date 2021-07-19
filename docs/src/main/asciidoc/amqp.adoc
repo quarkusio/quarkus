@@ -161,11 +161,11 @@ Quarkus has built-in capabilities to deal with JSON AMQP messages.
 
 [NOTE]
 .@RegisterForReflection
-----
+====
 The `@RegisterForReflection` annotation instructs Quarkus to include the class (including fields and methods) when building the native executable.
 This will be useful later when we run the applications as native executables inside containers.
 Without, the native compilation would remove the fields and methods during the dead-code elimination phase.
-----
+====
 
 == Sending quote request
 

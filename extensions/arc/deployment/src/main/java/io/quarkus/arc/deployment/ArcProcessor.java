@@ -56,8 +56,9 @@ import io.quarkus.arc.processor.StereotypeInfo;
 import io.quarkus.arc.runtime.AdditionalBean;
 import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.arc.runtime.JBossLoggerProducer;
+import io.quarkus.arc.runtime.JavaUtilLoggerProducer;
 import io.quarkus.arc.runtime.LaunchModeProducer;
-import io.quarkus.arc.runtime.LoggerProducer;
 import io.quarkus.arc.runtime.test.PreloadedTestApplicationClassPredicate;
 import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.deployment.Capabilities;
@@ -540,7 +541,7 @@ public class ArcProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem loggerProducer() {
-        return new AdditionalBeanBuildItem(LoggerProducer.class);
+        return new AdditionalBeanBuildItem(JBossLoggerProducer.class, JavaUtilLoggerProducer.class);
     }
 
     @BuildStep

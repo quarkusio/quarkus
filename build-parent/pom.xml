@@ -820,7 +820,7 @@
                 <property>
                     <name>dokka</name>
                 </property>
-                <jdk>[,16)</jdk>
+                <jdk>(,16)</jdk>
                 <file>
                     <exists>src/main/kotlin</exists>
                 </file>

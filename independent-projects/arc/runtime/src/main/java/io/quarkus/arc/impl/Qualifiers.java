@@ -1,10 +1,12 @@
 package io.quarkus.arc.impl;
 
 import java.lang.annotation.Annotation;
+import java.lang.annotation.Repeatable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -23,15 +25,32 @@ public final class Qualifiers {
     }
 
     static void verify(Iterable<Annotation> qualifiers) {
+        Map<Class<? extends Annotation>, Integer> timesQualifierWasSeen = new HashMap<>();
         for (Annotation qualifier : qualifiers) {
             verifyQualifier(qualifier.annotationType());
+            timesQualifierWasSeen.compute(qualifier.annotationType(), (k, v) -> (v == null) ? 1 : (v + 1));
         }
+        checkQualifiersForDuplicates(timesQualifierWasSeen);
     }
 
     static void verify(Annotation... qualifiers) {
+        Map<Class<? extends Annotation>, Integer> timesQualifierWasSeen = new HashMap<>();
         for (Annotation qualifier : qualifiers) {
             verifyQualifier(qualifier.annotationType());
+            timesQualifierWasSeen.compute(qualifier.annotationType(), (k, v) -> (v == null) ? 1 : (v + 1));
         }
+        checkQualifiersForDuplicates(timesQualifierWasSeen);
+    }
+
+    // in various cases, specification requires to check qualifiers for duplicates and throw IAE
+    private static void checkQualifiersForDuplicates(Map<Class<? extends Annotation>, Integer> timesQualifierSeen) {
+        timesQualifierSeen.forEach((aClass, timesSeen) -> {
+            // if the qualifier was declared more than once and wasn't repeatable
+            if (timesSeen > 1 && aClass.getAnnotation(Repeatable.class) == null) {
+                throw new IllegalArgumentException("The qualifier " + aClass + " was used repeatedly " +
+                        "but it is not annotated with @java.lang.annotation.Repeatable");
+            }
+        });
     }
 
     static boolean hasQualifiers(Set<Annotation> beanQualifiers, Map<String, Set<String>> qualifierNonbindingMembers,

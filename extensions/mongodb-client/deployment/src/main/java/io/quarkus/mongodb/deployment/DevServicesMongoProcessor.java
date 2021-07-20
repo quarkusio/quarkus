@@ -3,17 +3,22 @@ package io.quarkus.mongodb.deployment;
 import static io.quarkus.mongodb.runtime.MongoClientBeanUtil.isDefault;
 
 import java.io.Closeable;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.utility.DockerImageName;
+
+import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.message.BasicNameValuePair;
+import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URLEncodedUtils;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.IsDockerWorking;
@@ -169,8 +174,16 @@ public class DevServicesMongoProcessor {
         }
         mongoDBContainer.start();
         Optional<String> databaseName = ConfigProvider.getConfig().getOptionalValue(configPrefix + "database", String.class);
+        String effectiveURL = databaseName.map(mongoDBContainer::getReplicaSetUrl).orElse(mongoDBContainer.getReplicaSetUrl());
+        if ((capturedProperties.connectionProperties != null) && !capturedProperties.connectionProperties.isEmpty()) {
+            effectiveURL = effectiveURL + "?"
+                    + URLEncodedUtils.format(
+                            capturedProperties.connectionProperties.entrySet().stream()
+                                    .map(e -> new BasicNameValuePair(e.getKey(), e.getValue())).collect(Collectors.toList()),
+                            StandardCharsets.UTF_8);
+        }
         return new StartResult(
-                databaseName.map(mongoDBContainer::getReplicaSetUrl).orElse(mongoDBContainer.getReplicaSetUrl()),
+                effectiveURL,
                 new Closeable() {
                     @Override
                     public void close() {
@@ -205,7 +218,7 @@ public class DevServicesMongoProcessor {
         DevServicesBuildTimeConfig devServicesConfig = mongoClientBuildTimeConfig.devservices;
         boolean devServicesEnabled = devServicesConfig.enabled.orElse(true);
         return new CapturedProperties(databaseName, connectionString, devServicesEnabled,
-                devServicesConfig.imageName.orElse(null), devServicesConfig.port.orElse(null));
+                devServicesConfig.imageName.orElse(null), devServicesConfig.port.orElse(null), devServicesConfig.properties);
     }
 
     private static class StartResult {
@@ -232,14 +245,16 @@ public class DevServicesMongoProcessor {
         private final boolean devServicesEnabled;
         private final String imageName;
         private final Integer fixedExposedPort;
+        private final Map<String, String> connectionProperties;
 
         public CapturedProperties(String database, String connectionString, boolean devServicesEnabled, String imageName,
-                Integer fixedExposedPort) {
+                Integer fixedExposedPort, Map<String, String> connectionProperties) {
             this.database = database;
             this.connectionString = connectionString;
             this.devServicesEnabled = devServicesEnabled;
             this.imageName = imageName;
             this.fixedExposedPort = fixedExposedPort;
+            this.connectionProperties = connectionProperties;
         }
 
         @Override
@@ -251,12 +266,14 @@ public class DevServicesMongoProcessor {
             CapturedProperties that = (CapturedProperties) o;
             return devServicesEnabled == that.devServicesEnabled && Objects.equals(database, that.database)
                     && Objects.equals(connectionString, that.connectionString) && Objects.equals(imageName, that.imageName)
-                    && Objects.equals(fixedExposedPort, that.fixedExposedPort);
+                    && Objects.equals(fixedExposedPort, that.fixedExposedPort)
+                    && Objects.equals(connectionProperties, that.connectionProperties);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(database, connectionString, devServicesEnabled, imageName, fixedExposedPort);
+            return Objects.hash(database, connectionString, devServicesEnabled, imageName, fixedExposedPort,
+                    connectionProperties);
         }
     }
 

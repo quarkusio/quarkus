@@ -88,6 +88,7 @@
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
                 <configuration>
                     <capabilities>
+                        <provides>io.quarkus.servlet-base</provides> <!-- this only exists to conflict with RESTEasy Reactive -->
                         <provides>io.quarkus.servlet</provides>
                     </capabilities>
                     <excludedArtifacts>

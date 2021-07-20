@@ -65,6 +65,9 @@
 
                         <!-- TODO fix this-->
                         <exclude>org.eclipse.microprofile.rest.client.tck.jsonb.InvokeWithJsonBProviderTest</exclude>
+
+                        <!-- currently not supported because it brings in Undertow -->
+                        <exclude>io.quarkus.tck.restclient.cdi.CDIInterceptorTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>

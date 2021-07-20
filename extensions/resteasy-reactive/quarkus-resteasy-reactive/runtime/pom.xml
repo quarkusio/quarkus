@@ -60,6 +60,7 @@
                     <capabilities>
                         <provides>io.quarkus.rest</provides>
                         <provides>io.quarkus.resteasy.reactive</provides>
+                        <provides>io.quarkus.servlet-base</provides> <!-- this only exists to conflict with Undertow -->
                     </capabilities>
                 </configuration>
             </plugin>

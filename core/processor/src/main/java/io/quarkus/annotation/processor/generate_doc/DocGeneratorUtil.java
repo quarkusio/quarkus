@@ -448,22 +448,39 @@ public class DocGeneratorUtil {
         return type.substring(1 + type.lastIndexOf(Constants.DOT));
     }
 
-    static String deriveConfigRootName(String simpleClassName, ConfigPhase configPhase) {
+    static String getName(String prefix, String name, String simpleClassName, ConfigPhase configPhase) {
+        if (name.equals(Constants.HYPHENATED_ELEMENT_NAME)) {
+            return deriveConfigRootName(simpleClassName, prefix, configPhase);
+        }
+
+        if (!prefix.isEmpty()) {
+            if (!name.isEmpty()) {
+                return prefix + Constants.DOT + name;
+            } else {
+                return prefix;
+            }
+        } else {
+            return name;
+        }
+    }
+
+    static String deriveConfigRootName(String simpleClassName, String prefix, ConfigPhase configPhase) {
         String simpleNameInLowerCase = simpleClassName.toLowerCase();
         int length = simpleNameInLowerCase.length();
 
         if (simpleNameInLowerCase.endsWith(CONFIG.toLowerCase())) {
             String sanitized = simpleClassName.substring(0, length - CONFIG.length());
-            return deriveConfigRootName(sanitized, configPhase);
+            return deriveConfigRootName(sanitized, prefix, configPhase);
         } else if (simpleNameInLowerCase.endsWith(CONFIGURATION.toLowerCase())) {
             String sanitized = simpleClassName.substring(0, length - CONFIGURATION.length());
-            return deriveConfigRootName(sanitized, configPhase);
+            return deriveConfigRootName(sanitized, prefix, configPhase);
         } else if (simpleNameInLowerCase.endsWith(configPhase.getConfigSuffix().toLowerCase())) {
             String sanitized = simpleClassName.substring(0, length - configPhase.getConfigSuffix().length());
-            return deriveConfigRootName(sanitized, configPhase);
+            return deriveConfigRootName(sanitized, prefix, configPhase);
         }
 
-        return Constants.QUARKUS + Constants.DOT + hyphenate(simpleClassName);
+        return !prefix.isEmpty() ? prefix + Constants.DOT + hyphenate(simpleClassName)
+                : Constants.QUARKUS + Constants.DOT + hyphenate(simpleClassName);
     }
 
     /**

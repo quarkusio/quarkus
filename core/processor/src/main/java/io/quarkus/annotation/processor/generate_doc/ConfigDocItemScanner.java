@@ -2,7 +2,7 @@ package io.quarkus.annotation.processor.generate_doc;
 
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.computeConfigGroupDocFileName;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.computeConfigRootDocFileName;
-import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.deriveConfigRootName;
+import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getName;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -64,6 +64,7 @@ final public class ConfigDocItemScanner {
             return;
         }
 
+        String prefix = Constants.QUARKUS;
         ConfigPhase configPhase = ConfigPhase.BUILD_TIME;
 
         for (AnnotationMirror annotationMirror : clazz.getAnnotationMirrors()) {
@@ -71,20 +72,21 @@ final public class ConfigDocItemScanner {
             if (annotationName.equals(Constants.ANNOTATION_CONFIG_ROOT)) {
                 final Map<? extends ExecutableElement, ? extends AnnotationValue> elementValues = annotationMirror
                         .getElementValues();
-                String name = Constants.EMPTY;
+                String name = Constants.HYPHENATED_ELEMENT_NAME;
                 for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : elementValues.entrySet()) {
                     final String key = entry.getKey().toString();
                     final String value = entry.getValue().getValue().toString();
                     if ("name()".equals(key)) {
-                        name = Constants.QUARKUS + Constants.DOT + value;
+                        name = value;
                     } else if ("phase()".equals(key)) {
                         configPhase = ConfigPhase.valueOf(value);
+                    } else if ("prefix()".equals(key)) {
+                        prefix = value;
                     }
                 }
 
-                if (name.isEmpty()) {
-                    name = deriveConfigRootName(clazz.getSimpleName().toString(), configPhase);
-                } else if (name.endsWith(Constants.DOT + Constants.PARENT)) {
+                name = getName(prefix, name, clazz.getSimpleName().toString(), configPhase);
+                if (name.endsWith(Constants.DOT + Constants.PARENT)) {
                     // take into account the root case which would contain characters that can't be used to create the final file
                     name = name.replace(Constants.DOT + Constants.PARENT, "");
                 }

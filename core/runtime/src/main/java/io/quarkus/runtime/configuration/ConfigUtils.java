@@ -23,7 +23,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.IntFunction;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
@@ -35,10 +34,10 @@ import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
 import io.smallrye.config.DotEnvConfigSourceProvider;
 import io.smallrye.config.EnvConfigSource;
-import io.smallrye.config.Expressions;
 import io.smallrye.config.FallbackConfigSourceInterceptor;
 import io.smallrye.config.Priorities;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
+import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SysPropConfigSource;
 import io.smallrye.config.common.utils.ConfigSourceUtil;
@@ -196,8 +195,7 @@ public final class ConfigUtils {
      * @return true if the property is present or false otherwise.
      */
     public static boolean isPropertyPresent(String propertyName) {
-        Config config = ConfigProvider.getConfig();
-        return Expressions.withoutExpansion(() -> config.getOptionalValue(propertyName, String.class)).isPresent();
+        return ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).isPropertyPresent(propertyName);
     }
 
     /**

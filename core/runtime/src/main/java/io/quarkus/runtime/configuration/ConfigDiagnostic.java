@@ -12,6 +12,8 @@ import org.jboss.logging.Logger;
 
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 
+import io.smallrye.config.common.utils.StringUtil;
+
 /**
  * Utility methods to log configuration problems.
  */
@@ -77,14 +79,14 @@ public final class ConfigDiagnostic {
                 continue;
             }
 
-            usedProperties.add(replaceNonAlphanumericByUnderscores(property));
+            usedProperties.add(StringUtil.replaceNonAlphanumericByUnderscores(property));
         }
         usedProperties.removeAll(properties);
 
         for (String property : properties) {
             boolean found = false;
             for (String usedProperty : usedProperties) {
-                if (usedProperty.equalsIgnoreCase(replaceNonAlphanumericByUnderscores(property))) {
+                if (usedProperty.equalsIgnoreCase(StringUtil.replaceNonAlphanumericByUnderscores(property))) {
                     found = true;
                     break;
                 }
@@ -136,21 +138,5 @@ public final class ConfigDiagnostic {
             b.append(System.lineSeparator());
         }
         return b.toString();
-    }
-
-    private static String replaceNonAlphanumericByUnderscores(final String name) {
-        int length = name.length();
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < length; i++) {
-            char c = name.charAt(i);
-            if ('a' <= c && c <= 'z' ||
-                    'A' <= c && c <= 'Z' ||
-                    '0' <= c && c <= '9') {
-                sb.append(c);
-            } else {
-                sb.append('_');
-            }
-        }
-        return sb.toString();
     }
 }

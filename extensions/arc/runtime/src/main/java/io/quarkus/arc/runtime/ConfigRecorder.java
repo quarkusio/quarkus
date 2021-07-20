@@ -1,5 +1,6 @@
 package io.quarkus.arc.runtime;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -31,7 +32,7 @@ public class ConfigRecorder {
         for (ConfigValidationMetadata property : properties) {
             Class<?> propertyClass = load(property.getType(), cl);
             // For parameterized types and arrays, we only check if the property config exists without trying to convert it
-            if (propertyClass.isArray() || propertyClass.getTypeParameters().length > 0) {
+            if (propertyClass.isArray() || (propertyClass.getTypeParameters().length > 0 && propertyClass != Map.class)) {
                 propertyClass = String.class;
             }
 

@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -259,9 +260,13 @@ public class VertxCoreRecorder {
                 if (!tmp.mkdirs()) {
                     LOGGER.warnf("Unable to create Vert.x cache directory : %s", tmp.getAbsolutePath());
                 }
-                if (!(tmp.setReadable(true, false) && tmp.setWritable(true, false))) {
-                    LOGGER.warnf("Unable to make the Vert.x cache directory (%s) world readable and writable",
-                            tmp.getAbsolutePath());
+                String os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+                if (!os.contains("windows")) {
+                    // Do not execute the following on windows.
+                    if (!(tmp.setReadable(true, false) && tmp.setWritable(true, false))) {
+                        LOGGER.warnf("Unable to make the Vert.x cache directory (%s) world readable and writable",
+                                tmp.getAbsolutePath());
+                    }
                 }
             }
 

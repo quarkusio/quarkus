@@ -115,6 +115,7 @@ class EventImpl<T> implements Event<T> {
 
     @Override
     public Event<T> select(Annotation... qualifiers) {
+        Qualifiers.verify(qualifiers);
         Set<Annotation> mergedQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergedQualifiers, qualifiers);
         return new EventImpl<T>(eventType, mergedQualifiers);
@@ -122,6 +123,7 @@ class EventImpl<T> implements Event<T> {
 
     @Override
     public <U extends T> Event<U> select(Class<U> subtype, Annotation... qualifiers) {
+        Qualifiers.verify(qualifiers);
         Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergerdQualifiers, qualifiers);
         return new EventImpl<U>(subtype, mergerdQualifiers);
@@ -129,6 +131,11 @@ class EventImpl<T> implements Event<T> {
 
     @Override
     public <U extends T> Event<U> select(TypeLiteral<U> subtype, Annotation... qualifiers) {
+        Qualifiers.verify(qualifiers);
+        if (Types.containsTypeVariable(subtype.getType())) {
+            throw new IllegalArgumentException(
+                    "Event#select(TypeLiteral, Annotation...) cannot be used with type variable parameter");
+        }
         Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergerdQualifiers, qualifiers);
         return new EventImpl<U>(subtype.getType(), mergerdQualifiers);

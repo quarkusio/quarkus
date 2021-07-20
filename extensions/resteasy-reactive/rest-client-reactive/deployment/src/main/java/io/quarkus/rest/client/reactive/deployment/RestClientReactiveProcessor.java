@@ -76,6 +76,9 @@ import io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilder;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveCDIWrapperBase;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
+import io.quarkus.restclient.config.RestClientConfig;
+import io.quarkus.restclient.config.RestClientConfigRoot;
+import io.quarkus.restclient.config.RestClientConfigRootProvider;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 
 class RestClientReactiveProcessor {
@@ -104,10 +107,12 @@ class RestClientReactiveProcessor {
     void setUpDefaultMediaType(BuildProducer<RestClientDefaultConsumesBuildItem> consumes,
             BuildProducer<RestClientDefaultProducesBuildItem> produces,
             BuildProducer<RestClientDisableSmartDefaultProduces> disableSmartProduces,
-            RestClientReactiveConfig config) {
+            RestClientReactiveConfig config,
+            RestClientConfigRoot configRoot) {
         consumes.produce(new RestClientDefaultConsumesBuildItem(MediaType.APPLICATION_JSON, 10));
         produces.produce(new RestClientDefaultProducesBuildItem(MediaType.APPLICATION_JSON, 10));
-        if (config.disableSmartProduces) {
+        // TODO: add to the new configuration
+        if (config.disableSmartProduces || configRoot.disableSmartProduces.orElse(false)) {
             disableSmartProduces.produce(new RestClientDisableSmartDefaultProduces());
         }
     }
@@ -134,6 +139,7 @@ class RestClientReactiveProcessor {
         restClientRecorder.setRestClientBuilderResolver();
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(HeaderContainer.class));
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(RestClientConfigRootProvider.class));
     }
 
     @BuildStep
@@ -261,7 +267,8 @@ class RestClientReactiveProcessor {
     void addRestClientBeans(Capabilities capabilities,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            RestClientReactiveConfig clientConfig) {
+            RestClientReactiveConfig legacyConfig,
+            RestClientConfigRoot clientConfigRoot) {
 
         CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
         Set<AnnotationInstance> registerRestClientAnnos = new HashSet<>(index.getAnnotations(REGISTER_REST_CLIENT));
@@ -288,7 +295,7 @@ class RestClientReactiveProcessor {
                     // CLASS LEVEL
                     final String configPrefix = computeConfigPrefix(jaxrsInterface.name(), registerRestClient);
                     final ScopeInfo scope = computeDefaultScope(capabilities, ConfigProvider.getConfig(), jaxrsInterface,
-                            configPrefix, clientConfig);
+                            configPrefix, legacyConfig, clientConfigRoot.configs.get(configPrefix));
                     // add a scope annotation, e.g. @Singleton
                     classCreator.addAnnotation(scope.getDotName().toString());
                     classCreator.addAnnotation(RestClient.class);
@@ -381,25 +388,31 @@ class RestClientReactiveProcessor {
     private ScopeInfo computeDefaultScope(Capabilities capabilities, Config config,
             ClassInfo restClientInterface,
             String configPrefix,
-            RestClientReactiveConfig mpClientConfig) {
+            RestClientReactiveConfig legacyClientConfig,
+            RestClientConfig clientConfig) {
         ScopeInfo scopeToUse = null;
-        final Optional<String> scopeConfig = config
-                .getOptionalValue(String.format(RestClientCDIDelegateBuilder.REST_SCOPE_FORMAT, configPrefix), String.class);
+        final Optional<String> scopeConfig;
+        if (clientConfig != null && clientConfig.getScope().isPresent()) {
+            scopeConfig = clientConfig.getScope();
+        } else {
+            scopeConfig = config.getOptionalValue(String.format(RestClientCDIDelegateBuilder.REST_SCOPE_FORMAT, configPrefix),
+                    String.class);
+        }
 
-        BuiltinScope globalDefaultScope = BuiltinScope.from(DotName.createSimple(mpClientConfig.scope));
+        BuiltinScope globalDefaultScope = BuiltinScope.from(DotName.createSimple(legacyClientConfig.scope));
         if (globalDefaultScope == null) {
             log.warnv("Unable to map the global rest client scope: '{}' to a scope. Using @ApplicationScoped",
-                    mpClientConfig.scope);
+                    legacyClientConfig.scope);
             globalDefaultScope = BuiltinScope.APPLICATION;
         }
 
         if (scopeConfig.isPresent()) {
             final DotName scope = DotName.createSimple(scopeConfig.get());
-            final BuiltinScope builtinScope = BuiltinScope.from(scope);
+            final BuiltinScope builtinScope = builtinScopeFromName(scope);
             if (builtinScope != null) { // override default @Dependent scope with user defined one.
                 scopeToUse = builtinScope.getInfo();
             } else if (capabilities.isPresent(Capability.SERVLET)) {
-                if (scope.equals(SESSION_SCOPED)) {
+                if (scope.equals(SESSION_SCOPED) || scope.toString().equalsIgnoreCase(SESSION_SCOPED.withoutPackagePrefix())) {
                     scopeToUse = new ScopeInfo(SESSION_SCOPED, true);
                 }
             }
@@ -426,5 +439,17 @@ class RestClientReactiveProcessor {
 
         // Initialize a default @Dependent scope as per the spec
         return scopeToUse != null ? scopeToUse : globalDefaultScope.getInfo();
+    }
+
+    private BuiltinScope builtinScopeFromName(DotName scopeName) {
+        BuiltinScope scope = BuiltinScope.from(scopeName);
+        if (scope == null) {
+            for (BuiltinScope builtinScope : BuiltinScope.values()) {
+                if (builtinScope.getName().withoutPackagePrefix().equalsIgnoreCase(scopeName.toString())) {
+                    scope = builtinScope;
+                }
+            }
+        }
+        return scope;
     }
 }

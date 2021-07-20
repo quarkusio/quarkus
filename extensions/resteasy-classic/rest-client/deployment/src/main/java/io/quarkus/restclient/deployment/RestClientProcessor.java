@@ -74,6 +74,9 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.restclient.NoopHostnameVerifier;
+import io.quarkus.restclient.config.RestClientConfig;
+import io.quarkus.restclient.config.RestClientConfigRoot;
+import io.quarkus.restclient.config.RestClientConfigRootProvider;
 import io.quarkus.restclient.runtime.PathFeatureHandler;
 import io.quarkus.restclient.runtime.PathTemplateInjectionFilter;
 import io.quarkus.restclient.runtime.RestClientBase;
@@ -148,6 +151,7 @@ class RestClientProcessor {
         restClientRecorder.setRestClientBuilderResolver();
 
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(RestClientConfigRootProvider.class));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 DefaultResponseExceptionMapper.class.getName(),
@@ -175,7 +179,8 @@ class RestClientProcessor {
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
-            BuildProducer<RestClientBuildItem> restClient) {
+            BuildProducer<RestClientBuildItem> restClient,
+            RestClientConfigRoot configRoot) {
 
         // According to the spec only rest client interfaces annotated with RegisterRestClient are registered as beans
         Map<DotName, ClassInfo> interfaces = new HashMap<>();
@@ -231,7 +236,7 @@ class RestClientProcessor {
             configurator.addType(restClientName);
             configurator.addQualifier(REST_CLIENT);
             final String configPrefix = computeConfigPrefix(restClientName.toString(), entry.getValue());
-            final ScopeInfo scope = computeDefaultScope(capabilities, config, entry, configPrefix);
+            final ScopeInfo scope = computeDefaultScope(capabilities, config, entry, configPrefix, configRoot);
             final List<Class<?>> annotationProviders = checkAnnotationProviders(entry.getValue(),
                     restClientAnnotationProviders);
             configurator.scope(scope);
@@ -375,18 +380,25 @@ class RestClientProcessor {
     }
 
     private ScopeInfo computeDefaultScope(Capabilities capabilities, Config config, Map.Entry<DotName, ClassInfo> entry,
-            String configPrefix) {
+            String configPrefix, RestClientConfigRoot configRoot) {
         ScopeInfo scopeToUse = null;
-        final Optional<String> scopeConfig = config
-                .getOptionalValue(String.format(RestClientBase.REST_SCOPE_FORMAT, configPrefix), String.class);
+
+        final Optional<String> scopeConfig;
+
+        RestClientConfig clientConfig = configRoot.configs.get(configPrefix);
+        if (clientConfig != null && clientConfig.getScope().isPresent()) {
+            scopeConfig = clientConfig.getScope();
+        } else {
+            scopeConfig = config.getOptionalValue(String.format(RestClientBase.REST_SCOPE_FORMAT, configPrefix), String.class);
+        }
 
         if (scopeConfig.isPresent()) {
             final DotName scope = DotName.createSimple(scopeConfig.get());
-            final BuiltinScope builtinScope = BuiltinScope.from(scope);
+            final BuiltinScope builtinScope = builtinScopeFromName(scope);
             if (builtinScope != null) { // override default @Dependent scope with user defined one.
                 scopeToUse = builtinScope.getInfo();
             } else if (capabilities.isPresent(Capability.SERVLET)) {
-                if (scope.equals(SESSION_SCOPED)) {
+                if (scope.equals(SESSION_SCOPED) || scope.toString().equalsIgnoreCase(SESSION_SCOPED.withoutPackagePrefix())) {
                     scopeToUse = new ScopeInfo(SESSION_SCOPED, true);
                 }
             }
@@ -512,5 +524,17 @@ class RestClientProcessor {
     private boolean isRestClientInterface(IndexView index, ClassInfo classInfo) {
         return Modifier.isInterface(classInfo.flags())
                 && index.getAllKnownImplementors(classInfo.name()).isEmpty();
+    }
+
+    private static BuiltinScope builtinScopeFromName(DotName scopeName) {
+        BuiltinScope scope = BuiltinScope.from(scopeName);
+        if (scope == null) {
+            for (BuiltinScope builtinScope : BuiltinScope.values()) {
+                if (builtinScope.getName().withoutPackagePrefix().equalsIgnoreCase(scopeName.toString())) {
+                    scope = builtinScope;
+                }
+            }
+        }
+        return scope;
     }
 }

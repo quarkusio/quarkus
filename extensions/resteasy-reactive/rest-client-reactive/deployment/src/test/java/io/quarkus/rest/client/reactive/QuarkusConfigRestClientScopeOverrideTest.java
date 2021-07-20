@@ -17,12 +17,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class MpRestClientScopeOverrideTest {
+public class QuarkusConfigRestClientScopeOverrideTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(HelloClient2.class))
-            .withConfigurationResource("dependent-test-application.properties");
+            .withConfigurationResource("quarkus-config-dependent-test-application.properties");
 
     @RestClient
     HelloClient2 client;

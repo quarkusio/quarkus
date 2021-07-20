@@ -174,11 +174,13 @@
         </plugins>
     </build>
     <profiles>
-        <!-- Execute kapt, but not on Java 17 or higher due to https://youtrack.jetbrains.com/issue/KT-47583 -->
+        <!-- Execute kapt, but not on Java 16 or higher due to
+            - https://youtrack.jetbrains.com/issue/KT-45545 (Java 16+)
+            - https://youtrack.jetbrains.com/issue/KT-47583 (Java 17+) -->
         <profile>
-            <id>kapt-not-on-jdk17</id>
+            <id>kapt-not-on-jdk16</id>
             <activation>
-                <jdk>(,17)</jdk>
+                <jdk>(,16)</jdk>
             </activation>
             <build>
                 <plugins>

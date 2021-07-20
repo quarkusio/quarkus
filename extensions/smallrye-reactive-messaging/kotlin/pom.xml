@@ -109,30 +109,6 @@
                     <failOnError>false</failOnError>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.jetbrains.dokka</groupId>
-                <artifactId>dokka-maven-plugin</artifactId>
-                <version>${dokka.version}</version>
-                <executions>
-                    <execution>
-                        <id>javadoc</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>javadocJar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <jdkVersion>11</jdkVersion>
-                    <outputFormat>html</outputFormat>
-                    <externalDocumentationLinks>
-                        <link>
-                            <!-- Root URL of the generated documentation to link with. The trailing slash is required! -->
-                            <url>https://docs.oracle.com/en/java/javase/11/docs/api/</url>
-                        </link>
-                    </externalDocumentationLinks>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 </project>

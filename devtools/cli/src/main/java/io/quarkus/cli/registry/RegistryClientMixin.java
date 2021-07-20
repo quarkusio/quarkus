@@ -67,11 +67,11 @@ public class RegistryClientMixin {
                     QuarkusProjectHelper.artifactResolver(), log);
         }
 
+        refreshRegistryCache(log);
+
         if (targetVersion.isStreamSpecified()) {
             return catalogResolver.resolveExtensionCatalog(targetVersion.getStream());
         }
-
-        refreshRegistryCache(log);
         return catalogResolver.resolveExtensionCatalog();
     }
 

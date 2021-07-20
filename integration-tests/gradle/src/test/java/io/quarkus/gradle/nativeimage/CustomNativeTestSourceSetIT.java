@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.gradle.BuildResult;
 
-public class CustomNativeTestSourceSetTest extends QuarkusNativeGradleTestBase {
+public class CustomNativeTestSourceSetIT extends QuarkusNativeGradleITBase {
 
     @Test
     public void runNativeTests() throws Exception {

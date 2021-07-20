@@ -33,5 +33,5 @@ compileTestJava {
 }
 
 quarkusDev {
-    workingDir = System.getProperty("java.io.tmpdir")
+    workingDir = "./build"
 }

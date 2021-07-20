@@ -9,7 +9,7 @@ import java.util.List;
 import io.quarkus.gradle.BuildResult;
 import io.quarkus.gradle.QuarkusGradleWrapperTestBase;
 
-public class QuarkusNativeGradleTestBase extends QuarkusGradleWrapperTestBase {
+public class QuarkusNativeGradleITBase extends QuarkusGradleWrapperTestBase {
 
     private final static String[] NATIVE_ARGS = new String[] {
             "quarkus.native.container-build",

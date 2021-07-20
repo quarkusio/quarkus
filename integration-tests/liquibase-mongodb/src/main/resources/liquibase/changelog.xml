@@ -1,0 +1,23 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd
+        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+
+    <changeSet id="1" author="loic">
+
+        <ext:createCollection collectionName="Fruit"/>
+
+        <ext:createIndex collectionName="Fruit">
+            <ext:keys>{color: 1}</ext:keys>
+            <ext:options>{name: "colorIdx"}</ext:options>
+        </ext:createIndex>
+
+        <ext:insertOne collectionName="Fruit">
+            <ext:document>{"name":"orange", "color": "orange"}</ext:document>
+        </ext:insertOne>
+
+    </changeSet>
+
+</databaseChangeLog>

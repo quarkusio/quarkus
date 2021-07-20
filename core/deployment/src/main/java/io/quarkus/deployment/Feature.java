@@ -62,6 +62,7 @@ public enum Feature {
     KUBERNETES,
     KUBERNETES_CLIENT,
     LIQUIBASE,
+    LIQUIBASE_MONGODB,
     LOGGING_GELF,
     MAILER,
     MICROMETER,

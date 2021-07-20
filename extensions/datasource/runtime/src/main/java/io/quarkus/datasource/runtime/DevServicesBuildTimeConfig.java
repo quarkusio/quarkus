@@ -16,8 +16,21 @@ public class DevServicesBuildTimeConfig {
      *
      * When DevServices is enabled Quarkus will attempt to automatically configure and start
      * a database when running in Dev or Test mode.
+     *
+     * @deprecated Use .enabled instead.
      */
     @ConfigItem(name = ConfigItem.PARENT)
+    @Deprecated(forRemoval = true, since = "2.1")
+    public Optional<Boolean> enabledDeprecated = Optional.empty();
+
+    /**
+     * If DevServices has been explicitly enabled or disabled. DevServices is generally enabled
+     * by default, unless there is an existing configuration present.
+     *
+     * When DevServices is enabled Quarkus will attempt to automatically configure and start
+     * a database when running in Dev or Test mode.
+     */
+    @ConfigItem
     public Optional<Boolean> enabled = Optional.empty();
 
     /**

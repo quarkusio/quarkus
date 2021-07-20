@@ -196,18 +196,22 @@ public class DevServicesDatasourceProcessor {
             Map<String, List<DevServicesDatasourceConfigurationHandlerBuildItem>> configurationHandlerBuildItems,
             Map<String, String> propertiesMap, List<Closeable> closeableList,
             LaunchMode launchMode) {
-        Optional<Boolean> enabled = dataSourceBuildTimeConfig.devservices.enabled;
-        if (enabled.isPresent() && !enabled.get()) {
+        boolean explicitlyDisabled = !(dataSourceBuildTimeConfig.devservices.enabled
+                .orElse(dataSourceBuildTimeConfig.devservices.enabledDeprecated.orElse(true)));
+        if (explicitlyDisabled) {
             //explicitly disabled
             log.debug("Not starting devservices for " + (dbName == null ? "default datasource" : dbName)
                     + " as it has been disabled in the config");
             return null;
         }
 
+        Boolean enabled = dataSourceBuildTimeConfig.devservices.enabled
+                .orElse(dataSourceBuildTimeConfig.devservices.enabledDeprecated.orElse(!hasNamedDatasources));
+
         Optional<String> defaultDbKind = DefaultDataSourceDbKindBuildItem.resolve(
                 dataSourceBuildTimeConfig.dbKind,
                 installedDrivers,
-                dbName != null || enabled.orElse(!hasNamedDatasources),
+                dbName != null || enabled,
                 curateOutcomeBuildItem);
 
         if (!defaultDbKind.isPresent()) {
@@ -224,7 +228,8 @@ public class DevServicesDatasourceProcessor {
             return null;
         }
 
-        if (!enabled.isPresent()) {
+        if (dataSourceBuildTimeConfig.devservices.enabled.isEmpty()
+                && dataSourceBuildTimeConfig.devservices.enabledDeprecated.isEmpty()) {
             for (DevServicesDatasourceConfigurationHandlerBuildItem i : configHandlers) {
                 if (i.getCheckConfiguredFunction().test(dbName)) {
                     //this database has explicit configuration

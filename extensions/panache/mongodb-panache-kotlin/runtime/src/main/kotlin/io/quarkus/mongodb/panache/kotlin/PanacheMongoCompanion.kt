@@ -2,7 +2,6 @@ package io.quarkus.mongodb.panache.kotlin
 
 import com.mongodb.client.MongoCollection
 import com.mongodb.client.MongoDatabase
-import io.quarkus.mongodb.panache.PanacheUpdate
 import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations.Companion.INSTANCE
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
@@ -645,45 +644,45 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id: Any> {
 
     /**
      * Update all entities of this type using the given update document with optional indexed parameters.
-     * The returned [PanacheUpdate] object will allow to restrict on which document the update should be applied.
+     * The returned [io.quarkus.mongodb.panache.common.PanacheUpdate] object will allow to restrict on which document the update should be applied.
      *
      * @param update the update document, if it didn't contain any update operator, we add `$set`.
      * It can also be expressed as a query string.
      * @param params optional sequence of indexed parameters
-     * @return a new [PanacheUpdate] instance for the given update document
+     * @return a new [io.quarkus.mongodb.panache.common.PanacheUpdate] instance for the given update document
      * @see [update]
      */
     @GenerateBridge
-    fun update(update: String, vararg params: Any?): PanacheUpdate = throw INSTANCE.implementationInjectionMissing()
+    fun update(update: String, vararg params: Any?): io.quarkus.mongodb.panache.common.PanacheUpdate = throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Update all entities of this type by the given update document with named parameters.
-     * The returned [PanacheUpdate] object will allow to restrict on which document the update should be applied.
+     * The returned [io.quarkus.mongodb.panache.common.PanacheUpdate] object will allow to restrict on which document the update should be applied.
      *
      * @param update the update document, if it didn't contain any update operator, we add `$set`.
      * It can also be expressed as a query string.
      *
      * @param params map of named parameters
-     * @return a new [PanacheUpdate] instance for the given update document
+     * @return a new [io.quarkus.mongodb.panache.common.PanacheUpdate] instance for the given update document
      * @see [update]
      */
     @GenerateBridge
-    fun update(update: String, params: Map<String, Any?>): PanacheUpdate =
+    fun update(update: String, params: Map<String, Any?>): io.quarkus.mongodb.panache.common.PanacheUpdate =
             throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Update all entities of this type by the given update document, with named parameters.
-     * The returned [PanacheUpdate] object will allow to restrict on which document the update should be applied.
+     * The returned [io.quarkus.mongodb.panache.common.PanacheUpdate] object will allow to restrict on which document the update should be applied.
      *
      * @param update the update document, if it didn't contain any update operator, we add `$set`.
      * It can also be expressed as a query string.
      *
      * @param params [Parameters] of named parameters
-     * @return a new [PanacheUpdate] instance for the given update document
+     * @return a new [io.quarkus.mongodb.panache.common.PanacheUpdate] instance for the given update document
      * @see [update]
      */
     @GenerateBridge
-    fun update(update: String, params: Parameters): PanacheUpdate = throw INSTANCE.implementationInjectionMissing()
+    fun update(update: String, params: Parameters): io.quarkus.mongodb.panache.common.PanacheUpdate = throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Allow to access the underlying Mongo Collection.

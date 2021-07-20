@@ -1,6 +1,6 @@
 package io.quarkus.mongodb.panache.kotlin.deployment;
 
-import io.quarkus.mongodb.panache.PanacheUpdate;
+import io.quarkus.mongodb.panache.common.PanacheUpdate;
 import io.quarkus.mongodb.panache.kotlin.PanacheMongoCompanion;
 import io.quarkus.mongodb.panache.kotlin.PanacheMongoCompanionBase;
 import io.quarkus.mongodb.panache.kotlin.PanacheMongoEntity;

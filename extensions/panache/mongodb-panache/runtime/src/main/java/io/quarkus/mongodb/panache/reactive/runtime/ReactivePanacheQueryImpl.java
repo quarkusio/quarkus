@@ -8,6 +8,7 @@ import org.bson.conversions.Bson;
 import com.mongodb.ReadPreference;
 import com.mongodb.client.model.Collation;
 
+import io.quarkus.mongodb.panache.common.reactive.runtime.CommonReactivePanacheQueryImpl;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.panache.common.Page;

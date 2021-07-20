@@ -4,10 +4,10 @@ import java.time.LocalDate;
 
 import javax.json.bind.annotation.JsonbDateFormat;
 
-import io.quarkus.mongodb.panache.common.ProjectionFor;
+import io.quarkus.mongodb.panache.ProjectionFor;
 
 @ProjectionFor(Book.class)
-public class BookShortView {
+public class LegacyBookShortView {
     private String title; // uses the field name title and not the column name bookTitle
     private String author;
     @JsonbDateFormat("yyyy-MM-dd")

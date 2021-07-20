@@ -1,4 +1,4 @@
-package io.quarkus.mongodb.panache.runtime;
+package io.quarkus.mongodb.panache.common.runtime;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

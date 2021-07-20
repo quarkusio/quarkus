@@ -669,7 +669,7 @@ Projection can be done for both PanacheQL and native queries.
 
 [source,java]
 ----
-import io.quarkus.mongodb.panache.ProjectionFor;
+import io.quarkus.mongodb.panache.common.ProjectionFor;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 
 // using public fields

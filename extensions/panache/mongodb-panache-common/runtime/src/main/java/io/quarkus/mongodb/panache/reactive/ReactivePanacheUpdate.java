@@ -9,7 +9,10 @@ import io.smallrye.mutiny.Uni;
  * Interface representing an update query.
  *
  * Use one of its methods to perform the update query.
+ *
+ * @deprecated use {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate} instead.
  */
+@Deprecated(forRemoval = true, since = "2.1.0")
 public interface ReactivePanacheUpdate {
     /**
      * Execute the update query with the update document.

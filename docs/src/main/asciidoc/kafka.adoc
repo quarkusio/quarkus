@@ -1355,11 +1355,13 @@ mp.messaging.connector.smallrye-kafka.sasl.jaas.config=org.apache.kafka.common.s
   oauth.client.secret="team-a-client-secret" \
   oauth.token.endpoint.uri="http://keycloak:8080/auth/realms/kafka-authz/protocol/openid-connect/token" ;
 mp.messaging.connector.smallrye-kafka.sasl.login.callback.handler.class=io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler
+
+quarkus.ssl.native=true
 ----
 
 Update the `oauth.client.id`, `oauth.client.secret` and `oauth.token.endpoint.uri` values.
 
-OAuth authentication works for both JVM and native modes.
+OAuth authentication works for both JVM and native modes. Since SSL in not enabled by default in native mode, `quarkus.ssl.native=true` must be added to support JaasClientOauthLoginCallbackHandler, which uses SSL. (See the xref:native-and-ssl.adoc[Using SSL with Native Executables] guide for more details.)
 
 == Testing a Kafka application
 

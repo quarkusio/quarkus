@@ -28,12 +28,12 @@ The second application receives the _quote request_ and sends a _quote_ back.
 image::kafka-qs-architecture.png[alt=Architecture, align=center]
 
 The first application, the _producer_, will let the user request some quotes over a HTTP endpoint.
-For each quote request a random identifier is generated and returned to the user, to put the quote request on _pending_.
-At the same time the generated request id is sent over a Kafka topic `quote-requests`.
+For each quote request a random identifier is generated and returned to the user, to mark the quote request as _pending_.
+At the same time, the generated request id is sent over a Kafka topic `quote-requests`.
 
 image::kafka-qs-app-screenshot.png[alt=Producer App UI, align=center]
 
-The second application, the _processor_, in turn, will read from the `quote-requests` topic put a random price to the quote, and send it to a Kafka topic named `quotes`.
+The second application, the _processor_, will read from the `quote-requests` topic, put a random price to the quote, and send it to a Kafka topic named `quotes`.
 
 Lastly, the _producer_ will read the quotes and send them to the browser using server-sent events.
 The user will therefore see the quote price updated from _pending_ to the received price in real-time.
@@ -65,7 +65,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 This command creates the project structure and selects two Quarkus extensions we will be using:
 
 1. RESTEasy Reactive and its Jackson support (to handle JSON) to serve the HTTP endpoint.
-2. The Kafka connector for reactive messaging
+2. The Kafka connector for Reactive Messaging
 
 To create the _processor_ project, from the same directory, run:
 
@@ -78,7 +78,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dextensions=smallrye-reactive-messaging-kafka
 ----
 
-At that point you should have the following structure:
+At that point, you should have the following structure:
 
 [source, text]
 ----
@@ -120,7 +120,7 @@ See xref:kafka-dev-services.adoc[Dev Services for Kafka] for details.
 == The Quote object
 
 The `Quote` class will be used in both _producer_ and _processor_ projects.
-For the sake of simplicity we will duplicate the class.
+For the sake of simplicity, we will duplicate the class.
 In both projects, create the `src/main/java/org/acme/kafka/model/Quote.java` file, with the following content:
 
 [source,java]
@@ -156,11 +156,11 @@ JSON representation of `Quote` objects will be used in messages sent to the Kafk
 and also in the server-sent events sent to web browsers.
 
 Quarkus has built-in capabilities to deal with JSON Kafka messages.
-In a following section we will create serializer/deserializer classes for Jackson.
+In a following section, we will create serializer/deserializer classes for Jackson.
 
 == Sending quote request
 
-Inside the _producer_ project create the `src/main/java/org/acme/kafka/producer/QuotesResource.java` file, and add the following content:
+Inside the _producer_ project, create the `src/main/java/org/acme/kafka/producer/QuotesResource.java` file and add the following content:
 
 [source,java]
 ----
@@ -178,12 +178,11 @@ import org.acme.kafka.model.Quote;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 
-import io.smallrye.mutiny.Multi;
-
 @Path("/quotes")
 public class QuotesResource {
 
-    @Channel("quote-requests") Emitter<String> quoteRequestEmitter; // <1>
+    @Channel("quote-requests")
+    Emitter<String> quoteRequestEmitter; // <1>
 
     /**
      * Endpoint to generate a new quote request id and send it to "quote-requests" Kafka topic using the emitter.
@@ -194,30 +193,31 @@ public class QuotesResource {
     public String createRequest() {
         UUID uuid = UUID.randomUUID();
         quoteRequestEmitter.send(uuid.toString()); // <2>
-        return uuid.toString();
+        return uuid.toString(); // <3>
     }
 }
 ----
 <1> Inject a Reactive Messaging `Emitter` to send messages to the `quote-requests` channel.
 <2> On a post request, generate a random UUID and send it to the Kafka topic using the emitter.
+<3> Return the same UUID to the client.
 
 We need to instruct Quarkus to map the `quote-requests` channel to a Kafka topic.
-In the `src/main/resources/application.properties` of the _producer_ project, add:
+In the `src/main/resources/application.properties` file in the _producer_ project, add:
 
 [source, properties]
 ----
-# Configure the outgoing Kafka topic quote-requests
+# Configure the outgoing `quote-requests` Kafka topic
 mp.messaging.outgoing.quote-requests.connector=smallrye-kafka
 ----
 
 All we need to specify is the `smallrye-kafka` connector.
 By default, the Kafka connector uses the channel name (`quote-requests`) as the Kafka topic name.
-It configures the serializer automatically.
+Quarkus configures the serializer automatically, because it finds that the `Emitter` produces `String` values.
 
 == Processing quote requests
 
 Now let's consume the quote request and give out a price.
-Inside the _processor_ project, create the `src/main/java/org/acme/kafka/processor/QuoteProcessor.java` file and add the following content:
+Inside the _processor_ project, create the `src/main/java/org/acme/kafka/processor/QuotesProcessor.java` file and add the following content:
 
 [source, java]
 ----
@@ -234,7 +234,7 @@ import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 
 /**
- * A bean consuming data from the "request" Kafka topic and giving out a random quote.
+ * A bean consuming data from the "quote-requests" Kafka topic (mapped to "requests" channel) and giving out a random quote.
  * The result is pushed to the "quotes" Kafka topic.
  */
 @ApplicationScoped
@@ -242,9 +242,9 @@ public class QuotesProcessor {
 
     private Random random = new Random();
 
-    @Incoming("requests")       // <1>
-    @Outgoing("quotes")         // <2>
-    @Blocking                   // <3>
+    @Incoming("requests") // <1>
+    @Outgoing("quotes")   // <2>
+    @Blocking             // <3>
     public Quote process(String quoteRequest) throws InterruptedException {
         // simulate some hard working task
         Thread.sleep(200);
@@ -253,23 +253,23 @@ public class QuotesProcessor {
 }
 
 ----
-<1> Indicates that the method consumes the items from the `requests` channel
-<2> Indicates that the objects returned by the method are sent to the `quotes` channel
+<1> Indicates that the method consumes the items from the `requests` channel.
+<2> Indicates that the objects returned by the method are sent to the `quotes` channel.
 <3> Indicates that the processing is _blocking_ and cannot be run on the caller thread.
 
-For every Kafka _record_ from the `quote-requests` topic, it calls the `process` method, and sends the returned `Quote` object to the `quotes` channel.
-As with the previous example we need to configure the connectors in the `application.properties` file, to map the `requests` and `quotes` channels to Kafka topics:
+For every Kafka _record_ from the `quote-requests` topic, Reactive Messagins calls the `process` method, and sends the returned `Quote` object to the `quotes` channel.
+As with the previous example, we need to configure the connectors in the `application.properties` file, to map the `requests` and `quotes` channels to Kafka topics:
 
 [source, properties]
 ----
 %dev.quarkus.http.port=8081
 
-# Configure the incoming Kafka topic `quote-requests`
+# Configure the incoming `quote-requests` Kafka topic
 mp.messaging.incoming.requests.connector=smallrye-kafka
 mp.messaging.incoming.requests.topic=quote-requests
 mp.messaging.incoming.requests.auto.offset.reset=earliest
 
-# Configure the outgoing Kafka topic `quotes`
+# Configure the outgoing `quotes` Kafka topic
 mp.messaging.outgoing.quotes.connector=smallrye-kafka
 mp.messaging.outgoing.quotes.value.serializer=io.quarkus.kafka.client.serialization.ObjectMapperSerializer
 ----
@@ -286,8 +286,8 @@ The `channel-name` segment must match the value set in the `@Incoming` and `@Out
 
 [NOTE]
 ====
-More details about this configuration is available on the https://kafka.apache.org/documentation/#producerconfigs[Producer configuration] and https://kafka.apache.org/documentation/#consumerconfigs[Consumer configuration] section from the Kafka documentation. These properties are configured with the prefix `kafka`. An exhaustive list of configuration properties is available in
-xref:kafka.adoc#kafka-configuration[Using Apache Kafka with Reactive Messaging - Configuration].
+More details about this configuration is available on the https://kafka.apache.org/documentation/#producerconfigs[Producer configuration] and https://kafka.apache.org/documentation/#consumerconfigs[Consumer configuration] section from the Kafka documentation. These properties are configured with the prefix `kafka`.
+An exhaustive list of configuration properties is available in xref:kafka.adoc#kafka-configuration[Kafka Reference Guide - Configuration].
 ====
 
 Also, for the outgoing configuration we specified the serializer because we are sending a `Quote` object as the message payload.
@@ -298,14 +298,16 @@ Quarkus provides default implementations for Kafka serializer/deserializer pairs
 == Receiving quotes
 
 Back to our _producer_ project.
-Let's modify the `QuotesResource` to consume quotes, bind it to an HTTP endpoint to send events to clients:
+Let's modify the `QuotesResource` to consume quotes from Kafka and send them back to the client via Server-Sent Events:
 
 [source,java]
 ----
 import io.smallrye.mutiny.Multi;
-[...]
 
-@Channel("quotes") Multi<Quote> quotes;     // <1>
+...
+
+@Channel("quotes")
+Multi<Quote> quotes; // <1>
 
 /**
  * Endpoint retrieving the "quotes" Kafka topic and sending the items to a server sent event.
@@ -325,10 +327,7 @@ Add the following inside `application.properties` file:
 
 [source, properties]
 ----
-# Configure the outgoing Kafka topic quote-requests
-mp.messaging.outgoing.quote-requests.connector=smallrye-kafka
-
-# Configure the incoming Kafka topic quotes
+# Configure the incoming `quotes` Kafka topic
 mp.messaging.incoming.quotes.connector=smallrye-kafka
 ----
 
@@ -342,7 +341,7 @@ xref:kafka.adoc#kafka-bare-clients[using Kafka clients directly].
 == JSON serialization via Jackson
 
 Finally, we will configure JSON serialization for messages using Jackson.
-Previously we've seen the usage of `ObjectMapperSerializer` to serialize objects via Jackson.
+Previously, we've seen the usage of `ObjectMapperSerializer` to serialize objects via Jackson.
 For the corresponding deserializer class, we need to create a subclass of `ObjectMapperDeserializer`.
 
 So, let's create it inside _producer_ project on `src/main/java/org/acme/kafka/model/QuoteDeserializer.java`
@@ -355,36 +354,38 @@ import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 
 public class QuoteDeserializer extends ObjectMapperDeserializer<Quote> {
     public QuoteDeserializer() {
-        // pass the class to the parent.
         super(Quote.class);
     }
 }
 ----
 
 No need to add any configuration for this inside `application.properties` file.
-Quarkus will automatically detect this serializer.
+Quarkus will automatically detect this deserializer.
 
 [TIP]
 ====
 .Message serialization in Kafka
 In this example we used Jackson to serialize/deserialize Kafka messages.
-For more options on message serialization see
-xref:kafka.adoc#kafka-serialization[Using Apache Kafka with Reactive Messaging - Serialization].
+For more options on message serialization, see xref:kafka.adoc#kafka-serialization[Kafka Reference Guide - Serialization].
 
 We strongly suggest adopting a contract-first approach using a schema registry.
-To learn more about how to use Apache Kafka with the schema registry and Avro follow the
+To learn more about how to use Apache Kafka with the schema registry and Avro, follow the
 xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro] guide.
 ====
 
 == The HTML page
 
-Final touch, the HTML page reading the converted prices using SSE.
+Final touch, the HTML page requesting quotes and displaying the prices obtained over SSE.
 
-Create inside the _producer_ project `src/main/resources/META-INF/resources/quotes.html` file, with the following content:
+Inside the _producer_ project, create the `src/main/resources/META-INF/resources/quotes.html` file with the following content:
 
 [source, html]
 ----
-<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <title>Quotes</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prices</title>
 
     <link rel="stylesheet" type="text/css"
           href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/css/patternfly.min.css">
@@ -409,13 +410,14 @@ Create inside the _producer_ project `src/main/resources/META-INF/resources/quot
         .then(res => res.text())
         .then(qid => {
             var row = $(`<h4 class='col-md-12' id='${qid}'>Quote # <i>${qid}</i> | <strong>Pending</strong></h4>`);
-            $(".quotes").append(row);
+            $(".quotes").prepend(row);
         });
     });
+
     var source = new EventSource("/quotes");
     source.onmessage = (event) => {
       var json = JSON.parse(event.data);
-      $(`#${json.id}`).html(function(index, html) {
+      $(`#${json.id}`).html((index, html) => {
         return html.replace("Pending", `\$\xA0${json.price}`);
       });
     };
@@ -424,19 +426,20 @@ Create inside the _producer_ project `src/main/resources/META-INF/resources/quot
 ----
 
 Nothing spectacular here.
-On each received quote, it updates the page.
+When the user clicks the button, HTTP request is made to request a quote, and a pending quote is added to the list.
+On each quote received over SSE, the corresponding item in the list is updated.
 
 == Get it running
 
 You just need to run both applications.
-In a first terminal, run:
+In one terminal, run:
 
 [source,bash]
 ----
 mvn -f kafka-quickstart-producer quarkus:dev
 ----
 
-In a separate terminal, run:
+In another terminal, run:
 
 [source, bash]
 ----
@@ -455,7 +458,7 @@ You can follow the instructions from the https://kafka.apache.org/quickstart[Apa
 
 [source, yaml]
 ----
-version: '2'
+version: '3.5'
 
 services:
 
@@ -470,7 +473,7 @@ services:
     environment:
       LOG_DIR: /tmp/logs
     networks:
-      - kafkaquickstart-network
+      - kafka-quickstart-network
 
   kafka:
     image: quay.io/strimzi/kafka:0.23.0-kafka-2.8.0
@@ -488,32 +491,36 @@ services:
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
     networks:
-      - kafkaquickstart-network
+      - kafka-quickstart-network
 
   producer:
     image: quarkus-quickstarts/kafka-quickstart-producer:1.0-${QUARKUS_MODE:-jvm}
     build:
       context: producer
       dockerfile: src/main/docker/Dockerfile.${QUARKUS_MODE:-jvm}
+    depends_on:
+      - kafka
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8080:8080"
     networks:
-      - kafkaquickstart-network
+      - kafka-quickstart-network
 
   processor:
     image: quarkus-quickstarts/kafka-quickstart-processor:1.0-${QUARKUS_MODE:-jvm}
     build:
       context: processor
       dockerfile: src/main/docker/Dockerfile.${QUARKUS_MODE:-jvm}
+    depends_on:
+      - kafka
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     networks:
-      - kafkaquickstart-network
+      - kafka-quickstart-network
 
 networks:
-  kafkaquickstart-network:
+  kafka-quickstart-network:
     name: kafkaquickstart
 ----
 
@@ -525,7 +532,7 @@ mvn -f kafka-quickstart-producer package
 mvn -f kafka-quickstart-processor package
 ----
 
-Once packaged, run `docker compose up`.
+Once packaged, run `docker-compose up`.
 
 NOTE: This is a development cluster, do not use in production.
 
@@ -534,8 +541,8 @@ First, compile both applications as native:
 
 [source, bash]
 ----
-mvn -f kafka-quickstart-producer package -Pnative -Dquarkus.native.container-build=true
-mvn -f kafka-quickstart-processor package -Pnative -Dquarkus.native.container-build=true
+mvn -f kafka-quickstart-producer package -Dnative -Dquarkus.native.container-build=true
+mvn -f kafka-quickstart-processor package -Dnative -Dquarkus.native.container-build=true
 ----
 
 Run the system with:
@@ -543,7 +550,7 @@ Run the system with:
 [source, bash]
 ----
 export QUARKUS_MODE=native
-docker compose up --build
+docker-compose up --build
 ----
 
 == Going further
@@ -551,4 +558,4 @@ docker compose up --build
 This guide has shown how you can interact with Kafka using Quarkus.
 It utilizes https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging] to build data streaming applications.
 
-For the exhaustive list of features and configuration options check the xref:kafka.adoc[Reference guide for Apache Kafka Extension].
+For the exhaustive list of features and configuration options, check the xref:kafka.adoc[Reference guide for Apache Kafka Extension].

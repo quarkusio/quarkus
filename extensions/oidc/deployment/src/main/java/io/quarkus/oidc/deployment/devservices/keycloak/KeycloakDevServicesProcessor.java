@@ -215,7 +215,7 @@ public class KeycloakDevServicesProcessor {
     private StartResult startContainer() {
         if (!capturedDevServicesConfiguration.enabled) {
             // explicitly disabled
-            LOG.error("Not starting devservices for Keycloak as it has been disabled in the config");
+            LOG.debug("Not starting devservices for Keycloak as it has been disabled in the config");
             return null;
         }
         if (!isOidcTenantEnabled()) {

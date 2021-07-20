@@ -1130,31 +1130,31 @@ This is covered in the link:building-native-image[Native Executable Guide].
 
 [WARNING]
 ====
-Although `@NativeImageTest` is not yet deprecated, it will be in the future as it's functionality is covered by `@QuarkusIntegrationTest`
+Although `@NativeImageTest` is not yet deprecated, it will be in the future as its functionality is covered by `@QuarkusIntegrationTest`
 which is described in the following section.
 ====
 
 [#quarkus-integration-test]
 == Using @QuarkusIntegrationTest
 
-`@QuarkusIntegrationTest` should be used to launch and test the artifact produced by the Quarkus build, and supports testing a jar (of whichever type), a native image or container-image.
+`@QuarkusIntegrationTest` should be used to launch and test the artifact produced by the Quarkus build, and supports testing a jar (of whichever type), a native image or container image.
 Put simply, this means that if the result of a Quarkus build (`mvn package` or `gradle build`) is a jar, that jar will be launched as `java -jar ...` and tests run against it.
-If instead a native image was build, then the application is launched as `./application ...` and again the tests run against the running application.
-Finally, if a container image was created during the build (by using including the `quarkus-container-image-jib` or `quarkus-container-image-docker` extensions and having the
+If instead a native image was built, then the application is launched as `./application ...` and again the tests run against the running application.
+Finally, if a container image was created during the build (by including the `quarkus-container-image-jib` or `quarkus-container-image-docker` extensions and having the
 `quarkus.container-image.build=true` property configured), then a container is created and run (this requires the `docker` executable being present).
 
 As is the case with `@NativeImageTest`, this is a black box test that supports the same set features and has the same limitations.
 
 [NOTE]
 ====
-As the `@QuarkusIntegrationTest` tests the result of the build, it should be run as part of the integration test suite - i.e., via the `maven-failsafe-plugin` if using Maven or an additional task if using Gradle.
+As a test annotated with `@QuarkusIntegrationTest` tests the result of the build, it should be run as part of the integration test suite - i.e. via the `maven-failsafe-plugin` if using Maven or an additional task if using Gradle.
 These tests will **not** work if run in the same phase as `@QuarkusTest` as Quarkus has not yet created the final artifact.
 ====
 
 [[test-from-ide]]
 == Running `@QuarkusTest` from an IDE
 
-Most IDEs offer the possibility to run a selected class as JUnit test directly. For this you should set a few properties in the settings of your chosen IDE:
+Most IDEs offer the possibility to run a selected class as a JUnit test directly. For this you should set a few properties in the settings of your chosen IDE:
 
 * `java.util.logging.manager` (see link:logging[Logging Guide])
 
@@ -1174,7 +1174,7 @@ Use this JRE definition as your Quarkus project targeted runtime and the workaro
 
 === VSCode "run with" configuration
 
-The `settings.json` placed in the root of your project directory or in the workspace will need the workaround in your test configuration:
+The `settings.json` placed in the root of your project directory or in the workspace will need the following workaround in your test configuration:
 [source, json]
 ----
 "java.test.config": [

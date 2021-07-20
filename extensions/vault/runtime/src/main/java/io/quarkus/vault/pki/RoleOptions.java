@@ -117,7 +117,7 @@ public class RoleOptions {
     public Integer keyBits;
 
     /**
-     * Specifies the allowed key usage constraint on issued certificates
+     * Specifies the allowed key usage constraint on issued certificates.
      */
     public List<CertificateKeyUsage> keyUsages;
 

@@ -1,7 +1,7 @@
 package io.quarkus.vault.pki;
 
 /**
- * Options for configuration the CRL
+ * Options for configuring the CRL
  */
 public class ConfigCRLOptions {
 

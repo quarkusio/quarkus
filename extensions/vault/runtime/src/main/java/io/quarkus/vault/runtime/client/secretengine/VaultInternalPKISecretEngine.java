@@ -1,20 +1,16 @@
 package io.quarkus.vault.runtime.client.secretengine;
 
-import static java.util.Collections.emptyList;
-
 import javax.inject.Singleton;
 
-import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.VaultInternalBase;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKICRLRotateResult;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKICertificateListResult;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKICertificateResult;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIConfigCABody;
-import io.quarkus.vault.runtime.client.dto.pki.VaultPKIConfigCRLBody;
+import io.quarkus.vault.runtime.client.dto.pki.VaultPKIConfigCRLData;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIConfigCRLResult;
-import io.quarkus.vault.runtime.client.dto.pki.VaultPKIConfigURLsBody;
+import io.quarkus.vault.runtime.client.dto.pki.VaultPKIConfigURLsData;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIConfigURLsResult;
-import io.quarkus.vault.runtime.client.dto.pki.VaultPKIEnableBody;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIGenerateCertificateBody;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIGenerateCertificateResult;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIGenerateIntermediateCSRBody;
@@ -23,9 +19,8 @@ import io.quarkus.vault.runtime.client.dto.pki.VaultPKIGenerateRootBody;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIGenerateRootResult;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIRevokeCertificateBody;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIRevokeCertificateResult;
+import io.quarkus.vault.runtime.client.dto.pki.VaultPKIRoleOptionsData;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIRoleReadResult;
-import io.quarkus.vault.runtime.client.dto.pki.VaultPKIRoleUpdateBody;
-import io.quarkus.vault.runtime.client.dto.pki.VaultPKIRolesListData;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIRolesListResult;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKISetSignedIntermediateCABody;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKISignCertificateRequestBody;
@@ -77,7 +72,7 @@ public class VaultInternalPKISecretEngine extends VaultInternalBase {
         return vaultClient.post(getPath(mount, "revoke"), token, body, VaultPKIRevokeCertificateResult.class);
     }
 
-    public void updateRole(String token, String mount, String role, VaultPKIRoleUpdateBody body) {
+    public void updateRole(String token, String mount, String role, VaultPKIRoleOptionsData body) {
         vaultClient.post(getPath(mount, "roles/" + role), token, body, 204);
     }
 
@@ -86,19 +81,7 @@ public class VaultInternalPKISecretEngine extends VaultInternalBase {
     }
 
     public VaultPKIRolesListResult listRoles(String token, String mount) {
-        try {
-            return vaultClient.list(getPath(mount, "roles"), token, VaultPKIRolesListResult.class);
-        } catch (VaultClientException x) {
-            // Translate 404 to empty list
-            if (x.getStatus() == 404) {
-                VaultPKIRolesListResult empty = new VaultPKIRolesListResult();
-                empty.data = new VaultPKIRolesListData();
-                empty.data.keys = emptyList();
-                return empty;
-            } else {
-                throw x;
-            }
-        }
+        return vaultClient.list(getPath(mount, "roles"), token, VaultPKIRolesListResult.class);
     }
 
     public void deleteRole(String token, String mount, String role) {
@@ -138,7 +121,7 @@ public class VaultInternalPKISecretEngine extends VaultInternalBase {
         vaultClient.post(getPath(mount, "tidy"), token, body, 202);
     }
 
-    public void configURLs(String token, String mount, VaultPKIConfigURLsBody body) {
+    public void configURLs(String token, String mount, VaultPKIConfigURLsData body) {
         vaultClient.post(getPath(mount, "config/urls"), token, body, 204);
     }
 
@@ -146,7 +129,7 @@ public class VaultInternalPKISecretEngine extends VaultInternalBase {
         return vaultClient.get(getPath(mount, "config/urls"), token, VaultPKIConfigURLsResult.class);
     }
 
-    public void configCRL(String token, String mount, VaultPKIConfigCRLBody body) {
+    public void configCRL(String token, String mount, VaultPKIConfigCRLData body) {
         vaultClient.post(getPath(mount, "config/crl"), token, body, 204);
     }
 
@@ -154,17 +137,9 @@ public class VaultInternalPKISecretEngine extends VaultInternalBase {
         return vaultClient.get(getPath(mount, "config/crl"), token, VaultPKIConfigCRLResult.class);
     }
 
-    public void enableEngine(String token, String mount, VaultPKIEnableBody body) {
-        vaultClient.post("sys/mounts/" + mount, token, body, 204);
-    }
-
-    public void disableEngine(String token, String mount) {
-        vaultClient.delete("sys/mounts/" + mount, token, 204);
-    }
-
     public boolean checkEngineEnabled(String token, String mount) {
         try {
-            configURLs(token, mount, new VaultPKIConfigURLsBody());
+            configURLs(token, mount, new VaultPKIConfigURLsData());
             return true;
         } catch (Throwable x) {
             return false;

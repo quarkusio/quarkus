@@ -1,10 +1,12 @@
 package io.quarkus.vault.runtime;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.function.Function;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -26,15 +28,14 @@ import io.quarkus.vault.pki.RoleOptions;
 import io.quarkus.vault.pki.SignIntermediateCAOptions;
 import io.quarkus.vault.pki.SignedCertificate;
 import io.quarkus.vault.pki.TidyOptions;
+import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.dto.AbstractVaultDTO;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKICRLRotateResult;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKICertificateListResult;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKICertificateResult;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIConfigCABody;
-import io.quarkus.vault.runtime.client.dto.pki.VaultPKIConfigCRLBody;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIConfigCRLData;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIConfigCRLResult;
-import io.quarkus.vault.runtime.client.dto.pki.VaultPKIConfigURLsBody;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIConfigURLsData;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIConfigURLsResult;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIGenerateCertificateBody;
@@ -50,7 +51,6 @@ import io.quarkus.vault.runtime.client.dto.pki.VaultPKIRevokeCertificateBody;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIRevokeCertificateResult;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIRoleOptionsData;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIRoleReadResult;
-import io.quarkus.vault.runtime.client.dto.pki.VaultPKIRoleUpdateBody;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKIRolesListResult;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKISetSignedIntermediateCABody;
 import io.quarkus.vault.runtime.client.dto.pki.VaultPKISignCertificateRequestBody;
@@ -90,9 +90,7 @@ public class VaultPKIManager implements VaultPKISecretEngine {
     @Override
     public String getCertificateAuthority() {
         VaultPKICertificateResult internalResult = vaultInternalPKISecretEngine.getCertificate(getToken(), mount, "ca");
-        if (internalResult.data == null) {
-            error(internalResult);
-        }
+        checkDataValid(internalResult);
 
         return internalResult.data.certificate;
     }
@@ -106,7 +104,7 @@ public class VaultPKIManager implements VaultPKISecretEngine {
 
     @Override
     public void configURLs(ConfigURLsOptions options) {
-        VaultPKIConfigURLsBody body = new VaultPKIConfigURLsBody();
+        VaultPKIConfigURLsData body = new VaultPKIConfigURLsData();
         body.issuingCertificates = options.issuingCertificates;
         body.crlDistributionPoints = options.crlDistributionPoints;
         body.ocspServers = options.ocspServers;
@@ -117,9 +115,7 @@ public class VaultPKIManager implements VaultPKISecretEngine {
     @Override
     public ConfigURLsOptions readURLsConfig() {
         VaultPKIConfigURLsResult internalResult = vaultInternalPKISecretEngine.readURLs(getToken(), mount);
-        if (internalResult.data == null) {
-            error(internalResult);
-        }
+        checkDataValid(internalResult);
 
         VaultPKIConfigURLsData internalResultData = internalResult.data;
 
@@ -132,7 +128,7 @@ public class VaultPKIManager implements VaultPKISecretEngine {
 
     @Override
     public void configCRL(ConfigCRLOptions options) {
-        VaultPKIConfigCRLBody body = new VaultPKIConfigCRLBody();
+        VaultPKIConfigCRLData body = new VaultPKIConfigCRLData();
         body.expiry = options.expiry;
         body.disable = options.disable;
 
@@ -142,9 +138,7 @@ public class VaultPKIManager implements VaultPKISecretEngine {
     @Override
     public ConfigCRLOptions readCRLConfig() {
         VaultPKIConfigCRLResult internalResult = vaultInternalPKISecretEngine.readCRL(getToken(), mount);
-        if (internalResult.data == null) {
-            error(internalResult);
-        }
+        checkDataValid(internalResult);
 
         VaultPKIConfigCRLData internalResultData = internalResult.data;
 
@@ -157,9 +151,7 @@ public class VaultPKIManager implements VaultPKISecretEngine {
     @Override
     public String getCertificateAuthorityChain() {
         VaultPKICertificateResult internalResult = vaultInternalPKISecretEngine.getCertificate(getToken(), mount, "ca_chain");
-        if (internalResult.data == null) {
-            error(internalResult);
-        }
+        checkDataValid(internalResult);
 
         return internalResult.data.certificate;
     }
@@ -167,9 +159,7 @@ public class VaultPKIManager implements VaultPKISecretEngine {
     @Override
     public String getCertificateRevocationList() {
         VaultPKICertificateResult internalResult = vaultInternalPKISecretEngine.getCertificate(getToken(), mount, "crl");
-        if (internalResult.data == null) {
-            error(internalResult);
-        }
+        checkDataValid(internalResult);
 
         return internalResult.data.certificate;
     }
@@ -178,19 +168,15 @@ public class VaultPKIManager implements VaultPKISecretEngine {
     public boolean rotateCertificateRevocationList() {
         VaultPKICRLRotateResult internalResult = vaultInternalPKISecretEngine.rotateCertificateRevocationList(getToken(),
                 mount);
-        if (internalResult.data == null) {
-            error(internalResult);
-        }
+        checkDataValid(internalResult);
 
         return internalResult.data.success;
     }
 
     @Override
-    public List<String> listCertificates() {
+    public List<String> getCertificates() {
         VaultPKICertificateListResult internalResult = vaultInternalPKISecretEngine.listCertificates(getToken(), mount);
-        if (internalResult.data == null) {
-            error(internalResult);
-        }
+        checkDataValid(internalResult);
 
         // Return serials corrected to colon format (to match those returned by generateCertificate/signRequest)
         return internalResult.data.keys.stream().map(serial -> serial.replaceAll("-", ":")).collect(toList());
@@ -199,9 +185,7 @@ public class VaultPKIManager implements VaultPKISecretEngine {
     @Override
     public String getCertificate(String serial) {
         VaultPKICertificateResult internalResult = vaultInternalPKISecretEngine.getCertificate(getToken(), mount, serial);
-        if (internalResult.data == null) {
-            error(internalResult);
-        }
+        checkDataValid(internalResult);
 
         return internalResult.data.certificate;
     }
@@ -210,24 +194,16 @@ public class VaultPKIManager implements VaultPKISecretEngine {
     public GeneratedCertificate generateCertificate(String role, GenerateCertificateOptions options) {
         VaultPKIGenerateCertificateBody body = new VaultPKIGenerateCertificateBody();
         body.subjectCommonName = options.subjectCommonName;
-        body.subjectAlternativeNames = options.subjectAlternativeNames != null
-                ? String.join(",", options.subjectAlternativeNames)
-                : null;
-        body.ipSubjectAlternativeNames = options.subjectAlternativeNames != null
-                ? String.join(",", options.ipSubjectAlternativeNames)
-                : null;
-        body.uriSubjectAlternativeNames = options.subjectAlternativeNames != null
-                ? String.join(",", options.uriSubjectAlternativeNames)
-                : null;
+        body.subjectAlternativeNames = stringListToCommaString(options.subjectAlternativeNames);
+        body.ipSubjectAlternativeNames = stringListToCommaString(options.ipSubjectAlternativeNames);
+        body.uriSubjectAlternativeNames = stringListToCommaString(options.uriSubjectAlternativeNames);
         body.otherSubjectAlternativeNames = options.otherSubjectAlternativeNames;
         body.timeToLive = options.timeToLive;
         body.excludeCommonNameFromSubjectAlternativeNames = options.excludeCommonNameFromSubjectAlternativeNames;
 
         VaultPKIGenerateCertificateResult internalResult = vaultInternalPKISecretEngine.generateCertificate(getToken(), mount,
                 role, body);
-        if (internalResult.data == null) {
-            error(internalResult);
-        }
+        checkDataValid(internalResult);
 
         VaultPKIGenerateCertificateData internalResultData = internalResult.data;
 
@@ -236,9 +212,7 @@ public class VaultPKIManager implements VaultPKISecretEngine {
         result.issuingCA = internalResultData.issuingCA;
         result.caChain = internalResultData.caChain;
         result.serialNumber = internalResultData.serialNumber;
-        result.privateKeyType = internalResultData.privateKeyType != null
-                ? CertificateKeyType.valueOf(internalResultData.privateKeyType.toUpperCase())
-                : null;
+        result.privateKeyType = stringToCertificateKeyType(internalResultData.privateKeyType);
         result.privateKey = internalResultData.privateKey;
         return result;
     }
@@ -248,24 +222,16 @@ public class VaultPKIManager implements VaultPKISecretEngine {
         VaultPKISignCertificateRequestBody body = new VaultPKISignCertificateRequestBody();
         body.csr = pemSigningRequest;
         body.subjectCommonName = options.subjectCommonName;
-        body.subjectAlternativeNames = options.subjectAlternativeNames != null
-                ? String.join(",", options.subjectAlternativeNames)
-                : null;
-        body.ipSubjectAlternativeNames = options.subjectAlternativeNames != null
-                ? String.join(",", options.ipSubjectAlternativeNames)
-                : null;
-        body.uriSubjectAlternativeNames = options.subjectAlternativeNames != null
-                ? String.join(",", options.uriSubjectAlternativeNames)
-                : null;
+        body.subjectAlternativeNames = stringListToCommaString(options.subjectAlternativeNames);
+        body.ipSubjectAlternativeNames = stringListToCommaString(options.ipSubjectAlternativeNames);
+        body.uriSubjectAlternativeNames = stringListToCommaString(options.uriSubjectAlternativeNames);
         body.otherSubjectAlternativeNames = options.otherSubjectAlternativeNames;
         body.timeToLive = options.timeToLive;
         body.excludeCommonNameFromSubjectAlternativeNames = options.excludeCommonNameFromSubjectAlternativeNames;
 
         VaultPKISignCertificateRequestResult internalResult = vaultInternalPKISecretEngine.signCertificate(getToken(), mount,
                 role, body);
-        if (internalResult.data == null) {
-            error(internalResult);
-        }
+        checkDataValid(internalResult);
 
         VaultPKISignCertificateRequestData internalResultData = internalResult.data;
 
@@ -284,16 +250,14 @@ public class VaultPKIManager implements VaultPKISecretEngine {
 
         VaultPKIRevokeCertificateResult internalResult = vaultInternalPKISecretEngine.revokeCertificate(getToken(), mount,
                 body);
-        if (internalResult.data == null) {
-            error(internalResult);
-        }
+        checkDataValid(internalResult);
 
         return internalResult.data.revocationTime;
     }
 
     @Override
     public void updateRole(String role, RoleOptions options) {
-        VaultPKIRoleUpdateBody body = new VaultPKIRoleUpdateBody();
+        VaultPKIRoleOptionsData body = new VaultPKIRoleOptionsData();
         body.timeToLive = options.timeToLive;
         body.maxTimeToLive = options.maxTimeToLive;
         body.allowLocalhost = options.allowLocalhost;
@@ -311,40 +275,20 @@ public class VaultPKIManager implements VaultPKISecretEngine {
         body.clientFlag = options.clientFlag;
         body.codeSigningFlag = options.codeSigningFlag;
         body.emailProtectionFlag = options.emailProtectionFlag;
-        body.keyType = options.keyType != null
-                ? options.keyType.name().toLowerCase()
-                : null;
+        body.keyType = certificateKeyTypeToString(options.keyType);
         body.keyBits = options.keyBits;
-        body.keyUsages = options.keyUsages != null
-                ? options.keyUsages.stream().map(CertificateKeyUsage::name).collect(toList())
-                : null;
-        body.extendedKeyUsages = options.extendedKeyUsages != null
-                ? options.extendedKeyUsages.stream().map(CertificateExtendedKeyUsage::name).collect(toList())
-                : null;
+        body.keyUsages = enumListToStringList(options.keyUsages, CertificateKeyUsage::name);
+        body.extendedKeyUsages = enumListToStringList(options.extendedKeyUsages, CertificateExtendedKeyUsage::name);
         body.extendedKeyUsageOIDs = options.extendedKeyUsageOIDs;
         body.useCSRCommonName = options.useCSRCommonName;
         body.useCSRSubjectAlternativeNames = options.useCSRSubjectAlternativeNames;
-        body.subjectOrganization = options.subjectOrganization != null
-                ? asList(options.subjectOrganization.split(","))
-                : null;
-        body.subjectOrganizationalUnit = options.subjectOrganizationalUnit != null
-                ? asList(options.subjectOrganizationalUnit.split(","))
-                : null;
-        body.subjectStreetAddress = options.subjectStreetAddress != null
-                ? asList(options.subjectStreetAddress.split(","))
-                : null;
-        body.subjectPostalCode = options.subjectPostalCode != null
-                ? asList(options.subjectPostalCode.split(","))
-                : null;
-        body.subjectLocality = options.subjectLocality != null
-                ? asList(options.subjectLocality.split(","))
-                : null;
-        body.subjectProvince = options.subjectProvince != null
-                ? asList(options.subjectProvince.split(","))
-                : null;
-        body.subjectCountry = options.subjectCountry != null
-                ? asList(options.subjectCountry.split(","))
-                : null;
+        body.subjectOrganization = commaStringToStringList(options.subjectOrganization);
+        body.subjectOrganizationalUnit = commaStringToStringList(options.subjectOrganizationalUnit);
+        body.subjectStreetAddress = commaStringToStringList(options.subjectStreetAddress);
+        body.subjectPostalCode = commaStringToStringList(options.subjectPostalCode);
+        body.subjectLocality = commaStringToStringList(options.subjectLocality);
+        body.subjectProvince = commaStringToStringList(options.subjectProvince);
+        body.subjectCountry = commaStringToStringList(options.subjectCountry);
         body.allowedSubjectSerialNumbers = options.allowedSubjectSerialNumbers;
         body.generateLease = options.generateLease;
         body.noStore = options.noStore;
@@ -359,9 +303,7 @@ public class VaultPKIManager implements VaultPKISecretEngine {
     @Override
     public RoleOptions getRole(String role) {
         VaultPKIRoleReadResult internalResult = vaultInternalPKISecretEngine.readRole(getToken(), mount, role);
-        if (internalResult.data == null) {
-            error(internalResult);
-        }
+        checkDataValid(internalResult);
 
         VaultPKIRoleOptionsData internalResultData = internalResult.data;
 
@@ -383,40 +325,21 @@ public class VaultPKIManager implements VaultPKISecretEngine {
         result.clientFlag = internalResultData.clientFlag;
         result.codeSigningFlag = internalResultData.codeSigningFlag;
         result.emailProtectionFlag = internalResultData.emailProtectionFlag;
-        result.keyType = internalResultData.keyType != null
-                ? CertificateKeyType.valueOf(internalResultData.keyType.toUpperCase())
-                : null;
+        result.keyType = stringToCertificateKeyType(internalResultData.keyType);
         result.keyBits = internalResultData.keyBits;
-        result.keyUsages = internalResultData.keyUsages != null
-                ? internalResultData.keyUsages.stream().map(CertificateKeyUsage::valueOf).collect(toList())
-                : null;
-        result.extendedKeyUsages = internalResultData.extendedKeyUsages != null
-                ? internalResultData.extendedKeyUsages.stream().map(CertificateExtendedKeyUsage::valueOf).collect(toList())
-                : null;
+        result.keyUsages = stringListToEnumList(internalResultData.keyUsages, CertificateKeyUsage::valueOf);
+        result.extendedKeyUsages = stringListToEnumList(internalResultData.extendedKeyUsages,
+                CertificateExtendedKeyUsage::valueOf);
         result.extendedKeyUsageOIDs = internalResultData.extendedKeyUsageOIDs;
         result.useCSRCommonName = internalResultData.useCSRCommonName;
         result.useCSRSubjectAlternativeNames = internalResultData.useCSRSubjectAlternativeNames;
-        result.subjectOrganization = internalResultData.subjectOrganization != null
-                ? String.join(",", internalResultData.subjectOrganization)
-                : null;
-        result.subjectOrganizationalUnit = internalResultData.subjectOrganizationalUnit != null
-                ? String.join(",", internalResultData.subjectOrganizationalUnit)
-                : null;
-        result.subjectStreetAddress = internalResultData.subjectStreetAddress != null
-                ? String.join(",", internalResultData.subjectStreetAddress)
-                : null;
-        result.subjectPostalCode = internalResultData.subjectPostalCode != null
-                ? String.join(",", internalResultData.subjectPostalCode)
-                : null;
-        result.subjectLocality = internalResultData.subjectLocality != null
-                ? String.join(",", internalResultData.subjectLocality)
-                : null;
-        result.subjectProvince = internalResultData.subjectProvince != null
-                ? String.join(",", internalResultData.subjectProvince)
-                : null;
-        result.subjectCountry = internalResultData.subjectCountry != null
-                ? String.join(",", internalResultData.subjectCountry)
-                : null;
+        result.subjectOrganization = stringListToCommaString(internalResultData.subjectOrganization);
+        result.subjectOrganizationalUnit = stringListToCommaString(internalResultData.subjectOrganizationalUnit);
+        result.subjectStreetAddress = stringListToCommaString(internalResultData.subjectStreetAddress);
+        result.subjectPostalCode = stringListToCommaString(internalResultData.subjectPostalCode);
+        result.subjectLocality = stringListToCommaString(internalResultData.subjectLocality);
+        result.subjectProvince = stringListToCommaString(internalResultData.subjectProvince);
+        result.subjectCountry = stringListToCommaString(internalResultData.subjectCountry);
         result.allowedSubjectSerialNumbers = internalResultData.allowedSubjectSerialNumbers;
         result.generateLease = internalResultData.generateLease;
         result.noStore = internalResultData.noStore;
@@ -428,13 +351,22 @@ public class VaultPKIManager implements VaultPKISecretEngine {
     }
 
     @Override
-    public List<String> listRoles() {
-        VaultPKIRolesListResult internalResult = vaultInternalPKISecretEngine.listRoles(getToken(), mount);
-        if (internalResult.data == null) {
-            error(internalResult);
-        }
+    public List<String> getRoles() {
+        try {
 
-        return internalResult.data.keys;
+            VaultPKIRolesListResult internalResult = vaultInternalPKISecretEngine.listRoles(getToken(), mount);
+            checkDataValid(internalResult);
+
+            return internalResult.data.keys;
+
+        } catch (VaultClientException x) {
+            // Translate 404 to empty list
+            if (x.getStatus() == 404) {
+                return emptyList();
+            } else {
+                throw x;
+            }
+        }
     }
 
     @Override
@@ -447,20 +379,12 @@ public class VaultPKIManager implements VaultPKISecretEngine {
         String type = options.exportPrivateKey ? "exported" : "internal";
         VaultPKIGenerateRootBody body = new VaultPKIGenerateRootBody();
         body.subjectCommonName = options.subjectCommonName;
-        body.subjectAlternativeNames = options.subjectAlternativeNames != null
-                ? String.join(",", options.subjectAlternativeNames)
-                : null;
-        body.ipSubjectAlternativeNames = options.ipSubjectAlternativeNames != null
-                ? String.join(",", options.ipSubjectAlternativeNames)
-                : null;
-        body.uriSubjectAlternativeNames = options.uriSubjectAlternativeNames != null
-                ? String.join(",", options.uriSubjectAlternativeNames)
-                : null;
+        body.subjectAlternativeNames = stringListToCommaString(options.subjectAlternativeNames);
+        body.ipSubjectAlternativeNames = stringListToCommaString(options.ipSubjectAlternativeNames);
+        body.uriSubjectAlternativeNames = stringListToCommaString(options.uriSubjectAlternativeNames);
         body.otherSubjectAlternativeNames = options.otherSubjectAlternativeNames;
         body.timeToLive = options.timeToLive;
-        body.keyType = options.keyType != null
-                ? options.keyType.name().toLowerCase()
-                : null;
+        body.keyType = certificateKeyTypeToString(options.keyType);
         body.keyBits = options.keyBits;
         body.maxPathLength = options.maxPathLength;
         body.excludeCommonNameFromSubjectAlternativeNames = options.excludeCommonNameFromSubjectAlternativeNames;
@@ -475,9 +399,7 @@ public class VaultPKIManager implements VaultPKISecretEngine {
         body.subjectSerialNumber = options.subjectSerialNumber;
 
         VaultPKIGenerateRootResult internalResult = vaultInternalPKISecretEngine.generateRoot(getToken(), mount, type, body);
-        if (internalResult.data == null) {
-            error(internalResult);
-        }
+        checkDataValid(internalResult);
 
         VaultPKIGenerateRootData internalResultData = internalResult.data;
 
@@ -485,9 +407,7 @@ public class VaultPKIManager implements VaultPKISecretEngine {
         result.certificate = internalResultData.certificate;
         result.issuingCA = internalResultData.issuingCA;
         result.serialNumber = internalResultData.serialNumber;
-        result.privateKeyType = internalResultData.privateKeyType != null
-                ? CertificateKeyType.valueOf(internalResultData.privateKeyType.toUpperCase())
-                : null;
+        result.privateKeyType = stringToCertificateKeyType(internalResultData.privateKeyType);
         result.privateKey = internalResultData.privateKey;
         return result;
     }
@@ -502,15 +422,9 @@ public class VaultPKIManager implements VaultPKISecretEngine {
         VaultPKISignIntermediateCABody body = new VaultPKISignIntermediateCABody();
         body.csr = pemSigningRequest;
         body.subjectCommonName = options.subjectCommonName;
-        body.subjectAlternativeNames = options.subjectAlternativeNames != null
-                ? String.join(",", options.subjectAlternativeNames)
-                : null;
-        body.ipSubjectAlternativeNames = options.ipSubjectAlternativeNames != null
-                ? String.join(",", options.ipSubjectAlternativeNames)
-                : null;
-        body.uriSubjectAlternativeNames = options.uriSubjectAlternativeNames != null
-                ? String.join(",", options.uriSubjectAlternativeNames)
-                : null;
+        body.subjectAlternativeNames = stringListToCommaString(options.subjectAlternativeNames);
+        body.ipSubjectAlternativeNames = stringListToCommaString(options.ipSubjectAlternativeNames);
+        body.uriSubjectAlternativeNames = stringListToCommaString(options.uriSubjectAlternativeNames);
         body.otherSubjectAlternativeNames = options.otherSubjectAlternativeNames;
         body.timeToLive = options.timeToLive;
         body.maxPathLength = options.maxPathLength;
@@ -528,9 +442,7 @@ public class VaultPKIManager implements VaultPKISecretEngine {
 
         VaultPKISignCertificateRequestResult internalResult = vaultInternalPKISecretEngine.signIntermediateCA(getToken(), mount,
                 body);
-        if (internalResult.data == null) {
-            error(internalResult);
-        }
+        checkDataValid(internalResult);
 
         VaultPKISignCertificateRequestData internalResultData = internalResult.data;
 
@@ -547,19 +459,11 @@ public class VaultPKIManager implements VaultPKISecretEngine {
         String type = options.exportPrivateKey ? "exported" : "internal";
         VaultPKIGenerateIntermediateCSRBody body = new VaultPKIGenerateIntermediateCSRBody();
         body.subjectCommonName = options.subjectCommonName;
-        body.subjectAlternativeNames = options.subjectAlternativeNames != null
-                ? String.join(",", options.subjectAlternativeNames)
-                : null;
-        body.ipSubjectAlternativeNames = options.ipSubjectAlternativeNames != null
-                ? String.join(",", options.ipSubjectAlternativeNames)
-                : null;
-        body.uriSubjectAlternativeNames = options.uriSubjectAlternativeNames != null
-                ? String.join(",", options.uriSubjectAlternativeNames)
-                : null;
+        body.subjectAlternativeNames = stringListToCommaString(options.subjectAlternativeNames);
+        body.ipSubjectAlternativeNames = stringListToCommaString(options.ipSubjectAlternativeNames);
+        body.uriSubjectAlternativeNames = stringListToCommaString(options.uriSubjectAlternativeNames);
         body.otherSubjectAlternativeNames = options.otherSubjectAlternativeNames;
-        body.keyType = options.keyType != null
-                ? options.keyType.name().toLowerCase()
-                : null;
+        body.keyType = certificateKeyTypeToString(options.keyType);
         body.keyBits = options.keyBits;
         body.excludeCommonNameFromSubjectAlternativeNames = options.excludeCommonNameFromSubjectAlternativeNames;
         body.subjectOrganization = options.subjectOrganization;
@@ -578,9 +482,7 @@ public class VaultPKIManager implements VaultPKISecretEngine {
 
         GeneratedIntermediateCSRResult result = new GeneratedIntermediateCSRResult();
         result.csr = internalResultData.csr;
-        result.privateKeyType = internalResultData.privateKeyType != null
-                ? CertificateKeyType.valueOf(internalResultData.privateKeyType.toUpperCase())
-                : null;
+        result.privateKeyType = stringToCertificateKeyType(internalResultData.privateKeyType);
         result.privateKey = internalResultData.privateKey;
         return result;
     }
@@ -603,7 +505,52 @@ public class VaultPKIManager implements VaultPKISecretEngine {
         vaultInternalPKISecretEngine.tidy(getToken(), mount, body);
     }
 
-    private void error(AbstractVaultDTO<?, ?> dto) {
+    private String stringListToCommaString(List<String> values) {
+        if (values == null) {
+            return null;
+        }
+        return String.join(",", values);
+    }
+
+    private List<String> commaStringToStringList(String value) {
+        if (value == null) {
+            return null;
+        }
+        return asList(value.split(","));
+    }
+
+    private CertificateKeyType stringToCertificateKeyType(String value) {
+        if (value == null) {
+            return null;
+        }
+        return CertificateKeyType.valueOf(value.toUpperCase());
+    }
+
+    private String certificateKeyTypeToString(CertificateKeyType value) {
+        if (value == null) {
+            return null;
+        }
+        return value.name().toLowerCase();
+    }
+
+    private <T extends Enum<T>> List<String> enumListToStringList(List<T> values, Function<T, String> converter) {
+        if (values == null) {
+            return null;
+        }
+        return values.stream().map(converter).collect(toList());
+    }
+
+    private <T extends Enum<T>> List<T> stringListToEnumList(List<String> values, Function<String, T> converter) {
+        if (values == null) {
+            return null;
+        }
+        return values.stream().map(converter).collect(toList());
+    }
+
+    private void checkDataValid(AbstractVaultDTO<?, ?> dto) {
+        if (dto.data != null) {
+            return;
+        }
         if (dto.warnings instanceof List<?>) {
             List<?> warnings = (List<?>) dto.warnings;
             if (!warnings.isEmpty()) {

@@ -6,7 +6,8 @@ import javax.inject.Inject;
 import io.quarkus.vault.VaultPKISecretEngine;
 import io.quarkus.vault.VaultPKISecretEngineFactory;
 import io.quarkus.vault.pki.EnableEngineOptions;
-import io.quarkus.vault.runtime.client.dto.pki.VaultPKIEnableBody;
+import io.quarkus.vault.runtime.client.backend.VaultInternalSystemBackend;
+import io.quarkus.vault.runtime.client.dto.sys.VaultEnableEngineBody;
 import io.quarkus.vault.runtime.client.secretengine.VaultInternalPKISecretEngine;
 
 @ApplicationScoped
@@ -16,6 +17,8 @@ public class VaultPKIManagerFactory implements VaultPKISecretEngineFactory {
     private VaultAuthManager vaultAuthManager;
     @Inject
     private VaultInternalPKISecretEngine vaultInternalPKISecretEngine;
+    @Inject
+    private VaultInternalSystemBackend vaultInternalSystemBackend;
 
     @Override
     public VaultPKISecretEngine engine(String mount) {
@@ -24,18 +27,19 @@ public class VaultPKIManagerFactory implements VaultPKISecretEngineFactory {
 
     @Override
     public void enable(String mount, String description, EnableEngineOptions options) {
-        VaultPKIEnableBody body = new VaultPKIEnableBody();
+        VaultEnableEngineBody body = new VaultEnableEngineBody();
+        body.type = "pki";
         body.description = description;
-        body.config = new VaultPKIEnableBody.Config();
+        body.config = new VaultEnableEngineBody.Config();
         body.config.defaultLeaseTimeToLive = options.defaultLeaseTimeToLive;
         body.config.maxLeaseTimeToLive = options.maxLeaseTimeToLive;
 
-        vaultInternalPKISecretEngine.enableEngine(vaultAuthManager.getClientToken(), mount, body);
+        vaultInternalSystemBackend.enableEngine(vaultAuthManager.getClientToken(), mount, body);
     }
 
     @Override
     public void disable(String mount) {
-        vaultInternalPKISecretEngine.disableEngine(vaultAuthManager.getClientToken(), mount);
+        vaultInternalSystemBackend.disableEngine(vaultAuthManager.getClientToken(), mount);
     }
 
     @Override

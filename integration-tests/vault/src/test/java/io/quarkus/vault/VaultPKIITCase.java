@@ -90,7 +90,7 @@ public class VaultPKIITCase {
         }
 
         try {
-            for (String role : pkiSecretEngine.listRoles()) {
+            for (String role : pkiSecretEngine.getRoles()) {
                 try {
                     pkiSecretEngine.deleteRole(role);
                 } catch (Throwable x) {
@@ -476,7 +476,7 @@ public class VaultPKIITCase {
         pkiSecretEngine.updateRole("test1", options);
         pkiSecretEngine.updateRole("test2", options);
 
-        assertEquals(asList("test1", "test2"), pkiSecretEngine.listRoles());
+        assertEquals(asList("test1", "test2"), pkiSecretEngine.getRoles());
     }
 
     @Test
@@ -484,11 +484,11 @@ public class VaultPKIITCase {
         RoleOptions options = new RoleOptions();
         pkiSecretEngine.updateRole("test1", options);
 
-        assertEquals(singletonList("test1"), pkiSecretEngine.listRoles());
+        assertEquals(singletonList("test1"), pkiSecretEngine.getRoles());
 
         pkiSecretEngine.deleteRole("test1");
 
-        assertEquals(emptyList(), pkiSecretEngine.listRoles());
+        assertEquals(emptyList(), pkiSecretEngine.getRoles());
     }
 
     @Test
@@ -685,7 +685,7 @@ public class VaultPKIITCase {
         String certSerialNumber2 = pkiSecretEngine.generateCertificate("test", options).serialNumber;
 
         // Test list certs
-        List<String> certSerials = pkiSecretEngine.listCertificates();
+        List<String> certSerials = pkiSecretEngine.getCertificates();
         assertTrue(certSerials.containsAll(asList(certSerialNumber1, certSerialNumber2)));
     }
 

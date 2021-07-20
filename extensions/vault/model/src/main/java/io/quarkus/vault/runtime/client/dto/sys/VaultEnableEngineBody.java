@@ -1,8 +1,8 @@
-package io.quarkus.vault.runtime.client.dto.pki;
+package io.quarkus.vault.runtime.client.dto.sys;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class VaultPKIEnableBody {
+public class VaultEnableEngineBody {
 
     public static class Config {
 
@@ -14,7 +14,7 @@ public class VaultPKIEnableBody {
 
     }
 
-    public String type = "pki";
+    public String type;
 
     public String description = "";
 

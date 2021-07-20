@@ -27,7 +27,7 @@ public interface VaultPKISecretEngine {
     /**
      * Retrieves the engine's PEM encoded CA certificate.
      * 
-     * @return PEM encoded certificate authority certificate .
+     * @return PEM encoded certificate authority certificate.
      */
     String getCertificateAuthority();
 
@@ -41,28 +41,28 @@ public interface VaultPKISecretEngine {
     /**
      * Configures engine's URLs for issuing certificates, CRL distribution points, and OCSP servers.
      *
-     * @param options URL options
+     * @param options URL options.
      */
     void configURLs(ConfigURLsOptions options);
 
     /**
      * Read engine's configured URLs for issuing certificates, CRL distribution points, and OCSP servers.
      *
-     * @return URL options
+     * @return URL options.
      */
     ConfigURLsOptions readURLsConfig();
 
     /**
      * Configures engine's CRL.
      *
-     * @param options CRL options
+     * @param options CRL options.
      */
     void configCRL(ConfigCRLOptions options);
 
     /**
      * Read engine's CRL configuration.
      *
-     * @return URL options
+     * @return URL options.
      */
     ConfigCRLOptions readCRLConfig();
 
@@ -90,7 +90,7 @@ public interface VaultPKISecretEngine {
      * 
      * @return List of certificate serialize numbers.
      */
-    List<String> listCertificates();
+    List<String> getCertificates();
 
     /**
      * Retrieve a specific PEM encoded certificate.
@@ -149,7 +149,7 @@ public interface VaultPKISecretEngine {
      *
      * @return List of role names.
      */
-    List<String> listRoles();
+    List<String> getRoles();
 
     /**
      * Deletes a role.
@@ -161,7 +161,7 @@ public interface VaultPKISecretEngine {
     /**
      * Generates a self-signed root as the engine's CA.
      *
-     * @param options Generation options
+     * @param options Generation options.
      * @return Generated root certificate.
      */
     GeneratedRootCertificate generateRoot(GenerateRootOptions options);
@@ -176,7 +176,7 @@ public interface VaultPKISecretEngine {
      * Request and options.
      *
      * @param pemSigningRequest Certificate Signing Request (PEM encoded).
-     * @param options Signing options
+     * @param options Signing options.
      * @return Generated certificate.
      */
     SignedCertificate signIntermediateCA(String pemSigningRequest, SignIntermediateCAOptions options);
@@ -211,7 +211,7 @@ public interface VaultPKISecretEngine {
      * Tidy up the storage backend and/or CRL by removing certificates that have expired and are past a certain buffer
      * period beyond their expiration time.
      *
-     * @param options Tidy options
+     * @param options Tidy options.
      */
     void tidy(TidyOptions options);
 

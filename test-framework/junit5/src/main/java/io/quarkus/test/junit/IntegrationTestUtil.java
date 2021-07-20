@@ -186,7 +186,7 @@ public final class IntegrationTestUtil {
         }
     }
 
-    static Map<String, String> handleDevDb(ExtensionContext context) throws Exception {
+    static Map<String, String> handleDevServices(ExtensionContext context) throws Exception {
         Class<?> requiredTestClass = context.getRequiredTestClass();
         Path testClassLocation = getTestClassesLocation(requiredTestClass);
         final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());

@@ -7,7 +7,7 @@ import static io.quarkus.test.junit.IntegrationTestUtil.doProcessTestInstance;
 import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
 import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResources;
 import static io.quarkus.test.junit.IntegrationTestUtil.getSysPropsToRestore;
-import static io.quarkus.test.junit.IntegrationTestUtil.handleDevDb;
+import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.startLauncher;
 
 import java.util.HashMap;
@@ -110,7 +110,7 @@ public class NativeTestExtension
 
     private IntegrationTestExtensionState doNativeStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile)
             throws Throwable {
-        Map<String, String> devDbProps = handleDevDb(context);
+        Map<String, String> devServicesProps = handleDevServices(context);
         quarkusTestProfile = profile;
         currentJUnitTestClass = context.getRequiredTestClass();
         TestResourceManager testResourceManager = null;
@@ -128,7 +128,7 @@ public class NativeTestExtension
             hasPerTestResources = testResourceManager.hasPerTestResources();
 
             Map<String, String> additionalProperties = new HashMap<>(testProfileAndProperties.properties);
-            additionalProperties.putAll(devDbProps);
+            additionalProperties.putAll(devServicesProps);
             Map<String, String> resourceManagerProps = testResourceManager.start();
             Map<String, String> old = new HashMap<>();
             for (Map.Entry<String, String> i : resourceManagerProps.entrySet()) {

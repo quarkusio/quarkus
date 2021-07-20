@@ -3,6 +3,7 @@ package io.quarkus.test.junit;
 import static io.quarkus.test.junit.IntegrationTestUtil.*;
 import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
 
+import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,6 +41,8 @@ public class QuarkusIntegrationTestExtension
 
     private static Class<?> currentJUnitTestClass;
     private static boolean hasPerTestResources;
+
+    private static Map<String, String> devServicesProps;
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
@@ -102,7 +105,7 @@ public class QuarkusIntegrationTestExtension
     private IntegrationTestExtensionState doProcessStart(Properties quarkusArtifactProperties,
             Class<? extends QuarkusTestProfile> profile, ExtensionContext context)
             throws Throwable {
-        Map<String, String> devDbProps = handleDevDb(context);
+        devServicesProps = handleDevServices(context);
         quarkusTestProfile = profile;
         currentJUnitTestClass = context.getRequiredTestClass();
         TestResourceManager testResourceManager = null;
@@ -119,7 +122,7 @@ public class QuarkusIntegrationTestExtension
             hasPerTestResources = testResourceManager.hasPerTestResources();
 
             Map<String, String> additionalProperties = new HashMap<>(testProfileAndProperties.properties);
-            additionalProperties.putAll(devDbProps);
+            additionalProperties.putAll(devServicesProps);
             Map<String, String> resourceManagerProps = testResourceManager.start();
             Map<String, String> old = new HashMap<>();
             for (Map.Entry<String, String> i : resourceManagerProps.entrySet()) {
@@ -189,6 +192,30 @@ public class QuarkusIntegrationTestExtension
         ensureStarted(context);
         if (!failedBoot) {
             doProcessTestInstance(testInstance, context);
+            injectTestContext(testInstance);
+        }
+    }
+
+    private void injectTestContext(Object testInstance) {
+        Class<?> c = testInstance.getClass();
+        while (c != Object.class) {
+            for (Field f : c.getDeclaredFields()) {
+                if (f.getType().equals(QuarkusIntegrationTest.Context.class)) {
+                    try {
+                        Map<String, String> devServicesPropsCopy = devServicesProps.isEmpty() ? Collections.emptyMap()
+                                : Collections.unmodifiableMap(devServicesProps);
+                        QuarkusIntegrationTest.Context testContext = new DefaultQuarkusIntegrationTestContext(
+                                devServicesPropsCopy);
+                        f.setAccessible(true);
+                        f.set(testInstance, testContext);
+                        return;
+                    } catch (Exception e) {
+                        throw new RuntimeException("Unable to set field '" + f.getName()
+                                + "' with the proper test context", e);
+                    }
+                }
+            }
+            c = c.getSuperclass();
         }
     }
 
@@ -227,6 +254,20 @@ public class QuarkusIntegrationTestExtension
         @Override
         public Class<?> testClass() {
             return requiredTestClass;
+        }
+    }
+
+    private static class DefaultQuarkusIntegrationTestContext implements QuarkusIntegrationTest.Context {
+
+        private final Map<String, String> map;
+
+        private DefaultQuarkusIntegrationTestContext(Map<String, String> map) {
+            this.map = map;
+        }
+
+        @Override
+        public Map<String, String> devServicesProperties() {
+            return map;
         }
     }
 }

@@ -1,12 +1,12 @@
 package org.acme;
 
-import io.quarkus.arc.config.ConfigProperties;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithName;
 
-@ConfigProperties(prefix = "greeting")
+@ConfigMapping(prefix = "greeting")
 public interface GreetingConfig {
 
-    @ConfigProperty(name = "message")
+    @WithName("message")
     String message();
 
 }

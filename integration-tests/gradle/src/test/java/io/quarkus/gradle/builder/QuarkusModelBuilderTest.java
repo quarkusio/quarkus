@@ -1,10 +1,7 @@
 package io.quarkus.gradle.builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -17,9 +14,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-import org.assertj.core.util.Files;
-import org.gradle.api.artifacts.ResolvedArtifact;
-import org.gradle.api.artifacts.ResolvedModuleVersion;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.model.gradle.QuarkusModel;
@@ -29,16 +23,6 @@ import io.quarkus.bootstrap.model.gradle.WorkspaceModule;
 import io.quarkus.bootstrap.resolver.QuarkusGradleModelFactory;
 
 class QuarkusModelBuilderTest {
-
-    @Test
-    void testToAppDependency() {
-        ResolvedArtifact artifact = mock(ResolvedArtifact.class);
-        ResolvedModuleVersion version = mock(ResolvedModuleVersion.class);
-        when(version.toString()).thenReturn(":commons-lang3-3.9:");
-        when(artifact.getModuleVersion()).thenReturn(version);
-        when(artifact.getFile()).thenReturn(Files.currentFolder());
-        assertThatCode(() -> QuarkusModelBuilder.toDependency(artifact)).doesNotThrowAnyException();
-    }
 
     @Test
     public void shouldLoadSimpleModuleModel() throws URISyntaxException, IOException {

@@ -38,6 +38,7 @@ dependencies {
     testImplementation 'org.assertj:assertj-core:3.20.2'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.7.2'
     testImplementation "io.quarkus:quarkus-devmode-test-utils:${version}"
+    testImplementation "io.quarkus:quarkus-devtools-testing:${version}"
     testImplementation gradleTestKit()
 }
 

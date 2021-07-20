@@ -38,7 +38,7 @@ public class KafkaRuntimeConfigProducer {
             result.put(effectivePropertyName, value);
         }
 
-        if (!result.containsKey(GROUP_ID) && app.name.isPresent()) {
+        if (!result.isEmpty() && !result.containsKey(GROUP_ID) && app.name.isPresent()) {
             result.put(GROUP_ID, app.name.get());
         }
 

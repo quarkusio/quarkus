@@ -41,10 +41,10 @@ This is a quick introduction to datasource configuration.
 If you want a better understanding of how all this works, this guide has a lot more information in the subsequent paragraphs.
 
 [[dev-services]]
-=== Zero Config Setup (DevServices)
+=== Zero Config Setup (Dev Services)
 
 When testing or running in dev mode Quarkus can even provide you with a zero config database out of the box, a feature
-we refer to as DevServices. Depending on your database type you may need docker installed in order to use this feature. DevServices
+we refer to as Dev Services. Depending on your database type you may need docker installed in order to use this feature. Dev Services
 is supported for the following open source databases:
 
 * Postgresql (container)
@@ -56,7 +56,7 @@ is supported for the following open source databases:
 * MSSQL (container) (requires license acceptance)
 
 
-If you want to use DevServices then all you need to do is include the relevant extension for the type of database you want (either reactive or
+If you want to use Dev Services then all you need to do is include the relevant extension for the type of database you want (either reactive or
 JDBC, or both), and don't configure a database URL, username and password, Quarkus will provide the database and you can just start
 coding without worrying about config.
 
@@ -434,7 +434,7 @@ The syntax is as follows: `quarkus.datasource.[optional name.][datasource proper
 
 NOTE: Even when only one database extension is installed, named databases need to specify at least one build time
 property so that Quarkus knows they exist. Generally this will be the `db-kind` property, although you can also
-specify DevServices properties to create named datasources (covered later in this guide).
+specify Dev Services properties to create named datasources (covered later in this guide).
 
 === Named Datasource Injection
 
@@ -489,25 +489,25 @@ If the Narayana JTA extension is also available, integration is automatic.
 
 You can override this by setting the `transactions` configuration property - see the <<configuration-reference, Configuration Reference>> below.
 
-== DevServices (Configuration Free Databases)
+== Dev Services (Configuration Free Databases)
 
-As mentioned above Quarkus supports a feature called DevServices that allows you to create datasources without any config. If
+As mentioned above Quarkus supports a feature called Dev Services that allows you to create datasources without any config. If
 you have a database extension that supports it and no config is provided, Quarkus will automatically start a database (either
 using Testcontainers, or by starting a Java DB in process), and automatically configure a connection to this database.
 
 Production databases need to be configured as normal, so if you want to include a production database config in your
-application.properties and continue to use DevServices we recommend that you use the `%prod.` profile to define your
+application.properties and continue to use Dev Services we recommend that you use the `%prod.` profile to define your
 database settings.
 
-=== Configuring DevServices
+=== Configuring Dev Services
 
-DevServices supports the following config options:
+Dev Services supports the following config options:
 
 include::{generated-dir}/config/quarkus-datasource-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
 
 === Named Datasources
 
-When using DevServices the default datasource will always be created, but to specify a named datasource you need to have
+When using Dev Services the default datasource will always be created, but to specify a named datasource you need to have
 at least one build time property so Quarkus knows to create the datasource. In general you will usually either specify
 the `db-kind` property, or explicitly enable DevDb: `quarkus.datasource."named".devservices=true`.
 

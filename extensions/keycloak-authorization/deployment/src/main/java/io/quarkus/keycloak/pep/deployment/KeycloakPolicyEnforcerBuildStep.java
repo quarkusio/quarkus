@@ -20,7 +20,7 @@ import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerRecorder;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.KeycloakConfigPolicyEnforcer.PathConfig;
 import io.quarkus.keycloak.pep.runtime.PolicyEnforcerResolver;
-import io.quarkus.oidc.runtime.OidcBuildTimeConfig;
+import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;

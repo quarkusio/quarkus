@@ -1,4 +1,4 @@
-package io.quarkus.oidc.runtime;
+package io.quarkus.oidc.deployment;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;

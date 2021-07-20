@@ -448,8 +448,8 @@ Alternatively, if the discovery endpoint is not available or you would like to s
 ----
 quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
 quarkus.oidc.discovery-enabled=false
-# Token endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens
-quarkus.oidc.token-path=/protocol/openid-connect/tokens
+# Token endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/token
+quarkus.oidc.token-path=/protocol/openid-connect/token
 # JWK set endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/certs
 quarkus.oidc.jwks-path=/protocol/openid-connect/certs
 # UserInfo endoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/userinfo
@@ -917,4 +917,5 @@ Note Quarkus `web-app` applications always require `quarkus.oidc.client-id` prop
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
 * link:security-openid-connect-client[Quarkus - Using OpenID Connect and OAuth2 Client and Filters to manage access tokens]
+* link:security-openid-connect-dev-services[Dev Services for OpenId Connect]
 * link:security[Quarkus Security]

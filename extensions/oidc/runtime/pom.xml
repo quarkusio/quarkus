@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-oidc</artifactId>
     <name>Quarkus - OpenID Connect Adapter - Runtime</name>
-    <description>Secure your applications with OpenID Connect Adapter and IDP such as Keycloak</description>
+    <description>Secure your applications with OpenID Connect Adapter</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

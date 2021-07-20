@@ -28,12 +28,12 @@ And all this functionality is provided in a distributed, highly scalable, elasti
 
 == Quarkus Extension for Apache Kafka
 
-Quarkus provides support for Apache Kafka through https://smallrye.io/smallrye-reactive-messaging/[Smallrye Reactive Messaging] framework.
+Quarkus provides support for Apache Kafka through https://smallrye.io/smallrye-reactive-messaging/[SmallRye Reactive Messaging] framework.
 Based on Eclipse MicroProfile Reactive Messaging specification 2.0, it proposes a flexible programming model bridging CDI and event-driven.
 
 [NOTE]
 ====
-This guide provides an in-depth look on Apache Kafka and Smallrye Reactive Messaging framework.
+This guide provides an in-depth look on Apache Kafka and SmallRye Reactive Messaging framework.
 For a quick start take a look at xref:kafka-reactive-getting-started.adoc[Getting Started to SmallRye Reactive Messaging with Apache Kafka].
 ====
 
@@ -114,7 +114,7 @@ public CompletionStage<Void> consume(Message<Double> msg) {
 }
 ----
 
-`Message` type lets the consuming method to access the incoming message metadata and handle the acknowledgment manually.
+The `Message` type lets the consuming method access the incoming message metadata and handle the acknowledgment manually.
 We'll explore different acknowledgment strategies in <<commit-strategies>>.
 
 If you want to access the Kafka record objects directly, use:
@@ -167,7 +167,8 @@ import org.jboss.resteasy.annotations.SseElementType;
 public class PriceResource {
 
     @Inject
-    @Channel("prices") Multi<Double> prices;
+    @Channel("prices")
+    Multi<Double> prices;
 
     @GET
     @Path("/prices")
@@ -186,7 +187,7 @@ in this example exposing it as a Server-Sent Events endpoint.
 [NOTE]
 ====
 When consuming messages with `@Channel`, the application code is responsible for the subscription.
-In the example above RESTEasy endpoint handles that for you.
+In the example above, RESTEasy endpoint handles that for you.
 ====
 
 Following types can be injected as channels:
@@ -209,7 +210,7 @@ We will explore sending broadcast messages in <<broadcasting-messages-on-multipl
 [IMPORTANT]
 ====
 Injecting `@Channel("prices")` or having `@Incoming("prices")` does not automatically configure the application to consume messages from Kafka.
-You need to configure an inbound connector with `mp.messageing.incoming.prices...` or have an `@Outgoing("prices")` somewhere in your application (meaning a method generating messages transiting on the channel "prices").
+You need to configure an inbound connector with `mp.messaging.incoming.prices\...` or have an `@Outgoing("prices")` method somewhere in your application (in which case, `prices` will be an in-memory channel).
 ====
 
 === Blocking processing
@@ -253,17 +254,16 @@ There are 2 `@Blocking` annotations:
 
 They have the same effect.
 Thus, you can use both.
-The first one provides more fine-grain tuning such as the worker pool to use and whether it preserves the order.
+The first one provides more fine-grained tuning such as the worker pool to use and whether it preserves the order.
 The second one, used also with other reactive features of Quarkus, uses the default worker pool and preserves the order.
 ====
 
 === Acknowledgment Strategies
 
 All messages received by a consumer must be acknowledged.
-In the absence of acknowledgment, the processing is considered on error.
+In the absence of acknowledgment, the processing is considered in error.
 If the consumer method receives a `Record` or a payload, the message will be acked on method return, also known as `Strategy.POST_PROCESSING`.
-If the consumer method returns another reactive stream or `CompletableStage`, the message will be acked when the downstream message is acked.
-// No, it will be ack then the produced message get acked -> Needs confirmation
+If the consumer method returns another reactive stream or `CompletionStage`, the message will be acked when the downstream message is acked.
 You can override the default behavior to ack the message on arrival (`Strategy.PRE_PROCESSING`),
 or do not ack the message at all (`Strategy.NONE`) on the consumer method as in the following example:
 
@@ -282,7 +282,7 @@ and the consumer method is in charge of ack/nack the message.
 [source, java]
 ----
 @Incoming("prices")
-public CompletableStage<Void> process(Message<Double> msg) {
+public CompletionStage<Void> process(Message<Double> msg) {
     // process price
     return msg.ack();
 }
@@ -303,18 +303,18 @@ However, not committing the offset often enough may lead to message duplication 
 
 The Kafka connector supports three strategies:
 
-- `throttled` keeps track of received messages and commits to the next offset after the latest acked message in sequence.
+- `throttled` keeps track of received messages and commits an offset of the latest acked message in sequence (meaning, all previous messages were also acked).
 This strategy guarantees at-least-once delivery even if the channel performs asynchronous processing.
-The connector tracks the received records and periodically (period specified by `auto.commit.interval.ms` (default: 5000 ms)) commits the highest consecutive offset.
+The connector tracks the received records and periodically (period specified by `auto.commit.interval.ms`, default: 5000 ms) commits the highest consecutive offset.
 The connector will be marked as unhealthy if a message associated with a record is not acknowledged in `throttled.unprocessed-record-max-age.ms` (default: 60000 ms).
 Indeed, this strategy cannot commit the offset as soon as a single record processing fails (see <<error-handling>> to configure what happens on failing processing).
 If `throttled.unprocessed-record-max-age.ms` is set to less than or equal to `0`, it does not perform any health check verification.
-Such a setting might lead to running out of memory if there are "poison pill" messages.
+Such a setting might lead to running out of memory if there are "poison pill" messages (that are never acked).
 This strategy is the default if `enable.auto.commit` is not explicitly set to true.
 
 - `latest` commits the record offset received by the Kafka consumer as soon as the associated message is acknowledged (if the offset is higher than the previously committed offset).
 This strategy provides at-least-once delivery if the channel processes the message without performing any asynchronous processing.
-This strategy should not be used on high-load as offset commit is expensive. However, it reduces the risk of duplicates.
+This strategy should not be used in high load environment, as offset commit is expensive. However, it reduces the risk of duplicates.
 
 - `ignore` performs no commit. This strategy is the default strategy when the consumer is explicitly configured with `enable.auto.commit` to true.
 It delegates the offset commit to the underlying Kafka client.
@@ -324,10 +324,10 @@ However, if the processing failed between two commits, messages received after t
 [IMPORTANT]
 ====
 The Kafka connector disables the Kafka auto commit when it is not explicitly enabled. This behavior differs from the traditional Kafka consumer.
-If high-throughout is important for you, and not limited by the downstream, we recommend to either:
+If high throughput is important for you, and you are not limited by the downstream, we recommend to either:
 
-- Use the `throttled` policy
-- or set `enable.auto.commit` to true and annotate the consuming method with `@Acknowledgment(Acknowledgment.Strategy.NONE)`
+- use the `throttled` policy,
+- or set `enable.auto.commit` to true and annotate the consuming method with `@Acknowledgment(Acknowledgment.Strategy.NONE)`.
 ====
 
 [[error-handling]]
@@ -337,7 +337,7 @@ If a message produced from a Kafka record is nacked, a failure strategy is appli
 
 - `fail`: fail the application, no more records will be processed (default strategy). The offset of the record that has not been processed correctly is not committed.
 - `ignore`: the failure is logged, but the processing continue. The offset of the record that has not been processed correctly is committed.
-- `dead-letter-queue`: the offset of the record that has not been processed correctly is committed, but the record is written to a (Kafka) dead letter queue topic.
+- `dead-letter-queue`: the offset of the record that has not been processed correctly is committed, but the record is written to a Kafka dead letter topic.
 
 The strategy is selected using the `failure-strategy` attribute.
 
@@ -368,14 +368,13 @@ public void consume(String v) {
 }
 ----
 
-You can configure the delay, the number of retries, the jitter...
+You can configure the delay, the number of retries, the jitter, etc.
 
-If your method returns a `Uni`, you need to add the `@NonBlocking` annotation:
+If your method returns a `Uni` or `CompletionStage`, you need to add the `@NonBlocking` annotation:
 
 [source,java]
 ----
 @Incoming("kafka")
-@Incoming("processed")
 @Retry(delay = 10, maxRetries = 5)
 @NonBlocking
 public Uni<String> consume(String v) {
@@ -383,9 +382,13 @@ public Uni<String> consume(String v) {
 }
 ----
 
+NOTE: The `@NonBlocking` annotation is only required with SmallRye Fault Tolerance 5.1.0 and earlier.
+Starting with SmallRye Fault Tolerance 5.2.0 (available since Quarkus 2.1.0.Final), it is not necessary.
+See https://smallrye.io/docs/smallrye-fault-tolerance/5.2.0/usage/extra.html#_non_compatible_mode[SmallRye Fault Tolerance documentation] for more information.
+
 The incoming messages are acknowledged only once the processing completes successfully.
 So, it commits the offset after the successful processing.
-If after the retries the processing still failed, the message is _nacked_ and the failure strategy is applied.
+If the processing still fails, even after all retries, the message is _nacked_ and the failure strategy is applied.
 
 === Consumer Groups
 
@@ -393,7 +396,7 @@ In Kafka, a consumer group is a set of consumers which cooperate to consume data
 A topic is divided into a set of partitions.
 The partitions of a topic are assigned among the consumers in the group, effectively allowing to scale consumption throughput.
 Note that each partition is assigned to a single consumer from a group.
-However, a consumer can be assigned to multiple partitions if the number of partitions is greater than the number of consumer in the group.
+However, a consumer can be assigned multiple partitions if the number of partitions is greater than the number of consumer in the group.
 
 Let's explore briefly different producer/consumer patterns and how to implement them using Quarkus:
 
@@ -422,9 +425,9 @@ image::kafka-two-app-one-consumer-group.png[alt=Architecture, width=60% , align=
 
 . *Pub/Sub: Multiple consumer groups subscribed to a topic*
 +
-Lastly different applications can subscribe independently to same topics setting different *consumer group ids*.
+Lastly different applications can subscribe independently to same topics using different *consumer group ids*.
 For example, messages published to a topic called _orders_ can be consumed independently on two consumer applications, one with `mp.messaging.incoming.orders.group.id=invoicing` and second with `mp.messaging.incoming.orders.group.id=shipping`.
-Different consumer groups can scale thus independently according to the message consumption requirements.
+Different consumer groups can thus scale independently according to the message consumption requirements.
 +
 image::kafka-two-app-two-consumer-groups.png[alt=Architecture, width=60%, align=center]
 
@@ -433,7 +436,7 @@ image::kafka-two-app-two-consumer-groups.png[alt=Architecture, width=60%, align=
 Inside a consumer group, as new group members arrive and old members leave, the partitions are re-assigned so that each member receives a proportional share of the partitions.
 This is known as rebalancing the group.
 To handle offset commit and assigned partitions yourself, you can provide a consumer rebalance listener.
-To achieve this, implement the `io.smallrye.reactive.messaging.kafka.KafkaConsumerRebalanceListener` interface and exposed it as a `@Idenfier` bean.
+To achieve this, implement the `io.smallrye.reactive.messaging.kafka.KafkaConsumerRebalanceListener` interface and expose it as a CDI bean with the `@Idenfier` qualifier.
 A common use case is to store offset in a separate data store to implement exactly-once semantic, or starting the processing at a specific offset.
 
 The listener is invoked every time the consumer topic/partition assignment changes.
@@ -452,7 +455,7 @@ We also recommend applying the same logic when the application stops.
 Unlike the `ConsumerRebalanceListener` from Apache Kafka, the `io.smallrye.reactive.messaging.kafka.KafkaConsumerRebalanceListener` methods pass the Kafka Consumer and the set of topics/partitions.
 
 In the following example we set-up a consumer that always starts on messages from at most 10 minutes ago (or offset 0). 
-First we need to provide a bean managed implementation of `io.smallrye.reactive.messaging.kafka.KafkaConsumerRebalanceListener` annotated with `io.smallrye.common.annotation.Identifier`.
+First we need to provide a bean that implements `io.smallrye.reactive.messaging.kafka.KafkaConsumerRebalanceListener` and is annotated with `io.smallrye.common.annotation.Identifier`.
 We then must configure our inbound connector to use this bean.
 
 [source, java]
@@ -478,7 +481,7 @@ public class KafkaRebalancedConsumerRebalanceListener implements KafkaConsumerRe
     private static final Logger LOGGER = Logger.getLogger(KafkaRebalancedConsumerRebalanceListener.class.getName());
 
     /**
-     * When receiving a list of partitions will search for the earliest offset within 10 minutes
+     * When receiving a list of partitions, will search for the earliest offset within 10 minutes
      * and seek the consumer to it.
      *
      * @param consumer   underlying consumer
@@ -523,21 +526,22 @@ public class KafkaRebalancedConsumer {
     @Incoming("rebalanced-example")
     @Acknowledgment(Acknowledgment.Strategy.NONE)
     public CompletionStage<Void> consume(IncomingKafkaRecord<Integer, String> message) {
-        // We don't need to ACK messages because in this example we set offset during consumer re-balance
+        // We don't need to ACK messages because in this example,
+        // we set offset during consumer rebalance
         return CompletableFuture.completedFuture(null);
     }
 
 }
 ----
 
-To configure the inbound connector to use the provided listener we either set the consumer rebalance listener’s identifier:
+To configure the inbound connector to use the provided listener, we either set the consumer rebalance listener’s identifier:
 `mp.messaging.incoming.rebalanced-example.consumer-rebalance-listener.name=rebalanced-example.rebalancer`
 
 Or have the listener’s name be the same as the group id:
 
 `mp.messaging.incoming.rebalanced-example.group.id=rebalanced-example.rebalancer`
 
-Setting the consumer re-balance listener’s name takes precedence over using the group id.
+Setting the consumer rebalance listener’s name takes precedence over using the group id.
 
 ==== Using unique consumer groups
 
@@ -573,17 +577,18 @@ mp.messaging.outgoing.prices-out.topic=prices <3>
 
 <1> Configure the broker location for the production profile. You can configure it globally or per channel using `mp.messaging.outgoing.$channel.bootstrap.servers` property.
 In dev mode and when running tests, link:kafka-dev-services[Dev Services for Kafka] automatically starts a Kafka broker.
-When not provided this property defaults to `localhost:9092`.
-<2> Configure the connector to manage the prices channel.
-<3> By default the topic name is same as the channel name. You can configure the topic attribute to override it.
+When not provided, this property defaults to `localhost:9092`.
+<2> Configure the connector to manage the `prices-out` channel.
+<3> By default, the topic name is same as the channel name. You can configure the topic attribute to override it.
 
 [IMPORTANT]
 ====
-Inside an application configuration channel names are unique. Therefore if you'd like to configure an incoming and outgoing channel on the same topic, you will need to name channels differently (like in the examples of this guide, `mp.messaging.incoming.prices` and `mp.messaging.outgoing.prices-out`).
+Inside application configuration, channel names are unique.
+Therefore, if you'd like to configure an incoming and outgoing channel on the same topic, you will need to name channels differently (like in the examples of this guide, `mp.messaging.incoming.prices` and `mp.messaging.outgoing.prices-out`).
 ====
 
-Then, your application can generate messages and publish them to the prices channel.
-It can use double payloads as in the following snippet:
+Then, your application can generate messages and publish them to the `prices-out` channel.
+It can use `double` payloads as in the following snippet:
 
 [source, java]
 ----
@@ -616,7 +621,7 @@ You should not call methods annotated with `@Incoming` and/or `@Outgoing` direct
 ====
 
 Note that the `generate` method returns a `Multi<Double>`, which implements the Reactive Streams `Publisher` interface.
-This publisher will be used by the framework to generate messages and send it to the configured Kafka topic.
+This publisher will be used by the framework to generate messages and send them to the configured Kafka topic.
 
 Instead of returning a payload, you can return a `io.smallrye.reactive.messaging.kafka.Record` to send key/value pairs:
 
@@ -646,17 +651,21 @@ public Multi<Message<Double>> generate() {
 ----
 
 `OutgoingKafkaRecordMetadata` allows to set metadata attributes of the Kafka record, such as `key`, `topic`, `partition` or `timestamp`.
-One use case is to set dynamically select the destination topic of a message.
-In this case, instead of configuring the topic inside your application configuration file, you need to use the outbound metadata to set the name of the topic.
+One use case is to dynamically select the destination topic of a message.
+In this case, instead of configuring the topic inside your application configuration file, you need to use the outgoing metadata to set the name of the topic.
 
 Other than method signatures returning a Reactive Stream `Publisher` (`Multi` being an implementation of `Publisher`), outgoing method can also return single message.
 In this case the producer will use this method as generator to create an infinite stream.
 
 [source, java]
 ----
-@Outgoing("prices-out") T generate(); // T excluding Void
+@Outgoing("prices-out") T generate(); // T excluding void
 
 @Outgoing("prices-out") Message<T> generate();
+
+@Outgoing("prices-out") Uni<T> generate();
+
+@Outgoing("prices-out") Uni<Message<T>> generate();
 
 @Outgoing("prices-out") CompletionStage<T> generate();
 
@@ -686,7 +695,9 @@ import javax.ws.rs.core.MediaType;
 @Path("/prices")
 public class PriceResource {
 
-    @Inject @Channel("price-create") Emitter<Double> priceEmitter;
+    @Inject
+    @Channel("price-create")
+    Emitter<Double> priceEmitter;
 
     @POST
     @Consumes(MediaType.TEXT_PLAIN)
@@ -709,10 +720,10 @@ Using the `Emitter` you are sending messages from your imperative code to reacti
 These messages are stored in a queue until they are sent.
 If the Kafka producer client can't keep up with messages trying to be sent over to Kafka, this queue can become a memory hog and you may even run out of memory.
 You can use `@OnOverflow` to configure back-pressure strategy.
-It lets you configure the size of the queue (default is 256) and the strategy to apply when the buffer size is reached. Available strategies are `DROP`, `LATEST`, `FAIL`, `BUFFER`, UNBOUNDED_BUFFER` and `NONE`.
+It lets you configure the size of the queue (default is 256) and the strategy to apply when the buffer size is reached. Available strategies are `DROP`, `LATEST`, `FAIL`, `BUFFER`, `UNBOUNDED_BUFFER` and `NONE`.
 ====
 
-With the `Emitter` API you can also encapsulate the outgoing payload inside `Message<T>`. As with the previous examples, `Message` lets you handle the ack/nack cases differently.
+With the `Emitter` API, you can also encapsulate the outgoing payload inside `Message<T>`. As with the previous examples, `Message` lets you handle the ack/nack cases differently.
 
 [source,java]
 ----
@@ -747,7 +758,7 @@ public class PriceResource {
 }
 ----
 
-If you prefer using Reactive Stream APIs you can use `MutinyEmitter` that will return `Uni<Void>` on the send method.
+If you prefer using Reactive Stream APIs, you can use `MutinyEmitter` that will return `Uni<Void>` from the `send` method.
 You can therefore use Mutiny APIs for handling downstream messages and errors.
 
 [source,java]
@@ -765,7 +776,9 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
 @Path("/prices")
 public class PriceResource {
 
-    @Inject @Channel("price-create") MutinyEmitter<Double> priceEmitter;
+    @Inject
+    @Channel("price-create")
+    MutinyEmitter<Double> priceEmitter;
 
     @POST
     @Consumes(MediaType.TEXT_PLAIN)
@@ -777,7 +790,7 @@ public class PriceResource {
 }
 ----
 
-There’s also the ability to block on sending the event to the emitter with `sendAndAwait` method.
+It is also possible to block on sending the event to the emitter with the `sendAndAwait` method.
 It will only return from the method when the event is acked or nacked by the receiver.
 
 [NOTE]
@@ -815,22 +828,23 @@ Then, the connector writes a new message to Kafka when one of the broker’s in-
 Be sure to configure Kafka’s `batch.size` and `linger.ms` accordingly.
 
 You can also remove the limit of in-flight messages by setting `max-inflight-messages` to `0`.
-However, note that the Kafka Producer may block if the number of requests reaches `max.in.flight.requests.per.connection`.
+However, note that the Kafka producer may block if the number of requests reaches `max.in.flight.requests.per.connection`.
 
 === Retrying message dispatch
 
 When the Kafka producer receives an error from the server, if it is a transient, recoverable error, the client will retry sending the batch of messages.
 This behavior is controlled by `retries` and `retry.backoff.ms` parameters.
-In addition to this, Smallrye reactive messaging will retry individual messages on recoverable errors, depending on the `retries` and `delivery.timeout.ms` parameters.
+In addition to this, SmallRye Reactive Messaging will retry individual messages on recoverable errors, depending on the `retries` and `delivery.timeout.ms` parameters.
 
 Note that while having retries in a reliable system is a best practice, the `max.in.flights.requests.per.session` parameter defaults to `5`, meaning that the order of the messages is not guaranteed.
 If the message order is a must for your use case, setting `max.in.flights.requests.per.session` to `1` will make sure a single batch of messages is sent at a time, in the expense of limiting the throughput of the producer.
 
-For applying retry mechanism on processing errors see the section on <<retrying-processing>>.
+For applying retry mechanism on processing errors, see the section on <<retrying-processing>>.
 
 === In-memory channels
-In some use cases it is convenient to use the messaging patterns to transfer messages inside the same application.
-When you don't connect a channel to a messaging backend like Kafka, everything happens in-memory, and the streams are created by chaining methods altogether.
+
+In some use cases, it is convenient to use the messaging patterns to transfer messages inside the same application.
+When you don't connect a channel to a messaging backend like Kafka, everything happens in-memory, and the streams are created by chaining methods together.
 Each chain is still a reactive stream and enforces the back-pressure protocol.
 
 The framework verifies that the producer/consumer chain is complete,
@@ -883,13 +897,13 @@ public class MultipleConsumer {
 
 [NOTE]
 ====
-Reciprocally multiple producers on the same channel can be merged by setting `mp.messaging.incoming.$channel.merge=true`.
-On the `@Incoming` methods you can control how multiple channels are merged using `@Merge` annotation.
+Reciprocally, multiple producers on the same channel can be merged by setting `mp.messaging.incoming.$channel.merge=true`.
+On the `@Incoming` methods, you can control how multiple channels are merged using the `@Merge` annotation.
 ====
 
 == Processing Messages
 
-Often applications streaming data need to consume some events from a topic, process them and publish the result to a different topic.
+Applications streaming data often need to consume some events from a topic, process them and publish the result to a different topic.
 A processor method can be simply implemented using both the `@Incoming` and `@Outgoing` annotations:
 
 [source, java]
@@ -913,8 +927,8 @@ public class PriceProcessor {
 }
 ----
 
-The parameter of the `process` method is the incoming message payload, whereas the return will be used as the outgoing messaage payload.
-Previously mentioned signatures for parameter and return types, as described in previous sections are supported, such as `Message<T>`, `Record<K, V>` etc.
+The parameter of the `process` method is the incoming message payload, whereas the return value will be used as the outgoing message payload.
+Previously mentioned signatures for parameter and return types are also supported, such as `Message<T>`, `Record<K, V>`, etc.
 
 You can apply asynchronous stream processing by consuming and returning reactive stream `Multi<T>` type:
 
@@ -944,7 +958,7 @@ public class PriceProcessor {
 [[kafka-bare-clients]]
 == Accessing Kafka clients directly
 
-In rare cases you may need to access the underlying Kafka clients.
+In rare cases, you may need to access the underlying Kafka clients.
 `KafkaClientService` provides thread-safe access to `Producer` and `Consumer`.
 
 [source,java]
@@ -1023,7 +1037,7 @@ This configuration map will contain all Kafka related properties configured insi
 
 Quarkus has built-in capabilities to deal with JSON Kafka messages.
 
-Imagine we have a `Fruit` pojo as follows:
+Imagine we have a `Fruit` data class as follows:
 
 [source,java]
 ----
@@ -1053,8 +1067,8 @@ import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import javax.enterprise.context.ApplicationScoped;
 
 /**
-* A bean consuming data from the "fruit-in" Kafka topic and applying some price conversion.
-* The result is pushed to the "fruit-out" stream.
+* A bean consuming data from the "fruit-in" channel and applying some price conversion.
+* The result is pushed to the "fruit-out" channel.
 */
 @ApplicationScoped
 public class FruitProcessor {
@@ -1089,7 +1103,7 @@ First, you need to include the `quarkus-jackson` extension.
 </dependency>
 ----
 
-There is an existing `ObjectMapperSerializer` that can be used to serialize all pojos via Jackson.
+There is an existing `ObjectMapperSerializer` that can be used to serialize all data objects via Jackson.
 You may create an empty subclass if you want to use <<serialization-autodetection>>.
 
 The corresponding deserializer class needs to be subclassed.
@@ -1103,13 +1117,12 @@ import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 
 public class FruitDeserializer extends ObjectMapperDeserializer<Fruit> {
     public FruitDeserializer() {
-        // pass the class to the parent.
         super(Fruit.class);
     }
 }
 ----
 
-Finally, configure your streams to use the Jackson serializer and deserializer.
+Finally, configure your channels to use the Jackson serializer and deserializer.
 
 [source,properties]
 ----
@@ -1124,8 +1137,8 @@ mp.messaging.outgoing.fruit-out.topic=fruit-out
 mp.messaging.outgoing.fruit-out.value.serializer=io.quarkus.kafka.client.serialization.ObjectMapperSerializer
 ----
 
-Now, your Kafka messages will contain a Jackson serialized representation of your Fruit pojo.
-In this case `serializer` and `deserializer` configurations are not necessary as the <<serialization-autodetection>> is enabled by default.
+Now, your Kafka messages will contain a Jackson serialized representation of your `Fruit` data object.
+In this case, the `deserializer` configuration is not necessary as the <<serialization-autodetection>> is enabled by default.
 
 [[jsonb-serialization]]
 === Serializing via JSON-B
@@ -1140,7 +1153,7 @@ First, you need to include the `quarkus-jsonb` extension.
 </dependency>
 ----
 
-There is an existing `JsonbSerializer` that can be used to serialize all pojos via JSON-B.
+There is an existing `JsonbSerializer` that can be used to serialize all data objects via JSON-B.
 You may create an empty subclass if you want to use <<serialization-autodetection>>.
 
 The corresponding deserializer class needs to be subclassed.
@@ -1154,13 +1167,12 @@ import io.quarkus.kafka.client.serialization.JsonbDeserializer;
 
 public class FruitDeserializer extends JsonbDeserializer<Fruit> {
     public FruitDeserializer() {
-        // pass the class to the parent.
         super(Fruit.class);
     }
 }
 ----
 
-Finally, configure your streams to use the JSON-B serializer and deserializer.
+Finally, configure your channels to use the JSON-B serializer and deserializer.
 
 [source,properties]
 ----
@@ -1175,9 +1187,9 @@ mp.messaging.outgoing.fruit-out.topic=fruit-out
 mp.messaging.outgoing.fruit-out.value.serializer=io.quarkus.kafka.client.serialization.JsonbSerializer
 ----
 
-Now, your Kafka messages will contain a JSON-B serialized representation of your Fruit pojo.
+Now, your Kafka messages will contain a JSON-B serialized representation of your `Fruit` data object.
 
-NOTE: If you don't want to create a deserializer for each of your pojo, you can use the generic `io.vertx.kafka.client.serialization.JsonObjectDeserializer`
+NOTE: If you don't want to create a deserializer for each data object, you can use the generic `io.vertx.kafka.client.serialization.JsonObjectDeserializer`
 that will deserialize to a `io.vertx.core.json.JsonObject`. The corresponding serializer can also be used: `io.vertx.kafka.client.serialization.JsonObjectSerializer`.
 
 == Avro Serialization
@@ -1248,7 +1260,7 @@ The full set of types supported by the serializer/deserializer autodetection is:
 ** it is technically not needed to subclass `JsonbSerializer`, but in such case, autodetection isn't possible
 
 In case you have any issues with serializer autodetection, you can switch it off completely by setting `quarkus.reactive-messaging.kafka.serializer-autodetection.enabled=false`.
-If a serializer/deserializer is set by configuration it won't be replaced by the autodetection.
+If a serializer/deserializer is set by configuration, it won't be replaced by the autodetection.
 If you find you need to do this, please file a bug in the link:https://github.com/quarkusio/quarkus/issues[Quarkus issue tracker] so we can fix whatever problem you have.
 
 == Using Schema Registry
@@ -1261,7 +1273,7 @@ This is described in a dedicated guide: link:kafka-schema-registry-avro[Using Ap
 Quarkus provides several health checks for Kafka.
 These checks are used in combination with the `quarkus-smallrye-health` extension.
 
-When using the `quarkus-kafka` extension, you can enable _readiness_ health check by setting the `quarkus.kafka.health.enabled` property to `true` in your `application.properties`.
+When using the `quarkus-kafka-client` extension, you can enable _readiness_ health check by setting the `quarkus.kafka.health.enabled` property to `true` in your `application.properties`.
 This check reports the status of the interaction with a _default_ Kafka broker (configured using `kafka.bootstrap.servers`).
 That check requires an _admin connection_ with the Kafka broker.
 This check is disabled by default.
@@ -1288,14 +1300,14 @@ mp.messaging.outgoing.your-channel.health-readiness-enabled=false
 ----
 
 NOTE: You can configure the `bootstrap.servers` for each channel using `mp.messaging.incoming|outgoing.$channel.bootstrap.servers` property.
-Defaults is `kafka.bootstrap.servers`.
+Default is `kafka.bootstrap.servers`.
 
 Reactive Messaging readiness check offers two strategies.
 The default strategy verifies that an active connection is established with the broker.
 This approach is not intrusive as it's based on built-in metrics.
 
 Using the `health-readiness-topic-verification=true` attribute, you can also check the topics used by the application exist in the broker.
-Note that, to achieve this, an _admin connection_ is required.
+Note that to achieve this, an _admin connection_ is required.
 
 == Kafka Streams
 
@@ -1391,10 +1403,10 @@ public class KafkaTestResourceLifecycleManager implements QuarkusTestResourceLif
     }
 }
 ----
-1. Switch the incoming channel "orders" (expecting messages from Kafka) to in-memory.
-2. Switch the outgoing channel "queue" (writing messages to Kafka) to in-memory.
-3. Builds and returns a `Map` containing all the properties required to configure the application to use in-memory channels.
-4. When the test stops, clear the `InMemoryConnector` (discard all the received and sent messages)
+<1> Switch the incoming channel "orders" (expecting messages from Kafka) to in-memory.
+<2> Switch the outgoing channel "queue" (writing messages to Kafka) to in-memory.
+<3> Builds and returns a `Map` containing all the properties required to configure the application to use in-memory channels.
+<4> When the test stops, clear the `InMemoryConnector` (discard all the received and sent messages)
 
 Create a Quarkus Test using the test resource created above:
 
@@ -1404,7 +1416,7 @@ Create a Quarkus Test using the test resource created above:
 @QuarkusTestResource(KafkaTestResourceLifecycleManager.class)
 class BaristaTest {
 
-    @Inject @Any
+    @Inject
     InMemoryConnector connector; // <1>
 
     @Test
@@ -1430,11 +1442,11 @@ class BaristaTest {
 
 }
 ----
-1. Inject the in-memory connector in your test class.
-2. Retrieve the incoming channel (`orders`) - the channel must have been switched to in-memory in the test resource.
-3. Retrieve the outgoing channel (`queue`) - the channel must have been switched to in-memory in the test resource.
-4. Use the `send` method to send a message to the `orders` channel. So, the application will process this message.
-5. Use the `received` method to check the messages produced by the application.
+<1> Inject the in-memory connector in your test class.
+<2> Retrieve the incoming channel (`orders`) - the channel must have been switched to in-memory in the test resource.
+<3> Retrieve the outgoing channel (`queue`) - the channel must have been switched to in-memory in the test resource.
+<4> Use the `send` method to send a message to the `orders` channel. So, the application will process this message.
+<5> Use the `received` method to check the messages produced by the application.
 
 === Starting Kafka in a test resource
 
@@ -1459,7 +1471,7 @@ public class KafkaResource implements QuarkusTestResourceLifecycleManager {
     }
 }
 ----
-1. Configure the Kafka bootstrap location, so the application connects to this broker.
+<1> Configure the Kafka bootstrap location, so the application connects to this broker.
 
 [[kafka-dev-services]]
 include::kafka-dev-services.adoc[leveloffset=+1]
@@ -1475,7 +1487,7 @@ When running in appropriately configured Kubernetes clusters, Kafka extension wi
 [[kafka-configuration]]
 == Configuration Reference
 
-More details about the SmallRye Reactive Messaging configuration can be found in the https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/2.8/kafka/kafka.html[SmallRye Reactive Messaging - Kafka Connector Documentation].
+More details about the SmallRye Reactive Messaging configuration can be found in the https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.6/kafka/kafka.html[SmallRye Reactive Messaging - Kafka Connector Documentation].
 The most important attributes are listed in the tables below:
 
 === Incoming channel configuration (polling from Kafka)
@@ -1779,4 +1791,4 @@ Type: _boolean_ | false | `true`
 This guide has shown how you can interact with Kafka using Quarkus.
 It utilizes SmallRye Reactive Messaging to build data streaming applications.
 
-If you want to go further check the documentation of https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging], the implementation used in Quarkus.
+If you want to go further, check the documentation of https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging], the implementation used in Quarkus.

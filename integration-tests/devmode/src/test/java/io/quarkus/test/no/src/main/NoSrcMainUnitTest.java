@@ -20,7 +20,8 @@ public class NoSrcMainUnitTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(NoSrcMainResource.class)
-                    .addAsResource(new StringAsset("test.message = Hello from NoSrcMainUnitTest"),
+                    .addAsResource(new StringAsset("test.message = Hello from NoSrcMainUnitTest\n"
+                            + "quarkus.oidc.tenant-enabled=false"),
                             "application.properties"));
 
     @Test

@@ -188,17 +188,24 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     public MongoCollection mongoCollection(Class<?> entityClass) {
-        MongoEntity mongoEntity = entityClass.getAnnotation(MongoEntity.class);
-        MongoDatabase database = mongoDatabase(mongoEntity);
+        MongoEntity legacyMongoEntity = entityClass.getAnnotation(MongoEntity.class);
+        io.quarkus.mongodb.panache.common.MongoEntity mongoEntity = entityClass
+                .getAnnotation(io.quarkus.mongodb.panache.common.MongoEntity.class);
+        MongoDatabase database = mongoDatabase(legacyMongoEntity, mongoEntity);
         if (mongoEntity != null && !mongoEntity.collection().isEmpty()) {
             return database.getCollection(mongoEntity.collection(), entityClass);
+        }
+        if (legacyMongoEntity != null && !legacyMongoEntity.collection().isEmpty()) {
+            return database.getCollection(legacyMongoEntity.collection(), entityClass);
         }
         return database.getCollection(entityClass.getSimpleName(), entityClass);
     }
 
     public MongoDatabase mongoDatabase(Class<?> entityClass) {
-        MongoEntity mongoEntity = entityClass.getAnnotation(MongoEntity.class);
-        return mongoDatabase(mongoEntity);
+        MongoEntity legacyMongoEntity = entityClass.getAnnotation(MongoEntity.class);
+        io.quarkus.mongodb.panache.common.MongoEntity mongoEntity = entityClass
+                .getAnnotation(io.quarkus.mongodb.panache.common.MongoEntity.class);
+        return mongoDatabase(legacyMongoEntity, mongoEntity);
     }
 
     //
@@ -321,7 +328,9 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     ClientSession getSession(Class<?> entityClass) {
-        MongoEntity mongoEntity = entityClass.getAnnotation(MongoEntity.class);
+        MongoEntity legacyMongoEntity = entityClass.getAnnotation(MongoEntity.class);
+        io.quarkus.mongodb.panache.common.MongoEntity mongoEntity = entityClass
+                .getAnnotation(io.quarkus.mongodb.panache.common.MongoEntity.class);
         InstanceHandle<TransactionSynchronizationRegistry> instance = Arc.container()
                 .instance(TransactionSynchronizationRegistry.class);
         if (instance.isAvailable()) {
@@ -329,16 +338,18 @@ public abstract class MongoOperations<QueryType, UpdateType> {
             if (registry.getTransactionStatus() == Status.STATUS_ACTIVE) {
                 ClientSession clientSession = (ClientSession) registry.getResource(SESSION_KEY);
                 if (clientSession == null) {
-                    return registerClientSession(mongoEntity, registry);
+                    return registerClientSession(legacyMongoEntity, mongoEntity, registry);
                 }
             }
         }
         return null;
     }
 
-    private ClientSession registerClientSession(MongoEntity mongoEntity, TransactionSynchronizationRegistry registry) {
+    private ClientSession registerClientSession(MongoEntity legacyMongoEntity,
+            io.quarkus.mongodb.panache.common.MongoEntity mongoEntity,
+            TransactionSynchronizationRegistry registry) {
         TransactionManager transactionManager = Arc.container().instance(TransactionManager.class).get();
-        MongoClient client = BeanUtils.clientFromArc(mongoEntity, MongoClient.class, false);
+        MongoClient client = BeanUtils.clientFromArc(legacyMongoEntity, mongoEntity, MongoClient.class, false);
         ClientSession clientSession = client.startSession();
         clientSession.startTransaction();//TODO add txoptions from annotation
         registry.putResource(SESSION_KEY, clientSession);
@@ -376,22 +387,26 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         return mongoCollection(entityClass);
     }
 
-    private MongoDatabase mongoDatabase(MongoEntity entity) {
-        MongoClient mongoClient = BeanUtils.clientFromArc(entity, MongoClient.class, false);
-        if (entity != null && !entity.database().isEmpty()) {
-            return mongoClient.getDatabase(entity.database());
+    private MongoDatabase mongoDatabase(MongoEntity legacyEntity, io.quarkus.mongodb.panache.common.MongoEntity mongoEntity) {
+        MongoClient mongoClient = BeanUtils.clientFromArc(legacyEntity, mongoEntity, MongoClient.class, false);
+        if (legacyEntity != null && !legacyEntity.database().isEmpty()) {
+            return mongoClient.getDatabase(legacyEntity.database());
         }
-        String databaseName = getDefaultDatabaseName(entity);
+        if (mongoEntity != null && !mongoEntity.database().isEmpty()) {
+            return mongoClient.getDatabase(mongoEntity.database());
+        }
+        String databaseName = getDefaultDatabaseName(legacyEntity, mongoEntity);
         return mongoClient.getDatabase(databaseName);
     }
 
-    private String getDefaultDatabaseName(MongoEntity entity) {
-        return defaultDatabaseName.computeIfAbsent(BeanUtils.beanName(entity), new Function<String, String>() {
-            @Override
-            public String apply(String beanName) {
-                return BeanUtils.getDatabaseName(entity, beanName);
-            }
-        });
+    private String getDefaultDatabaseName(MongoEntity legacyEntity, io.quarkus.mongodb.panache.common.MongoEntity mongoEntity) {
+        return defaultDatabaseName.computeIfAbsent(BeanUtils.beanName(legacyEntity, mongoEntity),
+                new Function<String, String>() {
+                    @Override
+                    public String apply(String beanName) {
+                        return BeanUtils.getDatabaseName(legacyEntity, mongoEntity, beanName);
+                    }
+                });
     }
     //
     // Queries

@@ -658,7 +658,6 @@ public class DevMojo extends AbstractMojo {
                     .collect(Collectors.toCollection(LinkedHashSet::new));
             testSourcePaths = mavenProject.getTestCompileSourceRoots().stream()
                     .map(Paths::get)
-                    .filter(Files::isDirectory)
                     .map(Path::toAbsolutePath)
                     .collect(Collectors.toCollection(LinkedHashSet::new));
             activeProfiles = mavenProject.getActiveProfiles();
@@ -670,9 +669,7 @@ public class DevMojo extends AbstractMojo {
             classesPath = classesDir.toAbsolutePath().toString();
         }
         Path testClassesDir = localProject.getTestClassesDir();
-        if (Files.isDirectory(testClassesDir)) {
-            testClassesPath = testClassesDir.toAbsolutePath().toString();
-        }
+        testClassesPath = testClassesDir.toAbsolutePath().toString();
         resourcePaths = localProject.getResourcesSourcesDirs().toList().stream()
                 .map(Path::toAbsolutePath)
                 .collect(Collectors.toCollection(LinkedHashSet::new));

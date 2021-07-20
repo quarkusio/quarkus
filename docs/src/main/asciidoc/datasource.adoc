@@ -509,7 +509,7 @@ include::{generated-dir}/config/quarkus-datasource-config-group-dev-services-bui
 
 When using DevServices the default datasource will always be created, but to specify a named datasource you need to have
 at least one build time property so Quarkus knows to create the datasource. In general you will usually either specify
-the `db-kind` property, or explicitly enable DevDb: `quarkus.datasource."named".devservices=true`.
+the `db-kind` property, or explicitly enable DevDb: `quarkus.datasource."name".devservices.enabled=true`.
 
 [[in-memory-databases]]
 == Testing with in-memory databases

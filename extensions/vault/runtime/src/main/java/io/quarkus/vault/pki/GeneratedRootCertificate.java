@@ -32,4 +32,28 @@ public class GeneratedRootCertificate {
      */
     public String privateKey;
 
+    public GeneratedRootCertificate setSerialNumber(String serialNumber) {
+        this.serialNumber = serialNumber;
+        return this;
+    }
+
+    public GeneratedRootCertificate setCertificate(String certificate) {
+        this.certificate = certificate;
+        return this;
+    }
+
+    public GeneratedRootCertificate setIssuingCA(String issuingCA) {
+        this.issuingCA = issuingCA;
+        return this;
+    }
+
+    public GeneratedRootCertificate setPrivateKeyType(CertificateKeyType privateKeyType) {
+        this.privateKeyType = privateKeyType;
+        return this;
+    }
+
+    public GeneratedRootCertificate setPrivateKey(String privateKey) {
+        this.privateKey = privateKey;
+        return this;
+    }
 }

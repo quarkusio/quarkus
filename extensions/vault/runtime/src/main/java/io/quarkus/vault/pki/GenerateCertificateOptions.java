@@ -49,4 +49,43 @@ public class GenerateCertificateOptions {
      * Value is specified as a string duration with time suffix. Hour is the largest supported suffix.
      */
     public String timeToLive;
+
+    public GenerateCertificateOptions setSubjectCommonName(String subjectCommonName) {
+        this.subjectCommonName = subjectCommonName;
+        return this;
+    }
+
+    public GenerateCertificateOptions setSubjectAlternativeNames(List<String> subjectAlternativeNames) {
+        this.subjectAlternativeNames = subjectAlternativeNames;
+        return this;
+    }
+
+    public GenerateCertificateOptions setExcludeCommonNameFromSubjectAlternativeNames(
+            Boolean excludeCommonNameFromSubjectAlternativeNames) {
+        this.excludeCommonNameFromSubjectAlternativeNames = excludeCommonNameFromSubjectAlternativeNames;
+        return this;
+    }
+
+    public GenerateCertificateOptions setIpSubjectAlternativeNames(
+            List<String> ipSubjectAlternativeNames) {
+        this.ipSubjectAlternativeNames = ipSubjectAlternativeNames;
+        return this;
+    }
+
+    public GenerateCertificateOptions setUriSubjectAlternativeNames(
+            List<String> uriSubjectAlternativeNames) {
+        this.uriSubjectAlternativeNames = uriSubjectAlternativeNames;
+        return this;
+    }
+
+    public GenerateCertificateOptions setOtherSubjectAlternativeNames(
+            List<String> otherSubjectAlternativeNames) {
+        this.otherSubjectAlternativeNames = otherSubjectAlternativeNames;
+        return this;
+    }
+
+    public GenerateCertificateOptions setTimeToLive(String timeToLive) {
+        this.timeToLive = timeToLive;
+        return this;
+    }
 }

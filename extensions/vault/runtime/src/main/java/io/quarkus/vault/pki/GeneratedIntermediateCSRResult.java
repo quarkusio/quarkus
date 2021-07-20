@@ -24,4 +24,18 @@ public class GeneratedIntermediateCSRResult {
      */
     public String privateKey;
 
+    public GeneratedIntermediateCSRResult setCsr(String csr) {
+        this.csr = csr;
+        return this;
+    }
+
+    public GeneratedIntermediateCSRResult setPrivateKeyType(CertificateKeyType privateKeyType) {
+        this.privateKeyType = privateKeyType;
+        return this;
+    }
+
+    public GeneratedIntermediateCSRResult setPrivateKey(String privateKey) {
+        this.privateKey = privateKey;
+        return this;
+    }
 }

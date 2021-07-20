@@ -24,4 +24,18 @@ public class TidyOptions {
      */
     public String safetyBuffer;
 
+    public TidyOptions setTidyCertStore(Boolean tidyCertStore) {
+        this.tidyCertStore = tidyCertStore;
+        return this;
+    }
+
+    public TidyOptions setTidyRevokedCerts(Boolean tidyRevokedCerts) {
+        this.tidyRevokedCerts = tidyRevokedCerts;
+        return this;
+    }
+
+    public TidyOptions setSafetyBuffer(String safetyBuffer) {
+        this.safetyBuffer = safetyBuffer;
+        return this;
+    }
 }

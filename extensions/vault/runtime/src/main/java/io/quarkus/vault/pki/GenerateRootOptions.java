@@ -116,4 +116,106 @@ public class GenerateRootOptions {
      * are allowed, as per RFC.
      */
     public List<String> permittedDnsDomains;
+
+    public GenerateRootOptions setSubjectCommonName(String subjectCommonName) {
+        this.subjectCommonName = subjectCommonName;
+        return this;
+    }
+
+    public GenerateRootOptions setSubjectOrganization(String subjectOrganization) {
+        this.subjectOrganization = subjectOrganization;
+        return this;
+    }
+
+    public GenerateRootOptions setSubjectOrganizationalUnit(String subjectOrganizationalUnit) {
+        this.subjectOrganizationalUnit = subjectOrganizationalUnit;
+        return this;
+    }
+
+    public GenerateRootOptions setSubjectStreetAddress(String subjectStreetAddress) {
+        this.subjectStreetAddress = subjectStreetAddress;
+        return this;
+    }
+
+    public GenerateRootOptions setSubjectPostalCode(String subjectPostalCode) {
+        this.subjectPostalCode = subjectPostalCode;
+        return this;
+    }
+
+    public GenerateRootOptions setSubjectLocality(String subjectLocality) {
+        this.subjectLocality = subjectLocality;
+        return this;
+    }
+
+    public GenerateRootOptions setSubjectProvince(String subjectProvince) {
+        this.subjectProvince = subjectProvince;
+        return this;
+    }
+
+    public GenerateRootOptions setSubjectCountry(String subjectCountry) {
+        this.subjectCountry = subjectCountry;
+        return this;
+    }
+
+    public GenerateRootOptions setSubjectSerialNumber(String subjectSerialNumber) {
+        this.subjectSerialNumber = subjectSerialNumber;
+        return this;
+    }
+
+    public GenerateRootOptions setSubjectAlternativeNames(List<String> subjectAlternativeNames) {
+        this.subjectAlternativeNames = subjectAlternativeNames;
+        return this;
+    }
+
+    public GenerateRootOptions setExcludeCommonNameFromSubjectAlternativeNames(
+            Boolean excludeCommonNameFromSubjectAlternativeNames) {
+        this.excludeCommonNameFromSubjectAlternativeNames = excludeCommonNameFromSubjectAlternativeNames;
+        return this;
+    }
+
+    public GenerateRootOptions setIpSubjectAlternativeNames(List<String> ipSubjectAlternativeNames) {
+        this.ipSubjectAlternativeNames = ipSubjectAlternativeNames;
+        return this;
+    }
+
+    public GenerateRootOptions setUriSubjectAlternativeNames(List<String> uriSubjectAlternativeNames) {
+        this.uriSubjectAlternativeNames = uriSubjectAlternativeNames;
+        return this;
+    }
+
+    public GenerateRootOptions setOtherSubjectAlternativeNames(
+            List<String> otherSubjectAlternativeNames) {
+        this.otherSubjectAlternativeNames = otherSubjectAlternativeNames;
+        return this;
+    }
+
+    public GenerateRootOptions setTimeToLive(String timeToLive) {
+        this.timeToLive = timeToLive;
+        return this;
+    }
+
+    public GenerateRootOptions setKeyType(CertificateKeyType keyType) {
+        this.keyType = keyType;
+        return this;
+    }
+
+    public GenerateRootOptions setKeyBits(Integer keyBits) {
+        this.keyBits = keyBits;
+        return this;
+    }
+
+    public GenerateRootOptions setExportPrivateKey(boolean exportPrivateKey) {
+        this.exportPrivateKey = exportPrivateKey;
+        return this;
+    }
+
+    public GenerateRootOptions setMaxPathLength(Integer maxPathLength) {
+        this.maxPathLength = maxPathLength;
+        return this;
+    }
+
+    public GenerateRootOptions setPermittedDnsDomains(List<String> permittedDnsDomains) {
+        this.permittedDnsDomains = permittedDnsDomains;
+        return this;
+    }
 }

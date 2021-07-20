@@ -219,4 +219,197 @@ public class RoleOptions {
      * Value is specified as a string duration with time suffix. Hour is the largest supported suffix.
      */
     public String notBeforeDuration;
+
+    public RoleOptions setTimeToLive(String timeToLive) {
+        this.timeToLive = timeToLive;
+        return this;
+    }
+
+    public RoleOptions setMaxTimeToLive(String maxTimeToLive) {
+        this.maxTimeToLive = maxTimeToLive;
+        return this;
+    }
+
+    public RoleOptions setAllowLocalhost(Boolean allowLocalhost) {
+        this.allowLocalhost = allowLocalhost;
+        return this;
+    }
+
+    public RoleOptions setAllowedDomains(List<String> allowedDomains) {
+        this.allowedDomains = allowedDomains;
+        return this;
+    }
+
+    public RoleOptions setAllowTemplatesInAllowedDomains(Boolean allowTemplatesInAllowedDomains) {
+        this.allowTemplatesInAllowedDomains = allowTemplatesInAllowedDomains;
+        return this;
+    }
+
+    public RoleOptions setAllowBareDomains(Boolean allowBareDomains) {
+        this.allowBareDomains = allowBareDomains;
+        return this;
+    }
+
+    public RoleOptions setAllowSubdomains(Boolean allowSubdomains) {
+        this.allowSubdomains = allowSubdomains;
+        return this;
+    }
+
+    public RoleOptions setAllowGlobsInAllowedDomains(Boolean allowGlobsInAllowedDomains) {
+        this.allowGlobsInAllowedDomains = allowGlobsInAllowedDomains;
+        return this;
+    }
+
+    public RoleOptions setAllowAnyName(Boolean allowAnyName) {
+        this.allowAnyName = allowAnyName;
+        return this;
+    }
+
+    public RoleOptions setEnforceHostnames(Boolean enforceHostnames) {
+        this.enforceHostnames = enforceHostnames;
+        return this;
+    }
+
+    public RoleOptions setAllowIpSubjectAlternativeNames(Boolean allowIpSubjectAlternativeNames) {
+        this.allowIpSubjectAlternativeNames = allowIpSubjectAlternativeNames;
+        return this;
+    }
+
+    public RoleOptions setAllowedUriSubjectAlternativeNames(
+            List<String> allowedUriSubjectAlternativeNames) {
+        this.allowedUriSubjectAlternativeNames = allowedUriSubjectAlternativeNames;
+        return this;
+    }
+
+    public RoleOptions setAllowedOtherSubjectAlternativeNames(
+            List<String> allowedOtherSubjectAlternativeNames) {
+        this.allowedOtherSubjectAlternativeNames = allowedOtherSubjectAlternativeNames;
+        return this;
+    }
+
+    public RoleOptions setServerFlag(Boolean serverFlag) {
+        this.serverFlag = serverFlag;
+        return this;
+    }
+
+    public RoleOptions setClientFlag(Boolean clientFlag) {
+        this.clientFlag = clientFlag;
+        return this;
+    }
+
+    public RoleOptions setCodeSigningFlag(Boolean codeSigningFlag) {
+        this.codeSigningFlag = codeSigningFlag;
+        return this;
+    }
+
+    public RoleOptions setEmailProtectionFlag(Boolean emailProtectionFlag) {
+        this.emailProtectionFlag = emailProtectionFlag;
+        return this;
+    }
+
+    public RoleOptions setKeyType(CertificateKeyType keyType) {
+        this.keyType = keyType;
+        return this;
+    }
+
+    public RoleOptions setKeyBits(Integer keyBits) {
+        this.keyBits = keyBits;
+        return this;
+    }
+
+    public RoleOptions setKeyUsages(List<CertificateKeyUsage> keyUsages) {
+        this.keyUsages = keyUsages;
+        return this;
+    }
+
+    public RoleOptions setExtendedKeyUsages(
+            List<CertificateExtendedKeyUsage> extendedKeyUsages) {
+        this.extendedKeyUsages = extendedKeyUsages;
+        return this;
+    }
+
+    public RoleOptions setExtendedKeyUsageOIDs(List<String> extendedKeyUsageOIDs) {
+        this.extendedKeyUsageOIDs = extendedKeyUsageOIDs;
+        return this;
+    }
+
+    public RoleOptions setUseCSRCommonName(Boolean useCSRCommonName) {
+        this.useCSRCommonName = useCSRCommonName;
+        return this;
+    }
+
+    public RoleOptions setUseCSRSubjectAlternativeNames(Boolean useCSRSubjectAlternativeNames) {
+        this.useCSRSubjectAlternativeNames = useCSRSubjectAlternativeNames;
+        return this;
+    }
+
+    public RoleOptions setSubjectOrganization(String subjectOrganization) {
+        this.subjectOrganization = subjectOrganization;
+        return this;
+    }
+
+    public RoleOptions setSubjectOrganizationalUnit(String subjectOrganizationalUnit) {
+        this.subjectOrganizationalUnit = subjectOrganizationalUnit;
+        return this;
+    }
+
+    public RoleOptions setSubjectStreetAddress(String subjectStreetAddress) {
+        this.subjectStreetAddress = subjectStreetAddress;
+        return this;
+    }
+
+    public RoleOptions setSubjectPostalCode(String subjectPostalCode) {
+        this.subjectPostalCode = subjectPostalCode;
+        return this;
+    }
+
+    public RoleOptions setSubjectLocality(String subjectLocality) {
+        this.subjectLocality = subjectLocality;
+        return this;
+    }
+
+    public RoleOptions setSubjectProvince(String subjectProvince) {
+        this.subjectProvince = subjectProvince;
+        return this;
+    }
+
+    public RoleOptions setSubjectCountry(String subjectCountry) {
+        this.subjectCountry = subjectCountry;
+        return this;
+    }
+
+    public RoleOptions setAllowedSubjectSerialNumbers(List<String> allowedSubjectSerialNumbers) {
+        this.allowedSubjectSerialNumbers = allowedSubjectSerialNumbers;
+        return this;
+    }
+
+    public RoleOptions setGenerateLease(Boolean generateLease) {
+        this.generateLease = generateLease;
+        return this;
+    }
+
+    public RoleOptions setNoStore(Boolean noStore) {
+        this.noStore = noStore;
+        return this;
+    }
+
+    public RoleOptions setRequireCommonName(Boolean requireCommonName) {
+        this.requireCommonName = requireCommonName;
+        return this;
+    }
+
+    public RoleOptions setPolicyOIDs(List<String> policyOIDs) {
+        this.policyOIDs = policyOIDs;
+        return this;
+    }
+
+    public RoleOptions setBasicConstraintsValidForNonCA(Boolean basicConstraintsValidForNonCA) {
+        this.basicConstraintsValidForNonCA = basicConstraintsValidForNonCA;
+        return this;
+    }
+
+    public RoleOptions setNotBeforeDuration(String notBeforeDuration) {
+        this.notBeforeDuration = notBeforeDuration;
+        return this;
+    }
 }

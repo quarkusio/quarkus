@@ -15,4 +15,13 @@ public class ConfigCRLOptions {
      */
     public Boolean disable;
 
+    public ConfigCRLOptions setExpiry(String expiry) {
+        this.expiry = expiry;
+        return this;
+    }
+
+    public ConfigCRLOptions setDisable(Boolean disable) {
+        this.disable = disable;
+        return this;
+    }
 }

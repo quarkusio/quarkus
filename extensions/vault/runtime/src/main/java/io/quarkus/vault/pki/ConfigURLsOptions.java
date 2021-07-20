@@ -22,4 +22,18 @@ public class ConfigURLsOptions {
      */
     public List<String> ocspServers;
 
+    public ConfigURLsOptions setIssuingCertificates(List<String> issuingCertificates) {
+        this.issuingCertificates = issuingCertificates;
+        return this;
+    }
+
+    public ConfigURLsOptions setCrlDistributionPoints(List<String> crlDistributionPoints) {
+        this.crlDistributionPoints = crlDistributionPoints;
+        return this;
+    }
+
+    public ConfigURLsOptions setOcspServers(List<String> ocspServers) {
+        this.ocspServers = ocspServers;
+        return this;
+    }
 }

@@ -38,4 +38,34 @@ public class GeneratedCertificate {
      * Generated private Key (PEM Encoded).
      */
     public String privateKey;
+
+    public GeneratedCertificate setSerialNumber(String serialNumber) {
+        this.serialNumber = serialNumber;
+        return this;
+    }
+
+    public GeneratedCertificate setCertificate(String certificate) {
+        this.certificate = certificate;
+        return this;
+    }
+
+    public GeneratedCertificate setIssuingCA(String issuingCA) {
+        this.issuingCA = issuingCA;
+        return this;
+    }
+
+    public GeneratedCertificate setCaChain(List<String> caChain) {
+        this.caChain = caChain;
+        return this;
+    }
+
+    public GeneratedCertificate setPrivateKeyType(CertificateKeyType privateKeyType) {
+        this.privateKeyType = privateKeyType;
+        return this;
+    }
+
+    public GeneratedCertificate setPrivateKey(String privateKey) {
+        this.privateKey = privateKey;
+        return this;
+    }
 }

@@ -99,4 +99,94 @@ public class GenerateIntermediateCSROptions {
      * Flag determining if the generated private key should be exported or kept internally.
      */
     public boolean exportPrivateKey = false;
+
+    public GenerateIntermediateCSROptions setSubjectCommonName(String subjectCommonName) {
+        this.subjectCommonName = subjectCommonName;
+        return this;
+    }
+
+    public GenerateIntermediateCSROptions setSubjectOrganization(String subjectOrganization) {
+        this.subjectOrganization = subjectOrganization;
+        return this;
+    }
+
+    public GenerateIntermediateCSROptions setSubjectOrganizationalUnit(String subjectOrganizationalUnit) {
+        this.subjectOrganizationalUnit = subjectOrganizationalUnit;
+        return this;
+    }
+
+    public GenerateIntermediateCSROptions setSubjectStreetAddress(String subjectStreetAddress) {
+        this.subjectStreetAddress = subjectStreetAddress;
+        return this;
+    }
+
+    public GenerateIntermediateCSROptions setSubjectPostalCode(String subjectPostalCode) {
+        this.subjectPostalCode = subjectPostalCode;
+        return this;
+    }
+
+    public GenerateIntermediateCSROptions setSubjectLocality(String subjectLocality) {
+        this.subjectLocality = subjectLocality;
+        return this;
+    }
+
+    public GenerateIntermediateCSROptions setSubjectProvince(String subjectProvince) {
+        this.subjectProvince = subjectProvince;
+        return this;
+    }
+
+    public GenerateIntermediateCSROptions setSubjectCountry(String subjectCountry) {
+        this.subjectCountry = subjectCountry;
+        return this;
+    }
+
+    public GenerateIntermediateCSROptions setSubjectSerialNumber(String subjectSerialNumber) {
+        this.subjectSerialNumber = subjectSerialNumber;
+        return this;
+    }
+
+    public GenerateIntermediateCSROptions setSubjectAlternativeNames(
+            List<String> subjectAlternativeNames) {
+        this.subjectAlternativeNames = subjectAlternativeNames;
+        return this;
+    }
+
+    public GenerateIntermediateCSROptions setExcludeCommonNameFromSubjectAlternativeNames(
+            Boolean excludeCommonNameFromSubjectAlternativeNames) {
+        this.excludeCommonNameFromSubjectAlternativeNames = excludeCommonNameFromSubjectAlternativeNames;
+        return this;
+    }
+
+    public GenerateIntermediateCSROptions setIpSubjectAlternativeNames(
+            List<String> ipSubjectAlternativeNames) {
+        this.ipSubjectAlternativeNames = ipSubjectAlternativeNames;
+        return this;
+    }
+
+    public GenerateIntermediateCSROptions setUriSubjectAlternativeNames(
+            List<String> uriSubjectAlternativeNames) {
+        this.uriSubjectAlternativeNames = uriSubjectAlternativeNames;
+        return this;
+    }
+
+    public GenerateIntermediateCSROptions setOtherSubjectAlternativeNames(
+            List<String> otherSubjectAlternativeNames) {
+        this.otherSubjectAlternativeNames = otherSubjectAlternativeNames;
+        return this;
+    }
+
+    public GenerateIntermediateCSROptions setKeyType(CertificateKeyType keyType) {
+        this.keyType = keyType;
+        return this;
+    }
+
+    public GenerateIntermediateCSROptions setKeyBits(Integer keyBits) {
+        this.keyBits = keyBits;
+        return this;
+    }
+
+    public GenerateIntermediateCSROptions setExportPrivateKey(boolean exportPrivateKey) {
+        this.exportPrivateKey = exportPrivateKey;
+        return this;
+    }
 }

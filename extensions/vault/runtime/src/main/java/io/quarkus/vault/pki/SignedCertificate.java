@@ -28,4 +28,24 @@ public class SignedCertificate {
      * Complete CA chain of generated certificate (elements are PEM encoded).
      */
     public List<String> caChain;
+
+    public SignedCertificate setSerialNumber(String serialNumber) {
+        this.serialNumber = serialNumber;
+        return this;
+    }
+
+    public SignedCertificate setCertificate(String certificate) {
+        this.certificate = certificate;
+        return this;
+    }
+
+    public SignedCertificate setIssuingCA(String issuingCA) {
+        this.issuingCA = issuingCA;
+        return this;
+    }
+
+    public SignedCertificate setCaChain(List<String> caChain) {
+        this.caChain = caChain;
+        return this;
+    }
 }

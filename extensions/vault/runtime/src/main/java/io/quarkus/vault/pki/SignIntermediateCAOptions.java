@@ -112,4 +112,98 @@ public class SignIntermediateCAOptions {
      * are allowed, as per RFC.
      */
     public List<String> permittedDnsDomains;
+
+    public SignIntermediateCAOptions setSubjectCommonName(String subjectCommonName) {
+        this.subjectCommonName = subjectCommonName;
+        return this;
+    }
+
+    public SignIntermediateCAOptions setSubjectOrganization(String subjectOrganization) {
+        this.subjectOrganization = subjectOrganization;
+        return this;
+    }
+
+    public SignIntermediateCAOptions setSubjectOrganizationalUnit(String subjectOrganizationalUnit) {
+        this.subjectOrganizationalUnit = subjectOrganizationalUnit;
+        return this;
+    }
+
+    public SignIntermediateCAOptions setSubjectStreetAddress(String subjectStreetAddress) {
+        this.subjectStreetAddress = subjectStreetAddress;
+        return this;
+    }
+
+    public SignIntermediateCAOptions setSubjectPostalCode(String subjectPostalCode) {
+        this.subjectPostalCode = subjectPostalCode;
+        return this;
+    }
+
+    public SignIntermediateCAOptions setSubjectLocality(String subjectLocality) {
+        this.subjectLocality = subjectLocality;
+        return this;
+    }
+
+    public SignIntermediateCAOptions setSubjectProvince(String subjectProvince) {
+        this.subjectProvince = subjectProvince;
+        return this;
+    }
+
+    public SignIntermediateCAOptions setSubjectCountry(String subjectCountry) {
+        this.subjectCountry = subjectCountry;
+        return this;
+    }
+
+    public SignIntermediateCAOptions setSubjectSerialNumber(String subjectSerialNumber) {
+        this.subjectSerialNumber = subjectSerialNumber;
+        return this;
+    }
+
+    public SignIntermediateCAOptions setSubjectAlternativeNames(List<String> subjectAlternativeNames) {
+        this.subjectAlternativeNames = subjectAlternativeNames;
+        return this;
+    }
+
+    public SignIntermediateCAOptions setExcludeCommonNameFromSubjectAlternativeNames(
+            Boolean excludeCommonNameFromSubjectAlternativeNames) {
+        this.excludeCommonNameFromSubjectAlternativeNames = excludeCommonNameFromSubjectAlternativeNames;
+        return this;
+    }
+
+    public SignIntermediateCAOptions setIpSubjectAlternativeNames(
+            List<String> ipSubjectAlternativeNames) {
+        this.ipSubjectAlternativeNames = ipSubjectAlternativeNames;
+        return this;
+    }
+
+    public SignIntermediateCAOptions setUriSubjectAlternativeNames(
+            List<String> uriSubjectAlternativeNames) {
+        this.uriSubjectAlternativeNames = uriSubjectAlternativeNames;
+        return this;
+    }
+
+    public SignIntermediateCAOptions setOtherSubjectAlternativeNames(
+            List<String> otherSubjectAlternativeNames) {
+        this.otherSubjectAlternativeNames = otherSubjectAlternativeNames;
+        return this;
+    }
+
+    public SignIntermediateCAOptions setTimeToLive(String timeToLive) {
+        this.timeToLive = timeToLive;
+        return this;
+    }
+
+    public SignIntermediateCAOptions setMaxPathLength(Integer maxPathLength) {
+        this.maxPathLength = maxPathLength;
+        return this;
+    }
+
+    public SignIntermediateCAOptions setUseCSRValues(Boolean useCSRValues) {
+        this.useCSRValues = useCSRValues;
+        return this;
+    }
+
+    public SignIntermediateCAOptions setPermittedDnsDomains(List<String> permittedDnsDomains) {
+        this.permittedDnsDomains = permittedDnsDomains;
+        return this;
+    }
 }

@@ -1,11 +1,11 @@
 package io.quarkus.mongodb.panache.deployment;
 
+import io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntityBase;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepositoryBase;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
-import io.quarkus.mongodb.panache.reactive.ReactivePanacheUpdate;
 import io.quarkus.mongodb.panache.reactive.runtime.JavaReactiveMongoOperations;
 import io.quarkus.panache.common.deployment.ByteCodeType;
 import io.quarkus.panache.common.deployment.TypeBundle;

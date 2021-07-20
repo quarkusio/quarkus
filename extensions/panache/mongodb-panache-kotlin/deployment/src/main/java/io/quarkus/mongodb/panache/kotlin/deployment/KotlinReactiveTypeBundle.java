@@ -1,5 +1,6 @@
 package io.quarkus.mongodb.panache.kotlin.deployment;
 
+import io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate;
 import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheMongoCompanion;
 import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheMongoCompanionBase;
 import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheMongoEntity;
@@ -8,7 +9,6 @@ import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheMongoRepository
 import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheMongoRepositoryBase;
 import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheQuery;
 import io.quarkus.mongodb.panache.kotlin.reactive.runtime.KotlinReactiveMongoOperations;
-import io.quarkus.mongodb.panache.reactive.ReactivePanacheUpdate;
 import io.quarkus.panache.common.deployment.ByteCodeType;
 import io.quarkus.panache.common.deployment.TypeBundle;
 

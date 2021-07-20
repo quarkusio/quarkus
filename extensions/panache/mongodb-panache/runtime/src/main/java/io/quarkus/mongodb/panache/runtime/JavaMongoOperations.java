@@ -9,7 +9,7 @@ import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
 
 import io.quarkus.mongodb.panache.PanacheQuery;
-import io.quarkus.mongodb.panache.PanacheUpdate;
+import io.quarkus.mongodb.panache.common.PanacheUpdate;
 import io.quarkus.mongodb.panache.common.runtime.MongoOperations;
 import io.quarkus.mongodb.panache.common.runtime.PanacheUpdateImpl;
 

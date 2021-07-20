@@ -2,8 +2,8 @@ package io.quarkus.mongodb.panache.kotlin.reactive.runtime
 
 import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheQuery
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheUpdate
-import io.quarkus.mongodb.panache.reactive.runtime.ReactiveMongoOperations
-import io.quarkus.mongodb.panache.reactive.runtime.ReactivePanacheUpdateImpl
+import io.quarkus.mongodb.panache.common.reactive.runtime.ReactiveMongoOperations
+import io.quarkus.mongodb.panache.common.reactive.runtime.ReactivePanacheUpdateImpl
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.Uni

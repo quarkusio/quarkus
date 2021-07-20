@@ -1,6 +1,6 @@
 package io.quarkus.mongodb.panache.kotlin.reactive.runtime
 
-import io.quarkus.mongodb.panache.reactive.runtime.CommonReactivePanacheQueryImpl
+import io.quarkus.mongodb.panache.common.reactive.runtime.CommonReactivePanacheQueryImpl
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection
 import org.bson.conversions.Bson
 import io.smallrye.mutiny.Uni

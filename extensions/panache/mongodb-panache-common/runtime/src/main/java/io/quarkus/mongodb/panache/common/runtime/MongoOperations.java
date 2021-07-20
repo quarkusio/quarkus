@@ -1,8 +1,4 @@
-package io.quarkus.mongodb.panache.runtime;
-
-import static io.quarkus.mongodb.panache.runtime.BeanUtils.beanName;
-import static io.quarkus.mongodb.panache.runtime.BeanUtils.clientFromArc;
-import static io.quarkus.mongodb.panache.runtime.BeanUtils.getDatabaseName;
+package io.quarkus.mongodb.panache.common.runtime;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -342,7 +338,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     private ClientSession registerClientSession(MongoEntity mongoEntity, TransactionSynchronizationRegistry registry) {
         TransactionManager transactionManager = Arc.container().instance(TransactionManager.class).get();
-        MongoClient client = clientFromArc(mongoEntity, MongoClient.class, false);
+        MongoClient client = BeanUtils.clientFromArc(mongoEntity, MongoClient.class, false);
         ClientSession clientSession = client.startSession();
         clientSession.startTransaction();//TODO add txoptions from annotation
         registry.putResource(SESSION_KEY, clientSession);
@@ -381,7 +377,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     private MongoDatabase mongoDatabase(MongoEntity entity) {
-        MongoClient mongoClient = clientFromArc(entity, MongoClient.class, false);
+        MongoClient mongoClient = BeanUtils.clientFromArc(entity, MongoClient.class, false);
         if (entity != null && !entity.database().isEmpty()) {
             return mongoClient.getDatabase(entity.database());
         }
@@ -390,10 +386,10 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     private String getDefaultDatabaseName(MongoEntity entity) {
-        return defaultDatabaseName.computeIfAbsent(beanName(entity), new Function<String, String>() {
+        return defaultDatabaseName.computeIfAbsent(BeanUtils.beanName(entity), new Function<String, String>() {
             @Override
             public String apply(String beanName) {
-                return getDatabaseName(entity, beanName);
+                return BeanUtils.getDatabaseName(entity, beanName);
             }
         });
     }

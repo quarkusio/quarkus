@@ -1,4 +1,4 @@
-package io.quarkus.mongodb.panache.reactive.runtime;
+package io.quarkus.mongodb.panache.common.reactive.runtime;
 
 import java.util.Map;
 

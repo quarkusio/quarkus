@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import picocli.CommandLine;
 
 public class CliNonProjectTest {
@@ -127,10 +128,18 @@ public class CliNonProjectTest {
 
     @Test
     public void testRegistryRefresh() throws Exception {
-        // List extensions of a specified platform version
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "registry", "--refresh", "-e");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
-                "Expected OK return code." + result);
+
+        CliDriver.Result result;
+
+        RegistryClientTestHelper.enableRegistryClientTestConfig();
+        try {
+            // refresh the local cache and list the registries
+            result = CliDriver.execute(workspaceRoot, "registry", "--refresh", "-e");
+            Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                    "Expected OK return code." + result);
+        } finally {
+            RegistryClientTestHelper.disableRegistryClientTestConfig();
+        }
 
         Path configPath = resolveConfigPath("enabledConfig.yml");
         result = CliDriver.execute(workspaceRoot, "registry", "--refresh", "-e",

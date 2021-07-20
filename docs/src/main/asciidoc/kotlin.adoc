@@ -435,4 +435,45 @@ class GreetingResource {
 ----
 <1> Kotlin requires a @field: xxx qualifier as it has no @Target on the annotation definition. Add @field: xxx in this example. @Default is used as the qualifier, explicitly specifying the use of the default bean.
 
+=== Use of CDI values with Kotlin `object` declarations
 
+link:https://quarkus.io/guides/kotlin[Object declarations] in Kotlin are useful for Singletons, and may also be used to group a set of utility functions together (a "utility class").
+
+`@Inject` and other CDI annotations will not work properly in Kotlin `object` declarations. To get around this limitation, there are two approaches that can be used:
+
+* Use the method call to `CDI` to resolve the dependency:
+
+[source, kotlin]
+----
+object MyThing {
+    // Lazy delegation not necessary, but will only compute once asked for and will cache the result
+    val someClass: SomeClass by lazy {
+        CDI.current().select(SomeClass::class.java).get()
+    }
+}
+
+val someClassInstance = MyThing.someClass
+----
+
+* Use an `@ApplicationScope` class, but with a clever trick via Kotlin's `companion object` so that all fields/methods can be accessed as though the class were a static `object` by providing a default instance:
+
+[source, kotlin]
+----
+@ApplicationScoped
+class MyThing {
+    @Inject
+    lateinit var someClass: SomeClass
+
+    @ConfigProperty(name = "some.key")
+    lateinit var someKey: String?
+
+    companion object Default : MyThing()
+}
+
+// "MyThing" is now also a transparent reference to "MyThing.Default"
+// So this is equivalent to "MyThing.Default.someClass", which accesses the field on the companion object (an instance) called "Default"
+val someClassInstance = MyThing.someClass
+// See the kotlinx.serialization codebase for use of this pattern:
+// https://github.com/Kotlin/kotlinx.serialization/blob/master/formats/json/commonMain/src/kotlinx/serialization/json/Json.kt#L70
+val someKey = MyThing.someKey
+----

@@ -10,7 +10,9 @@ import javax.enterprise.context.ApplicationScoped;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
+import io.quarkus.arc.Unremovable;
 
+@Unremovable
 @ApplicationScoped
 public class TestSpanExporter implements SpanExporter {
     private final List<SpanData> finishedSpanItems = new ArrayList<>();

@@ -9,7 +9,7 @@
         {
             "category": "Data1",
             "timeout": 65,
-            "test-modules": "jpa-h2, jpa-mariadb, jpa-mssql, jpa-derby, jpa-without-entity, hibernate-tenancy",
+            "test-modules": "jpa-h2, jpa-mariadb, jpa-mssql, jpa-derby, jpa-without-entity, hibernate-orm-tenancy/datasource, hibernate-orm-tenancy/connection-resolver",
             "os-name": "ubuntu-latest"
         },
         {

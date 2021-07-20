@@ -1,5 +1,8 @@
 package io.quarkus.grpc.runtime.supports.context;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.spi.Prioritized;
+
 import org.jboss.logging.Logger;
 
 import io.grpc.ForwardingServerCallListener;
@@ -13,7 +16,8 @@ import io.quarkus.arc.ManagedContext;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
-public class GrpcRequestContextGrpcInterceptor implements ServerInterceptor {
+@ApplicationScoped
+public class GrpcRequestContextGrpcInterceptor implements ServerInterceptor, Prioritized {
     private static final Logger log = Logger.getLogger(GrpcRequestContextGrpcInterceptor.class.getName());
 
     private final ManagedContext reqContext;
@@ -131,5 +135,10 @@ public class GrpcRequestContextGrpcInterceptor implements ServerInterceptor {
             log.warn("Unable to activate the request scope - interceptor not called on the Vert.x event loop");
             return next.startCall(call, headers);
         }
+    }
+
+    @Override
+    public int getPriority() {
+        return Integer.MAX_VALUE;
     }
 }

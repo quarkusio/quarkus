@@ -59,6 +59,7 @@ import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerBuildTimeConfig;
 import io.quarkus.grpc.runtime.health.GrpcHealthEndpoint;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
+import io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.runtime.LaunchMode;
@@ -253,7 +254,7 @@ public class GrpcServerProcessor {
         Type mutinyBeanType = Type.create(GrpcDotNames.MUTINY_BEAN, org.jboss.jandex.Type.Kind.CLASS);
         Type mutinyServiceType = Type.create(GrpcDotNames.MUTINY_SERVICE, org.jboss.jandex.Type.Kind.CLASS);
         Type bindableServiceType = Type.create(GrpcDotNames.BINDABLE_SERVICE, org.jboss.jandex.Type.Kind.CLASS);
-        Predicate<Set<Type>> predicate = new Predicate<Set<Type>>() {
+        Predicate<Set<Type>> predicate = new Predicate<>() {
             @Override
             public boolean test(Set<Type> types) {
                 return types.contains(bindableServiceType) || types.contains(mutinyServiceType);
@@ -300,6 +301,10 @@ public class GrpcServerProcessor {
 
         if (!bindables.isEmpty() || LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcContainer.class));
+
+            // this makes GrpcRequestContextGrpcInterceptor registered as a global gRPC interceptor.
+            // Global interceptors are invoked before any of the per-service interceptors
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcRequestContextGrpcInterceptor.class));
             features.produce(new FeatureBuildItem(GRPC_SERVER));
         } else {
             logger.debug("Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");

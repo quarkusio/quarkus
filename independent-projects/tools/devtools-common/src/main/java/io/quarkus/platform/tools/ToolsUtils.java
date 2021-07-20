@@ -7,13 +7,11 @@ import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.registry.PlatformStackIndex;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
 import io.quarkus.registry.catalog.json.JsonCatalogMerger;
 import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
-import io.quarkus.registry.union.ElementCatalogBuilder;
-import io.quarkus.registry.union.ElementCatalogBuilder.UnionBuilder;
+import io.quarkus.registry.catalog.selection.OriginPreference;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -133,10 +131,8 @@ public class ToolsUtils {
                 if (members instanceof Collection) {
                     final Collection<?> memberList = (Collection<?>) members;
                     final List<ExtensionCatalog> catalogs = new ArrayList<>(memberList.size());
-                    final ElementCatalogBuilder<ExtensionCatalog> elementsBuilder = ElementCatalogBuilder.newInstance();
-                    final UnionBuilder<ExtensionCatalog> union = elementsBuilder
-                            .getOrCreateUnion(PlatformStackIndex.initial());
 
+                    int memberIndex = 0;
                     for (Object m : memberList) {
                         if (!(m instanceof String)) {
                             continue;
@@ -158,11 +154,18 @@ public class ToolsUtils {
                                 continue;
                             }
                         }
+
+                        final OriginPreference originPreference = new OriginPreference(1, 1, 1, ++memberIndex, 1);
+                        Map<String, Object> metadata = memberCatalog.getMetadata();
+                        if (metadata.isEmpty()) {
+                            metadata = new HashMap<>();
+                            ((JsonExtensionCatalog) memberCatalog).setMetadata(metadata);
+                        }
+                        metadata.put("origin-preference", originPreference);
+
                         catalogs.add(memberCatalog);
-                        ElementCatalogBuilder.addUnionMember(union, memberCatalog);
                     }
                     catalog = JsonCatalogMerger.merge(catalogs);
-                    ElementCatalogBuilder.setElementCatalog(catalog, elementsBuilder.build());
                 }
             }
         }

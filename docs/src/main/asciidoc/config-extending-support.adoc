@@ -138,7 +138,7 @@ Consider:
 package org.acme.config;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
-import io.quarkus.runtime.configuration.StaticInitSafe;
+import io.quarkus.runtime.annotations.StaticInitSafe;
 
 @StaticInitSafe
 public class InMemoryConfigSource implements ConfigSource {

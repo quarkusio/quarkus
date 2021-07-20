@@ -29,20 +29,21 @@ import java.util.Objects;
 public class RegistriesConfigLocator {
 
     public static final String CONFIG_RELATIVE_PATH = ".quarkus/config.yaml";
-    public static final String CONFIG_FILE_PATH_PROPERTY = "qer.config";
+    public static final String CONFIG_FILE_PATH_PROPERTY = "quarkus.tools.config";
 
     /**
      * Locate the registry client configuration file and deserialize it.
-     * The method will be looking for the file in the following locations in this order:
+     *
+     * The method will look for the file in the following locations in this order:
      * <ol>
-     * <li>if <code>qer.config</code> system property is set, its value will be used as the location of the configuration
-     * file</li>
+     * <li>if <code>quarkus.config.root</code> system property is set, its value will be
+     * used as the location of the configuration file</li>
      * <li>current user directory (which usually would be the project dir)</li>
      * <li><code>.quarkus/config.yaml</code> in the user home directory
      * </ol>
      *
-     * Given that the presence of the configuration file is optional, if the configuration file couldn't be located,
-     * an empty configuration would be returned to the caller.
+     * If the configuration file can't be located (it is optional),
+     * an empty configuration will be returned to the caller.
      *
      * @return registry client configuration, never null
      */
@@ -122,11 +123,9 @@ public class RegistriesConfigLocator {
             config.addRegistry(getDefaultRegistry());
         } else {
             for (RegistryConfig qerConfig : original.getRegistries()) {
-                if (!qerConfig.isDisabled()) {
-                    config.addRegistry(completeRequiredConfig(qerConfig));
-                }
+                config.addRegistry(completeRequiredConfig(qerConfig));
             }
-            if (config.isEmpty()) {
+            if (config.getRegistries().stream().filter(x -> !x.isDisabled()).count() == 0) {
                 config.addRegistry(getDefaultRegistry());
             }
         }
@@ -140,6 +139,7 @@ public class RegistriesConfigLocator {
         final String id = original.getId();
         final JsonRegistryConfig config = new JsonRegistryConfig(id);
         config.setUpdatePolicy(original.getUpdatePolicy());
+        config.setDisabled(original.isDisabled());
         config.setDescriptor(completeDescriptor(original));
         if (original != null) {
             if (original.getMaven() != null) {

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
+import javax.persistence.PersistenceException;
 
 import org.hibernate.reactive.mutiny.Mutiny.Transaction;
 import org.junit.jupiter.api.Assertions;
@@ -21,6 +22,7 @@ import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactiona
 import io.quarkus.test.TestReactiveTransaction;
 import io.quarkus.test.junit.DisabledOnNativeImage;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.vertx.RunOnVertxContext;
 import io.quarkus.test.junit.vertx.UniAsserter;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -259,5 +261,13 @@ public class PanacheFunctionalityTest {
         asserter.assertEquals(() -> Person.count(), 1l);
         // and clean up
         asserter.assertEquals(() -> Person.deleteAll(), 1l);
+    }
+
+    @DisabledOnNativeImage
+    @RunOnVertxContext
+    @Test
+    @Order(300)
+    public void testPersistenceException(UniAsserter asserter) {
+        asserter.assertFailedWith(() -> new Person().delete(), PersistenceException.class);
     }
 }

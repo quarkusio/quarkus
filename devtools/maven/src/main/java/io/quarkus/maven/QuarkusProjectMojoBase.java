@@ -95,8 +95,8 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
             quarkusProject = MavenProjectBuildFile.getProject(projectArtifact(), project.getOriginalModel(), baseDir(),
                     project.getModel().getProperties(), artifactResolver(), getMessageWriter(), null);
         } else {
-            final List<ResourceLoader> codestartsResourceLoader = getCodestartResourceLoaders(resolveExtensionsCatalog());
-            quarkusProject = QuarkusProject.of(baseDir(), resolveExtensionsCatalog(),
+            final List<ResourceLoader> codestartsResourceLoader = getCodestartResourceLoaders(resolveExtensionCatalog());
+            quarkusProject = QuarkusProject.of(baseDir(), resolveExtensionCatalog(),
                     codestartsResourceLoader,
                     log, buildTool);
         }
@@ -113,13 +113,13 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
                 : project.getBasedir().toPath();
     }
 
-    private ExtensionCatalog resolveExtensionsCatalog() throws MojoExecutionException {
+    private ExtensionCatalog resolveExtensionCatalog() throws MojoExecutionException {
         final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
                 ? getExtensionCatalogResolver()
                 : ExtensionCatalogResolver.empty();
         if (catalogResolver.hasRegistries()) {
             try {
-                return catalogResolver.resolveExtensionCatalog(getQuarkusCoreVersion());
+                return catalogResolver.resolveExtensionCatalog(getImportedPlatforms());
             } catch (Exception e) {
                 throw new MojoExecutionException("Failed to resolve the Quarkus extensions catalog", e);
             }

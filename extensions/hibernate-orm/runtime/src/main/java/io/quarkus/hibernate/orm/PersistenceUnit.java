@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.orm;
 
 import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PACKAGE;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
@@ -28,7 +29,7 @@ import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
  * <p>
  * It is also used to mark packages as part of a given persistence unit.
  */
-@Target({ TYPE, FIELD, PARAMETER, PACKAGE })
+@Target({ TYPE, FIELD, METHOD, PARAMETER, PACKAGE })
 @Retention(RUNTIME)
 @Documented
 @Qualifier

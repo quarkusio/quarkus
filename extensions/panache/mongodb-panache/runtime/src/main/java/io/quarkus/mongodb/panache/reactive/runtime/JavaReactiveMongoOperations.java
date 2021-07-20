@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.bson.Document;
 
+import io.quarkus.mongodb.panache.common.reactive.runtime.ReactiveMongoOperations;
+import io.quarkus.mongodb.panache.common.reactive.runtime.ReactivePanacheUpdateImpl;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheUpdate;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;

@@ -1,8 +1,8 @@
-package io.quarkus.mongodb.panache;
+package io.quarkus.mongodb.panache.common;
 
 import java.util.Map;
 
-import io.quarkus.mongodb.panache.runtime.MongoPropertyUtil;
+import io.quarkus.mongodb.panache.common.runtime.MongoPropertyUtil;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder

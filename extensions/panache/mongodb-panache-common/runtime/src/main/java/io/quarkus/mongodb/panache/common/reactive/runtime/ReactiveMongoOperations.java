@@ -1,8 +1,8 @@
-package io.quarkus.mongodb.panache.reactive.runtime;
+package io.quarkus.mongodb.panache.common.reactive.runtime;
 
-import static io.quarkus.mongodb.panache.runtime.BeanUtils.beanName;
-import static io.quarkus.mongodb.panache.runtime.BeanUtils.clientFromArc;
-import static io.quarkus.mongodb.panache.runtime.BeanUtils.getDatabaseName;
+import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.beanName;
+import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.clientFromArc;
+import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.getDatabaseName;
 
 import java.util.ArrayList;
 import java.util.Arrays;

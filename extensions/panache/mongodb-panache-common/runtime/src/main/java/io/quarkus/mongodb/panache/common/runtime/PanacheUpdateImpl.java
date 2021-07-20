@@ -8,7 +8,7 @@ import org.bson.conversions.Bson;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
 
-import io.quarkus.mongodb.panache.PanacheUpdate;
+import io.quarkus.mongodb.panache.common.PanacheUpdate;
 import io.quarkus.panache.common.Parameters;
 
 public class PanacheUpdateImpl implements PanacheUpdate {

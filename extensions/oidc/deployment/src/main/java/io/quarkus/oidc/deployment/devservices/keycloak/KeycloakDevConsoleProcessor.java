@@ -48,6 +48,8 @@ public class KeycloakDevConsoleProcessor {
                     new DevConsoleRouteBuildItem("testService", "POST", new KeycloakDevConsolePostHandler(users)));
             devConsoleRoute.produce(
                     new DevConsoleRouteBuildItem("testServiceWithToken", "POST", new KeycloakImplicitGrantPostHandler()));
+            devConsoleRoute.produce(
+                    new DevConsoleRouteBuildItem("exchangeCodeForTokens", "POST", new KeycloakAuthorizationCodePostHandler()));
         }
     }
 }

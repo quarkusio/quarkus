@@ -4,7 +4,7 @@
 {#script}
 
 {#if info:oidcApplicationType is 'service'}
-    {#if info:oidcGrantType is 'implicit'}
+    {#if info:oidcGrantType is 'implicit' || info:oidcGrantType is 'code'}
     var accessToken;
     var idToken;
     var loggedIn = false;
@@ -18,16 +18,21 @@
             var hash = window.location.hash;
             accessToken = hash.match(/access_token=([^&]+)/)[1];
             idToken = hash.match(/id_token=([^&]+)/)[1];
-
             $('#accessTokenArea').text(accessToken);
             $('#idTokenArea').text(idToken);
+        }else if(codeInUrl()){
+            loggedIn === true;
+            $('.implicitLoggedOut').hide();
+            $('.implicitLoggedIn').show();
+            var hash = window.location.hash;
+            var code = hash.match(/code=([^&]+)/)[1];
+            exchangeCodeForTokens(code);
         }else{
             loggedIn === false;
             $('.implicitLoggedOut').show();
             $('.implicitLoggedIn').hide();
             accessToken = null;
             idToken = null;
-
             $('#accessTokenArea').text('');
             $('#idTokenArea').text('');
 
@@ -45,6 +50,10 @@
     function accessTokenInUrl(){
         return inUrl('access_token');
     }
+    
+    function codeInUrl(){
+        return inUrl('code');
+    }
 
     function inUrl(field){
         var url = window.location.href;
@@ -56,11 +65,19 @@
     }
 
     function signInToKeycloakAndGetTokens() {
+      {#if info:oidcGrantType is 'implicit'}
         window.location.href = '{info:keycloakUrl}' + "/realms/" + '{info:keycloakRealm}' + "/protocol/openid-connect/auth"
           + "?client_id=" + '{info:keycloakClient}'
           + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A8080%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider"
           + "&scope=openid&response_type=token id_token&response_mode=fragment&prompt=login"
           + "&nonce=" + makeid();
+      {#else}
+        window.location.href = '{info:keycloakUrl}' + "/realms/" + '{info:keycloakRealm}' + "/protocol/openid-connect/auth"
+          + "?client_id=" + '{info:keycloakClient}'
+          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A8080%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider"
+          + "&scope=openid&response_type=code&response_mode=fragment&prompt=login"
+          + "&nonce=" + makeid();
+      {/if}    
     }
 
     function testServiceWithAccessToken(){
@@ -118,8 +135,26 @@
     function logout() {
         window.location.assign('{info:keycloakUrl}' + "/realms/" + '{info:keycloakRealm}' + "/protocol/openid-connect/logout"
           + "?post_logout_redirect_uri=" + "http%3A%2F%2Flocalhost%3A8080%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider");
-    }    
-    
+    }
+        
+    function exchangeCodeForTokens(code){
+        $.post("exchangeCodeForTokens",
+            {
+              keycloakUrl: '{info:keycloakUrl}',
+              realm: '{info:keycloakRealm}',
+              client: '{info:keycloakClient}',
+              clientSecret: '{info:keycloakClientSecret}',
+              authorizationCode: code,
+              redirectUri: "http://localhost:8080/q/dev/io.quarkus.quarkus-oidc/provider"
+            },
+            function(data, status){
+                var tokens = JSON.parse(data);
+                accessToken = tokens.access_token
+                idToken = tokens.id_token
+                $('#accessTokenArea').text(accessToken);
+                $('#idTokenArea').text(idToken);
+            });
+    }
     
     {/if}
 {/if}
@@ -191,7 +226,7 @@ function signInToService(servicePath) {
 
 <div class="container">
 {#if info:oidcApplicationType?? is 'service'}
-    {#if info:oidcGrantType is 'implicit'}
+    {#if info:oidcGrantType is 'implicit' || info:oidcGrantType is 'code'}
         
         <div class="card implicitLoggedOut">
             <div class="card-body">

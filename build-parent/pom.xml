@@ -339,7 +339,9 @@
                             <maven.home>${maven.home}</maven.home>
                             <maven.repo.local>${settings.localRepository}</maven.repo.local>
                             <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
-                            <project.version>${project.version}</project.version> <!-- some dev tools tests need this -->
+                            <!-- some dev tools tests need the following properties -->
+                            <project.version>${project.version}</project.version>
+                            <project.groupId>${project.groupId}</project.groupId>
                         </systemPropertyVariables>
                         <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
                         <!-- set tmpdir as early as possible because surefire sets it too late for JDK16 -->
@@ -358,7 +360,9 @@
                             <maven.home>${maven.home}</maven.home>
                             <maven.repo.local>${settings.localRepository}</maven.repo.local>
                             <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
-                            <project.version>${project.version}</project.version> <!-- some dev tools tests need this -->
+                            <!-- some dev tools tests need the following properties -->
+                            <project.version>${project.version}</project.version>
+                            <project.groupId>${project.groupId}</project.groupId>
                         </systemPropertyVariables>
                         <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
                         <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>

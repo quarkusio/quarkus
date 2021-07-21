@@ -161,6 +161,7 @@ class PrometheusMetricsRegistryTest {
                 .body(not(containsString("class-should-not-match")))
 
                 // should not find this ignored uri
-                .body(not(containsString("uri=\"/fruit/create\"")));
+                .body(not(containsString("uri=\"/fruit/create\"")))
+                .log().all();
     }
 }

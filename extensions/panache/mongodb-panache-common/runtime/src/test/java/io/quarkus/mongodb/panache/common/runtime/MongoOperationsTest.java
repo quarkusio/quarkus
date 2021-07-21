@@ -1,4 +1,4 @@
-package io.quarkus.mongodb.panache.runtime;
+package io.quarkus.mongodb.panache.common.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -13,18 +13,41 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 
+import org.bson.Document;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.mongodb.panache.PanacheQuery;
+import com.mongodb.client.ClientSession;
+import com.mongodb.client.MongoCollection;
+
 import io.quarkus.mongodb.panache.PanacheUpdate;
 import io.quarkus.panache.common.Parameters;
 
 class MongoOperationsTest {
+    private final MongoOperations<Object, PanacheUpdate> operations = new MongoOperations() {
+        @Override
+        protected List<?> list(Object o) {
+            return null;
+        }
 
-    private final MongoOperations<PanacheQuery<?>, PanacheUpdate> operations = new JavaMongoOperations();
+        @Override
+        protected Stream<?> stream(Object o) {
+            return null;
+        }
+
+        @Override
+        protected Object createUpdate(MongoCollection collection, Class entityClass, Document docUpdate) {
+            return null;
+        }
+
+        @Override
+        protected Object createQuery(MongoCollection collection, ClientSession session, Document query, Document sortDoc) {
+            return null;
+        }
+    };
 
     private static class DemoObj {
         public String field;

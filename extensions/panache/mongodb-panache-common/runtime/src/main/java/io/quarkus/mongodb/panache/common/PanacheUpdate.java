@@ -1,4 +1,4 @@
-package io.quarkus.mongodb.panache;
+package io.quarkus.mongodb.panache.common;
 
 import java.util.Map;
 
@@ -8,11 +8,8 @@ import io.quarkus.panache.common.Parameters;
  * Interface representing an update query.
  *
  * Use one of its methods to perform the update query.
- *
- * @deprecated use {@link io.quarkus.mongodb.panache.common.PanacheUpdate} instead.
  */
-@Deprecated(forRemoval = true, since = "2.1.0")
-public interface PanacheUpdate {
+public interface PanacheUpdate extends io.quarkus.mongodb.panache.PanacheUpdate {
 
     /**
      * Execute the update query with the update document.

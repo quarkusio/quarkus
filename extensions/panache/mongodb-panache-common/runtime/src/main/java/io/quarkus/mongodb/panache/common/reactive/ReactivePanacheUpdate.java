@@ -1,19 +1,16 @@
-package io.quarkus.mongodb.panache;
+package io.quarkus.mongodb.panache.common.reactive;
 
 import java.util.Map;
 
 import io.quarkus.panache.common.Parameters;
+import io.smallrye.mutiny.Uni;
 
 /**
  * Interface representing an update query.
  *
  * Use one of its methods to perform the update query.
- *
- * @deprecated use {@link io.quarkus.mongodb.panache.common.PanacheUpdate} instead.
  */
-@Deprecated(forRemoval = true, since = "2.1.0")
-public interface PanacheUpdate {
-
+public interface ReactivePanacheUpdate extends io.quarkus.mongodb.panache.reactive.ReactivePanacheUpdate {
     /**
      * Execute the update query with the update document.
      *
@@ -21,7 +18,7 @@ public interface PanacheUpdate {
      * @param params params optional sequence of indexed parameters
      * @return the number of entities updated.
      */
-    public long where(String query, Object... params);
+    public Uni<Long> where(String query, Object... params);
 
     /**
      * Execute the update query with the update document.
@@ -30,7 +27,7 @@ public interface PanacheUpdate {
      * @param params {@link Map} of named parameters
      * @return the number of entities updated.
      */
-    public long where(String query, Map<String, Object> params);
+    public Uni<Long> where(String query, Map<String, Object> params);
 
     /**
      * Execute the update query with the update document.
@@ -39,12 +36,12 @@ public interface PanacheUpdate {
      * @param params {@link Parameters} of named parameters
      * @return the number of entities updated.
      */
-    public long where(String query, Parameters params);
+    public Uni<Long> where(String query, Parameters params);
 
     /**
      * Execute an update on all documents with the update document.
      *
      * @return the number of entities updated.
      */
-    public long all();
+    public Uni<Long> all();
 }

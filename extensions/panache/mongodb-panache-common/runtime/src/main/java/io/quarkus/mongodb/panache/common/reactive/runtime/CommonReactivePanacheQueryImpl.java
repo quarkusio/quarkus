@@ -1,4 +1,4 @@
-package io.quarkus.mongodb.panache.reactive.runtime;
+package io.quarkus.mongodb.panache.common.reactive.runtime;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,7 +11,7 @@ import com.mongodb.ReadPreference;
 import com.mongodb.client.model.Collation;
 
 import io.quarkus.mongodb.FindOptions;
-import io.quarkus.mongodb.panache.runtime.MongoPropertyUtil;
+import io.quarkus.mongodb.panache.common.runtime.MongoPropertyUtil;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;

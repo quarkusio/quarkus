@@ -1,11 +1,11 @@
-package io.quarkus.mongodb.panache.reactive.runtime;
+package io.quarkus.mongodb.panache.common.reactive.runtime;
 
 import java.util.Map;
 
 import org.bson.BsonDocument;
 import org.bson.conversions.Bson;
 
-import io.quarkus.mongodb.panache.reactive.ReactivePanacheUpdate;
+import io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.panache.common.Parameters;
 import io.smallrye.mutiny.Uni;

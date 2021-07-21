@@ -76,6 +76,11 @@ public class DevServicesConfig {
             PASSWORD("password"),
 
             /**
+             * 'authorization_code' grant
+             */
+            CODE("code"),
+
+            /**
              * 'implicit' grant
              */
             IMPLICIT("implicit");
@@ -94,8 +99,8 @@ public class DevServicesConfig {
         /**
          * Grant type which will be used to acquire a token to test the OIDC 'service' applications
          */
-        @ConfigItem(defaultValue = "implicit")
-        public Type type = Type.IMPLICIT;
+        @ConfigItem(defaultValue = "code")
+        public Type type = Type.CODE;
     }
 
     /**

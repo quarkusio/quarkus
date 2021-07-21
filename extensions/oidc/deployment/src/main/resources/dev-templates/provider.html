@@ -181,14 +181,16 @@ function signInToService(servicePath) {
 {#body}
 <p/>
 
+{#if info:keycloakUrl??}
 <div class="float-right">
     <a href="{info:keycloakUrl}" target="_blank" class="btn btn-link" title="Log into Keycloak to Configure Realms">
        <i class="fas fa-key"></i> Keycloak Admin
     </a>
 </div>
+{/if}
 
 <div class="container">
-{#if info:oidcApplicationType is 'service'}
+{#if info:oidcApplicationType?? is 'service'}
     {#if info:oidcGrantType is 'implicit'}
         
         <div class="card implicitLoggedOut">

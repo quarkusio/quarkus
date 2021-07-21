@@ -35,6 +35,11 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <capabilities>
+                        <provides>io.quarkus.rest.client</provides>
+                    </capabilities>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

@@ -1,8 +1,10 @@
 package io.quarkus.smallrye.reactivemessaging.kafka.deployment;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -19,7 +21,7 @@ class DefaultSerdeDiscoveryState {
     private final IndexView index;
 
     private final Map<String, Boolean> isKafkaConnector = new HashMap<>();
-    private final Map<String, String> serdeConfigMap = new HashMap<>();
+    private final Set<String> alreadyConfigured = new HashSet<>();
 
     private Boolean hasConfluent;
     private Boolean hasApicurio1;
@@ -41,9 +43,9 @@ class DefaultSerdeDiscoveryState {
         });
     }
 
-    void runIfConfigIsAbsent(String key, String value, Runnable runnable) {
-        if (value != null && !serdeConfigMap.containsKey(key)) {
-            serdeConfigMap.put(key, value);
+    void ifNotYetConfigured(String key, Runnable runnable) {
+        if (!alreadyConfigured.contains(key)) {
+            alreadyConfigured.add(key);
             runnable.run();
         }
     }

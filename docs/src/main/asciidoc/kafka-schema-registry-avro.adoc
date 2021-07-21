@@ -179,10 +179,10 @@ To achieve this, edit the `application.properties` file, and add the following c
 
 [source,properties]
 ----
-# set the connector to use for the `movies` channel to smallrye-kafka
+# set the connector for the outgoing channel to `smallrye-kafka`
 mp.messaging.outgoing.movies.connector=smallrye-kafka
 
-# the name of the corresponding Kafka topic to `movies`
+# set the topic name for the channel to `movies`
 mp.messaging.outgoing.movies.topic=movies
 
 # automatically register the schema with the registry, if not present
@@ -249,12 +249,11 @@ mp.messaging.incoming.movies-from-kafka.topic=movies
 mp.messaging.incoming.movies-from-kafka.enable.auto.commit=false
 
 mp.messaging.incoming.movies-from-kafka.auto.offset.reset=earliest
-mp.messaging.incoming.movies-from-kafka.apicurio.registry.use-specific-avro-reader=true
 ----
 
 TIP: You might have noticed that we didn't define the `value.deserializer`.
 That's because Quarkus can xref:kafka.adoc#serialization-autodetection[autodetect] that `io.apicurio.registry.serde.avro.AvroKafkaDeserializer` is appropriate here, based on the `@Channel` declaration, structure of the `Movie` type, and presence of the Apicurio Registry libraries.
-We still have to define the `apicurio.registry.use-specific-avro-reader` property.
+We don't have to define the `apicurio.registry.use-specific-avro-reader` property either, that is also configured automatically.
 
 == Running the application
 
@@ -480,7 +479,7 @@ public class MovieResourceTest {
 
         source.open();
 
-        // check if, after at most 5 seconds, we have at last 2 items collected, and they are what we expect:
+        // check if, after at most 5 seconds, we have at least 2 items collected, and they are what we expect
         await().atMost(5, SECONDS).until(() -> received.size() >= 2);
         assertThat(received, Matchers.hasItems("'The Shawshank Redemption' from 1994",
                 "'12 Angry Men' from 1957"));

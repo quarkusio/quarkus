@@ -19,6 +19,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationProvider;
 import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationRecorder;
@@ -67,11 +68,12 @@ class SmallRyeContextPropagationProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void build(SmallRyeContextPropagationRecorder recorder,
             ExecutorBuildItem executorBuildItem,
+            ShutdownContextBuildItem shutdownContextBuildItem,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_CONTEXT_PROPAGATION));
 
-        recorder.configureRuntime(executorBuildItem.getExecutorProxy());
+        recorder.configureRuntime(executorBuildItem.getExecutorProxy(), shutdownContextBuildItem);
 
         // Synthetic bean for ManagedExecutor
         syntheticBeans.produce(

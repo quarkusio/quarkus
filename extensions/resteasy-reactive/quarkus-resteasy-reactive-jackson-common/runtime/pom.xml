@@ -6,7 +6,7 @@
     <parent>
         <artifactId>quarkus-resteasy-reactive-jackson-common-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>2.0.3.Final</version>
     </parent>
     <artifactId>quarkus-resteasy-reactive-jackson-common</artifactId>
     <name>Quarkus - RESTEasy Reactive - Jackson Common Bits - Runtime</name>

@@ -1,17 +1,12 @@
 package io.quarkus.arc.deployment;
 
-import static io.quarkus.arc.deployment.ConfigClassBuildItem.Type.MAPPING;
-import static io.quarkus.arc.deployment.ConfigClassBuildItem.Type.PROPERTIES;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.configuration.ConfigMappingUtils.CONFIG_MAPPING_NAME;
 import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
-import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
-import static org.eclipse.microprofile.config.inject.ConfigProperties.UNCONFIGURED_PREFIX;
 import static org.jboss.jandex.AnnotationInstance.create;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
-import static org.jboss.jandex.AnnotationTarget.Kind.FIELD;
-import static org.jboss.jandex.AnnotationTarget.Kind.METHOD_PARAMETER;
 import static org.jboss.jandex.AnnotationValue.createStringValue;
 
 import java.util.ArrayList;
@@ -19,7 +14,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -31,10 +25,8 @@ import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
@@ -54,16 +46,15 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.configuration.ConfigMappingUtils;
 import io.quarkus.deployment.configuration.definition.RootDefinition;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.annotations.ConfigPhase;
-import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.ConfigMappingLoader;
-import io.smallrye.config.ConfigMappingMetadata;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.inject.ConfigProducer;
 
@@ -75,7 +66,6 @@ public class ConfigBuildStep {
     private static final DotName MP_CONFIG_PROPERTIES_NAME = DotName.createSimple(ConfigProperties.class.getName());
     private static final DotName MP_CONFIG_VALUE_NAME = DotName.createSimple(ConfigValue.class.getName());
 
-    private static final DotName CONFIG_MAPPING_NAME = DotName.createSimple(ConfigMapping.class.getName());
     private static final DotName MAP_NAME = DotName.createSimple(Map.class.getName());
     private static final DotName SET_NAME = DotName.createSimple(Set.class.getName());
     private static final DotName LIST_NAME = DotName.createSimple(List.class.getName());
@@ -252,79 +242,11 @@ public class ConfigBuildStep {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ConfigClassBuildItem> configClasses) {
 
-        List<AnnotationInstance> mappingAnnotations = new ArrayList<>();
-        mappingAnnotations.addAll(combinedIndex.getIndex().getAnnotations(CONFIG_MAPPING_NAME));
-        mappingAnnotations.addAll(combinedIndex.getIndex().getAnnotations(MP_CONFIG_PROPERTIES_NAME));
-
-        for (AnnotationInstance instance : mappingAnnotations) {
-            AnnotationTarget target = instance.target();
-            AnnotationValue annotationPrefix = instance.value("prefix");
-
-            if (target.kind().equals(FIELD)) {
-                if (annotationPrefix != null && !annotationPrefix.asString().equals(UNCONFIGURED_PREFIX)) {
-                    configClasses.produce(
-                            toConfigClassBuildItem(instance, toClass(target.asField().type().name()),
-                                    annotationPrefix.asString()));
-                    continue;
-                }
-            }
-
-            if (target.kind().equals(METHOD_PARAMETER)) {
-                if (annotationPrefix != null && !annotationPrefix.asString().equals(UNCONFIGURED_PREFIX)) {
-                    ClassType classType = target.asMethodParameter().method().parameters()
-                            .get(target.asMethodParameter().position()).asClassType();
-                    configClasses
-                            .produce(toConfigClassBuildItem(instance, toClass(classType.name()), annotationPrefix.asString()));
-                    continue;
-                }
-            }
-
-            if (!target.kind().equals(CLASS)) {
-                continue;
-            }
-
-            Class<?> configClass = toClass(target.asClass().name());
-            String prefix = Optional.ofNullable(annotationPrefix).map(AnnotationValue::asString).orElse("");
-
-            List<ConfigMappingMetadata> configMappingsMetadata = ConfigMappingLoader.getConfigMappingsMetadata(configClass);
-            Set<String> generatedClassesNames = new HashSet<>();
-            Set<ClassInfo> mappingsInfo = new HashSet<>();
-            configMappingsMetadata.forEach(mappingMetadata -> {
-                generatedClasses.produce(
-                        new GeneratedClassBuildItem(true, mappingMetadata.getClassName(), mappingMetadata.getClassBytes()));
-                reflectiveClasses
-                        .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getInterfaceType()).methods(true).build());
-                reflectiveClasses
-                        .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName()).constructors(true).build());
-
-                for (Class<?> parent : getHierarchy(mappingMetadata.getInterfaceType())) {
-                    reflectiveClasses.produce(ReflectiveClassBuildItem.builder(parent).methods(true).build());
-                }
-
-                generatedClassesNames.add(mappingMetadata.getClassName());
-
-                ClassInfo mappingInfo = combinedIndex.getIndex()
-                        .getClassByName(DotName.createSimple(mappingMetadata.getInterfaceType().getName()));
-                if (mappingInfo != null) {
-                    mappingsInfo.add(mappingInfo);
-                }
-            });
-
-            // Search and register possible classes for implicit Converter methods
-            for (ClassInfo classInfo : mappingsInfo) {
-                for (MethodInfo method : classInfo.methods()) {
-                    if (!isHandledByProducers(method.returnType()) &&
-                            mappingsInfo.stream()
-                                    .map(ClassInfo::name)
-                                    .noneMatch(name -> name.equals(method.returnType().name()))) {
-                        reflectiveClasses
-                                .produce(new ReflectiveClassBuildItem(true, false, method.returnType().name().toString()));
-                    }
-                }
-            }
-
-            configClasses.produce(toConfigClassBuildItem(instance, configClass, generatedClassesNames, prefix));
-        }
+        // TODO - Generation of Mapping interface classes can be done in core because they don't require CDI
+        ConfigMappingUtils.generateConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, configClasses,
+                CONFIG_MAPPING_NAME);
+        ConfigMappingUtils.generateConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, configClasses,
+                MP_CONFIG_PROPERTIES_NAME);
     }
 
     @BuildStep
@@ -405,57 +327,12 @@ public class ConfigBuildStep {
                 configClassWithPrefix -> Stream.of(configClassWithPrefix.getKlass(), configClassWithPrefix.getPrefix())
                         .collect(toList()));
 
-        recorder.registerConfigMappings(
-                configClasses.stream()
-                        .filter(ConfigClassBuildItem::isMapping)
-                        .map(configMapping -> configClassWithPrefix(configMapping.getConfigClass(), configMapping.getPrefix()))
-                        .collect(toSet()));
-
         recorder.registerConfigProperties(
                 configClasses.stream()
                         .filter(ConfigClassBuildItem::isProperties)
                         .map(configProperties -> configClassWithPrefix(configProperties.getConfigClass(),
                                 configProperties.getPrefix()))
                         .collect(toSet()));
-    }
-
-    private static Class<?> toClass(DotName dotName) {
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        try {
-            return classLoader.loadClass(dotName.toString());
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("The class (" + dotName.toString() + ") cannot be created during deployment.", e);
-        }
-    }
-
-    private static ConfigClassBuildItem toConfigClassBuildItem(
-            AnnotationInstance instance,
-            Class<?> configClass,
-            String prefix) {
-        return toConfigClassBuildItem(instance, configClass, emptySet(), prefix);
-    }
-
-    private static ConfigClassBuildItem toConfigClassBuildItem(
-            AnnotationInstance instance,
-            Class<?> configClass,
-            Set<String> generatedClasses,
-            String prefix) {
-        if (instance.name().equals(CONFIG_MAPPING_NAME)) {
-            return new ConfigClassBuildItem(configClass, generatedClasses, prefix, MAPPING);
-        } else if (instance.name().equals(MP_CONFIG_PROPERTIES_NAME)) {
-            return new ConfigClassBuildItem(configClass, generatedClasses, prefix, PROPERTIES);
-        } else {
-            throw new IllegalArgumentException();
-        }
-    }
-
-    private static List<Class<?>> getHierarchy(Class<?> mapping) {
-        List<Class<?>> interfaces = new ArrayList<>();
-        for (Class<?> i : mapping.getInterfaces()) {
-            interfaces.add(i);
-            interfaces.addAll(getHierarchy(i));
-        }
-        return interfaces;
     }
 
     private String getPropertyName(String name, ClassInfo declaringClass) {

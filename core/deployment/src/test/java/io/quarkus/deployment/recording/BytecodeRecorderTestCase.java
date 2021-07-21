@@ -363,7 +363,7 @@ public class BytecodeRecorderTestCase {
         generator.accept(recorder);
         recorder.writeBytecode(new TestClassOutput(tcl));
 
-        StartupTask task = (StartupTask) tcl.loadClass(TEST_CLASS).newInstance();
+        StartupTask task = (StartupTask) tcl.loadClass(TEST_CLASS).getDeclaredConstructor().newInstance();
         task.deploy(new StartupContext());
         assertEquals(expected.length, TestRecorder.RESULT.size());
         for (Object i : expected) {

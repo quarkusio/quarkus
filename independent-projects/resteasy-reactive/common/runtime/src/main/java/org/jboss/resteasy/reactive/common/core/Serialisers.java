@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.common.core;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -228,8 +229,9 @@ public abstract class Serialisers {
             if (builtinWriter.constraint == null || builtinWriter.constraint == constraint) {
                 MessageBodyWriter<?> writer;
                 try {
-                    writer = builtinWriter.writerClass.newInstance();
-                } catch (InstantiationException | IllegalAccessException e) {
+                    writer = builtinWriter.writerClass.getDeclaredConstructor().newInstance();
+                } catch (InstantiationException | IllegalAccessException | NoSuchMethodException
+                        | InvocationTargetException e) {
                     e.printStackTrace();
                     continue;
                 }
@@ -245,8 +247,9 @@ public abstract class Serialisers {
             if (builtinReader.constraint == null || builtinReader.constraint == constraint) {
                 MessageBodyReader<?> reader;
                 try {
-                    reader = builtinReader.readerClass.newInstance();
-                } catch (InstantiationException | IllegalAccessException e) {
+                    reader = builtinReader.readerClass.getDeclaredConstructor().newInstance();
+                } catch (InstantiationException | IllegalAccessException | NoSuchMethodException
+                        | InvocationTargetException e) {
                     e.printStackTrace();
                     continue;
                 }

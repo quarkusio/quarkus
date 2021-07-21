@@ -1,6 +1,8 @@
 package io.quarkus.arc.runtime;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
@@ -55,23 +57,27 @@ public class BeanContainerImpl implements BeanContainer {
 
     static final class DefaultInstanceFactory<T> implements BeanContainer.Factory<T> {
 
-        final Class<T> type;
+        final Constructor<T> typeCtor;
 
         DefaultInstanceFactory(Class<T> type) {
-            this.type = type;
+            try {
+                this.typeCtor = type.getDeclaredConstructor();
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
         public BeanContainer.Instance<T> create() {
             try {
-                T instance = type.newInstance();
+                T instance = typeCtor.newInstance();
                 return new BeanContainer.Instance<T>() {
                     @Override
                     public T get() {
                         return instance;
                     }
                 };
-            } catch (InstantiationException | IllegalAccessException e) {
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
         }

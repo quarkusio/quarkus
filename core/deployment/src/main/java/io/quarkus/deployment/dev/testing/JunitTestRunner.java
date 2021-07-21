@@ -134,7 +134,8 @@ public class JunitTestRunner {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try (QuarkusClassLoader tcl = testApplication.createDeploymentClassLoader()) {
             Thread.currentThread().setContextClassLoader(tcl);
-            Consumer currentTestAppConsumer = (Consumer) tcl.loadClass(CurrentTestApplication.class.getName()).newInstance();
+            Consumer currentTestAppConsumer = (Consumer) tcl.loadClass(CurrentTestApplication.class.getName())
+                    .getDeclaredConstructor().newInstance();
             currentTestAppConsumer.accept(testApplication);
 
             Set<UniqueId> allDiscoveredIds = new HashSet<>();

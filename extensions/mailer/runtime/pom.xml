@@ -18,6 +18,12 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.smallrye.reactive</groupId>
+                    <artifactId>smallrye-mutiny-vertx-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -30,6 +36,18 @@
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-mutiny-vertx-mail-client</artifactId>
+            <version>2.11.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.smallrye.reactive</groupId>
+                    <artifactId>smallrye-mutiny-vertx-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-mutiny-vertx-core</artifactId>
+            <version>2.11.0</version>
         </dependency>
         <dependency>
             <groupId>org.subethamail</groupId>

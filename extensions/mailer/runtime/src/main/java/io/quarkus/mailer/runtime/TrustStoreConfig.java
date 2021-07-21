@@ -16,7 +16,7 @@ public class TrustStoreConfig {
      * Note that the password is only used for JKS and PCK#12 trust stores.
      */
     @ConfigItem
-    Optional<String> password;
+    public Optional<String> password;
 
     /**
      * Sets the location of the trust store files.
@@ -27,7 +27,7 @@ public class TrustStoreConfig {
      */
     @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
-    Optional<List<String>> paths;
+    public Optional<List<String>> paths;
 
     /**
      * Sets the trust store type.
@@ -38,7 +38,7 @@ public class TrustStoreConfig {
      * Accepted values are: {@code JKS}, {@code PEM}, {@code PCKS}.
      */
     @ConfigItem
-    Optional<String> type;
+    public Optional<String> type;
 
     /**
      * @return {@code true} is the trust store is configured, {@code false otherwise}

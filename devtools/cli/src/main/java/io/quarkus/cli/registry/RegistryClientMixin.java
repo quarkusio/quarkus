@@ -87,7 +87,7 @@ public class RegistryClientMixin {
         return catalogResolver.resolveExtensionCatalog();
     }
 
-    private ExtensionCatalogResolver getExtensionCatalogResolver(OutputOptionMixin log) throws RegistryResolutionException {
+    public ExtensionCatalogResolver getExtensionCatalogResolver(OutputOptionMixin log) throws RegistryResolutionException {
         return QuarkusProjectHelper.getCatalogResolver(enabled(), log);
     }
 

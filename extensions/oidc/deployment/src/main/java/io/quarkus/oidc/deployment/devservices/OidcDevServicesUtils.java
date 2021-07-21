@@ -1,9 +1,10 @@
-package io.quarkus.oidc.deployment.devservices.keycloak;
+package io.quarkus.oidc.deployment.devservices;
 
 import java.time.Duration;
 
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.vertx.core.MultiMap;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.buffer.Buffer;
@@ -11,23 +12,23 @@ import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
-public final class KeycloakDevServicesUtils {
-    private KeycloakDevServicesUtils() {
+public final class OidcDevServicesUtils {
+    private OidcDevServicesUtils() {
 
     }
 
-    public static WebClient createWebClient() {
-        return WebClient.create(new io.vertx.mutiny.core.Vertx(KeycloakDevServicesProcessor.vertxInstance));
+    public static WebClient createWebClient(Vertx vertx) {
+        return WebClient.create(new io.vertx.mutiny.core.Vertx(vertx));
     }
 
     public static String getPasswordAccessToken(WebClient client,
-            String keycloakUrl,
+            String tokenUrl,
             String clientId,
             String clientSecret,
             String userName,
             String userPassword,
             Duration timeout) throws Exception {
-        HttpRequest<Buffer> request = client.postAbs(keycloakUrl);
+        HttpRequest<Buffer> request = client.postAbs(tokenUrl);
         request.putHeader(HttpHeaders.CONTENT_TYPE.toString(), HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
 
         io.vertx.mutiny.core.MultiMap props = new io.vertx.mutiny.core.MultiMap(MultiMap.caseInsensitiveMultiMap());
@@ -45,11 +46,11 @@ public final class KeycloakDevServicesUtils {
     }
 
     public static String getClientCredAccessToken(WebClient client,
-            String keycloakUrl,
+            String tokenUrl,
             String clientId,
             String clientSecret,
             Duration timeout) throws Exception {
-        HttpRequest<Buffer> request = client.postAbs(keycloakUrl);
+        HttpRequest<Buffer> request = client.postAbs(tokenUrl);
         request.putHeader(HttpHeaders.CONTENT_TYPE.toString(), HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
 
         io.vertx.mutiny.core.MultiMap props = new io.vertx.mutiny.core.MultiMap(MultiMap.caseInsensitiveMultiMap());

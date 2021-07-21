@@ -50,6 +50,7 @@ import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.oidc.deployment.OidcBuildStep.IsEnabled;
 import io.quarkus.oidc.deployment.devservices.OidcDevServicesBuildItem;
+import io.quarkus.oidc.deployment.devservices.OidcDevServicesUtils;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.vertx.core.Vertx;
@@ -453,9 +454,9 @@ public class KeycloakDevServicesProcessor {
             realm.getUsers().add(createUser(entry.getKey(), entry.getValue(), getUserRoles(entry.getKey())));
         }
 
-        WebClient client = KeycloakDevServicesUtils.createWebClient();
+        WebClient client = OidcDevServicesUtils.createWebClient(vertxInstance);
         try {
-            String token = KeycloakDevServicesUtils.getPasswordAccessToken(client,
+            String token = OidcDevServicesUtils.getPasswordAccessToken(client,
                     keycloakUrl + "/realms/master/protocol/openid-connect/token",
                     "admin-cli", null, "admin", "admin", capturedDevServicesConfiguration.webClienTimeout);
 

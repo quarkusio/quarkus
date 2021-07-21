@@ -5,6 +5,7 @@ import java.util.Map;
 import org.jboss.logging.Logger;
 
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
+import io.quarkus.oidc.deployment.devservices.OidcDevServicesUtils;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.RoutingContext;
@@ -20,33 +21,31 @@ public class KeycloakDevConsolePostHandler extends DevConsolePostHandler {
 
     @Override
     protected void handlePostAsync(RoutingContext event, MultiMap form) throws Exception {
-        WebClient client = KeycloakDevServicesUtils.createWebClient();
-        String keycloakUrl = form.get("keycloakUrl") + "/realms/" + form.get("realm") + "/protocol/openid-connect/token";
+        WebClient client = OidcDevServicesUtils.createWebClient(KeycloakDevServicesProcessor.vertxInstance);
+        String tokenUrl = form.get("tokenUrl");
 
         try {
             String token = null;
             if ("password".equals(form.get("grant"))) {
-                LOG.infof("Using a password grant to get a token from '%s' for user '%s' in realm '%s' with client id '%s'",
-                        keycloakUrl, form.get("user"), form.get("realm"), form.get("client"));
+                LOG.infof("Using a password grant to get a token from '%s' for user '%s' with client id '%s'",
+                        tokenUrl, form.get("user"), form.get("client"));
 
                 String userName = form.get("user");
-                token = KeycloakDevServicesUtils.getPasswordAccessToken(client, keycloakUrl,
+                token = OidcDevServicesUtils.getPasswordAccessToken(client, tokenUrl,
                         form.get("client"), form.get("clientSecret"),
                         userName,
                         users.get(userName),
                         KeycloakDevServicesProcessor.capturedDevServicesConfiguration.webClienTimeout);
             } else {
-                LOG.infof("Using a client_credentials grant to get a token token from '%s' in realm '%s' with client id '%s'",
-                        keycloakUrl, form.get("realm"), form.get("client"));
+                LOG.infof("Using a client_credentials grant to get a token token from '%s' with client id '%s'",
+                        tokenUrl, form.get("client"));
 
-                token = KeycloakDevServicesUtils.getClientCredAccessToken(client, keycloakUrl,
+                token = OidcDevServicesUtils.getClientCredAccessToken(client, tokenUrl,
                         form.get("client"),
                         form.get("clientSecret"),
                         KeycloakDevServicesProcessor.capturedDevServicesConfiguration.webClienTimeout);
             }
 
-            LOG.infof("Test token: %s", token);
-            LOG.infof("Sending token to '%s'", form.get("serviceUrl"));
             testServiceInternal(event, client, form.get("serviceUrl"), token);
         } catch (Throwable t) {
             LOG.errorf("Token can not be acquired from Keycloak: %s", t.toString());
@@ -57,6 +56,8 @@ public class KeycloakDevConsolePostHandler extends DevConsolePostHandler {
 
     private void testServiceInternal(RoutingContext event, WebClient client, String serviceUrl, String token) {
         try {
+            LOG.infof("Test token: %s", token);
+            LOG.infof("Sending token to '%s'", serviceUrl);
             int statusCode = client.getAbs(serviceUrl)
                     .putHeader(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + token).send().await().indefinitely()
                     .statusCode();

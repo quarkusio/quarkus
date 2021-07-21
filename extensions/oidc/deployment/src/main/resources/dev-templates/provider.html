@@ -1,5 +1,11 @@
 {#include main fluid=true}
-{#title}Keycloak{/title}
+{#title}
+{#if info:keycloakUrl??}
+Keycloak
+{#else}
+OpenId Connect Dev Console
+{/if}
+{/title}
 {#script}
 
 var port = {config:property('quarkus.http.port')};
@@ -28,8 +34,8 @@ var port = {config:property('quarkus.http.port')};
             loggedIn === true;
             $('.implicitLoggedOut').hide();
             $('.implicitLoggedIn').show();
-            var hash = window.location.hash;
-            var code = hash.match(/code=([^&]+)/)[1];
+            var search = window.location.search;
+            var code = search.match(/code=([^&]+)/)[1];
             exchangeCodeForTokens(code);
         }else{
             loggedIn === false;
@@ -71,18 +77,18 @@ var port = {config:property('quarkus.http.port')};
         return false;
     }
 
-    function signInToKeycloakAndGetTokens() {
+    function signInToOidcProviderAndGetTokens() {
       {#if info:oidcGrantType is 'implicit'}
-        window.location.href = '{info:keycloakUrl}' + "/realms/" + '{info:keycloakRealm}' + "/protocol/openid-connect/auth"
-          + "?client_id=" + '{info:keycloakClient}'
+        window.location.href = '{info:authorizationUrl}'
+          + "?client_id=" + '{info:clientId}'
           + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + "%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider"
-          + "&scope=openid&response_type=token id_token&response_mode=fragment&prompt=login"
+          + "&scope=openid&response_type=token id_token&response_mode=query&prompt=login"
           + "&nonce=" + makeid();
       {#else}
-        window.location.href = '{info:keycloakUrl}' + "/realms/" + '{info:keycloakRealm}' + "/protocol/openid-connect/auth"
-          + "?client_id=" + '{info:keycloakClient}'
+        window.location.href = '{info:authorizationUrl}'
+          + "?client_id=" + '{info:clientId}'
           + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + "%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider"
-          + "&scope=openid&response_type=code&response_mode=fragment&prompt=login"
+          + "&scope=openid&response_type=code&response_mode=query&prompt=login"
           + "&nonce=" + makeid();
       {/if}    
     }
@@ -140,17 +146,16 @@ var port = {config:property('quarkus.http.port')};
     }
 
     function logout() {
-        window.location.assign('{info:keycloakUrl}' + "/realms/" + '{info:keycloakRealm}' + "/protocol/openid-connect/logout"
+        window.location.assign('{info:logoutUrl??}'
           + "?post_logout_redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + "%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider");
     }
         
     function exchangeCodeForTokens(code){
         $.post("exchangeCodeForTokens",
             {
-              keycloakUrl: '{info:keycloakUrl}',
-              realm: '{info:keycloakRealm}',
-              client: '{info:keycloakClient}',
-              clientSecret: '{info:keycloakClientSecret}',
+              tokenUrl: '{info:tokenUrl}',
+              client: '{info:clientId}',
+              clientSecret: '{info:clientSecret}',
               authorizationCode: code,
               redirectUri: "http://localhost:" + port + "/q/dev/io.quarkus.quarkus-oidc/provider"
             },
@@ -179,6 +184,8 @@ var port = {config:property('quarkus.http.port')};
                 }
                 if (userName) {
                     $('#loggedInUser').append("Logged in as " + userName + " ");
+                } else {
+                    $('#loggedInUser').append("Logged in ");
                 }
             }
             return "<pre class='text-danger' title='Header'>" + 
@@ -212,11 +219,10 @@ var port = {config:property('quarkus.http.port')};
     function testServiceWithPassword(userName, servicePath){
         $.post("testService",
             {
-              keycloakUrl: '{info:keycloakUrl}',
+              tokenUrl: '{info:tokenUrl}',
               serviceUrl: "http://localhost:" + port + servicePath,
-              realm: '{info:keycloakRealm}',
-              client: '{info:keycloakClient}',
-              clientSecret: '{info:keycloakClientSecret}',
+              client: '{info:clientId}',
+              clientSecret: '{info:clientSecret}',
               user: userName,
               grant: '{info:oidcGrantType}'
             },
@@ -230,11 +236,10 @@ var port = {config:property('quarkus.http.port')};
     function testServiceWithClientCredentials(servicePath) {
         $.post("testService",
             {
-              keycloakUrl: '{info:keycloakUrl}',
+              tokenUrl: '{info:tokenUrl}',
               serviceUrl: "http://localhost:" + port + servicePath,
-              realm: '{info:keycloakRealm}',
-              client: '{info:keycloakClient}',
-              clientSecret: '{info:keycloakClientSecret}',
+              client: '{info:clientId}',
+              clientSecret: '{info:clientSecret}',
               grant: '{info:oidcGrantType}'
             },
             function(data, status){
@@ -264,9 +269,9 @@ function signInToService(servicePath) {
 {#body}
 <p/>
 
-{#if info:keycloakUrl??}
+{#if info:keycloakAdminUrl??}
 <div class="float-right">
-    <a href="{info:keycloakUrl}" target="_blank" class="btn btn-link" title="Log into Keycloak to Configure Realms">
+    <a href="{info:keycloakAdminUrl??}" target="_blank" class="btn btn-link" title="Log into Keycloak to Configure Realms">
        <i class="fas fa-key"></i> Keycloak Admin
     </a>
 </div>
@@ -278,7 +283,7 @@ function signInToService(servicePath) {
         
         <div class="card implicitLoggedOut">
             <div class="card-body">
-                <a class="btn btn-block btn-success" title="Log into Single Page Application to Get Access and ID Tokens" onclick="signInToKeycloakAndGetTokens();">
+                <a class="btn btn-block btn-success" title="Log into Single Page Application to Get Access and ID Tokens" onclick="signInToOidcProviderAndGetTokens();">
                     <i class="fas fa-user"></i> Log into Single Page Application
                 </a>
             </div>
@@ -290,9 +295,11 @@ function signInToService(servicePath) {
                 </div>
                 <div class="float-right">
                     <span id="loggedInUser"></span>
+                    {#if info:logoutUrl??}
                     <a onclick="logout();" class="btn btn-link" title="Click to logout and start again">
                         <i class="fas fa-sign-out-alt"></i>
                     </a>
+                    {/if}
                 </div>
             </div>
             <div class="card-body mx-0 px-0">
@@ -431,7 +438,7 @@ function signInToService(servicePath) {
     {#else if info:oidcGrantType is 'client_credentials'}
         <div class="card">
             <div class="card-header">
-                Get access token for {info:keycloakClient} and test your service
+                Get access token for {info:clientId} and test your service
             </div>
             <div class="card-body">
                 <div class="row">

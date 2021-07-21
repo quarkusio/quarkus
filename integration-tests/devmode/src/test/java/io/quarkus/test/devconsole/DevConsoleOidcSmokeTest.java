@@ -20,9 +20,9 @@ public class DevConsoleOidcSmokeTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
 
     @Test
-    public void testCaches() {
+    public void testOidcProviderTemplate() {
         RestAssured.get("q/dev/io.quarkus.quarkus-oidc/provider")
                 .then()
-                .statusCode(200).body(Matchers.containsString("Keycloak"));
+                .statusCode(200).body(Matchers.containsString("OpenId Connect Dev Console"));
     }
 }

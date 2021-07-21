@@ -269,6 +269,16 @@ public class ExtensionCatalogResolver {
         return result;
     }
 
+    public PlatformCatalog resolvePlatformCatalogFromRegistry(String registryId) throws RegistryResolutionException {
+        return registries.get(getRegistryIndex(registryId)).resolvePlatformCatalog();
+    }
+
+    public PlatformCatalog resolvePlatformCatalogFromRegistry(String registryId, String quarkusVersion)
+            throws RegistryResolutionException {
+        return quarkusVersion == null ? resolvePlatformCatalogFromRegistry(registryId)
+                : registries.get(getRegistryIndex(registryId)).resolvePlatformCatalog(quarkusVersion);
+    }
+
     private void collectPlatforms(PlatformCatalog catalog, List<Platform> collectedPlatforms,
             Set<String> collectedPlatformKeys) {
         for (Platform p : catalog.getPlatforms()) {
@@ -633,7 +643,8 @@ public class ExtensionCatalogResolver {
 
             if (nonPlatformCatalog != null) {
                 final int compatibilityCode = catalogBuilder.getCompatibilityCode(quarkusVersion);
-                final OriginPreference originPreference = new OriginPreference(getRegistryIndex(registry), Integer.MAX_VALUE,
+                final OriginPreference originPreference = new OriginPreference(getRegistryIndex(registry.getId()),
+                        Integer.MAX_VALUE,
                         compatibilityCode, 0, compatibilityCode);
 
                 addOriginPreference(nonPlatformCatalog, originPreference);
@@ -642,16 +653,16 @@ public class ExtensionCatalogResolver {
         }
     }
 
-    public int getRegistryIndex(RegistryExtensionResolver registry) {
+    public int getRegistryIndex(String registryId) {
         int registryIndex = 0;
         while (registryIndex < registries.size()) {
-            if (registries.get(registryIndex) == registry) {
+            if (registries.get(registryIndex).getId().equals(registryId)) {
                 return registryIndex;
             }
             ++registryIndex;
         }
         final StringBuilder buf = new StringBuilder();
-        buf.append("Failed to locate ").append(registry.getId()).append(" among the configured registries: ");
+        buf.append("Failed to locate ").append(registryId).append(" among the configured registries:");
         registries.forEach(r -> buf.append(" ").append(r.getId()));
         throw new IllegalStateException(buf.toString());
     }
@@ -703,7 +714,7 @@ public class ExtensionCatalogResolver {
                     final ExtensionCatalog catalog = registry.resolvePlatformExtensions(bom);
                     if (catalog != null) {
 
-                        final OriginPreference originPreference = new OriginPreference(getRegistryIndex(registry),
+                        final OriginPreference originPreference = new OriginPreference(getRegistryIndex(registry.getId()),
                                 platformIndex,
                                 releaseIndex, ++memberIndex, compatibilityCode);
                         addOriginPreference(catalog, originPreference);

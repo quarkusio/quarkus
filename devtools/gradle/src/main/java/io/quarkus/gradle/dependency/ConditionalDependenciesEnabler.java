@@ -194,14 +194,14 @@ public class ConditionalDependenciesEnabler {
         List<Dependency> conditionalDependencies = new ArrayList<>();
         if (extensionProperties.containsKey(BootstrapConstants.CONDITIONAL_DEPENDENCIES)) {
             String conditionalDeps = extensionProperties.get(BootstrapConstants.CONDITIONAL_DEPENDENCIES).toString();
-            for (String conditionalDep : conditionalDeps.split(",")) {
+            for (String conditionalDep : conditionalDeps.split("\\s+")) {
                 conditionalDependencies.add(DependencyUtils.create(project.getDependencies(), conditionalDep));
             }
         }
         List<AppArtifactKey> constraints = new ArrayList<>();
         if (extensionProperties.containsKey(BootstrapConstants.DEPENDENCY_CONDITION)) {
             String constraintDeps = extensionProperties.getProperty(BootstrapConstants.DEPENDENCY_CONDITION);
-            for (String constraint : constraintDeps.split(",")) {
+            for (String constraint : constraintDeps.split("\\s+")) {
                 constraints.add(AppArtifactKey.fromString(constraint));
             }
         }

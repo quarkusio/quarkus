@@ -18,8 +18,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.AccessController;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivilegedAction;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,6 +40,7 @@ import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.Path;
@@ -55,9 +59,11 @@ import org.eclipse.microprofile.rest.client.ext.AsyncInvocationInterceptorFactor
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.jboss.resteasy.client.jaxrs.engines.PassthroughTrustManager;
 import org.jboss.resteasy.client.jaxrs.engines.URLConnectionClientEngineBuilder;
 import org.jboss.resteasy.client.jaxrs.internal.LocalResteasyProviderFactory;
 import org.jboss.resteasy.microprofile.client.ConfigurationWrapper;
@@ -78,7 +84,10 @@ import org.jboss.resteasy.specimpl.ResteasyUriBuilderImpl;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.jboss.resteasy.spi.ResteasyUriBuilder;
 
+import io.quarkus.restclient.NoopHostnameVerifier;
 import io.quarkus.resteasy.common.runtime.QuarkusInjectorFactory;
+import io.quarkus.runtime.graal.DisabledSSLContext;
+import io.quarkus.runtime.ssl.SslContextConfiguration;
 
 /**
  * This is mostly a copy from {@link org.jboss.resteasy.microprofile.client.RestClientBuilderImpl}. It is required to
@@ -90,6 +99,8 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
     private static final String DEFAULT_MAPPER_PROP = "microprofile.rest.client.disable.default.mapper";
     private static final Logger LOGGER = Logger.getLogger(QuarkusRestClientBuilder.class);
     private static final DefaultMediaTypeFilter DEFAULT_MEDIA_TYPE_FILTER = new DefaultMediaTypeFilter();
+    private static final String TLS_TRUST_ALL = "quarkus.tls.trust-all";
+
     public static final MethodInjectionFilter METHOD_INJECTION_FILTER = new MethodInjectionFilter();
     public static final ClientHeadersRequestFilter HEADERS_REQUEST_FILTER = new ClientHeadersRequestFilter();
 
@@ -333,6 +344,14 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
             resteasyClientBuilder.trustStore(null);
             resteasyClientBuilder.keyStore(null, "");
         }
+
+        configureTrustAll(resteasyClientBuilder);
+        // we need to push a disabled SSL context when SSL has been disabled
+        // because otherwise Apache HTTP Client will try to initialize one and will fail
+        if (ImageInfo.inImageRuntimeCode() && !SslContextConfiguration.isSslNativeEnabled()) {
+            resteasyClientBuilder.sslContext(new DisabledSSLContext());
+        }
+
         client = resteasyClientBuilder
                 .build();
         ((MpClient) client).setQueryParamStyle(queryParamStyle);
@@ -352,6 +371,24 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
                 new ProxyInvocationHandler(aClass, actualClient, getLocalProviderInstances(), client, getBeanManager()));
         ClientHeaderProviders.registerForClass(aClass, proxy, getBeanManager());
         return proxy;
+    }
+
+    private void configureTrustAll(ResteasyClientBuilder clientBuilder) {
+        if (config == null) {
+            return;
+        }
+        Optional<Boolean> trustAll = config.getOptionalValue(TLS_TRUST_ALL, Boolean.class);
+        if (trustAll.isPresent() && trustAll.get()) {
+            clientBuilder.hostnameVerifier(new NoopHostnameVerifier());
+            try {
+                SSLContext sslContext = SSLContext.getInstance("SSL");
+                sslContext.init(null, new TrustManager[] { new PassthroughTrustManager() },
+                        new SecureRandom());
+                clientBuilder.sslContext(sslContext);
+            } catch (NoSuchAlgorithmException | KeyManagementException e) {
+                throw new RuntimeException("Failed to initialized SSL context", e);
+            }
+        }
     }
 
     /**

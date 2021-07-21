@@ -11,7 +11,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
  */
 @SuppressWarnings("unused")
 @ConfigRoot(name = "micrometer.export.prometheus", phase = ConfigPhase.RUN_TIME)
-public class PrometheusConfig {
+public class PrometheusRuntimeConfig {
     // @formatter:off
     /**
      * Prometheus registry configuration properties.
@@ -23,5 +23,5 @@ public class PrometheusConfig {
      */
     // @formatter:on
     @ConfigItem(name = ConfigItem.PARENT)
-    Map<String, String> prometheus;
+    public Map<String, String> prometheus;
 }

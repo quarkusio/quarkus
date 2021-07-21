@@ -8,6 +8,7 @@ import java.util.Map;
 import javax.inject.Singleton;
 
 import io.quarkus.vault.runtime.client.VaultInternalBase;
+import io.quarkus.vault.runtime.client.dto.sys.VaultEnableEngineBody;
 import io.quarkus.vault.runtime.client.dto.sys.VaultHealthResult;
 import io.quarkus.vault.runtime.client.dto.sys.VaultInitBody;
 import io.quarkus.vault.runtime.client.dto.sys.VaultInitResponse;
@@ -77,6 +78,14 @@ public class VaultInternalSystemBackend extends VaultInternalBase {
     public VaultRenewLease renewLease(String token, String leaseId) {
         VaultLeasesBody body = new VaultLeasesBody(leaseId);
         return vaultClient.put("sys/leases/renew", token, body, VaultRenewLease.class);
+    }
+
+    public void enableEngine(String token, String mount, VaultEnableEngineBody body) {
+        vaultClient.post("sys/mounts/" + mount, token, body, 204);
+    }
+
+    public void disableEngine(String token, String mount) {
+        vaultClient.delete("sys/mounts/" + mount, token, 204);
     }
 
     // ---

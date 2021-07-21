@@ -42,7 +42,7 @@
         <microprofile-rest-client.version>2.0</microprofile-rest-client.version>
         <microprofile-jwt.version>1.2</microprofile-jwt.version>
         <smallrye-common.version>1.6.0</smallrye-common.version>
-        <smallrye-config.version>2.3.0</smallrye-config.version>
+        <smallrye-config.version>2.4.2</smallrye-config.version>
         <smallrye-health.version>3.0.2</smallrye-health.version>
         <smallrye-metrics.version>3.0.1</smallrye-metrics.version>
         <smallrye-open-api.version>2.1.6</smallrye-open-api.version>
@@ -90,7 +90,7 @@
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-codec.version>1.15</commons-codec.version>
         <classmate.version>1.5.1</classmate.version>
-        <hibernate-orm.version>5.5.3.Final</hibernate-orm.version>
+        <hibernate-orm.version>5.5.4.Final</hibernate-orm.version>
         <hibernate-reactive.version>1.0.0.CR7</hibernate-reactive.version>
         <hibernate-validator.version>6.2.0.Final</hibernate-validator.version>
         <hibernate-search.version>6.0.4.Final</hibernate-search.version>

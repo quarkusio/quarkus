@@ -73,6 +73,11 @@ class VertxCoreProcessor {
     }
 
     @BuildStep
+    LogCleanupFilterBuildItem cleanupVertxWarnings() {
+        return new LogCleanupFilterBuildItem("io.vertx.core.impl.ContextImpl", "You have disabled TCCL checks");
+    }
+
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     IOThreadDetectorBuildItem ioThreadDetector(VertxCoreRecorder recorder) {
         return new IOThreadDetectorBuildItem(recorder.detector());

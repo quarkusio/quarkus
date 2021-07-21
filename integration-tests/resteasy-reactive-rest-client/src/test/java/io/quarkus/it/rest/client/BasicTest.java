@@ -3,6 +3,7 @@ package io.quarkus.it.rest.client;
 import static java.util.stream.Collectors.counting;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.hamcrest.Matchers.equalTo;
 
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,14 @@ public class BasicTest {
         });
         Map<Object, Long> valueByCount = results.stream().collect(Collectors.groupingBy(m -> m.get("cultivar"), counting()));
         assertThat(valueByCount).containsOnly(entry("cortland", 3L), entry("lobo", 3L), entry("golden delicious", 3L));
+    }
+
+    @Test
+    void shouldRetryOnFailure() {
+        RestAssured.with().body(appleUrl).post("/call-client-retry")
+                .then()
+                .statusCode(200)
+                .body(equalTo("4"));
     }
 
     @Test

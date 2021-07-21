@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -19,6 +20,16 @@ import picocli.CommandLine;
 
 public class CliNonProjectTest {
     static Path workspaceRoot;
+
+    @BeforeAll
+    public static void setupTestRegistry() {
+        RegistryClientTestHelper.enableRegistryClientTestConfig();
+    }
+
+    @AfterAll
+    public static void cleanupTestRegistry() {
+        RegistryClientTestHelper.disableRegistryClientTestConfig();
+    }
 
     @BeforeAll
     public static void initial() throws Exception {
@@ -35,7 +46,6 @@ public class CliNonProjectTest {
                 "Directory list operation should succeed");
         Assertions.assertEquals(0, files.length,
                 "Directory should be empty. Found: " + Arrays.toString(files));
-        CliDriver.afterEachCleanup();
     }
 
     @Test
@@ -92,7 +102,7 @@ public class CliNonProjectTest {
                 "Expected OK return code." + result);
 
         noSpaces = result.stdout.replaceAll("[\\s\\p{Z}]", "");
-        Assertions.assertTrue(noSpaces.contains("RegistryClientfalse"),
+        Assertions.assertTrue(noSpaces.contains("RegistryClienttrue"),
                 "Should contain 'Registry Client false', found: " + result.stdout);
         Assertions.assertFalse(Boolean.getBoolean("quarkusRegistryClient"),
                 "Registry Client property should be set to false");

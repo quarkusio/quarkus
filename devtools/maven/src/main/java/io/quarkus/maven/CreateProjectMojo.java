@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -348,7 +349,8 @@ public class CreateProjectMojo extends AbstractMojo {
             }
             final ArtifactCoords matchedBom = QuarkusProjectMojoBase.getSingleMatchingBom(groupId, artifactId, version,
                     platformsCatalog);
-            return catalogResolver.resolveExtensionCatalog(Arrays.asList(matchedBom));
+            return catalogResolver
+                    .resolveExtensionCatalog(matchedBom == null ? Collections.emptyList() : Arrays.asList(matchedBom));
         } catch (RegistryResolutionException e) {
             throw new MojoExecutionException("Failed to resolve the extensions catalog", e);
         }

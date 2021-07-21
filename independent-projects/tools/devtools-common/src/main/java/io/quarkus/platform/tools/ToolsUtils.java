@@ -93,8 +93,8 @@ public class ToolsUtils {
             throw new IllegalArgumentException("BOM version was not provided");
         }
         Artifact catalogCoords = new DefaultArtifact(
-                bomGroupId == null ? "io.quarkus" : bomGroupId,
-                (bomArtifactId == null ? "quarkus-universe-bom" : bomArtifactId)
+                bomGroupId == null ? ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID : bomGroupId,
+                (bomArtifactId == null ? ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID : bomArtifactId)
                         + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX,
                 bomVersion, "json", bomVersion);
         Path platformJson = null;
@@ -102,9 +102,9 @@ public class ToolsUtils {
             log.debug("Resolving platform descriptor %s", catalogCoords);
             platformJson = artifactResolver.resolve(catalogCoords).getArtifact().getFile().toPath();
         } catch (Exception e) {
-            if (bomArtifactId == null && catalogCoords.getArtifactId().startsWith("quarkus-universe-bom")) {
+            if (bomGroupId == null && catalogCoords.getArtifactId().startsWith("quarkus-bom")) {
                 catalogCoords = new DefaultArtifact(
-                        catalogCoords.getGroupId(),
+                        ToolsConstants.IO_QUARKUS,
                         "quarkus-bom" + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX,
                         catalogCoords.getClassifier(), catalogCoords.getExtension(), catalogCoords.getVersion());
                 try {

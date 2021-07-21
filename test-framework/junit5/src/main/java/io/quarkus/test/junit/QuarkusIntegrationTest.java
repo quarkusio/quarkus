@@ -4,6 +4,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Map;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -31,4 +32,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith({ DisabledOnIntegrationTestCondition.class, QuarkusTestExtension.class, QuarkusIntegrationTestExtension.class })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface QuarkusIntegrationTest {
+
+    /**
+     * If used as a field of class annotated with {@link QuarkusIntegrationTest}, the field is populated
+     * with an implementation that allows accessing contextual test information
+     */
+    interface Context {
+
+        /**
+         * Returns a map containing all the properties creates by potentially launched dev services.
+         * If no dev services where launched, the map will be empty.
+         */
+        Map<String, String> devServicesProperties();
+    }
 }

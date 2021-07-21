@@ -43,8 +43,9 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
     private final Vertx vertx;
     private final WebClient webClient;
     private final URI baseURI;
+    private final SpringCloudClientCredentialsProvider authProvider;
 
-    public VertxSpringCloudConfigGateway(SpringCloudConfigClientConfig springCloudConfigClientConfig, TlsConfig tlsConfig) {
+    public VertxSpringCloudConfigGateway(SpringCloudConfigClientConfig springCloudConfigClientConfig, TlsConfig tlsConfig, SpringCloudClientCredentialsProvider authProvider) {
         this.springCloudConfigClientConfig = springCloudConfigClientConfig;
         try {
             this.baseURI = determineBaseUri(springCloudConfigClientConfig);
@@ -54,6 +55,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
         }
         this.vertx = Vertx.vertx();
         this.webClient = createHttpClient(vertx, springCloudConfigClientConfig, tlsConfig);
+        this.authProvider = authProvider;
     }
 
     public static WebClient createHttpClient(Vertx vertx, SpringCloudConfigClientConfig springCloudConfig,
@@ -78,9 +80,9 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
             } else if (trustAll) {
                 skipVerify(webClientOptions);
             } else if (springCloudConfig.keyStore.isPresent()) {
-                Path trustStorePath = springCloudConfig.keyStore.get();
-                String type = determineStoreType(trustStorePath);
-                KeyStoreOptionsBase storeOptions = storeOptions(trustStorePath, springCloudConfig.keyStorePassword,
+                Path keyStorePath = springCloudConfig.keyStore.get();
+                String type = determineStoreType(keyStorePath);
+                KeyStoreOptionsBase storeOptions = storeOptions(keyStorePath, springCloudConfig.keyStorePassword,
                         createStoreOptions(type));
                 if (isPfx(type)) {
                     webClientOptions.setPfxTrustOptions((PfxOptions) storeOptions);
@@ -184,10 +186,8 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
                 .get(getPort(baseURI), baseURI.getHost(), requestURI)
                 .ssl(isHttps(baseURI))
                 .putHeader("Accept", "application/json");
-        if (springCloudConfigClientConfig.usernameAndPasswordSet()) {
-            request.basicAuthentication(springCloudConfigClientConfig.username.get(),
-                    springCloudConfigClientConfig.password.get());
-        }
+
+        authProvider.addAuthenticationInfo(request, springCloudConfigClientConfig);
         for (Map.Entry<String, String> entry : springCloudConfigClientConfig.headers.entrySet()) {
             request.putHeader(entry.getKey(), entry.getValue());
         }

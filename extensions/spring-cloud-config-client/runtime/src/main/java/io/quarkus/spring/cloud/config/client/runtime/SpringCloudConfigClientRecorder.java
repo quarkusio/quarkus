@@ -6,6 +6,7 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.runtime.ApplicationConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.TlsConfig;
@@ -31,8 +32,11 @@ public class SpringCloudConfigClientRecorder {
             return emptyRuntimeValue();
         }
 
+        SpringCloudClientCredentialsProvider credentialsProvider = Arc.container()
+                .instance(SpringCloudClientCredentialsProvider.class).get();
+
         return new RuntimeValue<>(new SpringCloudConfigServerClientConfigSourceProvider(
-                springCloudConfigClientConfig, applicationConfig.name.get(), ProfileManager.getActiveProfile(), tlsConfig));
+                springCloudConfigClientConfig, applicationConfig.name.get(), ProfileManager.getActiveProfile(), tlsConfig, credentialsProvider));
     }
 
     private RuntimeValue<ConfigSourceProvider> emptyRuntimeValue() {

@@ -1,5 +1,6 @@
 package io.quarkus.spring.cloud.config.client;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -12,6 +13,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.runtime.ApplicationConfig;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.spring.cloud.config.client.runtime.Response;
+import io.quarkus.spring.cloud.config.client.runtime.SpringCloudClientBasicAuthProvider;
 import io.quarkus.spring.cloud.config.client.runtime.SpringCloudConfigClientConfig;
 import io.quarkus.spring.cloud.config.client.runtime.SpringCloudConfigClientRecorder;
 
@@ -38,7 +40,8 @@ public class SpringCloudConfigProcessor {
     public RunTimeConfigurationSourceValueBuildItem configure(SpringCloudConfigClientRecorder recorder,
             SpringCloudConfigClientConfig springCloudConfigClientConfig,
             ApplicationConfig applicationConfig,
-            TlsConfig tlsConfig) {
+            TlsConfig tlsConfig, BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(SpringCloudClientBasicAuthProvider.class));
         return new RunTimeConfigurationSourceValueBuildItem(
                 recorder.create(springCloudConfigClientConfig, applicationConfig, tlsConfig));
     }

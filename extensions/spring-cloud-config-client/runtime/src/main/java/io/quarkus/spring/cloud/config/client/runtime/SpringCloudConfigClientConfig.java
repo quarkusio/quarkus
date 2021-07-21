@@ -12,7 +12,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(phase = ConfigPhase.BOOTSTRAP, name = SpringCloudConfigClientConfig.NAME)
 public class SpringCloudConfigClientConfig {
 
-    protected static final String NAME = "spring-cloud-config";
+    public static final String NAME = "spring-cloud-config";
 
     /**
      * If enabled, will try to read the configuration from a Spring Cloud Config Server

@@ -140,6 +140,24 @@ The result should be: `Hello world` as it is the value obtained from the Spring 
 
 You can of course create a native image using the instructions of the link:building-native-image[Building a native executable guide].
 
+== Connect to Config Server through OIDC
+
+By default, the extension supports basic authentication. You can get support for OIDC by adding the following extensions:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-spring-cloud-config-client-oidc</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc-client</artifactId>
+</dependency>
+----
+
+Once added, the extension will use the configured OIDC client. See the link:security-openid-connect-client[OpenID Connect Client] guide for more information about OIDC configuration.
+
 == More Spring guides
 
 Quarkus has more Spring compatibility features. See the following guides for more details:

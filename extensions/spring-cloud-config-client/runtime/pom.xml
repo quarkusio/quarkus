@@ -38,7 +38,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jackson</artifactId>
         </dependency>
-
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

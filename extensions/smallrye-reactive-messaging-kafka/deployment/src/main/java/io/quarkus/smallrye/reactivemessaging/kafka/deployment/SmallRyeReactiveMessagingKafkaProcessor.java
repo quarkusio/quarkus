@@ -71,11 +71,15 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
             MethodInfo method = annotation.target().asMethod();
 
-            processIncomingMethod(discovery, method, (keyDeserializer, valueDeserializer) -> {
+            Type incomingType = getIncomingTypeFromMethod(method);
+            processIncomingType(discovery, incomingType, (keyDeserializer, valueDeserializer) -> {
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config,
                         "mp.messaging.incoming." + channelName + ".key.deserializer", keyDeserializer);
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config,
                         "mp.messaging.incoming." + channelName + ".value.deserializer", valueDeserializer);
+
+                handleAdditionalProperties("mp.messaging.incoming." + channelName + ".", discovery,
+                        config, keyDeserializer, valueDeserializer);
             });
         }
 
@@ -87,11 +91,15 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
             MethodInfo method = annotation.target().asMethod();
 
-            processOutgoingMethod(discovery, method, (keySerializer, valueSerializer) -> {
+            Type outgoingType = getOutgoingTypeFromMethod(method);
+            processOutgoingType(discovery, outgoingType, (keySerializer, valueSerializer) -> {
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config,
                         "mp.messaging.outgoing." + channelName + ".key.serializer", keySerializer);
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config,
                         "mp.messaging.outgoing." + channelName + ".value.serializer", valueSerializer);
+
+                handleAdditionalProperties("mp.messaging.outgoing." + channelName + ".", discovery,
+                        config, keySerializer, valueSerializer);
             });
         }
 
@@ -102,28 +110,36 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                 continue;
             }
 
-            Type injectionPointType = getInjectionPointTypeFromChannel(annotation);
+            Type injectionPointType = getInjectionPointType(annotation);
             if (injectionPointType == null) {
                 continue;
             }
 
-            processIncomingChannelInjectionPoint(discovery, injectionPointType, (keyDeserializer, valueDeserializer) -> {
+            Type incomingType = getIncomingTypeFromChannelInjectionPoint(injectionPointType);
+            processIncomingType(discovery, incomingType, (keyDeserializer, valueDeserializer) -> {
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config,
                         "mp.messaging.incoming." + channelName + ".key.deserializer", keyDeserializer);
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config,
                         "mp.messaging.incoming." + channelName + ".value.deserializer", valueDeserializer);
+
+                handleAdditionalProperties("mp.messaging.incoming." + channelName + ".", discovery,
+                        config, keyDeserializer, valueDeserializer);
             });
 
-            processOutgoingChannelInjectionPoint(discovery, injectionPointType, (keySerializer, valueSerializer) -> {
+            Type outgoingType = getOutgoingTypeFromChannelInjectionPoint(injectionPointType);
+            processOutgoingType(discovery, outgoingType, (keySerializer, valueSerializer) -> {
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config,
                         "mp.messaging.outgoing." + channelName + ".key.serializer", keySerializer);
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config,
                         "mp.messaging.outgoing." + channelName + ".value.serializer", valueSerializer);
+
+                handleAdditionalProperties("mp.messaging.outgoing." + channelName + ".", discovery,
+                        config, keySerializer, valueSerializer);
             });
         }
     }
 
-    private Type getInjectionPointTypeFromChannel(AnnotationInstance annotation) {
+    private Type getInjectionPointType(AnnotationInstance annotation) {
         switch (annotation.target().kind()) {
             case FIELD:
                 return annotation.target().asField().type();
@@ -135,18 +151,40 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         }
     }
 
-    void produceRuntimeConfigurationDefaultBuildItem(DefaultSerdeDiscoveryState discovery,
+    private void handleAdditionalProperties(String configPropertyBase, DefaultSerdeDiscoveryState discovery,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> config, Result... results) {
+        for (Result result : results) {
+            if (result == null) {
+                continue;
+            }
+
+            result.additionalProperties.forEach((key, value) -> {
+                produceRuntimeConfigurationDefaultBuildItem(discovery, config, configPropertyBase + key, value);
+            });
+        }
+    }
+
+    private void produceRuntimeConfigurationDefaultBuildItem(DefaultSerdeDiscoveryState discovery,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> config, String key, Result result) {
+        if (result == null) {
+            return;
+        }
+
+        produceRuntimeConfigurationDefaultBuildItem(discovery, config, key, result.value);
+    }
+
+    private void produceRuntimeConfigurationDefaultBuildItem(DefaultSerdeDiscoveryState discovery,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config, String key, String value) {
-        discovery.runIfConfigIsAbsent(key, value,
-                () -> config.produce(new RunTimeConfigurationDefaultBuildItem(key, value)));
+        if (value == null) {
+            return;
+        }
+
+        discovery.ifNotYetConfigured(key, () -> {
+            config.produce(new RunTimeConfigurationDefaultBuildItem(key, value));
+        });
     }
 
-    private void processIncomingMethod(DefaultSerdeDiscoveryState discovery, MethodInfo method,
-            BiConsumer<String, String> deserializerAcceptor) {
-        processIncomingType(discovery, getIncomingType(method), deserializerAcceptor);
-    }
-
-    private Type getIncomingType(MethodInfo method) {
+    private Type getIncomingTypeFromMethod(MethodInfo method) {
         List<Type> parameterTypes = method.parameters();
         int parametersCount = parameterTypes.size();
         Type returnType = method.returnType();
@@ -187,15 +225,11 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         return incomingType;
     }
 
-    private void processIncomingChannelInjectionPoint(DefaultSerdeDiscoveryState discovery, Type injectionPointType,
-            BiConsumer<String, String> deserializerAcceptor) {
-        processIncomingType(discovery, getIncomingChannelType(injectionPointType), deserializerAcceptor);
-    }
-
-    private Type getIncomingChannelType(Type injectionPointType) {
+    private Type getIncomingTypeFromChannelInjectionPoint(Type injectionPointType) {
         if (injectionPointType == null) {
             return null;
         }
+
         if (isPublisher(injectionPointType) || isPublisherBuilder(injectionPointType) || isMulti(injectionPointType)) {
             return injectionPointType.asParameterizedType().arguments().get(0);
         } else {
@@ -204,17 +238,15 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     }
 
     private void processIncomingType(DefaultSerdeDiscoveryState discovery, Type incomingType,
-            BiConsumer<String, String> deserializerAcceptor) {
-        extractKeyValueType(incomingType, (key, value) -> deserializerAcceptor.accept(deserializerFor(discovery, key),
-                deserializerFor(discovery, value)));
+            BiConsumer<Result, Result> deserializerAcceptor) {
+        extractKeyValueType(incomingType, (key, value) -> {
+            Result keyDeserializer = deserializerFor(discovery, key);
+            Result valueDeserializer = deserializerFor(discovery, value);
+            deserializerAcceptor.accept(keyDeserializer, valueDeserializer);
+        });
     }
 
-    private void processOutgoingMethod(DefaultSerdeDiscoveryState discovery, MethodInfo method,
-            BiConsumer<String, String> serializerAcceptor) {
-        processOutgoingType(discovery, getOutgoingType(method), serializerAcceptor);
-    }
-
-    private Type getOutgoingType(MethodInfo method) {
+    private Type getOutgoingTypeFromMethod(MethodInfo method) {
         List<Type> parameterTypes = method.parameters();
         int parametersCount = parameterTypes.size();
         Type returnType = method.returnType();
@@ -256,15 +288,11 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         return outgoingType;
     }
 
-    private void processOutgoingChannelInjectionPoint(DefaultSerdeDiscoveryState discovery, Type injectionPointType,
-            BiConsumer<String, String> serializerAcceptor) {
-        processOutgoingType(discovery, getOutgoingChannelType(injectionPointType), serializerAcceptor);
-    }
-
-    private Type getOutgoingChannelType(Type injectionPointType) {
+    private Type getOutgoingTypeFromChannelInjectionPoint(Type injectionPointType) {
         if (injectionPointType == null) {
             return null;
         }
+
         if (isEmitter(injectionPointType) || isMutinyEmitter(injectionPointType)) {
             return injectionPointType.asParameterizedType().arguments().get(0);
         } else {
@@ -273,9 +301,12 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     }
 
     private void processOutgoingType(DefaultSerdeDiscoveryState discovery, Type outgoingType,
-            BiConsumer<String, String> serializerAcceptor) {
-        extractKeyValueType(outgoingType,
-                (key, value) -> serializerAcceptor.accept(serializerFor(discovery, key), serializerFor(discovery, value)));
+            BiConsumer<Result, Result> serializerAcceptor) {
+        extractKeyValueType(outgoingType, (key, value) -> {
+            Result keySerializer = serializerFor(discovery, key);
+            Result valueSerializer = serializerFor(discovery, value);
+            serializerAcceptor.accept(keySerializer, valueSerializer);
+        });
     }
 
     private void extractKeyValueType(Type type, BiConsumer<Type, Type> keyValueTypeAcceptor) {
@@ -489,15 +520,15 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     );
     // @formatter:on
 
-    private String deserializerFor(DefaultSerdeDiscoveryState discovery, Type type) {
+    private Result deserializerFor(DefaultSerdeDiscoveryState discovery, Type type) {
         return serializerDeserializerFor(discovery, type, false);
     }
 
-    private String serializerFor(DefaultSerdeDiscoveryState discovery, Type type) {
+    private Result serializerFor(DefaultSerdeDiscoveryState discovery, Type type) {
         return serializerDeserializerFor(discovery, type, true);
     }
 
-    private String serializerDeserializerFor(DefaultSerdeDiscoveryState discovery, Type type, boolean serializer) {
+    private Result serializerDeserializerFor(DefaultSerdeDiscoveryState discovery, Type type, boolean serializer) {
         if (type == null) {
             return null;
         }
@@ -506,23 +537,27 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         // statically known serializer/deserializer
         Map<DotName, String> map = serializer ? KNOWN_SERIALIZERS : KNOWN_DESERIALIZERS;
         if (map.containsKey(typeName)) {
-            return map.get(typeName);
+            return Result.of(map.get(typeName));
         }
 
-        // Avro generated class (serializer/deserializer provided by Confluent or Apicurio)
-        if (discovery.isAvroGenerated(typeName)) {
+        // Avro generated class or GenericRecord (serializer/deserializer provided by Confluent or Apicurio)
+        boolean isAvroGenerated = discovery.isAvroGenerated(typeName);
+        if (isAvroGenerated || DotNames.AVRO_GENERIC_RECORD.equals(typeName)) {
             if (discovery.hasConfluent()) {
                 return serializer
-                        ? "io.confluent.kafka.serializers.KafkaAvroSerializer"
-                        : "io.confluent.kafka.serializers.KafkaAvroDeserializer";
+                        ? Result.of("io.confluent.kafka.serializers.KafkaAvroSerializer")
+                        : Result.of("io.confluent.kafka.serializers.KafkaAvroDeserializer")
+                                .with(isAvroGenerated, "specific.avro.reader", "true");
             } else if (discovery.hasApicurio1()) {
                 return serializer
-                        ? "io.apicurio.registry.utils.serde.AvroKafkaSerializer"
-                        : "io.apicurio.registry.utils.serde.AvroKafkaDeserializer";
+                        ? Result.of("io.apicurio.registry.utils.serde.AvroKafkaSerializer")
+                        : Result.of("io.apicurio.registry.utils.serde.AvroKafkaDeserializer")
+                                .with(isAvroGenerated, "apicurio.registry.use-specific-avro-reader", "true");
             } else if (discovery.hasApicurio2()) {
                 return serializer
-                        ? "io.apicurio.registry.serde.avro.AvroKafkaSerializer"
-                        : "io.apicurio.registry.serde.avro.AvroKafkaDeserializer";
+                        ? Result.of("io.apicurio.registry.serde.avro.AvroKafkaSerializer")
+                        : Result.of("io.apicurio.registry.serde.avro.AvroKafkaDeserializer")
+                                .with(isAvroGenerated, "apicurio.registry.use-specific-avro-reader", "true");
             }
         }
 
@@ -532,7 +567,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             ClassInfo subclass = discovery.getSubclassOfWithTypeArgument(
                     serializer ? DotNames.OBJECT_MAPPER_SERIALIZER : DotNames.OBJECT_MAPPER_DESERIALIZER, typeName);
             if (subclass != null) {
-                return subclass.name().toString();
+                return Result.of(subclass.name().toString());
             }
         }
 
@@ -541,13 +576,15 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             ClassInfo subclass = discovery.getSubclassOfWithTypeArgument(
                     serializer ? DotNames.JSONB_SERIALIZER : DotNames.JSONB_DESERIALIZER, typeName);
             if (subclass != null) {
-                return subclass.name().toString();
+                return Result.of(subclass.name().toString());
             }
         }
 
         // unknown
         return null;
     }
+
+    // ---
 
     @BuildStep
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
@@ -578,28 +615,28 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     void processOutgoingForReflectiveClassPayload(IndexView index, Config config,
             BiConsumer<AnnotationInstance, Type> annotationAcceptor) {
         processAnnotationsForReflectiveClassPayload(index, config, DotNames.OUTGOING, true,
-                annotation -> getOutgoingType(annotation.target().asMethod()), annotationAcceptor);
+                annotation -> getOutgoingTypeFromMethod(annotation.target().asMethod()), annotationAcceptor);
     }
 
     // visible for testing
     void processOutgoingChannelForReflectiveClassPayload(IndexView index, Config config,
             BiConsumer<AnnotationInstance, Type> annotationAcceptor) {
         processAnnotationsForReflectiveClassPayload(index, config, DotNames.CHANNEL, true,
-                annotation -> getOutgoingChannelType(getInjectionPointTypeFromChannel(annotation)), annotationAcceptor);
+                annotation -> getOutgoingTypeFromChannelInjectionPoint(getInjectionPointType(annotation)), annotationAcceptor);
     }
 
     // visible for testing
     void processIncomingForReflectiveClassPayload(IndexView index, Config config,
             BiConsumer<AnnotationInstance, Type> annotationAcceptor) {
         processAnnotationsForReflectiveClassPayload(index, config, DotNames.INCOMING, false,
-                annotation -> getIncomingType(annotation.target().asMethod()), annotationAcceptor);
+                annotation -> getIncomingTypeFromMethod(annotation.target().asMethod()), annotationAcceptor);
     }
 
     // visible for testing
     void processIncomingChannelForReflectiveClassPayload(IndexView index, Config config,
             BiConsumer<AnnotationInstance, Type> annotationAcceptor) {
         processAnnotationsForReflectiveClassPayload(index, config, DotNames.CHANNEL, false,
-                annotation -> getIncomingChannelType(getInjectionPointTypeFromChannel(annotation)),
+                annotation -> getIncomingTypeFromChannelInjectionPoint(getInjectionPointType(annotation)),
                 annotationAcceptor);
     }
 

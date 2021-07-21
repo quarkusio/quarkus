@@ -150,7 +150,7 @@
         <azure-functions-java-library.version>1.4.2</azure-functions-java-library.version>
         <kotlin.version>1.5.20</kotlin.version>
         <kotlin.coroutine.version>1.5.0</kotlin.coroutine.version>
-        <dekorate.version>2.2.2</dekorate.version>
+        <dekorate.version>2.3.0</dekorate.version>
         <maven-artifact-transfer.version>0.10.0</maven-artifact-transfer.version>
         <maven-invoker.version>3.0.1</maven-invoker.version>
         <awaitility.version>4.1.0</awaitility.version>

@@ -241,14 +241,14 @@ quarkus.mongodb.connection-string = mongodb://localhost:27017
 If you need more configuration properties, there is a full list at the end of this guide.
 
 [[dev-services]]
-=== DevServices (Configuration Free Databases)
+=== Dev Services (Configuration Free Databases)
 
-Quarkus supports a feature called DevServices that allows you to create various datasources without any config. In the case of MongoDB this support extends to the default MongoDB connection.
+Quarkus supports a feature called Dev Services that allows you to create various datasources without any config. In the case of MongoDB this support extends to the default MongoDB connection.
 What that means practically, is that if you have not configured `quarkus.mongodb.connection-string` Quarkus will automatically start a MongoDB container when running tests or dev-mode,
 and automatically configure the connection.
 
 When running the production version of the application, the MongoDB connection need to be configured as normal, so if you want to include a production database config in your
-`application.properties` and continue to use DevServices we recommend that you use the `%prod.` profile to define your MongoDB settings.
+`application.properties` and continue to use Dev Services we recommend that you use the `%prod.` profile to define your MongoDB settings.
 
 == Multiple MongoDB Clients
 
@@ -305,7 +305,7 @@ docker run -ti --rm -p 27017:27017 mongo:4.0
 
 [NOTE]
 ====
-If you use <<dev-services,DevServices>>, launching the container manually is not necessary!
+If you use <<dev-services,Dev Services>>, launching the container manually is not necessary!
 ====
 
 

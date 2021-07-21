@@ -47,7 +47,7 @@ To complete this guide, you need:
 
 [TIP]
 ====
-Using <<dev-services,DevServices>>, Quarkus will take care of starting Vault in dev and test mode.
+Using <<dev-services,Dev Services>>, Quarkus will take care of starting Vault in dev and test mode.
 ====
 
 Let's start Vault in development mode:
@@ -285,7 +285,7 @@ quarkus.vault.secret-config-kv-path=myapps/vault-quickstart/config
 
 [TIP]
 ====
-Using <<dev-services,DevServices>>, Quarkus will take care of configuring the Vault connection in dev and test mode.
+Using <<dev-services,Dev Services>>, Quarkus will take care of configuring the Vault connection in dev and test mode.
 ====
 
 This should mount whatever keys are stored in `secret/myapps/vault-quickstart` as Config properties.
@@ -519,15 +519,15 @@ path "auth/kubernetes/role/*" {
 You should adjust to the minimal set of access rights depending on your specific use case.
 
 [[dev-services]]
-== DevServices (Configuration Free Vault)
+== Dev Services (Configuration Free Vault)
 
-Quarkus supports a feature called DevServices that allows you to create various containers without any config.
+Quarkus supports a feature called Dev Services that allows you to create various containers without any config.
 What that means in practice is that if you have Docker running and have not configured `quarkus.vault.url`,
 Quarkus will automatically start a Vault container when running tests or in dev mode, and automatically
 configure the connection.
 
 When running the production version of the application, the Vault connection needs to be configured as normal,
-so if you want to include a production Vault config in your `application.properties` and continue to use DevServices
+so if you want to include a production Vault config in your `application.properties` and continue to use Dev Services
 we recommend that you use the `%prod.` profile to define your Vault connection settings.
 
 === Automatic Secret Engine Provisioning

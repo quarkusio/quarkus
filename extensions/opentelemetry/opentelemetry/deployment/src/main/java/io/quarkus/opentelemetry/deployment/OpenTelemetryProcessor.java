@@ -62,7 +62,7 @@ public class OpenTelemetryProcessor {
             OpenTelemetryRecorder recorder,
             Optional<TracerProviderBuildItem> tracerProviderBuildItem,
             LaunchModeBuildItem launchMode) {
-        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
+        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT || launchMode.getLaunchMode() == LaunchMode.TEST) {
             recorder.resetGlobalOpenTelemetryForDevMode();
         }
 

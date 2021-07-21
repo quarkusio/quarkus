@@ -22,6 +22,11 @@
     </properties>
 
     <dependencies>
+        <!-- Make sure we force import of SR-CP-JTA to test https://github.com/quarkusio/quarkus/issues/18565 -->
+        <dependency>
+            <groupId>io.smallrye</groupId>
+            <artifactId>smallrye-context-propagation-jta</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-reactive-panache</artifactId>

@@ -26,6 +26,7 @@ import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.loader.BatchFetchStyle;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.Feature;
@@ -359,4 +360,21 @@ public final class HibernateReactiveProcessor {
         return !jpaModel.getEntityClassNames().isEmpty();
     }
 
+    /**
+     * This registers a part of JTA Context Propagation to be unremovable, because our quarkus-hibernate-orm imports excludes
+     * quarkus-narayana, which would mark it as unremovable. This means that if by accident or other, the
+     * smallrye-context-propagation-jta module gets imported by the user, there will be an annoying warning thrown by ArC
+     * telling the user something went wrong because this class was removed. Marking it unremovable does not add a dependency to
+     * this class, but if it's present, it avoids it being removed, which is what we want, since if it's present, it will be
+     * used by SR-CP anyway, and it handles the case where JTA is not present (as is the case for Hibernate Reactive) so it's
+     * safe to keep it.
+     * This is tested by the hibernate-reactive-panache integration tests.
+     * See https://github.com/quarkusio/quarkus/issues/18565
+     */
+    @BuildStep
+    void fixJTAContextPropagation(BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+        UnremovableBeanBuildItem buildItem = UnremovableBeanBuildItem
+                .beanClassNames("io.smallrye.context.jta.context.propagation.JtaContextProvider$LifecycleManager");
+        unremovableBeans.produce(buildItem);
+    }
 }

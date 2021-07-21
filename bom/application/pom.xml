@@ -36,7 +36,7 @@
         <google-auth.version>0.22.0</google-auth.version>
         <microprofile-config-api.version>2.0</microprofile-config-api.version>
         <microprofile-metrics-api.version>3.0</microprofile-metrics-api.version>
-        <microprofile-context-propagation.version>1.2</microprofile-context-propagation.version>
+        <microprofile-context-propagation.version>1.2.1</microprofile-context-propagation.version>
         <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>
         <microprofile-reactive-streams-operators.version>1.0.1</microprofile-reactive-streams-operators.version>
         <microprofile-rest-client.version>2.0</microprofile-rest-client.version>

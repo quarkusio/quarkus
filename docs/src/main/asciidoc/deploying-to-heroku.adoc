@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Deploying to Heroku
+= Deploying to Heroku
 include::./attributes.adoc[]
 
 In this guide you will learn how to deploy a Quarkus based web application as a web-dyno to Heroku.

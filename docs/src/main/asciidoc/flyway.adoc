@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using Flyway
+= Using Flyway
 
 include::./attributes.adoc[]
 :migrations-path: src/main/resources/db/migration

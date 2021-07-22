@@ -4,7 +4,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Measuring the coverage of your tests
+= Measuring the coverage of your tests
 
 include::./attributes.adoc[]
 

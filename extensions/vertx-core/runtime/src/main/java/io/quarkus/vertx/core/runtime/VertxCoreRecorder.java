@@ -7,6 +7,7 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertO
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -133,12 +134,8 @@ public class VertxCoreRecorder {
         //this is a best effort attempt to clean out the old TCCL from
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
 
-        EnhancedQueueExecutor executor = extractExecutor(devModeVertx);
-
-        final Thread[] runningThreads = executor.getRunningThreads();
-        for (Thread t : runningThreads) {
-            t.setContextClassLoader(cl);
-        }
+        resetExecutorsClassloaderContext(extractWorkerPool(devModeVertx), cl);
+        resetExecutorsClassloaderContext(extractInternalWorkerPool(devModeVertx), cl);
 
         EventLoopGroup group = ((VertxImpl) devModeVertx).getEventLoopGroup();
         for (EventExecutor i : group) {
@@ -154,13 +151,37 @@ public class VertxCoreRecorder {
 
     }
 
+    private WorkerPool extractInternalWorkerPool(Vertx devModeVertx) {
+        VertxImpl vertxImpl = (VertxImpl) devModeVertx;
+        final Object internalWorkerPool;
+        final Field field;
+        try {
+            field = VertxImpl.class.getDeclaredField("internalWorkerPool");
+            field.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            internalWorkerPool = field.get(vertxImpl);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+
+        return (WorkerPool) internalWorkerPool;
+    }
+
+    private WorkerPool extractWorkerPool(Vertx devModeVertx) {
+        final ContextInternal ctx = (ContextInternal) devModeVertx.getOrCreateContext();
+        return ctx.workerPool();
+    }
+
     /**
      * Extract the JBoss Threads EnhancedQueueExecutor from the Vertx instance
-     * this is messy as it needs to use reflection until Vertx can expose it.
+     * and reset all threads to use the given ClassLoader.
+     * This is messy as it needs to use reflection until Vertx can expose it:
+     * - https://github.com/eclipse-vertx/vert.x/pull/4029
      */
-    private EnhancedQueueExecutor extractExecutor(Vertx devModeVertx) {
-        final ContextInternal ctx = (ContextInternal) devModeVertx.getOrCreateContext();
-        final WorkerPool workerPool = ctx.workerPool();
+    private void resetExecutorsClassloaderContext(WorkerPool workerPool, ClassLoader cl) {
         final Method executorMethod;
         try {
             executorMethod = WorkerPool.class.getDeclaredMethod("executor");
@@ -175,7 +196,10 @@ public class VertxCoreRecorder {
             throw new RuntimeException(e);
         }
         EnhancedQueueExecutor executor = (EnhancedQueueExecutor) result;
-        return executor;
+        final Thread[] runningThreads = executor.getRunningThreads();
+        for (Thread t : runningThreads) {
+            t.setContextClassLoader(cl);
+        }
     }
 
     public IOThreadDetector detector() {

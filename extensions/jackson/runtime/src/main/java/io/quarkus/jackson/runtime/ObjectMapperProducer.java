@@ -32,6 +32,10 @@ public class ObjectMapperProducer {
             // this feature is enabled by default, so we disable it
             objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         }
+        if (!jacksonConfigSupport.isFailOnEmptyBeans()) {
+            // this feature is enabled by default, so we disable it
+            objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        }
         if (!jacksonConfigSupport.isWriteDatesAsTimestamps()) {
             // this feature is enabled by default, so we disable it
             objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);

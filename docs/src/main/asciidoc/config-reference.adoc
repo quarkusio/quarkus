@@ -440,6 +440,8 @@ The indexed property is sorted by their index before being added to the target `
 indexes do not resolve to the target `Collection`, which means that the `Collection` result will store all values
 without any gaps.
 
+IMPORTANT: Indexed Properties are not supported in Environment Variables.
+
 == Generate Configuration
 
 It is also possible to generate an example `application.properties` with all known configuration properties:

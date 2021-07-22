@@ -132,7 +132,7 @@ public class TestRegistryClientBuilder {
         }
 
         public TestRegistryBuilder disabled() {
-            config.setDisabled(true);
+            config.setEnabled(false);
             return this;
         }
 

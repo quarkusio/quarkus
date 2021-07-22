@@ -2,22 +2,27 @@ package io.quarkus.cli;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.BufferedReader;
+import java.io.StringReader;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Objects;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.registry.config.RegistriesConfigLocator;
+import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import picocli.CommandLine;
 
 public class CliNonProjectTest {
+    private static final String TEST_QUARKUS_REGISTRY = "test.quarkus.registry";
     static Path workspaceRoot;
 
     @BeforeAll
@@ -28,6 +33,11 @@ public class CliNonProjectTest {
         Files.createDirectories(workspaceRoot);
     }
 
+    @BeforeEach
+    public void setupTestRegistry() {
+        RegistryClientTestHelper.reenableRegistryClientTestConfig();
+    }
+
     @AfterEach
     public void verifyEmptyDirectory() throws Exception {
         String[] files = workspaceRoot.toFile().list();
@@ -35,7 +45,7 @@ public class CliNonProjectTest {
                 "Directory list operation should succeed");
         Assertions.assertEquals(0, files.length,
                 "Directory should be empty. Found: " + Arrays.toString(files));
-        System.clearProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY);
+        RegistryClientTestHelper.disableRegistryClientTestConfig();
     }
 
     @Test
@@ -57,6 +67,45 @@ public class CliNonProjectTest {
                 "Should contain 'Jackson' in the list of extensions, found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("2.0.0.CR3"),
                 "Should contain '2.0.0.CR3' in the list of extensions (origin), found: " + result.stdout);
+    }
+
+    @Test
+    public void testListPlatformExtensionsRegistryClient() throws Exception {
+        // Dry run: Make sure registry-client system property is true
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "ext", "list", "-e",
+                "--dry-run", "--registry-client");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+
+        String noSpaces = result.stdout.replaceAll("[\\s\\p{Z}]", "");
+        Assertions.assertTrue(noSpaces.contains("RegistryClienttrue"),
+                "Should contain 'Registry Client true', found: " + result.stdout);
+        Assertions.assertTrue(Boolean.getBoolean("quarkusRegistryClient"),
+                "Registry Client property should be set to true");
+
+        // Dry run: Make sure registry-client system property is false
+        result = CliDriver.execute(workspaceRoot, "ext", "list", "-e",
+                "--dry-run", "--no-registry-client");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+
+        noSpaces = result.stdout.replaceAll("[\\s\\p{Z}]", "");
+        Assertions.assertTrue(noSpaces.contains("RegistryClientfalse"),
+                "Should contain 'Registry Client false', found: " + result.stdout);
+        Assertions.assertFalse(Boolean.getBoolean("quarkusRegistryClient"),
+                "Registry Client property should be set to false");
+
+        // Dry run: Make sure registry client property is set (default = false) TODO
+        result = CliDriver.execute(workspaceRoot, "ext", "list", "-e",
+                "--dry-run");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+
+        noSpaces = result.stdout.replaceAll("[\\s\\p{Z}]", "");
+        Assertions.assertTrue(noSpaces.contains("RegistryClienttrue"),
+                "Should contain 'Registry Client false', found: " + result.stdout);
+        Assertions.assertFalse(Boolean.getBoolean("quarkusRegistryClient"),
+                "Registry Client property should be set to false");
     }
 
     @Test
@@ -88,10 +137,41 @@ public class CliNonProjectTest {
     }
 
     @Test
+    public void testRegistryStreams() throws Exception {
+
+        CliDriver.Result result;
+
+        // refresh the local cache and list the registries
+        result = CliDriver.execute(workspaceRoot, "registry", "--streams", "-e");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+        try (BufferedReader reader = new BufferedReader(new StringReader(result.stdout))) {
+            String line = reader.readLine();
+            while (line != null && !TEST_QUARKUS_REGISTRY.equals(line)) {
+                line = reader.readLine();
+            }
+            if (line == null) {
+                Assertions.fail("Failed to locate registry " + TEST_QUARKUS_REGISTRY + " in the output");
+            }
+            line = reader.readLine();
+            Assertions.assertNotNull(line, "Expected stream");
+            final String expectedStream = getRequiredProperty("project.groupId") + ":" + getRequiredProperty("project.version");
+            Assertions.assertTrue(line.contains(expectedStream), expectedStream);
+
+            line = reader.readLine();
+            Assertions.assertNotNull(line);
+            Assertions.assertTrue(line.startsWith("(Read from "), "Expected (Read from ...");
+            Assertions.assertNull(reader.readLine(), "No further content expected");
+        }
+    }
+
+    @Test
     public void testRegistryRefresh() throws Exception {
 
-        // List extensions of a specified platform version
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "registry", "--refresh", "-e");
+        CliDriver.Result result;
+
+        // refresh the local cache and list the registries
+        result = CliDriver.execute(workspaceRoot, "registry", "--refresh", "-e");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
 
@@ -102,10 +182,10 @@ public class CliNonProjectTest {
                 "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains(configPath.toString()),
                 "Should contain path to config file, found: " + result.stdout);
-        Assertions.assertTrue(result.stdout.contains("- registry.test.local"),
-                "Should contain '- registry.test.local', found: " + result.stdout);
-        Assertions.assertFalse(result.stdout.contains("- registry.quarkus.io"),
-                "Should not contain '- registry.quarkus.io', found: " + result.stdout);
+        Assertions.assertTrue(result.stdout.contains("registry.test.local"),
+                "Should contain 'registry.test.local', found: " + result.stdout);
+        Assertions.assertFalse(result.stdout.contains("registry.quarkus.io"),
+                "Should not contain 'registry.quarkus.io', found: " + result.stdout);
 
         configPath = resolveConfigPath("disabledConfig.yml");
         result = CliDriver.execute(workspaceRoot, "registry", "--refresh", "-e",
@@ -114,10 +194,15 @@ public class CliNonProjectTest {
                 "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains(configPath.toString()),
                 "Should contain path to config file, found: " + result.stdout);
-        Assertions.assertTrue(result.stdout.contains("- registry.test.local (disabled)"),
+        Assertions.assertTrue(result.stdout.contains("registry.test.local (disabled)"),
                 "Should contain '- registry.test.local (disabled)', found: " + result.stdout);
-        Assertions.assertTrue(result.stdout.contains("- registry.quarkus.io"),
+        Assertions.assertTrue(result.stdout.contains("registry.quarkus.io"),
                 "Should contain '- registry.quarkus.io', found: " + result.stdout);
+    }
+
+    private static String getRequiredProperty(String name) {
+        return Objects.requireNonNull(System.getProperty(name));
+
     }
 
     private static Path resolveConfigPath(String configName) throws URISyntaxException {

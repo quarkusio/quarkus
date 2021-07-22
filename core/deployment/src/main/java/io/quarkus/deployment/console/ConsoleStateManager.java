@@ -118,6 +118,7 @@ public class ConsoleStateManager {
                                 ? toLevel(((LogManager) LogManager.getLogManager()).getLogger("").getLevel()).toString()
                                 : currentLevel.toString())),
                 ConsoleStateManager.this::toggleLogLevel));
+        commands.add(new ConsoleCommand((char) 13, null, null, 10001, null, this::printBlankLine));
         commands.add(new ConsoleCommand('h', "Shows this help", "for more options", 10000, null, this::printHelp));
         commands.add(new ConsoleCommand('q', "Quits the application", null, this::exitQuarkus));
         context.reset(commands.toArray(new ConsoleCommand[0]));
@@ -175,6 +176,10 @@ public class ConsoleStateManager {
         }
     }
 
+    private void printBlankLine() {
+        System.out.println("");
+    }
+
     private void printHelp() {
         System.out.println("\nThe following commands are currently available:");
         Set<ConsoleContext> contexts = new HashSet<>();
@@ -186,13 +191,15 @@ public class ConsoleStateManager {
                 .collect(Collectors.toList())) {
             System.out.println("\n" + RED + "==" + RESET + " " + UNDERLINE + ctx.name + NO_UNDERLINE + "\n");
             for (var i : ctx.internal) {
-                if (i.getHelpState() == null) {
-                    System.out.println(helpOption(i.getKey(), i.getDescription()));
-                } else if (i.getHelpState().toggleState != null) {
-                    System.out.println(helpOption(i.getKey(), i.getDescription(), i.getHelpState().toggleState.get()));
-                } else {
-                    System.out.println(helpOption(i.getKey(), i.getDescription(), i.getHelpState().stateSupplier.get(),
-                            i.getHelpState().colorSupplier.get()));
+                if (i.getDescription() != null) {
+                    if (i.getHelpState() == null) {
+                        System.out.println(helpOption(i.getKey(), i.getDescription()));
+                    } else if (i.getHelpState().toggleState != null) {
+                        System.out.println(helpOption(i.getKey(), i.getDescription(), i.getHelpState().toggleState.get()));
+                    } else {
+                        System.out.println(helpOption(i.getKey(), i.getDescription(), i.getHelpState().stateSupplier.get(),
+                                i.getHelpState().colorSupplier.get()));
+                    }
                 }
             }
         }

@@ -55,6 +55,7 @@ test {
         systemProperty 'maven.repo.local', System.properties.get('maven.repo.local')
     }
     systemProperty 'project.version', "${version}"
+    systemProperty 'project.groupId', "${quarkusPlatformGroupId}"
     useJUnitPlatform()
 
     // Kotlin compiler does not support Java 14

@@ -21,6 +21,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-scheduler-deployment</artifactId>
             <scope>test</scope>
         </dependency>
@@ -107,6 +112,15 @@
                             <version>${project.version}</version>
                         </path>
                     </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skip>false</skip>
+                    <systemPropertyVariables>
+                        <quarkus.keycloak.devservices.enabled>false</quarkus.keycloak.devservices.enabled>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>

@@ -264,8 +264,9 @@ class AgroalProcessor {
 
         Optional<String> effectiveDbKind = DefaultDataSourceDbKindBuildItem
                 .resolve(dataSourcesBuildTimeConfig.defaultDataSource.dbKind, defaultDbKinds,
-                        dataSourcesBuildTimeConfig.defaultDataSource.devservices.enabled
-                                .orElse(dataSourcesBuildTimeConfig.namedDataSources.isEmpty()),
+                        dataSourcesBuildTimeConfig.defaultDataSource.devservices.enabled.orElse(
+                                dataSourcesBuildTimeConfig.defaultDataSource.devservices.enabledDeprecated
+                                        .orElse(dataSourcesBuildTimeConfig.namedDataSources.isEmpty())),
                         curateOutcomeBuildItem);
 
         if (effectiveDbKind.isPresent()) {

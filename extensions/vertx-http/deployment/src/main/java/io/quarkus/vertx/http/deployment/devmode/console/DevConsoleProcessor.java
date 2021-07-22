@@ -827,7 +827,7 @@ public class DevConsoleProcessor {
 
             switch (ctxName) {
                 case "srcMainPath": {
-                    return srcMainPath.toAbsolutePath().toString();
+                    return srcMainPath.toAbsolutePath().toString().replace("\\", "/");
                 }
                 case "ideLinkType":
                     if (!effectiveIdeBuildItem.isPresent()) {

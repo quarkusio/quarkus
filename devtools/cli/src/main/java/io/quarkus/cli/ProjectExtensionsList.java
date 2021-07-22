@@ -15,6 +15,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.registry.RegistryResolutionException;
 import picocli.CommandLine;
 import picocli.CommandLine.Mixin;
 
@@ -112,12 +113,13 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
         dryRunOutput.put("List installable extensions", Boolean.toString(installable));
         dryRunOutput.put("Search pattern", searchPattern);
         dryRunOutput.put("Category", category);
+        dryRunOutput.put("Registry Client", Boolean.toString(registryClient.enabled()));
 
         output.info(help.createTextTable(dryRunOutput).toString());
         return CommandLine.ExitCode.OK;
     }
 
-    Integer listPlatformExtensions() throws QuarkusCommandException {
+    Integer listPlatformExtensions() throws QuarkusCommandException, RegistryResolutionException {
         QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetQuarkusVersion,
                 BuildTool.MAVEN, output);
 

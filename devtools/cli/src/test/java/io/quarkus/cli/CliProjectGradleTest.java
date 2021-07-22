@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.cli.build.ExecuteUtil;
 import io.quarkus.cli.build.GradleRunner;
 import io.quarkus.devtools.project.codegen.CreateProjectHelper;
+import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import picocli.CommandLine;
 
 /**
@@ -31,6 +32,16 @@ public class CliProjectGradleTest {
 
     Path project;
     static File gradle;
+
+    @BeforeAll
+    public static void setupTestRegistry() {
+        RegistryClientTestHelper.enableRegistryClientTestConfig();
+    }
+
+    @AfterAll
+    public static void cleanupTestRegistry() {
+        RegistryClientTestHelper.disableRegistryClientTestConfig();
+    }
 
     @BeforeEach
     public void setupTestDirectories() throws Exception {

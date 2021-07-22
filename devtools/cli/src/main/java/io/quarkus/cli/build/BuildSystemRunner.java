@@ -33,11 +33,11 @@ public interface BuildSystemRunner {
         switch (buildTool) {
             default:
             case MAVEN:
-                return new MavenRunner(output, propertiesOptions, projectRoot);
+                return new MavenRunner(output, propertiesOptions, registryClient, projectRoot);
             case GRADLE_KOTLIN_DSL:
-                return new GradleRunner(output, propertiesOptions, projectRoot, BuildTool.GRADLE_KOTLIN_DSL);
+                return new GradleRunner(output, propertiesOptions, registryClient, projectRoot, BuildTool.GRADLE_KOTLIN_DSL);
             case GRADLE:
-                return new GradleRunner(output, propertiesOptions, projectRoot, BuildTool.GRADLE);
+                return new GradleRunner(output, propertiesOptions, registryClient, projectRoot, BuildTool.GRADLE);
             case JBANG:
                 return new JBangRunner(output, propertiesOptions, registryClient, projectRoot);
         }

@@ -88,16 +88,17 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
         } catch (BootstrapMavenException e) {
             final StringWriter buf = new StringWriter();
             try (BufferedWriter writer = new BufferedWriter(buf)) {
-                writer.write("Failed to resolve Quarkus extensions registry descriptor ");
+                writer.write("Failed to resolve Quarkus extension registry descriptor ");
                 writer.write(registryDescriptorCoords.toString());
-                writer.write(" using the following repositories:");
+                writer.write(" from");
                 for (RemoteRepository repo : aggregatedRepos) {
-                    writer.newLine();
-                    writer.write("- ");
-                    writer.write(repo.getId());
-                    writer.write(" (");
-                    writer.write(repo.getUrl());
-                    writer.write(")");
+                    if (repo.getPolicy(registryDescriptorCoords.isSnapshot()).isEnabled()) {
+                        writer.append(" ");
+                        writer.write(repo.getId());
+                        writer.write(" (");
+                        writer.write(repo.getUrl());
+                        writer.write(")");
+                    }
                 }
             } catch (IOException e1) {
                 buf.append(e.getLocalizedMessage());
@@ -254,7 +255,7 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
     }
 
     private static boolean isComplete(RegistryConfig client, RegistryConfig descriptor) {
-        if (client.isDisabled()) {
+        if (!client.isEnabled()) {
             return true;
         }
         if (client.getDescriptor() == null) {

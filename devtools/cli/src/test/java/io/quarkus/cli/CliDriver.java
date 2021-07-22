@@ -159,6 +159,10 @@ public class CliDriver {
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("camel-"),
+                "camel extensions should not appear in the list of installable extensions. Found:\n" + result);
+
         return result;
     }
 
@@ -256,9 +260,8 @@ public class CliDriver {
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("quarkus-hibernate-orm"),
                 "quarkus-hibernate-orm should be listed as an installable extension. Found:\n" + result);
-        Assertions.assertFalse(result.stdout.contains("quarkus-qute"),
+        Assertions.assertFalse(result.stdout.matches("quarkus-qute"),
                 "quarkus-qute should not be listed as an installable extension. Found:\n" + result);
-
         return result;
     }
 

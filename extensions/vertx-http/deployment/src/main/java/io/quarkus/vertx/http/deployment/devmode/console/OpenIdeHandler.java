@@ -1,7 +1,8 @@
 package io.quarkus.vertx.http.deployment.devmode.console;
 
 import java.io.File;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -48,11 +49,9 @@ public class OpenIdeHandler extends DevConsolePostHandler {
 
     private void typicalProcessLaunch(RoutingContext routingContext, String className, String lang, String srcMainPath,
             String line, Ide ide) {
-        String arg = toFileName(className, lang, srcMainPath);
-        if (!isNullOrEmpty(line)) {
-            arg = arg + ":" + line;
-        }
-        launchInIDE(ide, arg, routingContext);
+        String fileName = toFileName(className, lang, srcMainPath);
+        List<String> args = ide.createFileOpeningArgs(fileName, line);
+        launchInIDE(routingContext, ide, args);
     }
 
     private String toFileName(String className, String lang, String srcMainPath) {
@@ -68,7 +67,7 @@ public class OpenIdeHandler extends DevConsolePostHandler {
 
     }
 
-    protected void launchInIDE(Ide ide, String arg, RoutingContext routingContext) {
+    protected void launchInIDE(RoutingContext routingContext, Ide ide, List<String> args) {
         new Thread(new Runnable() {
             public void run() {
                 try {
@@ -78,7 +77,10 @@ public class OpenIdeHandler extends DevConsolePostHandler {
                         routingContext.response().setStatusCode(500).end();
                         return;
                     }
-                    new ProcessBuilder(Arrays.asList(effectiveCommand, arg)).inheritIO().start().waitFor(10,
+                    List<String> command = new ArrayList<>();
+                    command.add(effectiveCommand);
+                    command.addAll(args);
+                    new ProcessBuilder(command).inheritIO().start().waitFor(10,
                             TimeUnit.SECONDS);
                     routingContext.response().setStatusCode(200).end();
                 } catch (Exception e) {

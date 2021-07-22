@@ -85,7 +85,6 @@ public class HibernateHotReloadTestCase {
         ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
 
         TestStatus ts = utils.waitForNextCompletion();
-        ;
 
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());

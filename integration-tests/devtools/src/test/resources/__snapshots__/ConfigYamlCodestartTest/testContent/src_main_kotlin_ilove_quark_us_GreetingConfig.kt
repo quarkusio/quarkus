@@ -1,12 +1,13 @@
 package ilove.quark.us
 
-import io.quarkus.arc.config.ConfigProperties
-import org.eclipse.microprofile.config.inject.ConfigProperty
+import io.smallrye.config.ConfigMapping
+import io.smallrye.config.WithName
 
-@ConfigProperties(prefix = "greeting")
+
+@ConfigMapping(prefix = "greeting")
 interface GreetingConfig {
 
-    @ConfigProperty(name = "message")
+    @WithName("message")
     fun message(): String?
 
 }

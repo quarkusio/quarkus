@@ -1,5 +1,7 @@
 package io.quarkus.it.smallrye.config;
 
+import java.util.List;
+
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.json.Json;
@@ -28,6 +30,9 @@ public class ServerResource {
     @Inject
     @ConfigProperty(name = "server.info.message")
     Instance<String> message;
+    @Inject
+    @ConfigProperty(name = "http.server.form.positions")
+    List<Integer> positions;
 
     @GET
     public Response getServer() {
@@ -64,5 +69,11 @@ public class ServerResource {
     @Path("/info")
     public String info() {
         return message.get();
+    }
+
+    @GET
+    @Path("/positions")
+    public List<Integer> positions() {
+        return positions;
     }
 }

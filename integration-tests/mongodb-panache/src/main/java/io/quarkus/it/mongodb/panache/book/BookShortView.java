@@ -4,7 +4,7 @@ import java.time.LocalDate;
 
 import javax.json.bind.annotation.JsonbDateFormat;
 
-import io.quarkus.mongodb.panache.ProjectionFor;
+import io.quarkus.mongodb.panache.common.ProjectionFor;
 
 @ProjectionFor(Book.class)
 public class BookShortView {

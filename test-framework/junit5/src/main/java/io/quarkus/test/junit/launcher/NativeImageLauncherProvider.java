@@ -11,6 +11,7 @@ import java.util.ServiceLoader;
 
 import org.eclipse.microprofile.config.Config;
 
+import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DefaultNativeImageLauncher;
 import io.quarkus.test.common.LauncherUtil;
 import io.quarkus.test.common.NativeImageLauncher;
@@ -41,6 +42,7 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
                     ConfigUtil.waitTimeValue(config),
                     config.getOptionalValue("quarkus.test.native-image-profile", String.class).orElse(null),
                     ConfigUtil.argLineValue(config),
+                    context.devServicesLaunchResult(),
                     System.getProperty("native.image.path"),
                     context.testClass()));
             return launcher;
@@ -56,9 +58,9 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
         private final Class<?> testClass;
 
         public DefaultNativeImageInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
-                List<String> argLine,
+                List<String> argLine, ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult,
                 String nativeImagePath, Class<?> testClass) {
-            super(httpPort, httpsPort, waitTime, testProfile, argLine);
+            super(httpPort, httpsPort, waitTime, testProfile, argLine, devServicesLaunchResult);
             this.nativeImagePath = nativeImagePath;
             this.testClass = testClass;
         }

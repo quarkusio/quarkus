@@ -105,7 +105,16 @@ public class QuarkusIntegrationTestExtension
     private IntegrationTestExtensionState doProcessStart(Properties quarkusArtifactProperties,
             Class<? extends QuarkusTestProfile> profile, ExtensionContext context)
             throws Throwable {
-        devServicesProps = handleDevServices(context);
+        String artifactType = quarkusArtifactProperties.getProperty("type");
+        if (artifactType == null) {
+            throw new IllegalStateException("Unable to determine the type of artifact created by the Quarkus build");
+        }
+
+        boolean isDockerLaunch = "jar-container".equals(artifactType) || "native-container".equals(artifactType);
+
+        ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult = handleDevServices(context,
+                isDockerLaunch);
+        QuarkusIntegrationTestExtension.devServicesProps = devServicesLaunchResult.properties();
         quarkusTestProfile = profile;
         currentJUnitTestClass = context.getRequiredTestClass();
         TestResourceManager testResourceManager = null;
@@ -122,7 +131,7 @@ public class QuarkusIntegrationTestExtension
             hasPerTestResources = testResourceManager.hasPerTestResources();
 
             Map<String, String> additionalProperties = new HashMap<>(testProfileAndProperties.properties);
-            additionalProperties.putAll(devServicesProps);
+            additionalProperties.putAll(QuarkusIntegrationTestExtension.devServicesProps);
             Map<String, String> resourceManagerProps = testResourceManager.start();
             Map<String, String> old = new HashMap<>();
             for (Map.Entry<String, String> i : resourceManagerProps.entrySet()) {
@@ -149,16 +158,13 @@ public class QuarkusIntegrationTestExtension
                     });
             additionalProperties.putAll(resourceManagerProps);
 
-            String artifactType = quarkusArtifactProperties.getProperty("type");
-            if (artifactType == null) {
-                throw new IllegalStateException("Unable to determine the type of artifact created by the Quarkus build");
-            }
             ArtifactLauncher<?> launcher = null;
             ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
             for (ArtifactLauncherProvider launcherProvider : loader) {
                 if (launcherProvider.supportsArtifactType(artifactType)) {
                     launcher = launcherProvider.create(
-                            new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context, requiredTestClass));
+                            new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context, requiredTestClass,
+                                    devServicesLaunchResult));
                     break;
                 }
             }
@@ -233,12 +239,14 @@ public class QuarkusIntegrationTestExtension
         private final Properties quarkusArtifactProperties;
         private final ExtensionContext context;
         private final Class<?> requiredTestClass;
+        private final ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult;
 
         DefaultArtifactLauncherCreateContext(Properties quarkusArtifactProperties, ExtensionContext context,
-                Class<?> requiredTestClass) {
+                Class<?> requiredTestClass, ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
             this.quarkusArtifactProperties = quarkusArtifactProperties;
             this.context = context;
             this.requiredTestClass = requiredTestClass;
+            this.devServicesLaunchResult = devServicesLaunchResult;
         }
 
         @Override
@@ -254,6 +262,11 @@ public class QuarkusIntegrationTestExtension
         @Override
         public Class<?> testClass() {
             return requiredTestClass;
+        }
+
+        @Override
+        public ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult() {
+            return devServicesLaunchResult;
         }
     }
 

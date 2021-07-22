@@ -10,6 +10,7 @@ import static io.quarkus.test.junit.IntegrationTestUtil.getSysPropsToRestore;
 import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.startLauncher;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.opentest4j.TestAbortedException;
 
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
+import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DefaultNativeImageLauncher;
 import io.quarkus.test.common.LauncherUtil;
 import io.quarkus.test.common.NativeImageLauncher;
@@ -110,7 +112,7 @@ public class NativeTestExtension
 
     private IntegrationTestExtensionState doNativeStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile)
             throws Throwable {
-        Map<String, String> devServicesProps = handleDevServices(context);
+        Map<String, String> devServicesProps = handleDevServices(context, false).properties();
         quarkusTestProfile = profile;
         currentJUnitTestClass = context.getRequiredTestClass();
         TestResourceManager testResourceManager = null;
@@ -186,6 +188,17 @@ public class NativeTestExtension
                 ConfigUtil.waitTimeValue(config),
                 config.getOptionalValue("quarkus.test.native-image-profile", String.class).orElse(null),
                 ConfigUtil.argLineValue(config),
+                new ArtifactLauncher.InitContext.DevServicesLaunchResult() {
+                    @Override
+                    public Map<String, String> properties() {
+                        return Collections.emptyMap();
+                    }
+
+                    @Override
+                    public String networkId() {
+                        return null;
+                    }
+                },
                 System.getProperty("native.image.path"),
                 requiredTestClass));
         return launcher;

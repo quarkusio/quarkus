@@ -14,6 +14,7 @@ import java.util.ServiceLoader;
 
 import org.eclipse.microprofile.config.Config;
 
+import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DefaultJarLauncher;
 import io.quarkus.test.common.JarArtifactLauncher;
 import io.quarkus.test.common.LauncherUtil;
@@ -46,6 +47,7 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
                             .orElse(DEFAULT_WAIT_TIME_SECONDS)),
                     config.getOptionalValue("quarkus.test.native-image-profile", String.class).orElse(null),
                     ConfigUtil.argLineValue(config),
+                    context.devServicesLaunchResult(),
                     context.buildOutputDirectory().resolve(pathStr)));
             return launcher;
         } else {
@@ -58,8 +60,8 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
         private final Path jarPath;
 
         DefaultJarInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile, List<String> argLine,
-                Path jarPath) {
-            super(httpPort, httpsPort, waitTime, testProfile, argLine);
+                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult, Path jarPath) {
+            super(httpPort, httpsPort, waitTime, testProfile, argLine, devServicesLaunchResult);
             this.jarPath = jarPath;
         }
 

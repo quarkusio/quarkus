@@ -27,7 +27,9 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.util.JsonSerialization;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.utility.Base58;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -36,6 +38,7 @@ import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.oidc.deployment.OidcBuildStep.IsEnabled;
@@ -79,6 +82,7 @@ public class KeycloakDevServicesProcessor {
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = IsEnabled.class)
     public DevServicesConfigBuildItem startKeycloakContainer(LaunchModeBuildItem launchMode,
+            Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
             BuildProducer<DevServicesNativeConfigResultBuildItem> devServices,
             Optional<OidcDevServicesBuildItem> oidcProviderBuildItem,
@@ -119,7 +123,7 @@ public class KeycloakDevServicesProcessor {
         }
         capturedDevServicesConfiguration = currentDevServicesConfiguration;
 
-        StartResult startResult = startContainer();
+        StartResult startResult = startContainer(devServicesSharedNetworkBuildItem.isPresent());
         if (startResult == null) {
             return null;
         }
@@ -212,7 +216,7 @@ public class KeycloakDevServicesProcessor {
         return new DevServicesConfigBuildItem(configProperties);
     }
 
-    private StartResult startContainer() {
+    private StartResult startContainer(boolean useSharedContainer) {
         if (!capturedDevServicesConfiguration.enabled) {
             // explicitly disabled
             LOG.debug("Not starting devservices for Keycloak as it has been disabled in the config");
@@ -235,8 +239,9 @@ public class KeycloakDevServicesProcessor {
         String imageName = capturedDevServicesConfiguration.imageName.get();
         DockerImageName dockerImageName = DockerImageName.parse(imageName)
                 .asCompatibleSubstituteFor(imageName);
-        FixedPortOidcContainer oidcContainer = new FixedPortOidcContainer(dockerImageName,
+        QuarkusOidcContainer oidcContainer = new QuarkusOidcContainer(dockerImageName,
                 capturedDevServicesConfiguration.port,
+                useSharedContainer,
                 capturedDevServicesConfiguration.realmPath);
 
         oidcContainer.start();
@@ -264,24 +269,37 @@ public class KeycloakDevServicesProcessor {
         }
     }
 
-    private static class FixedPortOidcContainer extends GenericContainer {
-        OptionalInt fixedExposedPort;
-        Optional<String> realm;
-        boolean realmFileExists;
+    private static class QuarkusOidcContainer extends GenericContainer {
+        private final OptionalInt fixedExposedPort;
+        private final boolean useSharedNetwork;
+        private final Optional<String> realm;
+        private boolean realmFileExists;
+        private String hostName = null;
 
-        public FixedPortOidcContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, Optional<String> realm) {
+        public QuarkusOidcContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
+                Optional<String> realm) {
             super(dockerImageName);
             this.fixedExposedPort = fixedExposedPort;
+            this.useSharedNetwork = useSharedNetwork;
             this.realm = realm;
         }
 
         @Override
         protected void configure() {
             super.configure();
-            if (fixedExposedPort.isPresent()) {
-                addFixedExposedPort(fixedExposedPort.getAsInt(), KEYCLOAK_EXPOSED_PORT);
+            if (useSharedNetwork) {
+                // When a shared network is requested for the launched containers, we need to configure
+                // the container to use it. We also need to create a hostname that will be applied to the returned
+                // Redis URL
+                setNetwork(Network.SHARED);
+                hostName = "redis-" + Base58.randomString(5);
+                setNetworkAliases(Collections.singletonList(hostName));
             } else {
-                addExposedPort(KEYCLOAK_EXPOSED_PORT);
+                if (fixedExposedPort.isPresent()) {
+                    addFixedExposedPort(fixedExposedPort.getAsInt(), KEYCLOAK_EXPOSED_PORT);
+                } else {
+                    addExposedPort(KEYCLOAK_EXPOSED_PORT);
+                }
             }
 
             addEnv(KEYCLOAK_USER_PROP, KEYCLOAK_ADMIN_USER);
@@ -308,7 +326,18 @@ public class KeycloakDevServicesProcessor {
             super.setWaitStrategy(Wait.forHttp("/auth").forPort(KEYCLOAK_EXPOSED_PORT));
         }
 
+        @Override
+        public String getHost() {
+            if (useSharedNetwork) {
+                return hostName;
+            }
+            return super.getHost();
+        }
+
         public int getPort() {
+            if (useSharedNetwork) {
+                return KEYCLOAK_EXPOSED_PORT;
+            }
             if (fixedExposedPort.isPresent()) {
                 return fixedExposedPort.getAsInt();
             }

@@ -27,6 +27,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private long waitTimeSeconds;
     private String testProfile;
     private List<String> argLine;
+    private ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult;
     private String containerImage;
     private boolean pullRequired;
 
@@ -41,6 +42,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         this.waitTimeSeconds = initContext.waitTime().getSeconds();
         this.testProfile = initContext.testProfile();
         this.argLine = initContext.argLine();
+        this.devServicesLaunchResult = initContext.getDevServicesLaunchResult();
         this.containerImage = initContext.containerImage();
         this.pullRequired = initContext.pullRequired();
     }
@@ -76,9 +78,14 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             args.addAll(argLine);
         }
         args.add("--rm");
-        // the only reliable way the application container can talk to services launched via testcontainers, is to use host network
-        // this is because those containers use 'localhost' as their host in the config property they present to Quarkus
-        args.add("--net=host");
+        args.add("-p");
+        args.add(httpPort + ":" + httpPort);
+        args.add("-p");
+        args.add(httpsPort + ":" + httpsPort);
+        // if the dev services resulted in creating a dedicated network, then use it
+        if (devServicesLaunchResult.networkId() != null) {
+            args.add("--net=" + devServicesLaunchResult.networkId());
+        }
         args.addAll(toEnvVar("quarkus.http.port", "" + httpPort));
         args.addAll(toEnvVar("quarkus.http.ssl-port", "" + httpsPort));
         // this won't be correct when using the random port but it's really only used by us for the rest client tests

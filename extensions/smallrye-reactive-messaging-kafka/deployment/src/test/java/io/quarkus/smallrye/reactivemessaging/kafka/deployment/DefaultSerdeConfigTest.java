@@ -11,6 +11,7 @@ import java.util.concurrent.CompletionStage;
 
 import javax.inject.Inject;
 
+import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.specific.AvroGenerated;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -726,6 +727,363 @@ public class DefaultSerdeConfigTest {
         @Incoming("channel64")
         @Outgoing("channel65")
         Multi<AvroDto> method43(Multi<byte[]> payload) {
+            return null;
+        }
+    }
+
+    // ---
+
+    @Test
+    public void avroDtoInGenericRecordOut() {
+        // @formatter:off
+        Tuple[] expectations = {
+                tuple("mp.messaging.outgoing.channel1.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel2.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel3.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel4.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel5.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel6.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel7.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel8.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel9.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel10.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel11.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel12.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+
+                tuple("mp.messaging.incoming.channel13.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel13.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.incoming.channel14.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel14.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.incoming.channel15.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel15.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.incoming.channel16.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel16.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.incoming.channel17.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel17.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.incoming.channel18.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel18.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.incoming.channel19.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel19.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.incoming.channel20.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel20.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.incoming.channel21.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel21.apicurio.registry.use-specific-avro-reader", "true"),
+
+                tuple("mp.messaging.incoming.channel22.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel22.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel23.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel24.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel24.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel25.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel26.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel26.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel27.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel28.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel28.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel29.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel30.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel30.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel31.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel32.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel32.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel33.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel34.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel34.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel35.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel36.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel36.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel37.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel38.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel38.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel39.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel40.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel40.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel41.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel42.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel42.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel43.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel44.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel44.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel45.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel46.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel46.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel47.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel48.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel48.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel49.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel50.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel50.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel51.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel52.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel52.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel53.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+
+                tuple("mp.messaging.incoming.channel54.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel54.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel55.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel56.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel56.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel57.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel58.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel58.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel59.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel60.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel60.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel61.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel62.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel62.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel63.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel64.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel64.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel65.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+        };
+        // @formatter:on
+
+        doTest(expectations, AvroDto.class, AvroDtoInGenericRecordOut.class);
+    }
+
+    private static class AvroDtoInGenericRecordOut {
+        // @Outgoing
+
+        @Outgoing("channel1")
+        Publisher<Message<GenericRecord>> method1() {
+            return null;
+        }
+
+        @Outgoing("channel2")
+        Publisher<GenericRecord> method2() {
+            return null;
+        }
+
+        @Outgoing("channel3")
+        PublisherBuilder<Message<GenericRecord>> method3() {
+            return null;
+        }
+
+        @Outgoing("channel4")
+        PublisherBuilder<GenericRecord> method4() {
+            return null;
+        }
+
+        @Outgoing("channel5")
+        Multi<Message<GenericRecord>> method5() {
+            return null;
+        }
+
+        @Outgoing("channel6")
+        Multi<GenericRecord> method6() {
+            return null;
+        }
+
+        @Outgoing("channel7")
+        Message<GenericRecord> method7() {
+            return null;
+        }
+
+        @Outgoing("channel8")
+        GenericRecord method8() {
+            return null;
+        }
+
+        @Outgoing("channel9")
+        CompletionStage<Message<GenericRecord>> method9() {
+            return null;
+        }
+
+        @Outgoing("channel10")
+        CompletionStage<GenericRecord> method10() {
+            return null;
+        }
+
+        @Outgoing("channel11")
+        Uni<Message<GenericRecord>> method11() {
+            return null;
+        }
+
+        @Outgoing("channel12")
+        Uni<GenericRecord> method12() {
+            return null;
+        }
+
+        // @Incoming
+
+        @Incoming("channel13")
+        Subscriber<Message<AvroDto>> method13() {
+            return null;
+        }
+
+        @Incoming("channel14")
+        Subscriber<AvroDto> method14() {
+            return null;
+        }
+
+        @Incoming("channel15")
+        SubscriberBuilder<Message<AvroDto>, Void> method15() {
+            return null;
+        }
+
+        @Incoming("channel16")
+        SubscriberBuilder<AvroDto, Void> method16() {
+            return null;
+        }
+
+        @Incoming("channel17")
+        void method17(AvroDto msg) {
+        }
+
+        @Incoming("channel18")
+        CompletionStage<?> method18(Message<AvroDto> msg) {
+            return null;
+        }
+
+        @Incoming("channel19")
+        CompletionStage<?> method19(AvroDto payload) {
+            return null;
+        }
+
+        @Incoming("channel20")
+        Uni<?> method20(Message<AvroDto> msg) {
+            return null;
+        }
+
+        @Incoming("channel21")
+        Uni<?> method21(AvroDto payload) {
+            return null;
+        }
+
+        // @Incoming @Outgoing
+
+        @Incoming("channel22")
+        @Outgoing("channel23")
+        Processor<Message<AvroDto>, Message<GenericRecord>> method22() {
+            return null;
+        }
+
+        @Incoming("channel24")
+        @Outgoing("channel25")
+        Processor<AvroDto, GenericRecord> method23() {
+            return null;
+        }
+
+        @Incoming("channel26")
+        @Outgoing("channel27")
+        ProcessorBuilder<Message<AvroDto>, Message<GenericRecord>> method24() {
+            return null;
+        }
+
+        @Incoming("channel28")
+        @Outgoing("channel29")
+        ProcessorBuilder<AvroDto, GenericRecord> method25() {
+            return null;
+        }
+
+        @Incoming("channel30")
+        @Outgoing("channel31")
+        Publisher<Message<GenericRecord>> method26(Message<AvroDto> msg) {
+            return null;
+        }
+
+        @Incoming("channel32")
+        @Outgoing("channel33")
+        Publisher<GenericRecord> method27(AvroDto payload) {
+            return null;
+        }
+
+        @Incoming("channel34")
+        @Outgoing("channel35")
+        PublisherBuilder<Message<GenericRecord>> method28(Message<AvroDto> msg) {
+            return null;
+        }
+
+        @Incoming("channel36")
+        @Outgoing("channel37")
+        PublisherBuilder<GenericRecord> method29(AvroDto payload) {
+            return null;
+        }
+
+        @Incoming("channel38")
+        @Outgoing("channel39")
+        Multi<Message<GenericRecord>> method30(Message<AvroDto> msg) {
+            return null;
+        }
+
+        @Incoming("channel40")
+        @Outgoing("channel41")
+        Multi<GenericRecord> method31(AvroDto payload) {
+            return null;
+        }
+
+        @Incoming("channel42")
+        @Outgoing("channel43")
+        Message<GenericRecord> method32(Message<AvroDto> msg) {
+            return null;
+        }
+
+        @Incoming("channel44")
+        @Outgoing("channel45")
+        GenericRecord method33(AvroDto payload) {
+            return null;
+        }
+
+        @Incoming("channel46")
+        @Outgoing("channel47")
+        CompletionStage<Message<GenericRecord>> method34(Message<AvroDto> msg) {
+            return null;
+        }
+
+        @Incoming("channel48")
+        @Outgoing("channel49")
+        CompletionStage<GenericRecord> method35(AvroDto payload) {
+            return null;
+        }
+
+        @Incoming("channel50")
+        @Outgoing("channel51")
+        Uni<Message<GenericRecord>> method36(Message<AvroDto> msg) {
+            return null;
+        }
+
+        @Incoming("channel52")
+        @Outgoing("channel53")
+        Uni<GenericRecord> method37(AvroDto payload) {
+            return null;
+        }
+
+        // @Incoming @Outgoing stream manipulation
+
+        @Incoming("channel54")
+        @Outgoing("channel55")
+        Publisher<Message<GenericRecord>> method38(Publisher<Message<AvroDto>> msg) {
+            return null;
+        }
+
+        @Incoming("channel56")
+        @Outgoing("channel57")
+        Publisher<GenericRecord> method39(Publisher<AvroDto> payload) {
+            return null;
+        }
+
+        @Incoming("channel58")
+        @Outgoing("channel59")
+        PublisherBuilder<Message<GenericRecord>> method40(PublisherBuilder<Message<AvroDto>> msg) {
+            return null;
+        }
+
+        @Incoming("channel60")
+        @Outgoing("channel61")
+        PublisherBuilder<GenericRecord> method41(PublisherBuilder<AvroDto> payload) {
+            return null;
+        }
+
+        @Incoming("channel62")
+        @Outgoing("channel63")
+        Multi<Message<GenericRecord>> method42(Multi<Message<AvroDto>> msg) {
+            return null;
+        }
+
+        @Incoming("channel64")
+        @Outgoing("channel65")
+        Multi<GenericRecord> method43(Multi<AvroDto> payload) {
             return null;
         }
     }
@@ -2015,7 +2373,6 @@ public class DefaultSerdeConfigTest {
 
         @Incoming("channel2")
         void channel2Duplicate(JacksonDto jacksonDto) {
-
         }
 
         @Channel("channel3")
@@ -2023,7 +2380,6 @@ public class DefaultSerdeConfigTest {
 
         @Incoming("channel3")
         void channel3Duplicate(Record<Integer, JacksonDto> jacksonDto) {
-
         }
 
         @Channel("channel4")
@@ -2032,7 +2388,6 @@ public class DefaultSerdeConfigTest {
         @Outgoing("channel4")
         ProducerRecord<String, Integer> method4() {
             return null;
-        };
-
+        }
     }
 }

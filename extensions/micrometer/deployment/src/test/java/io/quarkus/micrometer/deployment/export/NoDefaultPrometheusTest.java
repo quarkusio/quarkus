@@ -22,6 +22,7 @@ public class NoDefaultPrometheusTest {
             .setFlatClassPath(true)
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
+            .overrideConfigKey("quarkus.micrometer.binder.jvm", "true")
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.export.prometheus.default-registry", "false")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
@@ -49,6 +50,9 @@ public class NoDefaultPrometheusTest {
                 "Should be PrometheusMeterRegistry");
         Assertions.assertEquals(subPromRegistry, promRegistry,
                 "Should be the same bean as the PrometheusMeterRegistry. Found " + subRegistries);
+
+        Assertions.assertNotNull(registry.find("jvm.info").counter(),
+                "JVM Info counter should be present, found: " + registry.getMeters());
 
         String result = promRegistry.scrape();
         Assertions.assertTrue(result.contains("customKey=\"customValue\""),

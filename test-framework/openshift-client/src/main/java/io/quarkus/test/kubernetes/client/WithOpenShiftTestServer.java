@@ -6,17 +6,17 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.function.Consumer;
 
-import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
+import io.fabric8.openshift.client.server.mock.OpenShiftServer;
 import io.quarkus.test.common.QuarkusTestResource;
 
 /**
- * Use on your test resource to get a mock {@link KubernetesServer} spawn up, and injectable with {@link KubernetesTestServer}.
+ * Use on your test resource to get a mock {@link OpenShiftServer} spawn up, and injectable with {@link OpenShiftTestServer}.
  * This annotation is only active when used on a test class, and only for this test class.
  */
-@QuarkusTestResource(value = KubernetesServerTestResource.class, restrictToAnnotatedClass = true)
+@QuarkusTestResource(value = OpenShiftServerTestResource.class, restrictToAnnotatedClass = true)
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface WithKubernetesTestServer {
+public @interface WithOpenShiftTestServer {
 
     /**
      * Start it with HTTPS
@@ -29,18 +29,13 @@ public @interface WithKubernetesTestServer {
     boolean crud() default true;
 
     /**
-     * Port to use, defaults to any available port
-     */
-    int port() default 0;
-
-    /**
      * Setup class to call after the mock server is created, for custom setup.
      */
-    Class<? extends Consumer<KubernetesServer>> setup() default NO_SETUP.class;
+    Class<? extends Consumer<OpenShiftServer>> setup() default NO_SETUP.class;
 
-    class NO_SETUP implements Consumer<KubernetesServer> {
+    class NO_SETUP implements Consumer<OpenShiftServer> {
         @Override
-        public void accept(KubernetesServer t) {
+        public void accept(OpenShiftServer t) {
         }
     }
 }

@@ -384,6 +384,20 @@ public class OpenShiftClientTest {
 ...
 ----
 
+Or by using the `@WithOpenShiftTestServer` similar to the `@WithKubernetesTestServer` explained in the
+previous section:
+
+[source, java]
+----
+@WithOpenShiftTestServer
+@QuarkusTest
+public class OpenShiftClientTest {
+
+    @OpenShiftTestServer
+    private OpenShiftServer mockOpenShiftServer;
+...
+----
+
 To use this feature, you have to add a dependency on `quarkus-test-openshift-client`:
 
 [source,xml]

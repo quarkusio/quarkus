@@ -48,6 +48,7 @@ import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.parser.CronParser;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.Subclass;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.Scheduled.ConcurrentExecution;
@@ -482,11 +483,16 @@ public class QuartzScheduler implements Scheduler {
             this.jobs = jobs;
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public Job newJob(TriggerFiredBundle bundle, org.quartz.Scheduler Scheduler) throws SchedulerException {
             Class<? extends Job> jobClass = bundle.getJobDetail().getJobClass();
             if (jobClass.equals(InvokerJob.class)) {
                 return new InvokerJob(invokers);
+            }
+            if (Subclass.class.isAssignableFrom(jobClass)) {
+                // Get the original class from an intercepted bean class
+                jobClass = (Class<? extends Job>) jobClass.getSuperclass();
             }
             Instance<?> instance = jobs.select(jobClass);
             if (instance.isResolvable()) {

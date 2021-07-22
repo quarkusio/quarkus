@@ -39,4 +39,11 @@ public class AsyncReturnTypeScanner implements MethodScanner {
         }
         return Collections.emptyList();
     }
+
+    @Override
+    public boolean isMethodSignatureAsync(MethodInfo method) {
+        DotName returnTypeName = method.returnType().name();
+        return returnTypeName.equals(COMPLETION_STAGE) || returnTypeName.equals(UNI) || returnTypeName.equals(MULTI)
+                || returnTypeName.equals(PUBLISHER);
+    }
 }

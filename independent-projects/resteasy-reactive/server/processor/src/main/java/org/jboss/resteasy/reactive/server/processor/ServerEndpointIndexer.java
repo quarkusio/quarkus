@@ -145,6 +145,15 @@ public class ServerEndpointIndexer
         return injectableBean.isFormParamRequired();
     }
 
+    protected boolean doesMethodHaveBlockingSignature(MethodInfo info) {
+        for (var i : methodScanners) {
+            if (i.isMethodSignatureAsync(info)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     @Override
     protected void handleAdditionalMethodProcessing(ServerResourceMethod method, ClassInfo currentClassInfo, MethodInfo info) {
         Supplier<EndpointInvoker> invokerSupplier = null;

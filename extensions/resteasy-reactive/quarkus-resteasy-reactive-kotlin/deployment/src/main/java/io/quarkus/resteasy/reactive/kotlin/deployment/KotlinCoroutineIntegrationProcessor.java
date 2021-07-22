@@ -99,6 +99,16 @@ public class KotlinCoroutineIntegrationProcessor {
                 }
                 return null;
             }
+
+            @Override
+            public boolean isMethodSignatureAsync(MethodInfo info) {
+                for (var param : info.parameters()) {
+                    if (param.name().equals(CONTINUATION)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
         });
     }
 
@@ -166,6 +176,11 @@ public class KotlinCoroutineIntegrationProcessor {
                             HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE));
                 }
                 return Collections.emptyList();
+            }
+
+            @Override
+            public boolean isMethodSignatureAsync(MethodInfo info) {
+                return info.returnType().name().equals(FLOW);
             }
         });
     }

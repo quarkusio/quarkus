@@ -43,4 +43,8 @@ public interface MethodScanner {
         return null;
     }
 
+    default boolean isMethodSignatureAsync(MethodInfo info) {
+        return false;
+    }
+
 }

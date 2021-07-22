@@ -343,7 +343,7 @@ public class ResteasyReactiveProcessor {
                     .setHttpAnnotationToMethod(result.getHttpAnnotationToMethod())
                     .setInjectableBeans(injectableBeans)
                     .setAdditionalWriters(additionalWriters)
-                    .setDefaultBlocking(appResult.isBlocking())
+                    .setDefaultBlocking(appResult.getBlockingDefault())
                     .setHasRuntimeConverters(!paramConverterProviders.getParamConverterProviders().isEmpty())
                     .setClassLevelExceptionMappers(
                             classLevelExceptionMappers.isPresent() ? classLevelExceptionMappers.get().getMappers()

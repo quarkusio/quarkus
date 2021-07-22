@@ -16,6 +16,7 @@ import org.jboss.resteasy.reactive.RestQuery;
 
 import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
 
 @Path("/multipart")
 public class MultipartResource {
@@ -24,6 +25,7 @@ public class MultipartResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Path("/simple/{times}")
+    @NonBlocking
     public String simple(@MultipartForm FormData formData, Integer times) {
         if (BlockingOperationControl.isBlockingAllowed()) {
             throw new RuntimeException("should not have dispatched");
@@ -41,7 +43,7 @@ public class MultipartResource {
     @Path("/blocking")
     public Response blocking(@DefaultValue("1") @RestQuery Integer times, FormData formData) throws IOException {
         if (!BlockingOperationControl.isBlockingAllowed()) {
-            throw new RuntimeException("should not have dispatched");
+            throw new RuntimeException("should have dispatched");
         }
         return Response.ok(formData.getName() + " - " + times * formData.getNum() + " - " + formData.getStatus())
                 .header("html-size", formData.getHtmlPart().size())
@@ -58,8 +60,8 @@ public class MultipartResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Path("/same-name")
     public String sameName(FormDataSameFileName formData) {
-        if (BlockingOperationControl.isBlockingAllowed()) {
-            throw new RuntimeException("should not have dispatched");
+        if (!BlockingOperationControl.isBlockingAllowed()) {
+            throw new RuntimeException("should have dispatched");
         }
         return formData.status + " - " + formData.getHtmlFiles().size() + " - " + formData.txtFiles.size() + " - "
                 + formData.xmlFiles.size();

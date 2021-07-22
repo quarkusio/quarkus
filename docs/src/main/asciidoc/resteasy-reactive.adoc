@@ -963,16 +963,28 @@ The event-loop threads (also called IO threads) are responsible for actually per
 operations in an asynchronous way, and to trigger any listener interested in the completion of those
 IO operations.
 
-By default, RESTEasy Reactive will run endpoint methods on the event-loop threads, on the assumption that
-they are going to be fast and only invoke non-blocking operations.
+By default, the thread RESTEasy Reactive will run endpoint methods on depends on the signature of the method.
+If a method returns one of the following types then it is considered non-blocking, and will be run on the IO thread
+by default:
 
-This is the model of execution that leads to best performance if your endpoints do not do any blocking
-operation (such as blocking IO, blocking on an asynchronous operation, or sleeping).
+- `io.smallrye.mutiny.Uni`
+- `io.smallrye.mutiny.Multi`
+- `java.util.concurrent.CompletionStage`
+- `org.reactivestreams.Publisher`
+- Kotlin `suspended` methods
 
-If your endpoint method needs to do any of those blocking operations, you should add the 
+This 'best guess' approach means that the majority of operations will run on the correct thread by default. If you are
+writing reactive code then your method will generally return one of these types, and will be executed on the IO thread.
+If you are writing blocking code your methods will generally return the result directly, and these will be run on a worker
+thread.
+
+You can override this behaviour using the
 https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/1.5.0/io/smallrye/common/annotation/Blocking.html[`@Blocking`]
-annotation on your endpoint and it will instead be invoked on a worker thread. Your endpoint method
-code can remain exactly the same, and it will be allowed to block:
+and
+https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/1.5.0/io/smallrye/common/annotation/NonBlocking.html[`@NonBlocking`]
+annotations. This can be applied at the method, class or `javax.ws.rs.core.Application` level.
+
+The example below will override the default behaviour and always run on a worker thread, even though it returns a `Uni`.
 
 [source,java]
 ----
@@ -988,10 +1000,10 @@ public class Endpoint {
 
     @Blocking
     @GET
-    public String blockingHello() throws InterruptedException {
+    public Uni<String> blockingHello() throws InterruptedException {
         // do a blocking operation
         Thread.sleep(1000);
-        return "Yaaaawwwwnnnnnn…";
+        return Uni.createFrom().item("Yaaaawwwwnnnnnn…");
     }
 }
 ----
@@ -1026,6 +1038,14 @@ public class Endpoint {
 If a method or class is annotated with `javax.transaction.Transactional` then it will also be treated as a blocking
 method. This is because JTA is a blocking technology, and is generally used with other blocking technology such as
 Hibernate and JDBC. An explicit `@Blocking` or `@NonBlocking` on the class will override this behaviour.
+
+==== Overriding the default behaviour
+
+If you want to override the default behaviour you can annotate a `javax.ws.rs.core.Application` subclass in your application
+with `@Blocking` or `@NonBlocking`, and this will set the default for every method that does not have an explicit annotation.
+
+Behaviour can still be overridden on a class or method level by annotating them directly, however all endpoints without
+an annotation will now follow the default, no matter their method signature.
 
 === Exception mapping
 

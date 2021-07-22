@@ -29,6 +29,7 @@ import io.restassured.RestAssured;
 import io.restassured.http.Headers;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
+import io.smallrye.mutiny.Uni;
 
 public class ValidNonBlockingFiltersTest {
 
@@ -79,8 +80,8 @@ public class ValidNonBlockingFiltersTest {
 
         @Path("nonblocking")
         @GET
-        public Response nonblocking(@Context HttpHeaders headers) {
-            return getResponse(headers);
+        public Uni<Response> nonblocking(@Context HttpHeaders headers) {
+            return Uni.createFrom().item(getResponse(headers));
         }
 
         private Response getResponse(HttpHeaders headers) {

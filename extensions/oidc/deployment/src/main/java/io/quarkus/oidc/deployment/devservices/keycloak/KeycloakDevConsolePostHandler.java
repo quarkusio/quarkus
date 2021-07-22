@@ -26,7 +26,7 @@ public class KeycloakDevConsolePostHandler extends DevConsolePostHandler {
         try {
             String token = null;
             if ("password".equals(form.get("grant"))) {
-                LOG.infof("Getting token from '%s' for user '%s' in realm '%s' using client id '%s'",
+                LOG.infof("Using a password grant to get a token from '%s' for user '%s' in realm '%s' with client id '%s'",
                         keycloakUrl, form.get("user"), form.get("realm"), form.get("client"));
 
                 String userName = form.get("user");
@@ -36,7 +36,7 @@ public class KeycloakDevConsolePostHandler extends DevConsolePostHandler {
                         users.get(userName),
                         KeycloakDevServicesProcessor.capturedDevServicesConfiguration.webClienTimeout);
             } else {
-                LOG.infof("Getting token from '%s' in realm '%s' using client id '%s'",
+                LOG.infof("Using a client_credentials grant to get a token token from '%s' in realm '%s' with client id '%s'",
                         keycloakUrl, form.get("realm"), form.get("client"));
 
                 token = KeycloakDevServicesUtils.getClientCredAccessToken(client, keycloakUrl,

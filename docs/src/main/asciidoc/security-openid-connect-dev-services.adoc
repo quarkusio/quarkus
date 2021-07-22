@@ -45,10 +45,9 @@ Click on the `Provider: Keycloak` link and you will see a Keycloak page which wi
 
 By default the Keycloak page can be used to support the development of a link:security-openid-connect[Quarkus OIDC service application].
 
-==== Implicit Grant
+==== Authorization Code Grant
 
-If you set `quarkus.keycloak.devservices.grant.type=implicit` in `applicatin.properties` (this is a default value) then an `implicit` grant will be used to acquire both access and ID tokens.
-Using this grant is recommended to emulate a typical flow where a `Singe Page Application` acquires the tokens and uses them to access Quarkus services.
+If you set `quarkus.keycloak.devservices.grant.type=code` in `applicatin.properties` (this is a default value) then an `authorization_code` grant will be used to acquire both access and ID tokens. Using this grant is recommended to emulate a typical flow where a `Single Page Application` acquires the tokens and uses them to access Quarkus services.
 
 First you will see an option to `Log into Single Page Application`:
 
@@ -62,6 +61,10 @@ Here you can test the service with either the access token or ID token (note tha
 
 Finally you can click a `Logged in` option if you'd like to log out and authenticate to Keycloak as a different user.
 
+==== Implicit Grant
+
+If you set `quarkus.keycloak.devservices.grant.type=implicit` in `applicatin.properties` then an `implicit` grant will be used to acquire both access and ID tokens. Use this grant for emulating a `Single Page Application` only if the authorization code grant does not work (for example, a client is configured in Keycloak to support an implicit grant, etc).
+
 ==== Password Grant
 
 If you set `quarkus.keycloak.devservices.grant.type=password` in `applicatin.properties` then you will see a screen like this one:
@@ -74,7 +77,7 @@ You will also see in the Dev UI console something similar to:
 
 [source,shell]
 ----
-2021-07-19 17:58:11,407 INFO  [io.qua.oid.dep.dev.key.KeycloakDevConsolePostHandler] (security-openid-connect-quickstart-dev.jar) (DEV Console action) Getting token from 'http://localhost:32818/auth/realms/quarkus/protocol/openid-connect/token' for user 'alice' in realm 'quarkus' using client id 'quarkus-app'
+2021-07-19 17:58:11,407 INFO  [io.qua.oid.dep.dev.key.KeycloakDevConsolePostHandler] (security-openid-connect-quickstart-dev.jar) (DEV Console action) Using password grant to get a token from 'http://localhost:32818/auth/realms/quarkus/protocol/openid-connect/token' for user 'alice' in realm 'quarkus' with client id 'quarkus-app'
 2021-07-19 17:58:11,533 INFO  [io.qua.oid.dep.dev.key.KeycloakDevConsolePostHandler] (security-openid-connect-quickstart-dev.jar) (DEV Console action) Test token: eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ6Z2tDazJQZ1JaYnVlVG5kcTFKSW1sVnNoZ2hhbWhtbnBNcXU0QUt5MnJBIn0.ey...
 2021-07-19 17:58:11,536 INFO  [io.qua.oid.dep.dev.key.KeycloakDevConsolePostHandler] (security-openid-connect-quickstart-dev.jar) (DEV Console action) Sending token to 'http://localhost:8080/api/admin'
 2021-07-19 17:58:11,674 INFO  [io.qua.oid.dep.dev.key.KeycloakDevConsolePostHandler] (security-openid-connect-quickstart-dev.jar) (DEV Console action) Result: 200

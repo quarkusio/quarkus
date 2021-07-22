@@ -36,8 +36,8 @@
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
            what we work with by self downloading it: -->
-        <graal-sdk.version-for-documentation>21.1.0</graal-sdk.version-for-documentation>
-        <mandrel.version-for-documentation>21.0</mandrel.version-for-documentation>
+        <graal-sdk.version-for-documentation>21.2.0</graal-sdk.version-for-documentation>
+        <mandrel.version-for-documentation>21.2</mandrel.version-for-documentation>
 
         <htmlunit.version>2.40.0</htmlunit.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
@@ -132,7 +132,7 @@
         <forbiddenapis-maven-plugin.version>3.1</forbiddenapis-maven-plugin.version>
 
         <!-- platform properties - this is a floating tag -->
-        <platform.quarkus.native.builder-image>quay.io/quarkus/ubi-quarkus-native-image:21.1-java11</platform.quarkus.native.builder-image>
+        <platform.quarkus.native.builder-image>quay.io/quarkus/ubi-quarkus-native-image:21.2-java11</platform.quarkus.native.builder-image>
 
         <script.extension>sh</script.extension>
         <docker-prune.location>${maven.multiModuleProjectDirectory}/.github/docker-prune.${script.extension}</docker-prune.location>

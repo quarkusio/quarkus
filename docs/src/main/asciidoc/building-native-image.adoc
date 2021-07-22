@@ -512,7 +512,7 @@ Sample Dockerfile for building with Maven:
 [source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/ubi-quarkus-native-image:21.1.0-java11 AS build
+FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor} AS build
 COPY pom.xml /project/
 COPY mvnw /project/mvnw
 COPY .mvn /project/.mvn
@@ -550,7 +550,7 @@ Sample Dockerfile for building with Gradle:
 [source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/ubi-quarkus-native-image:21.1.0-java11 AS build
+FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor} AS build
 COPY gradlew /project/gradlew
 COPY gradle /project/gradle
 COPY build.gradle /project/
@@ -665,7 +665,7 @@ The process for Gradle is analogous.
 
 Running the build process in a container is also possible:
 
-[source,bash]
+[source,bash,subs=attributes+]
 ---
 cd target/native-image
 docker run \
@@ -674,13 +674,13 @@ docker run \
   --v $(pwd):/work <1>
   -w /work <2>
   --entrypoint bin/sh \
-  quay.io/quarkus/ubi-quarkus-native-image:21.1.0-java11 \ <3>
+  quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor} \ <3>
   -c "native-image $(cat native-image.args) -J-Xmx4g" <4>
 ---
 
 <1> Mount the host's directory `target/native-image` to the container's `/work`. Thus, the generated binary will also be written to this directory.
 <2> Switch the working directory to `/work`, which we have mounted in <1>.
-<3> Use the `quay.io/quarkus/ubi-quarkus-native-image:21.1.0-java11` docker image introduced in <<#multistage-docker,Using a multi-stage Docker build>> to build the native image.
+<3> Use the `quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor}` docker image introduced in <<#multistage-docker,Using a multi-stage Docker build>> to build the native image.
 <4> Call `native-image` with the content of file `native-image.args` as arguments. We also supply an additional argument to limit the process's maximum memory limitation to 4 Gigabyte.
 
 In a CI/CD setup, we would:

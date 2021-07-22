@@ -124,9 +124,9 @@ public class NativeConfig {
 In this case the default value for `quarkus.native.builder-image` will be provided by the platform. The user will still be able to set the desired value for `quarkus.native.builder-image` in its `application.properties`, of course. But in case it's not customized by the user, the default value will be coming from the platform properties.
 A platform properties file for the example above would contain (the actual value is provided as an example):
 
-[source,text]
+[source,text,subs=attributes+]
 ----
-platform.quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:21.1.0-java11
+platform.quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor}
 ----
 
 There is also a Maven plugin goal that validates the platform properties content and its artifact coordinates and also checks whether the platform properties artifact is present in the platform's BOM. Here is a sample plugin configuration:

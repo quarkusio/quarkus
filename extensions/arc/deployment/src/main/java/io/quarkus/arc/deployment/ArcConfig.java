@@ -2,9 +2,6 @@ package io.quarkus.arc.deployment;
 
 import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_TIME;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -20,8 +17,8 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(phase = BUILD_TIME)
 public class ArcConfig {
 
-    public static final Set<String> ALLOWED_REMOVE_UNUSED_BEANS_VALUES = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList("all", "true", "none", "false", "fwk", "framework")));
+    public static final Set<String> ALLOWED_REMOVE_UNUSED_BEANS_VALUES = Set.of("all", "true", "none", "false", "fwk",
+            "framework");
 
     /**
      * <ul>

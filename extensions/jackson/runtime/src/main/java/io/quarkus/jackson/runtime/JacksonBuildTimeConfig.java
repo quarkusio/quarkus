@@ -18,6 +18,13 @@ public class JacksonBuildTimeConfig {
     public boolean failOnUnknownProperties;
 
     /**
+     * If enabled, Jackson will fail when no accessors are found for a type.
+     * This is enabled by default to match the default Jackson behavior.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean failOnEmptyBeans;
+
+    /**
      * If enabled, Jackson will serialize dates as numeric value(s).
      */
     @ConfigItem(defaultValue = "false")

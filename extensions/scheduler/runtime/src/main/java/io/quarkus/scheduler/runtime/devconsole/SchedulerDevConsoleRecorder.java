@@ -1,6 +1,8 @@
 package io.quarkus.scheduler.runtime.devconsole;
 
 import java.time.Instant;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
@@ -14,6 +16,7 @@ import io.quarkus.scheduler.Trigger;
 import io.quarkus.scheduler.runtime.ScheduledInvoker;
 import io.quarkus.scheduler.runtime.ScheduledMethodMetadata;
 import io.quarkus.scheduler.runtime.SchedulerContext;
+import io.quarkus.scheduler.runtime.util.SchedulerUtils;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
@@ -22,6 +25,16 @@ import io.vertx.ext.web.RoutingContext;
 public class SchedulerDevConsoleRecorder {
 
     private static final Logger LOG = Logger.getLogger(SchedulerDevConsoleRecorder.class);
+
+    public Supplier<Function<String, String>> getConfigLookup() {
+        return new Supplier<Function<String, String>>() {
+
+            @Override
+            public Function<String, String> get() {
+                return SchedulerUtils::lookUpPropertyValue;
+            }
+        };
+    }
 
     public Handler<RoutingContext> invokeHandler() {
         // the usual issue of Vert.x hanging on to the first TCCL and setting it on all its threads
@@ -44,6 +57,22 @@ public class SchedulerDevConsoleRecorder {
                         LOG.info("Scheduler resumed via Dev UI");
                         flashMessage(ctx, "Scheduler resumed");
                     }
+                } else if ("pauseJob".equals(action)) {
+                    Scheduler scheduler = Arc.container().instance(Scheduler.class).get();
+                    String identity = form.get("identity");
+                    if (identity != null && !scheduler.isPaused(identity)) {
+                        scheduler.pause(identity);
+                        LOG.infof("Scheduler paused job with identity '%s' via Dev UI", identity);
+                        flashMessage(ctx, "Job with identity " + identity + " paused");
+                    }
+                } else if ("resumeJob".equals(action)) {
+                    Scheduler scheduler = Arc.container().instance(Scheduler.class).get();
+                    String identity = form.get("identity");
+                    if (identity != null && scheduler.isPaused(identity)) {
+                        scheduler.resume(identity);
+                        LOG.infof("Scheduler resumed job with identity '%s'via Dev UI", identity);
+                        flashMessage(ctx, "Job with identity " + identity + " resumed");
+                    }
                 } else {
                     String name = form.get("name");
                     SchedulerContext context = Arc.container().instance(SchedulerContext.class).get();
@@ -58,6 +87,7 @@ public class SchedulerDevConsoleRecorder {
                                         ScheduledInvoker invoker = context
                                                 .createInvoker(metadata.getInvokerClassName());
                                         invoker.invoke(new DevModeScheduledExecution());
+                                        LOG.infof("Invoked scheduled method %s via Dev UI", name);
                                     } catch (Exception e) {
                                         LOG.error(
                                                 "Unable to invoke a @Scheduled method: "

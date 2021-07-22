@@ -1,5 +1,29 @@
-{#include main}
-  {#title}Schedules{/title}
+{#include main fluid=true}
+  {#title}Scheduled Methods{/title}
+  {#style}
+   span.app-class {
+     cursor:pointer;
+     color:blue;
+     text-decoration:underline;
+   }
+  {/style}
+  {#script}
+    $(document).ready(function(){
+      if (!ideKnown()) {
+        return;
+      }
+      $(".class-candidate").each(function() {
+        var className = $(this).text();
+        if (appClassLang(className)) {
+          $(this).addClass("app-class");
+        }
+      });
+
+      $(".app-class").on("click", function() {
+        openInIDE($(this).text());
+      });
+    });
+  {/script}
   {#body}
   {#if info:scheduler.running}
   <form method="post" enctype="application/x-www-form-urlencoded">
@@ -40,7 +64,7 @@
        {/if}
       </td>
       <td>
-        {scheduledMethod.methodDescription}
+        <span class="class-candidate">{scheduledMethod.declaringClassName}</span>#{scheduledMethod.methodName}()
       </td>
       <td>
        <form method="post"  enctype="application/x-www-form-urlencoded">

@@ -26,7 +26,7 @@ public class DevConsoleSchedulerSmokeTest {
     public void testScheduler() {
         RestAssured.get("q/dev")
                 .then()
-                .statusCode(200).body(Matchers.containsString("Schedules"));
+                .statusCode(200).body(Matchers.containsString("Scheduled Methods"));
         RestAssured.get("q/dev/io.quarkus.quarkus-scheduler/schedules")
                 .then()
                 .statusCode(200).body(Matchers.containsString("Scheduler is running"));

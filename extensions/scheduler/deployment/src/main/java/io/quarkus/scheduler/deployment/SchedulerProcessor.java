@@ -238,8 +238,8 @@ public class SchedulerProcessor {
                 schedules.add(annotationProxy.builder(scheduled, Scheduled.class).build(classOutput));
             }
             metadata.setSchedules(schedules);
-            metadata.setMethodDescription(
-                    scheduledMethod.getMethod().declaringClass() + "#" + scheduledMethod.getMethod().name());
+            metadata.setDeclaringClassName(scheduledMethod.getMethod().declaringClass().toString());
+            metadata.setMethodName(scheduledMethod.getMethod().name());
             scheduledMetadata.add(metadata);
         }
 
@@ -251,16 +251,15 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    public void devConsoleInfo(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> infos) {
+    @Record(value = STATIC_INIT, optional = true)
+    public DevConsoleRouteBuildItem devConsole(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> infos,
+            SchedulerDevConsoleRecorder recorder) {
         infos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("schedulerContext",
                 new BeanLookupSupplier(SchedulerContext.class)));
         infos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("scheduler",
                 new BeanLookupSupplier(Scheduler.class)));
-    }
-
-    @BuildStep
-    @Record(value = STATIC_INIT, optional = true)
-    DevConsoleRouteBuildItem invokeEndpoint(SchedulerDevConsoleRecorder recorder) {
+        infos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("configLookup",
+                recorder.getConfigLookup()));
         return new DevConsoleRouteBuildItem("schedules", "POST", recorder.invokeHandler());
     }
 

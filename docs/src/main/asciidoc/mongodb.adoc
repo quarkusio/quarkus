@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using the MongoDB Client
+= Using the MongoDB Client
 include::./attributes.adoc[]
 
 MongoDB is a well known NoSQL Database that is widely used.

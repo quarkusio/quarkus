@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - How dev-mode differs from a production application
+= How dev-mode differs from a production application
 
 include::./attributes.adoc[]
 

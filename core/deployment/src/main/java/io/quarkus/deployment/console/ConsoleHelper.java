@@ -35,16 +35,22 @@ public class ConsoleHelper {
         //note that we never enable input for tests
         //surefire communicates of stdin, so this can mess with it
         boolean inputSupport = !test && !config.disableConsoleInput.orElse(consoleConfig.disableInput);
+        if (!inputSupport) {
+            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled,
+                    inputSupport, consumer);
+            return;
+        }
         try {
             new TerminalConnection(new Consumer<Connection>() {
                 @Override
                 public void accept(Connection connection) {
                     if (connection.supportsAnsi() && !config.basicConsole.orElse(consoleConfig.basic)) {
-                        QuarkusConsole.INSTANCE = new AeshConsole(connection,
-                                inputSupport);
+                        QuarkusConsole.INSTANCE = new AeshConsole(connection);
                     } else {
                         LinkedBlockingDeque<Integer> queue = new LinkedBlockingDeque<>();
-                        connection.openNonBlocking();
+                        if (inputSupport) {
+                            connection.openNonBlocking();
+                        }
                         connection.setStdinHandler(new Consumer<int[]>() {
                             @Override
                             public void accept(int[] ints) {

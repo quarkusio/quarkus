@@ -19,7 +19,6 @@ import io.quarkus.dev.console.StatusLine;
 public class AeshConsole extends QuarkusConsole {
 
     private final Connection connection;
-    private final boolean inputSupport;
     private Size size;
     private Attributes attributes;
 
@@ -57,8 +56,7 @@ public class AeshConsole extends QuarkusConsole {
     private final ReadWriteLock positionLock = new ReentrantReadWriteLock();
     private volatile boolean closed;
 
-    public AeshConsole(Connection connection, boolean inputSupport) {
-        this.inputSupport = inputSupport;
+    public AeshConsole(Connection connection) {
         INSTANCE = this;
         this.connection = connection;
         connection.openNonBlocking();
@@ -111,9 +109,6 @@ public class AeshConsole extends QuarkusConsole {
 
     @Override
     public void setPromptMessage(String promptMessage) {
-        if (!inputSupport) {
-            return;
-        }
         setMessage(0, promptMessage);
     }
 
@@ -197,31 +192,26 @@ public class AeshConsole extends QuarkusConsole {
                         break;
                 }
             });
-            if (inputSupport) {
-                // Keyboard handling
-                conn.setStdinHandler(keys -> {
-                    var handler = inputHandler;
-                    if (handler != null) {
-                        handler.accept(keys);
-                    }
-                    if (doingReadline) {
-                        for (var k : keys) {
-                            if (k == '\n') {
-                                doingReadline = false;
-                                connection.enterRawMode();
-                            }
+            // Keyboard handling
+            conn.setStdinHandler(keys -> {
+                var handler = inputHandler;
+                if (handler != null) {
+                    handler.accept(keys);
+                }
+                if (doingReadline) {
+                    for (var k : keys) {
+                        if (k == '\n') {
+                            doingReadline = false;
+                            connection.enterRawMode();
                         }
                     }
-                });
-            }
+                }
+            });
+
             conn.setCloseHandler(close -> end(conn));
             conn.setSizeHandler(size -> setup(conn));
 
-            if (inputSupport) {
-                attributes = conn.enterRawMode();
-            } else {
-                attributes = conn.getAttributes();
-            }
+            attributes = conn.enterRawMode();
 
             StringBuilder sb = new StringBuilder();
             printStatusAndPrompt(sb);
@@ -393,9 +383,6 @@ public class AeshConsole extends QuarkusConsole {
 
     @Override
     public void doReadLine() {
-        if (!inputSupport) {
-            return;
-        }
         setPromptMessage("");
         connection.setAttributes(attributes);
         doingReadline = true;

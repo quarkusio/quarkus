@@ -42,6 +42,11 @@ final class AgroalEventLoggingListener implements AgroalDataSourceListener {
     }
 
     @Override
+    public void onConnectionLeak(Connection connection, Thread thread) {
+        log.infov("{0}: Connection leak of {1}", datasourceName, connection);
+    }
+
+    @Override
     public void onConnectionReap(Connection connection) {
         log.tracev("{0}: Closing idle connection {1}", datasourceName, connection);
     }

@@ -292,6 +292,7 @@ public class DataSources {
         if (dataSourceJdbcRuntimeConfig.maxLifetime.isPresent()) {
             poolConfiguration.maxLifetime(dataSourceJdbcRuntimeConfig.maxLifetime.get());
         }
+        poolConfiguration.enhancedLeakReport(dataSourceJdbcRuntimeConfig.extendedLeakReport);
     }
 
     public DataSourceBuildTimeConfig getDataSourceBuildTimeConfig(String dataSourceName) {

@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging.kafka.deployment;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -22,9 +23,11 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.smallrye.reactivemessaging.kafka.ReactiveMessagingKafkaConfig;
 import io.vertx.kafka.client.consumer.impl.KafkaReadStreamImpl;
 
 public class SmallRyeReactiveMessagingKafkaProcessor {
@@ -46,18 +49,41 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                         .build());
     }
 
+    /**
+     * Handles the serializer/deserializer detection and whether or not the graceful shutdown should be used in dev mode.
+     */
     @BuildStep
-    public void defaultSerdeConfig(ReactiveMessagingKafkaBuildTimeConfig buildTimeConfig,
+    public void defaultChannelConfiguration(
+            LaunchModeBuildItem launchMode,
+            ReactiveMessagingKafkaBuildTimeConfig buildTimeConfig,
+            ReactiveMessagingKafkaConfig runtimeConfig,
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigProducer) {
 
-        if (!buildTimeConfig.serializerAutodetectionEnabled) {
-            return;
+        DefaultSerdeDiscoveryState discoveryState = new DefaultSerdeDiscoveryState(combinedIndex.getIndex());
+        if (buildTimeConfig.serializerAutodetectionEnabled) {
+            discoverDefaultSerdeConfig(discoveryState, defaultConfigProducer);
         }
 
-        DefaultSerdeDiscoveryState discoveryState = new DefaultSerdeDiscoveryState(combinedIndex.getIndex());
-
-        discoverDefaultSerdeConfig(discoveryState, defaultConfigProducer);
+        if (launchMode.getLaunchMode().isDevOrTest()) {
+            if (!runtimeConfig.enableGracefulShutdownInDevAndTestMode) {
+                List<AnnotationInstance> incomings = discoveryState.findAnnotationsOnMethods(DotNames.INCOMING);
+                List<AnnotationInstance> channels = discoveryState.findAnnotationsOnInjectionPoints(DotNames.CHANNEL);
+                List<AnnotationInstance> annotations = new ArrayList<>();
+                annotations.addAll(incomings);
+                annotations.addAll(channels);
+                for (AnnotationInstance annotation : annotations) {
+                    String channelName = annotation.value().asString();
+                    if (!discoveryState.isKafkaConnector(true, channelName)) {
+                        continue;
+                    }
+                    String key = "mp.messaging.incoming." + channelName + ".graceful-shutdown";
+                    discoveryState.ifNotYetConfigured(key, () -> {
+                        defaultConfigProducer.produce(new RunTimeConfigurationDefaultBuildItem(key, "false"));
+                    });
+                }
+            }
+        }
     }
 
     // visible for testing

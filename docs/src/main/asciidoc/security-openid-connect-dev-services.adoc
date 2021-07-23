@@ -61,6 +61,12 @@ Here you can test the service with either the access token or ID token (note tha
 
 Finally you can click a `Logged in` option if you'd like to log out and authenticate to Keycloak as a different user.
 
+[NOTE]
+====
+You may need to register a redirect URI for the authorization code flow initiated by Dev UI for Keycloak to work.
+Select a `Keycloak Admin` option in the right top corner, login as `admin:admin`, select the test realm and the client which Dev UI for Keycloak is configured with and add `http://localhost:8080/q/dev/io.quarkus.quarkus-oidc/provider` to `Valid Redirect URIs`.
+====
+
 ==== Implicit Grant
 
 If you set `quarkus.keycloak.devservices.grant.type=implicit` in `applicatin.properties` then an `implicit` grant will be used to acquire both access and ID tokens. Use this grant for emulating a `Single Page Application` only if the authorization code grant does not work (for example, a client is configured in Keycloak to support an implicit grant, etc).

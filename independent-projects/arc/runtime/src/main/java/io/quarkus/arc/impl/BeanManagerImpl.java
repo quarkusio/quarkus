@@ -134,7 +134,7 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public List<Decorator<?>> resolveDecorators(Set<Type> types, Annotation... qualifiers) {
-        throw new UnsupportedOperationException();
+        return ArcContainerImpl.instance().resolveDecorators(types, qualifiers);
     }
 
     @Override

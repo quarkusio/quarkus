@@ -396,23 +396,50 @@ NOTE: We don't generate a no-args constructor automatically if a bean class exte
 [[remove_unused_beans]]
 === Removing Unused Beans
 
-The container attempts to remove all unused beans during build by default.
-This optimization can be disabled by setting `quarkus.arc.remove-unused-beans` to `none` or `false`.
+The container attempts to remove all unused beans, interceptors and decorators during build by default.
+This optimization helps to minimize the amount of generated classes, thus conserving memory.
+However, Quarkus can't detect the programmatic lookup performed via the `CDI.current()` static method.
+Therefore, it is possible that a removal results in a false positive error, i.e. a bean is removed although it's actually used.
+In such cases, you'll notice a big warning in the log.
+Users and extension authors have several options <<eliminate_false_positives,how to eliminate false positives>>.
 
-An unused bean:
+The optimization can be disabled by setting `quarkus.arc.remove-unused-beans` to `none` or `false`.
+Quarkus also provides a middle ground where application beans are never removed whether or not they are unused, while the optimization proceeds normally for non application classes. 
+To use this mode, set `quarkus.arc.remove-unused-beans` to `fwk` or `framework`.
 
-* is not a built-in bean or an interceptor,
-* is not eligible for injection to any injection point,
-* is not excluded by any extension,
-* does not have a name,
-* does not declare an observer,
-* does not declare any producer which is eligible for injection to any injection point,
-* is not directly eligible for injection into any `javax.enterprise.inject.Instance` or `javax.inject.Provider` injection point
+==== What's Removed?
 
-This optimization applies to all forms of bean declarations: bean class, producer method, producer field.
+Quarkus first identifies so-called _unremovable_ beans that form the roots in the dependency tree.
+A good example is a JAX-RS resource class or a bean which declares a `@Scheduled` method.
 
-Users can instruct the container to not remove any of their specific beans (even if they satisfy all the rules specified above) by annotating them with `io.quarkus.arc.Unremovable`.
-This annotation can be placed on the types, producer methods, and producer fields.
+An _unremovable_ bean:
+
+* is excluded from removal by an extension, or
+* has a name designated via `@Named`, or
+* declares an observer method.
+
+An _unused_ bean:
+
+* is not _unremovable_, and
+* is not eligible for injection to any injection point in the dependency tree, and
+* does not declare any producer which is eligible for injection to any injection point in the dependency tree, and
+* is not eligible for injection into any `javax.enterprise.inject.Instance` or `javax.inject.Provider` injection point.
+
+Unused interceptors and decorators are not associated with any bean.
+
+[TIP]
+====
+When using the dev mode (running `./mvnw clean compile quarkus:dev`), you can see more information about which beans are being removed:
+
+1. In the console - just enable the DEBUG level in your `application.properties`, i.e. `quarkus.log.category."io.quarkus.arc.processor".level=DEBUG`
+2. In the relevant Dev UI page
+====
+
+[[eliminate_false_positives]]
+==== How To Eliminate False Positives
+
+Users can instruct the container to not remove any of their specific beans (even if they satisfy all the rules specified above) by annotating them with `@io.quarkus.arc.Unremovable`.
+This annotation can be declared on a class, a producer method or field.
 
 Since this is not always possible, there is an option to achieve the same via `application.properties`.
 The `quarkus.arc.unremovable-types` property accepts a list of string values that are used to match beans based on their name or package.
@@ -432,17 +459,7 @@ The `quarkus.arc.unremovable-types` property accepts a list of string values tha
 quarkus.arc.unremovable-types=org.acme.Foo,org.acme.*,Bar
 ----
 
-Furthermore, extensions can eliminate possible false positives by producing `UnremovableBeanBuildItem`.
-
-Finally, Quarkus provides a middle ground for the bean removal optimization where application beans are never removed whether or not they are unused,
-while the optimization proceeds normally for non application classes. To use this mode, set `quarkus.arc.remove-unused-beans` to `fwk` or `framework`.
-
-When using the dev mode (running `./mvnw clean compile quarkus:dev`), you can see more information about which beans are being removed
-by enabling additional logging via the following line in your `application.properties`.
-
-----
-quarkus.log.category."io.quarkus.arc.processor".level=DEBUG
-----
+Furthermore, extensions can eliminate false positives by producing an `UnremovableBeanBuildItem`.
 
 [[default_beans]]
 === Default Beans

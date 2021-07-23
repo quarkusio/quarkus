@@ -175,20 +175,18 @@ public class SmallRyeMetricsProcessor {
     }
 
     @BuildStep
-    void beans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
-        additionalBeans.produce(new AdditionalBeanBuildItem(MetricProducer.class,
+    void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans) {
+        beans.produce(new AdditionalBeanBuildItem(MetricProducer.class,
                 MetricNameFactory.class,
-                MetricRegistries.class,
                 GaugeRegistrationInterceptor.class,
                 MeteredInterceptor.class,
                 ConcurrentGaugeInterceptor.class,
                 CountedInterceptor.class,
                 TimedInterceptor.class,
-                SimplyTimedInterceptor.class,
-                MetricsRequestHandler.class));
-        unremovableBeans.produce(new UnremovableBeanBuildItem(
-                new UnremovableBeanBuildItem.BeanClassNameExclusion(MetricsRequestHandler.class.getName())));
+                SimplyTimedInterceptor.class));
+        // MetricsRequestHandler and MetricRegistries are looked up programmatically in the recorder
+        beans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                .addBeanClasses(MetricsRequestHandler.class, MetricRegistries.class).build());
     }
 
     @BuildStep

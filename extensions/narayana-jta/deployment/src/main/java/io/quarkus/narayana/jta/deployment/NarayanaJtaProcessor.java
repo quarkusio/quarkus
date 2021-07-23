@@ -6,6 +6,7 @@ import java.util.Properties;
 
 import javax.annotation.Priority;
 import javax.interceptor.Interceptor;
+import javax.transaction.TransactionManager;
 import javax.transaction.TransactionScoped;
 
 import com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean;
@@ -143,9 +144,11 @@ class NarayanaJtaProcessor {
     }
 
     @BuildStep
-    UnremovableBeanBuildItem unremovableBean() {
+    void unremovableBean(BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         // LifecycleManager comes from smallrye-context-propagation-jta and is only used via programmatic lookup in JtaContextProvider
-        return UnremovableBeanBuildItem.beanClassNames(JtaContextProvider.LifecycleManager.class.getName());
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(JtaContextProvider.LifecycleManager.class.getName()));
+        // The tx manager is obtained via CDI.current().select(TransactionManager.class) in the JtaContextProvider
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(TransactionManager.class));
     }
 
 }

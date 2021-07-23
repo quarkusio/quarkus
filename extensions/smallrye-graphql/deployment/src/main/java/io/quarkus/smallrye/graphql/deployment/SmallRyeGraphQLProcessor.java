@@ -48,7 +48,6 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRecorder;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRuntimeConfig;
 import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
@@ -373,8 +372,7 @@ public class SmallRyeGraphQLProcessor {
     void activateMetrics(Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
             SmallRyeGraphQLConfig graphQLConfig,
-            BuildProducer<SystemPropertyBuildItem> systemProperties,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+            BuildProducer<SystemPropertyBuildItem> systemProperties) {
 
         boolean activate = shouldActivateService(graphQLConfig.metricsEnabled,
                 metricsCapability.isPresent(),
@@ -383,9 +381,6 @@ public class SmallRyeGraphQLProcessor {
                 "quarkus.smallrye-graphql.metrics.enabled",
                 false);
         if (activate) {
-            if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
-                unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames("io.smallrye.metrics.MetricRegistries"));
-            }
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_METRICS, TRUE));
         } else {
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_METRICS, FALSE));
@@ -395,7 +390,8 @@ public class SmallRyeGraphQLProcessor {
     @BuildStep
     void activateTracing(Capabilities capabilities,
             SmallRyeGraphQLConfig graphQLConfig,
-            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+            BuildProducer<SystemPropertyBuildItem> systemProperties,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
 
         boolean activate = shouldActivateService(graphQLConfig.tracingEnabled,
                 capabilities.isPresent(Capability.OPENTRACING),

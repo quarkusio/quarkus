@@ -209,6 +209,10 @@ public class InjectionPointInfo {
         return isDelegate;
     }
 
+    public boolean hasResolvedBean() {
+        return resolvedBean.get() != null;
+    }
+
     /**
      * @return the parameter position or {@code -1} for a field injection point
      */

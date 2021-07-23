@@ -67,7 +67,7 @@ public class SchedulerUtils {
      * @return the resolved property value.
      */
     public static String lookUpPropertyValue(String propertyValue) {
-        String value = propertyValue.trim();
+        String value = propertyValue.stripLeading();
         if (!value.isEmpty() && isConfigValue(value)) {
             value = resolvePropertyExpression(adjustExpressionSyntax(value));
         }
@@ -97,7 +97,9 @@ public class SchedulerUtils {
      * Adapted from {@link io.smallrye.config.ExpressionConfigSourceInterceptor}
      */
     private static String resolvePropertyExpression(String expr) {
-        final Config config = ConfigProviderResolver.instance().getConfig();
+        // Force the runtime CL in order to make the DEV UI page work  
+        final ClassLoader cl = SchedulerUtils.class.getClassLoader();
+        final Config config = ConfigProviderResolver.instance().getConfig(cl);
         final Expression expression = Expression.compile(expr, LENIENT_SYNTAX, NO_TRIM);
         final String expanded = expression.evaluate(new BiConsumer<ResolveContext<RuntimeException>, StringBuilder>() {
             @Override

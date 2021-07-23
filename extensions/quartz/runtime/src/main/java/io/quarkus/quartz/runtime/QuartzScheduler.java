@@ -3,6 +3,7 @@ package io.quarkus.quartz.runtime;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalLong;
@@ -34,6 +35,7 @@ import org.quartz.ScheduleBuilder;
 import org.quartz.SchedulerException;
 import org.quartz.SchedulerFactory;
 import org.quartz.SimpleScheduleBuilder;
+import org.quartz.Trigger.TriggerState;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.simpl.InitThreadContextClassLoadHelper;
@@ -252,6 +254,35 @@ public class QuartzScheduler implements Scheduler {
             scheduler.pauseJob(new JobKey(SchedulerUtils.lookUpPropertyValue(identity), Scheduler.class.getName()));
         } catch (SchedulerException e) {
             throw new RuntimeException("Unable to pause job", e);
+        }
+    }
+
+    @Override
+    public boolean isPaused(String identity) {
+        Objects.requireNonNull(identity);
+        if (identity.isEmpty()) {
+            return false;
+        }
+        try {
+            List<? extends org.quartz.Trigger> triggers = scheduler
+                    .getTriggersOfJob(new JobKey(SchedulerUtils.lookUpPropertyValue(identity), Scheduler.class.getName()));
+            if (triggers.isEmpty()) {
+                return false;
+            }
+            for (org.quartz.Trigger trigger : triggers) {
+                try {
+                    if (scheduler.getTriggerState(trigger.getKey()) != TriggerState.PAUSED) {
+                        return false;
+                    }
+                } catch (SchedulerException e) {
+                    LOGGER.warnf("Cannot obtain the trigger state for %s", trigger.getKey());
+                    return false;
+                }
+            }
+            return true;
+        } catch (SchedulerException e1) {
+            LOGGER.warnf(e1, "Cannot obtain triggers for job with identity %s", identity);
+            return false;
         }
     }
 

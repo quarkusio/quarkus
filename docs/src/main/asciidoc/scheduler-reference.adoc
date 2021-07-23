@@ -54,7 +54,7 @@ The syntax used in CRON expressions is controlled by the `quarkus.scheduler.cron
 The values can be `cron4j`, `quartz`, `unix` and `spring`.
 `quartz` is used by default.
 
-The `cron` attribute supports <<config-reference#using_property_expressions,Property Expressions>> including default values and nested
+The `cron` attribute supports <<config-reference#property_expressions,Property Expressions>> including default values and nested
 Property Expressions. (Note that "{property.path}" style expressions are still supported but don't offer the full functionality of Property Expressions.)
 
 
@@ -98,7 +98,7 @@ So for example, `15m` can be used instead of `PT15M` and is parsed as "15 minute
 void every15Mins() { }
 ----
 
-The `every` attribute supports <<config-reference#using_property_expressions,Property Expressions>> including default values and nested
+The `every` attribute supports <<config-reference#property_expressions,Property Expressions>> including default values and nested
 Property Expressions. (Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
 
 .Interval Config Property Example
@@ -132,7 +132,7 @@ Sometimes a possibility to specify an explicit id may come in handy.
 void myMethod() { }
 ----
 
-The `identity` attribute supports <<config-reference#using_property_expressions,Property Expressions>> including default values and nested
+The `identity` attribute supports <<config-reference#property_expressions,Property Expressions>> including default values and nested
 Property Expressions. (Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
 
 .Interval Config Property Example
@@ -171,7 +171,7 @@ void everyTwoSeconds() { }
 NOTE: If `@Scheduled#delay()` is set to a value greater than zero the value of `@Scheduled#delayed()` is ignored.
 
 The main advantage over `@Scheduled#delay()` is that the value is configurable.
-The `delay` attribute supports <<config-reference#using_property_expressions,Property Expressions>> including default values and nested
+The `delay` attribute supports <<config-reference#property_expressions,Property Expressions>> including default values and nested
 Property Expressions. (Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
 
 

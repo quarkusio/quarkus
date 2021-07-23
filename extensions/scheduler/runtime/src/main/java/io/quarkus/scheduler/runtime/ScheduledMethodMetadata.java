@@ -7,7 +7,8 @@ import io.quarkus.scheduler.Scheduled;
 public class ScheduledMethodMetadata {
 
     private String invokerClassName;
-    private String methodDescription;
+    private String declaringClassName;
+    private String methodName;
     private List<Scheduled> schedules;
 
     public String getInvokerClassName() {
@@ -19,11 +20,23 @@ public class ScheduledMethodMetadata {
     }
 
     public String getMethodDescription() {
-        return methodDescription;
+        return declaringClassName + "#" + methodName;
     }
 
-    public void setMethodDescription(String description) {
-        this.methodDescription = description;
+    public String getDeclaringClassName() {
+        return declaringClassName;
+    }
+
+    public void setDeclaringClassName(String declaringClassName) {
+        this.declaringClassName = declaringClassName;
+    }
+
+    public String getMethodName() {
+        return methodName;
+    }
+
+    public void setMethodName(String methodName) {
+        this.methodName = methodName;
     }
 
     public List<Scheduled> getSchedules() {

@@ -348,7 +348,7 @@ public class BeanInfo implements InjectionTargetInfo {
      *
      * @return an ordered list of all interceptors associated with the bean
      */
-    List<InterceptorInfo> getBoundInterceptors() {
+    public List<InterceptorInfo> getBoundInterceptors() {
         if (lifecycleInterceptors.isEmpty() && interceptedMethods.isEmpty()) {
             return Collections.emptyList();
         }
@@ -371,7 +371,7 @@ public class BeanInfo implements InjectionTargetInfo {
         return bound;
     }
 
-    List<DecoratorInfo> getBoundDecorators() {
+    public List<DecoratorInfo> getBoundDecorators() {
         if (decoratedMethods.isEmpty()) {
             return Collections.emptyList();
         }

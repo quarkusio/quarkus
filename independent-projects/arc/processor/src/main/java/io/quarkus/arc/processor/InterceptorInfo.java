@@ -116,19 +116,19 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
         return priority;
     }
 
-    MethodInfo getAroundInvoke() {
+    public MethodInfo getAroundInvoke() {
         return aroundInvoke;
     }
 
-    MethodInfo getAroundConstruct() {
+    public MethodInfo getAroundConstruct() {
         return aroundConstruct;
     }
 
-    MethodInfo getPostConstruct() {
+    public MethodInfo getPostConstruct() {
         return postConstruct;
     }
 
-    MethodInfo getPreDestroy() {
+    public MethodInfo getPreDestroy() {
         return preDestroy;
     }
 

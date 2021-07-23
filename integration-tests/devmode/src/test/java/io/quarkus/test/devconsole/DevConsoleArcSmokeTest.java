@@ -34,7 +34,8 @@ public class DevConsoleArcSmokeTest {
                 .get("q/dev/io.quarkus.quarkus-arc/observers")
                 .then()
                 .statusCode(200)
-                .body(Matchers.containsString("io.quarkus.test.devconsole.DevConsoleArcSmokeTest$Foo#onStr"));
+                .body(Matchers.containsString(
+                        "<span class=\"class-candidate\">io.quarkus.test.devconsole.DevConsoleArcSmokeTest$Foo</span>#onStr"));
         RestAssured
                 .get("q/dev/io.quarkus.quarkus-arc/events")
                 .then()

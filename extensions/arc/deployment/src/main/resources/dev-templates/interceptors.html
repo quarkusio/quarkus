@@ -12,7 +12,6 @@
      color:blue;
      text-decoration:underline;
    }
-
   {/style}
 
   {#script}
@@ -31,12 +30,13 @@
         openInIDE($(this).text());
       });
     });
+
   {/script}
 
-  {#title}Beans{/title}
+  {#title}Interceptors{/title}
   {#body}
   <div class="alert alert-primary alert-dismissible fade show" role="alert" data-timer="30000">
-    Beans are sorted by the bean class name in ascending order. However, application beans go first. 
+    Interceptors are sorted by the interceptor class name in ascending order. However, application interceptors go first. 
     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
         <span aria-hidden="true">&times;</span>
     </button>
@@ -45,28 +45,28 @@
    <thead class="thead-dark">
     <tr>
       <th scope="col">#</th>
-      <th scope="col">Bean</th>
-      <th scope="col">Kind</th>
-      <th scope="col">Associated Interceptors</th>
+      <th scope="col">Interceptor class</th>
+      <th scope="col">Priority</th>
+      <th scope="col">Bindings</th>
+      <th scope="col">Interception Types</th>
     </tr>
    </thead>
    <tbody>
-    {#for bean in info:devBeanInfos.beans}
+    {#for interceptor in info:devBeanInfos.interceptors}
     <tr>
       <td>{count}.</td>
+      <td><span class="class-candidate">{interceptor.interceptorClass}</span></td>
+      <td><span class="badge rounded-pill bg-info text-light larger-badge" title="Priority: {interceptor.priority}">{interceptor.priority}</span></td>
       <td>
-       {#display-bean bean/}
-      </td>
-      <td>
-       {#bean-declaration bean/}
+       {#for b in interceptor.bindings}
+        <span class="annotation" title="Binding: {b}">{b.simpleName}</span><br/>
+       {/for}
       </td>
       <td>
        <ul>
-       {#for interceptorId in bean.interceptors}
-         {#set interceptor=info:devBeanInfos.getInterceptor(interceptorId)}
-         <li><span class="class-candidate">{interceptor.interceptorClass}</span> <span class="badge rounded-pill bg-info text-light larger-badge" title="Priority: {interceptor.priority}">{interceptor.priority}</span></li>
-         {/set}
-       {/for}
+       {#each interceptor.intercepts}
+       <li>{#interception-type it.key /} {interceptor.interceptorClass.simpleName}#{it.value.name}()</li>
+       {/each}
        </ul>
       </td>
     {/for}

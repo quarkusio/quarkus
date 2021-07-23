@@ -1,6 +1,8 @@
 package io.quarkus.arc.deployment.devconsole;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -14,6 +16,7 @@ import org.jboss.jandex.Type;
 import io.quarkus.arc.deployment.CompletedApplicationClassPredicateBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.InterceptorInfo;
 
 public class DevBeanInfo implements Comparable<DevBeanInfo> {
 
@@ -28,6 +31,17 @@ public class DevBeanInfo implements Comparable<DevBeanInfo> {
         }
         Name scope = Name.from(bean.getScope().getDotName());
         Name providerType = Name.from(bean.getProviderType());
+
+        List<String> interceptors;
+        List<InterceptorInfo> boundInterceptors = bean.getBoundInterceptors();
+        if (boundInterceptors.isEmpty()) {
+            interceptors = List.of();
+        } else {
+            interceptors = new ArrayList<>();
+            for (InterceptorInfo interceptor : boundInterceptors) {
+                interceptors.add(interceptor.getIdentifier());
+            }
+        }
 
         if (bean.getTarget().isPresent()) {
             AnnotationTarget target = bean.getTarget().get();
@@ -56,15 +70,17 @@ public class DevBeanInfo implements Comparable<DevBeanInfo> {
             } else {
                 throw new IllegalArgumentException("Invalid annotation target: " + target);
             }
-            return new DevBeanInfo(kind, isApplicationBean, providerType, memberName, types, qualifiers, scope, declaringClass);
+            return new DevBeanInfo(kind, isApplicationBean, providerType, memberName, types, qualifiers, scope, declaringClass,
+                    interceptors);
         } else {
             // Synthetic bean
-            return new DevBeanInfo(DevBeanKind.SYNTHETIC, false, providerType, null, types, qualifiers, scope, null);
+            return new DevBeanInfo(DevBeanKind.SYNTHETIC, false, providerType, null, types, qualifiers, scope, null,
+                    interceptors);
         }
     }
 
     public DevBeanInfo(DevBeanKind kind, boolean isApplicationBean, Name providerType, String memberName, Set<Name> types,
-            Set<Name> qualifiers, Name scope, Name declaringClass) {
+            Set<Name> qualifiers, Name scope, Name declaringClass, List<String> boundInterceptors) {
         this.kind = kind;
         this.isApplicationBean = isApplicationBean;
         this.providerType = providerType;
@@ -73,6 +89,7 @@ public class DevBeanInfo implements Comparable<DevBeanInfo> {
         this.qualifiers = qualifiers;
         this.scope = scope;
         this.declaringClass = declaringClass;
+        this.interceptors = boundInterceptors;
     }
 
     private final DevBeanKind kind;
@@ -83,6 +100,7 @@ public class DevBeanInfo implements Comparable<DevBeanInfo> {
     private final Set<Name> qualifiers;
     private final Name scope;
     private final Name declaringClass;
+    private final List<String> interceptors;
 
     public DevBeanKind getKind() {
         return kind;
@@ -127,6 +145,10 @@ public class DevBeanInfo implements Comparable<DevBeanInfo> {
 
     public Name getDeclaringClass() {
         return declaringClass;
+    }
+
+    public List<String> getInterceptors() {
+        return interceptors;
     }
 
     @Override

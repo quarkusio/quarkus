@@ -226,10 +226,12 @@ public class BeanDeployment {
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
         this.beans.addAll(findBeans(initBeanDefiningAnnotations(beanDefiningAnnotations, stereotypes.keySet()), observers,
                 injectionPoints, jtaCapabilities));
+        // Note that we need to use view of the collections to reflect further additions, e.g. synthetic beans and observers
         buildContextPut(Key.BEANS.asString(), Collections.unmodifiableList(beans));
         buildContextPut(Key.OBSERVERS.asString(), Collections.unmodifiableList(observers));
 
         this.interceptors.addAll(findInterceptors(injectionPoints));
+        buildContextPut(Key.INTERCEPTORS.asString(), Collections.unmodifiableList(interceptors));
         this.decorators.addAll(findDecorators(injectionPoints));
         this.injectionPoints.addAll(injectionPoints);
         buildContextPut(Key.INJECTION_POINTS.asString(), Collections.unmodifiableList(this.injectionPoints));

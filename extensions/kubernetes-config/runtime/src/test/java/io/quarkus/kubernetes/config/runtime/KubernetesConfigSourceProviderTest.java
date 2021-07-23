@@ -1,4 +1,4 @@
-package io.quarkus.kubernetes.client.runtime;
+package io.quarkus.kubernetes.config.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;

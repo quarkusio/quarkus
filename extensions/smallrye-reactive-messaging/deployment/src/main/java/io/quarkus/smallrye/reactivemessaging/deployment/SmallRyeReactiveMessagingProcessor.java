@@ -80,6 +80,7 @@ import io.smallrye.reactive.messaging.extension.ChannelConfiguration;
 import io.smallrye.reactive.messaging.extension.EmitterConfiguration;
 import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingLivenessCheck;
 import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingReadinessCheck;
+import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingStartupCheck;
 
 public class SmallRyeReactiveMessagingProcessor {
 
@@ -345,6 +346,9 @@ public class SmallRyeReactiveMessagingProcessor {
                         buildTimeConfig.healthEnabled));
         producer.produce(
                 new HealthBuildItem(SmallRyeReactiveMessagingReadinessCheck.class.getName(),
+                        buildTimeConfig.healthEnabled));
+        producer.produce(
+                new HealthBuildItem(SmallRyeReactiveMessagingStartupCheck.class.getName(),
                         buildTimeConfig.healthEnabled));
     }
 

@@ -1,4 +1,4 @@
-package io.quarkus.kubernetes.client.runtime;
+package io.quarkus.kubernetes.config.runtime;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;

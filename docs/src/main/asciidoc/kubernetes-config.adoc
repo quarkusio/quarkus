@@ -69,4 +69,4 @@ Set `quarkus.kubernetes-config.secrets.enabled=true` to generate the necessary r
 
 == Configuration Reference
 
-include::{generated-dir}/config/quarkus-kubernetes-config-kubernetes-config-source-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-kubernetes-config.adoc[opts=optional, leveloffset=+1]

@@ -1,4 +1,4 @@
-package io.quarkus.kubernetes.client.runtime;
+package io.quarkus.kubernetes.config.runtime;
 
 import java.util.List;
 import java.util.Optional;

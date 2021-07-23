@@ -1,4 +1,4 @@
-package io.quarkus.kubernetes.client.runtime;
+package io.quarkus.kubernetes.config.runtime;
 
 import java.util.Collections;
 
@@ -7,6 +7,8 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.jboss.logging.Logger;
 
+import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
+import io.quarkus.kubernetes.client.runtime.KubernetesClientUtils;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.annotations.Recorder;

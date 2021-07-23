@@ -46,6 +46,7 @@
         <module>kafka-avro</module>
         <module>kafka-avro-apicurio2</module>
         <module>kafka-streams</module>
+        <module>kafka-devservices</module>
         <module>jpa</module>
         <module>jpa-mapping-xml</module>
         <module>jpa-db2</module>

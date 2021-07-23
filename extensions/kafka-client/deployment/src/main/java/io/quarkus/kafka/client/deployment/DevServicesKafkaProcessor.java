@@ -2,10 +2,25 @@ package io.quarkus.kafka.client.deployment;
 
 import java.io.Closeable;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.CreateTopicsResult;
+import org.apache.kafka.clients.admin.KafkaAdminClient;
+import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.admin.TopicDescription;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
@@ -112,12 +127,55 @@ public class DevServicesKafkaProcessor {
                                 + " this by starting your application with -Dkafka.bootstrap.servers=%s",
                         bootstrapServers.getBootstrapServers());
             }
+            createTopicPartitions(bootstrapServers.getBootstrapServers(), configuration);
 
             devServicePropertiesProducer.produce(new DevServicesNativeConfigResultBuildItem("kafka.bootstrap.servers",
                     bootstrapServers.getBootstrapServers()));
         }
 
         return bootstrapServers;
+    }
+
+    public void createTopicPartitions(String bootstrapServers, KafkaDevServiceCfg configuration) {
+        Map<String, Integer> topicPartitions = configuration.topicPartitions;
+        if (topicPartitions.isEmpty()) {
+            return;
+        }
+        Map<String, Object> props = Map.ofEntries(
+                Map.entry(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers),
+                Map.entry(AdminClientConfig.CLIENT_ID_CONFIG, "kafka-devservices"));
+        try (AdminClient adminClient = KafkaAdminClient.create(props)) {
+            long adminClientTimeout = configuration.topicPartitionsTimeout.toMillis();
+            // get current partitions for topics asked to be created
+            Set<String> currentTopics = adminClient.listTopics().names()
+                    .get(adminClientTimeout, TimeUnit.MILLISECONDS);
+            Map<String, TopicDescription> partitions = adminClient.describeTopics(currentTopics).all()
+                    .get(adminClientTimeout, TimeUnit.MILLISECONDS);
+            // find new topics to create
+            List<NewTopic> newTopics = topicPartitions.entrySet().stream()
+                    .filter(e -> {
+                        TopicDescription topicDescription = partitions.get(e.getKey());
+                        if (topicDescription == null) {
+                            return true;
+                        } else {
+                            log.warnf("Topic '%s' already exists with %s partition(s)", e.getKey(),
+                                    topicDescription.partitions().size());
+                            return false;
+                        }
+                    })
+                    .map(e -> new NewTopic(e.getKey(), e.getValue(), (short) 1))
+                    .collect(Collectors.toList());
+            // create new topics
+            CreateTopicsResult topics = adminClient.createTopics(newTopics);
+            topics.all().get(adminClientTimeout, TimeUnit.MILLISECONDS);
+            // print out topics after create
+            HashMap<String, Integer> newTopicPartitions = new HashMap<>();
+            partitions.forEach((key, value) -> newTopicPartitions.put(key, value.partitions().size()));
+            newTopics.forEach(t -> newTopicPartitions.put(t.name(), t.numPartitions()));
+            log.infof("Dev Services for Kafka broker contains following topics with partitions: %s", newTopicPartitions);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            log.errorf(e, "Failed to create topics: %s", topicPartitions);
+        }
     }
 
     private void shutdownBroker() {
@@ -231,6 +289,8 @@ public class DevServicesKafkaProcessor {
         private final Integer fixedExposedPort;
         private final boolean shared;
         private final String serviceName;
+        private final Map<String, Integer> topicPartitions;
+        private final Duration topicPartitionsTimeout;
 
         public KafkaDevServiceCfg(KafkaDevServicesBuildTimeConfig config) {
             this.devServicesEnabled = config.enabled.orElse(true);
@@ -238,6 +298,8 @@ public class DevServicesKafkaProcessor {
             this.fixedExposedPort = config.port.orElse(0);
             this.shared = config.shared;
             this.serviceName = config.serviceName;
+            this.topicPartitions = config.topicPartitions;
+            this.topicPartitionsTimeout = config.topicPartitionsTimeout;
         }
 
         @Override

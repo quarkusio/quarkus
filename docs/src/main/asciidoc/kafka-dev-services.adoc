@@ -57,3 +57,21 @@ quarkus.kafka.devservices.image-name=vectorized/redpanda:latest
 ----
 
 IMPORTANT: Dev Services for Kafka only support Redpanda.
+
+== Configuring Kafka topics
+
+You can configure the Dev Services for Kafka to create topics once the broker is started.
+Topics are created with given number of partitions and 1 replica.
+
+The following example creates a topic named `test` with 3 partitions, and a second topic named `messages` with 2 partitions.
+
+[source, properties]
+----
+quarkus.kafka.devservices.topic-partitions.test=3
+quarkus.kafka.devservices.topic-partitions.messages=2
+----
+
+If a topic already exists with the given name, the creation is skipped,
+without trying to re-partition the existing topic to a different number of partitions.
+
+You can configure timeout for Kafka admin client calls used in topic creation using `quarkus.kafka.devservices.topic-partitions-timeout`, it defaults to 2 seconds.

@@ -63,6 +63,17 @@ public class ResteasyBuiltinsProcessor {
             }
 
             additionalSecuredClasses.produce(new AdditionalSecuredClassesBuildItem(classes));
+        } else if (config.defaultRolesAllowed.isPresent() && resteasyDeployment != null) {
+            final List<ClassInfo> classes = new ArrayList<>();
+
+            List<String> resourceClasses = resteasyDeployment.getDeployment().getScannedResourceClasses();
+            for (String className : resourceClasses) {
+                ClassInfo classInfo = index.getIndex().getClassByName(DotName.createSimple(className));
+                if (!hasSecurityAnnotation(classInfo)) {
+                    classes.add(classInfo);
+                }
+            }
+            additionalSecuredClasses.produce(new AdditionalSecuredClassesBuildItem(classes, config.defaultRolesAllowed));
         }
     }
 

@@ -20,21 +20,20 @@ public class OriginSelector {
         }
         select(0, new OriginCombination());
 
-        /*
-         * log all the complete combincations
-         *
-         * System.out.println("OriginSelector.calculateCompatibleCombinations");
-         * if (completeCombinations.isEmpty()) {
-         * System.out.println("  none");
-         * } else {
-         * for (int i = 0; i < completeCombinations.size(); ++i) {
-         * final OriginCombination s = completeCombinations.get(i);
-         * System.out.println("Combination #" + (i + 1));
-         * s.getUniqueSortedOrigins()
-         * .forEach(o -> System.out.println(" - " + o.getCatalog().getBom() + " " + o.getCatalog().isPlatform()));
-         * }
-         * }
-         */
+        // log all the complete combincations
+        //System.out.println("OriginSelector.calculateCompatibleCombinations of " + extOrigins.size() + " extensions");
+        //if (completeCombinations.isEmpty()) {
+        //    System.out.println("  none");
+        //} else {
+        //    for (int i = 0; i < completeCombinations.size(); ++i) {
+        //        final OriginCombination s = completeCombinations.get(i);
+        //        System.out.println("Combination #" + (i + 1) + " score=" + calculateScore(s));
+        //        s.getUniqueSortedOrigins()
+        //                .forEach(o -> System.out.println(
+        //                        " - " + o.getCatalog().getBom() + " " + o.getCatalog().isPlatform() + " " + o.getPreference()));
+        //    }
+        //}
+
     }
 
     public OriginCombination getRecommendedCombination() {
@@ -46,10 +45,10 @@ public class OriginSelector {
         }
         // here we are going to be looking for the combination that include the most extensions
         // in the most preferred registry with the lowest total number of platforms BOMs to be imported
-        int highestScore = 0;
+        double highestScore = 0;
         OriginCombination recommended = null;
         for (OriginCombination combination : completeCombinations) {
-            final int score = calculateScore(combination);
+            final double score = calculateScore(combination);
             if (score > highestScore) {
                 highestScore = score;
                 recommended = combination;
@@ -58,11 +57,12 @@ public class OriginSelector {
         return recommended;
     }
 
-    private int calculateScore(OriginCombination s) {
-        int combinationScore = 0;
+    private double calculateScore(OriginCombination s) {
+        double combinationScore = 0;
         for (OriginWithPreference o : s.getCollectedOrigins()) {
             combinationScore += Math.pow(extOrigins.size(),
-                    highestRegistryPreference + 1 - o.getPreference().registryPreference);
+                    highestRegistryPreference + 1 - o.getPreference().registryPreference)
+                    * ((double) (Integer.MAX_VALUE + 1 - o.getPreference().platformPreference) / Integer.MAX_VALUE);
         }
         return combinationScore;
     }

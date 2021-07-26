@@ -85,8 +85,10 @@ public class ConsoleStateManager {
             return;
         }
         initialized = true;
-        console.setInputHandler(INSTANCE.consumer);
-        INSTANCE.installBuiltins(devModeType);
+        if (console.isInputSupported()) {
+            console.setInputHandler(INSTANCE.consumer);
+            INSTANCE.installBuiltins(devModeType);
+        }
     }
 
     void installBuiltins(DevModeType devModeType) {

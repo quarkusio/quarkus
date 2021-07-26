@@ -77,14 +77,6 @@ public class TestTracingProcessor {
                 testSupport.stop();
             }
         }
-
-        QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-        ((QuarkusClassLoader) cl.parent()).addCloseTask(new Runnable() {
-            @Override
-            public void run() {
-                testSupport.stop();
-            }
-        });
     }
 
     @BuildStep(onlyIf = IsTest.class)

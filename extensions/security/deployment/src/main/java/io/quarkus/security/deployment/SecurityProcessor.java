@@ -289,14 +289,21 @@ public class SecurityProcessor {
             transformers.produce(new AnnotationsTransformerBuildItem(new DenyingUnannotatedTransformer()));
         }
         if (!additionalSecuredClasses.isEmpty()) {
-            Set<String> additionalSecured = new HashSet<>();
             for (AdditionalSecuredClassesBuildItem securedClasses : additionalSecuredClasses) {
+                Set<String> additionalSecured = new HashSet<>();
                 for (ClassInfo additionalSecuredClass : securedClasses.additionalSecuredClasses) {
                     additionalSecured.add(additionalSecuredClass.name().toString());
                 }
+                if (securedClasses.rolesAllowed.isPresent()) {
+                    transformers.produce(
+                            new AnnotationsTransformerBuildItem(new AdditionalRolesAllowedTransformer(additionalSecured,
+                                    securedClasses.rolesAllowed.get())));
+                } else {
+                    transformers.produce(
+                            new AnnotationsTransformerBuildItem(
+                                    new AdditionalDenyingUnannotatedTransformer(additionalSecured)));
+                }
             }
-            transformers.produce(
-                    new AnnotationsTransformerBuildItem(new AdditionalDenyingUnannotatedTransformer(additionalSecured)));
         }
     }
 
@@ -310,11 +317,11 @@ public class SecurityProcessor {
             List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config) {
         classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorage.AppPredicate()));
 
-        final Map<DotName, ClassInfo> additionalSecured = new HashMap<>();
+        final Map<DotName, AdditionalSecured> additionalSecured = new HashMap<>();
         for (AdditionalSecuredClassesBuildItem securedClasses : additionalSecuredClasses) {
             securedClasses.additionalSecuredClasses.forEach(c -> {
                 if (!additionalSecured.containsKey(c.name())) {
-                    additionalSecured.put(c.name(), c);
+                    additionalSecured.put(c.name(), new AdditionalSecured(c, securedClasses.rolesAllowed));
                 }
             });
         }
@@ -352,7 +359,7 @@ public class SecurityProcessor {
 
     private Map<MethodInfo, SecurityCheck> gatherSecurityAnnotations(
             IndexView index,
-            Map<DotName, ClassInfo> additionalSecuredClasses, boolean denyUnannotated, SecurityCheckRecorder recorder) {
+            Map<DotName, AdditionalSecured> additionalSecuredClasses, boolean denyUnannotated, SecurityCheckRecorder recorder) {
 
         Map<MethodInfo, AnnotationInstance> methodToInstanceCollector = new HashMap<>();
         Map<ClassInfo, AnnotationInstance> classAnnotations = new HashMap<>();
@@ -371,14 +378,19 @@ public class SecurityProcessor {
          * Handle additional secured classes by adding the denyAll check to all public non-static methods
          * that don't have security annotations
          */
-        for (Map.Entry<DotName, ClassInfo> additionalSecureClassInfo : additionalSecuredClasses.entrySet()) {
-            for (MethodInfo methodInfo : additionalSecureClassInfo.getValue().methods()) {
+        for (Map.Entry<DotName, AdditionalSecured> additionalSecureClassInfo : additionalSecuredClasses.entrySet()) {
+            for (MethodInfo methodInfo : additionalSecureClassInfo.getValue().classInfo.methods()) {
                 if (!isPublicNonStaticNonConstructor(methodInfo)) {
                     continue;
                 }
                 AnnotationInstance alreadyExistingInstance = methodToInstanceCollector.get(methodInfo);
                 if ((alreadyExistingInstance == null)) {
-                    result.put(methodInfo, recorder.denyAll());
+                    if (additionalSecureClassInfo.getValue().rolesAllowed.isPresent()) {
+                        result.put(methodInfo, recorder
+                                .rolesAllowed(additionalSecureClassInfo.getValue().rolesAllowed.get().toArray(String[]::new)));
+                    } else {
+                        result.put(methodInfo, recorder.denyAll());
+                    }
                 } else if (alreadyExistingInstance.target().kind() == AnnotationTarget.Kind.CLASS) {
                     throw new IllegalStateException("Class " + methodInfo.declaringClass()
                             + " should not have been added as an additional secured class");
@@ -480,5 +492,16 @@ public class SecurityProcessor {
     @BuildStep
     AdditionalBeanBuildItem authorizationController() {
         return AdditionalBeanBuildItem.builder().addBeanClass(AuthorizationController.class).build();
+    }
+
+    static class AdditionalSecured {
+
+        final ClassInfo classInfo;
+        final Optional<List<String>> rolesAllowed;
+
+        AdditionalSecured(ClassInfo classInfo, Optional<List<String>> rolesAllowed) {
+            this.classInfo = classInfo;
+            this.rolesAllowed = rolesAllowed;
+        }
     }
 }

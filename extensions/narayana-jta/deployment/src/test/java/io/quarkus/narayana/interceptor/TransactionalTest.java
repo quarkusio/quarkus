@@ -1,5 +1,9 @@
 package io.quarkus.narayana.interceptor;
 
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.RollbackException;
@@ -16,15 +20,20 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.bootstrap.classloading.ClassLoaderLimiter;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class TransactionalTest {
+
+    static final Set<String> loadedClasses = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TransactionalTest.TransactionalBean.class, TestXAResource.class,
-                            TxAssertionData.class, TestException.class));
+                            TxAssertionData.class, TestException.class))
+            .addClassLoaderEventListener(ClassLoaderLimiter.builder()
+                    .neverLoadedRuntimeClassName("javax.xml.stream.XMLInputFactory").build());
 
     @Inject
     private TransactionManager tm;

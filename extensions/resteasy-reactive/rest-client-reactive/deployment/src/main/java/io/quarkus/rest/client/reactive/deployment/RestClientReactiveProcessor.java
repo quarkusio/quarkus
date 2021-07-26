@@ -22,6 +22,8 @@ import java.util.Set;
 import javax.enterprise.context.SessionScoped;
 import javax.enterprise.inject.Typed;
 import javax.inject.Singleton;
+import javax.ws.rs.Priorities;
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.Config;
@@ -178,9 +180,14 @@ class RestClientReactiveProcessor {
     }
 
     /**
-     * Creates an implementation of `AnnotationRegisteredProviders` class with a constructor that
-     * puts all the providers registered by the @RegisterProvider annotation in a
-     * map using the {@link AnnotationRegisteredProviders#addProviders(String, Map)} method
+     * Creates an implementation of `AnnotationRegisteredProviders` class with a constructor that:
+     * <ul>
+     * <li>puts all the providers registered by the @RegisterProvider annotation in a
+     * map using the {@link AnnotationRegisteredProviders#addProviders(String, Map)} method</li>
+     * <li>registers all the provider implementations annotated with @Provider using
+     * {@link AnnotationRegisteredProviders#addGlobalProvider(Class, int)}</li>
+     * </ul>
+     * 
      *
      * @param indexBuildItem index
      * @param generatedBeans build producer for generated beans
@@ -188,7 +195,8 @@ class RestClientReactiveProcessor {
     @BuildStep
     void registerProvidersFromAnnotations(CombinedIndexBuildItem indexBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            RestClientReactiveConfig clientConfig) {
         String annotationRegisteredProvidersImpl = AnnotationRegisteredProviders.class.getName() + "Implementation";
         IndexView index = indexBuildItem.getIndex();
         Map<String, List<AnnotationInstance>> annotationsByClassName = new HashMap<>();
@@ -217,14 +225,48 @@ class RestClientReactiveProcessor {
             constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(AnnotationRegisteredProviders.class),
                     constructor.getThis());
 
+            if (clientConfig.providerAutodiscovery) {
+                for (AnnotationInstance instance : index.getAnnotations(ResteasyReactiveDotNames.PROVIDER)) {
+                    ClassInfo providerClass = instance.target().asClass();
+
+                    // ignore providers annotated with `@ConstrainedTo(SERVER)`
+                    AnnotationInstance constrainedToInstance = providerClass
+                            .classAnnotation(ResteasyReactiveDotNames.CONSTRAINED_TO);
+                    if (constrainedToInstance != null) {
+                        if (RuntimeType.valueOf(constrainedToInstance.value().asEnum()) == RuntimeType.SERVER) {
+                            continue;
+                        }
+                    }
+
+                    if (providerClass.interfaceNames().contains(ResteasyReactiveDotNames.FEATURE)) {
+                        continue; // features should not be automatically registered for the client, see javadoc for Feature
+                    }
+
+                    int priority = getAnnotatedPriority(index, providerClass.name().toString(), Priorities.USER);
+
+                    constructor.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addGlobalProvider",
+                                    void.class, Class.class,
+                                    int.class),
+                            constructor.getThis(), constructor.loadClass(providerClass.name().toString()),
+                            constructor.load(priority));
+                }
+            }
+
             for (Map.Entry<String, List<AnnotationInstance>> annotationsForClass : annotationsByClassName.entrySet()) {
                 ResultHandle map = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
                 for (AnnotationInstance value : annotationsForClass.getValue()) {
                     String className = value.value().asString();
-                    AnnotationValue priority = value.value("priority");
+                    AnnotationValue priorityAnnotationValue = value.value("priority");
+                    int priority;
+                    if (priorityAnnotationValue == null) {
+                        priority = getAnnotatedPriority(index, className, Priorities.USER);
+                    } else {
+                        priority = priorityAnnotationValue.asInt();
+                    }
 
                     constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(className),
-                            constructor.load(priority == null ? -1 : priority.asInt()));
+                            constructor.load(priority));
                 }
                 constructor.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addProviders", void.class, String.class,
@@ -236,6 +278,21 @@ class RestClientReactiveProcessor {
         }
 
         unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(annotationRegisteredProvidersImpl));
+    }
+
+    private int getAnnotatedPriority(IndexView index, String className, int defaultPriority) {
+        ClassInfo providerClass = index.getClassByName(DotName.createSimple(className));
+        int priority = defaultPriority;
+        if (providerClass == null) {
+            log.warnv("Unindexed provider class {0}. The priority of the provider will be set to {1}. ", className,
+                    defaultPriority);
+        } else {
+            AnnotationInstance priorityAnnoOnProvider = providerClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
+            if (priorityAnnoOnProvider != null) {
+                priority = priorityAnnoOnProvider.value().asInt();
+            }
+        }
+        return priority;
     }
 
     @BuildStep

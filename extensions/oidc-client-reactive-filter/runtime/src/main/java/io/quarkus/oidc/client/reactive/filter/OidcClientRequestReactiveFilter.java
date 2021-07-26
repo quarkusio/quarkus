@@ -8,7 +8,6 @@ import javax.inject.Inject;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.Provider;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -20,7 +19,6 @@ import io.quarkus.oidc.client.runtime.AbstractTokensProducer;
 import io.quarkus.oidc.client.runtime.DisabledOidcClientException;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 
-@Provider
 @Priority(Priorities.AUTHENTICATION)
 public class OidcClientRequestReactiveFilter extends AbstractTokensProducer implements ResteasyReactiveClientRequestFilter {
     private static final Logger LOG = Logger.getLogger(OidcClientRequestReactiveFilter.class);

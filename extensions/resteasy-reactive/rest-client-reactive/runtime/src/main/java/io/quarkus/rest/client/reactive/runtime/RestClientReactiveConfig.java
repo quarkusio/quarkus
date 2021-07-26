@@ -22,4 +22,11 @@ public class RestClientReactiveConfig {
      */
     @ConfigItem(name = "disable-smart-produces", defaultValue = "false")
     public boolean disableSmartProduces;
+
+    /**
+     * Whether or not providers (filters, etc) annotated with {@link javax.ws.rs.ext.Provider} should be
+     * automatically registered for all the clients in the application.
+     */
+    @ConfigItem(name = "provider-autodiscovery", defaultValue = "true")
+    public boolean providerAutodiscovery = true;
 }

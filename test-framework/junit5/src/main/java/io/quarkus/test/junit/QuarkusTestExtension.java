@@ -31,8 +31,10 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -148,9 +150,9 @@ public class QuarkusTestExtension
     private static DeepClone deepClone;
     //needed for @Nested
     private static final Deque<Class<?>> currentTestClassStack = new ArrayDeque<>();
-    private static ScheduledExecutorService hangDetectionExecutor;
-    private static Duration hangTimeout;
-    private static ScheduledFuture<?> hangTaskKey;
+    private static volatile ScheduledExecutorService hangDetectionExecutor;
+    private static volatile Duration hangTimeout;
+    private static volatile ScheduledFuture<?> hangTaskKey;
     private static final Runnable hangDetectionTask = new Runnable() {
 
         final AtomicBoolean runOnce = new AtomicBoolean();
@@ -188,9 +190,30 @@ public class QuarkusTestExtension
         }
     };
 
+    static {
+        ClassLoader classLoader = QuarkusTestExtension.class.getClassLoader();
+        if (classLoader instanceof QuarkusClassLoader) {
+            ((QuarkusClassLoader) classLoader).addCloseTask(new Runnable() {
+                @Override
+                public void run() {
+                    ScheduledExecutorService h = QuarkusTestExtension.hangDetectionExecutor;
+                    if (h != null) {
+                        h.shutdownNow();
+                        QuarkusTestExtension.hangDetectionExecutor = null;
+                    }
+                }
+            });
+        }
+    }
+
     private ExtensionState doJavaStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile) throws Throwable {
         TracingHandler.quarkusStarting();
-        hangDetectionExecutor = Executors.newSingleThreadScheduledExecutor();
+        hangDetectionExecutor = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                return new Thread(r, "Quarkus hang detection timer thread");
+            }
+        });
         String time = "10m";
         //config is not established yet
         //we can only read from system properties
@@ -404,8 +427,11 @@ public class QuarkusTestExtension
                                     hangTaskKey.cancel(true);
                                     hangTaskKey = null;
                                 }
-                                hangDetectionExecutor.shutdownNow();
-                                hangDetectionExecutor = null;
+                                var h = hangDetectionExecutor;
+                                if (h != null) {
+                                    h.shutdownNow();
+                                    hangDetectionExecutor = null;
+                                }
                             }
                         }
                         try {
@@ -1185,7 +1211,6 @@ public class QuarkusTestExtension
 
         @Override
         public void close() {
-            resetHangTimeout();
             if (closed.compareAndSet(false, true)) {
                 ClassLoader old = Thread.currentThread().getContextClassLoader();
                 if (runningQuarkusApplication != null) {
@@ -1336,7 +1361,14 @@ public class QuarkusTestExtension
     private static void resetHangTimeout() {
         if (hangTaskKey != null) {
             hangTaskKey.cancel(false);
-            hangTaskKey = hangDetectionExecutor.schedule(hangDetectionTask, hangTimeout.toMillis(), TimeUnit.MILLISECONDS);
+            ScheduledExecutorService h = QuarkusTestExtension.hangDetectionExecutor;
+            if (h != null) {
+                try {
+                    hangTaskKey = h.schedule(hangDetectionTask, hangTimeout.toMillis(), TimeUnit.MILLISECONDS);
+                } catch (RejectedExecutionException ignore) {
+
+                }
+            }
         }
     }
 

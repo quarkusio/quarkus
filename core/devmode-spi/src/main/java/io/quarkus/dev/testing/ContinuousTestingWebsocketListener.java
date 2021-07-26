@@ -14,7 +14,7 @@ public class ContinuousTestingWebsocketListener {
 
     public static void setStateListener(Consumer<State> stateListener) {
         ContinuousTestingWebsocketListener.stateListener = stateListener;
-        if (lastState != null) {
+        if (lastState != null && stateListener != null) {
             stateListener.accept(lastState);
         }
     }

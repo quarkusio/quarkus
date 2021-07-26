@@ -236,6 +236,12 @@ public final class LoggingResourceProcessor {
                 }
             }
         };
+        ((QuarkusClassLoader) getClass().getClassLoader()).addCloseTask(new Runnable() {
+            @Override
+            public void run() {
+                CurrentAppExceptionHighlighter.THROWABLE_FORMATTER = null;
+            }
+        });
     }
 
     @BuildStep

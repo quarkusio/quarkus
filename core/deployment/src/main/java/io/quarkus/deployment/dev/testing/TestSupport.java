@@ -142,7 +142,11 @@ public class TestSupport implements TestController {
                 cl.addCloseTask(new Runnable() {
                     @Override
                     public void run() {
-                        testCuratedApplication.close();
+                        try {
+                            stop();
+                        } finally {
+                            testCuratedApplication.close();
+                        }
                     }
                 });
 

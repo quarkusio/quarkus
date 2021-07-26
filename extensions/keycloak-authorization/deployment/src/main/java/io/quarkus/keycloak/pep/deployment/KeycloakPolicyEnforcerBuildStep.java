@@ -24,7 +24,6 @@ import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
 
 public class KeycloakPolicyEnforcerBuildStep {
 
@@ -92,12 +91,11 @@ public class KeycloakPolicyEnforcerBuildStep {
     @BuildStep(onlyIf = IsEnabled.class)
     public SyntheticBeanBuildItem setup(OidcBuildTimeConfig oidcBuildTimeConfig, OidcConfig oidcRunTimeConfig,
             TlsConfig tlsConfig,
-            KeycloakPolicyEnforcerConfig keycloakConfig, KeycloakPolicyEnforcerRecorder recorder,
-            HttpConfiguration httpConfiguration) {
+            KeycloakPolicyEnforcerConfig keycloakConfig, KeycloakPolicyEnforcerRecorder recorder) {
         if (oidcBuildTimeConfig.enabled) {
             return SyntheticBeanBuildItem.configure(PolicyEnforcerResolver.class).unremovable()
                     .types(PolicyEnforcerResolver.class)
-                    .supplier(recorder.setup(oidcRunTimeConfig, keycloakConfig, tlsConfig, httpConfiguration))
+                    .supplier(recorder.setup(oidcRunTimeConfig, keycloakConfig, tlsConfig))
                     .scope(Singleton.class)
                     .setRuntimeInit()
                     .done();

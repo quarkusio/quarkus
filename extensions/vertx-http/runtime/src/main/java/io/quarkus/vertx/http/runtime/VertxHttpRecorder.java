@@ -156,6 +156,13 @@ public class VertxHttpRecorder {
             }
         }
     };
+    final HttpBuildTimeConfig httpBuildTimeConfig;
+    final RuntimeValue<HttpConfiguration> httpConfiguration;
+
+    public VertxHttpRecorder(HttpBuildTimeConfig httpBuildTimeConfig, RuntimeValue<HttpConfiguration> httpConfiguration) {
+        this.httpBuildTimeConfig = httpBuildTimeConfig;
+        this.httpConfiguration = httpConfiguration;
+    }
 
     public static void setHotReplacement(Handler<RoutingContext> handler, HotReplacementContext hrc) {
         hotReplacementHandler = handler;
@@ -239,7 +246,6 @@ public class VertxHttpRecorder {
     }
 
     public void startServer(Supplier<Vertx> vertx, ShutdownContext shutdown,
-            HttpBuildTimeConfig httpBuildTimeConfig, HttpConfiguration httpConfiguration,
             LaunchMode launchMode,
             boolean startVirtual, boolean startSocket, Supplier<Integer> ioThreads, List<String> websocketSubProtocols,
             boolean auxiliaryApplication)
@@ -248,6 +254,7 @@ public class VertxHttpRecorder {
         if (startVirtual) {
             initializeVirtual(vertx.get());
         }
+        HttpConfiguration httpConfiguration = this.httpConfiguration.getValue();
         if (startSocket && (httpConfiguration.hostEnabled || httpConfiguration.domainSocketEnabled)) {
             // Start the server
             if (closeTask == null) {
@@ -277,9 +284,10 @@ public class VertxHttpRecorder {
             LiveReloadConfig liveReloadConfig, Optional<RuntimeValue<Router>> mainRouterRuntimeValue,
             RuntimeValue<Router> httpRouterRuntimeValue, RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter,
             String rootPath, LaunchMode launchMode, boolean requireBodyHandler,
-            Handler<RoutingContext> bodyHandler, HttpConfiguration httpConfiguration,
+            Handler<RoutingContext> bodyHandler,
             GracefulShutdownFilter gracefulShutdownFilter, ShutdownConfig shutdownConfig,
             Executor executor) {
+        HttpConfiguration httpConfiguration = this.httpConfiguration.getValue();
         // install the default route at the end
         Router httpRouteRouter = httpRouterRuntimeValue.getValue();
 
@@ -1172,13 +1180,13 @@ public class VertxHttpRecorder {
         return rootHandler;
     }
 
-    public Handler<RoutingContext> createBodyHandler(HttpConfiguration httpConfiguration) {
+    public Handler<RoutingContext> createBodyHandler() {
         BodyHandler bodyHandler = BodyHandler.create();
-        Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
+        Optional<MemorySize> maxBodySize = httpConfiguration.getValue().limits.maxBodySize;
         if (maxBodySize.isPresent()) {
             bodyHandler.setBodyLimit(maxBodySize.get().asLongValue());
         }
-        final BodyConfig bodyConfig = httpConfiguration.body;
+        final BodyConfig bodyConfig = httpConfiguration.getValue().body;
         bodyHandler.setHandleFileUploads(bodyConfig.handleFileUploads);
         bodyHandler.setUploadsDirectory(bodyConfig.uploadsDirectory);
         bodyHandler.setDeleteUploadedFilesOnEnd(bodyConfig.deleteUploadedFilesOnEnd);

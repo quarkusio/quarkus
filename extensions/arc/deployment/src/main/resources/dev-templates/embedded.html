@@ -4,18 +4,22 @@
 <br>
 <a href="{urlbase}/observers" class="badge badge-light">
   <i class="fa fa-eye fa-fw"></i>
-  Observers <span class="badge badge-light">{info:arcContainer.observers.size}</span></a>
+  Observers <span class="badge badge-light">{info:devBeanInfos.observers.size}</span></a>
+<br>
+<a href="{urlbase}/interceptors" class="badge badge-light">
+  <i class="fa fa-traffic-light fa-fw"></i>
+  Interceptors <span class="badge badge-light">{info:devBeanInfos.interceptors.size}</span></a>
 <br>
 {#if config:property('quarkus.arc.dev-mode.monitoring-enabled') is "true"}
 <a href="{urlbase}/events" class="badge badge-light">
-  <i class="far fa-eye"></i>
+  <i class="far fa-eye fa-fw"></i>
   Fired Events</a>
 <br>
 <a href="{urlbase}/invocations" class="badge badge-light">
-  <i class="fas fa-project-diagram"></i>
+  <i class="fas fa-project-diagram fa-fw"></i>
   Invocation Trees</a>
 <br>
 {/if}
 <a href="{urlbase}/removed-beans" class="badge badge-light">
   <i class="fa fa-trash-alt fa-fw"></i>
-  Removed Beans <span class="badge badge-light">{info:arcContainer.removedBeans.size}</span></a>
+  Removed Beans <span class="badge badge-light">{info:devBeanInfos.removedBeans.size}</span></a>

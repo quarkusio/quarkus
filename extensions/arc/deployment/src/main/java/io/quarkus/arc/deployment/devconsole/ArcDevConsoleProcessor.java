@@ -18,6 +18,7 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
+import io.quarkus.arc.processor.InterceptorInfo;
 import io.quarkus.arc.processor.ObserverInfo;
 import io.quarkus.arc.runtime.ArcContainerSupplier;
 import io.quarkus.arc.runtime.ArcRecorder;
@@ -92,14 +93,17 @@ public class ArcDevConsoleProcessor {
             CompletedApplicationClassPredicateBuildItem predicate) {
         BeanDeploymentValidator.ValidationContext validationContext = validationPhaseBuildItem.getContext();
         DevBeanInfos beanInfos = new DevBeanInfos();
-        for (BeanInfo beanInfo : validationContext.beans()) {
-            beanInfos.addBean(DevBeanInfo.from(beanInfo, predicate));
+        for (BeanInfo bean : validationContext.beans()) {
+            beanInfos.addBean(DevBeanInfo.from(bean, predicate));
         }
-        for (BeanInfo beanInfo : validationContext.removedBeans()) {
-            beanInfos.addRemovedBean(DevBeanInfo.from(beanInfo, predicate));
+        for (BeanInfo bean : validationContext.removedBeans()) {
+            beanInfos.addRemovedBean(DevBeanInfo.from(bean, predicate));
         }
-        for (ObserverInfo observerInfo : validationContext.get(BuildExtension.Key.OBSERVERS)) {
-            beanInfos.addObserver(DevObserverInfo.from(observerInfo, predicate));
+        for (ObserverInfo observer : validationContext.get(BuildExtension.Key.OBSERVERS)) {
+            beanInfos.addObserver(DevObserverInfo.from(observer, predicate));
+        }
+        for (InterceptorInfo interceptor : validationContext.get(BuildExtension.Key.INTERCEPTORS)) {
+            beanInfos.addInterceptor(DevInterceptorInfo.from(interceptor, predicate));
         }
         beanInfos.sort();
         return new DevConsoleTemplateInfoBuildItem("devBeanInfos", beanInfos);

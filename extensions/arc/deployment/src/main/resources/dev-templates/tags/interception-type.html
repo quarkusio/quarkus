@@ -1,0 +1,10 @@
+{#switch it}
+  {#case AROUND_INVOKE}
+  <span class="annotation" title="{it}">@AroundInvoke</span>
+  {#case AROUND_CONSTRUCT}
+  <span class="annotation" title="{it}">@AroundConstruct</span>
+  {#case POST_CONSTRUCT}
+  <span class="annotation" title="{it}">@PostConstruct</span>
+  {#case PRE_DESTROY}
+  <span class="annotation" title="{it}">@PreDestroy</span>
+{/switch}

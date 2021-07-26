@@ -7,6 +7,7 @@ import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.graphql.schema.helper.TypeAutoNameStrategy;
+import io.smallrye.graphql.spi.config.LogPayloadOption;
 
 @ConfigRoot(name = "smallrye-graphql")
 public class SmallRyeGraphQLConfig {
@@ -88,6 +89,54 @@ public class SmallRyeGraphQLConfig {
      */
     @ConfigItem
     Optional<String> defaultErrorMessage;
+
+    /**
+     * Print the data fetcher exception to the log file.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean printDataFetcherException;
+
+    /**
+     * Include the Scalar definitions in the schema.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean schemaIncludeScalars;
+
+    /**
+     * Include the schema internal definition in the schema.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean schemaIncludeSchemaDefinition;
+
+    /**
+     * Include Directives in the schema.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean schemaIncludeDirectives;
+
+    /**
+     * Include Introspection Types in the schema.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean schemaIncludeIntrospectionTypes;
+
+    /**
+     * Log the payload (and optionally variables) to System out.
+     */
+    @ConfigItem(defaultValue = "off")
+    LogPayloadOption logPayload;
+
+    /**
+     * Set the Field visibility.
+     */
+    @ConfigItem(defaultValue = "default")
+    String fieldVisibility;
+
+    /**
+     * Exceptions that should be unwrapped (class names).
+     */
+    @ConfigItem
+    Optional<List<String>> unwrapExceptions;
 
     /**
      * SmallRye GraphQL UI configuration

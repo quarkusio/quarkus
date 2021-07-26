@@ -323,16 +323,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         transformLegacyToNew(output, extObject, mapper);
 
-        JsonNode artifactNode = extObject.get("artifact");
-        if (artifactNode == null) {
-            final AppArtifactCoords coords = new AppArtifactCoords(
-                    extObject.has("groupId") ? extObject.get("groupId").asText() : project.getGroupId(),
-                    extObject.has("artifactId") ? extObject.get("artifactId").asText() : project.getArtifactId(),
-                    null,
-                    "jar",
-                    extObject.has("version") ? extObject.get("version").asText() : project.getVersion());
-            extObject.put("artifact", coords.toString());
-        }
+        ensureArtifactCoords(extObject);
 
         if (extObject.get("name") == null) {
             if (project.getName() != null) {
@@ -387,6 +378,45 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             throw new MojoExecutionException(
                     "Failed to persist " + output.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME), e);
         }
+    }
+
+    private void ensureArtifactCoords(ObjectNode extObject) {
+        String groupId = null;
+        String artifactId = null;
+        String version = null;
+        final JsonNode artifactNode = extObject.get("artifact");
+        if (artifactNode == null) {
+            groupId = getRealValueOrNull(extObject.has("groupId") ? extObject.get("groupId").asText() : null,
+                    "${project.groupId");
+            artifactId = getRealValueOrNull(extObject.has("artifactId") ? extObject.get("artifactId").asText() : null,
+                    "${project.artifactId");
+            version = getRealValueOrNull(extObject.has("version") ? extObject.get("version").asText() : null,
+                    "${project.version");
+        } else {
+            final String[] coordsArr = artifactNode.asText().split(":");
+            if (coordsArr.length > 0) {
+                groupId = getRealValueOrNull(coordsArr[0], "${project.groupId}");
+                if (coordsArr.length > 1) {
+                    artifactId = getRealValueOrNull(coordsArr[1], "${project.artifactId}");
+                    if (coordsArr.length > 2) {
+                        version = getRealValueOrNull(coordsArr[2], "${project.version}");
+                    }
+                }
+            }
+        }
+        if (artifactNode == null || groupId == null || artifactId == null || version == null) {
+            final AppArtifactCoords coords = new AppArtifactCoords(
+                    groupId == null ? project.getGroupId() : groupId,
+                    artifactId == null ? project.getArtifactId() : artifactId,
+                    null,
+                    "jar",
+                    version == null ? project.getVersion() : version);
+            extObject.put("artifact", coords.toString());
+        }
+    }
+
+    private static String getRealValueOrNull(String s, String propertyExpr) {
+        return s != null && !s.isBlank() && !s.equals(propertyExpr) ? s : null;
     }
 
     private ObjectNode readJsonNode(Path extensionFile, ObjectMapper mapper) throws MojoExecutionException {

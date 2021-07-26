@@ -593,6 +593,7 @@ public class QuarkusUnitTest
             originalClassLoader = null;
             timeoutTask.cancel();
             timeoutTask = null;
+            timeoutTimer.cancel();
             timeoutTimer = null;
             if (deploymentDir != null) {
                 FileUtil.deleteDirectory(deploymentDir);

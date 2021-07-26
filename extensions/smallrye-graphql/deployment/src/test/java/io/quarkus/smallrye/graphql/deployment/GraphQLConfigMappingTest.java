@@ -80,7 +80,7 @@ public class GraphQLConfigMappingTest extends AbstractGraphQLTest {
     private static Map<String, String> configuration() {
         Map<String, String> m = new HashMap<>();
         m.put("quarkus.smallrye-graphql.error-extension-fields",
-                "exception, classification, code, description, validationErrorType, queryPath");
+                "exception,classification,code,description,validationErrorType,queryPath");
         m.put("quarkus.smallrye-graphql.default-error-message", "O gats, daar is 'n probleem !");
 
         m.put("quarkus.smallrye-graphql.events.enabled", "true");

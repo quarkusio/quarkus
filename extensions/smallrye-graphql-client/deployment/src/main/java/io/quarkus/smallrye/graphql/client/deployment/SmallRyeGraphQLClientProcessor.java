@@ -178,4 +178,9 @@ public class SmallRyeGraphQLClientProcessor {
         recorder.initializeConfigurationMergerBean();
     }
 
+    @BuildStep
+    ServiceProviderBuildItem overrideErrorMessageProvider() {
+        return ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.ErrorMessageProvider");
+    }
+
 }

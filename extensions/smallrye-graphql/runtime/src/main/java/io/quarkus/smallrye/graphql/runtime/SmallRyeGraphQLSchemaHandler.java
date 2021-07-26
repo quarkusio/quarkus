@@ -19,13 +19,18 @@ public class SmallRyeGraphQLSchemaHandler implements Handler<RoutingContext> {
     private static final String ALLOWED_METHODS = "GET, OPTIONS";
     private static final String CONTENT_TYPE = "text/plain; charset=UTF-8";
 
+    private final SchemaPrinter schemaPrinter;
+
+    public SmallRyeGraphQLSchemaHandler() {
+        this.schemaPrinter = new SchemaPrinter();
+    }
+
     @Override
     public void handle(RoutingContext event) {
         HttpServerRequest request = event.request();
         HttpServerResponse response = event.response();
 
         GraphQLSchema graphQLSchema = CDI.current().select(GraphQLSchema.class).get();
-        SchemaPrinter schemaPrinter = CDI.current().select(SchemaPrinter.class).get();
 
         String schemaString = schemaPrinter.print(graphQLSchema);
 

@@ -8,7 +8,7 @@ metadata:
   - "resteasy-reactive"
   categories:
   - "web"
-  status: "experimental"
+  status: "preview"
   codestart:
     name: "resteasy-reactive"
     languages:

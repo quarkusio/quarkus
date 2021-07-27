@@ -13,7 +13,7 @@ metadata:
   categories:
   - "web"
   - "serialization"
-  status: "experimental"
+  status: "preview"
   codestart:
     name: "resteasy-reactive"
     languages:

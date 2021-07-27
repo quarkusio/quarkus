@@ -262,6 +262,7 @@ public class QuarkusDevModeTest
         }
         rootLogger.setHandlers(originalRootLoggerHandlers);
         inMemoryLogHandler.clearRecords();
+        inMemoryLogHandler.setFilter(null);
         ClearCache.clearAnnotationCache();
         GroovyCacheCleaner.clearGroovyCache();
     }

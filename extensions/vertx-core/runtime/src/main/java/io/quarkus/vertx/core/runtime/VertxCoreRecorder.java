@@ -64,6 +64,10 @@ import io.vertx.core.spi.resolver.ResolverProvider;
 @Recorder
 public class VertxCoreRecorder {
 
+    static {
+        System.setProperty("vertx.disableTCCL", "true");
+    }
+
     private static final Logger LOGGER = Logger.getLogger(VertxCoreRecorder.class.getName());
     public static final String VERTX_CACHE = "vertx-cache";
 

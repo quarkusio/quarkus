@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package blocking.call.test;
+
+option java_package = "io.quarkus.grpc.blocking.call.test";
+
+service CallBlocking {
+  rpc doBlockingCall(Empty) returns (SuccessOrFailureDescription);
+}
+
+message Empty {}
+
+message SuccessOrFailureDescription {
+  bool success = 1;
+  string error_description = 2;
+}

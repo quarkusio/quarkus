@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.gradle.BuildResult;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
-public class BasicJavaNativeBuildTest extends QuarkusNativeGradleTestBase {
+public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
 
     @Test
     public void shouldBuildNativeImage() throws Exception {

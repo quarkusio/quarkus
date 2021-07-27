@@ -39,6 +39,7 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
 
         File logOutput = new File(projectDir, "command-output.log");
 
+        System.out.println("$ " + String.join(" ", command));
         Process p = new ProcessBuilder()
                 .directory(projectDir)
                 .command(command)
@@ -56,7 +57,7 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
             final BuildResult commandResult = BuildResult.of(is);
             int exitCode = p.exitValue();
             if (exitCode != 0) {
-                printCommandOutput(command, commandResult, exitCode);
+                printCommandOutput(projectDir, command, commandResult, exitCode);
             }
             return commandResult;
         }
@@ -104,9 +105,10 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         return new StringBuilder().append("-D=").append(name).append("=").append(value).toString();
     }
 
-    private void printCommandOutput(List<String> command, BuildResult commandResult, int exitCode) {
+    private void printCommandOutput(File projectDir, List<String> command, BuildResult commandResult, int exitCode) {
         System.err.println(
-                "Command: " + String.join(" ", command) + " failed with exit code: " + exitCode + " and the following output:");
+                "Command: " + String.join(" ", command) + " ran from: " + projectDir.getAbsolutePath()
+                        + " failed with exit code: " + exitCode + " and the following output:");
         System.err.println(commandResult.getOutput());
     }
 

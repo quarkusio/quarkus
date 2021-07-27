@@ -33,6 +33,7 @@ public class ContinuousTestWebSocketHandler
         response.put("isBrokenOnly", state.isBrokenOnly);
         response.put("isTestOutput", state.isTestOutput);
         response.put("isInstrumentationBasedReload", state.isInstrumentationBasedReload);
+        response.put("isLiveReload", state.isLiveReload);
 
         lastMessage = response.build();
         for (ServerWebSocket i : sockets) {
@@ -44,7 +45,7 @@ public class ContinuousTestWebSocketHandler
     public void handle(RoutingContext event) {
 
         if ("websocket".equalsIgnoreCase(event.request().getHeader(HttpHeaderNames.UPGRADE))) {
-            event.request().toWebSocket(new Handler<AsyncResult<ServerWebSocket>>() {
+            event.request().toWebSocket(new Handler<>() {
                 @Override
                 public void handle(AsyncResult<ServerWebSocket> event) {
                     if (event.succeeded()) {

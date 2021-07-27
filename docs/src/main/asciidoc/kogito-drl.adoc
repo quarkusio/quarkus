@@ -1,0 +1,361 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Using Kogito to add rule engine capabilities to an application
+
+include::./attributes.adoc[]
+
+This guide demonstrates how your Quarkus application can use Kogito to add DRL files with rules.
+
+Kogito is a next generation business automation toolkit that originates from well known Open Source projects
+Drools (for business rules) and jBPM (for business processes). Kogito aims at providing another approach
+to business automation where the main message is to expose your business knowledge (processes, rules and decisions)
+in a domain specific way.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
+* Docker
+
+== Architecture
+
+In this example, we build a very simple microservice which offers one REST endpoint:
+
+* `/find-approved`
+
+This endpoint will be automatically generated based on the query inserted in the Rule Unit of the DRL file.
+It's an example of a stateless invocation (also called "pure function invocation") in which the execution of our business rules doesn't have any side effects.
+The output value returned is based uniquely on the input provided.
+
+=== Business rule
+
+A business rule allows to externalise decision logic into reusable pieces that can be easily
+used in declarative way. There are multiple ways of writing rules like decision tables,
+decision trees, rules, etc. For this example we focus on the rule format backed by DRL
+(Drools Rule Language).
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the complete example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `kogito-drl-quickstart` {quickstarts-tree-url}/kogito-quickstart[directory].
+
+== Creating the Maven Project
+
+First, we need a new project. Create a new project with the following command:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=kogito-drl-quickstart \
+    -Dextensions="kogito-quarkus-rules" \
+    -DnoExamples
+cd kogito-drl-quickstart
+----
+
+This command generates a Maven project, importing the `kogito-quarkus-rules` extension
+that comes with all needed dependencies and configuration to equip your application
+with business automation.
+
+If you already have your Quarkus project configured, you can add the `kogito-quarkus-rules` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="kogito-quarkus-rules"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.kie.kogito</groupId>
+    <artifactId>kogito-quarkus-rules</artifactId>
+</dependency>
+----
+
+== Writing the application
+
+Let's start from the application domain model.
+This application will approve Loan Applications so we have a class with all the details of the wanted Loan:
+
+[source,java]
+----
+package org.acme.kogito.model;
+
+public class LoanApplication {
+
+   private String id;
+   private Applicant applicant;
+   private int amount;
+   private int deposit;
+   private boolean approved = false;
+
+   public LoanApplication() {
+
+   }
+
+   public LoanApplication(String id, Applicant applicant,
+                      	int amount, int deposit) {
+       this.id = id;
+       this.applicant = applicant;
+       this.amount = amount;
+       this.deposit = deposit;
+   }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public Applicant getApplicant() {
+        return applicant;
+    }
+
+    public void setApplicant(Applicant applicant) {
+        this.applicant = applicant;
+    }
+
+    public int getAmount() {
+        return amount;
+    }
+
+    public void setAmount(int amount) {
+        this.amount = amount;
+    }
+
+    public int getDeposit() {
+        return deposit;
+    }
+
+    public void setDeposit(int deposit) {
+        this.deposit = deposit;
+    }
+
+    public boolean isApproved() {
+        return approved;
+    }
+
+    public void setApproved(boolean approved) {
+        this.approved = approved;
+    }
+}
+
+
+----
+
+And another class with the details of the Applicant:
+
+[source,java]
+----
+package org.acme.kogito.model;
+
+public class Applicant {
+
+   private String name;
+   private int age;
+
+   public Applicant() {
+   }
+
+   public Applicant(String name, int age) {
+       this.name = name;
+       this.age = age;
+   }
+
+   public String getName() {
+       return name;
+   }
+
+   public void setName(String name) {
+       this.name = name;
+   }
+
+   public int getAge() {
+       return age;
+   }
+
+   public void setAge(int age) {
+       this.age = age;
+   }
+}
+
+----
+
+Next, we create a rule file `loan-rules.drl` inside the `src/main/resources/org/acme/kogito/queries` folder of
+the generated project.
+
+[source,plain]
+----
+package org.acme.kogito.queries;
+
+unit LoanUnit; // no need to using globals, all variables and facts are stored in the rule unit
+
+import org.acme.kogito.model.Applicant;
+import org.acme.kogito.model.LoanApplication;
+
+rule LargeDepositApprove when
+   $l: /loanApplications[ applicant.age >= 20, deposit >= 1000, amount <= maxAmount ] // oopath style
+then
+   modify($l) { setApproved(true) };
+end
+
+rule LargeDepositReject when
+   $l: /loanApplications[ applicant.age >= 20, deposit >= 1000, amount > maxAmount ]
+then
+   modify($l) { setApproved(false) };
+end
+
+// ... more loans approval/rejections business rules ...
+
+// approved loan applications are now retrieved through a query
+query FindApproved
+   $l: /loanApplications[ approved ]
+end
+
+----
+
+In this file there are some example rules to decide whether the Loan should be approved or not. The service wants the Applicant to have an age equal or greater than 20 and more than 1000 currency on their bank account.
+The amount of the Loan shouldn't be more than the `maxAmount`.
+
+This example uses Rule Units, a new concept introduced in Kogito that helps users to encapsulate the set of rules and the facts against which those rules will be matched.
+
+The facts inserted will be inserted into a `DataStore`, a type-safe entry point. To make everything work, we need to define both the RuleUnit and the DataStore.
+
+[source,java]
+----
+package org.acme.kogito.queries;
+
+import org.acme.kogito.model.LoanApplication;
+import org.kie.kogito.rules.DataSource;
+import org.kie.kogito.rules.DataStore;
+import org.kie.kogito.rules.RuleUnitData;
+
+public class LoanUnit implements RuleUnitData {
+
+   private int maxAmount;
+   private DataStore<LoanApplication> loanApplications;
+
+   public LoanUnit() {
+   	this(DataSource.createStore(), 0);
+   }
+
+   public LoanUnit(DataStore<LoanApplication> loanApplications, int maxAmount) {
+   	this.loanApplications = loanApplications;
+   	this.maxAmount = maxAmount;
+   }
+
+   public DataStore<LoanApplication> getLoanApplications() { return loanApplications; }
+
+   public void setLoanApplications(DataStore<LoanApplication> loanApplications) {
+   	this.loanApplications = loanApplications;
+   }
+
+   public int getMaxAmount() { return maxAmount; }
+   public void setMaxAmount(int maxAmount) { this.maxAmount = maxAmount; }
+}
+
+
+----
+
+And that's it: REST endpoint to validate Loan Applications will be automatically generated from this Rule Unit.
+
+
+== Running and Using the Application
+
+=== Running in Developer Mode
+
+To run the microservice in dev mode, use `./mvnw clean quarkus:dev`.
+
+=== Running in JVM Mode
+
+When you're done playing with dev mode you can run it as a standard Java application.
+
+First compile it:
+
+[source,bash]
+----
+./mvnw package
+----
+
+Then run it:
+
+[source,bash]
+----
+java -jar target/quarkus-app/quarkus-run.jar
+----
+
+=== Running in Native Mode
+
+This same demo can be compiled into native code: no modifications required.
+
+This implies that you no longer need to install a JVM on your
+production environment, as the runtime technology is included in
+the produced binary, and optimized to run with minimal resource overhead.
+
+Compilation will take a bit longer, so this step is disabled by default;
+let's build again by enabling the `native` profile:
+
+[source,bash]
+----
+./mvnw package -Dnative
+----
+
+After getting a cup of coffee, you'll be able to run this binary directly:
+
+[source,bash]
+----
+ target/kogito-drl-quickstart-1.0.0-SNAPSHOT-runner
+----
+
+== Testing the Application
+
+To test your application, just send a request to the service with giving the person as JSON
+payload.
+
+[source,bash]
+----
+
+curl -X POST http://localhost:8080/find-approved \
+    -H 'Content-Type: application/json'\
+    -H 'Accept: application/json' \
+    -d '{"maxAmount":5000,
+          "loanApplications":[
+          {"id":"ABC10001","amount":2000,"deposit":1000,
+            "applicant":{"age":45,"name":"John"}},
+          {"id":"ABC10002","amount":5000,"deposit":100,
+            "applicant":{"age":25,"name":"Paul"}},
+          {"id":"ABC10015","amount":1000,"deposit":100,
+            "applicant":{"age":12,"name":"George"}}
+]}'
+----
+
+In the response, the list of the approved applications will be returned:
+
+
+[source,JSON]
+----
+[{"id":"ABC10001",
+    "applicant":{"name":"John","age":45},
+    "amount":2000,"deposit":100,"approved":true}]
+----
+
+== References
+
+* https://kogito.kie.org[Kogito Website]
+* https://docs.jboss.org/kogito/release/latest/html_single[Kogito Documentation]

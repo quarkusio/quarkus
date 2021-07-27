@@ -70,18 +70,24 @@ public final class GrpcClientBuildItem extends MultiBuildItem {
 
     public enum ClientType {
 
-        BLOCKING_STUB("newBlockingStub"),
-        MUTINY_STUB("newMutinyStub"),
-        MUTINY_CLIENT(null);
+        BLOCKING_STUB("newBlockingStub", true),
+        MUTINY_STUB("newMutinyStub", false),
+        MUTINY_CLIENT(null, false);
 
         private final String factoryMethodName;
+        private boolean blocking;
 
-        ClientType(String factoryMethodName) {
+        ClientType(String factoryMethodName, boolean blocking) {
             this.factoryMethodName = factoryMethodName;
+            this.blocking = blocking;
         }
 
         public String getFactoryMethodName() {
             return factoryMethodName;
+        }
+
+        public boolean isBlocking() {
+            return blocking;
         }
     }
 }

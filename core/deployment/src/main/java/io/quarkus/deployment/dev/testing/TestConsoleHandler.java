@@ -87,7 +87,9 @@ public class TestConsoleHandler implements TestListener {
         consoleContext.reset(new ConsoleCommand('r', "Resume testing", "to resume testing", 500, null, new Runnable() {
             @Override
             public void run() {
-                testsStatusOutput.setMessage(BLUE + "Starting tests" + RESET);
+                if (lastResults == null) {
+                    testsStatusOutput.setMessage(BLUE + "Starting tests" + RESET);
+                }
                 TestSupport.instance().get().start();
             }
         }));
@@ -95,7 +97,11 @@ public class TestConsoleHandler implements TestListener {
     }
 
     private void setupFirstRunConsole() {
-        testsStatusOutput.setMessage(BLUE + "Running tests for the first time" + RESET);
+        if (lastResults != null) {
+            resultsOutput.setMessage(lastResults);
+        } else {
+            testsStatusOutput.setMessage(BLUE + "Running tests for the first time" + RESET);
+        }
         consoleContext.reset();
         addTestOutput();
     }

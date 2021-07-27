@@ -1,6 +1,7 @@
 package io.quarkus.grpc.deployment;
 
 import static io.quarkus.deployment.Feature.GRPC_CLIENT;
+import static io.quarkus.grpc.deployment.GrpcDotNames.ADD_BLOCKING_CLIENT_INTERCEPTOR;
 import static io.quarkus.grpc.deployment.GrpcDotNames.CONFIGURE_STUB;
 import static io.quarkus.grpc.deployment.GrpcDotNames.CREATE_CHANNEL_METHOD;
 import static io.quarkus.grpc.deployment.GrpcDotNames.RETRIEVE_CHANNEL_METHOD;
@@ -197,7 +198,7 @@ public class GrpcClientProcessor {
                     .addQualifier().annotation(GrpcDotNames.GRPC_CLIENT).addValue("value", client.getClientName()).done()
                     .scope(Singleton.class)
                     .unremovable()
-                    .creator(new Consumer<MethodCreator>() {
+                    .creator(new Consumer<>() {
                         @Override
                         public void accept(MethodCreator mc) {
                             GrpcClientProcessor.this.generateChannelProducer(mc, client);
@@ -210,7 +211,7 @@ public class GrpcClientProcessor {
                 syntheticBeans.produce(SyntheticBeanBuildItem.configure(clientInfo.className)
                         .addQualifier().annotation(GrpcDotNames.GRPC_CLIENT).addValue("value", svcName).done()
                         .scope(Singleton.class)
-                        .creator(new Consumer<MethodCreator>() {
+                        .creator(new Consumer<>() {
                             @Override
                             public void accept(MethodCreator mc) {
                                 GrpcClientProcessor.this.generateClientProducer(mc, svcName, clientInfo);
@@ -340,6 +341,9 @@ public class GrpcClientProcessor {
 
             // If needed, modify the call options, e.g. stub = stub.withCompression("gzip")
             client = mc.invokeStaticMethod(CONFIGURE_STUB, serviceName, client);
+            if (clientInfo.type.isBlocking()) {
+                client = mc.invokeStaticMethod(ADD_BLOCKING_CLIENT_INTERCEPTOR, client);
+            }
         }
         mc.returnValue(client);
         mc.close();

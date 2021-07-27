@@ -313,6 +313,18 @@ public class TestSupport implements TestController {
     }
 
     @Override
+    public boolean toggleLiveReloadEnabled() {
+
+        boolean lr = RuntimeUpdatesProcessor.INSTANCE.toggleLiveReloadEnabled();
+
+        for (TestListener i : testListeners) {
+            i.setLiveReloadEnabled(lr);
+        }
+
+        return lr;
+    }
+
+    @Override
     public void printFullResults() {
         if (currentState().getFailingClasses().isEmpty()) {
             log.info("All tests passed, no output to display");

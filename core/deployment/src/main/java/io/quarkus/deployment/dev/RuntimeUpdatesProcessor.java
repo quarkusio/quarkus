@@ -479,8 +479,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     || (IsolatedDevModeMain.deploymentProblem != null && userInitiated) || configFileRestartNeeded);
             if (restartNeeded) {
                 String changeString = changedFilesForRestart.stream().map(Path::getFileName).map(Object::toString)
-                        .collect(Collectors.joining(", ")) + ".";
-                log.infof("Restarting quarkus due to changes in " + changeString);
+                        .collect(Collectors.joining(", "));
+                if (!changeString.isEmpty()) {
+                    log.infof("Restarting quarkus due to changes in %s.", changeString);
+                } else if (forceRestart && userInitiated) {
+                    log.info("Restarting as requested by the user.");
+                }
+
                 restartCallback.accept(filesChanged, changedClassResults);
                 long timeNanoSeconds = System.nanoTime() - startNanoseconds;
                 log.infof("Live reload total time: %ss ", Timing.convertToBigDecimalSeconds(timeNanoSeconds));

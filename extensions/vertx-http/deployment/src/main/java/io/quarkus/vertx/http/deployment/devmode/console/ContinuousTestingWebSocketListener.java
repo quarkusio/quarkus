@@ -22,7 +22,7 @@ public class ContinuousTestingWebSocketListener implements TestListener {
     public void testsEnabled() {
         ContinuousTestingWebsocketListener
                 .setLastState(
-                        new ContinuousTestingWebsocketListener.State(true, true, 0L, 0L, 0L, 0L, false, false, false));
+                        new ContinuousTestingWebsocketListener.State(true, true, 0L, 0L, 0L, 0L, false, false, false, true));
     }
 
     @Override
@@ -55,7 +55,8 @@ public class ContinuousTestingWebSocketListener implements TestListener {
                                 testRunResults.getFailedCount(), testRunResults.getSkippedCount(),
                                 ContinuousTestingWebsocketListener.getLastState().isBrokenOnly,
                                 ContinuousTestingWebsocketListener.getLastState().isTestOutput,
-                                ContinuousTestingWebsocketListener.getLastState().isInstrumentationBasedReload));
+                                ContinuousTestingWebsocketListener.getLastState().isInstrumentationBasedReload,
+                                ContinuousTestingWebsocketListener.getLastState().isLiveReload));
             }
 
             @Override
@@ -84,6 +85,11 @@ public class ContinuousTestingWebSocketListener implements TestListener {
     @Override
     public void setInstrumentationBasedReload(boolean ibr) {
         ContinuousTestingWebsocketListener.setInstrumentationBasedReload(ibr);
+    }
+
+    @Override
+    public void setLiveReloadEnabled(boolean lre) {
+        ContinuousTestingWebsocketListener.setLiveReloadEnabled(lre);
     }
 
 }

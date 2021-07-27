@@ -97,6 +97,14 @@ function addTestsBtnListeners(){
     $(".btnToggleInstrumentationBasedReload").on("click", function(e) {
         toggleInstrumentationReload();
     });
+
+    $(".btnToggleLiveReload").on("click", function(e) {
+        toggleLiveReload();
+    });
+
+    $(".btnForceRestart").on("click", function(e) {
+        forceRestart();
+    });
     
     $(".btnDisplayTestHelp").on("click", function(e) {
         displayTestsHelp();
@@ -113,7 +121,9 @@ function addTestsKeyListeners(){
     var d = 68; // Disable tests
     var h = 72; // Display this help
     var p = 80; // Pause tests
-    
+    var s = 83; // force restart
+    var l = 76; // toggle live reload
+
     $(document).keydown(function (e) {
         if (e.target.tagName === "BODY") {
             if (e.keyCode === r){
@@ -136,6 +146,10 @@ function addTestsKeyListeners(){
                 displayTestsHelp();
             } else if (e.keyCode === p){
                 pauseTests();
+            } else if (e.keyCode === s){
+                forceRestart();
+            } else if (e.keyCode === l){
+                toggleLiveReload();
             }
         }
     });
@@ -218,6 +232,24 @@ function toggleInstrumentationReload(){
     }
 }
 
+function toggleLiveReload(){
+    if(!testsInProgress){
+        $.post(testBackendUrl + "toggle-live-reload", function(data){
+            if(data.liveReloadEnabled){
+                switchOnLiveReload();
+            }else{
+                switchOffLiveReload();
+            }
+        });
+    }
+}
+
+function forceRestart(){
+    if(!testsInProgress){
+        $.post(testBackendUrl + "force-restart");
+    }
+}
+
 function displayTestsHelp(){
     $('#testsHelpModal').modal('show');
 }
@@ -256,22 +288,23 @@ function switchOnTesting(json){
         $('.btnPowerOnOffButton, .btnTestsResults i').addClass("text-danger");
         $('.btnRerunFailedTests, .btnPrintFailuresTests').removeClass("d-none");
     }
-    
+
     setBrokenOnly(json.isBrokenOnly);
     setTestOutput(json.isTestOutput);
     setInstrumentationBasedReload(json.isInstrumentationBasedReload);
+    setLiveReload(json.isLiveReload);
     document.dispatchEvent(messageReceivedEvent);
     testsIsRunning = true;
 }
 
 function showRunningToolbar(){
-    $(".btnRerunAllTests,.btnRerunFailedTests,.btnBrokenOnlyTests,.btnPrintFailuresTests,.btnToggleTestOutput,.btnToggleInstrumentationBasedReload, .btnTestsResults, .btnTestsGuide").each(function(){
+    $(".btnRerunAllTests,.btnRerunFailedTests,.btnBrokenOnlyTests,.btnPrintFailuresTests,.btnToggleTestOutput,.btnToggleInstrumentationBasedReload, .btnToggleLiveReload, .btnForceRestart, .btnTestsResults, .btnTestsGuide").each(function(){
         $(this).removeClass("d-none");
     });
 }
 
 function hideRunningToolbar(){
-    $(".btnRerunAllTests,.btnRerunFailedTests,.btnBrokenOnlyTests,.btnPrintFailuresTests,.btnToggleTestOutput,.btnToggleInstrumentationBasedReload, .btnTestsResults, .btnTestsGuide").each(function(){
+    $(".btnRerunAllTests,.btnRerunFailedTests,.btnBrokenOnlyTests,.btnPrintFailuresTests,.btnToggleTestOutput,.btnToggleInstrumentationBasedReload, .btnToggleLiveReload, .btnForceRestart, .btnTestsResults, .btnTestsGuide").each(function(){
         $(this).addClass("d-none");
     });
 }
@@ -345,4 +378,23 @@ function switchOffInstrumentation(){
     $('.btnToggleInstrumentationBasedReload i').addClass("text-secondary");
     $('.btnToggleInstrumentationBasedReload i').removeClass("text-success");
 }
+
+function switchOnLiveReload(){
+    $('.btnToggleLiveReload i').removeClass("text-secondary");
+    $('.btnToggleLiveReload i').addClass("text-success");
+}
+
+function switchOffLiveReload(){
+    $('.btnToggleLiveReload i').addClass("text-secondary");
+    $('.btnToggleLiveReload i').removeClass("text-success");
+}
+
+function setLiveReload(isLiveReload) {
+    if(isLiveReload) {
+       switchOnLiveReload();
+    }else{
+       switchOffLiveReload();
+    }
+}
+
 

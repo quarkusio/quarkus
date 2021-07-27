@@ -108,8 +108,14 @@ public class ConsoleStateManager {
                         }
                     }));
             commands.add(new ConsoleCommand('l', "Toggle live reload",
-                    new ConsoleCommand.HelpState(() -> RuntimeUpdatesProcessor.INSTANCE.isLiveReloadEnabled()),
-                    () -> RuntimeUpdatesProcessor.INSTANCE.toggleLiveReloadEnabled()));
+                    new ConsoleCommand.HelpState(() -> RuntimeUpdatesProcessor.INSTANCE.isLiveReloadEnabled()), () -> {
+                        // TODO: same hack as above
+                        if (TestSupport.instance().isPresent()) {
+                            TestSupport.instance().get().toggleLiveReloadEnabled();
+                        } else {
+                            RuntimeUpdatesProcessor.INSTANCE.toggleLiveReloadEnabled();
+                        }
+                    }));
         }
 
         ConsoleContext context = createContext("System");

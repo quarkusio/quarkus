@@ -31,6 +31,10 @@ public interface TestListener {
 
     }
 
+    default void setLiveReloadEnabled(boolean lre) {
+
+    }
+
     default void testCompileFailed(String message) {
 
     }

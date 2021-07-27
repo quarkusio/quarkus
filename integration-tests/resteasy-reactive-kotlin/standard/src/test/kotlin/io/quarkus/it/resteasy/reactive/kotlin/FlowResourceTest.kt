@@ -20,7 +20,7 @@ class FlowResourceTest {
     @Test
     fun testSeeStrings() {
         testSse("str", 5) {
-            assertThat(it).containsExactly("Hello", "From", "Kotlin", "Flow")
+            assertThat(it).containsExactly("HELLO", "FROM", "KOTLIN", "FLOW")
         }
     }
 

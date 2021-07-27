@@ -1,5 +1,7 @@
 package io.quarkus.kafka.client.deployment;
 
+import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -59,5 +61,24 @@ public class KafkaDevServicesBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "kafka")
     public String serviceName;
+
+    /**
+     * The topic-partition pairs to create in the Dev Services Kafka broker.
+     * After the broker is started, given topics with partitions are created, skipping already existing topics.
+     * For example, <code>quarkus.kafka.devservices.topic-partitions.test=2</code> will create a topic named
+     * {@code test} with 2 partitions.
+     * <p>
+     * The topic creation will not try to re-partition existing topics with different number of partitions.
+     */
+    @ConfigItem
+    public Map<String, Integer> topicPartitions;
+
+    /**
+     * Timeout for admin client calls used in topic creation.
+     * <p>
+     * Defaults to 2 seconds.
+     */
+    @ConfigItem(defaultValue = "2S")
+    public Duration topicPartitionsTimeout;
 
 }

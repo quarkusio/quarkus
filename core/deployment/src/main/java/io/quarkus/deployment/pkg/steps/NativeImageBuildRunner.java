@@ -42,6 +42,9 @@ public abstract class NativeImageBuildRunner {
     public void setup(boolean processInheritIODisabled) {
     }
 
+    public void addShutdownHook(Process buildNativeProcess) {
+    }
+
     public int build(List<String> args, String nativeImageName, String resultingExecutableName, Path outputDir,
             boolean debugEnabled, boolean processInheritIODisabled)
             throws InterruptedException, IOException {
@@ -53,6 +56,7 @@ public abstract class NativeImageBuildRunner {
                     .directory(outputDir.toFile());
             log.info(String.join(" ", buildCommand).replace("$", "\\$"));
             final Process process = ProcessUtil.launchProcessStreamStdOut(processBuilder, processInheritIODisabled);
+            addShutdownHook(process);
             ExecutorService executor = Executors.newSingleThreadExecutor();
             executor.submit(new ErrorReplacingProcessReader(process.getErrorStream(), outputDir.resolve("reports").toFile(),
                     errorReportLatch));

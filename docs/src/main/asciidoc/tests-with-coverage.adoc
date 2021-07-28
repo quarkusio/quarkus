@@ -301,10 +301,7 @@ In order to run the integration tests as a jar with the Jacoco agent, add the fo
                         <systemPropertyVariables>
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                             <maven.home>${maven.home}</maven.home>
-                            <quarkus.test.argLine>${argLine}</quarkus.test.argLine>
-                            <!-- If your integration tests require a different profile, you can set that here as well.
-                            <quarkus.test.native-image-profile>it</quarkus.test.native-image-profile>
-                            -->
+                            <quarkus.test.arg-line>${argLine}</quarkus.test.arg-line>
                         </systemPropertyVariables>
                     </configuration>
                 </execution>
@@ -316,6 +313,8 @@ In order to run the integration tests as a jar with the Jacoco agent, add the fo
 </build>
 
 ----
+
+WARNING: Sharing the same value for `quarkus.test.arg-line` might break integration test runs that test different types of Quarkus artifacts. In such cases, the use of maven profiles is advised.
 
 == Setting coverage thresholds for the Maven build
 

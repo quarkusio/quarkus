@@ -94,7 +94,8 @@ public class SplitPackageProcessor {
                             }
                         }
                     } else {
-                        splitPackages.add(a.getGroupId() + ":" + a.getArtifactId());
+                        // Generates an app archive information in form of groupId:artifactId:classifier:type
+                        splitPackages.add(a.toString());
                     }
                 }
                 splitPackagesWarning.append(splitPackages.stream().collect(Collectors.joining(", ", "[", "]")));

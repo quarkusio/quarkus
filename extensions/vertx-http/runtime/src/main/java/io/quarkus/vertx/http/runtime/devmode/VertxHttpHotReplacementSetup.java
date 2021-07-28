@@ -1,6 +1,12 @@
 package io.quarkus.vertx.http.runtime.devmode;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import io.quarkus.dev.ErrorPageGenerators;
+import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
@@ -39,7 +45,38 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
         VertxHttpRecorder.startServerAfterFailedStart();
     }
 
+    private static volatile Set<ConnectionBase> openConnections;
+
+    public static void handleDevModeRestart() {
+        if (DevConsoleManager.isDoingHttpInitiatedReload()) {
+            return;
+        }
+        Set<ConnectionBase> cons = VertxHttpHotReplacementSetup.openConnections;
+        if (cons != null) {
+            for (ConnectionBase con : cons) {
+                con.close();
+            }
+        }
+    }
+
     void handleHotReplacementRequest(RoutingContext routingContext) {
+        if (openConnections == null) {
+            synchronized (VertxHttpHotReplacementSetup.class) {
+                if (openConnections == null) {
+                    openConnections = Collections.newSetFromMap(new ConcurrentHashMap<>());
+                }
+            }
+        }
+        ConnectionBase connectionBase = (ConnectionBase) routingContext.request().connection();
+        if (openConnections.add(connectionBase)) {
+            connectionBase.closeFuture().onComplete(new Handler<AsyncResult<Void>>() {
+                @Override
+                public void handle(AsyncResult<Void> event) {
+                    openConnections.remove(connectionBase);
+                }
+            });
+        }
+
         if ((nextUpdate > System.currentTimeMillis() && !hotReplacementContext.isTest())
                 || routingContext.request().headers().contains(HEADER_NAME)) {
             if (hotReplacementContext.getDeploymentProblem() != null) {
@@ -50,27 +87,42 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
             return;
         }
         ClassLoader current = Thread.currentThread().getContextClassLoader();
-        ConnectionBase connectionBase = (ConnectionBase) routingContext.request().connection();
         connectionBase.getContext().executeBlocking(new Handler<Promise<Boolean>>() {
             @Override
             public void handle(Promise<Boolean> event) {
                 //the blocking pool may have a stale TCCL
                 Thread.currentThread().setContextClassLoader(current);
                 boolean restart = false;
-                synchronized (this) {
-                    if (nextUpdate < System.currentTimeMillis() || hotReplacementContext.isTest()) {
-                        nextUpdate = System.currentTimeMillis() + HOT_REPLACEMENT_INTERVAL;
-                        try {
-                            restart = hotReplacementContext.doScan(true);
-                        } catch (Exception e) {
-                            event.fail(new IllegalStateException("Unable to perform live reload scanning", e));
-                            return;
+                try {
+                    DevConsoleManager.setDoingHttpInitiatedReload(true);
+                    synchronized (this) {
+                        if (nextUpdate < System.currentTimeMillis() || hotReplacementContext.isTest()) {
+                            nextUpdate = System.currentTimeMillis() + HOT_REPLACEMENT_INTERVAL;
+                            try {
+                                restart = hotReplacementContext.doScan(true);
+                            } catch (Exception e) {
+                                event.fail(new IllegalStateException("Unable to perform live reload scanning", e));
+                                return;
+                            }
                         }
                     }
-                }
-                if (hotReplacementContext.getDeploymentProblem() != null) {
-                    event.fail(hotReplacementContext.getDeploymentProblem());
-                    return;
+                    if (hotReplacementContext.getDeploymentProblem() != null) {
+                        event.fail(hotReplacementContext.getDeploymentProblem());
+                        return;
+                    }
+                    if (restart) {
+                        //close all connections on close, except for this one
+                        //this prevents long running requests such as SSE or websockets
+                        //from holding onto the old deployment
+                        Set<ConnectionBase> connections = new HashSet<>(openConnections);
+                        for (ConnectionBase con : connections) {
+                            if (con != connectionBase) {
+                                con.close();
+                            }
+                        }
+                    }
+                } finally {
+                    DevConsoleManager.setDoingHttpInitiatedReload(false);
                 }
                 event.complete(restart);
             }

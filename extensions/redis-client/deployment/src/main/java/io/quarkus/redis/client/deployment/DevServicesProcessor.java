@@ -5,15 +5,19 @@ import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
 
 import java.io.Closeable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
+import org.testcontainers.utility.Base58;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -23,6 +27,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
@@ -56,8 +61,8 @@ public class DevServicesProcessor {
     @Produce(ServiceStartBuildItem.class)
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = IsDockerRunningSilent.class)
     public void startRedisContainers(LaunchModeBuildItem launchMode,
+            Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
-
             BuildProducer<DevServicesNativeConfigResultBuildItem> devConfigProducer, RedisBuildTimeConfig config) {
 
         Map<String, DevServiceConfiguration> currentDevServicesConfiguration = new HashMap<>(config.additionalDevServices);
@@ -88,7 +93,8 @@ public class DevServicesProcessor {
         List<Closeable> currentCloseables = new ArrayList<>();
         for (Entry<String, DevServiceConfiguration> entry : currentDevServicesConfiguration.entrySet()) {
             String connectionName = entry.getKey();
-            StartResult startResult = startContainer(connectionName, entry.getValue().devservices, launchMode.getLaunchMode());
+            StartResult startResult = startContainer(connectionName, entry.getValue().devservices, launchMode.getLaunchMode(),
+                    devServicesSharedNetworkBuildItem.isPresent());
             if (startResult == null) {
                 continue;
             }
@@ -124,7 +130,8 @@ public class DevServicesProcessor {
         }
     }
 
-    private StartResult startContainer(String connectionName, DevServicesConfig devServicesConfig, LaunchMode launchMode) {
+    private StartResult startContainer(String connectionName, DevServicesConfig devServicesConfig, LaunchMode launchMode,
+            boolean useSharedNetwork) {
         if (!devServicesConfig.enabled) {
             // explicitly disabled
             log.debug("Not starting devservices for " + (isDefault(connectionName) ? "default redis client" : connectionName)
@@ -145,8 +152,8 @@ public class DevServicesProcessor {
                 .asCompatibleSubstituteFor(REDIS_6_ALPINE);
 
         Supplier<StartResult> defaultRedisServerSupplier = () -> {
-            FixedPortRedisContainer redisContainer = new FixedPortRedisContainer(dockerImageName, devServicesConfig.port,
-                    launchMode == DEVELOPMENT ? devServicesConfig.serviceName : null);
+            QuarkusPortRedisContainer redisContainer = new QuarkusPortRedisContainer(dockerImageName, devServicesConfig.port,
+                    launchMode == DEVELOPMENT ? devServicesConfig.serviceName : null, useSharedNetwork);
             redisContainer.start();
             String redisHost = REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort();
             return new StartResult(redisHost,
@@ -177,12 +184,17 @@ public class DevServicesProcessor {
         }
     }
 
-    private static class FixedPortRedisContainer extends GenericContainer<FixedPortRedisContainer> {
-        OptionalInt fixedExposedPort;
+    private static class QuarkusPortRedisContainer extends GenericContainer<QuarkusPortRedisContainer> {
+        private final OptionalInt fixedExposedPort;
+        private final boolean useSharedNetwork;
 
-        public FixedPortRedisContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, String serviceName) {
+        private String hostName = null;
+
+        public QuarkusPortRedisContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, String serviceName,
+                boolean useSharedNetwork) {
             super(dockerImageName);
             this.fixedExposedPort = fixedExposedPort;
+            this.useSharedNetwork = useSharedNetwork;
             if (serviceName != null) {
                 withLabel(DEV_SERVICE_LABEL, serviceName);
             }
@@ -191,6 +203,17 @@ public class DevServicesProcessor {
         @Override
         protected void configure() {
             super.configure();
+
+            if (useSharedNetwork) {
+                // When a shared network is requested for the launched containers, we need to configure
+                // the container to use it. We also need to create a hostname that will be applied to the returned
+                // Redis URL
+                setNetwork(Network.SHARED);
+                hostName = "redis-" + Base58.randomString(5);
+                setNetworkAliases(Collections.singletonList(hostName));
+                return;
+            }
+
             if (fixedExposedPort.isPresent()) {
                 addFixedExposedPort(fixedExposedPort.getAsInt(), REDIS_EXPOSED_PORT);
             } else {
@@ -199,10 +222,19 @@ public class DevServicesProcessor {
         }
 
         public int getPort() {
+            if (useSharedNetwork) {
+                return REDIS_EXPOSED_PORT;
+            }
+
             if (fixedExposedPort.isPresent()) {
                 return fixedExposedPort.getAsInt();
             }
             return super.getFirstMappedPort();
+        }
+
+        @Override
+        public String getHost() {
+            return useSharedNetwork ? hostName : super.getHost();
         }
     }
 }

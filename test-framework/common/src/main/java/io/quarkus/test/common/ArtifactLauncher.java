@@ -27,5 +27,14 @@ public interface ArtifactLauncher<T extends ArtifactLauncher.InitContext> extend
         String testProfile();
 
         List<String> argLine();
+
+        ArtifactLauncher.InitContext.DevServicesLaunchResult getDevServicesLaunchResult();
+
+        interface DevServicesLaunchResult {
+
+            Map<String, String> properties();
+
+            String networkId();
+        }
     }
 }

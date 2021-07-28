@@ -35,6 +35,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.JUnitException;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.PathsCollection;
@@ -186,7 +187,8 @@ public final class IntegrationTestUtil {
         }
     }
 
-    static Map<String, String> handleDevServices(ExtensionContext context) throws Exception {
+    static ArtifactLauncher.InitContext.DevServicesLaunchResult handleDevServices(ExtensionContext context,
+            boolean isDockerAppLaunch) throws Exception {
         Class<?> requiredTestClass = context.getRequiredTestClass();
         Path testClassLocation = getTestClassesLocation(requiredTestClass);
         final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
@@ -259,15 +261,55 @@ public final class IntegrationTestUtil {
         TestClassIndexer.writeIndex(testClassesIndex, requiredTestClass);
 
         Map<String, String> propertyMap = new HashMap<>();
-        curatedApplication
-                .createAugmentor()
-                .performCustomBuild(NativeDevServicesHandler.class.getName(), new BiConsumer<String, String>() {
-                    @Override
-                    public void accept(String s, String s2) {
-                        propertyMap.put(s, s2);
-                    }
-                }, DevServicesNativeConfigResultBuildItem.class.getName());
-        return propertyMap;
+        AugmentAction augmentAction;
+        String networkId = null;
+        if (isDockerAppLaunch) {
+            // when the application is going to be launched as a docker container, we need to make containers started by DevServices
+            // use a shared network that the application container can then use as well
+            augmentAction = curatedApplication.createAugmentor(
+                    "io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem$Factory", Collections.emptyMap());
+        } else {
+            augmentAction = curatedApplication.createAugmentor();
+        }
+        augmentAction.performCustomBuild(NativeDevServicesHandler.class.getName(), new BiConsumer<String, String>() {
+            @Override
+            public void accept(String s, String s2) {
+                propertyMap.put(s, s2);
+            }
+        }, DevServicesNativeConfigResultBuildItem.class.getName());
+
+        if (isDockerAppLaunch) {
+            // obtain the ID of the shared network - this needs to be done after the augmentation has been run
+            // or else we run into various ClassLoader problems
+            try {
+                Class<?> networkClass = curatedApplication.getAugmentClassLoader()
+                        .loadClass("org.testcontainers.containers.Network");
+                Object sharedNetwork = networkClass.getField("SHARED").get(null);
+                networkId = (String) networkClass.getMethod("getId").invoke(sharedNetwork);
+            } catch (Exception e) {
+                networkId = null;
+            }
+        }
+
+        return new DefaultDevServicesLaunchResult(propertyMap, networkId);
+    }
+
+    static class DefaultDevServicesLaunchResult implements ArtifactLauncher.InitContext.DevServicesLaunchResult {
+        private final Map<String, String> properties;
+        private final String networkId;
+
+        DefaultDevServicesLaunchResult(Map<String, String> properties, String networkId) {
+            this.properties = properties;
+            this.networkId = networkId;
+        }
+
+        public Map<String, String> properties() {
+            return properties;
+        }
+
+        public String networkId() {
+            return networkId;
+        }
     }
 
     static Properties readQuarkusArtifactProperties(ExtensionContext context) {

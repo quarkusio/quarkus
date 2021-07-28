@@ -32,7 +32,7 @@ public class LocalProject {
     private static final String PROJECT_BASEDIR = "${project.basedir}";
     private static final String PROJECT_BUILD_DIR = "${project.build.directory}";
 
-    static final String POM_XML = "pom.xml";
+    public static final String POM_XML = "pom.xml";
 
     public static LocalProject load(Path path) throws BootstrapMavenException {
         return load(path, true);

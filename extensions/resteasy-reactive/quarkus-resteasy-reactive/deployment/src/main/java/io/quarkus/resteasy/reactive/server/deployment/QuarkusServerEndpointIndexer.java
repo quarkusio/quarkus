@@ -232,6 +232,7 @@ public class QuarkusServerEndpointIndexer
         String populatorClassName = MultipartPopulatorGenerator.generate(multipartClassInfo,
                 new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), index);
         multipartGeneratedPopulators.put(className, populatorClassName);
+        reflectiveClassProducer.produce(new ReflectiveClassBuildItem(true, false, populatorClassName));
 
         // transform the multipart pojo (and any super-classes) so we can access its fields no matter what
         ClassInfo currentClassInHierarchy = multipartClassInfo;

@@ -8,11 +8,14 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 import io.quarkus.gizmo.Gizmo;
 
 class MultipartTransformer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
+    private static final String THREAD_BINARY_NAME = "java/lang/Thread";
+    private static final String CLASS_BINARY_NAME = "java/lang/Class";
     private static final String INJECTION_TARGET_BINARY_NAME = ResteasyReactiveInjectionTarget.class.getName()
             .replace('.', '/');
     private static final String INJECTION_CONTEXT_BINARY_NAME = ResteasyReactiveInjectionContext.class.getName()
@@ -79,11 +82,45 @@ class MultipartTransformer implements BiFunction<String, ClassVisitor, ClassVisi
             // ctx param
             injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
 
-            // call the populator
-            injectMethod.visitMethodInsn(Opcodes.INVOKESTATIC, populatorName.replace('.', '/'),
-                    DotNames.POPULATE_METHOD_NAME,
-                    String.format("(%s%s)V", thisDescriptor, INJECTION_CONTEXT_DESCRIPTOR), false);
+            // Call the populator using reflection. This is needed to ensure that the populator is loaded from the proper classloader
+            // See: https://github.com/quarkusio/quarkus/issues/19037
+            // All this ASM essentially generates:
+            //Thread.currentThread().getContextClassLoader().loadClass(populatorName).getMethod("populate", this.getClass(), ResteasyReactiveInjectionContext.class).invoke((Object)null, this, ctx);
 
+            injectMethod.visitMethodInsn(Opcodes.INVOKESTATIC, THREAD_BINARY_NAME, "currentThread", "()Ljava/lang/Thread;",
+                    false);
+            injectMethod.visitMethodInsn(Opcodes.INVOKEVIRTUAL, THREAD_BINARY_NAME, "getContextClassLoader",
+                    "()Ljava/lang/ClassLoader;", false);
+            injectMethod.visitLdcInsn(populatorName);
+            injectMethod.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/ClassLoader", "loadClass",
+                    "(Ljava/lang/String;)Ljava/lang/Class;", false);
+            injectMethod.visitLdcInsn("populate");
+            injectMethod.visitInsn(Opcodes.ICONST_2);
+            injectMethod.visitTypeInsn(Opcodes.ANEWARRAY, CLASS_BINARY_NAME);
+            injectMethod.visitInsn(Opcodes.DUP);
+            injectMethod.visitInsn(Opcodes.ICONST_0);
+            injectMethod.visitVarInsn(Opcodes.ALOAD, 0);
+            injectMethod.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Object", "getClass", "()Ljava/lang/Class;", false);
+            injectMethod.visitInsn(Opcodes.AASTORE);
+            injectMethod.visitInsn(Opcodes.DUP);
+            injectMethod.visitInsn(Opcodes.ICONST_1);
+            injectMethod.visitLdcInsn(Type.getType(INJECTION_CONTEXT_DESCRIPTOR));
+            injectMethod.visitInsn(Opcodes.AASTORE);
+            injectMethod.visitMethodInsn(Opcodes.INVOKEVIRTUAL, CLASS_BINARY_NAME, "getMethod",
+                    "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;", false);
+            injectMethod.visitInsn(Opcodes.ACONST_NULL);
+            injectMethod.visitInsn(Opcodes.ICONST_2);
+            injectMethod.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/Object");
+            injectMethod.visitInsn(Opcodes.DUP);
+            injectMethod.visitInsn(Opcodes.ICONST_0);
+            injectMethod.visitVarInsn(Opcodes.ALOAD, 0);
+            injectMethod.visitInsn(Opcodes.AASTORE);
+            injectMethod.visitInsn(Opcodes.DUP);
+            injectMethod.visitInsn(Opcodes.ICONST_1);
+            injectMethod.visitVarInsn(Opcodes.ALOAD, 1);
+            injectMethod.visitInsn(Opcodes.AASTORE);
+            injectMethod.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/reflect/Method", "invoke",
+                    "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;", false);
             injectMethod.visitInsn(Opcodes.RETURN);
             injectMethod.visitEnd();
             injectMethod.visitMaxs(0, 0);

@@ -87,8 +87,13 @@ public class ConfigEditorProcessor {
                         writer.newLine();
                     }
                 }
-
-                DevConsoleManager.getHotReplacementContext().doScan(true);
+                //if we don't set this the connection will be killed on restart
+                DevConsoleManager.setDoingHttpInitiatedReload(true);
+                try {
+                    DevConsoleManager.getHotReplacementContext().doScan(true);
+                } finally {
+                    DevConsoleManager.setDoingHttpInitiatedReload(false);
+                }
                 flashMessage(event, "Configuration updated");
             }
         });

@@ -30,7 +30,6 @@ import com.mongodb.event.CommandListener;
 import com.mongodb.event.ConnectionPoolListener;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -149,7 +148,7 @@ public class MongoClientProcessor {
     }
 
     @BuildStep
-    public void mongoClientNames(BeanArchiveIndexBuildItem indexBuildItem,
+    public void mongoClientNames(CombinedIndexBuildItem indexBuildItem,
             BuildProducer<MongoClientNameBuildItem> mongoClientName) {
         Set<String> values = new HashSet<>();
         IndexView indexView = indexBuildItem.getIndex();
@@ -203,10 +202,19 @@ public class MongoClientProcessor {
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(MongoClients.class).setUnremovable().build());
     }
 
+    @BuildStep
+    void connectionNames(
+            List<MongoClientNameBuildItem> mongoClientNames,
+            BuildProducer<MongoConnectionNameBuildItem> mongoConnections) {
+        mongoConnections.produce(new MongoConnectionNameBuildItem(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME));
+        for (MongoClientNameBuildItem bi : mongoClientNames) {
+            mongoConnections.produce(new MongoConnectionNameBuildItem(bi.getName()));
+        }
+    }
+
     @Record(STATIC_INIT)
     @BuildStep
     void build(
-            List<MongoClientNameBuildItem> mongoClientNames,
             MongoClientRecorder recorder,
             SslNativeConfigBuildItem sslNativeConfig,
             CodecProviderBuildItem codecProvider,
@@ -214,7 +222,6 @@ public class MongoClientProcessor {
             BsonDiscriminatorBuildItem bsonDiscriminator,
             CommandListenerBuildItem commandListener,
             List<MongoConnectionPoolListenerBuildItem> connectionPoolListenerProvider,
-            BuildProducer<MongoConnectionNameBuildItem> mongoConnections,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
         List<Supplier<ConnectionPoolListener>> poolListenerList = new ArrayList<>(connectionPoolListenerProvider.size());
@@ -230,11 +237,6 @@ public class MongoClientProcessor {
                         bsonDiscriminator.getBsonDiscriminatorClassNames(), commandListener.getCommandListenerClassNames(),
                         poolListenerList, sslNativeConfig.isExplicitlyDisabled()))
                 .done());
-
-        mongoConnections.produce(new MongoConnectionNameBuildItem(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME));
-        for (MongoClientNameBuildItem bi : mongoClientNames) {
-            mongoConnections.produce(new MongoConnectionNameBuildItem(bi.getName()));
-        }
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

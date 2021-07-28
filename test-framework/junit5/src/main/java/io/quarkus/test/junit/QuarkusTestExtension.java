@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -83,6 +84,7 @@ import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.RestorableSystemProperties;
 import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
@@ -253,8 +255,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 hangTaskKey = hangDetectionExecutor.schedule(hangDetectionTask, hangTimeout.toMillis(), TimeUnit.MILLISECONDS);
             }
             ConfigProviderResolver.setInstance(new RunningAppConfigResolver(runningQuarkusApplication));
-
-            System.setProperty("test.url", TestHTTPResourceManager.getUri(runningQuarkusApplication));
+            RestorableSystemProperties restorableSystemProperties = RestorableSystemProperties.setProperties(
+                    Collections.singletonMap("test.url", TestHTTPResourceManager.getUri(runningQuarkusApplication)));
 
             Closeable tm = testResourceManager;
             Closeable shutdownTask = new Closeable() {
@@ -275,6 +277,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                             try {
                                 tm.close();
                             } finally {
+                                restorableSystemProperties.close();
                                 GroovyCacheCleaner.clearGroovyCache();
                                 shutdownHangDetection();
                             }

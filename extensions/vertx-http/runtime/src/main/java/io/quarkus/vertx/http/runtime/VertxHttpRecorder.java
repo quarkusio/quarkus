@@ -122,7 +122,7 @@ public class VertxHttpRecorder {
 
     private static volatile Runnable closeTask;
 
-    private static volatile Handler<HttpServerRequest> rootHandler;
+    static volatile Handler<HttpServerRequest> rootHandler;
 
     private static volatile Handler<RoutingContext> nonApplicationRedirectHandler;
 
@@ -1162,6 +1162,14 @@ public class VertxHttpRecorder {
 
     public static Handler<HttpServerRequest> getRootHandler() {
         return ACTUAL_ROOT;
+    }
+
+    /**
+     * used in the live reload handler to make sure the application has not been changed by another source (e.g. reactive
+     * messaging)
+     */
+    public static Object getCurrentApplicationState() {
+        return rootHandler;
     }
 
     public Handler<RoutingContext> createBodyHandler(HttpConfiguration httpConfiguration) {

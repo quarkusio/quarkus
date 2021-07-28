@@ -8,6 +8,7 @@ import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT;
 import static io.smallrye.config.SmallRyeConfigBuilder.META_INF_MICROPROFILE_CONFIG_PROPERTIES;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,6 +18,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
+import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -35,6 +37,7 @@ import io.smallrye.config.DotEnvConfigSourceProvider;
 import io.smallrye.config.EnvConfigSource;
 import io.smallrye.config.FallbackConfigSourceInterceptor;
 import io.smallrye.config.Priorities;
+import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -50,6 +53,7 @@ public final class ConfigUtils {
      * The name of the property associated with a random UUID generated at launch time.
      */
     static final String UUID_KEY = "quarkus.uuid";
+    public static final String QUARKUS_RUNTIME_CONFIG_DEFAULTS_PROPERTIES = "quarkus-runtime-config-defaults.properties";
 
     private ConfigUtils() {
     }
@@ -114,6 +118,10 @@ public final class ConfigUtils {
         }
         if (addDiscovered) {
             builder.addDiscoveredSources();
+        }
+        if (runTime || bootstrap) {
+            Map<String, String> runtimeDefaults = loadRuntimeDefaultValues();
+            builder.withSources(new PropertiesConfigSource(runtimeDefaults, "Runtime Defaults", Integer.MIN_VALUE + 50));
         }
         return builder;
     }
@@ -189,14 +197,34 @@ public final class ConfigUtils {
         builder.withSources(provider.getConfigSourceFactory(Thread.currentThread().getContextClassLoader()));
     }
 
+    public static Map<String, String> loadRuntimeDefaultValues() {
+        Map<String, String> values = new HashMap<>();
+        try (InputStream in = Thread.currentThread().getContextClassLoader()
+                .getResourceAsStream(QUARKUS_RUNTIME_CONFIG_DEFAULTS_PROPERTIES)) {
+            if (in == null) {
+                return values;
+            }
+            Properties p = new Properties();
+            p.load(in);
+            for (String k : p.stringPropertyNames()) {
+                if (!values.containsKey(k)) {
+                    values.put(k, p.getProperty(k));
+                }
+            }
+            return values;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Checks if a property is present in the current Configuration.
-     *
+     * <p>
      * Because the sources may not expose the property directly in {@link ConfigSource#getPropertyNames()}, we cannot
      * reliable determine if the property is present in the properties list. The property needs to be retrieved to make
      * sure it exists. Also, if the value is an expression, we want to ignore expansion, because this is not relevant
      * for the check and the expansion value may not be available at this point.
-     *
+     * <p>
      * It may be interesting to expose such API in SmallRyeConfig directly.
      *
      * @param propertyName the property name.

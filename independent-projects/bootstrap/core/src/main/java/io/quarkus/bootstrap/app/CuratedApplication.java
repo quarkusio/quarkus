@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -61,6 +62,8 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     private final ConfiguredClassLoading configuredClassLoading;
 
     final AppModel appModel;
+
+    final AtomicInteger runtimeClassLoaderCount = new AtomicInteger();
 
     CuratedApplication(QuarkusBootstrap quarkusBootstrap, CurationResult curationResult,
             ConfiguredClassLoading configuredClassLoading) {
@@ -330,7 +333,9 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     public QuarkusClassLoader createRuntimeClassLoader(ClassLoader base, Map<String, byte[]> resources,
             Map<String, byte[]> transformedClasses) {
         QuarkusClassLoader.Builder builder = QuarkusClassLoader
-                .builder("Quarkus Runtime ClassLoader: " + quarkusBootstrap.getMode(),
+                .builder(
+                        "Quarkus Runtime ClassLoader: " + quarkusBootstrap.getMode() + " restart no:"
+                                + runtimeClassLoaderCount.getAndIncrement(),
                         getBaseRuntimeClassLoader(), false)
                 .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled())
                 .setAggregateParentResources(true);

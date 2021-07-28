@@ -60,6 +60,7 @@ import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.http.runtime.HttpConfiguration.InsecureRequests;
 import io.quarkus.vertx.http.runtime.devmode.RemoteSyncHandler;
+import io.quarkus.vertx.http.runtime.devmode.VertxHttpHotReplacementSetup;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.Filters;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
@@ -168,6 +169,7 @@ public class VertxHttpRecorder {
         }
         rootHandler = null;
         hotReplacementHandler = null;
+
     }
 
     public static void startServerAfterFailedStart() {
@@ -250,6 +252,13 @@ public class VertxHttpRecorder {
                         websocketSubProtocols, auxiliaryApplication);
                 if (launchMode != LaunchMode.DEVELOPMENT) {
                     shutdown.addShutdownTask(closeTask);
+                } else {
+                    shutdown.addShutdownTask(new Runnable() {
+                        @Override
+                        public void run() {
+                            VertxHttpHotReplacementSetup.handleDevModeRestart();
+                        }
+                    });
                 }
             }
         }

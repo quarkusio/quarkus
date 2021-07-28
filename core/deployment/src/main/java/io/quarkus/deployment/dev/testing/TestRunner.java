@@ -147,7 +147,7 @@ public class TestRunner {
                             }
                         }
                         if (run) {
-                            runTests(current, true, true);
+                            runTests(current, false, true);
                         }
                     }
                 } catch (Throwable t) {

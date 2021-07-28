@@ -17,7 +17,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
 /**
@@ -48,10 +47,7 @@ public class DevServicesApicurioRegistryProcessor {
         ApicurioRegistryDevServiceCfg configuration = getConfiguration(apicurioRegistryDevServices);
 
         if (closeable != null) {
-            boolean restartRequired = launchMode.getLaunchMode() == LaunchMode.TEST;
-            if (!restartRequired) {
-                restartRequired = !configuration.equals(cfg);
-            }
+            boolean restartRequired = !configuration.equals(cfg);
             if (!restartRequired) {
                 return;
             }

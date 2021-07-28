@@ -80,10 +80,7 @@ public class DevServicesKafkaProcessor {
         KafkaDevServiceCfg configuration = getConfiguration(kafkaClientBuildTimeConfig);
 
         if (closeable != null) {
-            boolean shouldShutdownTheBroker = launchMode.getLaunchMode() == LaunchMode.TEST;
-            if (!shouldShutdownTheBroker) {
-                shouldShutdownTheBroker = !configuration.equals(cfg);
-            }
+            boolean shouldShutdownTheBroker = !configuration.equals(cfg);
             if (!shouldShutdownTheBroker) {
                 return null;
             }

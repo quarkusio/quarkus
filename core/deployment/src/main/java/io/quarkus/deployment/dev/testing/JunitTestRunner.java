@@ -684,6 +684,9 @@ public class JunitTestRunner {
         public boolean test(String logRecord) {
             Thread thread = Thread.currentThread();
             ClassLoader cl = thread.getContextClassLoader();
+            if (cl == null) {
+                return true;
+            }
             while (cl.getParent() != null) {
                 if (cl == testApplication.getAugmentClassLoader()
                         || cl == testApplication.getBaseRuntimeClassLoader()) {

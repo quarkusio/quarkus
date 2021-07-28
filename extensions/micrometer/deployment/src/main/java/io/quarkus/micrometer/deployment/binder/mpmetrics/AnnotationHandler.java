@@ -6,9 +6,9 @@ import org.jboss.jandex.*;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.micrometer.deployment.MicrometerProcessor;
 
 /**
  * Create beans to handle MP Metrics API annotations.
@@ -28,7 +28,7 @@ public class AnnotationHandler {
             @Override
             public void transform(TransformationContext ctx) {
                 final Collection<AnnotationInstance> annotations = ctx.getAnnotations();
-                AnnotationInstance annotation = MicrometerProcessor.findAnnotation(annotations, sourceAnnotation);
+                AnnotationInstance annotation = Annotations.find(annotations, sourceAnnotation);
                 if (annotation == null) {
                     return;
                 }
@@ -78,9 +78,8 @@ public class AnnotationHandler {
             MethodInfo methodInfo) {
         if (MetricDotNames.COUNTED_ANNOTATION.equals(sourceAnnotation)) {
             if (methodInfo == null) {
-                if (MicrometerProcessor.findAnnotation(classInfo.classAnnotations(), MetricDotNames.TIMED_ANNOTATION) == null &&
-                        MicrometerProcessor.findAnnotation(classInfo.classAnnotations(),
-                                MetricDotNames.SIMPLY_TIMED_ANNOTATION) == null) {
+                if (!Annotations.contains(classInfo.classAnnotations(), MetricDotNames.TIMED_ANNOTATION) &&
+                        !Annotations.contains(classInfo.classAnnotations(), MetricDotNames.SIMPLY_TIMED_ANNOTATION)) {
                     return false;
                 }
                 log.warnf("Bean %s is both counted and timed. The @Counted annotation " +

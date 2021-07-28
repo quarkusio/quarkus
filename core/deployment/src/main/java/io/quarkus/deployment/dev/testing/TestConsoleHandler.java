@@ -33,7 +33,8 @@ public class TestConsoleHandler implements TestListener {
 
     private static final Logger log = Logger.getLogger("io.quarkus.test");
 
-    public static final ConsoleCommand TOGGLE_TEST_OUTPUT = new ConsoleCommand('o', "Toggle test output",
+    public static final ConsoleCommand TOGGLE_TEST_OUTPUT = new ConsoleCommand('o', "Toggle test output", "Toggle test output",
+            1000,
             new ConsoleCommand.HelpState(TestSupport.instance().get()::isDisplayTestOutput),
             () -> TestSupport.instance().get().toggleTestOutput());
 

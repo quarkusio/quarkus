@@ -1,6 +1,5 @@
 {#include main fluid=true}
 {#title}Keycloak{/title}
-
 {#script}
 
 {#if info:oidcApplicationType is 'service'}
@@ -8,6 +7,7 @@
     var accessToken;
     var idToken;
     var loggedIn = false;
+    var userName;
 
     $( document ).ready(function() {
 
@@ -18,8 +18,8 @@
             var hash = window.location.hash;
             accessToken = hash.match(/access_token=([^&]+)/)[1];
             idToken = hash.match(/id_token=([^&]+)/)[1];
-            $('#accessTokenArea').text(accessToken);
-            $('#idTokenArea').text(idToken);
+            $('#accessTokenArea').text(decodeToken(accessToken));
+            $('#idTokenArea').text(decodeToken(idToken));
         }else if(codeInUrl()){
             loggedIn === true;
             $('.implicitLoggedOut').hide();
@@ -33,6 +33,7 @@
             $('.implicitLoggedIn').hide();
             accessToken = null;
             idToken = null;
+            userName = null;
             $('#accessTokenArea').text('');
             $('#idTokenArea').text('');
 
@@ -151,9 +152,31 @@
                 var tokens = JSON.parse(data);
                 accessToken = tokens.access_token
                 idToken = tokens.id_token
-                $('#accessTokenArea').text(accessToken);
-                $('#idTokenArea').text(idToken);
+                $('#accessTokenArea').text(decodeToken(accessToken));
+                $('#idTokenArea').text(decodeToken(idToken));
             });
+    }
+    
+    function decodeToken(token) {
+        var parts = token.split(".");
+        if (parts.length == 3) {
+          var headers = window.atob(parts[0]);
+          var payload = window.atob(parts[1]);
+          var jsonPayload = JSON.parse(payload);
+          if (!userName) {
+	          if (jsonPayload.upn) {
+	              userName = jsonPayload.upn;
+	          } else if (jsonPayload.preferred_username) {
+	              userName = jsonPayload.preferred_username;
+	          }
+	          if (userName) {
+	              $('#userName').append("<span class='text-primary px-1'>" + "as " + userName + "</span>");
+	          }
+	      }
+          return JSON.stringify(JSON.parse(headers), null, '\t') + "\r\n.\r\n" + JSON.stringify(jsonPayload,null,'\t') + "\r\n.\r\n" + parts[2];
+        } else {
+          return token;
+        }
     }
     
     {/if}
@@ -242,7 +265,7 @@ function signInToService(servicePath) {
                 </div>
                 <div class="float-right">
                     <a onclick="logout();" class="btn btn-link" title="Click to logout and start again">
-                        <i class="fas fa-lock fa-xs"></i> Logged in
+                        <i class="fas fa-lock fa-xs"></i> Logged in<div class="bg-light" id="userName"></div> 
                     </a>
                 </div>
             </div>
@@ -252,9 +275,9 @@ function signInToService(servicePath) {
                 </a>
                 <div class="collapse" id="collapseAccessToken">
                     <div class="card card-body bg-dark">
-                        <p id="accessTokenArea" class="text-light text-monospace user-select-all">
+                        <pre id="accessTokenArea" class="text-light text-monospace user-select-all">
 
-                        </p>
+                        </pre>
                         <a class="btn btn-link shadow-none text-right text-secondary" title="Copy to clipboard" onclick="accessTokenToClipboard();">
                             <i class="fas fa-clipboard"></i>
                         </a>
@@ -268,9 +291,9 @@ function signInToService(servicePath) {
                 </a>
                 <div class="collapse" id="collapseIdToken">
                     <div class="card card-body bg-dark">
-                        <p id="idTokenArea" class="text-light text-monospace user-select-all">
+                        <pre id="idTokenArea" class="text-light text-monospace user-select-all">
 
-                        </p>
+                        </pre>
 
                         <a class="btn btn-link shadow-none text-right text-secondary" title="Copy to clipboard" onclick="idTokenToClipboard();">
                             <i class="fas fa-clipboard"></i>

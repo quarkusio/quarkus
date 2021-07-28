@@ -150,15 +150,19 @@ public class BeanDeployment {
         interceptorNonbindingMembers = new HashMap<>();
         interceptorBindings = findInterceptorBindings(this.beanArchiveIndex);
         for (InterceptorBindingRegistrar registrar : builder.interceptorBindingRegistrars) {
-            for (Map.Entry<DotName, Set<String>> entry : registrar.registerAdditionalBindings().entrySet()) {
-                DotName dotName = entry.getKey();
-                ClassInfo classInfo = getClassByName(this.beanArchiveIndex, dotName);
-                if (classInfo != null) {
-                    if (entry.getValue() != null) {
-                        interceptorNonbindingMembers.put(dotName, entry.getValue());
+            for (InterceptorBindingRegistrar.InterceptorBinding binding : registrar.getAdditionalBindings()) {
+                DotName dotName = binding.getName();
+                ClassInfo annotationClass = getClassByName(this.beanArchiveIndex, dotName);
+                if (annotationClass != null) {
+                    Set<String> nonbinding = new HashSet<>();
+                    for (MethodInfo method : annotationClass.methods()) {
+                        if (binding.isNonbinding(method.name())) {
+                            nonbinding.add(method.name());
+                        }
                     }
-                    interceptorBindings.put(dotName, classInfo);
+                    interceptorNonbindingMembers.put(dotName, nonbinding);
                 }
+                interceptorBindings.put(dotName, annotationClass);
             }
         }
         repeatingInterceptorBindingAnnotations = findContainerAnnotations(interceptorBindings, this.beanArchiveIndex);

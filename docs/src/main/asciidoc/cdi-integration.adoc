@@ -448,9 +448,8 @@ We are going to use `InterceptorBindingRegistrarBuildItem` to get it done.
 InterceptorBindingRegistrarBuildItem addInterceptorBindings() {
     return new InterceptorBindingRegistrarBuildItem(new InterceptorBindingRegistrar() {
         @Override
-        public Map<DotName, Set<String>> registerAdditionalBindings() {
-            return Collections.singletonMap(DotName.createSimple(NotAnInterceptorBinding.class.getName()),
-                                        Collections.emptySet());
+        public List<InterceptorBinding> getAdditionalBindings() {
+            return List.of(InterceptorBinding.of(NotAnInterceptorBinding.class));
         }
     });
 }

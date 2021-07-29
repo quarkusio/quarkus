@@ -40,6 +40,7 @@ import io.quarkus.deployment.mutability.DevModeTask;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 import io.quarkus.deployment.steps.ClassTransformingBuildStep;
+import io.quarkus.dev.spi.DeploymentFailedStartHandler;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.dev.spi.RemoteDevState;
@@ -142,6 +143,21 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                 hotReplacementSetups.add(service);
                 service.setupHotDeployment(processor);
                 processor.addHotReplacementSetup(service);
+            }
+            for (DeploymentFailedStartHandler service : ServiceLoader.load(DeploymentFailedStartHandler.class,
+                    curatedApplication.getAugmentClassLoader())) {
+                processor.addDeploymentFailedStartHandler(new Runnable() {
+                    @Override
+                    public void run() {
+                        ClassLoader old = Thread.currentThread().getContextClassLoader();
+                        try {
+                            Thread.currentThread().setContextClassLoader(curatedApplication.getAugmentClassLoader());
+                            service.handleFailedInitialStart();
+                        } finally {
+                            Thread.currentThread().setContextClassLoader(old);
+                        }
+                    }
+                });
             }
             return processor;
         }

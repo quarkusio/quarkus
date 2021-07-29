@@ -13,6 +13,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -782,7 +783,9 @@ public final class HibernateOrmProcessor {
                     "Model classes are defined for the default persistence unit, but no default datasource was found."
                             + " The default EntityManagerFactory will not be created."
                             + " To solve this, configure the default datasource."
-                            + " Refer to https://quarkus.io/guides/datasource for guidance.");
+                            + " Refer to https://quarkus.io/guides/datasource for guidance.",
+                    new HashSet<>(Arrays.asList("quarkus.datasource.db-kind", "quarkus.datasource.username",
+                            "quarkus.datasource.password", "quarkus.datasource.jdbc.url")));
         }
 
         for (Entry<String, HibernateOrmConfigPersistenceUnit> persistenceUnitEntry : hibernateOrmConfig.persistenceUnits
@@ -840,12 +843,15 @@ public final class HibernateOrmProcessor {
                                 + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "dialect") + "'.",
                         persistenceUnitName));
             }
+
         } else {
             if (!jdbcDataSource.isPresent()) {
                 throw new ConfigurationException(String.format(Locale.ROOT,
                         "Datasource must be defined for persistence unit '%s'."
                                 + " Refer to https://quarkus.io/guides/datasource for guidance.",
-                        persistenceUnitName));
+                        persistenceUnitName),
+                        new HashSet<>(Arrays.asList("quarkus.datasource.db-kind", "quarkus.datasource.username",
+                                "quarkus.datasource.password", "quarkus.datasource.jdbc.url")));
             }
             if (explicitDialect.isPresent()) {
                 dialect = explicitDialect.get();

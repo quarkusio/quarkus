@@ -14,6 +14,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,6 +52,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.smallrye.config.Converters;
@@ -626,11 +628,15 @@ public final class BuildTimeConfigurationReader {
         private void readConfigValue(String fullName, ClassDefinition.ItemMember member, Object instance) {
             Field field = member.getField();
             Converter<?> converter = getConverter(config, field, ConverterType.of(field));
-            Object val = config.getValue(fullName, converter);
+
             try {
+                Object val = config.getValue(fullName, converter);
                 field.set(instance, val);
             } catch (IllegalAccessException e) {
                 throw toError(e);
+            } catch (Exception e) {
+                throw new ConfigurationException(e.getMessage(), e, Collections.singleton(fullName));
+
             }
         }
 

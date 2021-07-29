@@ -143,7 +143,7 @@
         <ooxml-schemas.version>1.4</ooxml-schemas.version>
         <aws-lambda-java.version>1.2.1</aws-lambda-java.version>
         <aws-lambda-java-events.version>3.9.0</aws-lambda-java-events.version>
-        <aws-lambda-serverless-java-container.version>1.3.1</aws-lambda-serverless-java-container.version>
+        <aws-lambda-serverless-java-container.version>1.6</aws-lambda-serverless-java-container.version>
         <aws-xray.version>2.9.1</aws-xray.version>
         <awssdk.version>2.17.4</awssdk.version>
         <aws-alexa-sdk.version>2.40.0</aws-alexa-sdk.version>

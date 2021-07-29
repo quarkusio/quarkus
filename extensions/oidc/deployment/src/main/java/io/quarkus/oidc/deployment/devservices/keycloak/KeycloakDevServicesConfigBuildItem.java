@@ -4,11 +4,11 @@ import java.util.Map;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
-public final class DevServicesConfigBuildItem extends SimpleBuildItem {
+public final class KeycloakDevServicesConfigBuildItem extends SimpleBuildItem {
 
     private final Map<String, Object> properties;
 
-    public DevServicesConfigBuildItem(Map<String, Object> configProperties) {
+    public KeycloakDevServicesConfigBuildItem(Map<String, Object> configProperties) {
         this.properties = configProperties;
     }
 

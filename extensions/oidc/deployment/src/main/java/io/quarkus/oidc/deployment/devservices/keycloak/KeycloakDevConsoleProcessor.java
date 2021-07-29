@@ -18,7 +18,7 @@ public class KeycloakDevConsoleProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     public void setConfigProperties(BuildProducer<DevConsoleTemplateInfoBuildItem> console,
-            Optional<DevServicesConfigBuildItem> configProps) {
+            Optional<KeycloakDevServicesConfigBuildItem> configProps) {
         if (configProps.isPresent()) {
             console.produce(
                     new DevConsoleTemplateInfoBuildItem("devServicesEnabled", config.devservices.enabled));
@@ -40,7 +40,7 @@ public class KeycloakDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     void invokeEndpoint(BuildProducer<DevConsoleRouteBuildItem> devConsoleRoute,
-            Optional<DevServicesConfigBuildItem> configProps) {
+            Optional<KeycloakDevServicesConfigBuildItem> configProps) {
         if (configProps.isPresent()) {
             @SuppressWarnings("unchecked")
             Map<String, String> users = (Map<String, String>) configProps.get().getProperties().get("oidc.users");

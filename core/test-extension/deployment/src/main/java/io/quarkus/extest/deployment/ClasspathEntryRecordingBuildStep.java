@@ -12,7 +12,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.extest.runtime.classpath.ClasspathEntriesRecorder;
 import io.quarkus.extest.runtime.classpath.RecordedClasspathEntries;
@@ -39,7 +39,7 @@ public class ClasspathEntryRecordingBuildStep {
     @Produce(FeatureBuildItem.class)
     // This makes sure we execute this in io.quarkus.test.junit.IntegrationTestUtil.handleDevDb,
     // so that we can reproduce a problem that happens in the Hibernate ORM extension.
-    @Produce(DevServicesNativeConfigResultBuildItem.class)
+    @Produce(DevServicesConfigResultBuildItem.class)
     void recordDuringAugmentation(TestBuildTimeConfig config)
             throws IOException {
         List<String> resourcesToRecord = getResourcesToRecord(config);
@@ -54,7 +54,7 @@ public class ClasspathEntryRecordingBuildStep {
     @Record(ExecutionTime.STATIC_INIT)
     // This makes sure we execute this in io.quarkus.test.junit.IntegrationTestUtil.handleDevDb,
     // so that we can reproduce a problem that happens in the Hibernate ORM extension.
-    @Produce(DevServicesNativeConfigResultBuildItem.class)
+    @Produce(DevServicesConfigResultBuildItem.class)
     void recordDuringStaticInit(ClasspathEntriesRecorder classpathEntriesRecorder, TestBuildTimeConfig config)
             throws IOException {
         List<String> resourcesToRecord = getResourcesToRecord(config);
@@ -69,7 +69,7 @@ public class ClasspathEntryRecordingBuildStep {
     @Record(ExecutionTime.RUNTIME_INIT)
     // This makes sure we execute this in io.quarkus.test.junit.IntegrationTestUtil.handleDevDb,
     // so that we can reproduce a problem that happens in the Hibernate ORM extension.
-    @Produce(DevServicesNativeConfigResultBuildItem.class)
+    @Produce(DevServicesConfigResultBuildItem.class)
     void recordDuringRuntimeInit(ClasspathEntriesRecorder classpathEntriesRecorder, TestBuildTimeConfig config)
             throws IOException {
         List<String> resourcesToRecord = getResourcesToRecord(config);

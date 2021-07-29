@@ -25,14 +25,10 @@ import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.mongodb.runtime.MongodbConfig;
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
 public class DevServicesMongoProcessor {
@@ -48,11 +44,8 @@ public class DevServicesMongoProcessor {
     @BuildStep(onlyIfNot = IsNormal.class)
     public void startMongo(List<MongoConnectionNameBuildItem> mongoConnections,
             MongoClientBuildTimeConfig mongoClientBuildTimeConfig,
-            LaunchModeBuildItem launchMode,
             Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
-            BuildProducer<ServiceStartBuildItem> serviceStartBuildItemBuildProducer,
-            BuildProducer<DevServicesNativeConfigResultBuildItem> devServices) {
+            BuildProducer<DevServicesConfigResultBuildItem> devServices) {
 
         List<String> connectionNames = new ArrayList<>(mongoConnections.size());
         for (MongoConnectionNameBuildItem mongoConnection : mongoConnections) {
@@ -73,10 +66,7 @@ public class DevServicesMongoProcessor {
         //figure out if we need to shut down and restart existing databases
         //if not and the DB's have already started we just return
         if (closeables != null) {
-            boolean restartRequired = launchMode.getLaunchMode() == LaunchMode.TEST;
-            if (!restartRequired) {
-                restartRequired = !currentCapturedProperties.equals(capturedProperties);
-            }
+            boolean restartRequired = !currentCapturedProperties.equals(capturedProperties);
             if (!restartRequired) {
                 return;
             }
@@ -101,10 +91,8 @@ public class DevServicesMongoProcessor {
             currentCloseables.add(startResult.getCloseable());
             String connectionStringPropertyName = getConfigPrefix(connectionName) + "connection-string";
             String connectionStringPropertyValue = startResult.getUrl();
-            runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(
-                    connectionStringPropertyName, connectionStringPropertyValue));
             devServices.produce(
-                    new DevServicesNativeConfigResultBuildItem(connectionStringPropertyName, connectionStringPropertyValue));
+                    new DevServicesConfigResultBuildItem(connectionStringPropertyName, connectionStringPropertyValue));
         }
 
         if (first) {

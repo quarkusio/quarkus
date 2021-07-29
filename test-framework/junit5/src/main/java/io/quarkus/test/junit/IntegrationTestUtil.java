@@ -42,7 +42,7 @@ import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.model.gradle.QuarkusModel;
 import io.quarkus.bootstrap.util.PathsUtils;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
-import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.PathTestHelper;
@@ -276,7 +276,7 @@ public final class IntegrationTestUtil {
             public void accept(String s, String s2) {
                 propertyMap.put(s, s2);
             }
-        }, DevServicesNativeConfigResultBuildItem.class.getName());
+        }, DevServicesLauncherConfigResultBuildItem.class.getName());
 
         if (isDockerAppLaunch) {
             // obtain the ID of the shared network - this needs to be done after the augmentation has been run

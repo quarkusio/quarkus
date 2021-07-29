@@ -39,11 +39,9 @@ import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
@@ -77,17 +75,12 @@ public class DevServicesKafkaProcessor {
             LaunchModeBuildItem launchMode,
             KafkaBuildTimeConfig kafkaClientBuildTimeConfig,
             Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
-            BuildProducer<DevServicesNativeConfigResultBuildItem> devServicePropertiesProducer,
-            BuildProducer<ServiceStartBuildItem> serviceStartBuildItemBuildProducer) {
+            BuildProducer<DevServicesConfigResultBuildItem> devServicePropertiesProducer) {
 
         KafkaDevServiceCfg configuration = getConfiguration(kafkaClientBuildTimeConfig);
 
         if (closeable != null) {
-            boolean shouldShutdownTheBroker = launchMode.getLaunchMode() == LaunchMode.TEST;
-            if (!shouldShutdownTheBroker) {
-                shouldShutdownTheBroker = !configuration.equals(cfg);
-            }
+            boolean shouldShutdownTheBroker = !configuration.equals(cfg);
             if (!shouldShutdownTheBroker) {
                 return null;
             }
@@ -99,7 +92,7 @@ public class DevServicesKafkaProcessor {
         DevServicesKafkaBrokerBuildItem bootstrapServers = null;
         if (kafkaBroker != null) {
             closeable = kafkaBroker.getCloseable();
-            runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(
+            devServicePropertiesProducer.produce(new DevServicesConfigResultBuildItem(
                     KAFKA_BOOTSTRAP_SERVERS, kafkaBroker.getBootstrapServers()));
             bootstrapServers = new DevServicesKafkaBrokerBuildItem(kafkaBroker.getBootstrapServers());
         }
@@ -132,9 +125,6 @@ public class DevServicesKafkaProcessor {
                         bootstrapServers.getBootstrapServers());
             }
             createTopicPartitions(bootstrapServers.getBootstrapServers(), configuration);
-
-            devServicePropertiesProducer.produce(new DevServicesNativeConfigResultBuildItem("kafka.bootstrap.servers",
-                    bootstrapServers.getBootstrapServers()));
         }
 
         return bootstrapServers;

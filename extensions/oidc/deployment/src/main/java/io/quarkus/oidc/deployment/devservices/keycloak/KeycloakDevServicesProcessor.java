@@ -37,10 +37,8 @@ import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.oidc.deployment.OidcBuildStep.IsEnabled;
 import io.quarkus.oidc.deployment.devservices.OidcDevServicesBuildItem;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -81,10 +79,9 @@ public class KeycloakDevServicesProcessor {
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = IsEnabled.class)
-    public DevServicesConfigBuildItem startKeycloakContainer(LaunchModeBuildItem launchMode,
+    public KeycloakDevServicesConfigBuildItem startKeycloakContainer(
             Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
-            BuildProducer<DevServicesNativeConfigResultBuildItem> devServices,
+            BuildProducer<DevServicesConfigResultBuildItem> devServices,
             Optional<OidcDevServicesBuildItem> oidcProviderBuildItem,
             KeycloakBuildTimeConfig config) {
 
@@ -108,7 +105,7 @@ public class KeycloakDevServicesProcessor {
                 }
             }
             if (!restartRequired) {
-                return prepareConfiguration(false, runTimeConfiguration, devServices);
+                return null;
             }
             for (Closeable closeable : closeables) {
                 try {
@@ -175,12 +172,11 @@ public class KeycloakDevServicesProcessor {
             vertxInstance = Vertx.vertx();
         }
         capturedRealmFileLastModifiedDate = getRealmFileLastModifiedDate(capturedDevServicesConfiguration.realmPath);
-        return prepareConfiguration(!startResult.realmFileExists, runTimeConfiguration, devServices);
+        return prepareConfiguration(!startResult.realmFileExists, devServices);
     }
 
-    private DevServicesConfigBuildItem prepareConfiguration(boolean createRealm,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
-            BuildProducer<DevServicesNativeConfigResultBuildItem> devServices) {
+    private KeycloakDevServicesConfigBuildItem prepareConfiguration(boolean createRealm,
+            BuildProducer<DevServicesConfigResultBuildItem> devServices) {
         final String authServerUrl = capturedKeycloakUrl + "/realms/" + capturedDevServicesConfiguration.realmName;
 
         String oidcClientId = getOidcClientId();
@@ -191,19 +187,11 @@ public class KeycloakDevServicesProcessor {
         if (createRealm) {
             createRealm(capturedKeycloakUrl, users, oidcClientId, oidcClientSecret);
         }
-
-        runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(KEYCLOAK_URL_KEY, capturedKeycloakUrl));
-        runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(AUTH_SERVER_URL_CONFIG_KEY, authServerUrl));
-        runTimeConfiguration
-                .produce(new RunTimeConfigurationDefaultBuildItem(APPLICATION_TYPE_CONFIG_KEY, oidcApplicationType));
-        runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(CLIENT_ID_CONFIG_KEY, oidcClientId));
-        runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(CLIENT_SECRET_CONFIG_KEY, oidcClientSecret));
-
-        devServices.produce(new DevServicesNativeConfigResultBuildItem(KEYCLOAK_URL_KEY, capturedKeycloakUrl));
-        devServices.produce(new DevServicesNativeConfigResultBuildItem(AUTH_SERVER_URL_CONFIG_KEY, capturedKeycloakUrl));
-        devServices.produce(new DevServicesNativeConfigResultBuildItem(APPLICATION_TYPE_CONFIG_KEY, oidcApplicationType));
-        devServices.produce(new DevServicesNativeConfigResultBuildItem(CLIENT_ID_CONFIG_KEY, oidcClientId));
-        devServices.produce(new DevServicesNativeConfigResultBuildItem(CLIENT_SECRET_CONFIG_KEY, oidcClientSecret));
+        devServices.produce(new DevServicesConfigResultBuildItem(KEYCLOAK_URL_KEY, capturedKeycloakUrl));
+        devServices.produce(new DevServicesConfigResultBuildItem(AUTH_SERVER_URL_CONFIG_KEY, authServerUrl));
+        devServices.produce(new DevServicesConfigResultBuildItem(APPLICATION_TYPE_CONFIG_KEY, oidcApplicationType));
+        devServices.produce(new DevServicesConfigResultBuildItem(CLIENT_ID_CONFIG_KEY, oidcClientId));
+        devServices.produce(new DevServicesConfigResultBuildItem(CLIENT_SECRET_CONFIG_KEY, oidcClientSecret));
 
         Map<String, Object> configProperties = new HashMap<>();
         configProperties.put(KEYCLOAK_URL_KEY, capturedKeycloakUrl);
@@ -213,7 +201,7 @@ public class KeycloakDevServicesProcessor {
         configProperties.put(CLIENT_SECRET_CONFIG_KEY, oidcClientSecret);
         configProperties.put(OIDC_USERS, users);
 
-        return new DevServicesConfigBuildItem(configProperties);
+        return new KeycloakDevServicesConfigBuildItem(configProperties);
     }
 
     private StartResult startContainer(boolean useSharedContainer) {

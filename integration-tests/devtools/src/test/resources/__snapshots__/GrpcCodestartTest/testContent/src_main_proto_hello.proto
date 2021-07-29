@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "ilove.quark.us";
+option java_outer_classname = "HelloGrpcProto";
+
+package hello;
+
+service HelloGrpc {
+    rpc SayHello (HelloRequest) returns (HelloReply) {}
+}
+
+message HelloRequest {
+    string name = 1;
+}
+
+message HelloReply {
+    string message = 1;
+    int32 count = 2;
+}

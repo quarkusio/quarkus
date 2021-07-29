@@ -13,7 +13,6 @@ import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.runtime.QuarkusApplication;
-import io.quarkus.runtime.annotations.QuarkusMain;
 import picocli.CommandLine;
 import picocli.CommandLine.Help;
 import picocli.CommandLine.IHelpSectionRenderer;
@@ -24,12 +23,10 @@ import picocli.CommandLine.Model.UsageMessageSpec;
 import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.UnmatchedArgumentException;
 
-@QuarkusMain
 @CommandLine.Command(name = "quarkus", versionProvider = Version.class, subcommandsRepeatable = false, mixinStandardHelpOptions = true, subcommands = {
         Create.class, Build.class, Dev.class, ProjectExtensions.class, Registry.class, Version.class,
         Completion.class }, commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
 public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
-
     static {
         System.setProperty("picocli.endofoptions.description", "End of command line options.");
         // Change default short option to display version from "-V" to "-v":

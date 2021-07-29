@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
 
 import io.quarkus.dev.ErrorPageGenerators;
 import io.quarkus.dev.console.DevConsoleManager;
@@ -42,6 +44,11 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
 
     @Override
     public void handleFailedInitialStart() {
+        //remove for vert.x 4.2
+        //at the moment there is a TCCL error that is normally handled by the log filters
+        //but if startup fails it may not take effect
+        //it happens once per thread so it can completely mess up the console output, and hide the real issue
+        LogManager.getLogManager().getLogger("io.vertx.core.impl.ContextImpl").setLevel(Level.SEVERE);
         VertxHttpRecorder.startServerAfterFailedStart();
     }
 

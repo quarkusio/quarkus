@@ -1,6 +1,8 @@
 package io.quarkus.dev.console;
 
+import java.io.Console;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -24,6 +26,23 @@ public class BasicConsole extends QuarkusConsole {
     final boolean color;
 
     volatile boolean readingLine;
+
+    public BasicConsole(boolean color, boolean inputSupport, PrintStream printStream, Console console) {
+        this(color, inputSupport, (s) -> {
+            if (console != null) {
+                console.writer().print(s);
+                console.writer().flush();
+            } else {
+                printStream.print(s);
+            }
+        }, () -> {
+            try {
+                return System.in.read();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
 
     public BasicConsole(boolean color, boolean inputSupport, Consumer<String> output) {
         this(color, inputSupport, output, () -> {

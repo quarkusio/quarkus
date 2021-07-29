@@ -553,6 +553,8 @@ public class CodeFlowTest {
                 fail("401 status error is expected: " + page.getBody().asText());
             } catch (FailingHttpStatusCodeException ex) {
                 assertEquals(401, ex.getStatusCode());
+                assertEquals("http://localhost:8081/web-app/callback-before-wrong-redirect",
+                        ex.getResponse().getResponseHeaderValue("RedirectUri"));
             }
             webClient.getCookieManager().clearCookies();
         }

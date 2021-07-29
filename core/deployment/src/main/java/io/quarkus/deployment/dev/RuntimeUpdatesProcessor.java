@@ -239,9 +239,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                             testClassChangeWatcher.watchPath(path.toFile(), callback);
                         }
                     }
+                    testClassChangeTimer = new Timer("Test Compile Timer", true);
                     if (!nonExistent.isEmpty()) {
                         {
-                            testClassChangeTimer = new Timer("Test Compile Timer", true);
                             testClassChangeTimer.schedule(new TimerTask() {
                                 @Override
                                 public void run() {

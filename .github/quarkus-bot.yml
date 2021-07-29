@@ -194,7 +194,7 @@ triage:
         - extensions/resteasy-qute/
     - labels: [area/reactive-messaging, area/smallrye]
       title: "reactive.messaging"
-      notify: [cescoffier, kenfinnigan, phillip-kruger, michalszynkiewicz]
+      notify: [cescoffier, kenfinnigan, phillip-kruger, michalszynkiewicz, ozangunalp]
       directories:
         - extensions/smallrye-reactive-messaging
     - labels: [area/rest-client]
@@ -236,7 +236,7 @@ triage:
       titleBody: "jib"
       notify: [geoand]
     - labels: [area/kafka]
-      notify: [cescoffier]
+      notify: [cescoffier, ozangunalp]
       title: "kafka"
       directories:
         - extensions/kafka-client/

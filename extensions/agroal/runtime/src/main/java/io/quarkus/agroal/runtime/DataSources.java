@@ -126,13 +126,10 @@ public class DataSources {
         if (!dataSourceJdbcRuntimeConfig.url.isPresent()) {
             String errorMessage;
             // we don't have any URL configuration so using a standard message
-            String name;
             if (DataSourceUtil.isDefault(dataSourceName)) {
                 errorMessage = "quarkus.datasource.jdbc.url has not been defined";
-                name = "quarkus.datasource.jdbc.url";
             } else {
                 errorMessage = "quarkus.datasource." + dataSourceName + ".jdbc.url has not been defined";
-                name = "quarkus.datasource." + dataSourceName;
             }
             //this is not an error situation, because we want to allow the situation where a JDBC extension
             //is installed but has not been configured

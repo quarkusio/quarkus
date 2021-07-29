@@ -11,6 +11,7 @@ import javax.ws.rs.client.ClientResponseFilter;
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.jboss.resteasy.reactive.client.handlers.ClientResponseCompleteRestHandler;
 import org.jboss.resteasy.reactive.client.impl.ClientRequestContextImpl;
+import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 
 public class MicroProfileRestClientResponseFilter implements ClientResponseFilter {
@@ -23,13 +24,15 @@ public class MicroProfileRestClientResponseFilter implements ClientResponseFilte
         this.exceptionMappers = exceptionMappers;
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) throws IOException {
         for (ResponseExceptionMapper exceptionMapper : exceptionMappers) {
             if (exceptionMapper.handles(responseContext.getStatus(), responseContext.getHeaders())) {
                 // we have an exception mapper, we don't need the response anymore, we can map it to response right away (I hope :D)
-                ResponseImpl response = ClientResponseCompleteRestHandler.mapToResponse(
-                        ((ClientRequestContextImpl) requestContext).getRestClientRequestContext());
+                RestClientRequestContext restClientContext = ((ClientRequestContextImpl) requestContext)
+                        .getRestClientRequestContext();
+                ResponseImpl response = ClientResponseCompleteRestHandler.mapToResponse(restClientContext, false);
                 Throwable throwable = exceptionMapper.toThrowable(response);
                 if (throwable != null) {
                     throw new ProcessingException(throwable);

@@ -52,6 +52,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.ResourceHelper;
 import io.quarkus.runtime.graal.ResourcesFeature;
+import io.quarkus.runtime.graal.WeakReflection;
 
 public class NativeImageAutoFeatureStep {
 
@@ -83,6 +84,9 @@ public class NativeImageAutoFeatureStep {
     static final String DYNAMIC_PROXY_REGISTRY = "com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry";
     static final String LEGACY_LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.LocalizationFeature";
     static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.localization.LocalizationFeature";
+    public static final MethodDescriptor WEAK_REFLECTION_REGISTRATION = MethodDescriptor.ofMethod(WeakReflection.class,
+            "register", void.class, Feature.BeforeAnalysisAccess.class, Class.class, boolean.class, boolean.class,
+            boolean.class);
 
     @BuildStep
     GeneratedResourceBuildItem generateNativeResourcesList(List<NativeImageResourceBuildItem> resources,
@@ -314,9 +318,9 @@ public class NativeImageAutoFeatureStep {
         MethodDescriptor registerSerializationMethod = null;
 
         for (Map.Entry<String, ReflectionInfo> entry : reflectiveClasses.entrySet()) {
-            MethodCreator mv = file.getMethodCreator("registerClass" + count++, "V");
+            MethodCreator mv = file.getMethodCreator("registerClass" + count++, void.class, Feature.BeforeAnalysisAccess.class);
             mv.setModifiers(Modifier.PRIVATE | Modifier.STATIC);
-            overallCatch.invokeStaticMethod(mv.getMethodDescriptor());
+            overallCatch.invokeStaticMethod(mv.getMethodDescriptor(), overallCatch.getMethodParam(0));
 
             TryBlock tc = mv.tryBlock();
 
@@ -339,73 +343,77 @@ public class NativeImageAutoFeatureStep {
                 tc.writeArrayValue(carray, 0, clazz);
                 tc.invokeStaticMethod(ofMethod(RUNTIME_REFLECTION, "register", void.class, Class[].class),
                         carray);
-            }
 
-            if (entry.getValue().constructors) {
-                tc.invokeStaticMethod(
-                        ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
-                        constructors);
-            } else if (!entry.getValue().ctorSet.isEmpty()) {
-                ResultHandle farray = tc.newArray(Constructor.class, tc.load(1));
-                for (ReflectiveMethodBuildItem ctor : entry.getValue().ctorSet) {
-                    ResultHandle paramArray = tc.newArray(Class.class, tc.load(ctor.getParams().length));
-                    for (int i = 0; i < ctor.getParams().length; ++i) {
-                        String type = ctor.getParams()[i];
-                        tc.writeArrayValue(paramArray, i, tc.loadClass(type));
-                    }
-                    ResultHandle fhandle = tc.invokeVirtualMethod(
-                            ofMethod(Class.class, "getDeclaredConstructor", Constructor.class, Class[].class), clazz,
-                            paramArray);
-                    tc.writeArrayValue(farray, 0, fhandle);
+                if (entry.getValue().constructors) {
                     tc.invokeStaticMethod(
                             ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
-                            farray);
-                }
-            }
-            if (entry.getValue().methods) {
-                tc.invokeStaticMethod(
-                        ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
-                        methods);
-            } else if (!entry.getValue().methodSet.isEmpty()) {
-                ResultHandle farray = tc.newArray(Method.class, tc.load(1));
-                for (ReflectiveMethodBuildItem method : entry.getValue().methodSet) {
-                    ResultHandle paramArray = tc.newArray(Class.class, tc.load(method.getParams().length));
-                    for (int i = 0; i < method.getParams().length; ++i) {
-                        String type = method.getParams()[i];
-                        tc.writeArrayValue(paramArray, i, tc.loadClass(type));
+                            constructors);
+                } else if (!entry.getValue().ctorSet.isEmpty()) {
+                    ResultHandle farray = tc.newArray(Constructor.class, tc.load(1));
+                    for (ReflectiveMethodBuildItem ctor : entry.getValue().ctorSet) {
+                        ResultHandle paramArray = tc.newArray(Class.class, tc.load(ctor.getParams().length));
+                        for (int i = 0; i < ctor.getParams().length; ++i) {
+                            String type = ctor.getParams()[i];
+                            tc.writeArrayValue(paramArray, i, tc.loadClass(type));
+                        }
+                        ResultHandle fhandle = tc.invokeVirtualMethod(
+                                ofMethod(Class.class, "getDeclaredConstructor", Constructor.class, Class[].class), clazz,
+                                paramArray);
+                        tc.writeArrayValue(farray, 0, fhandle);
+                        tc.invokeStaticMethod(
+                                ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
+                                farray);
                     }
-                    ResultHandle fhandle = tc.invokeVirtualMethod(
-                            ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), clazz,
-                            tc.load(method.getName()), paramArray);
-                    tc.writeArrayValue(farray, 0, fhandle);
+                }
+                if (entry.getValue().methods) {
                     tc.invokeStaticMethod(
                             ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
-                            farray);
+                            methods);
+                } else if (!entry.getValue().methodSet.isEmpty()) {
+                    ResultHandle farray = tc.newArray(Method.class, tc.load(1));
+                    for (ReflectiveMethodBuildItem method : entry.getValue().methodSet) {
+                        ResultHandle paramArray = tc.newArray(Class.class, tc.load(method.getParams().length));
+                        for (int i = 0; i < method.getParams().length; ++i) {
+                            String type = method.getParams()[i];
+                            tc.writeArrayValue(paramArray, i, tc.loadClass(type));
+                        }
+                        ResultHandle fhandle = tc.invokeVirtualMethod(
+                                ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), clazz,
+                                tc.load(method.getName()), paramArray);
+                        tc.writeArrayValue(farray, 0, fhandle);
+                        tc.invokeStaticMethod(
+                                ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
+                                farray);
+                    }
                 }
-            }
-            if (entry.getValue().fields) {
-                BranchResult graalVm21Test = tc.ifGreaterEqualZero(
-                        tc.invokeVirtualMethod(VERSION_COMPARE_TO,
-                                tc.invokeStaticMethod(VERSION_CURRENT),
-                                tc.marshalAsArray(int.class, tc.load(21))));
-                graalVm21Test.trueBranch().invokeStaticMethod(
-                        ofMethod(RUNTIME_REFLECTION, "register", void.class,
-                                boolean.class, boolean.class, Field[].class),
-                        tc.load(entry.getValue().finalFieldsWritable), tc.load(entry.getValue().serialization), fields);
-                graalVm21Test.falseBranch().invokeStaticMethod(
-                        ofMethod(RUNTIME_REFLECTION, "register", void.class,
-                                boolean.class, Field[].class),
-                        tc.load(entry.getValue().finalFieldsWritable), fields);
-            } else if (!entry.getValue().fieldSet.isEmpty()) {
-                ResultHandle farray = tc.newArray(Field.class, tc.load(1));
-                for (String field : entry.getValue().fieldSet) {
-                    ResultHandle fhandle = tc.invokeVirtualMethod(
-                            ofMethod(Class.class, "getDeclaredField", Field.class, String.class), clazz, tc.load(field));
-                    tc.writeArrayValue(farray, 0, fhandle);
-                    tc.invokeStaticMethod(
-                            ofMethod(RUNTIME_REFLECTION, "register", void.class, Field[].class),
-                            farray);
+                if (entry.getValue().fields) {
+                    BranchResult graalVm21Test = tc.ifGreaterEqualZero(
+                            tc.invokeVirtualMethod(VERSION_COMPARE_TO,
+                                    tc.invokeStaticMethod(VERSION_CURRENT),
+                                    tc.marshalAsArray(int.class, tc.load(21))));
+                    graalVm21Test.trueBranch().invokeStaticMethod(
+                            ofMethod(RUNTIME_REFLECTION, "register", void.class,
+                                    boolean.class, boolean.class, Field[].class),
+                            tc.load(entry.getValue().finalFieldsWritable), tc.load(entry.getValue().serialization), fields);
+                    graalVm21Test.falseBranch().invokeStaticMethod(
+                            ofMethod(RUNTIME_REFLECTION, "register", void.class,
+                                    boolean.class, Field[].class),
+                            tc.load(entry.getValue().finalFieldsWritable), fields);
+                } else if (!entry.getValue().fieldSet.isEmpty()) {
+                    ResultHandle farray = tc.newArray(Field.class, tc.load(1));
+                    for (String field : entry.getValue().fieldSet) {
+                        ResultHandle fhandle = tc.invokeVirtualMethod(
+                                ofMethod(Class.class, "getDeclaredField", Field.class, String.class), clazz, tc.load(field));
+                        tc.writeArrayValue(farray, 0, fhandle);
+                        tc.invokeStaticMethod(
+                                ofMethod(RUNTIME_REFLECTION, "register", void.class, Field[].class),
+                                farray);
+                    }
                 }
+            } else {
+                tc.invokeStaticMethod(WEAK_REFLECTION_REGISTRATION, tc.getMethodParam(0), clazz,
+                        tc.load(entry.getValue().constructors), tc.load(entry.getValue().methods),
+                        tc.load(entry.getValue().fields));
             }
 
             if (entry.getValue().serialization) {

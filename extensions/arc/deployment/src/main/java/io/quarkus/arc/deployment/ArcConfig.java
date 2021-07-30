@@ -181,6 +181,18 @@ public class ArcConfig {
     @ConfigItem
     public ArcTestConfig test;
 
+    /**
+     * The list of packages that will not be checked for split package issues.
+     * <p>
+     * A package string representation can be:
+     * <ul>
+     * <li>a full name of the package, i.e. {@code org.acme.foo}</li>
+     * <li>a package name with suffix {@code .*}, i.e. {@code org.acme.*}, which matches a package that starts with provided
+     * value</li>
+     */
+    @ConfigItem
+    public Optional<List<String>> ignoredSplitPackages;
+
     public final boolean isRemoveUnusedBeansFieldValid() {
         return ALLOWED_REMOVE_UNUSED_BEANS_VALUES.contains(removeUnusedBeans.toLowerCase());
     }

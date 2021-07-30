@@ -17,10 +17,8 @@ import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -61,17 +59,12 @@ public class DevServicesAmqpProcessor {
     public DevServicesAmqpBrokerBuildItem startAmqpDevService(
             LaunchModeBuildItem launchMode,
             AmqpBuildTimeConfig amqpClientBuildTimeConfig,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
-            BuildProducer<DevServicesNativeConfigResultBuildItem> devServicePropertiesProducer,
-            BuildProducer<ServiceStartBuildItem> serviceStartBuildItemBuildProducer) {
+            BuildProducer<DevServicesConfigResultBuildItem> devServicePropertiesProducer) {
 
         AmqpDevServiceCfg configuration = getConfiguration(amqpClientBuildTimeConfig);
 
         if (closeable != null) {
-            boolean shouldShutdownTheBroker = launchMode.getLaunchMode() == LaunchMode.TEST;
-            if (!shouldShutdownTheBroker) {
-                shouldShutdownTheBroker = !configuration.equals(cfg);
-            }
+            boolean shouldShutdownTheBroker = !configuration.equals(cfg);
             if (!shouldShutdownTheBroker) {
                 return null;
             }
@@ -83,13 +76,21 @@ public class DevServicesAmqpProcessor {
         DevServicesAmqpBrokerBuildItem artemis = null;
         if (broker != null) {
             closeable = broker.getCloseable();
-            runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(AMQP_HOST_PROP, broker.host));
-            runTimeConfiguration
-                    .produce(new RunTimeConfigurationDefaultBuildItem(AMQP_PORT_PROP, Integer.toString(broker.port)));
-            runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(AMQP_USER_PROP, broker.user));
-            runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(AMQP_PASSWORD_PROP, broker.password));
+            devServicePropertiesProducer.produce(new DevServicesConfigResultBuildItem(AMQP_HOST_PROP, broker.host));
+            devServicePropertiesProducer
+                    .produce(new DevServicesConfigResultBuildItem(AMQP_PORT_PROP, Integer.toString(broker.port)));
+            devServicePropertiesProducer.produce(new DevServicesConfigResultBuildItem(AMQP_USER_PROP, broker.user));
+            devServicePropertiesProducer.produce(new DevServicesConfigResultBuildItem(AMQP_PASSWORD_PROP, broker.password));
 
             artemis = new DevServicesAmqpBrokerBuildItem(broker.host, broker.port, broker.user, broker.password);
+
+            if (broker.isOwner()) {
+                log.infof(
+                        "Dev Services for AMQP started. Other Quarkus applications in dev mode will find the "
+                                + "broker automatically. For Quarkus applications in production mode, you can connect to"
+                                + " this by starting your application with -Damqp.host=%s -Damqp.port=%d -Damqp.user=%s -Damqp.password=%s",
+                        broker.host, broker.port, broker.user, broker.password);
+            }
         }
 
         // Configure the watch dog
@@ -110,26 +111,6 @@ public class DevServicesAmqpProcessor {
             ((QuarkusClassLoader) cl.parent()).addCloseTask(() -> Runtime.getRuntime().removeShutdownHook(closeHookThread));
         }
         cfg = configuration;
-
-        if (broker != null) {
-            if (broker.isOwner()) {
-                log.infof(
-                        "Dev Services for AMQP started. Other Quarkus applications in dev mode will find the "
-                                + "broker automatically. For Quarkus applications in production mode, you can connect to"
-                                + " this by starting your application with -Damqp.host=%s -Damqp.port=%d -Damqp.user=%s -Damqp.password=%s",
-                        broker.host, broker.port, broker.user, broker.password);
-                devServicePropertiesProducer
-                        .produce(new DevServicesNativeConfigResultBuildItem(AMQP_HOST_PROP, broker.host));
-                devServicePropertiesProducer
-                        .produce(new DevServicesNativeConfigResultBuildItem(AMQP_PORT_PROP,
-                                Integer.toString(broker.port)));
-                devServicePropertiesProducer
-                        .produce(new DevServicesNativeConfigResultBuildItem(AMQP_USER_PROP, broker.user));
-                devServicePropertiesProducer
-                        .produce(new DevServicesNativeConfigResultBuildItem(AMQP_PASSWORD_PROP, broker.password));
-            }
-        }
-
         return artemis;
     }
 

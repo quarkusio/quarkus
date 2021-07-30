@@ -17,12 +17,7 @@ import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Produce;
-import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.runtime.LaunchMode;
+import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.vault.runtime.VaultVersions;
 import io.quarkus.vault.runtime.config.DevServicesConfig;
@@ -41,21 +36,15 @@ public class DevServicesVaultProcessor {
     private static volatile boolean first = true;
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
-    @Produce(ServiceStartBuildItem.class)
     @BuildStep(onlyIfNot = IsNormal.class)
-    public void startVaultContainers(LaunchModeBuildItem launchMode,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
-            BuildProducer<DevServicesNativeConfigResultBuildItem> devConfig, VaultBuildTimeConfig config) {
+    public void startVaultContainers(BuildProducer<DevServicesConfigResultBuildItem> devConfig, VaultBuildTimeConfig config) {
 
         DevServicesConfig currentDevServicesConfiguration = config.devservices;
 
         // figure out if we need to shut down and restart any existing Vault container
         // if not and the Vault container have already started we just return
         if (closeables != null) {
-            boolean restartRequired = launchMode.getLaunchMode() == LaunchMode.TEST;
-            if (!restartRequired) {
-                restartRequired = !currentDevServicesConfiguration.equals(capturedDevServicesConfiguration);
-            }
+            boolean restartRequired = !currentDevServicesConfiguration.equals(capturedDevServicesConfiguration);
             if (!restartRequired) {
                 return;
             }
@@ -76,11 +65,6 @@ public class DevServicesVaultProcessor {
         if (startResult == null) {
             return;
         }
-
-        runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(URL_CONFIG_KEY, startResult.url));
-        runTimeConfiguration
-                .produce(new RunTimeConfigurationDefaultBuildItem(CLIENT_TOKEN_CONFIG_KEY, startResult.clientToken));
-
         Map<String, String> connectionProperties = new HashMap<>();
         connectionProperties.put(URL_CONFIG_KEY, startResult.url);
         connectionProperties.put(CLIENT_TOKEN_CONFIG_KEY, startResult.clientToken);
@@ -118,7 +102,7 @@ public class DevServicesVaultProcessor {
             });
         }
         for (Map.Entry<String, String> entry : connectionProperties.entrySet()) {
-            devConfig.produce(new DevServicesNativeConfigResultBuildItem(entry.getKey(), entry.getValue()));
+            devConfig.produce(new DevServicesConfigResultBuildItem(entry.getKey(), entry.getValue()));
         }
     }
 

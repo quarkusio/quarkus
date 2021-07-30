@@ -25,12 +25,9 @@ import io.quarkus.deployment.IsDockerWorking.IsDockerRunningSilent;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Produce;
-import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.redis.client.deployment.RedisBuildTimeConfig.DevServiceConfiguration;
 import io.quarkus.redis.client.runtime.RedisClientUtil;
@@ -38,8 +35,8 @@ import io.quarkus.redis.client.runtime.RedisConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
-public class DevServicesProcessor {
-    private static final Logger log = Logger.getLogger(DevServicesProcessor.class);
+public class DevServicesRedisProcessor {
+    private static final Logger log = Logger.getLogger(DevServicesRedisProcessor.class);
     private static final String REDIS_6_ALPINE = "redis:6-alpine";
     private static final int REDIS_EXPOSED_PORT = 6379;
     private static final String REDIS_SCHEME = "redis://";
@@ -58,12 +55,10 @@ public class DevServicesProcessor {
     private static volatile Map<String, DevServiceConfiguration> capturedDevServicesConfiguration;
     private static volatile boolean first = true;
 
-    @Produce(ServiceStartBuildItem.class)
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = IsDockerRunningSilent.class)
     public void startRedisContainers(LaunchModeBuildItem launchMode,
             Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
-            BuildProducer<DevServicesNativeConfigResultBuildItem> devConfigProducer, RedisBuildTimeConfig config) {
+            BuildProducer<DevServicesConfigResultBuildItem> devConfigProducer, RedisBuildTimeConfig config) {
 
         Map<String, DevServiceConfiguration> currentDevServicesConfiguration = new HashMap<>(config.additionalDevServices);
         currentDevServicesConfiguration.put(RedisClientUtil.DEFAULT_CLIENT, config.defaultDevService);
@@ -71,10 +66,7 @@ public class DevServicesProcessor {
         // figure out if we need to shut down and restart existing redis containers
         // if not and the redis containers have already started we just return
         if (closeables != null) {
-            boolean restartRequired = launchMode.getLaunchMode() == LaunchMode.TEST;
-            if (!restartRequired) {
-                restartRequired = !currentDevServicesConfiguration.equals(capturedDevServicesConfiguration);
-            }
+            boolean restartRequired = !currentDevServicesConfiguration.equals(capturedDevServicesConfiguration);
             if (!restartRequired) {
                 return;
             }
@@ -100,8 +92,7 @@ public class DevServicesProcessor {
             }
             currentCloseables.add(startResult.closeable);
             String configKey = getConfigPrefix(connectionName) + RedisConfig.HOSTS_CONFIG_NAME;
-            runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(configKey, startResult.url));
-            devConfigProducer.produce(new DevServicesNativeConfigResultBuildItem(configKey, startResult.url));
+            devConfigProducer.produce(new DevServicesConfigResultBuildItem(configKey, startResult.url));
         }
 
         closeables = currentCloseables;

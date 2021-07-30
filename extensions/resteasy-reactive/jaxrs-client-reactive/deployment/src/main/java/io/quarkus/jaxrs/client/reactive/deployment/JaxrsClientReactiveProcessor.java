@@ -226,7 +226,7 @@ public class JaxrsClientReactiveProcessor {
                 .setInjectableBeans(new HashMap<>())
                 .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                 .setAdditionalWriters(additionalWriters)
-                .setDefaultBlocking(applicationResultBuildItem.getResult().isBlocking())
+                .setDefaultBlocking(applicationResultBuildItem.getResult().getBlockingDefault())
                 .setHasRuntimeConverters(false)
                 .setDefaultProduces(defaultProducesType)
                 .setSmartDefaultProduces(disableSmartDefaultProduces.isEmpty())

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
 
 public class InterfaceWithImplTest {
 
@@ -33,6 +34,7 @@ public class InterfaceWithImplTest {
     }
 
     @Path("/hello")
+    @NonBlocking
     public interface Greeting {
 
         @GET

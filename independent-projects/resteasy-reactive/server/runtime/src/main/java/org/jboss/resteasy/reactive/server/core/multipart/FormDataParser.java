@@ -31,7 +31,7 @@ public interface FormDataParser extends Closeable {
      * @return The parsed form data
      * @throws IOException If the data could not be read
      */
-    FormData parseBlocking() throws IOException;
+    FormData parseBlocking() throws Exception;
 
     /**
      * Closes the parser, and removes and temporary files that may have been created.

@@ -8,8 +8,10 @@ import javax.ws.rs.Path;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
 
 @Path("/non-blocking")
+@NonBlocking
 public class CallMakingResource {
 
     @RestClient

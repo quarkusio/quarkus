@@ -219,7 +219,7 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
         }
 
         @Override
-        public FormData parseBlocking() throws IOException {
+        public FormData parseBlocking() throws Exception {
             final FormData existing = exchange.getFormData();
             if (existing != null) {
                 return existing;

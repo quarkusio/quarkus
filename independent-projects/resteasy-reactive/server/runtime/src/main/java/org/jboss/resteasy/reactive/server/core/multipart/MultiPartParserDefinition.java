@@ -206,7 +206,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         }
 
         @Override
-        public FormData parseBlocking() throws IOException {
+        public FormData parseBlocking() throws Exception {
             final FormData existing = exchange.getFormData();
             if (existing != null) {
                 return existing;
@@ -221,8 +221,6 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                     throw new IOException("Connection terminated parsing multipart request");
                 }
                 exchange.setFormData(data);
-            } catch (RuntimeException e) {
-                throw new IOException(e);
             }
             return data;
         }

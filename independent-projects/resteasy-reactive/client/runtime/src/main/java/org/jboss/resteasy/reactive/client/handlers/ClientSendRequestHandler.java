@@ -59,6 +59,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         future.onSuccess(new Handler<HttpClientRequest>() {
             @Override
             public void handle(HttpClientRequest httpClientRequest) {
+                requestContext.setHttpClientRequest(httpClientRequest);
                 Future<HttpClientResponse> sent;
                 if (requestContext.isMultipart()) {
                     Promise<HttpClientRequest> requestPromise = Promise.promise();

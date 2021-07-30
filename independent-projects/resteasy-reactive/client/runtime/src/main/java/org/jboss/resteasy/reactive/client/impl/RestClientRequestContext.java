@@ -6,6 +6,8 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
+import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.multipart.MultipartForm;
 import java.io.IOException;
 import java.io.InputStream;
@@ -152,6 +154,17 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
             clientResponseContext = new ClientResponseContextImpl(this);
         }
         return clientResponseContext;
+    }
+
+    @Override
+    protected Executor getContextExecutor() {
+        if (httpClientRequest != null) {
+            return ((ConnectionBase) httpClientRequest.connection()).getContext().nettyEventLoop();
+        }
+        if (Context.isOnEventLoopThread()) {
+            return ((ContextInternal) restClient.getVertx().getOrCreateContext()).nettyEventLoop();
+        }
+        return null;
     }
 
     public ClientRequestContextImpl getOrCreateClientRequestContext() {

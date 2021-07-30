@@ -56,6 +56,8 @@ public class SmallRyeContextPropagationRecorder {
                 contextManagerProvider.releaseContextManager(contextManager);
             }
         });
+        //Avoid leaking the classloader:
+        this.builder = null;
     }
 
     public Supplier<Object> initializeManagedExecutor(ExecutorService executorService) {

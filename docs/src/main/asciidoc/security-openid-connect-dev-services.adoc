@@ -95,7 +95,7 @@ A token is acquired from Keycloak using a `password` grant and is sent to the se
 
 If you set `quarkus.keycloak.devservices.grant.type=client` then a `client_credentials` grant will be used to acquire a token, with the page showing no `User` field in this case:
 
-image::dev-ui-keycloak-client-credentials-grant.png[alt=Dev UI OpenId Connect Keycloak Page - Client Credentials Grant,role="center"].
+image::dev-ui-keycloak-client-credentials-grant.png[alt=Dev UI OpenId Connect Keycloak Page - Client Credentials Grant,role="center"]
 
 You can test the service the same way as with the `Password` grant.
 

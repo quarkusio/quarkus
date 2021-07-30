@@ -26,7 +26,7 @@ public class HttpCredentialTransport {
     public HttpCredentialTransport(Type transportType, String typeTarget, String authenticationScheme) {
         this.transportType = Objects.requireNonNull(transportType);
         this.typeTarget = Objects.requireNonNull(typeTarget).toLowerCase();
-        this.authenticationScheme = Objects.requireNonNull(authenticationScheme);
+        this.authenticationScheme = Objects.requireNonNull(authenticationScheme).toLowerCase();
     }
 
     public enum Type {

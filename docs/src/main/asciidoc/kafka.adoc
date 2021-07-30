@@ -1116,6 +1116,10 @@ First, you need to include the `quarkus-jackson` extension.
 There is an existing `ObjectMapperSerializer` that can be used to serialize all data objects via Jackson.
 You may create an empty subclass if you want to use <<serialization-autodetection>>.
 
+NOTE: By default, the `ObjectMapperSerializer` serializes null as the `"null"` String, this can be customized by setting the Kafka configuration
+property `json.serialize.null-as-null=true` which will serialize null as `null`.
+This is handy when using a compacted topic, as `null` is used as a tombstone to know which messages delete during compaction phase.
+
 The corresponding deserializer class needs to be subclassed.
 So, let's create a `FruitDeserializer` that extends the `ObjectMapperDeserializer`.
 
@@ -1165,6 +1169,10 @@ First, you need to include the `quarkus-jsonb` extension.
 
 There is an existing `JsonbSerializer` that can be used to serialize all data objects via JSON-B.
 You may create an empty subclass if you want to use <<serialization-autodetection>>.
+
+NOTE: By default, the `JsonbSerializer` serializes null as the `"null"` String, this can be customized by setting the Kafka configuration
+property `json.serialize.null-as-null=true` which will serialize null as `null`.
+This is handy when using a compacted topic, as `null` is used as a tombstone to know which messages delete during compaction phase.
 
 The corresponding deserializer class needs to be subclassed.
 So, let's create a `FruitDeserializer` that extends the generic `JsonbDeserializer`.

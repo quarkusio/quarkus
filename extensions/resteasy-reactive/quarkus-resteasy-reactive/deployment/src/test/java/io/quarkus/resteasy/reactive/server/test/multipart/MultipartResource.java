@@ -67,4 +67,18 @@ public class MultipartResource {
                 + formData.xmlFiles.size();
     }
 
+    @POST
+    @Produces(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Path("/optional")
+    @NonBlocking
+    public String optional(@MultipartForm FormData formData) {
+        if (BlockingOperationControl.isBlockingAllowed()) {
+            throw new RuntimeException("should not have dispatched");
+        }
+        return formData.getName() + " - " + formData.active + " - " + formData.getNum() + " - " + formData.getStatus()
+                + " - " + (formData.getHtmlPart() != null) + " - " + (formData.xmlPart != null) + " - "
+                + (formData.txtFile != null);
+    }
+
 }

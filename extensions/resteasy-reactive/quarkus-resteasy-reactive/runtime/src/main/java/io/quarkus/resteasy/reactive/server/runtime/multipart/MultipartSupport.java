@@ -9,6 +9,7 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -23,6 +24,7 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.core.multipart.DefaultFileUpload;
 import org.jboss.resteasy.reactive.server.core.multipart.FormData;
+import org.jboss.resteasy.reactive.server.core.multipart.FormData.FormValue;
 import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 
@@ -98,9 +100,12 @@ public final class MultipartSupport {
         List<DefaultFileUpload> result = new ArrayList<>();
         FormData fileUploads = context.getFormData();
         if (fileUploads != null) {
-            for (FormData.FormValue fileUpload : fileUploads.get(formName)) {
-                if (fileUpload.isFileItem()) {
-                    result.add(new DefaultFileUpload(formName, fileUpload));
+            Collection<FormValue> fileUploadsForName = fileUploads.get(formName);
+            if (fileUploadsForName != null) {
+                for (FormData.FormValue fileUpload : fileUploadsForName) {
+                    if (fileUpload.isFileItem()) {
+                        result.add(new DefaultFileUpload(formName, fileUpload));
+                    }
                 }
             }
         }

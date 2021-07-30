@@ -253,6 +253,14 @@ function printResponseData(data, message){
     $('#results').append("<span class='text-primary px-1'>" + message + "</span>, result : ");
     $('#results').append("<span class='text-primary px-1'>" + data + "</span>");
     $('#results').append("<br/>");
+    if(data is not "404"){
+        var serviceGetMethods = [];
+        if (locaStorage.getItem("serviceGetMethods")) {
+           serviceGetMethods = JSON.parse(locaStorage.getItem("serviceGetMethods"));
+        }
+        serviceGetMethods.push($('#servicePath').val());
+        localStorage.setItem("serviceGetMethods", JSON.stringify(serviceGetMethods));
+    }
 }
 
 function signInToService(servicePath) {

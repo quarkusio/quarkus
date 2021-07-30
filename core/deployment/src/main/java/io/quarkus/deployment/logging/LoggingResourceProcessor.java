@@ -42,6 +42,7 @@ import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.NamedLogHandlersBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.WebSocketLogHandlerBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -145,9 +146,11 @@ public final class LoggingResourceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     LoggingSetupBuildItem setupLoggingRuntimeInit(LoggingSetupRecorder recorder, LogConfig log, LogBuildTimeConfig buildLog,
             ConsoleRuntimeConfig consoleRuntimeConfig,
+            Optional<WebSocketLogHandlerBuildItem> logStreamHandlerBuildItem,
             List<LogHandlerBuildItem> handlerBuildItems,
             List<NamedLogHandlersBuildItem> namedHandlerBuildItems, List<LogConsoleFormatBuildItem> consoleFormatItems,
             Optional<ConsoleFormatterBannerBuildItem> possibleBannerBuildItem,
+            List<LogStreamBuildItem> logStreamBuildItems,
             LaunchModeBuildItem launchModeBuildItem,
             List<LogCleanupFilterBuildItem> logCleanupFilters) {
         if (!launchModeBuildItem.isAuxiliaryApplication()
@@ -166,7 +169,18 @@ public final class LoggingResourceProcessor {
             if (bannerBuildItem != null) {
                 possibleSupplier = bannerBuildItem.getBannerSupplier();
             }
-            recorder.initializeLogging(log, buildLog, consoleRuntimeConfig, handlers, namedHandlers,
+            // Dev UI Log Stream
+            RuntimeValue<Optional<Handler>> devUiLogHandler = null;
+            if (logStreamHandlerBuildItem.isPresent()) {
+                devUiLogHandler = logStreamHandlerBuildItem.get().getHandlerValue();
+            }
+            boolean alwaysEnableLogStream = false;
+            if (!logStreamBuildItems.isEmpty()) {
+                alwaysEnableLogStream = true;
+            }
+
+            recorder.initializeLogging(log, buildLog, consoleRuntimeConfig, alwaysEnableLogStream, devUiLogHandler, handlers,
+                    namedHandlers,
                     consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList()),
                     possibleSupplier, launchModeBuildItem.getLaunchMode());
             LogConfig logConfig = new LogConfig();

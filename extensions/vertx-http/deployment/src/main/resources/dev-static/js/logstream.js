@@ -563,12 +563,28 @@ function getThreadName(threadName, threadId) {
 
 function getLogMessage(message){
     if($('#logstreamColumnsModalMessageSwitch').is(":checked")){
+        // Make links clickable
         if(message.includes("http://")){
             message = makeLink(message, "http://");
         }
         if(message.includes("https://")){
             message = makeLink(message, "https://");
         }
+        // Make sure multi line is supported
+        if(message.includes('\n')){
+            var htmlifiedLines = [];
+            var lines = message.split('\n');
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i];
+                line = line.replace(/ /g, '\u00a0');
+                if(i === lines.length-1){
+                    htmlifiedLines.push(line);
+                }else{
+                    htmlifiedLines.push(line + '<br/>');
+                }
+            }
+            message = htmlifiedLines.join('');
+        }   
         return message;
     }
     return "";

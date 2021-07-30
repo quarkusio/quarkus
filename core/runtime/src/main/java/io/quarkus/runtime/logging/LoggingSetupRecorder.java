@@ -70,13 +70,16 @@ public class LoggingSetupRecorder {
         ConfigInstantiator.handleObject(buildConfig);
         ConsoleRuntimeConfig consoleRuntimeConfig = new ConsoleRuntimeConfig();
         ConfigInstantiator.handleObject(consoleRuntimeConfig);
-        new LoggingSetupRecorder().initializeLogging(config, buildConfig, consoleRuntimeConfig, Collections.emptyList(),
+        new LoggingSetupRecorder().initializeLogging(config, buildConfig, consoleRuntimeConfig, false, null,
+                Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(), banner, LaunchMode.DEVELOPMENT);
     }
 
     public void initializeLogging(LogConfig config, LogBuildTimeConfig buildConfig,
             ConsoleRuntimeConfig consoleConfig,
+            final boolean enableWebStream,
+            final RuntimeValue<Optional<Handler>> devUiConsoleHandler,
             final List<RuntimeValue<Optional<Handler>>> additionalHandlers,
             final List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
             final List<RuntimeValue<Optional<Formatter>>> possibleFormatters,
@@ -126,6 +129,22 @@ public class LoggingSetupRecorder {
             if (syslogHandler != null) {
                 handlers.add(syslogHandler);
             }
+        }
+
+        if ((launchMode.isDevOrTest() || enableWebStream)
+                && devUiConsoleHandler != null
+                && devUiConsoleHandler.getValue().isPresent()) {
+
+            Handler handler = devUiConsoleHandler.getValue().get();
+            handler.setErrorManager(errorManager);
+            handler.setFilter(new LogCleanupFilter(filterElements));
+
+            if (possibleBannerSupplier != null && possibleBannerSupplier.getValue().isPresent()) {
+                Supplier<String> bannerSupplier = possibleBannerSupplier.getValue().get();
+                String header = "\n" + bannerSupplier.get();
+                handler.publish(new LogRecord(Level.INFO, header));
+            }
+            handlers.add(handler);
         }
 
         if (!categories.isEmpty()) {

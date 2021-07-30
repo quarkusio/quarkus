@@ -25,13 +25,15 @@ public class GraalVMTest {
         assertVersion(20, 3, MANDREL, Version
                 .of(Stream.of("GraalVM Version 20.3.1.2-dev (Mandrel Distribution) (Java Version 11.0.8)")));
         assertVersion(21, 1, MANDREL, Version
-                .of(Stream.of("native-image 21.1.0.0 Java 11 Mandrel Distribution (Java Version 11.0.11)")));
+                .of(Stream.of("native-image 21.1.0.0-Final (Mandrel Distribution) (Java Version 11.0.11+9)")));
         assertVersion(21, 1, MANDREL, Version
-                .of(Stream.of("GraalVM 21.1.0.0 Java 11 Mandrel Distribution (Java Version 11.0.11)")));
+                .of(Stream.of("GraalVM 21.1.0.0-Final (Mandrel Distribution) (Java Version 11.0.11+9)")));
         assertVersion(21, 1, ORACLE, Version
                 .of(Stream.of("GraalVM 21.1.0 Java 11 CE (Java Version 11.0.11+5-jvmci-21.1-b02)")));
         assertVersion(21, 1, ORACLE, Version
                 .of(Stream.of("native-image 21.1.0.0 Java 11 CE (Java Version 11.0.11+5-jvmci-21.1-b02)")));
+        assertVersion(21, 2, MANDREL, Version
+                .of(Stream.of("native-image 21.2.0.0-Final Mandrel Distribution (Java Version 11.0.12+7)")));
     }
 
     static void assertVersion(int major, int minor, Distribution distro, Version version) {

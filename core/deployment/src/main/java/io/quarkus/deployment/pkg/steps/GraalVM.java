@@ -12,11 +12,11 @@ final class GraalVM {
 
         static final Version UNVERSIONED = new Version("Undefined", -1, -1, Distribution.ORACLE);
         static final Version VERSION_20_3 = new Version("GraalVM 20.3", 20, 3, Distribution.ORACLE);
-        static final Version VERSION_21_0 = new Version("GraalVM 21.0", 21, 0, Distribution.ORACLE);
         static final Version VERSION_21_1 = new Version("GraalVM 21.1", 21, 1, Distribution.ORACLE);
+        static final Version VERSION_21_2 = new Version("GraalVM 21.2", 21, 2, Distribution.ORACLE);
 
         static final Version MINIMUM = VERSION_20_3;
-        static final Version CURRENT = VERSION_21_0;
+        static final Version CURRENT = VERSION_21_2;
 
         final String fullVersion;
         final int major;

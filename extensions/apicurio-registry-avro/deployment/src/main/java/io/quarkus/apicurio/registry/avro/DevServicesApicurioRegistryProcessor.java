@@ -14,10 +14,7 @@ import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.runtime.LaunchMode;
+import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
 /**
@@ -39,19 +36,13 @@ public class DevServicesApicurioRegistryProcessor {
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
     @BuildStep(onlyIfNot = IsNormal.class)
-    public void startApicurioRegistryDevService(
-            LaunchModeBuildItem launchMode,
-            ApicurioRegistryDevServicesBuildTimeConfig apicurioRegistryDevServices,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
-            BuildProducer<DevServicesNativeConfigResultBuildItem> devServicesConfiguration) {
+    public void startApicurioRegistryDevService(ApicurioRegistryDevServicesBuildTimeConfig apicurioRegistryDevServices,
+            BuildProducer<DevServicesConfigResultBuildItem> devServicesConfiguration) {
 
         ApicurioRegistryDevServiceCfg configuration = getConfiguration(apicurioRegistryDevServices);
 
         if (closeable != null) {
-            boolean restartRequired = launchMode.getLaunchMode() == LaunchMode.TEST;
-            if (!restartRequired) {
-                restartRequired = !configuration.equals(cfg);
-            }
+            boolean restartRequired = !configuration.equals(cfg);
             if (!restartRequired) {
                 return;
             }
@@ -67,9 +58,7 @@ public class DevServicesApicurioRegistryProcessor {
         cfg = configuration;
         closeable = apicurioRegistry.getCloseable();
 
-        runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(
-                REGISTRY_URL_CONFIG, apicurioRegistry.getUrl() + "/apis/registry/v2"));
-        devServicesConfiguration.produce(new DevServicesNativeConfigResultBuildItem(
+        devServicesConfiguration.produce(new DevServicesConfigResultBuildItem(
                 REGISTRY_URL_CONFIG, apicurioRegistry.getUrl() + "/apis/registry/v2"));
 
         log.infof("Dev Services for Apicurio Registry started. The registry is available at %s", apicurioRegistry.getUrl());

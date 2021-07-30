@@ -6,7 +6,7 @@ import java.util.Map;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 
-import io.quarkus.mongodb.panache.runtime.MongoPropertyUtil;
+import io.quarkus.mongodb.panache.common.runtime.MongoPropertyUtil;
 import io.quarkus.panacheql.internal.HqlLexer;
 import io.quarkus.panacheql.internal.HqlParser;
 import io.quarkus.panacheql.internal.HqlParserBaseVisitor;

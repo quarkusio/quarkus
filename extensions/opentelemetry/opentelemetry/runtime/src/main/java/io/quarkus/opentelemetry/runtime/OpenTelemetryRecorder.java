@@ -10,7 +10,6 @@ import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.VertxInternal;
 
 @Recorder
 public class OpenTelemetryRecorder {
@@ -41,6 +40,6 @@ public class OpenTelemetryRecorder {
 
     /* RUNTIME INIT */
     public void storeVertxOnContextStorage(Supplier<Vertx> vertx) {
-        QuarkusContextStorage.vertx = (VertxInternal) vertx.get();
+        QuarkusContextStorage.vertx = vertx.get();
     }
 }

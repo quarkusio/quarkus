@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-gRPC services can be injected in your application code.
+gRPC clients can be injected in your application code.
 
 IMPORTANT: Consuming gRPC services requires the gRPC classes to be generated.
 Place your `proto` files in `src/main/proto` and run `mvn compile`.

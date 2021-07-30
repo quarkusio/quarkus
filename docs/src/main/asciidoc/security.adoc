@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Security Architecture and Guides
+= Security Architecture and Guides
 
 include::./attributes.adoc[]
 
@@ -251,7 +251,7 @@ If you plan to make your Quarkus application accessible to another application r
 
 == SameSite cookies
 
-Please see link:vertx#same-site-cookie[SameSite cookies] for information about adding a https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite[SameSite] cookie property to any of the cookies set by a Quarkus endpoint.
+Please see link:http-reference.adoc#same-site-cookie[SameSite cookies] for information about adding a https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite[SameSite] cookie property to any of the cookies set by a Quarkus endpoint.
 
 == Testing
 

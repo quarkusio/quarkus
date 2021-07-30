@@ -5,7 +5,10 @@ import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -14,11 +17,16 @@ import org.junit.jupiter.api.Assertions;
 import picocli.CommandLine;
 
 public class CliDriver {
-    // Enable to dump full output
-    private static final boolean printOutput = true;
-
     static final PrintStream stdout = System.out;
     static final PrintStream stderr = System.err;
+
+    private static final String localRepo = convertToProperty("maven.repo.local");
+
+    public static void preserveLocalRepoSettings(Collection<String> args) {
+        if (localRepo != null) {
+            args.add(localRepo);
+        }
+    }
 
     public static Result executeArbitraryCommand(Path startingDir, String... args) throws Exception {
         System.out.println("$ " + String.join(" ", args));
@@ -52,10 +60,22 @@ public class CliDriver {
     }
 
     public static Result execute(Path startingDir, String... args) throws Exception {
-        String newArgs[] = Arrays.copyOf(args, args.length + 3);
-        newArgs[args.length] = "--cli-test";
-        newArgs[args.length + 1] = "--cli-test-dir";
-        newArgs[args.length + 2] = startingDir.toString();
+
+        List<String> newArgs = new ArrayList<>();
+        newArgs.addAll(Arrays.asList(args));
+
+        List<String> looseArgs = Collections.emptyList();
+        int index = newArgs.indexOf("--");
+        if (index >= 0) {
+            looseArgs = new ArrayList<>(newArgs.subList(index, newArgs.size()));
+            newArgs.subList(index, newArgs.size()).clear();
+        }
+
+        preserveLocalRepoSettings(newArgs);
+        newArgs.add("--cli-test");
+        newArgs.add("--cli-test-dir");
+        newArgs.add(startingDir.toString());
+        newArgs.addAll(looseArgs); // re-add arguments
 
         System.out.println("$ quarkus " + String.join(" ", newArgs));
 
@@ -70,7 +90,7 @@ public class CliDriver {
         Result result = new Result();
         QuarkusCli cli = new QuarkusCli();
         try {
-            result.exitCode = cli.run(newArgs);
+            result.exitCode = cli.run(newArgs.toArray(String[]::new));
             outPs.flush();
             errPs.flush();
         } finally {
@@ -83,9 +103,7 @@ public class CliDriver {
     }
 
     public static void println(String msg) {
-        if (printOutput) {
-            System.out.println(msg);
-        }
+        System.out.println(msg);
     }
 
     public static class Result {
@@ -94,17 +112,13 @@ public class CliDriver {
         String stderr;
 
         public void echoSystemOut() {
-            if (CliDriver.printOutput) {
-                System.out.println(stdout);
-                System.out.println();
-            }
+            System.out.println(stdout);
+            System.out.println();
         }
 
         public void echoSystemErr() {
-            if (CliDriver.printOutput) {
-                System.out.println(stderr);
-                System.out.println();
-            }
+            System.out.println(stderr);
+            System.out.println();
         }
 
         @Override
@@ -145,6 +159,10 @@ public class CliDriver {
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("camel-"),
+                "camel extensions should not appear in the list of installable extensions. Found:\n" + result);
+
         return result;
     }
 
@@ -242,9 +260,8 @@ public class CliDriver {
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("quarkus-hibernate-orm"),
                 "quarkus-hibernate-orm should be listed as an installable extension. Found:\n" + result);
-        Assertions.assertFalse(result.stdout.contains("quarkus-qute"),
+        Assertions.assertFalse(result.stdout.matches("quarkus-qute"),
                 "quarkus-qute should not be listed as an installable extension. Found:\n" + result);
-
         return result;
     }
 
@@ -301,11 +318,12 @@ public class CliDriver {
     }
 
     public static Result invokeValidateDryRunBuild(Path projectRoot) throws Exception {
-        Result result = execute(projectRoot, "build", "-e", "-B", "--clean", "--dryrun",
+        Result result = execute(projectRoot, "build", "-e", "-B", "--dryrun",
                 "-Dproperty=value1", "-Dproperty2=value2");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
-        System.out.println(result.stdout);
+        Assertions.assertTrue(result.stdout.contains("Command line"),
+                "--dry-run should echo command line");
         return result;
     }
 
@@ -324,5 +342,13 @@ public class CliDriver {
         String propertiesFile = CliDriver.readFileAsString(projectRoot, properties);
         configs.forEach(conf -> Assertions.assertTrue(propertiesFile.contains(conf),
                 "Properties file should contain " + conf + ". Found:\n" + propertiesFile));
+    }
+
+    private static String convertToProperty(String name) {
+        String value = System.getProperty(name);
+        if (value != null) {
+            return "-D" + name + "=" + value;
+        }
+        return null;
     }
 }

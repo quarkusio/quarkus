@@ -15,7 +15,9 @@ public class UserTagTest {
                 .addSectionHelper(new UserTagSectionHelper.Factory("myTag", "my-tag-id"))
                 .build();
 
-        Template tag = engine.parse("{#if showImage}{it.name}{#else}nope{/if}");
+        Template tag = engine.parse("{#if showImage.or(false)}{it.name}{#else}nope{/if}");
+        // showImage.or(false), it.name
+        assertEquals(2, tag.getExpressions().size());
         engine.putTemplate("my-tag-id", tag);
 
         Map<String, Object> order = new HashMap<>();
@@ -36,7 +38,7 @@ public class UserTagTest {
                 .addSectionHelper(new UserTagSectionHelper.Factory("myTag", "my-tag-id"))
                 .build();
 
-        Template tag = engine.parse("{#if showImage}<b>{nested-content}</b>{#else}nope{/if}");
+        Template tag = engine.parse("{#if showImage.or(false)}<b>{nested-content}</b>{#else}nope{/if}");
         engine.putTemplate("my-tag-id", tag);
 
         Map<String, Object> order = new HashMap<>();
@@ -72,7 +74,24 @@ public class UserTagTest {
         assertEquals("<b><i>Herbert</i></b>",
                 engine.parse("{#myTag showImage=true}{#myTag2 showImage2=true}{order.name}{/myTag2}{/myTag}")
                         .render(Collections.singletonMap("order", order)));
+    }
 
+    @Test
+    public void testUserTagLoopParam() {
+        Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver())
+                .addSectionHelper(new UserTagSectionHelper.Factory("myTag", "my-tag-id"))
+                .build();
+
+        Template tag = engine.parse("{it} {surname}");
+        engine.putTemplate("my-tag-id", tag);
+
+        assertEquals("KOUBA kouba",
+                engine.parse("{#each surnames}{#myTag it.toUpperCase surname=it.toLowerCase /}{/each}")
+                        .data("surnames", Collections.singleton("Kouba")).render());
+        assertEquals("KOUBA kouba",
+                engine.parse(
+                        "{#for surname in surnames}{#each surnames}{#myTag it.toUpperCase surname=surname.toLowerCase /}{/each}{/for}")
+                        .data("surnames", Collections.singleton("Kouba")).render());
     }
 
 }

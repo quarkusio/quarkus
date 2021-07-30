@@ -29,6 +29,13 @@ public class MavenRegistryArtifactResolverWithCleanup implements MavenRegistryAr
     }
 
     @Override
+    public Path findArtifactDirectory(Artifact artifact) throws BootstrapMavenException {
+        final LocalRepositoryManager localRepo = resolver.getSession().getLocalRepositoryManager();
+        return localRepo.getRepository().getBasedir().toPath().resolve(localRepo.getPathForLocalArtifact(artifact))
+                .getParent();
+    }
+
+    @Override
     public String getLatestVersionFromRange(Artifact artifact, String versionRange) throws BootstrapMavenException {
         return resolver.getLatestVersionFromRange(artifact, versionRange);
     }

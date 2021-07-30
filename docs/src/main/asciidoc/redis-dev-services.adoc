@@ -1,0 +1,37 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Dev Services for Redis
+
+:extension-status: preview
+include::./attributes.adoc[]
+
+Quarkus supports a feature called Dev Services that allows you to create various datasources without any config.
+What that means practically, is that if you have docker running and have not configured `quarkus.redis.hosts`,
+Quarkus will automatically start a Redis container when running tests or dev-mode, and automatically configure the connection.
+
+Available properties to customize the Redis DevService.
+include::{generated-dir}/config/quarkus-redis-client-config-group-dev-services-config.adoc[opts=optional, leveloffset=+1]
+
+When running the production version of the application, the Redis connection need to be configured as normal,
+so if you want to include a production database config in your `application.properties` and continue to use Dev Services
+we recommend that you use the `%prod.` profile to define your Redis settings.
+
+Dev Services for Redis relies on Docker to start the server.
+If your environment does not support Docker, you will need to start the server manually, or connect to an already running server.
+
+== Shared server
+
+Most of the time you need to share the server between applications.
+Dev Services for Redis implements a _service discovery_ mechanism for your multiple Quarkus applications running in _dev_ mode to share a single server.
+
+NOTE: Dev Services for Redis starts the container with the `quarkus-dev-service-redis` label which is used to identify the container.
+
+If you need multiple (shared) servers, you can configure the `quarkus.redis.devservices.service-name` attribute and indicate the server name.
+It looks for a container with the same value, or starts a new one if none can be found.
+The default service name is `redis`.
+
+Sharing is enabled by default in dev mode, but disabled in test mode.
+You can disable the sharing with `quarkus.redis.devservices.shared=false`.

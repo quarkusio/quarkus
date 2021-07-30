@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.logging.Logger;
 
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.runtime.shutdown.ShutdownListener;
 import io.vertx.core.Handler;
@@ -40,7 +41,8 @@ public class GracefulShutdownFilter implements ShutdownListener, Handler<HttpSer
     @Override
     public void handle(HttpServerRequest event) {
         if (!running) {
-            event.response().setStatusCode(HttpResponseStatus.SERVICE_UNAVAILABLE.code()).end();
+            event.response().setStatusCode(HttpResponseStatus.SERVICE_UNAVAILABLE.code())
+                    .putHeader(HttpHeaderNames.CONNECTION, "close").end();
             return;
         }
         currentRequestCount.incrementAndGet();

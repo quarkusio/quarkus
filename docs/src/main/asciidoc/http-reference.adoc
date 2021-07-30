@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - HTTP Reference
+= HTTP Reference
 
 include::./attributes.adoc[]
 :numbered:
@@ -262,6 +262,63 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-confi
 |Request header                                                               |          | `%{i,request_header_name}`
 |Response header                                                              |          | `%{o,response_header_name}`
 |===
+
+
+[[reverse-proxy]]
+== Running behind a reverse proxy
+
+Quarkus could be accessed through proxies that additionally generate headers (e.g. `X-Forwarded-Host`) to keep
+information from the client-facing side of the proxy servers that is altered or lost when they are involved.
+In those scenarios, Quarkus can be configured to automatically update information like protocol, host, port and URI
+reflecting the values in these headers.
+
+IMPORTANT: Activating this feature leaves the server exposed to several security issues (i.e. information spoofing).
+Consider activate it only when running behind a reverse proxy.
+
+To setup this feature, please include the following lines in `src/main/resources/application.properties`:
+[source,properties]
+----
+quarkus.http.proxy-address-forwarding=true
+----
+
+To consider only de-facto standard header (`Forwarded` header), please include the following lines in `src/main/resources/application.properties`:
+[source,properties]
+----
+quarkus.http.proxy.allow-forwarded=true
+----
+
+To consider only non-standard headers, please include the following lines instead in `src/main/resources/application.properties`:
+
+[source,properties]
+----
+quarkus.http.proxy.proxy-address-forwarding=true
+quarkus.http.proxy.enable-forwarded-host=true
+quarkus.http.proxy.enable-forwarded-prefix=true
+----
+
+Both configurations related to standard and non-standard headers can be combined, although the standard headers configuration will have precedence.
+
+Supported forwarding address headers are:
+
+* `Forwarded`
+* `X-Forwarded-Proto`
+* `X-Forwarded-Host`
+* `X-Forwarded-Port`
+* `X-Forwarded-Ssl`
+* `X-Forwarded-Prefix`
+
+[[same-site-cookie]]
+== SameSite cookies
+
+One can easily add a https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite[SameSite] cookie property to any of the cookies set by a Quarkus endpoint by listing a cookie name and a `SameSite` attribute, for example:
+
+[source]
+----
+quarkus.http.same-site-cookie.jwt.value=Lax
+quarkus.http.same-site-cookie.session.value=Strict
+----
+
+Given this configuration, the `jwt` cookie will have a `SameSite=Lax` attribute and the `session` cookie will have a `SameSite=Strict` attribute.
 
 == Servlet Config
 

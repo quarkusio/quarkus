@@ -150,15 +150,19 @@ public class BeanDeployment {
         interceptorNonbindingMembers = new HashMap<>();
         interceptorBindings = findInterceptorBindings(this.beanArchiveIndex);
         for (InterceptorBindingRegistrar registrar : builder.interceptorBindingRegistrars) {
-            for (Map.Entry<DotName, Set<String>> entry : registrar.registerAdditionalBindings().entrySet()) {
-                DotName dotName = entry.getKey();
-                ClassInfo classInfo = getClassByName(this.beanArchiveIndex, dotName);
-                if (classInfo != null) {
-                    if (entry.getValue() != null) {
-                        interceptorNonbindingMembers.put(dotName, entry.getValue());
+            for (InterceptorBindingRegistrar.InterceptorBinding binding : registrar.getAdditionalBindings()) {
+                DotName dotName = binding.getName();
+                ClassInfo annotationClass = getClassByName(this.beanArchiveIndex, dotName);
+                if (annotationClass != null) {
+                    Set<String> nonbinding = new HashSet<>();
+                    for (MethodInfo method : annotationClass.methods()) {
+                        if (binding.isNonbinding(method.name())) {
+                            nonbinding.add(method.name());
+                        }
                     }
-                    interceptorBindings.put(dotName, classInfo);
+                    interceptorNonbindingMembers.put(dotName, nonbinding);
                 }
+                interceptorBindings.put(dotName, annotationClass);
             }
         }
         repeatingInterceptorBindingAnnotations = findContainerAnnotations(interceptorBindings, this.beanArchiveIndex);
@@ -226,10 +230,12 @@ public class BeanDeployment {
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
         this.beans.addAll(findBeans(initBeanDefiningAnnotations(beanDefiningAnnotations, stereotypes.keySet()), observers,
                 injectionPoints, jtaCapabilities));
+        // Note that we need to use view of the collections to reflect further additions, e.g. synthetic beans and observers
         buildContextPut(Key.BEANS.asString(), Collections.unmodifiableList(beans));
         buildContextPut(Key.OBSERVERS.asString(), Collections.unmodifiableList(observers));
 
         this.interceptors.addAll(findInterceptors(injectionPoints));
+        buildContextPut(Key.INTERCEPTORS.asString(), Collections.unmodifiableList(interceptors));
         this.decorators.addAll(findDecorators(injectionPoints));
         this.injectionPoints.addAll(injectionPoints);
         buildContextPut(Key.INJECTION_POINTS.asString(), Collections.unmodifiableList(this.injectionPoints));
@@ -773,8 +779,9 @@ public class BeanDeployment {
                 continue;
             }
 
-            if (annotationStore.hasAnnotation(beanClass, DotNames.INTERCEPTOR)) {
-                // Skip interceptors
+            if (annotationStore.hasAnnotation(beanClass, DotNames.INTERCEPTOR)
+                    || annotationStore.hasAnnotation(beanClass, DotNames.DECORATOR)) {
+                // Skip interceptors and decorators
                 continue;
             }
 

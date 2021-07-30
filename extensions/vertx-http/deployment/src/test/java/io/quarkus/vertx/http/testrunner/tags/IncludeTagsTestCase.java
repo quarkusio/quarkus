@@ -36,12 +36,12 @@ public class IncludeTagsTestCase {
 
     @Test
     public void checkTestsAreRun() throws InterruptedException {
-        TestStatus ts = ContinuousTestingTestUtils.waitForFirstRunToComplete();
-        Assertions.assertEquals(1L, ts.getLastRun());
+        ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
+        TestStatus ts = utils.waitForNextCompletion();
+
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(2L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         test.modifyResourceFile("application.properties", new Function<String, String>() {
             @Override
@@ -49,12 +49,11 @@ public class IncludeTagsTestCase {
                 return ContinuousTestingTestUtils.appProperties("quarkus.test.include-tags=c");
             }
         });
-        ts = ContinuousTestingTestUtils.waitForRun(2);
-        Assertions.assertEquals(2L, ts.getLastRun());
+        ts = utils.waitForNextCompletion();
+
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         test.modifyResourceFile("application.properties", new Function<String, String>() {
             @Override
@@ -62,11 +61,11 @@ public class IncludeTagsTestCase {
                 return ContinuousTestingTestUtils.appProperties();
             }
         });
-        ts = ContinuousTestingTestUtils.waitForRun(3);
-        Assertions.assertEquals(3L, ts.getLastRun());
+        ts = utils.waitForNextCompletion();
+
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(5L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
+
     }
 }

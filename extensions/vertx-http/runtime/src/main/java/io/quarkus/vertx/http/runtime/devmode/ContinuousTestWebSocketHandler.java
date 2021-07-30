@@ -14,40 +14,38 @@ import io.vertx.core.Handler;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.ext.web.RoutingContext;
 
-public class ContinuousTestWebSocketHandler implements Handler<RoutingContext> {
+public class ContinuousTestWebSocketHandler
+        implements Handler<RoutingContext>, Consumer<ContinuousTestingWebsocketListener.State> {
 
     private static final Logger log = Logger.getLogger(ContinuousTestingWebsocketListener.class);
     private static final Set<ServerWebSocket> sockets = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private static volatile String lastMessage;
 
-    static {
-        ContinuousTestingWebsocketListener.setStateListener(new Consumer<ContinuousTestingWebsocketListener.State>() {
-            @Override
-            public void accept(ContinuousTestingWebsocketListener.State state) {
-                Json.JsonObjectBuilder response = Json.object();
-                response.put("running", state.running);
-                response.put("inProgress", state.inProgress);
-                response.put("run", state.run);
-                response.put("passed", state.passed);
-                response.put("failed", state.failed);
-                response.put("skipped", state.skipped);
-                response.put("isBrokenOnly", state.isBrokenOnly);
-                response.put("isTestOutput", state.isTestOutput);
-                response.put("isInstrumentationBasedReload", state.isInstrumentationBasedReload);
+    @Override
+    public void accept(ContinuousTestingWebsocketListener.State state) {
+        Json.JsonObjectBuilder response = Json.object();
+        response.put("running", state.running);
+        response.put("inProgress", state.inProgress);
+        response.put("run", state.run);
+        response.put("passed", state.passed);
+        response.put("failed", state.failed);
+        response.put("skipped", state.skipped);
+        response.put("isBrokenOnly", state.isBrokenOnly);
+        response.put("isTestOutput", state.isTestOutput);
+        response.put("isInstrumentationBasedReload", state.isInstrumentationBasedReload);
+        response.put("isLiveReload", state.isLiveReload);
 
-                lastMessage = response.build();
-                for (ServerWebSocket i : sockets) {
-                    i.writeTextMessage(lastMessage);
-                }
-            }
-        });
+        lastMessage = response.build();
+        for (ServerWebSocket i : sockets) {
+            i.writeTextMessage(lastMessage);
+        }
     }
 
     @Override
     public void handle(RoutingContext event) {
 
         if ("websocket".equalsIgnoreCase(event.request().getHeader(HttpHeaderNames.UPGRADE))) {
-            event.request().toWebSocket(new Handler<AsyncResult<ServerWebSocket>>() {
+            event.request().toWebSocket(new Handler<>() {
                 @Override
                 public void handle(AsyncResult<ServerWebSocket> event) {
                     if (event.succeeded()) {

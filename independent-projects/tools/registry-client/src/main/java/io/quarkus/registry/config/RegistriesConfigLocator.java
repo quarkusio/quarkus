@@ -12,6 +12,7 @@ import io.quarkus.registry.config.json.JsonRegistryPlatformsConfig;
 import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -28,20 +29,21 @@ import java.util.Objects;
 public class RegistriesConfigLocator {
 
     public static final String CONFIG_RELATIVE_PATH = ".quarkus/config.yaml";
-    public static final String CONFIG_FILE_PATH_PROPERTY = "qer.config";
+    public static final String CONFIG_FILE_PATH_PROPERTY = "quarkus.tools.config";
 
     /**
      * Locate the registry client configuration file and deserialize it.
-     * The method will be looking for the file in the following locations in this order:
+     *
+     * The method will look for the file in the following locations in this order:
      * <ol>
-     * <li>if <code>qer.config</code> system property is set, its value will be used as the location of the configuration
-     * file</li>
+     * <li>if <code>quarkus.config.root</code> system property is set, its value will be
+     * used as the location of the configuration file</li>
      * <li>current user directory (which usually would be the project dir)</li>
      * <li><code>.quarkus/config.yaml</code> in the user home directory
      * </ol>
      *
-     * Given that the presence of the configuration file is optional, if the configuration file couldn't be located,
-     * an empty configuration would be returned to the caller.
+     * If the configuration file can't be located (it is optional),
+     * an empty configuration will be returned to the caller.
      *
      * @return registry client configuration, never null
      */
@@ -81,7 +83,21 @@ public class RegistriesConfigLocator {
         }
     }
 
-    private static Path locateConfigYaml() {
+    /**
+     * Deserializes registry client configuration from a reader.
+     *
+     * @param configYaml reader
+     * @return deserialized registry client configuration
+     */
+    public static RegistriesConfig load(Reader configYaml) {
+        try {
+            return completeRequiredConfig(RegistriesConfigMapperHelper.deserializeYaml(configYaml, JsonRegistriesConfig.class));
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to parse config file " + configYaml, e);
+        }
+    }
+
+    public static Path locateConfigYaml() {
         final String prop = PropertiesUtil.getProperty(CONFIG_FILE_PATH_PROPERTY);
         Path configYaml;
         if (prop != null) {
@@ -106,12 +122,12 @@ public class RegistriesConfigLocator {
         if (original.getRegistries().isEmpty()) {
             config.addRegistry(getDefaultRegistry());
         } else {
+            boolean sawEnabled = false;
             for (RegistryConfig qerConfig : original.getRegistries()) {
-                if (!qerConfig.isDisabled()) {
-                    config.addRegistry(completeRequiredConfig(qerConfig));
-                }
+                config.addRegistry(completeRequiredConfig(qerConfig));
+                sawEnabled |= qerConfig.isEnabled();
             }
-            if (config.isEmpty()) {
+            if (!sawEnabled) {
                 config.addRegistry(getDefaultRegistry());
             }
         }
@@ -125,9 +141,12 @@ public class RegistriesConfigLocator {
         final String id = original.getId();
         final JsonRegistryConfig config = new JsonRegistryConfig(id);
         config.setUpdatePolicy(original.getUpdatePolicy());
+        config.setEnabled(original.isEnabled());
         config.setDescriptor(completeDescriptor(original));
-        config.setMaven(completeRequiedMavenConfig(original));
         if (original != null) {
+            if (original.getMaven() != null) {
+                config.setMaven(original.getMaven());
+            }
             if (original.getNonPlatformExtensions() != null) {
                 config.setNonPlatformExtensions(original.getNonPlatformExtensions());
             }
@@ -137,18 +156,6 @@ public class RegistriesConfigLocator {
             if (!original.getExtra().isEmpty()) {
                 config.setExtra(original.getExtra());
             }
-        }
-        return config;
-    }
-
-    private static RegistryMavenConfig completeRequiedMavenConfig(RegistryConfig original) {
-        RegistryMavenConfig originalMaven = original.getMaven();
-        if (hasRequiredConfig(originalMaven)) {
-            return originalMaven;
-        }
-        final JsonRegistryMavenConfig config = new JsonRegistryMavenConfig();
-        if (originalMaven != null) {
-            config.setRepository(originalMaven.getRepository());
         }
         return config;
     }
@@ -193,13 +200,6 @@ public class RegistriesConfigLocator {
             return false;
         }
         if (qerConfig.getDescriptor() == null) {
-            return false;
-        }
-        return hasRequiredConfig(qerConfig.getMaven());
-    }
-
-    private static boolean hasRequiredConfig(RegistryMavenConfig maven) {
-        if (maven == null) {
             return false;
         }
         return true;

@@ -8,9 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 /**
@@ -30,7 +28,7 @@ public final class ValueResolvers {
 
             @Override
             public CompletionStage<Object> resolve(EvalContext context) {
-                return CompletableFuture.completedFuture(new RawString(context.getBase().toString()));
+                return CompletedStage.of(new RawString(context.getBase().toString()));
             }
         };
     }
@@ -72,13 +70,13 @@ public final class ValueResolvers {
 
             @Override
             public CompletionStage<Object> resolve(EvalContext context) {
-                return CompletableFuture.completedFuture(context.getBase());
+                return CompletedStage.of(context.getBase());
             }
         };
     }
 
     /**
-     * Returns the default value if the base object is null or {@link Result#NOT_FOUND} and the base object otherwise.
+     * Returns the default value if the base object is null or not found and the base object otherwise.
      * 
      * {@code foo.or(bar)}, {@code foo or true}, {@code name ?: 'elvis'}
      */
@@ -98,17 +96,17 @@ public final class ValueResolvers {
                 if (context.getBase() == null || Results.isNotFound(context.getBase())) {
                     return context.evaluate(context.getParams().get(0));
                 }
-                return CompletableFuture.completedFuture(context.getBase());
+                return CompletedStage.of(context.getBase());
             }
 
         };
     }
 
     /**
-     * Return an empty list if the base object is null or {@link Result#NOT_FOUND}.
+     * Return an empty list if the base object is null or not found.
      */
     public static ValueResolver orEmpty() {
-        CompletionStage<Object> empty = CompletableFuture.completedFuture(Collections.emptyList());
+        CompletionStage<Object> empty = CompletedStage.of(Collections.emptyList());
         return new ValueResolver() {
 
             public boolean appliesTo(EvalContext context) {
@@ -120,13 +118,13 @@ public final class ValueResolvers {
                 if (context.getBase() == null || Results.isNotFound(context.getBase())) {
                     return empty;
                 }
-                return CompletableFuture.completedFuture(context.getBase());
+                return CompletedStage.of(context.getBase());
             }
         };
     }
 
     /**
-     * Returns {@link Result#NOT_FOUND} if the base object is falsy and the base object otherwise.
+     * Returns {@link Results#NotFound} if the base object is falsy and the base object otherwise.
      * <p>
      * Can be used together with {@link #orResolver()} to form a ternary operator.
      * 
@@ -164,7 +162,7 @@ public final class ValueResolvers {
             @Override
             public CompletionStage<Object> resolve(EvalContext context) {
                 Entry<?, ?> entry = (Entry<?, ?>) context.getBase();
-                return CompletableFuture.completedFuture(entryResolve(entry, context.getName()));
+                return CompletedStage.of(entryResolve(entry, context.getName()));
             }
         };
     }
@@ -225,7 +223,7 @@ public final class ValueResolvers {
             @Override
             public CompletionStage<Object> resolve(EvalContext context) {
                 boolean baseIsFalsy = Booleans.isFalsy(context.getBase());
-                return baseIsFalsy ? CompletableFuture.completedFuture(false)
+                return baseIsFalsy ? CompletedStage.of(false)
                         : context.evaluate(context.getParams().get(0)).thenApply(new Function<Object, Object>() {
                             @Override
                             public Object apply(Object booleanParam) {
@@ -254,7 +252,7 @@ public final class ValueResolvers {
             @Override
             public CompletionStage<Object> resolve(EvalContext context) {
                 boolean baseIsFalsy = Booleans.isFalsy(context.getBase());
-                return !baseIsFalsy ? CompletableFuture.completedFuture(true)
+                return !baseIsFalsy ? CompletedStage.of(true)
                         : context.evaluate(context.getParams().get(0)).thenApply(new Function<Object, Object>() {
                             @Override
                             public Object apply(Object booleanParam) {
@@ -276,28 +274,61 @@ public final class ValueResolvers {
             @Override
             public CompletionStage<Object> resolve(EvalContext context) {
                 String name = context.getName();
-                if (name.equals("length")) {
-                    return CompletableFuture.completedFuture(Array.getLength(context.getBase()));
+                if (name.equals("length") || name.equals("size")) {
+                    return CompletedStage.of(Array.getLength(context.getBase()));
+                } else if (name.equals("take")) {
+                    if (context.getParams().isEmpty()) {
+                        throw new IllegalArgumentException("n-th parameter is missing");
+                    }
+                    Expression indexExpr = context.getParams().get(0);
+                    if (indexExpr.isLiteral()) {
+                        Object literalValue = indexExpr.getLiteral();
+                        if (literalValue instanceof Integer) {
+                            return CompletedStage.of(takeArray((Integer) literalValue, context.getBase()));
+                        }
+                        return Results.notFound(context);
+                    } else {
+                        return context.evaluate(indexExpr).thenCompose(n -> {
+                            if (n instanceof Integer) {
+                                return CompletedStage.of(takeArray((Integer) n, context.getBase()));
+                            }
+                            return Results.notFound(context);
+                        });
+                    }
+                } else if (name.equals("takeLast")) {
+                    if (context.getParams().isEmpty()) {
+                        throw new IllegalArgumentException("n-th parameter is missing");
+                    }
+                    Expression indexExpr = context.getParams().get(0);
+                    if (indexExpr.isLiteral()) {
+                        Object literalValue = indexExpr.getLiteral();
+                        if (literalValue instanceof Integer) {
+                            return CompletedStage.of(takeLastArray((Integer) literalValue, context.getBase()));
+                        }
+                        return Results.notFound(context);
+                    } else {
+                        return context.evaluate(indexExpr).thenCompose(n -> {
+                            if (n instanceof Integer) {
+                                return CompletedStage.of(takeLastArray((Integer) n, context.getBase()));
+                            }
+                            return Results.notFound(context);
+                        });
+                    }
                 } else if (name.equals("get")) {
                     if (context.getParams().isEmpty()) {
                         throw new IllegalArgumentException("Index parameter is missing");
                     }
                     Expression indexExpr = context.getParams().get(0);
                     if (indexExpr.isLiteral()) {
-                        Object literalValue;
-                        try {
-                            literalValue = indexExpr.getLiteralValue().get();
-                            if (literalValue instanceof Integer) {
-                                return CompletableFuture.completedFuture(Array.get(context.getBase(), (Integer) literalValue));
-                            }
-                            return Results.notFound(context);
-                        } catch (InterruptedException | ExecutionException e) {
-                            throw new RuntimeException(e);
+                        Object literalValue = indexExpr.getLiteral();
+                        if (literalValue instanceof Integer) {
+                            return CompletedStage.of(Array.get(context.getBase(), (Integer) literalValue));
                         }
+                        return Results.notFound(context);
                     } else {
                         return context.evaluate(indexExpr).thenCompose(idx -> {
                             if (idx instanceof Integer) {
-                                return CompletableFuture.completedFuture(Array.get(context.getBase(), (Integer) idx));
+                                return CompletedStage.of(Array.get(context.getBase(), (Integer) idx));
                             }
                             return Results.notFound(context);
                         });
@@ -310,10 +341,30 @@ public final class ValueResolvers {
                     } catch (NumberFormatException e) {
                         return Results.notFound(context);
                     }
-                    return CompletableFuture.completedFuture(Array.get(context.getBase(), index));
+                    return CompletedStage.of(Array.get(context.getBase(), index));
                 }
             }
         };
+    }
+
+    private static Object takeArray(int n, Object sourceArray) {
+        int size = Array.getLength(sourceArray);
+        if (n < 1 || n > size) {
+            throw new IndexOutOfBoundsException(n);
+        }
+        Object targetArray = Array.newInstance(sourceArray.getClass().getComponentType(), n);
+        System.arraycopy(sourceArray, 0, targetArray, 0, n);
+        return targetArray;
+    }
+
+    private static Object takeLastArray(int n, Object sourceArray) {
+        int size = Array.getLength(sourceArray);
+        if (n < 1 || n > size) {
+            throw new IndexOutOfBoundsException(n);
+        }
+        Object targetArray = Array.newInstance(sourceArray.getClass().getComponentType(), n);
+        System.arraycopy(sourceArray, size - n, targetArray, 0, n);
+        return targetArray;
     }
 
     // helper methods
@@ -322,14 +373,14 @@ public final class ValueResolvers {
         Collection<?> collection = (Collection<?>) context.getBase();
         switch (context.getName()) {
             case "size":
-                return CompletableFuture.completedFuture(collection.size());
+                return CompletedStage.of(collection.size());
             case "isEmpty":
             case "empty":
-                return CompletableFuture.completedFuture(collection.isEmpty());
+                return CompletedStage.of(collection.isEmpty());
             case "contains":
                 if (context.getParams().size() == 1) {
                     return context.evaluate(context.getParams().get(0)).thenCompose(e -> {
-                        return CompletableFuture.completedFuture(collection.contains(e));
+                        return CompletedStage.of(collection.contains(e));
                     });
                 }
             default:
@@ -351,6 +402,36 @@ public final class ValueResolvers {
                                         return Results.NotFound.from(context);
                                     }
                                     return list.get(idx);
+                                } catch (NumberFormatException e) {
+                                    return Results.NotFound.from(context);
+                                }
+                            });
+                }
+            case "take":
+                if (context.getParams().size() == 1) {
+                    return context.evaluate(context.getParams().get(0))
+                            .thenApply(r -> {
+                                try {
+                                    int n = r instanceof Integer ? (Integer) r : Integer.valueOf(r.toString());
+                                    if (n < 1 || n > list.size()) {
+                                        throw new IndexOutOfBoundsException(n);
+                                    }
+                                    return list.subList(0, n);
+                                } catch (NumberFormatException e) {
+                                    return Results.NotFound.from(context);
+                                }
+                            });
+                }
+            case "takeLast":
+                if (context.getParams().size() == 1) {
+                    return context.evaluate(context.getParams().get(0))
+                            .thenApply(r -> {
+                                try {
+                                    int n = r instanceof Integer ? (Integer) r : Integer.valueOf(r.toString());
+                                    if (n < 1 || n > list.size()) {
+                                        throw new IndexOutOfBoundsException(n);
+                                    }
+                                    return list.subList(list.size() - n, list.size());
                                 } catch (NumberFormatException e) {
                                     return Results.NotFound.from(context);
                                 }
@@ -381,26 +462,26 @@ public final class ValueResolvers {
         switch (name) {
             case "keys":
             case "keySet":
-                return CompletableFuture.completedFuture(map.keySet());
+                return CompletedStage.of(map.keySet());
             case "values":
-                return CompletableFuture.completedFuture(map.values());
+                return CompletedStage.of(map.values());
             case "entrySet":
-                return CompletableFuture.completedFuture(map.entrySet());
+                return CompletedStage.of(map.entrySet());
             case "size":
-                return CompletableFuture.completedFuture(map.size());
+                return CompletedStage.of(map.size());
             case "empty":
             case "isEmpty":
                 return map.isEmpty() ? Results.TRUE : Results.FALSE;
             case "get":
                 if (context.getParams().size() == 1) {
                     return context.evaluate(context.getParams().get(0)).thenCompose(k -> {
-                        return CompletableFuture.completedFuture(map.get(k));
+                        return CompletedStage.of(map.get(k));
                     });
                 }
             case "containsKey":
                 if (context.getParams().size() == 1) {
                     return context.evaluate(context.getParams().get(0)).thenCompose(k -> {
-                        return CompletableFuture.completedFuture(map.containsKey(k));
+                        return CompletedStage.of(map.containsKey(k));
                     });
                 }
             default:
@@ -408,7 +489,7 @@ public final class ValueResolvers {
                 if (val == null) {
                     return map.containsKey(name) ? Results.NULL : Results.notFound(context);
                 }
-                return CompletableFuture.completedFuture(val);
+                return CompletedStage.of(val);
         }
     }
 

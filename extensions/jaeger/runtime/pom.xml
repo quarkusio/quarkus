@@ -32,6 +32,15 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc</artifactId>
+        </dependency>
+        <dependency> 
+            <groupId>io.jaegertracing</groupId>
+            <artifactId>jaeger-zipkin</artifactId>
+            <optional>true</optional>
+        </dependency>
         <!-- transitive dependency from jaeger-thrift, consider removing once we move to jaeger 1.x -->
         <dependency>
             <groupId>jakarta.activation</groupId>

@@ -3,11 +3,11 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Simplified MongoDB with Panache
+= Simplified MongoDB with Panache
 
 include::./attributes.adoc[]
 :config-file: application.properties
-:mongodb-doc-root-url: https://mongodb.github.io/mongo-java-driver/3.11
+:mongodb-doc-root-url: https://mongodb.github.io/mongo-java-driver/4.2
 
 MongoDB is a well known NoSQL Database that is widely used, but using its raw API can be cumbersome as you need to express your entities and your queries as a MongoDB link:{mongodb-doc-root-url}/bson/documents/#document[`Document`].
 
@@ -138,7 +138,7 @@ public class Person extends PanacheMongoEntity {
 
 NOTE: Annotating with `@MongoEntity` is optional. Here the entity will be stored in the `ThePerson` collection instead of the default `Person` collection.
 
-MongoDB with Panache uses the link:{mongodb-doc-root-url}/bson/pojos/[PojoCodecProvider] to map your entities to a MongoDB `Document`.
+MongoDB with Panache uses the link:{mongodb-doc-root-url}/bson/pojos/[PojoCodecProvider] to convert your entities to a MongoDB `Document`.
 
 You will be allowed to use the following annotations to customize this mapping:
 
@@ -289,7 +289,7 @@ public class Person  {
 
 NOTE: Annotating with `@MongoEntity` is optional. Here the entity will be stored in the `ThePerson` collection instead of the default `Person` collection.
 
-MongoDB with Panache uses the link:{mongodb-doc-root-url}/bson/pojos/[PojoCodecProvider] to map your entities to a MongoDB `Document`.
+MongoDB with Panache uses the link:{mongodb-doc-root-url}/bson/pojos/[PojoCodecProvider] to convert your entities to a MongoDB `Document`.
 
 You will be allowed to use the following annotations to customize this mapping:
 
@@ -577,7 +577,7 @@ using the same field multiple times in a query is not allowed using PanacheQL as
 (see link:https://github.com/quarkusio/quarkus/issues/12086[this issue on github]).
 
 We also handle some basic date type transformations: all fields of type `Date`, `LocalDate`, `LocalDateTime` or `Instant` will be mapped to the
-link:https://docs.mongodb.com/manual/reference/bson-types/#document-bson-type-date[BSON Date] using the `ISODate` type (UTC datetime).
+link:https://docs.mongodb.com/manual/reference/bson-types/#date[BSON Date] using the `ISODate` type (UTC datetime).
 The MongoDB POJO codec doesn't support `ZonedDateTime` and `OffsetDateTime` so you should convert them prior usage.
 
 MongoDB with Panache also supports extended MongoDB queries by providing a `Document` query, this is supported by the find/list/stream/count/delete methods.
@@ -669,7 +669,7 @@ Projection can be done for both PanacheQL and native queries.
 
 [source,java]
 ----
-import io.quarkus.mongodb.panache.ProjectionFor;
+import io.quarkus.mongodb.panache.common.ProjectionFor;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 
 // using public fields
@@ -712,6 +712,21 @@ This can be achieved by setting to DEBUG the following log category inside your 
 ----
 quarkus.log.category."io.quarkus.mongodb.panache.runtime".level=DEBUG
 ----
+
+== The PojoCodecProvider: easy object to BSON document conversion.
+
+MongoDB with Panache uses the link:{mongodb-doc-root-url}/bson/pojos[PojoCodecProvider], with link:{mongodb-doc-root-url}/pojos/#pojo-support[automatic POJO support,
+to automatically convert your object to a BSON document.
+
+In case you encounter the `org.bson.codecs.configuration.CodecConfigurationException` exception, it means the codec is not able to
+automatically convert your object.
+This codec obeys the Java Bean standard, so it will successfully convert a POJO using public fields or getters/setters.
+You can use `@BsonIgnore` to make a field, or a getter/setter, ignored by the codec.
+
+If your class doesn't obey these rules (for example by including a method that starts with `get` but is not a setter),
+you could provide a custom codec for it.
+Your custom codec will be automatically discovered and registered inside the codec registry.
+See link:mongodb#simplifying-mongodb-client-usage-using-bson-codec[Using BSON codec].
 
 == Transactions
 
@@ -783,7 +798,7 @@ Kotlin data classes are a very convenient way of defining data carrier classes, 
 But this type of class comes with some limitations: all fields needs to be initialized at construction time or be marked as nullable,
 and the generated constructor needs to have as parameters all the fields of the data class.
 
-MongoDB with Panache uses the `PojoCodec`, a MongoDB codec which mandates the presence of a parameterless constructor.
+MongoDB with Panache uses the link:{mongodb-doc-root-url}/bson/pojos[PojoCodecProvider], a MongoDB codec which mandates the presence of a parameterless constructor.
 
 Therefore, if you want to use a data class as an entity class, you need a way to make Kotlin generate an empty constructor.
 To do so, you need to provide default values for all the fields of your classes.
@@ -793,10 +808,10 @@ __On the JVM, if the generated class needs to have a parameterless constructor, 
 
 If for whatever reason, the aforementioned solution is deemed unacceptable, there are alternatives.
 
-First, you can create a BSON Codec which will be automatically registered by Quarkus and will be used instead of the `PojoCodec`.
+First, you can create a BSON Codec which will be automatically registered by Quarkus and will be used instead of the `PojoCodecProvider`.
 See this part of the documentation: link:mongodb#simplifying-mongodb-client-usage-using-bson-codec[Using BSON codec].
 
-Another option is to use the `@BsonCreator` annotation to tell the `PojoCodec` to use the Kotlin data class default constructor,
+Another option is to use the `@BsonCreator` annotation to tell the `PojoCodecProvider` to use the Kotlin data class default constructor,
 in this case all constructor parameters have to be annotated with `@BsonProperty`: see link:{mongodb-doc-root-url}/bson/pojos/#supporting-pojos-without-no-args-constructors[Supporting pojos without no args constructor].
 
 This will only work when the entity extends `PanacheMongoEntityBase` and not `PanacheMongoEntity`, as the ID field also needs to be included in the constructor.

@@ -114,6 +114,7 @@ public class QuarkusDevModeTest
     private String[] commandLineArgs = new String[0];
     private final Map<String, String> oldSystemProps = new HashMap<>();
     private final Map<String, String> buildSystemProperties = new HashMap<>();
+    private boolean allowFailedStart = false;
 
     private static final List<CompilationProvider> compilationProviders;
 
@@ -240,14 +241,18 @@ public class QuarkusDevModeTest
             DevModeContext context = exportArchive(deploymentDir, projectSourceRoot, projectSourceParent);
             context.setArgs(commandLineArgs);
             context.setTest(true);
-            context.setAbortOnFailedStart(true);
+            context.setAbortOnFailedStart(!allowFailedStart);
             context.getBuildSystemProperties().put("quarkus.banner.enabled", "false");
             context.getBuildSystemProperties().putAll(buildSystemProperties);
             devModeMain = new DevModeMain(context);
             devModeMain.start();
             ApplicationStateNotification.waitForApplicationStart();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            if (allowFailedStart) {
+                e.printStackTrace();
+            } else {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -262,6 +267,7 @@ public class QuarkusDevModeTest
         }
         rootLogger.setHandlers(originalRootLoggerHandlers);
         inMemoryLogHandler.clearRecords();
+        inMemoryLogHandler.setFilter(null);
         ClearCache.clearAnnotationCache();
         GroovyCacheCleaner.clearGroovyCache();
     }
@@ -812,5 +818,14 @@ public class QuarkusDevModeTest
             }
         }
         throw new RuntimeException("Could not find source file for " + classFile);
+    }
+
+    public boolean isAllowFailedStart() {
+        return allowFailedStart;
+    }
+
+    public QuarkusDevModeTest setAllowFailedStart(boolean allowFailedStart) {
+        this.allowFailedStart = allowFailedStart;
+        return this;
     }
 }

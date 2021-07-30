@@ -1,12 +1,14 @@
 package io.quarkus.quartz.test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Priority;
 import javax.enterprise.event.Observes;
+import javax.inject.Inject;
 import javax.interceptor.Interceptor;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -28,9 +30,13 @@ public class PausedMethodTest {
 
     private static final String IDENTITY = "myScheduled";
 
+    @Inject
+    Scheduler scheduler;
+
     @Test
     public void testPause() throws InterruptedException {
         assertFalse(Jobs.LATCH.await(3, TimeUnit.SECONDS));
+        assertTrue(scheduler.isPaused(IDENTITY));
     }
 
     static class Jobs {

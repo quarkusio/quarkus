@@ -1,0 +1,62 @@
+name: Bug Report
+description: Report a bug in Quarkus
+labels: kind/bug
+body:
+  - type: textarea
+    validations:
+      required: true
+    attributes:
+      label: Describe the bug
+      description: >-
+        Describe the issue you are experiencing here to communicate to the
+        maintainers. Tell us what you were trying to do and what happened.
+
+        Provide a clear and concise description of what the problem is.
+  - type: textarea
+    attributes:
+      label: Expected behavior
+      description: >-
+        Describe the expected behavior clearly and concisely.
+  - type: textarea
+    attributes:
+      label: Actual behavior
+      description: >-
+        Describe the actual behavior clearly and concisely.
+  - type: textarea
+    attributes:
+      label: How to Reproduce?
+      description: >-
+        Link to a small reproducer (preferably a Maven project if the issue is not Gradle-specific) or attach an archive containing the reproducer to the issue.
+      placeholder: |
+        Reproducer:
+
+        Steps to reproduce the behavior:
+        1. 
+        2. 
+        3.        
+  - type: markdown
+    attributes:
+      value: |
+        ## Environment
+  - type: input
+    attributes:
+      label: Output of `uname -a` or `ver`
+  - type: input
+    attributes:
+      label:  Output of `java -version`
+  - type: input
+    attributes:
+      label:  GraalVM version (if different from Java)
+  - type: input
+    attributes:
+      label:  Quarkus version or git rev
+  - type: input
+    attributes:
+      label:  Build tool (ie. output of `mvnw --version` or `gradlew --version`)
+  - type: textarea
+    attributes:
+      label: Additional information
+      description: >
+        If you have any additional information for us, use the field below.
+        Please note, you can attach screenshots or screen recordings here, by
+        dragging and dropping files in the field below.

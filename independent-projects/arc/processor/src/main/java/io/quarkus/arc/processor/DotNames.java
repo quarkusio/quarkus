@@ -222,7 +222,7 @@ public final class DotNames {
         if (index == -1) {
             return "";
         }
-        return name.substring(0, index).replace(".", "/") + "/";
+        return name.substring(0, index).replace('.', '/') + '/';
     }
 
 }

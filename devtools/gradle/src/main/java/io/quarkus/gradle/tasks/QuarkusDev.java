@@ -1,5 +1,6 @@
 package io.quarkus.gradle.tasks;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,10 +52,12 @@ import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
+import io.quarkus.gradle.QuarkusPlugin;
 import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusDev extends QuarkusTask {
 
+    public static final String IO_QUARKUS_DEVMODE_ARGS = "io.quarkus.devmode-args";
     private Set<File> filesIncludedInClasspath = new HashSet<>();
 
     private File buildDir;
@@ -186,12 +189,22 @@ public class QuarkusDev extends QuarkusTask {
 
         try {
             QuarkusDevModeLauncher runner = newLauncher();
-            getProject().exec(action -> {
-                action.commandLine(runner.args()).workingDir(getWorkingDir());
-                action.setStandardInput(System.in)
-                        .setErrorOutput(System.out)
-                        .setStandardOutput(System.out);
-            });
+            String outputFile = System.getProperty(IO_QUARKUS_DEVMODE_ARGS);
+            if (outputFile == null) {
+                getProject().exec(action -> {
+                    action.commandLine(runner.args()).workingDir(getWorkingDir());
+                    action.setStandardInput(System.in)
+                            .setErrorOutput(System.out)
+                            .setStandardOutput(System.out);
+                });
+            } else {
+                try (BufferedWriter is = Files.newBufferedWriter(Paths.get(outputFile))) {
+                    for (String i : runner.args()) {
+                        is.write(i);
+                        is.newLine();
+                    }
+                }
+            }
 
         } catch (Exception e) {
             throw new GradleException("Failed to run", e);
@@ -217,10 +230,13 @@ public class QuarkusDev extends QuarkusTask {
                 .buildDir(getBuildDir())
                 .outputDir(getBuildDir())
                 .debug(System.getProperty("debug"))
-                .debugHost(System.getProperty("debugHost", "localhost"))
-                .suspend(System.getProperty("suspend"))
-                .jvmArgs("-Dquarkus.test.basic-console=true")
-                .jvmArgs("-Dio.quarkus.launched-from-ide=true");
+                .debugHost(System.getProperty("debugHost"))
+                .debugPort(System.getProperty("debugPort"))
+                .suspend(System.getProperty("suspend"));
+        if (System.getProperty(IO_QUARKUS_DEVMODE_ARGS) == null) {
+            builder.jvmArgs("-Dquarkus.test.basic-console=true")
+                    .jvmArgs("-Dio.quarkus.force-color-support=true");
+        }
 
         if (getJvmArgs() != null) {
             builder.jvmArgs(getJvmArgs());
@@ -335,7 +351,7 @@ public class QuarkusDev extends QuarkusTask {
         if (!visited.add(project.getPath())) {
             return;
         }
-        final Configuration compileCp = project.getConfigurations().findByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
+        final Configuration compileCp = project.getConfigurations().findByName(QuarkusPlugin.DEV_MODE_CONFIGURATION_NAME);
         if (compileCp != null) {
             compileCp.getIncoming().getDependencies().forEach(d -> {
                 if (d instanceof ProjectDependency) {

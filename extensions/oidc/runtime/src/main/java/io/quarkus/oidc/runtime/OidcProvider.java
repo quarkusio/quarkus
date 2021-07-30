@@ -50,7 +50,7 @@ public class OidcProvider {
     final String issuer;
     final String[] audience;
 
-    public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeyCache jwks) {
+    public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks) {
         this.client = client;
         this.oidcConfig = oidcConfig;
         this.keyResolver = jwks == null ? null : new JsonWebKeyResolver(jwks, oidcConfig.token.forcedJwkRefreshInterval);
@@ -144,6 +144,13 @@ public class OidcProvider {
     }
 
     public Uni<TokenVerificationResult> introspectToken(String token) {
+        if (client.getMetadata().getIntrospectionUri() == null) {
+            LOG.debugf(
+                    "Token issued to client %s can not be introspected because the introspection endpoint address is unknown - "
+                            + "please check if your OpenId Connect Provider supports the token introspection",
+                    oidcConfig.clientId.get());
+            throw new AuthenticationFailedException();
+        }
         return client.introspectToken(token).onItemOrFailure()
                 .transform(new BiFunction<TokenIntrospection, Throwable, TokenVerificationResult>() {
 
@@ -153,7 +160,7 @@ public class OidcProvider {
                             throw new AuthenticationFailedException(t);
                         }
                         if (!Boolean.TRUE.equals(introspectionResult.getBoolean(OidcConstants.INTROSPECTION_TOKEN_ACTIVE))) {
-                            LOG.debugf("Token issued to client %s is not active: %s", oidcConfig.clientId.get());
+                            LOG.debugf("Token issued to client %s is not active", oidcConfig.clientId.get());
                             throw new AuthenticationFailedException();
                         }
                         Long exp = introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP);
@@ -162,7 +169,7 @@ public class OidcProvider {
                                     ? client.getOidcConfig().token.lifespanGrace.getAsInt()
                                     : 0;
                             if (System.currentTimeMillis() / 1000 > exp + lifespanGrace) {
-                                LOG.debugf("Token issued to client %s has expired %s", oidcConfig.clientId.get());
+                                LOG.debugf("Token issued to client %s has expired", oidcConfig.clientId.get());
                                 throw new AuthenticationFailedException();
                             }
                         }
@@ -190,11 +197,11 @@ public class OidcProvider {
     }
 
     private class JsonWebKeyResolver implements RefreshableVerificationKeyResolver {
-        volatile JsonWebKeyCache jwks;
+        volatile JsonWebKeySet jwks;
         volatile long lastForcedRefreshTime;
         volatile long forcedJwksRefreshIntervalMilliSecs;
 
-        JsonWebKeyResolver(JsonWebKeyCache jwks, Duration forcedJwksRefreshInterval) {
+        JsonWebKeyResolver(JsonWebKeySet jwks, Duration forcedJwksRefreshInterval) {
             this.jwks = jwks;
             this.forcedJwksRefreshIntervalMilliSecs = forcedJwksRefreshInterval.toMillis();
         }
@@ -217,10 +224,10 @@ public class OidcProvider {
             final long now = System.currentTimeMillis();
             if (now > lastForcedRefreshTime + forcedJwksRefreshIntervalMilliSecs) {
                 lastForcedRefreshTime = now;
-                return client.getJsonWebKeySet().onItem().transformToUni(new Function<JsonWebKeyCache, Uni<? extends Void>>() {
+                return client.getJsonWebKeySet().onItem().transformToUni(new Function<JsonWebKeySet, Uni<? extends Void>>() {
 
                     @Override
-                    public Uni<? extends Void> apply(JsonWebKeyCache t) {
+                    public Uni<? extends Void> apply(JsonWebKeySet t) {
                         jwks = t;
                         return Uni.createFrom().voidItem();
                     }

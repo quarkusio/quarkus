@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Qute Reference Guide
+= Qute Reference Guide
 
 include::./attributes.adoc[]
 
@@ -375,7 +375,9 @@ NOTE: In fact, the operators are implemented as "virtual methods" that consume o
 
 ==== Arrays
 
-You can iterate over elements of an array with the <<loop_section>>. Moreover, it's also possible to get the length of the specified array and access the elements directly via an index value.
+You can iterate over elements of an array with the <<loop_section>>. 
+Moreover, it's also possible to get the length of the specified array and access the elements directly via an index value.
+Additionaly, you can access the first/last `n` elements via the `take(n)/takeLast(n)` methods.
 
 .Array Examples
 [source,html]
@@ -391,11 +393,13 @@ You can iterate over elements of an array with the <<loop_section>>. Moreover, i
  <li>{element}</li>
  {/for}
 </ol>
+First two elements: {#each myArray.take(2)}{it}{/each} <5>
 ----
 <1> Outputs the length of the array.
 <2> Outputs the first element of the array.
 <3> Outputs the second element of the array using the bracket notation.
 <4> Outputs the third element of the array via the virtual method `get()`.
+<5> Outputs the first two elements of the array.
 
 ==== Character Escapes
 
@@ -518,9 +522,9 @@ A section helper that defines the logic of a section can "execute" any of the bl
 [[loop_section]]
 ==== Loop Section
 
-The loop section makes it possible to iterate over an instance of `Iterable`, `Map` 's entry set, `Stream` and an `Integer`.
+The loop section makes it possible to iterate over an instance of `Iterable`, `Iterator`, array, `Map` 's entry set, `Stream` and an `Integer`.
 It has two flavors.
-The first one is using the `each` name alias.
+The first one is using the `each` name and `it` is an implicit alias for the iteration element.
 
 [source]
 ----
@@ -528,9 +532,9 @@ The first one is using the `each` name alias.
   {it.name} <1>
 {/each}
 ----
-<1> `it` is an implicit alias. `name` is resolved against the current iteration element.
+<1> `name` is resolved against the current iteration element.
 
-The other form is using the `for` name alias and can specify the alias used to reference the iteration element:
+The other form is using the `for` name and can specify the alias used to reference the iteration element:
 
 [source]
 ----
@@ -547,7 +551,9 @@ It's also possible to access the iteration metadata inside the loop:
   {count}. {it.name} <1>
 {/each}
 ----
-<1> `count` represents one-based index. Metadata also include zero-based `index`, `hasNext`, `odd` and `even`.
+<1> `count` represents one-based index. 
+
+TIP: The iteration metadata also include zero-based `index`, `hasNext`, `odd` and `even` properties.
 
 The `for` statement also works with integers, starting from 1. In the example below, considering that `total = 3`:
 
@@ -558,11 +564,22 @@ The `for` statement also works with integers, starting from 1. In the example be
 {/for}
 ----
 
-The output will be:
+And the output will be:
 
 [source]
 ----
 1:2:3:
+----
+
+A loop section may define the `{#else}` block that is executed when there are no items to iterate:
+
+[source]
+----
+{#for item in items}
+  {item.name}
+{#else}
+  No items.
+{/for}
 ----
 
 [[if_section]]
@@ -1012,6 +1029,26 @@ engineBuilder.addParserHook(new ParserHook() {
 ----
 <1> Escape all occurences of `${`.
 
+==== Strict Rendering
+
+The strict rendering enables the developers to catch insidious errors caused by typos and invalid expressions.
+If enabled then any expression that cannot be resolved, i.e. is evaluated to an instance of `io.quarkus.qute.Results.NotFound`, will always result in a `TemplateException` and the rendering is aborted.
+A `NotFound` value is considered an error because it basically means that no value resolver was able to resolve the expression correctly.
+
+NOTE: `null` is a valid value though. It is considered `falsy` as described in the <<if_section>> and does not produce any output.
+
+Strict rendering is enabled by default.
+However, you can disable this functionality via `io.quarkus.qute.EngineBuilder.strictRendering(boolean)`.
+
+TIP: In Quarkus, a dedicated config property can be used instead: `quarkus.qute.strict-rendering`.
+
+If you really need to use an expression which can potentially lead to a "not found" error, you can use _default values_ and _safe expressions_ in order to suppress the error.
+A default value is used if the previous part of an expression cannot be resolved or resolves to `null`. 
+You can use the elvis operator to output the default value: `{foo.bar ?: 'baz'}`, which is effectively the same as the following virtual method: `{foo.bar.or('baz')}`.
+A safe expression ends with the `??` suffix and results in `null` if the expression cannot be resolved.
+It can be very useful e.g. in `{#if}` sections: `{#if valueNotFound??}Only rendered if valueNotFound is truthy!{/if}`.
+In fact, `??` is just a shorthand notation for `.or(null)`, i.e. `{#if valueNotFound??}` becomes `{#if valueNotFound.or(null)}`.
+
 [[quarkus_integration]]
 == Quarkus Integration
 
@@ -1410,6 +1447,12 @@ TIP: A map value can be also accessed directly: `{map.myKey}`. Use the bracket n
 
 * `reversed`: Returns a reversed iterator over a list
 ** `{#for r in recordsList.reversed}`
+
+* `take`: Returns the first `n` elements from the given list; throws an `IndexOutOfBoundsException` if `n` is out of range
+** `{#for r in recordsList.take(3)}`
+
+* `takeLast`: Returns the last `n` elements from the given list; throws an `IndexOutOfBoundsException` if `n` is out of range
+** `{#for r in recordsList.takeLast(3)}`
 
 TIP: A list element can be accessed directly: `{list.10}` or `{list[10]}`.
 

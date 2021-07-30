@@ -17,7 +17,13 @@ public class ArrayResolverTest {
         assertEquals("3", engine.parse("{array.length}").data("array", int1).render());
         assertEquals("2", engine.parse("{array.1}").data("array", int1).render());
         assertEquals("3", engine.parse("{array.get(2)}").data("array", int1).render());
-        assertEquals("NOT_FOUND", engine.parse("{array.get('foo')}").data("array", int1).render());
+        try {
+            fail(engine.parse("{array.get('foo')}").data("array", int1).render());
+        } catch (TemplateException expected) {
+            assertEquals(
+                    "Method \"get('foo')\" not found on the base object \"[I\" in expression {array.get('foo')} in template 4 on line 1",
+                    expected.getMessage());
+        }
         assertEquals("3", engine.parse("{array.get(last)}").data("array", int1, "last", 2).render());
         assertEquals("1", engine.parse("{array[0]}").data("array", int1).render());
 
@@ -41,6 +47,30 @@ public class ArrayResolverTest {
             fail();
         } catch (Exception expected) {
             assertTrue(expected instanceof IllegalArgumentException, expected.toString());
+        }
+    }
+
+    @Test
+    public void testTake() {
+        String[] array = new String[] { "Lu", "Roman", "Matej" };
+
+        Engine engine = Engine.builder().addDefaults().build();
+
+        assertEquals("Lu,",
+                engine.parse("{#each array.take(1)}{it},{/each}").data("array", array).render());
+        assertEquals("Roman,Matej,",
+                engine.parse("{#each array.takeLast(2)}{it},{/each}").data("array", array).render());
+        try {
+            assertEquals("3",
+                    engine.parse("{array.take(12).size}").data("array", array).render());
+            fail();
+        } catch (IndexOutOfBoundsException expected) {
+        }
+        try {
+            assertEquals("3",
+                    engine.parse("{array.take(-1).size}").data("array", array).render());
+            fail();
+        } catch (IndexOutOfBoundsException expected) {
         }
     }
 

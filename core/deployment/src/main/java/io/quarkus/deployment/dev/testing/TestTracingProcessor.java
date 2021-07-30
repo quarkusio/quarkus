@@ -23,7 +23,6 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.deployment.dev.console.ConsoleHelper;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.testing.TracingHandler;
@@ -36,34 +35,14 @@ import io.quarkus.gizmo.Gizmo;
  */
 public class TestTracingProcessor {
 
-    private static boolean consoleInstalled = false;
-
     @BuildStep(onlyIfNot = IsNormal.class)
     LogCleanupFilterBuildItem handle() {
         return new LogCleanupFilterBuildItem("org.junit.platform.launcher.core.EngineDiscoveryOrchestrator", "0 containers");
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
-    @Produce(TestSetupBuildItem.class)
-    void setupConsole(TestConfig config, BuildProducer<TestListenerBuildItem> testListenerBuildItemBuildProducer,
-            LaunchModeBuildItem launchModeBuildItem) {
-        if (!TestSupport.instance().isPresent() || config.continuousTesting == TestConfig.Mode.DISABLED
-                || config.flatClassPath) {
-            return;
-        }
-        if (consoleInstalled) {
-            return;
-        }
-        consoleInstalled = true;
-        if (config.console) {
-            ConsoleHelper.installConsole(config);
-            TestConsoleHandler consoleHandler = new TestConsoleHandler(launchModeBuildItem.getDevModeType().get());
-            consoleHandler.install();
-            testListenerBuildItemBuildProducer.produce(new TestListenerBuildItem(consoleHandler));
-        }
-    }
+    static volatile boolean testingSetup;
 
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIf = IsDevelopment.class)
     @Produce(LogHandlerBuildItem.class)
     @Produce(TestSetupBuildItem.class)
     @Produce(ServiceStartBuildItem.class)
@@ -77,6 +56,10 @@ public class TestTracingProcessor {
         if (devModeType == null || !devModeType.isContinuousTestingSupported()) {
             return;
         }
+        if (testingSetup) {
+            return;
+        }
+        testingSetup = true;
         TestSupport testSupport = TestSupport.instance().get();
         for (TestListenerBuildItem i : testListenerBuildItems) {
             testSupport.addListener(i.listener);
@@ -94,14 +77,6 @@ public class TestTracingProcessor {
                 testSupport.stop();
             }
         }
-
-        QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-        ((QuarkusClassLoader) cl.parent()).addCloseTask(new Runnable() {
-            @Override
-            public void run() {
-                testSupport.stop();
-            }
-        });
     }
 
     @BuildStep(onlyIf = IsTest.class)

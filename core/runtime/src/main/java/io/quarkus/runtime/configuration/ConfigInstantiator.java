@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.Converter;
@@ -43,6 +44,12 @@ public class ConfigInstantiator {
         suffixes.add("Config");
         suffixes.add("Configuration");
         supportedClassNameSuffix = Collections.unmodifiableSet(suffixes);
+    }
+
+    public static <T> T handleObject(Supplier<T> supplier) {
+        T o = supplier.get();
+        handleObject(o);
+        return o;
     }
 
     public static void handleObject(Object o) {

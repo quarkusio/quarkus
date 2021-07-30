@@ -1,10 +1,12 @@
 package io.quarkus.resteasy.reactive.server.runtime.exceptionmappers;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import javax.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.resteasy.reactive.server.spi.AsyncExceptionMapperContext;
 
@@ -49,5 +51,15 @@ public final class AsyncExceptionMappingUtil {
                 context.resume();
             }
         });
+    }
+
+    public static void handleUniRestResponse(Uni<? extends RestResponse<?>> asyncResponse,
+            AsyncExceptionMapperContext context) {
+        handleUniResponse(asyncResponse.map(new Function<RestResponse<?>, Response>() {
+            @Override
+            public Response apply(RestResponse<?> t) {
+                return t != null ? t.toResponse() : null;
+            }
+        }), context);
     }
 }

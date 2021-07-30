@@ -8,30 +8,22 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
-import org.graalvm.nativeimage.ImageInfo;
-import org.jboss.resteasy.client.jaxrs.engines.PassthroughTrustManager;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.runtime.graal.DisabledSSLContext;
-import io.quarkus.runtime.ssl.SslContextConfiguration;
 
 public class RestClientBase {
     public static final String MP_REST = "mp-rest";
@@ -48,8 +40,6 @@ public class RestClientBase {
     public static final String REST_KEY_STORE_PASSWORD = "%s/" + MP_REST + "/keyStorePassword";
     public static final String REST_KEY_STORE_TYPE = "%s/" + MP_REST + "/keyStoreType";
     public static final String REST_HOSTNAME_VERIFIER = "%s/" + MP_REST + "/hostnameVerifier";
-    public static final String REST_NOOP_HOSTNAME_VERIFIER = "io.quarkus.restclient.NoopHostnameVerifier";
-    public static final String TLS_TRUST_ALL = "quarkus.tls.trust-all";
 
     private final Class<?> proxyType;
     private final String baseUriFromAnnotation;
@@ -76,25 +66,10 @@ public class RestClientBase {
             builder.executorService(managedExecutor.get());
         }
 
-        Object result = builder.build(proxyType);
-        return result;
+        return builder.build(proxyType);
     }
 
     private void configureSsl(RestClientBuilder builder) {
-
-        Optional<Boolean> trustAll = getOptionalProperty(TLS_TRUST_ALL, Boolean.class);
-        if (trustAll.isPresent() && trustAll.get()) {
-            registerHostnameVerifier(REST_NOOP_HOSTNAME_VERIFIER, builder);
-            try {
-                SSLContext sslContext = SSLContext.getInstance("SSL");
-                sslContext.init(null, new TrustManager[] { new PassthroughTrustManager() },
-                        new SecureRandom());
-                builder.sslContext(sslContext);
-            } catch (NoSuchAlgorithmException | KeyManagementException e) {
-                throw new RuntimeException("Failed to initialized SSL context", e);
-            }
-        }
-
         Optional<String> maybeTrustStore = getOptionalDynamicProperty(REST_TRUST_STORE, String.class);
         if (maybeTrustStore.isPresent()) {
             registerTrustStore(maybeTrustStore.get(), builder);
@@ -108,12 +83,6 @@ public class RestClientBase {
         Optional<String> maybeHostnameVerifier = getOptionalDynamicProperty(REST_HOSTNAME_VERIFIER, String.class);
         if (maybeHostnameVerifier.isPresent()) {
             registerHostnameVerifier(maybeHostnameVerifier.get(), builder);
-        }
-
-        // we need to push a disabled SSL context when SSL has been disabled
-        // because otherwise Apache HTTP Client will try to initialize one and will fail
-        if (ImageInfo.inImageRuntimeCode() && !SslContextConfiguration.isSslNativeEnabled()) {
-            builder.sslContext(new DisabledSSLContext());
         }
     }
 
@@ -143,7 +112,7 @@ public class RestClientBase {
 
         try {
             KeyStore keyStore = KeyStore.getInstance(keyStoreType.orElse("JKS"));
-            if (!keyStorePassword.isPresent()) {
+            if (keyStorePassword.isEmpty()) {
                 throw new IllegalArgumentException("No password provided for keystore");
             }
             String password = keyStorePassword.get();
@@ -167,7 +136,7 @@ public class RestClientBase {
 
         try {
             KeyStore trustStore = KeyStore.getInstance(maybeTrustStoreType.orElse("JKS"));
-            if (!maybeTrustStorePassword.isPresent()) {
+            if (maybeTrustStorePassword.isEmpty()) {
                 throw new IllegalArgumentException("No password provided for truststore");
             }
             String password = maybeTrustStorePassword.get();
@@ -250,11 +219,11 @@ public class RestClientBase {
 
     private void configureBaseUrl(RestClientBuilder builder) {
         Optional<String> propertyOptional = getOptionalDynamicProperty(REST_URI_FORMAT, String.class);
-        if (!propertyOptional.isPresent()) {
+        if (propertyOptional.isEmpty()) {
             propertyOptional = getOptionalDynamicProperty(REST_URL_FORMAT, String.class);
         }
         if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty())
-                && !propertyOptional.isPresent()) {
+                && propertyOptional.isEmpty()) {
             throw new IllegalArgumentException(
                     String.format(
                             "Unable to determine the proper baseUrl/baseUri. " +
@@ -284,10 +253,4 @@ public class RestClientBase {
         return interfaceNameValue.isPresent() ? interfaceNameValue
                 : config.getOptionalValue(String.format(propertyFormat, propertyPrefix), type);
     }
-
-    private <T> Optional<T> getOptionalProperty(String propertyName, Class<T> type) {
-        final Config config = ConfigProvider.getConfig();
-        return config.getOptionalValue(propertyName, type);
-    }
-
 }

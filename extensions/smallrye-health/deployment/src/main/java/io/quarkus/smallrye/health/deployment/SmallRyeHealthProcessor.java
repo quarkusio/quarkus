@@ -20,6 +20,7 @@ import java.util.stream.Stream;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.Readiness;
+import org.eclipse.microprofile.health.Startup;
 import org.eclipse.microprofile.health.spi.HealthCheckResponseProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -59,6 +60,7 @@ import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.smallrye.health.runtime.ShutdownReadinessListener;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthGroupHandler;
@@ -68,6 +70,7 @@ import io.quarkus.smallrye.health.runtime.SmallRyeHealthRuntimeConfig;
 import io.quarkus.smallrye.health.runtime.SmallRyeIndividualHealthGroupHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeLivenessHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeReadinessHandler;
+import io.quarkus.smallrye.health.runtime.SmallRyeStartupHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeWellnessHandler;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
@@ -84,6 +87,7 @@ class SmallRyeHealthProcessor {
 
     private static final DotName LIVENESS = DotName.createSimple(Liveness.class.getName());
     private static final DotName READINESS = DotName.createSimple(Readiness.class.getName());
+    private static final DotName STARTUP = DotName.createSimple(Startup.class.getName());
     private static final DotName HEALTH_GROUP = DotName.createSimple(HealthGroup.class.getName());
     private static final DotName HEALTH_GROUPS = DotName.createSimple(HealthGroups.class.getName());
     private static final DotName WELLNESS = DotName.createSimple(Wellness.class.getName());
@@ -153,10 +157,11 @@ class SmallRyeHealthProcessor {
 
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_HEALTH));
 
-        // Discover the beans annotated with @Health, @Liveness, @Readiness, @HealthGroup,
+        // Discover the beans annotated with @Health, @Liveness, @Readiness, @Startup, @HealthGroup,
         // @HealthGroups and @Wellness even if no scope is defined
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(LIVENESS));
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(READINESS));
+        beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(STARTUP));
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH_GROUP));
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH_GROUPS));
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(WELLNESS));
@@ -194,6 +199,7 @@ class SmallRyeHealthProcessor {
         // log a warning if users try to use MP Health annotations with JAX-RS @Path
         warnIfJaxRsPathUsed(index, LIVENESS);
         warnIfJaxRsPathUsed(index, READINESS);
+        warnIfJaxRsPathUsed(index, STARTUP);
         warnIfJaxRsPathUsed(index, WELLNESS);
 
         // Register the health handler
@@ -260,6 +266,14 @@ class SmallRyeHealthProcessor {
                 .blockingRoute()
                 .build());
 
+        // Register the startup handler
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .nestedRoute(healthConfig.rootPath, healthConfig.startupPath)
+                .handler(new SmallRyeStartupHandler())
+                .displayOnNotFoundPage()
+                .blockingRoute()
+                .build());
+
     }
 
     @BuildStep
@@ -282,7 +296,8 @@ class SmallRyeHealthProcessor {
 
             HealthOpenAPIFilter filter = new HealthOpenAPIFilter(healthRootPath,
                     nonApplicationRootPathBuildItem.resolveNestedPath(healthRootPath, healthConfig.livenessPath),
-                    nonApplicationRootPathBuildItem.resolveNestedPath(healthRootPath, healthConfig.readinessPath));
+                    nonApplicationRootPathBuildItem.resolveNestedPath(healthRootPath, healthConfig.readinessPath),
+                    nonApplicationRootPathBuildItem.resolveNestedPath(healthRootPath, healthConfig.startupPath));
 
             openAPIProducer.produce(new AddToOpenAPIDefinitionBuildItem(filter));
         }
@@ -315,7 +330,8 @@ class SmallRyeHealthProcessor {
     public void kubernetes(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             SmallRyeHealthConfig healthConfig,
             BuildProducer<KubernetesHealthLivenessPathBuildItem> livenessPathItemProducer,
-            BuildProducer<KubernetesHealthReadinessPathBuildItem> readinessPathItemProducer) {
+            BuildProducer<KubernetesHealthReadinessPathBuildItem> readinessPathItemProducer,
+            BuildProducer<KubernetesHealthStartupPathBuildItem> startupPathItemProducer) {
 
         livenessPathItemProducer.produce(
                 new KubernetesHealthLivenessPathBuildItem(
@@ -323,6 +339,9 @@ class SmallRyeHealthProcessor {
         readinessPathItemProducer.produce(
                 new KubernetesHealthReadinessPathBuildItem(
                         nonApplicationRootPathBuildItem.resolveNestedPath(healthConfig.rootPath, healthConfig.readinessPath)));
+        startupPathItemProducer.produce(
+                new KubernetesHealthStartupPathBuildItem(
+                        nonApplicationRootPathBuildItem.resolveNestedPath(healthConfig.rootPath, healthConfig.startupPath)));
     }
 
     @BuildStep
@@ -346,6 +365,7 @@ class SmallRyeHealthProcessor {
         List<DotName> healthAnnotations = new ArrayList<>(5);
         healthAnnotations.add(LIVENESS);
         healthAnnotations.add(READINESS);
+        healthAnnotations.add(STARTUP);
         healthAnnotations.add(HEALTH_GROUP);
         healthAnnotations.add(HEALTH_GROUPS);
         healthAnnotations.add(WELLNESS);

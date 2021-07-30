@@ -1,15 +1,16 @@
 package io.quarkus.dev.console;
 
 import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class BasicConsole extends QuarkusConsole {
 
     private static final Logger log = Logger.getLogger(BasicConsole.class.getName());
-    private static final Logger statusLogger = Logger.getLogger("quarkus");
 
     private static final ThreadLocal<Boolean> DISABLE_FILTER = new ThreadLocal<>() {
         @Override
@@ -17,29 +18,52 @@ public class BasicConsole extends QuarkusConsole {
             return false;
         }
     };
-    final PrintStream printStream;
+    final Consumer<String> output;
+    final Supplier<Integer> input;
     final boolean inputSupport;
-    final boolean noColor;
+    final boolean color;
 
-    public BasicConsole(boolean noColor, boolean inputSupport, PrintStream printStream) {
-        this.noColor = noColor;
+    volatile boolean readingLine;
+
+    public BasicConsole(boolean color, boolean inputSupport, Consumer<String> output) {
+        this(color, inputSupport, output, () -> {
+            try {
+                return System.in.read();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public BasicConsole(boolean color, boolean inputSupport, Consumer<String> output, Supplier<Integer> inputProvider) {
+        this.color = color;
         this.inputSupport = inputSupport;
-        this.printStream = printStream;
+        this.output = output;
+        this.input = inputProvider;
         if (inputSupport) {
+            Objects.requireNonNull(inputProvider);
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     while (true) {
                         try {
-                            int val = System.in.read();
+                            int val = input.get();
                             if (val == -1) {
                                 return;
                             }
-                            InputHolder handler = inputHandlers.peek();
-                            if (handler != null) {
-                                handler.handler.handleInput(new int[] { val });
+                            if (readingLine) {
+                                //when doing a read line we want to discard the first \n
+                                //as this was the one that was needed to activate this mode
+                                if (val == '\n') {
+                                    readingLine = false;
+                                    continue;
+                                }
                             }
-                        } catch (IOException e) {
+                            var handler = inputHandler;
+                            if (handler != null) {
+                                handler.accept(new int[] { val });
+                            }
+                        } catch (Exception e) {
                             log.log(Level.SEVERE, "Failed to read user input", e);
                             return;
                         }
@@ -53,57 +77,60 @@ public class BasicConsole extends QuarkusConsole {
     }
 
     @Override
-    public InputHolder createHolder(InputHandler inputHandler) {
-        return new InputHolder(inputHandler) {
+    public void doReadLine() {
+        readingLine = true;
+        output.accept(">");
+    }
+
+    public StatusLine registerStatusLine(int priority) {
+        return new StatusLine() {
+
+            boolean closed;
+
+            String old;
+
             @Override
-            protected void setPromptMessage(String prompt) {
-                if (!inputSupport) {
+            public void setMessage(String message) {
+                if (closed) {
                     return;
                 }
-                if (prompt == null) {
+                if (message == null) {
                     return;
                 }
+                if (message.equals(old)) {
+                    return;
+                }
+                old = message;
                 DISABLE_FILTER.set(true);
                 try {
-                    statusLogger.info(prompt);
+                    System.out.println(message);
                 } finally {
                     DISABLE_FILTER.set(false);
                 }
+
             }
 
             @Override
-            protected void setResultsMessage(String results) {
-                DISABLE_FILTER.set(true);
-                try {
-                    statusLogger.info(results);
-                } finally {
-                    DISABLE_FILTER.set(false);
-                }
-            }
-
-            @Override
-            protected void setCompileErrorMessage(String results) {
-                DISABLE_FILTER.set(true);
-                try {
-                    statusLogger.info(results);
-                } finally {
-                    DISABLE_FILTER.set(false);
-                }
-            }
-
-            @Override
-            protected void setStatusMessage(String status) {
-                if (status == null) {
-                    return;
-                }
-                DISABLE_FILTER.set(true);
-                try {
-                    statusLogger.info(status);
-                } finally {
-                    DISABLE_FILTER.set(false);
-                }
+            public void close() {
+                closed = true;
             }
         };
+    }
+
+    @Override
+    public void setPromptMessage(String prompt) {
+        if (!inputSupport) {
+            return;
+        }
+        if (prompt == null) {
+            return;
+        }
+        DISABLE_FILTER.set(true);
+        try {
+            System.out.println(prompt);
+        } finally {
+            DISABLE_FILTER.set(false);
+        }
     }
 
     @Override
@@ -116,17 +143,22 @@ public class BasicConsole extends QuarkusConsole {
                 }
             }
         }
-        if (noColor || !hasColorSupport()) {
-            printStream.print(stripAnsiCodes(s));
+        if (!color) {
+            output.accept(stripAnsiCodes(s));
         } else {
-            printStream.print(s);
+            output.accept(s);
         }
 
     }
 
     @Override
     public void write(byte[] buf, int off, int len) {
-        write(new String(buf, off, len, Charset.defaultCharset()));
+        write(new String(buf, off, len, StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public boolean isInputSupported() {
+        return inputSupport;
     }
 
 }

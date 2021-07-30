@@ -85,7 +85,9 @@ final class SummaryTableDocFormatter implements DocFormatter {
                 // make sure nobody inserts a table cell separator here
                 doc.replace("|", "\\|"),
                 typeContent, typeDetail,
-                defaultValue.isEmpty() ? required : String.format("`%s`", defaultValue)));
+                defaultValue.isEmpty() ? required
+                        : String.format("`%s`", defaultValue.replace("|", "\\|")
+                                .replace("`", "\\`"))));
     }
 
     @Override

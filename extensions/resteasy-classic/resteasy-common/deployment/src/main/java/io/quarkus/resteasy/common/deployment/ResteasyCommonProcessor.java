@@ -24,7 +24,6 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.AnnotationValue.Kind;
-import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
@@ -33,6 +32,9 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.MediaTypeMap;
+import org.jboss.resteasy.microprofile.config.FilterConfigSourceImpl;
+import org.jboss.resteasy.microprofile.config.ServletConfigSourceImpl;
+import org.jboss.resteasy.microprofile.config.ServletContextConfigSourceImpl;
 import org.jboss.resteasy.plugins.interceptors.AcceptEncodingGZIPFilter;
 import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
 import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
@@ -51,8 +53,8 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.AdditionalStaticInitConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.StaticInitConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.runtime.ResteasyInjectorFactoryRecorder;
@@ -123,9 +125,22 @@ public class ResteasyCommonProcessor {
     }
 
     @BuildStep
-    void initConfigSourceProvider(BuildProducer<AdditionalStaticInitConfigSourceProviderBuildItem> initConfigSourceProvider) {
+    void addStaticInitConfigSourceProvider(
+            Capabilities capabilities,
+            BuildProducer<StaticInitConfigSourceProviderBuildItem> initConfigSourceProvider,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+
+        if (!capabilities.isCapabilityWithPrefixPresent(Capability.SERVLET)) {
+            return;
+        }
+
         initConfigSourceProvider.produce(
-                new AdditionalStaticInitConfigSourceProviderBuildItem(ResteasyConfigSourceProvider.class.getName()));
+                new StaticInitConfigSourceProviderBuildItem(ResteasyConfigSourceProvider.class.getName()));
+
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
+                ServletConfigSourceImpl.class,
+                ServletContextConfigSourceImpl.class,
+                FilterConfigSourceImpl.class));
     }
 
     @BuildStep
@@ -176,7 +191,6 @@ public class ResteasyCommonProcessor {
                 annotatedProviders.add(i.target().asClass().name().toString());
             }
             checkProperConfigAccessInProvider(i);
-            checkProperConstructorInProvider(i);
         }
         contributedProviders.addAll(annotatedProviders);
         Set<String> availableProviders = new HashSet<>(ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
@@ -359,15 +373,6 @@ public class ResteasyCommonProcessor {
                             + " into a JAX-RS provider may lead to unexpected results. To ensure proper results, please change the type of the field to "
                             + ParameterizedType.create(ResteasyDotNames.CDI_INSTANCE, new Type[] { fieldType }, null)
                             + ". Offending field is '" + field.name() + "' of class '" + field.declaringClass() + "'");
-        }
-    }
-
-    private void checkProperConstructorInProvider(AnnotationInstance i) {
-        ClassInfo targetClass = i.target().asClass();
-        if (!targetClass.hasNoArgsConstructor()) {
-            LOGGER.warn(
-                    "Classes annotated with @Provider should have a single, no-argument constructor, otherwise dependency injection won't work properly. Offending class is "
-                            + targetClass);
         }
     }
 
@@ -656,10 +661,5 @@ public class ResteasyCommonProcessor {
         public boolean noProducesDefaultsToAll() {
             return noProducesDefaultsToAll;
         }
-    }
-
-    private enum NoMediaTypesDefault {
-        ALL,
-        JSON;
     }
 }

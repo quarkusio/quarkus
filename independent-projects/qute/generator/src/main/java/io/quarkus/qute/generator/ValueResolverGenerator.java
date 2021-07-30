@@ -262,7 +262,7 @@ public class ValueResolverGenerator {
                             MethodDescriptor.ofMethod(clazz.name().toString(), getterName,
                                     DescriptorUtils.typeToString(field.type())),
                             base);
-                    getterMatch.returnValue(getterMatch.invokeStaticMethod(Descriptors.COMPLETED_FUTURE, value));
+                    getterMatch.returnValue(getterMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
                 } else {
                     LOGGER.debugf("Field added: %s", field);
                     // Match field name
@@ -280,7 +280,7 @@ public class ValueResolverGenerator {
                                 .readInstanceField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()),
                                         base);
                     }
-                    fieldMatch.returnValue(fieldMatch.invokeStaticMethod(Descriptors.COMPLETED_FUTURE, value));
+                    fieldMatch.returnValue(fieldMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
                 }
             }
         }
@@ -310,7 +310,7 @@ public class ValueResolverGenerator {
                         if (hasCompletionStage) {
                             ret = invokeRet;
                         } else {
-                            ret = matchScope.invokeStaticMethod(Descriptors.COMPLETED_FUTURE, invokeRet);
+                            ret = matchScope.invokeStaticMethod(Descriptors.COMPLETED_STAGE, invokeRet);
                         }
                         matchScope.returnValue(ret);
                     }
@@ -434,7 +434,7 @@ public class ValueResolverGenerator {
                         whenEvaluatedParams, success.load(isVarArgs(method)), paramTypesHandle))
                 .falseBranch();
         typeMatchFailed.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet,
-                typeMatchFailed.invokeStaticInterfaceMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
+                typeMatchFailed.invokeStaticMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
         typeMatchFailed.returnValue(null);
 
         ResultHandle[] paramsHandle = new ResultHandle[methodParams.size()];
@@ -637,7 +637,7 @@ public class ValueResolverGenerator {
 
         // No method matches - result not found
         whenComplete.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet,
-                whenComplete.invokeStaticInterfaceMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
+                whenComplete.invokeStaticMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
         whenComplete.returnValue(null);
 
         matchScope.returnValue(ret);

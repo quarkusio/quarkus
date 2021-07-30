@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using OpenID Connect and OAuth2 Client and Filters to manage access tokens
+= Using OpenID Connect and OAuth2 Client and Filters to manage access tokens
 
 include::./attributes.adoc[]
 :toc:
@@ -360,6 +360,28 @@ quarkus.oidc-client.client-id=quarkus-app
 quarkus.oidc-client.credentials.secret=mysecret
 ----
 
+or
+
+[source,properties]
+----
+quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc-client.client-id=quarkus-app
+quarkus.oidc-client.credentials.client-secret.value=mysecret
+----
+
+or with the secret retrieved from a link:credentials-provider[CredentialsProvider]:
+
+[source,properties]
+----
+quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc-client.client-id=quarkus-app
+
+# This is a key which will be used to retrieve a secret from the map of credentails returned from CredentialsProvider
+quarkus.oidc-client.credentials.client-secret.provider.key=mysecret-key
+# Set it only if more than one CredentialsProvider can be registered
+quarkus.oidc-client.credentials.client-secret.provider.name=oidc-credentials-provider
+----
+
 `client_secret_post`:
 
 [source,properties]
@@ -374,30 +396,54 @@ quarkus.oidc-client.credentials.client-secret.method=post
 
 [source,properties]
 ----
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.client-id=quarkus-app
+quarkus.oidc.credentials.jwt.secret=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow
+
+# This is a token key identifier 'kid' header - set it if your OpenId Connect provider requires it,
+quarkus.oidc.credentials.jwt.token-key-id=mykey
+----
+
+or with the secret retrieved from a link:credentials-provider[CredentialsProvider]:
+
+[source,properties]
+----
 quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
 quarkus.oidc-client.client-id=quarkus-app
-quarkus.oidc-client.credentials.jwt.secret=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow
+
+# This is a key which will be used to retrieve a secret from the map of credentails returned from CredentialsProvider
+quarkus.oidc-client.credentials.jwt.secret-provider.key=mysecret-key
+# Set it only if more than one CredentialsProvider can be registered
+quarkus.oidc-client.credentials.jwt.secret-provider.name=oidc-credentials-provider
 ----
 
 `private_key_jwt` with the PEM key file:
 
 [source,properties]
 ----
-quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
-quarkus.oidc-client.client-id=quarkus-app
-quarkus.oidc-client.credentials.jwt.key-file=privateKey.pem
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.client-id=quarkus-app
+quarkus.oidc.credentials.jwt.key-file=privateKey.pem
+
+# This is a token key identifier 'kid' header - set it if your OpenId Connect provider requires it
+quarkus.oidc.credentials.jwt.token-key-id=mykey
 ----
 
 `private_key_jwt` with the key store file:
 
 [source,properties]
 ----
-quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
-quarkus.oidc-client.client-id=quarkus-app
-quarkus.oidc-client.credentials.jwt.key-store-file=keystore.jks
-quarkus.oidc-client.credentials.jwt.key-store-password=mypassword
-quarkus.oidc-client.credentials.jwt.key-password=mykeypassword
-quarkus.oidc-client.credentials.jwt.key-id=mykey
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.client-id=quarkus-app
+quarkus.oidc.credentials.jwt.key-store-file=keystore.jks
+quarkus.oidc.credentials.jwt.key-store-password=mypassword
+quarkus.oidc.credentials.jwt.key-password=mykeypassword
+# Private key alias inside the keystore
+quarkus.oidc.credentials.jwt.key-id=mykey
+
+# This is a token key identifier 'kid' header - set it if your OpenId Connect provider requires it,
+# Note it can be different to the `quarkus.oidc.credentials.jwt.key-id` value
+quarkus.oidc.credentials.jwt.token-key-id=mykey
 ----
 
 Using `client_secret_jwt` or `private_key_jwt` authentication methods ensures that no client secret goes over the wire.
@@ -523,6 +569,14 @@ Please enable `io.quarkus.oidc.client.runtime.OidcClientImpl` `TRACE` level logg
 ----
 quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientImpl".level=TRACE
 quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientImpl".min-level=TRACE
+----
+
+Please enable `io.quarkus.oidc.client.runtime.OidcClientRecorder` `TRACE` level logging to see more details about the OidcClient initialization errors:
+
+[source, properties]
+----
+quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".level=TRACE
+quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".min-level=TRACE
 ----
 
 == Token endpoint configuration

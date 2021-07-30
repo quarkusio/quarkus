@@ -1,6 +1,5 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.Results.Result;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -11,8 +10,8 @@ import java.util.concurrent.CompletionStage;
 public interface Resolver {
 
     /**
-     * This method should return {@link Result#NOT_FOUND} if it's not possible to resolve the context. Any other value is
-     * considered a valid result, including {@code null}.
+     * This method should return an instance of {@link Results#NotFound} if it's not possible to resolve the context. Any other
+     * value is considered a valid result, including {@code null}.
      * 
      * @param context
      * @return the result

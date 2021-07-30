@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Neo4j
+= Neo4j
 :neo4j_version: 4.0.0
 
 include::./attributes.adoc[]

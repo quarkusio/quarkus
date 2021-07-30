@@ -25,7 +25,7 @@ public class DenyAllJaxRsTest {
                             TestIdentityProvider.class,
                             TestIdentityController.class,
                             UnsecuredSubResource.class)
-                    .addAsResource(new StringAsset("quarkus.resteasy-reactive.deny-unannotated-endpoints = true\n"),
+                    .addAsResource(new StringAsset("quarkus.security.jaxrs.deny-unannotated-endpoints = true\n"),
                             "application.properties"));
 
     @BeforeAll

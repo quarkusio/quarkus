@@ -11,6 +11,10 @@ import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
  * The results of applying bytecode transformation to a class.
+ *
+ * Note that this has also been abused somewhat to also represent removed
+ * resources, as the logic is the same, and it avoids have two separate mechanisms
+ * that essentially do the same thing.
  */
 public final class TransformedClassesBuildItem extends SimpleBuildItem {
 
@@ -37,6 +41,9 @@ public final class TransformedClassesBuildItem extends SimpleBuildItem {
     public static class TransformedClass {
 
         private final String className;
+        /**
+         * The class data, if it is null then the class has been removed.
+         */
         private final byte[] data;
         private final String fileName;
         private final boolean eager;

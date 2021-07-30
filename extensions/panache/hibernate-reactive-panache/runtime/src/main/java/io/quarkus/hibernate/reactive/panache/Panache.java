@@ -21,7 +21,7 @@ public class Panache {
      * 
      * @return the current {@link Mutiny.Session}
      */
-    public static Mutiny.Session getSession() {
+    public static Uni<Mutiny.Session> getSession() {
         return AbstractJpaOperations.getSession();
     }
 
@@ -33,9 +33,10 @@ public class Panache {
      * @param <T> The function's return type
      * @param work The function to execute in the new transaction
      * @return the result of executing the function
+     * @see Panache#currentTransaction()
      */
     public static <T> Uni<T> withTransaction(Supplier<Uni<T>> work) {
-        return getSession().withTransaction(t -> work.get());
+        return getSession().flatMap(session -> session.withTransaction(t -> work.get()));
     }
 
     /**
@@ -77,6 +78,16 @@ public class Panache {
      * @return void
      */
     public static Uni<Void> flush() {
-        return getSession().flush();
+        return getSession().flatMap(session -> session.flush());
+    }
+
+    /**
+     * Returns the current transaction, if any, or <code>null</code>.
+     * 
+     * @return the current transaction, if any, or <code>null</code>.
+     * @see Panache#withTransaction(Supplier)
+     */
+    public static Uni<Mutiny.Transaction> currentTransaction() {
+        return getSession().map(session -> session.currentTransaction());
     }
 }

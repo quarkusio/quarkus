@@ -38,6 +38,12 @@
     .btnToggleInstrumentationBasedReload i::after {
         content: " Toggle instrumentation based reload";
     }
+    .btnToggleLiveReload i::after {
+        content: " Toggle live reload enabled";
+    }
+    .btnForceRestart i::after {
+        content: " Force restart";
+    }
     .btnTestsResults{
         display: none;
     }
@@ -67,7 +73,7 @@
     <div class="row p-1">
         <div class="col-sm">
             <button class="btn btn-danger btn-block" type="button" data-toggle="collapse" data-target="#failedTests{parentCount}" aria-expanded="false" aria-controls="failedTests{parentCount}">
-                <span class="float-left"><i class="fas fa-times-circle"></i> {cn.className}</span>
+                <span class="float-left"><i class="fas fa-times-circle"></i> {cn.className}</span><span class="float-right">{cn.time}ms</span>
             </button>
             <div class="collapse" id="failedTests{parentCount}">
                 <ul class="list-group">
@@ -76,19 +82,32 @@
                     <li class="list-group-item">
   
                         <a class="btn btn-link btn-block text-danger" data-toggle="collapse" data-target="#failedTests{parentCount}LogFailed{count}" aria-expanded="false" aria-controls="failedTests{parentCount}LogFailed{count}">
-                            <span class="float-left"><i class="fas fa-times-circle"></i> {r.displayName}</span>
+                            <span class="float-left"><i class="fas fa-times-circle"></i> {r.displayName}</span><span class="float-right">{r.time}ms</span>
                         </a>
-                        
-                    
+
                         <div id="failedTests{parentCount}LogFailed{count}" class="collapse">
                             <br/>
                             <div class="bg-dark p-2">
-                                <samp class="text-wrap " style="font-size: 0.9em;">
-                                    {#for log in r.logOutput}
-                                        {log.raw} <br/>
+                                <samp class="text-wrap text-info" style="font-size: 0.9em;">
+                                    {#for throwable in r.problems}
+                                        <pre class="text-danger">{throwable.message}</pre>
+                                        <br/>
+                                        {#for frame in throwable.stackTrace}
+                                        {frame} <br/>
+                                        {/for}
                                     {/for}
                                 </samp>
                             </div>
+                            {#if !r.logOutput.empty}
+                                <br/>
+                                <div class="bg-dark p-2">
+                                    <samp class="text-wrap " style="font-size: 0.9em;">
+                                        {#for log in r.logOutput}
+                                            {log.raw} <br/>
+                                        {/for}
+                                    </samp>
+                                </div>
+                            {/if}
                         </div>
                     </li>
                     {/if}
@@ -99,19 +118,20 @@
                     <li class="list-group-item">
   
                         <a class="btn btn-link btn-block text-success" data-toggle="collapse" data-target="#failedTests{parentCount}LogPassed{count}" aria-expanded="false" aria-controls="failedTests{parentCount}LogPassed{count}">
-                            <span class="float-left"><i class="fas fa-check-circle"></i> {r.displayName}</span>
+                            <span class="float-left"><i class="fas fa-check-circle"></i> {r.displayName}</span><span class="float-right">{r.time}ms</span>
                         </a>
-                        
                     
                         <div id="failedTests{parentCount}LogPassed{count}" class="collapse">
-                            <br/>
-                            <div class="bg-dark p-2">
-                                <samp class="text-wrap " style="font-size: 0.9em;">
-                                    {#for log in r.logOutput}
-                                        {log.raw} <br/>
-                                    {/for}
-                                </samp>
-                            </div>
+                            {#if !r.logOutput.empty}
+                                <br/>
+                                <div class="bg-dark p-2">
+                                    <samp class="text-wrap " style="font-size: 0.9em;">
+                                        {#for log in r.logOutput}
+                                            {log.raw} <br/>
+                                        {/for}
+                                    </samp>
+                                </div>
+                            {/if}
                         </div>
                     </li>
                     {/if}
@@ -122,19 +142,21 @@
                     <li class="list-group-item">
   
                         <a class="btn btn-link btn-block text-secondary" data-toggle="collapse" data-target="#failedTests{parentCount}LogSkipped{count}" aria-expanded="false" aria-controls="failedTests{parentCount}LogSkipped{count}">
-                            <span class="float-left"><i class="fas fa-minus-circle"></i> {r.displayName}</span>
+                            <span class="float-left"><i class="fas fa-minus-circle"></i> {r.displayName}</span><span class="float-right">{r.time}ms</span>
                         </a>
                         
                     
                         <div id="failedTests{parentCount}LogSkipped{count}" class="collapse">
-                            <br/>
-                            <div class="bg-dark p-2">
-                                <samp class="text-wrap " style="font-size: 0.9em;">
-                                    {#for log in r.logOutput}
-                                        {log.raw} <br/>
-                                    {/for}
-                                </samp>
-                            </div>
+                            {#if !r.logOutput.empty}
+                                <br/>
+                                <div class="bg-dark p-2">
+                                    <samp class="text-wrap " style="font-size: 0.9em;">
+                                        {#for log in r.logOutput}
+                                            {log.raw} <br/>
+                                        {/for}
+                                    </samp>
+                                </div>
+                            {/if}
                         </div>
                     </li>
                     
@@ -154,7 +176,7 @@
     <div class="row p-1">
         <div class="col-sm">
             <button class="btn btn-success btn-block" type="button" data-toggle="collapse" data-target="#passedTests{parentCount}" aria-expanded="false" aria-controls="passedTests{parentCount}">
-                <span class="float-left"><i class="fas fa-check-circle"></i> {cn.className}</span>
+                <span class="float-left"><i class="fas fa-check-circle"></i> {cn.className}</span><span class="float-right">{cn.time}ms</span>
             </button>
             <div class="collapse" id="passedTests{parentCount}">
                 <ul class="list-group">
@@ -163,7 +185,7 @@
                     <li class="list-group-item">
   
                         <a class="btn btn-link btn-block text-success" data-toggle="collapse" data-target="#passedTests{parentCount}LogPassed{count}" aria-expanded="false" aria-controls="passedTests{parentCount}LogPassed{count}">
-                            <span class="float-left"><i class="fas fa-check-circle"></i> {r.displayName}</span>
+                            <span class="float-left"><i class="fas fa-check-circle"></i> {r.displayName}</span><span class="float-right">{r.time}ms</span>
                         </a>
                         
                     
@@ -186,7 +208,7 @@
                     <li class="list-group-item">
   
                         <a class="btn btn-link btn-block text-secondary" data-toggle="collapse" data-target="#passedTests{parentCount}LogSkipped{count}" aria-expanded="false" aria-controls="passedTests{parentCount}LogSkipped{count}">
-                            <span class="float-left"><i class="fas fa-minus-circle"></i> {r.displayName}</span>
+                            <span class="float-left"><i class="fas fa-minus-circle"></i> {r.displayName}</span><span class="float-right">{r.time}ms</span>
                         </a>
                         
                     
@@ -218,7 +240,7 @@
     <div class="row p-1">
         <div class="col-sm">
             <button class="btn btn-secondary btn-block" type="button" data-toggle="collapse" data-target="#skippedTests{parentCount}" aria-expanded="false" aria-controls="skippedTests{parentCount}">
-                <span class="float-left"><i class="fas fa-minus-circle"></i> {cn.className}</span>
+                <span class="float-left"><i class="fas fa-minus-circle"></i> {cn.className}</span><span class="float-right">{cn.time}ms</span>
             </button>
             <div class="collapse" id="skippedTests{parentCount}">
                 <ul class="list-group">
@@ -228,7 +250,7 @@
                     <li class="list-group-item">
   
                         <a class="btn btn-link btn-block text-secondary" data-toggle="collapse" data-target="#skippedTests{parentCount}LogSkipped{count}" aria-expanded="false" aria-controls="skippedTests{parentCount}LogSkipped{count}">
-                            <span class="float-left"><i class="fas fa-minus-circle"></i> {r.displayName}</span>
+                            <span class="float-left"><i class="fas fa-minus-circle"></i> {r.displayName}</span><span class="float-right">{r.time}ms</span>
                         </a>
                         
                     

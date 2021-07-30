@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.Inheritance;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.Version;
 
@@ -86,6 +87,7 @@ public final class DotNames {
 
     public static final DotName JPA_ID = DotName.createSimple(Id.class.getName());
     public static final DotName VERSION = DotName.createSimple(Version.class.getName());
+    public static final DotName JPA_INHERITANCE = DotName.createSimple(Inheritance.class.getName());
     public static final DotName JPA_MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
     public static final DotName JPA_ENTITY = DotName.createSimple(Entity.class.getName());;
     public static final DotName VOID = DotName.createSimple(void.class.getName());

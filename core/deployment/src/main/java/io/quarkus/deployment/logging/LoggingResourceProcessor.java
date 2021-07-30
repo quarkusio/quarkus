@@ -1,26 +1,38 @@
 package io.quarkus.deployment.logging;
 
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Handler;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 
+import org.jboss.jandex.CompositeIndex;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.logmanager.EmbeddedConfigurator;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ConsoleFormatterBannerBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -33,9 +45,13 @@ import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.dev.testing.MessageFormat;
+import io.quarkus.deployment.dev.testing.TestSetupBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
+import io.quarkus.dev.console.CurrentAppExceptionHighlighter;
+import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.gizmo.AnnotationCreator;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -48,6 +64,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
+import io.quarkus.runtime.console.ConsoleRuntimeConfig;
 import io.quarkus.runtime.logging.CategoryBuildTimeConfig;
 import io.quarkus.runtime.logging.CleanupFilterConfig;
 import io.quarkus.runtime.logging.InheritableLevel;
@@ -127,12 +144,14 @@ public final class LoggingResourceProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     LoggingSetupBuildItem setupLoggingRuntimeInit(LoggingSetupRecorder recorder, LogConfig log, LogBuildTimeConfig buildLog,
+            ConsoleRuntimeConfig consoleRuntimeConfig,
             List<LogHandlerBuildItem> handlerBuildItems,
             List<NamedLogHandlersBuildItem> namedHandlerBuildItems, List<LogConsoleFormatBuildItem> consoleFormatItems,
             Optional<ConsoleFormatterBannerBuildItem> possibleBannerBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             List<LogCleanupFilterBuildItem> logCleanupFilters) {
-        if (!launchModeBuildItem.isAuxiliaryApplication()) {
+        if (!launchModeBuildItem.isAuxiliaryApplication()
+                || launchModeBuildItem.getAuxiliaryDevModeType().orElse(null) == DevModeType.TEST_ONLY) {
             final List<RuntimeValue<Optional<Handler>>> handlers = handlerBuildItems.stream()
                     .map(LogHandlerBuildItem::getHandlerValue)
                     .collect(Collectors.toList());
@@ -147,9 +166,9 @@ public final class LoggingResourceProcessor {
             if (bannerBuildItem != null) {
                 possibleSupplier = bannerBuildItem.getBannerSupplier();
             }
-            recorder.initializeLogging(log, buildLog, handlers, namedHandlers,
+            recorder.initializeLogging(log, buildLog, consoleRuntimeConfig, handlers, namedHandlers,
                     consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList()),
-                    possibleSupplier);
+                    possibleSupplier, launchModeBuildItem.getLaunchMode());
             LogConfig logConfig = new LogConfig();
             ConfigInstantiator.handleObject(logConfig);
             for (LogCleanupFilterBuildItem i : logCleanupFilters) {
@@ -160,7 +179,9 @@ public final class LoggingResourceProcessor {
                         : filterElement.getTargetLevel();
                 logConfig.filters.put(filterElement.getLoggerName(), value);
             }
-            LoggingSetupRecorder.initializeBuildTimeLogging(logConfig, buildLog);
+            ConsoleRuntimeConfig crc = new ConsoleRuntimeConfig();
+            ConfigInstantiator.handleObject(crc);
+            LoggingSetupRecorder.initializeBuildTimeLogging(logConfig, buildLog, crc, launchModeBuildItem.getLaunchMode());
             ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader()).addCloseTask(new Runnable() {
                 @Override
                 public void run() {
@@ -169,6 +190,58 @@ public final class LoggingResourceProcessor {
             });
         }
         return new LoggingSetupBuildItem();
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Produce(TestSetupBuildItem.class)
+    @Produce(LogConsoleFormatBuildItem.class)
+    void setupStackTraceFormatter(ApplicationArchivesBuildItem item) {
+        List<IndexView> indexList = new ArrayList<>();
+        for (ApplicationArchive i : item.getAllApplicationArchives()) {
+            if (Files.isDirectory(i.getArchiveLocation())) {
+                indexList.add(i.getIndex());
+            }
+        }
+        CompositeIndex index = CompositeIndex.create(indexList);
+        //awesome/horrible hack
+        //we know from the index which classes are part of the current application
+        //we add ANSI codes for bold and underline to their names to display them more prominently
+        CurrentAppExceptionHighlighter.THROWABLE_FORMATTER = new BiConsumer<LogRecord, Consumer<LogRecord>>() {
+            @Override
+            public void accept(LogRecord logRecord, Consumer<LogRecord> logRecordConsumer) {
+                Map<Throwable, StackTraceElement[]> restore = new HashMap<>();
+                Throwable c = logRecord.getThrown();
+                while (c != null) {
+                    StackTraceElement[] stackTrace = c.getStackTrace();
+                    for (int i = 0; i < stackTrace.length; ++i) {
+                        var elem = stackTrace[i];
+                        if (index.getClassByName(DotName.createSimple(elem.getClassName())) != null) {
+                            stackTrace[i] = new StackTraceElement(elem.getClassLoaderName(), elem.getModuleName(),
+                                    elem.getModuleVersion(),
+                                    MessageFormat.UNDERLINE + MessageFormat.BOLD + elem.getClassName()
+                                            + MessageFormat.NO_UNDERLINE + MessageFormat.NO_BOLD,
+                                    elem.getMethodName(), elem.getFileName(), elem.getLineNumber());
+                        }
+                    }
+                    restore.put(c, c.getStackTrace());
+                    c.setStackTrace(stackTrace);
+                    c = c.getCause();
+                }
+                try {
+                    logRecordConsumer.accept(logRecord);
+                } finally {
+                    for (Map.Entry<Throwable, StackTraceElement[]> entry : restore.entrySet()) {
+                        entry.getKey().setStackTrace(entry.getValue());
+                    }
+                }
+            }
+        };
+        ((QuarkusClassLoader) getClass().getClassLoader()).addCloseTask(new Runnable() {
+            @Override
+            public void run() {
+                CurrentAppExceptionHighlighter.THROWABLE_FORMATTER = null;
+            }
+        });
     }
 
     @BuildStep

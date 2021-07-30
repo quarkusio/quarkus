@@ -35,7 +35,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      *
      * @return the current {@link Mutiny.Session}
      */
-    public default Mutiny.Session getSession() {
+    public default Uni<Mutiny.Session> getSession() {
         return INSTANCE.getSession();
     }
 

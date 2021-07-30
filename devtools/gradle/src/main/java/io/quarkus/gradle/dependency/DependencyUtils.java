@@ -1,6 +1,7 @@
 package io.quarkus.gradle.dependency;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -18,6 +19,7 @@ import org.gradle.api.initialization.IncludedBuild;
 import org.gradle.api.plugins.JavaPlugin;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 
 public class DependencyUtils {
 
@@ -56,13 +58,11 @@ public class DependencyUtils {
                 dependencyCoords.getVersion()));
     }
 
-    public static boolean exist(Set<ResolvedArtifact> runtimeArtifacts, List<Dependency> dependencies) {
-        for (Dependency dependency : dependencies) {
-            if (!exists(runtimeArtifacts, dependency)) {
-                return false;
-            }
-        }
-        return true;
+    public static boolean exist(Set<ResolvedArtifact> runtimeArtifacts, List<AppArtifactKey> dependencies) {
+        final Set<AppArtifactKey> rtKeys = new HashSet<>(runtimeArtifacts.size());
+        runtimeArtifacts.forEach(r -> rtKeys.add(
+                new AppArtifactKey(r.getModuleVersion().getId().getGroup(), r.getName(), r.getClassifier(), r.getExtension())));
+        return rtKeys.containsAll(dependencies);
     }
 
     public static boolean exists(Set<ResolvedArtifact> runtimeArtifacts, Dependency dependency) {

@@ -18,7 +18,6 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.OidcTokenCredential;
 import io.quarkus.oidc.common.runtime.OidcConstants;
-import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -283,14 +282,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private Uni<TokenVerificationResult> introspectTokenUni(TenantConfigContext resolvedContext, String token) {
-        // remote introspection is required, a blocking call
-
-        return resolvedContext.provider.introspectToken(token).plug(u -> {
-            if (!BlockingOperationControl.isBlockingAllowed()) {
-                return u.runSubscriptionOn(tenantResolver.getBlockingExecutor());
-            }
-            return u;
-        });
+        return resolvedContext.provider.introspectToken(token);
     }
 
     private static Uni<SecurityIdentity> validateTokenWithoutOidcServer(TokenAuthenticationRequest request,
@@ -309,11 +301,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     private Uni<JsonObject> getUserInfoUni(RoutingContext vertxContext, TokenAuthenticationRequest request,
             TenantConfigContext resolvedContext) {
         if (resolvedContext.oidcConfig.authentication.isUserInfoRequired()) {
-            if (BlockingOperationControl.isBlockingAllowed()) {
-                return resolvedContext.provider.getUserInfo(vertxContext, request);
-            }
-            return resolvedContext.provider.getUserInfo(vertxContext, request)
-                    .runSubscriptionOn(tenantResolver.getBlockingExecutor());
+            return resolvedContext.provider.getUserInfo(vertxContext, request);
         } else {
             return NULL_USER_INFO_UNI;
         }

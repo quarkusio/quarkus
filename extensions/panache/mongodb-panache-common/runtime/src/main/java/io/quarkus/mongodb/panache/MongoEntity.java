@@ -7,9 +7,12 @@ import java.lang.annotation.Target;
 
 /**
  * This annotation can be used to specify some configuration of the mapping of an entity to MongoDB.
+ *
+ * @deprecated use {@link io.quarkus.mongodb.panache.common.MongoEntity} instead.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
+@Deprecated(forRemoval = true, since = "2.1.0")
 public @interface MongoEntity {
     /**
      * The name of the collection (if not set the name of the entity class will be used)

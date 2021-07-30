@@ -148,11 +148,12 @@ public class OpenshiftProcessor {
             });
             //In all other cases its the responsibility of the image to set those up correctly.
             if (!baseImage.isPresent()) {
-                List<String> args = new ArrayList<>();
-                args.addAll(config.jvmArguments);
-                args.addAll(Arrays.asList("-jar", pathToJar));
+                List<String> cmd = new ArrayList<>();
+                cmd.add("java");
+                cmd.addAll(config.jvmArguments);
+                cmd.addAll(Arrays.asList("-jar", pathToJar));
                 envProducer.produce(KubernetesEnvBuildItem.createSimpleVar("JAVA_APP_JAR", pathToJar, null));
-                commandProducer.produce(new KubernetesCommandBuildItem("java", args.toArray(new String[args.size()])));
+                commandProducer.produce(KubernetesCommandBuildItem.command(cmd));
             }
         }
     }
@@ -202,8 +203,7 @@ public class OpenshiftProcessor {
             });
 
             if (!baseImage.isPresent()) {
-                commandProducer.produce(new KubernetesCommandBuildItem(pathToNativeBinary,
-                        config.nativeArguments.toArray(new String[config.nativeArguments.size()])));
+                commandProducer.produce(KubernetesCommandBuildItem.commandWithArgs(pathToNativeBinary, config.nativeArguments));
             }
         }
     }
@@ -372,8 +372,6 @@ public class OpenshiftProcessor {
                     } catch (IllegalArgumentException e) {
                         // We should ignore that, as its expected to be thrown when item is actually
                         // deleted.
-                    } catch (InterruptedException e) {
-                        openshiftException(e);
                     }
                 } else if (i instanceof ImageStream) {
                     ImageStream is = (ImageStream) i;
@@ -469,8 +467,6 @@ public class OpenshiftProcessor {
             try {
                 client.builds().withName(buildName).waitUntilCondition(b -> !RUNNING.equalsIgnoreCase(b.getStatus().getPhase()),
                         openshiftConfig.buildTimeout.toMillis(), TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                openshiftException(e);
             } finally {
                 try {
                     watch.close();

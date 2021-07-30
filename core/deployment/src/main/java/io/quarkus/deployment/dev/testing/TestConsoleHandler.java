@@ -1,14 +1,12 @@
 package io.quarkus.deployment.dev.testing;
 
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.BLUE;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.GREEN;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.RED;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.RESET;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.helpOption;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.statusFooter;
-import static io.quarkus.deployment.dev.testing.TestConsoleHandler.MessageFormat.statusHeader;
+import static io.quarkus.deployment.dev.testing.MessageFormat.BLUE;
+import static io.quarkus.deployment.dev.testing.MessageFormat.GREEN;
+import static io.quarkus.deployment.dev.testing.MessageFormat.RED;
+import static io.quarkus.deployment.dev.testing.MessageFormat.RESET;
+import static io.quarkus.deployment.dev.testing.MessageFormat.statusFooter;
+import static io.quarkus.deployment.dev.testing.MessageFormat.statusHeader;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -23,168 +21,133 @@ import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.launcher.TestIdentifier;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.console.AeshConsole;
+import io.quarkus.deployment.console.ConsoleCommand;
+import io.quarkus.deployment.console.ConsoleStateManager;
 import io.quarkus.deployment.dev.ClassScanResult;
-import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
-import io.quarkus.deployment.dev.console.AeshConsole;
-import io.quarkus.dev.console.InputHandler;
 import io.quarkus.dev.console.QuarkusConsole;
+import io.quarkus.dev.console.StatusLine;
 import io.quarkus.dev.spi.DevModeType;
 
 public class TestConsoleHandler implements TestListener {
 
     private static final Logger log = Logger.getLogger("io.quarkus.test");
 
-    public static final String PAUSED_PROMPT = "Tests paused, press [" + BLUE + "r" + RESET + "] to resume, [" + BLUE + "h"
-            + RESET + "] for more options>" + RESET;
-    public static final String FIRST_RUN_PROMPT = BLUE + "Running Tests for the first time" + RESET;
-    public static final String RUNNING_PROMPT = "Press [" + BLUE + "r" + RESET + "] to re-run, [" + BLUE
-            + "v" + RESET + "] to view full results, [" + BLUE + "p" + RESET + "] to pause, [" + BLUE
-            + "h" + RESET + "] for more options>";
+    public static final ConsoleCommand TOGGLE_TEST_OUTPUT = new ConsoleCommand('o', "Toggle test output", "Toggle test output",
+            1000,
+            new ConsoleCommand.HelpState(TestSupport.instance().get()::isDisplayTestOutput),
+            () -> TestSupport.instance().get().toggleTestOutput());
 
     final DevModeType devModeType;
 
     boolean firstRun = true;
     boolean disabled = true;
     boolean currentlyFailing = false;
-    volatile InputHandler.ConsoleStatus promptHandler;
     volatile TestController testController;
     private String lastResults;
+
+    private volatile ConsoleStateManager.ConsoleContext consoleContext;
+    private volatile StatusLine resultsOutput;
+    private volatile StatusLine testsStatusOutput;
+    private volatile StatusLine testsCompileOutput;
 
     public TestConsoleHandler(DevModeType devModeType) {
         this.devModeType = devModeType;
     }
 
     public void install() {
-        QuarkusConsole.INSTANCE.pushInputHandler(inputHandler);
         QuarkusClassLoader classLoader = (QuarkusClassLoader) getClass().getClassLoader();
         classLoader.addCloseTask(new Runnable() {
             @Override
             public void run() {
-                QuarkusConsole.INSTANCE.popInputHandler();
+                if (resultsOutput != null) {
+                    resultsOutput.close();
+                }
+                if (testsStatusOutput != null) {
+                    testsStatusOutput.close();
+                }
+                if (consoleContext != null) {
+                    consoleContext.reset();
+                }
             }
         });
     }
 
-    private final InputHandler inputHandler = new InputHandler() {
-
-        @Override
-        public void handleInput(int[] keys) {
-            //common commands, work every time
-            for (int k : keys) {
-                if (k == 'h') {
-                    printUsage();
-                } else if (k == 'i' && devModeType != DevModeType.TEST_ONLY) {
-                    testController.toggleInstrumentation();
-                } else if (k == 'l' && devModeType != DevModeType.TEST_ONLY) {
-                    RuntimeUpdatesProcessor.INSTANCE.toggleLiveReloadEnabled();
-                } else if (k == 's' && devModeType != DevModeType.TEST_ONLY) {
-                    try {
-                        RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
-                    } catch (IOException e) {
-                        log.error("Live reload scan failed", e);
-                    }
-                } else if (k == 'q') {
-                    //we don't call Quarkus.exit() here as that would just result
-                    //in a 'press any key to restart' prompt
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            System.exit(0);
-                        }
-                    }, "Quarkus exit thread").run();
-                } else {
-                    if (disabled) {
-                        if (k == 'r') {
-                            promptHandler.setStatus(BLUE + "Starting tests" + RESET);
-                            TestSupport.instance().get().start();
-                        }
-                    } else if (!firstRun) {
-                        //TODO: some of this is a bit yuck, this needs some work
-                        if (k == 'r') {
-                            testController.runAllTests();
-                        } else if (k == 'f') {
-                            testController.runFailedTests();
-                        } else if (k == 'v') {
-                            testController.printFullResults();
-                        } else if (k == 'o' && devModeType != DevModeType.TEST_ONLY) {
-                            testController.toggleTestOutput();
-                        } else if (k == 'p') {
-                            TestSupport.instance().get().stop();
-                        } else if (k == 'b') {
-                            testController.toggleBrokenOnlyMode();
-                        }
-                    }
-                }
-            }
-        }
-
-        @Override
-        public void promptHandler(InputHandler.ConsoleStatus promptHandler) {
-            TestConsoleHandler.this.promptHandler = promptHandler;
-        }
-    };
-
     @Override
     public void listenerRegistered(TestController testController) {
         this.testController = testController;
-        promptHandler.setPrompt(PAUSED_PROMPT);
+        this.consoleContext = ConsoleStateManager.INSTANCE.createContext("Continuous Testing");
+        this.resultsOutput = QuarkusConsole.INSTANCE.registerStatusLine(QuarkusConsole.TEST_RESULTS);
+        this.testsStatusOutput = QuarkusConsole.INSTANCE.registerStatusLine(QuarkusConsole.TEST_STATUS);
+        this.testsCompileOutput = QuarkusConsole.INSTANCE.registerStatusLine(QuarkusConsole.COMPILE_ERROR);
+        setupPausedConsole();
     }
 
-    public void printUsage() {
-        System.out.println(RESET + "\nThe following commands are available:");
-        if (disabled) {
-            System.out.println(helpOption("r", "Resume testing"));
-        } else {
-            System.out.println(helpOption("r", "Re-run all tests"));
-            System.out.println(helpOption("f", "Re-run failed tests"));
-            System.out.println(helpOption("b", "Toggle 'broken only' mode, where only failing tests are run",
-                    testController.isBrokenOnlyMode()));
-            System.out.println(helpOption("v", "Print failures from the last test run"));
-            if (devModeType != DevModeType.TEST_ONLY) {
-                System.out.println(helpOption("o", "Toggle test output", testController.isDisplayTestOutput()));
+    private void setupPausedConsole() {
+        testsStatusOutput.setMessage(BLUE + "Tests paused" + RESET);
+        consoleContext.reset(new ConsoleCommand('r', "Resume testing", "to resume testing", 500, null, new Runnable() {
+            @Override
+            public void run() {
+                if (lastResults == null) {
+                    testsStatusOutput.setMessage(BLUE + "Starting tests" + RESET);
+                }
+                TestSupport.instance().get().start();
             }
-            System.out.println(helpOption("p", "Pause tests"));
+        }));
+        addTestOutput();
+    }
+
+    private void setupFirstRunConsole() {
+        if (lastResults != null) {
+            resultsOutput.setMessage(lastResults);
+        } else {
+            testsStatusOutput.setMessage(BLUE + "Running tests for the first time" + RESET);
         }
+        consoleContext.reset();
+        addTestOutput();
+    }
+
+    void addTestOutput() {
         if (devModeType != DevModeType.TEST_ONLY) {
-            System.out
-                    .println(helpOption("i", "Toggle instrumentation based reload", testController.isInstrumentationEnabled()));
-            System.out.println(helpOption("l", "Toggle live reload", testController.isLiveReloadEnabled()));
-            System.out.println(helpOption("s", "Force live reload scan"));
+            consoleContext.addCommand(TOGGLE_TEST_OUTPUT);
         }
-        System.out.println(helpOption("h", "Display this help"));
-        System.out.println(helpOption("q", "Quit"));
+    }
+
+    private void setupTestsRunningConsole() {
+        consoleContext.reset(
+                new ConsoleCommand('r', "Re-run all tests", "to re-run", 500, null, () -> {
+                    testController.runAllTests();
+                }), new ConsoleCommand('f', "Re-run failed tests", null, () -> {
+                    testController.runFailedTests();
+                }),
+                new ConsoleCommand('b', "Toggle 'broken only' mode, where only failing tests are run",
+                        new ConsoleCommand.HelpState(testController::isBrokenOnlyMode),
+                        () -> testController.toggleBrokenOnlyMode()),
+                new ConsoleCommand('v', "Print failures from the last test run", null, () -> testController.printFullResults()),
+                new ConsoleCommand('p', "Pause tests", null, () -> TestSupport.instance().get().stop()));
+        addTestOutput();
     }
 
     @Override
     public void testsEnabled() {
         disabled = false;
-        if (firstRun) {
-            promptHandler.setStatus(null);
-            promptHandler.setResults(null);
-            promptHandler.setPrompt(FIRST_RUN_PROMPT);
-        } else {
-            promptHandler.setPrompt(RUNNING_PROMPT);
-            promptHandler.setResults(lastResults);
-            promptHandler.setStatus(null);
-        }
+        setupFirstRunConsole();
     }
 
     @Override
     public void testsDisabled() {
         disabled = true;
-        promptHandler.setPrompt(PAUSED_PROMPT);
-        promptHandler.setStatus(null);
-        promptHandler.setResults(null);
+        setupPausedConsole();
     }
 
     @Override
     public void testCompileFailed(String message) {
-        promptHandler.setCompileError(message);
+        testsCompileOutput.setMessage(message);
     }
 
     @Override
     public void testCompileSucceeded() {
-        promptHandler.setCompileError(null);
+        testsCompileOutput.setMessage(null);
     }
 
     @Override
@@ -198,7 +161,7 @@ public class TestConsoleHandler implements TestListener {
             @Override
             public void runStarted(long toRun) {
                 totalNoTests.set(toRun);
-                promptHandler.setStatus("Running 0/" + toRun + ".");
+                testsStatusOutput.setMessage("Starting test run, " + toRun + " tests to run.");
             }
 
             @Override
@@ -213,6 +176,9 @@ public class TestConsoleHandler implements TestListener {
 
             @Override
             public void runComplete(TestRunResults results) {
+                if (firstRun) {
+                    setupTestsRunningConsole();
+                }
                 firstRun = false;
                 SimpleDateFormat df = new SimpleDateFormat("kk:mm:ss");
 
@@ -245,10 +211,16 @@ public class TestConsoleHandler implements TestListener {
                     }
                     currentlyFailing = false;
                     lastResults = String.format(
-                            GREEN + "All %d tests are passing (%d skipped), %d tests were run in %dms." + end + RESET,
+                            GREEN + "All %d " + pluralize("test is", "tests are", results.getPassedCount()) + " passing "
+                                    + "(%d skipped), "
+                                    + "%d "
+                                    + pluralize("test was", "tests were",
+                                            results.getCurrentTotalCount() - results.getCurrentSkippedCount())
+                                    + " run in %dms."
+                                    + end + RESET,
                             results.getPassedCount(),
                             results.getSkippedCount(),
-                            results.getCurrentTotalCount() - results.getSkippedCount(), results.getTotalTime());
+                            results.getCurrentTotalCount() - results.getCurrentSkippedCount(), results.getTotalTime());
                 } else {
                     currentlyFailing = true;
                     //TODO: this should not use the logger, it should print a nicer status
@@ -261,18 +233,21 @@ public class TestConsoleHandler implements TestListener {
                         }
                     }
                     log.error(
-                            statusFooter(RED + results.getCurrentFailedCount() + " TESTS FAILED"));
+                            statusFooter(RED + results.getCurrentFailedCount() + " "
+                                    + pluralize("TEST", "TESTS", results.getCurrentFailedCount()) + " FAILED"));
                     lastResults = String.format(
-                            RED + "%d tests failed" + RESET + " (" + GREEN + "%d passing" + RESET + ", " + BLUE + "%d skipped"
-                                    + RESET + ")" + RED + ", %d tests were run in %dms." + end + RESET,
+                            RED + "%d " + pluralize("test", "tests", results.getCurrentFailedCount()) + " failed"
+                                    + RESET + " (" + GREEN + "%d passing" + RESET + ", " + BLUE + "%d skipped"
+                                    + RESET + "), " + RED + "%d " + pluralize("test was", "tests were",
+                                            results.getCurrentTotalCount() - results.getCurrentSkippedCount())
+                                    + " run in %dms." + end + RESET,
                             results.getCurrentFailedCount(), results.getPassedCount(), results.getSkippedCount(),
-                            results.getCurrentTotalCount(), results.getTotalTime());
+                            results.getCurrentTotalCount() - results.getCurrentSkippedCount(), results.getTotalTime());
                 }
                 //this will re-print when using the basic console
                 if (!disabled) {
-                    promptHandler.setPrompt(RUNNING_PROMPT);
-                    promptHandler.setResults(lastResults);
-                    promptHandler.setStatus(null);
+                    resultsOutput.setMessage(lastResults);
+                    testsStatusOutput.setMessage(null);
                 }
             }
 
@@ -288,51 +263,31 @@ public class TestConsoleHandler implements TestListener {
 
             @Override
             public void testStarted(TestIdentifier testIdentifier, String className) {
-                String status = "Running " + methodCount.get() + "/" + totalNoTests
+                String status = "Running " + (methodCount.get() + 1) + "/" + totalNoTests
                         + (failureCount.get() == 0 ? "."
-                                : ". " + failureCount + " failures so far.")
+                                : ". " + failureCount + " " + pluralize("failure", "failures", failureCount) + " so far.")
                         + " Running: "
                         + className + "#" + testIdentifier.getDisplayName();
                 if (TestSupport.instance().get().isDisplayTestOutput() &&
                         QuarkusConsole.INSTANCE instanceof AeshConsole) {
                     log.info(status);
                 }
-                promptHandler.setStatus(status);
+                testsStatusOutput.setMessage(status);
             }
         });
 
     }
 
-    static class MessageFormat {
-
-        public static final String RED = "\u001B[91m";
-        public static final String GREEN = "\u001b[32m";
-        public static final String BLUE = "\u001b[34m";
-        public static final String RESET = "\u001b[0m";
-
-        private MessageFormat() {
+    private static String pluralize(String singular, String plural, long number) {
+        if (number == 1L) {
+            return singular;
         }
 
-        public static String statusHeader(String header) {
-            return RESET + "==================== " + header + RESET + " ====================";
-        }
+        return plural;
+    }
 
-        public static String statusFooter(String footer) {
-            return RESET + ">>>>>>>>>>>>>>>>>>>> " + footer + RESET + " <<<<<<<<<<<<<<<<<<<<";
-        }
-
-        public static String toggleStatus(boolean enabled) {
-            return " (" + (enabled ? GREEN + "enabled" + RESET + "" : RED + "disabled") + RESET + ")";
-        }
-
-        public static String helpOption(String key, String description) {
-            return "[" + BLUE + key + RESET + "] - " + description;
-        }
-
-        public static String helpOption(String key, String description, boolean enabled) {
-            return helpOption(key, description) + toggleStatus(enabled);
-        }
-
+    private static String pluralize(String singular, String plural, AtomicLong number) {
+        return pluralize(singular, plural, number.get());
     }
 
 }

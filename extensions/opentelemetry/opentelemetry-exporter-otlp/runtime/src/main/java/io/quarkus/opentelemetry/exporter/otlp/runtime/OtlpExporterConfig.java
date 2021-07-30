@@ -1,6 +1,7 @@
 package io.quarkus.opentelemetry.exporter.otlp.runtime;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -28,6 +29,17 @@ public class OtlpExporterConfig {
         public Optional<String> endpoint;
 
         /**
+         * Key-value pairs to be used as headers associated with gRPC requests.
+         * The format is similar to the {@code OTEL_EXPORTER_OTLP_HEADERS} environment variable,
+         * a list of key-value pairs separated by the "=" character.
+         * See <a href=
+         * "https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md#specifying-headers-via-environment-variables">
+         * Specifying headers</a> for more details.
+         */
+        @ConfigItem()
+        Optional<List<String>> headers;
+
+        /**
          * The maximum amount of time to wait for the collector to process exported spans before an exception is thrown.
          * A value of `0` will disable the timeout: the exporter will continue waiting until either exported spans are
          * processed,
@@ -35,5 +47,6 @@ public class OtlpExporterConfig {
          */
         @ConfigItem(defaultValue = "10S")
         public Duration exportTimeout;
+
     }
 }

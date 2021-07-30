@@ -27,7 +27,7 @@ public class GradleKotlinProjectBuildFile extends GradleProjectBuildFile {
 
     @Override
     protected boolean importBom(ArtifactCoords coords) {
-        return importBomInModel(getModel(), coords);
+        return importBomInModel(getModel(), toBomImportCoords(coords));
     }
 
     @Override
@@ -42,8 +42,8 @@ public class GradleKotlinProjectBuildFile extends GradleProjectBuildFile {
 
     static boolean importBomInModel(Model model, ArtifactCoords coords) {
         return addDependencyInModel(model,
-                String.format("    implementation enforcedPlatform(%s)%n",
-                        createDependencyCoordinatesString(coords, false, '\'')));
+                String.format("    implementation(%s)%n",
+                        createDependencyCoordinatesString(coords, false, '"')));
     }
 
     static boolean addDependencyInModel(Model model, ArtifactCoords coords, boolean managed) {

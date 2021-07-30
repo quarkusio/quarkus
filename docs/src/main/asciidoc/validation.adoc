@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Validation with Hibernate Validator
+= Validation with Hibernate Validator
 
 include::./attributes.adoc[]
 
@@ -294,6 +294,7 @@ If you create a bean of the following types in your application, it will automat
  * `javax.validation.ParameterNameProvider`
  * `javax.validation.TraversableResolver`
  * `org.hibernate.validator.spi.properties.GetterPropertySelectionStrategy`
+ * `org.hibernate.validator.spi.nodenameprovider.PropertyNodeNameProvider`
  * `org.hibernate.validator.spi.scripting.ScriptEvaluatorFactory`
 
 You don't have to wire anything.
@@ -302,7 +303,11 @@ You don't have to wire anything.
 ====
 Obviously, for each listed type, you can declare only one bean.
 
-These beans should be declared as `@ApplicationScoped`.
+Most of the time, these beans should be declared as `@ApplicationScoped`.
+
+However, in the case of ``ConstraintValidator``s that are dependent of attributes of the constraint annotation
+(typically when implementing the `initialize(A constraintAnnotation)` method),
+use the `@Dependent` scope to make sure each annotation context has a separate instance of the `ConstraintValidator` bean.
 ====
 
 ==== Constraint validators as beans

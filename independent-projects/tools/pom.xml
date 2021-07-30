@@ -39,8 +39,8 @@
 
         <!-- Versions -->
         <jline.version>2.14.6</jline.version>
-        <assertj.version>3.19.0</assertj.version>
-        <jackson.version>2.12.3</jackson.version>
+        <assertj.version>3.20.2</assertj.version>
+        <jackson.version>2.12.4</jackson.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <jakarta.servlet-api.version>4.0.3</jakarta.servlet-api.version>
         <jakarta.websocket-api.version>1.1.2</jakarta.websocket-api.version>
@@ -53,7 +53,7 @@
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <quarkus.version>999-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>18</maven-model-helper.version>
-        <commons-io.version>2.10.0</commons-io.version>
+        <commons-io.version>2.11.0</commons-io.version>
         <smallrye-common.version>1.6.0</smallrye-common.version>
     </properties>
     <modules>
@@ -333,7 +333,7 @@
             <plugin>
                 <groupId>net.revelc.code.formatter</groupId>
                 <artifactId>formatter-maven-plugin</artifactId>
-                <version>2.15.0</version>
+                <version>2.16.0</version>
                 <dependencies>
                     <dependency>
                         <artifactId>quarkus-ide-config</artifactId>

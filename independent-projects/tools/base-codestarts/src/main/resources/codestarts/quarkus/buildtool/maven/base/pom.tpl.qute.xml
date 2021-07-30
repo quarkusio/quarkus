@@ -140,6 +140,7 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>     
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>$\{compiler-plugin.version}</version>
                 <!-- Workaround to support maven.compiler.parameters property (see https://youtrack.jetbrains.com/issue/IDEA-201496) -->

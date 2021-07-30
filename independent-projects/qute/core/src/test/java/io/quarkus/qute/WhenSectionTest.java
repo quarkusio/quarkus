@@ -1,6 +1,7 @@
 package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.junit.jupiter.api.Test;
 
@@ -55,7 +56,12 @@ public class WhenSectionTest {
         assertEquals("0", template.data("state", State.OFF).render());
         assertEquals("-1", template.data("state", State.BROKEN).render());
         assertEquals("none", template.data("state", State.UNKNOWN).render());
-        assertEquals("none", template.data("state", null).render());
+        try {
+            fail(template.data("state", null).render());
+        } catch (TemplateException expected) {
+            assertEquals("Entry \"ON\" not found in the data map in expression {ON} in template <<synthetic>> on line 0",
+                    expected.getMessage());
+        }
     }
 
     @Test
@@ -66,7 +72,12 @@ public class WhenSectionTest {
         assertEquals("valid", template.data("state", State.OFF).render());
         assertEquals("invalid", template.data("state", State.BROKEN).render());
         assertEquals("none", template.data("state", State.UNKNOWN).render());
-        assertEquals("none", template.data("state", null).render());
+        try {
+            fail(template.data("state", null).render());
+        } catch (TemplateException expected) {
+            assertEquals("Entry \"ON\" not found in the data map in expression {ON} in template <<synthetic>> on line 0",
+                    expected.getMessage());
+        }
     }
 
     @Test
@@ -104,6 +115,23 @@ public class WhenSectionTest {
         assertEquals("Not in!", templateNotIn.data("testVal", "foos").data("itemName", null).render());
         assertEquals("Not in!", templateNotIn.data("testVal", "bazz").data("itemName", "baz").render());
         assertEquals("In!", templateNotIn.data("testVal", "baz").data("itemName", "baz").render());
+    }
+
+    @Test
+    public void testWhenNotFound() {
+        Engine engine = Engine.builder().addDefaults().build();
+        Template template = engine.parse("{#when testMe}"
+                + "{#is not 'foo'}"
+                + "Not a Foo"
+                + "{#else}"
+                + "Foo"
+                + "{/when}");
+        try {
+            fail(template.render());
+        } catch (TemplateException expected) {
+            assertEquals("Entry \"testMe\" not found in the data map in expression {testMe} in template 1 on line 1",
+                    expected.getMessage());
+        }
     }
 
 }

@@ -82,6 +82,7 @@ import org.jboss.resteasy.reactive.RestHeader;
 import org.jboss.resteasy.reactive.RestMatrix;
 import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestQuery;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.RestSseElementType;
 
 public final class ResteasyReactiveDotNames {
@@ -160,6 +161,7 @@ public final class ResteasyReactiveDotNames {
     public static final DotName NON_BLOCKING = DotName.createSimple(NonBlocking.class.getName());
     public static final DotName SUSPENDED = DotName.createSimple(Suspended.class.getName());
     public static final DotName PRE_MATCHING = DotName.createSimple(PreMatching.class.getName());
+    public static final DotName TRANSACTIONAL = DotName.createSimple("javax.transaction.Transactional");
 
     public static final DotName COLLECTION = DotName.createSimple(Collection.class.getName());
     public static final DotName LIST = DotName.createSimple(List.class.getName());
@@ -174,6 +176,7 @@ public final class ResteasyReactiveDotNames {
     public static final DotName UNI = DotName.createSimple(Uni.class.getName());
     public static final DotName MULTI = DotName.createSimple(Multi.class.getName());
     public static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
+    public static final DotName REST_RESPONSE = DotName.createSimple(RestResponse.class.getName());
 
     public static final DotName INTEGER = DotName.createSimple(Integer.class.getName());
     public static final DotName LONG = DotName.createSimple(Long.class.getName());

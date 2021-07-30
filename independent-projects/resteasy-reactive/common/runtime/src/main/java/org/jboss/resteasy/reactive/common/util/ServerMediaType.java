@@ -154,7 +154,7 @@ public class ServerMediaType {
                                     if (selectedDesired != null) {
                                         continue;
                                     }
-                                    selectedDesired = MediaType.APPLICATION_OCTET_STREAM_TYPE;
+                                    selectedDesired = provide; // if a wildcard was desired, the return type is the type of the provider
                                 } else if (desired.isWildcardSubtype()) {
                                     // this is only preferable if we don't already have a better
                                     // one

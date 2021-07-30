@@ -35,13 +35,14 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.JUnitException;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.model.gradle.QuarkusModel;
 import io.quarkus.bootstrap.util.PathsUtils;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
-import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.PathTestHelper;
@@ -49,7 +50,11 @@ import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
-final class IntegrationTestUtil {
+public final class IntegrationTestUtil {
+
+    public static final int DEFAULT_PORT = 8081;
+    public static final int DEFAULT_HTTPS_PORT = 8444;
+    public static final long DEFAULT_WAIT_TIME_SECONDS = 60;
 
     private IntegrationTestUtil() {
     }
@@ -165,7 +170,7 @@ final class IntegrationTestUtil {
 
     static void startLauncher(ArtifactLauncher launcher, Map<String, String> additionalProperties, Runnable sslSetter)
             throws IOException {
-        launcher.addSystemProperties(additionalProperties);
+        launcher.includeAsSysProps(additionalProperties);
         try {
             launcher.start();
         } catch (IOException e) {
@@ -182,7 +187,8 @@ final class IntegrationTestUtil {
         }
     }
 
-    static Map<String, String> handleDevDb(ExtensionContext context) throws Exception {
+    static ArtifactLauncher.InitContext.DevServicesLaunchResult handleDevServices(ExtensionContext context,
+            boolean isDockerAppLaunch) throws Exception {
         Class<?> requiredTestClass = context.getRequiredTestClass();
         Path testClassLocation = getTestClassesLocation(requiredTestClass);
         final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
@@ -255,15 +261,55 @@ final class IntegrationTestUtil {
         TestClassIndexer.writeIndex(testClassesIndex, requiredTestClass);
 
         Map<String, String> propertyMap = new HashMap<>();
-        curatedApplication
-                .createAugmentor()
-                .performCustomBuild(NativeDevServicesHandler.class.getName(), new BiConsumer<String, String>() {
-                    @Override
-                    public void accept(String s, String s2) {
-                        propertyMap.put(s, s2);
-                    }
-                }, DevServicesNativeConfigResultBuildItem.class.getName());
-        return propertyMap;
+        AugmentAction augmentAction;
+        String networkId = null;
+        if (isDockerAppLaunch) {
+            // when the application is going to be launched as a docker container, we need to make containers started by DevServices
+            // use a shared network that the application container can then use as well
+            augmentAction = curatedApplication.createAugmentor(
+                    "io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem$Factory", Collections.emptyMap());
+        } else {
+            augmentAction = curatedApplication.createAugmentor();
+        }
+        augmentAction.performCustomBuild(NativeDevServicesHandler.class.getName(), new BiConsumer<String, String>() {
+            @Override
+            public void accept(String s, String s2) {
+                propertyMap.put(s, s2);
+            }
+        }, DevServicesLauncherConfigResultBuildItem.class.getName());
+
+        if (isDockerAppLaunch) {
+            // obtain the ID of the shared network - this needs to be done after the augmentation has been run
+            // or else we run into various ClassLoader problems
+            try {
+                Class<?> networkClass = curatedApplication.getAugmentClassLoader()
+                        .loadClass("org.testcontainers.containers.Network");
+                Object sharedNetwork = networkClass.getField("SHARED").get(null);
+                networkId = (String) networkClass.getMethod("getId").invoke(sharedNetwork);
+            } catch (Exception e) {
+                networkId = null;
+            }
+        }
+
+        return new DefaultDevServicesLaunchResult(propertyMap, networkId);
+    }
+
+    static class DefaultDevServicesLaunchResult implements ArtifactLauncher.InitContext.DevServicesLaunchResult {
+        private final Map<String, String> properties;
+        private final String networkId;
+
+        DefaultDevServicesLaunchResult(Map<String, String> properties, String networkId) {
+            this.properties = properties;
+            this.networkId = networkId;
+        }
+
+        public Map<String, String> properties() {
+            return properties;
+        }
+
+        public String networkId() {
+            return networkId;
+        }
     }
 
     static Properties readQuarkusArtifactProperties(ExtensionContext context) {

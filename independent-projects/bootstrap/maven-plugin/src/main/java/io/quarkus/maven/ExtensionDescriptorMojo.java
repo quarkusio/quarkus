@@ -249,9 +249,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         if (!dependencyCondition.isEmpty()) {
             final StringBuilder buf = new StringBuilder();
             int i = 0;
-            buf.append(AppArtifactKey.fromString(dependencyCondition.get(i++)).toString());
+            buf.append(AppArtifactKey.fromString(dependencyCondition.get(i++)).toGacString());
             while (i < dependencyCondition.size()) {
-                buf.append(' ').append(AppArtifactKey.fromString(dependencyCondition.get(i++)).toString());
+                buf.append(' ').append(AppArtifactKey.fromString(dependencyCondition.get(i++)).toGacString());
             }
             props.setProperty(BootstrapConstants.DEPENDENCY_CONDITION, buf.toString());
 
@@ -323,16 +323,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         transformLegacyToNew(output, extObject, mapper);
 
-        JsonNode artifactNode = extObject.get("artifact");
-        if (artifactNode == null) {
-            final AppArtifactCoords coords = new AppArtifactCoords(
-                    extObject.has("groupId") ? extObject.get("groupId").asText() : project.getGroupId(),
-                    extObject.has("artifactId") ? extObject.get("artifactId").asText() : project.getArtifactId(),
-                    null,
-                    "jar",
-                    extObject.has("version") ? extObject.get("version").asText() : project.getVersion());
-            extObject.put("artifact", coords.toString());
-        }
+        ensureArtifactCoords(extObject);
 
         if (extObject.get("name") == null) {
             if (project.getName() != null) {
@@ -387,6 +378,45 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             throw new MojoExecutionException(
                     "Failed to persist " + output.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME), e);
         }
+    }
+
+    private void ensureArtifactCoords(ObjectNode extObject) {
+        String groupId = null;
+        String artifactId = null;
+        String version = null;
+        final JsonNode artifactNode = extObject.get("artifact");
+        if (artifactNode == null) {
+            groupId = getRealValueOrNull(extObject.has("groupId") ? extObject.get("groupId").asText() : null,
+                    "${project.groupId");
+            artifactId = getRealValueOrNull(extObject.has("artifactId") ? extObject.get("artifactId").asText() : null,
+                    "${project.artifactId");
+            version = getRealValueOrNull(extObject.has("version") ? extObject.get("version").asText() : null,
+                    "${project.version");
+        } else {
+            final String[] coordsArr = artifactNode.asText().split(":");
+            if (coordsArr.length > 0) {
+                groupId = getRealValueOrNull(coordsArr[0], "${project.groupId}");
+                if (coordsArr.length > 1) {
+                    artifactId = getRealValueOrNull(coordsArr[1], "${project.artifactId}");
+                    if (coordsArr.length > 2) {
+                        version = getRealValueOrNull(coordsArr[2], "${project.version}");
+                    }
+                }
+            }
+        }
+        if (artifactNode == null || groupId == null || artifactId == null || version == null) {
+            final AppArtifactCoords coords = new AppArtifactCoords(
+                    groupId == null ? project.getGroupId() : groupId,
+                    artifactId == null ? project.getArtifactId() : artifactId,
+                    null,
+                    "jar",
+                    version == null ? project.getVersion() : version);
+            extObject.put("artifact", coords.toString());
+        }
+    }
+
+    private static String getRealValueOrNull(String s, String propertyExpr) {
+        return s != null && !s.isBlank() && !s.equals(propertyExpr) ? s : null;
     }
 
     private ObjectNode readJsonNode(Path extensionFile, ObjectMapper mapper) throws MojoExecutionException {
@@ -532,7 +562,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                             extensionDeps.set(deps);
                         }
                         deps.add(new AppArtifactKey(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getExtension())
-                                .toString());
+                                .toGacString());
                     }
                 }
                 return true;
@@ -800,7 +830,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     private org.eclipse.aether.artifact.Artifact getDeploymentArtifact(org.eclipse.aether.artifact.Artifact a)
             throws MojoExecutionException {
-        final Properties props = getExtensionDescriptor(a, true);
+        final Properties props = getExtensionDescriptor(a, false);
         if (props == null) {
             return null;
         }
@@ -822,7 +852,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             return null;
         }
         // if it hasn't been packaged yet, we skip it, we are not packaging yet
-        if (packaged && !isJarFile(f)) {
+        if (!a.getExtension().equals("jar") || packaged && !isJarFile(f)) {
             return null;
         }
         try {

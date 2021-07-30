@@ -19,7 +19,9 @@ public class ReflectionResolverTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(HelloReflect.class)
-                    .addAsResource(new StringAsset("{age}:{ping}:{noMatch}:{active}:{isActive}:{hasItem}:{item}:{age2}"),
+                    .addAsResource(
+                            new StringAsset(
+                                    "{age}:{ping}:{noMatch ?: 'NOT_FOUND'}:{active}:{isActive}:{hasItem}:{item}:{age2}"),
                             "templates/reflect.txt"));
 
     @Inject

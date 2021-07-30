@@ -43,7 +43,6 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
         final ListExtensions listExtensions = new ListExtensions(project);
 
         final Map<ArtifactKey, ArtifactCoords> installed = readByKey(project);
-
         Assertions.assertNotNull(installed.get(ArtifactKey.fromString(IO_QUARKUS + ":quarkus-agroal")));
     }
 
@@ -112,7 +111,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
                                     String.format("%s", "https://quarkus.io/guides/rest-json")),
                             "RESTEasy should list as having an guide: " + line);
                 } else if (line.contains("quarkus-hibernate-orm-panache ")) {
-                    assertTrue(line.startsWith("custom"), "Panache should list as being custom: " + line);
+                    assertTrue(line.startsWith("default"), "Panache should list as being custom: " + line);
                     assertTrue(
                             line.contains(String.format("%-25s", getMavenPluginVersion())),
                             "Panache should list as being custom*: " + line);
@@ -135,7 +134,6 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
         final QuarkusProject quarkusProject = createNewProject(new File("target/list-extensions-test", "pom.xml"));
         addExtensions(quarkusProject, "commons-io:commons-io:2.5", "Agroal");
 
-        final PrintStream out = System.out;
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
             new ListExtensions(quarkusProject, MessageWriter.info(printStream))

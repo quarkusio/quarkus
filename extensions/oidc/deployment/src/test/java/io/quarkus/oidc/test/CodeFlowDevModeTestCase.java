@@ -28,7 +28,8 @@ public class CodeFlowDevModeTestCase {
             ProtectedResource.class,
             UnprotectedResource.class,
             CustomTenantConfigResolver.class,
-            CustomTokenStateManager.class
+            CustomTokenStateManager.class,
+            SecretProvider.class
     };
 
     @RegisterExtension

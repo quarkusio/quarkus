@@ -1,15 +1,15 @@
 package io.quarkus.cli;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import io.quarkus.cli.create.BaseCreateCommand;
 import picocli.CommandLine;
 import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.Unmatched;
 
-@CommandLine.Command(name = "create", sortOptions = false, mixinStandardHelpOptions = false, description = "Create a new project.", subcommands = {
-        CreateApp.class, CreateCli.class /* , CreateExtension.class */ })
+@CommandLine.Command(name = "create", sortOptions = false, mixinStandardHelpOptions = false, header = "Create a new project.", subcommands = {
+        CreateApp.class,
+        CreateCli.class /* , CreateExtension.class */ }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
 public class Create extends BaseCreateCommand {
 
     @Unmatched // avoids throwing errors for unmatched arguments
@@ -17,11 +17,10 @@ public class Create extends BaseCreateCommand {
 
     @Override
     public Integer call() throws Exception {
-        output.info("No subcommand specified, creating an app (see --help).");
+        output.info("Creating an app (default project type, see --help).");
 
         ParseResult result = spec.commandLine().getParseResult();
-        List<String> args = result.originalArgs().stream().filter(x -> !"create".equals(x)).collect(Collectors.toList());
         CommandLine appCommand = spec.subcommands().get("app");
-        return appCommand.execute(args.toArray(new String[0]));
+        return appCommand.execute(result.originalArgs().stream().filter(x -> !"create".equals(x)).toArray(String[]::new));
     }
 }

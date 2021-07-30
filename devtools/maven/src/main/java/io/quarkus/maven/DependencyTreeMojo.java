@@ -30,7 +30,7 @@ public class DependencyTreeMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     protected MavenProject project;
 
-    @Parameter(defaultValue = "${project.remoteRepositories}", readonly = true, required = true)
+    @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
     private List<RemoteRepository> repos;
 
     /**
@@ -80,6 +80,7 @@ public class DependencyTreeMojo extends AbstractMojo {
                         .setRemoteRepositoryManager(bootstrapProvider.remoteRepositoryManager())
                         //.setRepositorySystemSession(repoSession) the session should be initialized with the loaded workspace
                         .setRemoteRepositories(repos)
+                        .setPreferPomsFromWorkspace(true)
                         .build()
                 : resolver;
     }

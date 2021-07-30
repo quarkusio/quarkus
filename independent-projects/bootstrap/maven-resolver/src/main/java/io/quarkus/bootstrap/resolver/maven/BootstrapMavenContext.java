@@ -800,31 +800,28 @@ public class BootstrapMavenContext {
         if (alternatePom != null) {
             return pomXmlOrNull(basedir.resolve(alternatePom));
         }
-        final Path pom = basedir.resolve("pom.xml");
+        final Path pom = basedir.resolve(LocalProject.POM_XML);
         return Files.exists(pom) ? pom : null;
     }
 
     static Path getPomForDirOrNull(final Path basedir, Path alternatePom) {
-        // if the basedir matches the parent of the alternate pom, it's the alternate pom
-        if (alternatePom != null
-                && alternatePom.isAbsolute()
-                && alternatePom.getParent().equals(basedir)) {
-            return alternatePom;
-        }
-        // even if the alternate pom has been specified we try the default pom.xml first
-        // since unlike Maven CLI we don't know which project originated the build
-        Path pom = basedir.resolve("pom.xml");
-        if (Files.exists(pom)) {
-            return pom;
+        if (alternatePom != null) {
+            if (alternatePom.getNameCount() == 1 || basedir.endsWith(alternatePom.getParent())) {
+                if (alternatePom.isAbsolute()) {
+                    // if the basedir matches the parent of the alternate pom, it's the alternate pom
+                    return alternatePom;
+                }
+                // if the basedir ends with the alternate POM parent relative path, we can try it as the base dir
+                final Path pom = basedir.resolve(alternatePom.getFileName());
+                if (Files.exists(pom)) {
+                    return pom;
+                }
+            }
         }
 
-        // if alternate pom path has a single element we can try it
-        // if it has more, it won't match the basedir
-        if (alternatePom != null && !alternatePom.isAbsolute() && alternatePom.getNameCount() == 1) {
-            pom = basedir.resolve(alternatePom);
-            if (Files.exists(pom)) {
-                return pom;
-            }
+        final Path pom = basedir.resolve(LocalProject.POM_XML);
+        if (Files.exists(pom)) {
+            return pom;
         }
 
         // give up
@@ -833,7 +830,7 @@ public class BootstrapMavenContext {
 
     private static Path pomXmlOrNull(Path path) {
         if (Files.isDirectory(path)) {
-            path = path.resolve("pom.xml");
+            path = path.resolve(LocalProject.POM_XML);
         }
         return Files.exists(path) ? path : null;
     }

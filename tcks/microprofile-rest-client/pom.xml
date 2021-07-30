@@ -187,10 +187,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <excludes>
-                                <!-- fails with " module java.base does not "opens java.lang.invoke" to unnamed module" -->
-                                <exclude>org.eclipse.microprofile.rest.client.tck.ClientHeaderParamTest</exclude>
                                 <!-- the following tests fail for yet unknown reasons (assertion failures) -->
-                                <exclude>org.eclipse.microprofile.rest.client.tck.InvalidInterfaceTest</exclude>
                                 <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutBuilderIndependentOfMPConfigTest</exclude>
                                 <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutTest</exclude>
                                 <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutViaMPConfigTest</exclude>

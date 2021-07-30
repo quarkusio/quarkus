@@ -4,6 +4,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -24,8 +25,11 @@ public class OidcClientReactiveFilterBuildStep {
 
     @BuildStep(onlyIf = IsEnabled.class)
     void registerProvider(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClassesBuildItem) {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(OidcClientRequestReactiveFilter.class));
+        additionalIndexedClassesBuildItem
+                .produce(new AdditionalIndexedClassesBuildItem(OidcClientRequestReactiveFilter.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, OidcClientRequestReactiveFilter.class));
     }
 }

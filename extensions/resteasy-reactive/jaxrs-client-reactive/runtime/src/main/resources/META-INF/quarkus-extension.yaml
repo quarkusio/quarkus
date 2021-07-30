@@ -9,4 +9,4 @@ metadata:
   - "resteasy-reactive"
   categories:
   - "web"
-  status: "experimental"
+  status: "preview"

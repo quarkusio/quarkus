@@ -15,7 +15,7 @@ public interface RemovedBean {
     InjectableBean.Kind getKind();
 
     /**
-     * @return the description
+     * @return the description of the declaring java member for producers
      */
     String getDescription();
 

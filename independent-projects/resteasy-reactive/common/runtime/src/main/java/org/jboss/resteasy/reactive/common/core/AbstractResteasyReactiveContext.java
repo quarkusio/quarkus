@@ -11,6 +11,7 @@ import java.util.concurrent.Executor;
 import javax.ws.rs.container.CompletionCallback;
 import javax.ws.rs.container.ConnectionCallback;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.PreserveTargetException;
 import org.jboss.resteasy.reactive.spi.RestHandler;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
@@ -120,7 +121,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     @Override
     public void run() {
         running = true;
-        boolean submittedToExecutor = false;
+        boolean processingSuspended = false;
         //if this is a blocking target we don't activate for the initial non-blocking part
         //unless there are pre-mapping filters as these may require CDI
         boolean disasociateRequestScope = false;
@@ -152,19 +153,24 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                                 this.executor = null;
                             } else if (suspended) {
                                 running = false;
+                                processingSuspended = true;
                                 return;
                             }
                         }
                         if (exec != null) {
                             //outside sync block
                             exec.execute(this);
-                            submittedToExecutor = true;
+                            processingSuspended = true;
                             return;
                         }
                     }
                 } catch (Throwable t) {
                     boolean over = handlers == abortHandlerChain;
-                    handleException(t);
+                    if (t instanceof PreserveTargetException) {
+                        handleException(t.getCause(), true);
+                    } else {
+                        handleException(t);
+                    }
                     if (over) {
                         running = false;
                         return;
@@ -178,7 +184,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         } finally {
             // we need to make sure we don't close the underlying stream in the event loop if the task
             // has been offloaded to the executor
-            if (position == handlers.length && !suspended && !submittedToExecutor) {
+            if (position == handlers.length && !processingSuspended) {
                 close();
             } else {
                 if (disasociateRequestScope) {

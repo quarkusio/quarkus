@@ -26,6 +26,18 @@
             <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
         </dependency>
 
+        <!-- Tracing dependency -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-opentelemetry</artifactId>
+        </dependency>
+
+        <!-- Needed for InMemorySpanExporter to verify captured traces -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk-testing</artifactId>
+        </dependency>
+
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -39,6 +51,11 @@
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -59,6 +76,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx-http-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-opentelemetry-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

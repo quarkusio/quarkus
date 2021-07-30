@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using OpenID Connect to Protect Web Applications using Authorization Code Flow.
+= Using OpenID Connect to Protect Web Applications using Authorization Code Flow.
 
 include::./attributes.adoc[]
 :toc:
@@ -581,6 +581,107 @@ It applies to ID tokens but also to access tokens in a JWT format if the `web-ap
 == Token Propagation
 Please see link:security-openid-connect-client#token-propagation[Token Propagation] section about the Authorization Code Flow access token propagation to the downstream services.
 
+[[oidc-provider-client-authentication]]
+=== Oidc Provider Client Authentication
+
+`quarkus.oidc.runtime.OidcProviderClient` is used when a remote request to an OpenId Connect Provider has to be done. It has to authenticate to the OpenId Connect Provider when the authorization code has to be exchanged for the ID, access and refresh tokens, when the ID and access tokens have to be refreshed or introspected.
+
+All the https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication[OIDC Client Authentication] options are supported, for example:
+
+`client_secret_basic`:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.client-id=quarkus-app
+quarkus.oidc.credentials.secret=mysecret
+----
+
+or
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.client-id=quarkus-app
+quarkus.oidc.credentials.client-secret.value=mysecret
+----
+
+or with the secret retrieved from a link:credentials-provider[CredentialsProvider]:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.client-id=quarkus-app
+
+# This is a key which will be used to retrieve a secret from the map of credentails returned from CredentialsProvider
+quarkus.oidc.credentials.client-secret.provider.key=mysecret-key
+# Set it only if more than one CredentialsProvider can be registered
+quarkus.oidc.credentials.client-secret.provider.name=oidc-credentials-provider
+----
+
+`client_secret_post`:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.client-id=quarkus-app
+quarkus.oidc.credentials.client-secret.value=mysecret
+quarkus.oidc.credentials.client-secret.method=post
+----
+
+`client_secret_jwt`:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.client-id=quarkus-app
+quarkus.oidc.credentials.jwt.secret=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow
+# This is a token key identifier 'kid' header - set it if your OpenId Connect provider requires it,
+quarkus.oidc.credentials.jwt.token-key-id=mykey
+----
+
+or with the secret retrieved from a link:credentials-provider[CredentialsProvider]:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.client-id=quarkus-app
+
+# This is a key which will be used to retrieve a secret from the map of credentails returned from CredentialsProvider
+quarkus.oidc.credentials.jwt.secret-provider.key=mysecret-key
+# Set it only if more than one CredentialsProvider can be registered
+quarkus.oidc.credentials.jwt.secret-provider.name=oidc-credentials-provider
+----
+
+`private_key_jwt` with the PEM key file:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.client-id=quarkus-app
+quarkus.oidc.credentials.jwt.key-file=privateKey.pem
+# This is a token key identifier 'kid' header - set it if your OpenId Connect provider requires it
+quarkus.oidc.credentials.jwt.token-key-id=mykey
+----
+
+`private_key_jwt` with the key store file:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.client-id=quarkus-app
+quarkus.oidc.credentials.jwt.key-store-file=keystore.jks
+quarkus.oidc.credentials.jwt.key-store-password=mypassword
+quarkus.oidc.credentials.jwt.key-password=mykeypassword
+# Private key alias inside the keystore
+quarkus.oidc.credentials.jwt.key-id=mykey
+# This is a token key identifier 'kid' header - set it if your OpenId Connect provider requires it,
+# Note it can be different to the `quarkus.oidc.credentials.jwt.key-id` value
+quarkus.oidc.credentials.jwt.token-key-id=mykey
+----
+
+Using `client_secret_jwt` or `private_key_jwt` authentication methods ensures that no client secret goes over the wire.
+
 [[integration-testing]]
 == Testing
 
@@ -751,11 +852,19 @@ quarkus.log.category."io.quarkus.oidc.runtime.OidcProvider".level=TRACE
 quarkus.log.category."io.quarkus.oidc.runtime.OidcProvider".min-level=TRACE
 ----
 
+Please enable `io.quarkus.oidc.runtime.OidcRecorder` `TRACE` level logging to see more details about the OidcProvider client initialization errors:
+
+[source, properties]
+----
+quarkus.log.category."io.quarkus.oidc.runtime.OidcRecorder".level=TRACE
+quarkus.log.category."io.quarkus.oidc.runtime.OidcRecorder".min-level=TRACE
+----
+
 == Running behind a reverse proxy
 
 OIDC authentication mechanism can be affected if your Quarkus application is running behind a reverse proxy/gateway/firewall when HTTP `Host` header may be reset to the internal IP address, HTTPS connection may be terminated, etc. For example, an authorization code flow `redirect_uri` parameter may be set to the internal host instead of the expected external one.
 
-In such cases configuring Quarkus to recognize the original headers forwarded by the proxy will be required, see link:vertx#reverse-proxy[Running behind a reverse proxy] Vert.x documentation section for more information.
+In such cases configuring Quarkus to recognize the original headers forwarded by the proxy will be required, see link:http-reference#reverse-proxy[Running behind a reverse proxy] Vert.x documentation section for more information.
 
 For example, if your Quarkus endpoint runs in a cluster behind Kubernetes Ingress then a redirect from the OpenId Connect Provider back to this endpoint may not work since the calcuated `redirect_uri` parameter may point to the internal endpoint address. This problem can be resolved with the following configuration:
 
@@ -779,6 +888,17 @@ In such cases an issuer verification failure may be reported by the endpoint and
 In such cases, if you work with Keycloak then please start it with a `KEYCLOAK_FRONTEND_URL` system property set to the externally accessible base URL.
 If you work with other Openid Connect providers then please check your provider's documentation.
 
+== Customize authentication requests
+
+By default, only the `response_type` (set to `code`), `scope` (set to 'openid'), `client_id`, `redirect_uri` and `state` properties are passed as HTTP query parameters to the OpenId Connect provider's authorization endpoint when the user is redirected to it to authenticate.
+
+You can add more properties to it with `quarkus.oidc.authentication.extra-params`. For example, some OpenId Connect providers may choose to return the authorization code as part of the redirect URI's fragment which would break the authentication process - it can be fixed as follows:
+
+[source,properties]
+----
+quarkus.oidc.authentication.extra-params.response_mode=query
+----
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]
@@ -789,4 +909,5 @@ include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
 * link:security-openid-connect-client[Quarkus - Using OpenID Connect and OAuth2 Client and Filters to manage access tokens]
+* link:security-openid-connect-dev-services[Dev Services for OpenId Connect]
 * link:security[Quarkus Security]

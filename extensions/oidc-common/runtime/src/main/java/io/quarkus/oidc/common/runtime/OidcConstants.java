@@ -2,6 +2,8 @@ package io.quarkus.oidc.common.runtime;
 
 public final class OidcConstants {
 
+    public static final String WELL_KNOWN_CONFIGURATION = "/.well-known/openid-configuration";
+
     public static final String CLIENT_ASSERTION = "client_assertion";
     public static final String CLIENT_ASSERTION_TYPE = "client_assertion_type";
     public static final String JWT_BEARER_CLIENT_ASSERTION_TYPE = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";

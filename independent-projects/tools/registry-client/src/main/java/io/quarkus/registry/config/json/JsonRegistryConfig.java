@@ -16,11 +16,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_DEFAULT)
 public class JsonRegistryConfig implements RegistryConfig {
 
     private String id;
-    private boolean disabled;
+    private boolean enabled = true;
     private String updatePolicy;
     private RegistryDescriptorConfig descriptor;
     private RegistryPlatformsConfig platforms;
@@ -46,13 +46,14 @@ public class JsonRegistryConfig implements RegistryConfig {
         this.id = Objects.requireNonNull(id);
     }
 
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = JsonBooleanTrueFilter.class)
     @Override
-    public boolean isDisabled() {
-        return disabled;
+    public boolean isEnabled() {
+        return enabled;
     }
 
-    public void setDisabled(boolean disabled) {
-        this.disabled = disabled;
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 
     @Override
@@ -95,7 +96,14 @@ public class JsonRegistryConfig implements RegistryConfig {
     }
 
     boolean isIdOnly() {
-        return mavenConfig == null;
+        return this.mavenConfig == null
+                && this.enabled
+                && this.descriptor == null
+                && this.nonPlatformExtensions == null
+                && this.platforms == null
+                && this.updatePolicy == null
+                && this.versionsConfig == null
+                && (this.extra == null || this.extra.isEmpty());
     }
 
     @JsonDeserialize(as = JsonRegistryMavenConfig.class)
@@ -137,6 +145,37 @@ public class JsonRegistryConfig implements RegistryConfig {
     }
 
     public String toString() {
-        return "[" + id + " maven=" + mavenConfig + "]";
+        final StringBuilder buf = new StringBuilder();
+        buf.append('[').append(id);
+        if (mavenConfig != null) {
+            buf.append(" maven=").append(mavenConfig);
+        }
+        if (extra != null && !extra.isEmpty()) {
+            buf.append(" extra=").append(extra);
+        }
+        return buf.append(']').toString();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(descriptor, enabled, extra, id, mavenConfig, nonPlatformExtensions, platforms,
+                updatePolicy, versionsConfig);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        JsonRegistryConfig other = (JsonRegistryConfig) obj;
+        return Objects.equals(descriptor, other.descriptor) && enabled == other.enabled
+                && Objects.equals(extra, other.extra) && Objects.equals(id, other.id)
+                && Objects.equals(mavenConfig, other.mavenConfig)
+                && Objects.equals(nonPlatformExtensions, other.nonPlatformExtensions)
+                && Objects.equals(platforms, other.platforms) && Objects.equals(updatePolicy, other.updatePolicy)
+                && Objects.equals(versionsConfig, other.versionsConfig);
     }
 }

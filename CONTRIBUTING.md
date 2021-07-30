@@ -243,6 +243,7 @@ Do the same with _Names count to use static import with '\*'_.
 * Navigate to the directory: `cd quarkus`
 * Set Maven heap to 4GB `export MAVEN_OPTS="-Xmx4g"`
 * Invoke `./mvnw -Dquickly` from the root directory
+* _Note: On Windows, it may be necessary to run the build from an elevated shell. If you experience a failed build with the error `"A required privilege is not held by the client"`, this should fix it._
 
 ```bash
 git clone https://github.com/quarkusio/quarkus.git
@@ -469,6 +470,10 @@ This project is an open source project, please act responsibly, be nice, polite 
   In IntelliJ IDEA if you see problems in the Maven view claiming `java.lang.OutOfMemoryError: GC overhead limit exceeded` that means the project import failed.
 
   See section `IDEA Setup` as there are different possible solutions described.
+
+* IntelliJ does not recognize the project as a Java 11 project
+
+  In the Maven pane, uncheck the `include-jdk-misc` and `compile-java8-release-flag` profiles
 
 * Build hangs with DevMojoIT running infinitely
   ```

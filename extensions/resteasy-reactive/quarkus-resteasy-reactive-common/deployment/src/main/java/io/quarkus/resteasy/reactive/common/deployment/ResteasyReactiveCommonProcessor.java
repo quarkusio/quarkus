@@ -43,6 +43,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
+import io.quarkus.resteasy.reactive.common.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.spi.AbstractInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
@@ -65,8 +66,9 @@ public class ResteasyReactiveCommonProcessor {
     void setUpDenyAllJaxRs(CombinedIndexBuildItem index,
             ResteasyReactiveConfig config,
             Optional<ResourceScanningResultBuildItem> resteasyDeployment,
-            BuildProducer<AdditionalSecuredClassesBuildItem> additionalSecuredClasses) {
-        if (config.denyJaxRs && resteasyDeployment.isPresent()) {
+            BuildProducer<AdditionalSecuredClassesBuildItem> additionalSecuredClasses,
+            JaxRsSecurityConfig securityConfig) {
+        if (config.denyJaxRs.orElse(securityConfig.denyJaxRs) && resteasyDeployment.isPresent()) {
             final List<ClassInfo> classes = new ArrayList<>();
 
             Set<DotName> resourceClasses = resteasyDeployment.get().getResult().getScannedResourcePaths().keySet();
@@ -78,6 +80,18 @@ public class ResteasyReactiveCommonProcessor {
             }
 
             additionalSecuredClasses.produce(new AdditionalSecuredClassesBuildItem(classes));
+        } else if (securityConfig.defaultRolesAllowed.isPresent() && resteasyDeployment.isPresent()) {
+
+            final List<ClassInfo> classes = new ArrayList<>();
+            Set<DotName> resourceClasses = resteasyDeployment.get().getResult().getScannedResourcePaths().keySet();
+            for (DotName className : resourceClasses) {
+                ClassInfo classInfo = index.getIndex().getClassByName(className);
+                if (!SecurityTransformerUtils.hasSecurityAnnotation(classInfo)) {
+                    classes.add(classInfo);
+                }
+            }
+            additionalSecuredClasses
+                    .produce(new AdditionalSecuredClassesBuildItem(classes, securityConfig.defaultRolesAllowed));
         }
     }
 

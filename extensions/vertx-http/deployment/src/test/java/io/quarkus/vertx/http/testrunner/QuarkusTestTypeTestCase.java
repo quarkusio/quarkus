@@ -33,11 +33,12 @@ public class QuarkusTestTypeTestCase {
 
     @Test
     public void testQuarkusTestMode() throws InterruptedException {
-        TestStatus ts = ContinuousTestingTestUtils.waitForFirstRunToComplete();
-        Assertions.assertEquals(1L, ts.getLastRun());
+        ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
+        TestStatus ts = utils.waitForNextCompletion();
+
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
+
     }
 }

@@ -32,20 +32,6 @@ public class HibernateReactiveFetchLazyTest {
         assertTitles(response, "Cryptonomicon", "Snow Crash");
     }
 
-    @Test
-    public void fetchAfterFindWithWithStage() {
-        RestAssured.when()
-                .post("/prepareDb")
-                .then()
-                .body(is("Neal Stephenson"));
-
-        Response response = RestAssured.when()
-                .get("/findBooksWithStage/567")
-                .then()
-                .extract().response();
-        assertTitles(response, "Cryptonomicon", "Snow Crash");
-    }
-
     private void assertTitles(Response response, String... expectedTitles) {
         List<Object> titles = response.jsonPath().getList("title").stream().sorted().collect(toList());
         assertIterableEquals(asList(expectedTitles), titles);

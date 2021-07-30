@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.bootstrap.classloading.ClassLoaderLimiter;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class TransactionalTest {
@@ -24,7 +25,9 @@ public class TransactionalTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TransactionalTest.TransactionalBean.class, TestXAResource.class,
-                            TxAssertionData.class, TestException.class));
+                            TxAssertionData.class, TestException.class))
+            .addClassLoaderEventListener(ClassLoaderLimiter.builder()
+                    .neverLoadedRuntimeClassName("javax.xml.stream.XMLInputFactory").build());
 
     @Inject
     private TransactionManager tm;

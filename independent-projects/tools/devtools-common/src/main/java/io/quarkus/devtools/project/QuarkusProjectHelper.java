@@ -5,6 +5,7 @@ import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCod
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.ExtensionCatalogResolver;
@@ -22,13 +23,17 @@ public class QuarkusProjectHelper {
     private static MavenArtifactResolver artifactResolver;
     private static ExtensionCatalogResolver catalogResolver;
 
-    private static final boolean registryClientEnabled;
+    private static boolean registryClientEnabled;
     static {
+        initRegistryClientEnabled();
+    }
+
+    private static void initRegistryClientEnabled() {
         String value = System.getProperty("quarkusRegistryClient");
         if (value == null) {
             value = System.getenv("QUARKUS_REGISTRY_CLIENT");
         }
-        registryClientEnabled = Boolean.parseBoolean(value);
+        registryClientEnabled = value == null || value.isBlank() || Boolean.parseBoolean(value);
     }
 
     public static boolean isRegistryClientEnabled() {
@@ -96,6 +101,13 @@ public class QuarkusProjectHelper {
     }
 
     public static QuarkusProject getProject(Path projectDir, BuildTool buildTool) {
+        if (BuildTool.MAVEN.equals(buildTool)) {
+            try {
+                return MavenProjectBuildFile.getProject(projectDir, messageWriter(), null);
+            } catch (RegistryResolutionException e) {
+                throw new RuntimeException("Failed to initialize the Quarkus Maven extension manager", e);
+            }
+        }
         final ExtensionCatalog catalog;
         try {
             catalog = resolveExtensionCatalog();
@@ -130,16 +142,17 @@ public class QuarkusProjectHelper {
                 log, extManager);
     }
 
-    public static ExtensionCatalogResolver getCatalogResolver() {
+    public static ExtensionCatalogResolver getCatalogResolver() throws RegistryResolutionException {
         return catalogResolver == null ? catalogResolver = getCatalogResolver(true, messageWriter())
                 : catalogResolver;
     }
 
-    public static ExtensionCatalogResolver getCatalogResolver(MessageWriter log) {
+    public static ExtensionCatalogResolver getCatalogResolver(MessageWriter log) throws RegistryResolutionException {
         return getCatalogResolver(true, log);
     }
 
-    public static ExtensionCatalogResolver getCatalogResolver(boolean enableRegistryClient, MessageWriter log) {
+    public static ExtensionCatalogResolver getCatalogResolver(boolean enableRegistryClient, MessageWriter log)
+            throws RegistryResolutionException {
         if (catalogResolver == null) {
             if (enableRegistryClient) {
                 catalogResolver = getCatalogResolver(artifactResolver(), log);
@@ -150,7 +163,8 @@ public class QuarkusProjectHelper {
         return catalogResolver;
     }
 
-    public static ExtensionCatalogResolver getCatalogResolver(MavenArtifactResolver resolver, MessageWriter log) {
+    public static ExtensionCatalogResolver getCatalogResolver(MavenArtifactResolver resolver, MessageWriter log)
+            throws RegistryResolutionException {
         return ExtensionCatalogResolver.builder()
                 .artifactResolver(resolver)
                 .config(toolsConfig())
@@ -160,6 +174,14 @@ public class QuarkusProjectHelper {
 
     public static RegistriesConfig toolsConfig() {
         return toolsConfig == null ? toolsConfig = RegistriesConfigLocator.resolveConfig() : toolsConfig;
+    }
+
+    public static void reset() {
+        initRegistryClientEnabled();
+        toolsConfig = null;
+        artifactResolver = null;
+        catalogResolver = null;
+        log = null;
     }
 
     public static void setMessageWriter(MessageWriter newLog) {

@@ -25,6 +25,7 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
@@ -193,9 +194,7 @@ public class InvocationBuilderImpl implements Invocation.Builder {
 
     private <T> T unwrap(CompletableFuture<T> c) {
         if (Context.isOnEventLoopThread()) {
-            throw new IllegalStateException("Blocking REST client call made from the event loop. " +
-                    "If the code is executed from a RESTEasy Reactive resource, either annotate the resource method " +
-                    "with `@Blocking` or use non-blocking client calls.");
+            throw new BlockingNotAllowedException();
         }
         try {
             return c.get(readTimeoutMs, TimeUnit.MILLISECONDS);

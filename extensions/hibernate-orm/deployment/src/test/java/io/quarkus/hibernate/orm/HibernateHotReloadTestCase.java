@@ -82,13 +82,13 @@ public class HibernateHotReloadTestCase {
 
     @Test
     public void testImportSqlWithContinuousTesting() {
+        ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
 
-        TestStatus ts = ContinuousTestingTestUtils.waitForFirstRunToComplete();
-        Assertions.assertEquals(1L, ts.getLastRun());
+        TestStatus ts = utils.waitForNextCompletion();
+
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         TEST.modifyTestResourceFile("import.sql", new Function<String, String>() {
             @Override
@@ -96,12 +96,10 @@ public class HibernateHotReloadTestCase {
                 return s.replace("TEST ENTITY", "new entity");
             }
         });
-        ts = ContinuousTestingTestUtils.waitForRun(2);
-        Assertions.assertEquals(2L, ts.getLastRun());
+        ts = utils.waitForNextCompletion();
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         TEST.modifyTestSourceFile(HibernateET.class, new Function<String, String>() {
             @Override
@@ -109,12 +107,11 @@ public class HibernateHotReloadTestCase {
                 return s.replace("TEST ENTITY", "new entity");
             }
         });
-        ts = ContinuousTestingTestUtils.waitForRun(3);
-        Assertions.assertEquals(3L, ts.getLastRun());
+        ts = utils.waitForNextCompletion();
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
+
     }
 
     private void assertBodyIs(String expectedBody) {

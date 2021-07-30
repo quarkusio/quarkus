@@ -76,6 +76,15 @@
  * <code>update from EntityName set &lt;update-query&gt; = ?</code></li>
  * </ul>
  *
+ * If your delete query does not start with <code>delete from</code>, we support the following additional forms:
+ * </p>
+ * <ul>
+ * <li><code>from EntityName ...</code> which will expand to <code>delete from EntityName ...</code></li>
+ * <li><code>&lt;singleColumnName&gt;</code> (and single parameter) which will expand to
+ * <code>delete from EntityName where &lt;singleColumnName&gt; = ?</code></li>
+ * <li><code>&lt;query&gt;</code> will expand to <code>delete from EntityName where &lt;query&gt;</code></li>
+ * </ul>
+ *
  * We also support named queries, for Panache to know that a query is a named query and not an HQL one, you need
  * to prefix the name of the query with '#'.
  * 

@@ -24,10 +24,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.AsyncInvoker;
+import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.CompletionStageRxInvoker;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
@@ -53,6 +55,7 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.handlers.ClientObservabilityHandler;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
+import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
 import org.jboss.resteasy.reactive.client.impl.UniInvoker;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
@@ -136,6 +139,8 @@ public class JaxrsClientReactiveProcessor {
 
     private static final Logger log = Logger.getLogger(JaxrsClientReactiveProcessor.class);
 
+    private static final Pattern MULTIPLE_SLASH_PATTERN = Pattern.compile("//+");
+
     private static final MethodDescriptor WEB_TARGET_RESOLVE_TEMPLATE_METHOD = MethodDescriptor.ofMethod(WebTarget.class,
             "resolveTemplate",
             WebTarget.class,
@@ -158,6 +163,10 @@ public class JaxrsClientReactiveProcessor {
     void registerClientResponseBuilder(BuildProducer<ServiceProviderBuildItem> serviceProviders) {
         serviceProviders.produce(new ServiceProviderBuildItem(ResponseBuilderFactory.class.getName(),
                 ClientResponseBuilderFactory.class.getName()));
+
+        serviceProviders.produce(new ServiceProviderBuildItem(ClientBuilder.class.getName(),
+                ClientBuilderImpl.class.getName()));
+
     }
 
     @BuildStep
@@ -217,7 +226,7 @@ public class JaxrsClientReactiveProcessor {
                 .setInjectableBeans(new HashMap<>())
                 .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                 .setAdditionalWriters(additionalWriters)
-                .setDefaultBlocking(applicationResultBuildItem.getResult().isBlocking())
+                .setDefaultBlocking(applicationResultBuildItem.getResult().getBlockingDefault())
                 .setHasRuntimeConverters(false)
                 .setDefaultProduces(defaultProducesType)
                 .setSmartDefaultProduces(disableSmartDefaultProduces.isEmpty())
@@ -783,7 +792,8 @@ public class JaxrsClientReactiveProcessor {
                     AssignableResultHandle constructorTarget = createWebTargetForMethod(constructor, baseTarget, method);
                     constructor.writeInstanceField(webTargetForMethod, constructor.getThis(), constructorTarget);
                     if (observabilityIntegrationNeeded) {
-                        String templatePath = restClientInterface.getPath() + method.getPath();
+                        String templatePath = MULTIPLE_SLASH_PATTERN.matcher(restClientInterface.getPath() + method.getPath())
+                                .replaceAll("/");
                         constructor.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(WebTargetImpl.class, "setPreClientSendHandler", void.class,
                                         ClientRestHandler.class),

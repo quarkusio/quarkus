@@ -1,7 +1,7 @@
 package io.quarkus.test;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -17,7 +17,7 @@ public class InMemoryLogHandler extends Handler {
         this.predicate = Assert.checkNotNullParam("predicate", predicate);
     }
 
-    final List<LogRecord> records = new ArrayList<>();
+    final List<LogRecord> records = new CopyOnWriteArrayList<>();
 
     @Override
     public void publish(LogRecord record) {
@@ -38,6 +38,10 @@ public class InMemoryLogHandler extends Handler {
     @Override
     public void close() throws SecurityException {
         this.records.clear();
+    }
+
+    public List<LogRecord> getRecords() {
+        return records;
     }
 
     void clearRecords() {

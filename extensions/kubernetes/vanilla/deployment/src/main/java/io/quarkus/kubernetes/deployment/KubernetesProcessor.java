@@ -43,6 +43,7 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
+import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
@@ -89,6 +90,7 @@ class KubernetesProcessor {
             EnabledKubernetesDeploymentTargetsBuildItem kubernetesDeploymentTargets,
             List<ConfiguratorBuildItem> configurators,
             List<DecoratorBuildItem> decorators,
+            Optional<CustomProjectRootBuildItem> customProjectRoot,
             BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer) {
 
         List<ConfiguratorBuildItem> allConfigurationRegistry = new ArrayList<>(configurators);
@@ -116,7 +118,8 @@ class KubernetesProcessor {
 
         try {
             // by passing false to SimpleFileWriter, we ensure that no files are actually written during this phase
-            Optional<Project> optionalProject = KubernetesCommonHelper.createProject(applicationInfo, artifactPath);
+            Optional<Project> optionalProject = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot,
+                    artifactPath);
             optionalProject.ifPresent(project -> {
 
                 final Map<String, String> generatedResourcesMap;

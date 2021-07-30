@@ -1,4 +1,4 @@
-{#include main}
+{#include main fluid=true}
   {#style}
    .annotation {
      color: gray;
@@ -31,17 +31,23 @@
         openInIDE($(this).text());
       });
     });
-
   {/script}
 
   {#title}Beans{/title}
   {#body}
+  <div class="alert alert-primary alert-dismissible fade show" role="alert" data-timer="30000">
+    Beans are sorted by the bean class name in ascending order. However, application beans go first. 
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
   <table class="table table-striped">
    <thead class="thead-dark">
     <tr>
       <th scope="col">#</th>
       <th scope="col">Bean</th>
       <th scope="col">Kind</th>
+      <th scope="col">Associated Interceptors</th>
     </tr>
    </thead>
    <tbody>
@@ -53,6 +59,15 @@
       </td>
       <td>
        {#bean-declaration bean/}
+      </td>
+      <td>
+       <ul>
+       {#for interceptorId in bean.interceptors}
+         {#set interceptor=info:devBeanInfos.getInterceptor(interceptorId)}
+         <li><span class="class-candidate">{interceptor.interceptorClass}</span> <span class="badge rounded-pill bg-info text-light larger-badge" title="Priority: {interceptor.priority}">{interceptor.priority}</span></li>
+         {/set}
+       {/for}
+       </ul>
       </td>
     {/for}
    </tbody>

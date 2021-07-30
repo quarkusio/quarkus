@@ -8,6 +8,23 @@
      font-size: 0.9em;
    }
   {/style}
+  {#script}
+    $(document).ready(function(){
+      if (!ideKnown()) {
+        return;
+      }
+      $(".class-candidate").each(function() {
+        var className = $(this).text();
+        if (appClassLang(className)) {
+          $(this).addClass("app-class");
+        }
+      });
+
+      $(".app-class").on("click", function() {
+        openInIDE($(this).text());
+      });
+    });
+  {/script}
   {#title}Observers{/title}
   {#body}
   <table class="table table-striped">
@@ -28,7 +45,7 @@
       <td>{count}.</td>
       <td>
        {#if observer.declaringClass}
-       {observer.declaringClass}#{observer.methodName}()
+       <span class="class-candidate">{observer.declaringClass}</span>#{observer.methodName}()
        {#else}
        <span class="badge badge-secondary larger-badge">Synthetic</span>
        {/if}
@@ -39,9 +56,7 @@
        {/each}
        {observer.observedType}
       </td>
-      <td>
-       {observer.priority}
-      </td>
+      <td><span class="badge rounded-pill bg-info text-light larger-badge" title="Priority: {observer.priority}">{observer.priority}</span></td>
       <td>
        {observer.reception}
       </td>

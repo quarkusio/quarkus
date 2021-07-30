@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using OpenID Connect Multi-Tenancy
+= Using OpenID Connect Multi-Tenancy
 
 include::./attributes.adoc[]
 :toc:
@@ -319,8 +319,8 @@ package io.quarkus.it.keycloak;
 
 import javax.enterprise.context.ApplicationScoped;
 
+import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantConfigResolver;
-import io.quarkus.oidc.runtime.OidcTenantConfig;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped

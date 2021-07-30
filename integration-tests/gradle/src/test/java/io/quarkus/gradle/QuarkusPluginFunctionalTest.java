@@ -169,7 +169,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
                         .groupId("com.acme.foo")
                         .artifactId("foo")
                         .version("1.0.0-SNAPSHOT")
-                        .className("org.acme.foo.GreetingResource")
+                        .packageName("org.acme.foo")
                         .sourceType(sourceType)
                         .doCreateProject(context))
                                 .withFailMessage("Project was not created")

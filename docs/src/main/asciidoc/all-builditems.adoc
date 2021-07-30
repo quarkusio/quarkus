@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 include::./attributes.adoc[]
 
-= Quarkus - Build Items
+= Build Items
 
 Here you can find a list of Build Items and the extension that provides them:
 

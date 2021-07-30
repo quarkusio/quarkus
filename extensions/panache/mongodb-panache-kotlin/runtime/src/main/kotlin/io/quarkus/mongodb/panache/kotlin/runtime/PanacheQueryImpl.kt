@@ -5,7 +5,7 @@ import com.mongodb.client.ClientSession
 import com.mongodb.client.MongoCollection
 import com.mongodb.client.model.Collation
 import io.quarkus.mongodb.panache.kotlin.PanacheQuery
-import io.quarkus.mongodb.panache.runtime.CommonPanacheQueryImpl
+import io.quarkus.mongodb.panache.common.runtime.CommonPanacheQueryImpl
 import io.quarkus.panache.common.Page
 import org.bson.conversions.Bson
 import java.util.stream.Stream

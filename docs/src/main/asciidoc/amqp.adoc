@@ -3,14 +3,16 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using AMQP with Reactive Messaging
-:extension-status: preview
+= Getting Started to SmallRye Reactive Messaging with AMQP 1.0
 
 include::./attributes.adoc[]
 
-This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with AMQP.
+This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with AMQP 1.0.
 
 include::./status-include.adoc[]
+
+IMPORTANT: If you want to use RabbitMQ, you need to enable AMQP 1.0 in the RabbitMQ broker.
+Check the https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.5/amqp/amqp.html#amqp-rabbitmq[connecting to RabbitMQ] documentation.
 
 == Prerequisites
 
@@ -20,22 +22,32 @@ To complete this guide, you need:
 * an IDE
 * JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
-* A running AMQP 1.0 broker, or Docker Compose to start a development cluster
+* docker and docker-compose
 * GraalVM installed if you want to run in native mode.
 
 == Architecture
 
-In this guide, we are going to generate (random) prices in one component.
-These prices are written in an AMQP queue (`prices`).
-A second component reads from the `prices` queue and apply some magic conversion to the price.
-The result is sent to an in-memory stream consumed by a JAX-RS resource.
-The data is sent to a browser using server-sent events.
+In this guide, we are going to develop two applications communicating with an AMQP broker.
+We will use https://activemq.apache.org/components/artemis/[Artemis], but you can use any AMQP 1.0 broker.
+The first application sends a _quote request_ to an AMQP queue and consumes messages from the _quote_ queue.
+The second application receives the _quote request_ and sends a _quote_ back.
 
-image::amqp-guide-architecture.png[alt=Architecture,align=center,width=80%]
+image::amqp-qs-architecture.png[alt=Architecture, align=center,width=80%]
+
+The first application, the `producer`, will let the user request some quotes over an HTTP endpoint.
+For each quote request, a random identifier is generated and returned to the user, to put the quote request on _pending_.
+At the same time the generated request id is sent over the `quote-requests` queue.
+
+image::amqp-qs-app-screenshot.png[alt=Producer App UI, align=center]
+
+The second application, the `processor`, in turn, will read from the `quote-requests` queue put a random price to the quote, and send it to a queue named `quotes`.
+
+Lastly, the `producer` will read the quotes and send them to the browser using server-sent events.
+The user will therefore see the quote price updated from _pending_ to the received price in real-time.
 
 == Solution
 
-We recommend that you follow the instructions in the next sections and create the application step by step.
+We recommend that you follow the instructions in the next sections and create applications step by step.
 However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
@@ -44,194 +56,285 @@ The solution is located in the `amqp-quickstart` {quickstarts-tree-url}/amqp-qui
 
 == Creating the Maven Project
 
-First, we need a new project. Create a new project with the following command:
+First, we need to create two projects: the _producer_ and the _processor_.
+
+To create the _producer_ project, in a terminal run:
 
 [source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
-    -DprojectArtifactId=amqp-quickstart \
-    -Dextensions="resteasy,amqp" \
-    -DnoExamples
-cd amqp-quickstart
+    -DprojectArtifactId=amqp-quickstart-producer \
+    -DnoCode=true \
+    -Dextensions=resteasy-reactive-jackson,smallrye-reactive-messaging-amqp
 ----
 
-This command generates a Maven project, importing the Reactive Messaging and AMQP connector extensions.
+This command creates the project structure and select the two Quarkus extensions we will be using:
 
-[TIP]
-.Dev Services
-====
-No need to start an AMQP broker when using the dev mode or for tests. Quarkus starts a broker for you automatically.
-See xref:amqp-dev-services.adoc[Dev Services for AMQP] for details.
-====
+1. RESTEasy Reactive and it's Jackson support to handle JSON payloads
+2. The Reactive Messaging AMQP connector
 
+To create the _processor_ project, from the same directory, run:
 
-== The price generator
-
-Create the `src/main/java/org/acme/amqp/PriceGenerator.java` file, with the following content:
-
-[source, java]
+[source,bash,subs=attributes+]
 ----
-package org.acme.amqp;
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=amqp-quickstart-processor \
+    -DnoCode=true \
+    -Dextensions=smallrye-reactive-messaging-amqp
+----
 
-import java.time.Duration;
-import java.util.Random;
+At that point you should have the following structure:
 
-import javax.enterprise.context.ApplicationScoped;
+[source, text]
+----
+.
+├── amqp-quickstart-processor
+│  ├── README.md
+│  ├── mvnw
+│  ├── mvnw.cmd
+│  ├── pom.xml
+│  └── src
+│     └── main
+│        ├── docker
+│        ├── java
+│        └── resources
+│           └── application.properties
+└── amqp-quickstart-producer
+   ├── README.md
+   ├── mvnw
+   ├── mvnw.cmd
+   ├── pom.xml
+   └── src
+      └── main
+         ├── docker
+         ├── java
+         └── resources
+            └── application.properties
+----
 
-import io.smallrye.mutiny.Multi;
-import org.eclipse.microprofile.reactive.messaging.Outgoing;
+Open the two projects in your favorite IDE.
 
-/**
- * A bean producing random prices every 5 seconds.
- * The prices are written to a AMQP queue (prices). The AMQP configuration is specified in the application configuration.
- */
-@ApplicationScoped
-public class PriceGenerator {
+== The Quote object
 
-    private Random random = new Random();
+The `Quote` class will be used in both `producer` and `processor` projects.
+For the sake of simplicity we will duplicate the class.
+In both projects, create the `src/main/java/org/acme/amqp/model/Quote.java` file, with the following content:
 
-    @Outgoing("generated-price")                        // <1>
-    public Multi<Integer> generate() {                  // <2>
-        return Multi.createFrom().ticks().every(Duration.ofSeconds(5))
-                .onOverflow().drop()
-                .map(tick -> random.nextInt(100));
+[source,java]
+----
+package org.acme.amqp.model;
+
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
+@RegisterForReflection
+public class Quote {
+
+    public String id;
+    public int price;
+
+    /**
+    * Default constructor required for Jackson serializer
+    */
+    public Quote() { }
+
+    public Quote(String id, int price) {
+        this.id = id;
+        this.price = price;
     }
 
-}
-
-----
-<1> Instruct Reactive Messaging to dispatch the items from returned stream to `generated-price`.
-<2> The method returns a Mutiny _stream_ (`Multi`) emitting a random _price_ every 5 seconds.
-
-The method returns a _Reactive Stream_. The generated items are sent to the stream named `generated-price`.
-This stream is mapped to an AMQP queue using the `application.properties` file that we will create soon.
-
-== The price converter
-
-The price converter reads the prices from AMQP, and transforms them.
-Create the `src/main/java/org/acme/amqp/PriceConverter.java` file with the following content:
-
-[source, java]
-----
-package org.acme.amqp;
-
-import io.smallrye.reactive.messaging.annotations.Broadcast;
-import org.eclipse.microprofile.reactive.messaging.Incoming;
-import org.eclipse.microprofile.reactive.messaging.Outgoing;
-
-import javax.enterprise.context.ApplicationScoped;
-
-/**
- * A bean consuming data from the "prices" AMQP queue and applying some conversion.
- * The result is pushed to the "my-data-stream" stream which is an in-memory stream.
- */
-@ApplicationScoped
-public class PriceConverter {
-
-    private static final double CONVERSION_RATE = 0.88;
-
-    @Incoming("prices")                                  // <1>
-    @Outgoing("my-data-stream")                          // <2>
-    @Broadcast                                           // <3>
-    public double process(int priceInUsd) {
-        return priceInUsd * CONVERSION_RATE;
+    @Override
+    public String toString() {
+        return "Quote{" +
+                "id='" + id + '\'' +
+                ", price=" + price +
+                '}';
     }
-
 }
-
 ----
-<1> Indicates that the method consumes the items from the `prices` channel
-<2> Indicates that the objects returned by the method are sent to the `my-data-stream` channel
-<3> Indicates that the item are dispatched to all _subscribers_
 
-The `process` method is called for every AMQP messages from the `prices` queue (configured in the application configuration).
-Every result is sent to the `my-data-stream` in-memory stream.
+JSON representation of `Quote` objects will be used in messages sent to the AMQP queues
+and also in the server-sent events sent to browser clients.
 
-== The price resource
+Quarkus has built-in capabilities to deal with JSON AMQP messages.
 
-Finally, let's bind our stream to a JAX-RS resource.
-Creates the `src/main/java/org/acme/amqp/PriceResource.java` file with the following content:
+[NOTE]
+.@RegisterForReflection
+====
+The `@RegisterForReflection` annotation instructs Quarkus to include the class (including fields and methods) when building the native executable.
+This will be useful later when we run the applications as native executables inside containers.
+Without, the native compilation would remove the fields and methods during the dead-code elimination phase.
+====
 
-[source, java]
+== Sending quote request
+
+Inside the `producer` project locate the generated  `src/main/java/org/acme/amqp/producer/QuotesResource.java` file, and update the content to be:
+
+[source,java]
 ----
-package org.acme.amqp;
+package org.acme.amqp.producer;
 
-import io.smallrye.reactive.messaging.annotations.Channel;
-import org.reactivestreams.Publisher;
+import java.util.UUID;
 
-import javax.inject.Inject;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-/**
- * A simple resource retrieving the "in-memory" "my-data-stream" and sending the items as server-sent events.
- */
-@Path("/prices")
-public class PriceResource {
+import org.acme.amqp.model.Quote;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 
-    @Inject
-    @Channel("my-data-stream") Publisher<Double> prices;         // <1>
+import io.smallrye.mutiny.Multi;
 
-    @GET
+@Path("/quotes")
+public class QuotesResource {
+
+    @Channel("quote-requests") Emitter<String> quoteRequestEmitter; // <1>
+
+    /**
+     * Endpoint to generate a new quote request id and send it to "quote-requests" AMQP queue using the emitter.
+     */
+    @POST
+    @Path("/request")
     @Produces(MediaType.TEXT_PLAIN)
-    public String hello() {
-        return "hello";
-    }
-
-    @GET
-    @Path("/stream")
-    @Produces(MediaType.SERVER_SENT_EVENTS)                     // <2>
-    public Publisher<Double> stream() {                         // <3>
-        return prices;
+    public String createRequest() {
+        UUID uuid = UUID.randomUUID();
+        quoteRequestEmitter.send(uuid.toString()); // <2>
+        return uuid.toString();
     }
 }
 ----
-<1> Injects the `my-data-stream` channel using the `@Channel` qualifier
-<2> Indicates that the content is sent using `Server Sent Events`
-<3> Returns the stream (_Reactive Stream_)
+<1> Inject a Reactive Messaging `Emitter` to send messages to the `quote-requests` channel.
+<2> On a post request, generate a random UUID and send it to the AMQP queue using the emitter.
 
-== Configuring the AMQP connector
+This channel is mapped to an AMQP queue using the configuration we will add to the `application.properties` file.
+Open the `src/main/resource/application.properties` file and add:
 
-We need to configure the AMQP connector. This is done in the `application.properties` file.
-The keys are structured as follows:
+[source, properties]
+----
+# Configure the outgoing `quote-requests` queue
+mp.messaging.outgoing.quote-requests.connector=smallrye-amqp
+----
+
+All we need to specify is the `smallrye-amqp` connector.
+By default, reactive messaging maps the channel name `quote-requests` to the AMQP queue name.
+
+== Processing quote requests
+
+Now let's consume the quote request and give out a price.
+Inside the `processor` project, locate the `src/main/java/org/acme/amqp/processor/QuoteProcessor.java` file and add the following:
+
+[source, java]
+----
+package org.acme.amqp.processor;
+
+import java.util.Random;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import org.acme.amqp.model.Quote;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
+
+import io.smallrye.reactive.messaging.annotations.Blocking;
+
+/**
+ * A bean consuming data from the "request" AMQP queue and giving out a random quote.
+ * The result is pushed to the "quotes" AMQP queue.
+ */
+@ApplicationScoped
+public class QuoteProcessor {
+
+    private Random random = new Random();
+
+    @Incoming("requests")       // <1>
+    @Outgoing("quotes")         // <2>
+    @Blocking                   // <3>
+    public Quote process(String quoteRequest) throws InterruptedException {
+        // simulate some hard working task
+        Thread.sleep(200);
+        return new Quote(quoteRequest, random.nextInt(100));
+    }
+}
+----
+<1> Indicates that the method consumes the items from the `requests` channel
+<2> Indicates that the objects returned by the method are sent to the `quotes` channel
+<3> Indicates that the processing is _blocking_ and cannot be run on the caller thread.
+
+The `process` method is called for every AMQP message from the `quote-requests` queue, and will send a `Quote` object to the `quotes` queue.
+
+As with the previous example we need to configure the connectors in the `application.properties` file.
+Open the `src/main/resources/application.properties` file and add:
+
+[source, properties]
+----
+# Configure the incoming AMQP queue `quote-requests`
+mp.messaging.incoming.requests.connector=smallrye-amqp
+mp.messaging.incoming.requests.address=quote-requests
+
+# Configure the outgoing AMQP queue `quotes`
+mp.messaging.outgoing.quotes.connector=smallrye-amqp
+----
+
+Note that in this case we have one incoming and one outgoing connector configuration, each one distinctly named.
+The configuration keys are structured as follows:
 
 `mp.messaging.[outgoing|incoming].{channel-name}.property=value`
 
 The `channel-name` segment must match the value set in the `@Incoming` and `@Outgoing` annotation:
-* `generated-price` -> sink in which we write the prices
-* `prices` -> source in which we read the prices
 
-[source,properties]
+* `quote-requests` -> AMQP queue from which we read the quote requests
+* `quotes` -> AMQP queue in which we write the quotes
+
+== Receiving quotes
+
+Back to our `producer` project.
+Let's modify the `QuotesResource` to consume quotes, bind it to an HTTP endpoint to send events to clients:
+
+[source,java]
 ----
-# Configure the AMQP connector to write to the `prices` address
-mp.messaging.outgoing.generated-price.connector=smallrye-amqp
-mp.messaging.outgoing.generated-price.address=prices
+import io.smallrye.mutiny.Multi;
+//...
 
-# Configure the AMQP connector to read from the `prices` queue
-mp.messaging.incoming.prices.connector=smallrye-amqp
-mp.messaging.incoming.prices.durable=true
+@Channel("quotes") Multi<Quote> quotes;     // <1>
+
+/**
+ * Endpoint retrieving the "quotes" queue and sending the items to a server sent event.
+ */
+@GET
+@Produces(MediaType.SERVER_SENT_EVENTS) // <2>
+public Multi<Quote> stream() {
+    return quotes; // <3>
+}
 ----
+<1> Injects the `quotes` channel using the `@Channel` qualifier
+<2> Indicates that the content is sent using `Server Sent Events`
+<3> Returns the stream (_Reactive Stream_)
 
-More details about this configuration is available in the https://smallrye.io/smallrye-reactive-messaging/#_interacting_using_amqp[SmallRye Reactive Messaging AMQP connector] documentation.
+Again we need to configure the incoming `quotes` channel inside `producer` project.
+Add the following inside `application.properties` file:
 
-NOTE: What about `my-data-stream`? This is an in-memory stream, not connected to a message broker.
+[source, properties]
+----
+# Configure the outgoing `quote-requests` queue
+mp.messaging.outgoing.quote-requests.connector=smallrye-amqp
+
+# Configure the incoming `quotes` queue
+mp.messaging.incoming.quotes.connector=smallrye-amqp
+----
 
 == The HTML page
 
 Final touch, the HTML page reading the converted prices using SSE.
 
-Create the `src/main/resources/META-INF/resources/prices.html` file, with the following content:
+Create inside the `producer` project `src/main/resources/META-INF/resources/quotes.html` file, with the following content:
 
 [source, html]
 ----
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Prices</title>
+<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <title>Quotes</title>
 
     <link rel="stylesheet" type="text/css"
           href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/css/patternfly.min.css">
@@ -240,45 +343,68 @@ Create the `src/main/resources/META-INF/resources/prices.html` file, with the fo
 </head>
 <body>
 <div class="container">
-
-    <h2>Last price</h2>
-    <div class="row">
-    <p class="col-md-12">The last price is <strong><span id="content">N/A</span>&nbsp;&euro;</strong>.</p>
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title">Quotes</h2>
+            <button class="btn btn-info" id="request-quote">Request Quote</button>
+            <div class="quotes"></div>
+        </div>
     </div>
 </div>
 </body>
-<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    var source = new EventSource("/prices/stream");
-    source.onmessage = function (event) {
-        document.getElementById("content").innerHTML = event.data;
+    $("#request-quote").click((event) => {
+        fetch("/quotes/request", {method: "POST"})
+        .then(res => res.text())
+        .then(qid => {
+            var row = $(`<h4 class='col-md-12' id='${qid}'>Quote # <i>${qid}</i> | <strong>Pending</strong></h4>`);
+            $(".quotes").append(row);
+        });
+    });
+    var source = new EventSource("/quotes");
+    source.onmessage = (event) => {
+      var json = JSON.parse(event.data);
+      $(`#${json.id}`).html(function(index, html) {
+        return html.replace("Pending", `\$\xA0${json.price}`);
+      });
     };
 </script>
 </html>
 ----
 
-Nothing spectacular here. On each received price, it updates the page.
+Nothing spectacular here.
+On each received quote, it updates the page.
 
 == Get it running
 
-If you followed the instructions, you should have the AMQP broker running.
-Then, you just need to run the application using:
+You just need to run both applications using:
 
 [source,bash]
 ----
-./mvnw quarkus:dev
+> mvn -f amqp-quickstart-producer quarkus:dev
 ----
 
-Open `http://localhost:8080/prices.html` in your browser.
+And, in a separate terminal:
+
+[source, bash]
+----
+> mvn -f amqp-quickstart-processor quarkus:dev
+----
+
+Quarkus starts a AMQP broker automatically, configures the application and shares the broker instance between different applications.
+See xref:amqp-dev-services.adoc[Dev Services for AMQP] for more details.
+
+
+Open `http://localhost:8080/quotes.html` in your browser and request some quotes by clicking the button.
 
 == Running in JVM or Native mode
 
 When not running in dev or test mode, you will need to start your AMQP broker.
-You can follow the instructions from the https://activemq.apache.org/components/artemis/documentation/[Apache ActiveMQ Artemis] or create a `docker-compose.yaml` file with the following content:
+You can follow the instructions from the https://activemq.apache.org/components/artemis/documentation/latest/using-server.html[Apache ActiveMQ Artemis website] or create a `docker-compose.yaml` file with the following content:
 
 [source, yaml]
 ----
-# A docker compose file to start an Artemis AMQP broker
 version: '2'
 
 services:
@@ -292,85 +418,78 @@ services:
     environment:
       AMQ_USER: quarkus
       AMQ_PASSWORD: quarkus
+    networks:
+      - amqp-quickstart-network
+
+  producer:
+    image: quarkus-quickstarts/amqp-quickstart-producer:1.0-${QUARKUS_MODE:-jvm}
+    build:
+      context: amqp-quickstart-producer
+      dockerfile: src/main/docker/Dockerfile.${QUARKUS_MODE:-jvm}
+    environment:
+      AMQP_HOST: artemis
+      AMQP_PORT: 5672
+    ports:
+      - "8080:8080"
+    networks:
+      - amqp-quickstart-network
+
+  processor:
+    image: quarkus-quickstarts/amqp-quickstart-processor:1.0-${QUARKUS_MODE:-jvm}
+    build:
+      context: amqp-quickstart-processor
+      dockerfile: src/main/docker/Dockerfile.${QUARKUS_MODE:-jvm}
+    environment:
+      AMQP_HOST: artemis
+      AMQP_PORT: 5672
+    networks:
+      - amqp-quickstart-network
+
+networks:
+  amqp-quickstart-network:
+    name: amqp-quickstart
 ----
 
-Once created, run `docker-compose up`.
+Note how the AMQP broker location is configured.
+The `amqp.host` and `amqp.port` (`AMQP_HOST` and `AMQP_PORT` environment variables) properties configure location.
 
-NOTE: This is a development broker, do not use in production.
 
-You can build and run the application in JVM mode with:
+First, make sure you stopped the applications, and build both applications in JVM mode with:
 
 [source, bash]
 ----
-./mvnw package
-java -Damqp-user=quarkus -Damqp-password=quarkus -jar target/quarkus-app/quarkus-run.jar
+> mvn -f amqp-quickstart-producer clean package
+> mvn -f amqp-quickstart-processor clean package
 ----
 
-NOTE: By default, the application tries to connect to a AMQP broker listening at `localhost:5672`.
-You can configure the bootstrap server using: `java -Damqp-host=... -Damqp-port=... -jar target/quarkus-app/quarkus-run.jar`
+Once packaged, run `docker compose up --build`.
+The UI is exposed on http://localhost:8080/quotes.html
 
-You can build and run the native executable with:
+To run your applications as native, first we need to build the native executables:
 
-[source,bash]
+[source, bash]
 ----
-./mvnw package -Pnative
-./target/amqp-quickstart-1.0.0-SNAPSHOT-runner -Damqp-host=localhost -Damqp-port=5672 -Damqp-user=quarkus -Damqp-password=quarkus
-----
-
-== Imperative usage
-
-Sometimes you need to have an imperative way of sending messages.
-
-For example, if you need to send a message to a stream from inside a REST endpoint when receiving a POST request.
-In this case, you cannot use `@Outgoing` because your method has parameters.
-
-For this, you can use an `Emitter`.
-
-[source, java]
-----
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
-
-import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.core.MediaType;
-
-@Path("/prices")
-public class PriceResource {
-
-    @Inject @Channel("price-create") Emitter<Double> priceEmitter;
-
-    @POST
-    @Consumes(MediaType.TEXT_PLAIN)
-    public void addPrice(Double price) {
-        priceEmitter.send(price);
-    }
-}
+> mvn -f amqp-quickstart-producer package -Pnative  -Dquarkus.native.container-build=true
+> mvn -f amqp-quickstart-processor package -Pnative -Dquarkus.native.container-build=true
 ----
 
-NOTE: The `Emitter` configuration is done the same way as the other stream configuration used by `@Incoming` and `@Outgoing`.
-In addition, you can use `@OnOverflow` to configure a back-pressure strategy.
+The `-Dquarkus.native.container-build=true` instructs Quarkus to build Linux 64bits native executables, who can run inside containers.
+Then, run the system using:
 
-[NOTE]
-.Deprecation
-====
-The `io.smallrye.reactive.messaging.annotations.Emitter`, `io.smallrye.reactive.messaging.annotations.Channel` and `io.smallrye.reactive.messaging.annotations.OnOverflow` classes are now deprecated and replaced by:
+[source, bash]
+----
+> export QUARKUS_MODE=native
+> docker compose up --build
+----
 
-* `org.eclipse.microprofile.reactive.messaging.Emitter`
-* `org.eclipse.microprofile.reactive.messaging.Channel`
-* `org.eclipse.microprofile.reactive.messaging.OnOverflow`
-
-The new `Emitter.send` method returns a `CompletionStage` completed when the produced message is acknowledged.
-====
+As before, the UI is exposed on http://localhost:8080/quotes.html
 
 == Going further
 
-This guide has shown how you can interact with AMQP using Quarkus.
-It utilizes SmallRye Reactive Messaging to build data streaming applications.
+This guide has shown how you can interact with AMQP 1.0 using Quarkus.
+It utilizes https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging] to build data streaming applications.
 
 If you did the Kafka quickstart, you have realized that it's the same code.
-The only difference is the connector configuration.
+The only difference is the connector configuration and the JSON mapping.
 
-If you want to go further check the documentation of https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging], the implementation used in Quarkus.
+

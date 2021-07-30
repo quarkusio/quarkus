@@ -46,6 +46,13 @@ public interface TestController {
     boolean toggleInstrumentation();
 
     /**
+     * Toggles instrumentation based reload.
+     *
+     * @return <code>true</code> if this change to do instrumentation based reload
+     */
+    boolean toggleLiveReloadEnabled();
+
+    /**
      * Print the current results and failures
      */
     void printFullResults();

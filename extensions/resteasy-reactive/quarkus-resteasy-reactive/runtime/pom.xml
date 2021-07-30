@@ -19,8 +19,8 @@
             <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus.resteasy.reactive</groupId>
-            <artifactId>resteasy-reactive-vertx</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-reactive-server-common</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -29,6 +29,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-reactive-kotlin</artifactId>
+            <optional>true</optional> <!-- conditional dependency -->
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

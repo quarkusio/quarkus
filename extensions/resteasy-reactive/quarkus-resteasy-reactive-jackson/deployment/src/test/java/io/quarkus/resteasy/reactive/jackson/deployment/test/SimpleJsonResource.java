@@ -28,9 +28,11 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
 import io.quarkus.runtime.BlockingOperationControl;
+import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
 
 @Path("/simple")
+@NonBlocking
 public class SimpleJsonResource extends SuperClass<Person> {
 
     @ServerExceptionMapper

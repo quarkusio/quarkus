@@ -65,8 +65,11 @@ With this configuration, you can put your service and message definitions in the
 `quarkus-maven-plugin` will generate Java files from your `proto` files.
 
 `quarkus-maven-plugin` retrieves a version of `protoc` (the protobuf compiler) from Maven repositories. The retrieved version matches your operating system and CPU architecture.
-If this retrieved version does not work in your context, you can download the suitable binary and specify the location via
+If this retrieved version does not work in your context, you can either force to use a different OS classifier with
+`-Dquarkus.grpc.protoc-os-classifier=your-os-classifier` (e.g. `osx-x86_64`).
+You can also download the suitable binary and specify the location via
 `-Dquarkus.grpc.protoc-path=/path/to/protoc`.
+
 
 Alternatively to using the `generate-code` goal of the `quarkus-maven-plugin`, you can use `protobuf-maven-plugin` to generate these files, more in <<Generating Java files from proto with protobuf-maven-plugin>>
 

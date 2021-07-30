@@ -1,0 +1,45 @@
+plugins {
+    id 'java'
+    id 'org.jetbrains.kotlin.jvm' version "1.5.21"
+    id "org.jetbrains.kotlin.plugin.allopen" version "1.5.21"
+    id 'io.quarkus'
+}
+
+repositories {
+    mavenCentral()
+    // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
+    if (System.properties.containsKey('maven.repo.local')) {
+        maven {
+            url System.properties.get('maven.repo.local')
+        }
+    } else {
+        mavenLocal()
+    }
+}
+
+dependencies {
+    implementation 'io.quarkus:quarkus-kotlin'
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-resteasy'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+
+    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation 'io.rest-assured:kotlin-extensions'
+}
+
+group 'org.acme'
+version '1.0.0-SNAPSHOT'
+
+allOpen {
+    annotation("javax.ws.rs.Path")
+    annotation("javax.enterprise.context.ApplicationScoped")
+    annotation("io.quarkus.test.junit.QuarkusTest")
+}
+
+compileKotlin {
+    kotlinOptions.javaParameters = true
+}
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}

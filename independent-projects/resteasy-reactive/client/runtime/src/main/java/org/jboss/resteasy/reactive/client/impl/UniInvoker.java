@@ -1,6 +1,8 @@
 package org.jboss.resteasy.reactive.client.impl;
 
 import io.smallrye.mutiny.Uni;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
@@ -16,7 +18,12 @@ public class UniInvoker extends AbstractRxInvoker<Uni<?>> {
     @Override
     public <R> Uni<R> method(String name, Entity<?> entity, GenericType<R> responseType) {
         AsyncInvokerImpl invoker = (AsyncInvokerImpl) invocationBuilder.rx();
-        return Uni.createFrom().completionStage(invoker.method(name, entity, responseType));
+        return Uni.createFrom().completionStage(new Supplier<CompletionStage<R>>() {
+            @Override
+            public CompletionStage<R> get() {
+                return invoker.method(name, entity, responseType);
+            }
+        });
     }
 
     @Override

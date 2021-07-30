@@ -30,7 +30,8 @@ public interface RecorderContext {
      * @param to The class to serialize to
      * @param substitution The subclass of {@link ObjectSubstitution} that performs the substitution
      */
-    <F, T> void registerSubstitution(Class<F> from, Class<T> to, Class<? extends ObjectSubstitution<F, T>> substitution);
+    <F, T> void registerSubstitution(Class<F> from, Class<T> to,
+            Class<? extends ObjectSubstitution<? super F, ? super T>> substitution);
 
     /**
      * Register an object loader.

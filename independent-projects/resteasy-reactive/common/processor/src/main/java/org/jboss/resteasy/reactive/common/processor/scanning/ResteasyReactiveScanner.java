@@ -29,6 +29,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.common.processor.BlockingDefault;
 import org.jboss.resteasy.reactive.common.processor.NameBindingUtil;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
@@ -57,7 +58,7 @@ public class ResteasyReactiveScanner {
         boolean filterClasses = !excludedClasses.isEmpty();
         Application application = null;
         ClassInfo selectedAppClass = null;
-        boolean blocking = false;
+        BlockingDefault blocking = BlockingDefault.AUTOMATIC;
         for (ClassInfo applicationClassInfo : applications) {
             if (Modifier.isAbstract(applicationClassInfo.flags())) {
                 continue;
@@ -94,9 +95,9 @@ public class ResteasyReactiveScanner {
                 throw new RuntimeException("Unable to handle class: " + applicationClass, e);
             }
             if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.BLOCKING) != null) {
-                blocking = true;
+                blocking = BlockingDefault.BLOCKING;
             } else if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
-                blocking = false;
+                blocking = BlockingDefault.NON_BLOCKING;
             }
         }
         if (selectedAppClass != null) {

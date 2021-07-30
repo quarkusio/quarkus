@@ -2,10 +2,10 @@ package io.quarkus.mongodb.panache.kotlin.runtime
 
 import com.mongodb.client.ClientSession
 import com.mongodb.client.MongoCollection
-import io.quarkus.mongodb.panache.PanacheUpdate
+import io.quarkus.mongodb.panache.common.PanacheUpdate
 import io.quarkus.mongodb.panache.kotlin.PanacheQuery
-import io.quarkus.mongodb.panache.runtime.MongoOperations
-import io.quarkus.mongodb.panache.runtime.PanacheUpdateImpl
+import io.quarkus.mongodb.panache.common.runtime.MongoOperations
+import io.quarkus.mongodb.panache.common.runtime.PanacheUpdateImpl
 import org.bson.Document
 import java.util.stream.Stream
 

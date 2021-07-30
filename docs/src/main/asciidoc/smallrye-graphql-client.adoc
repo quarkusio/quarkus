@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - SmallRye GraphQL Client
+= SmallRye GraphQL Client
 
 :extension-status: preview
 include::./attributes.adoc[]
@@ -235,7 +235,7 @@ specify that within the `@GraphQLClientApi` annotation (by setting the `endpoint
 or move this over to the configuration file, `application.properties`:
 
 ----
-star-wars-typesafe/mp-graphql/url=https://swapi-graphql.netlify.app/.netlify/functions/index
+quarkus.smallrye-graphql-client.star-wars-typesafe.url=https://swapi-graphql.netlify.app/.netlify/functions/index
 ----
 
 `star-wars-typesafe` is the name of the configured client instance, and corresponds to the `configKey`
@@ -274,7 +274,7 @@ representations of the GraphQL types and documents. The client API interface is 
 
 We still need to configure the URL for the client, so let's put this into `application.properties`:
 ----
-star-wars-dynamic/mp-graphql/url=https://swapi-graphql.netlify.app/.netlify/functions/index
+quarkus.smallrye-graphql-client.star-wars-dynamic.url=https://swapi-graphql.netlify.app/.netlify/functions/index
 ----
 
 We decided to name the client `star-wars-dynamic`. We will use this name when injecting a dynamic client
@@ -283,7 +283,7 @@ to properly qualify the injection point.
 If you need to add an authorization header, or any other custom HTTP header (in our case
 it's not required), this can be done by:
 ----
-star-wars-dynamic/mp-graphql/header/HEADER-KEY=HEADER-VALUE"
+quarkus.smallrye-graphql-client.star-wars-dynamic.header.HEADER-KEY=HEADER-VALUE"
 ----
 
 Add this to the `StarWarsResource` created earlier:

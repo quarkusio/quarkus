@@ -1,3 +1,3 @@
 ```shell script
-./jbang src/GreetingResource.java
+./jbang src/main.java
 ```

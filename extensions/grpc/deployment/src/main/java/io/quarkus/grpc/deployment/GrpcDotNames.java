@@ -45,6 +45,8 @@ public class GrpcDotNames {
 
     static final MethodDescriptor CONFIGURE_STUB = MethodDescriptor.ofMethod(GrpcClientConfigProvider.class,
             "configureStub", AbstractStub.class, String.class, AbstractStub.class);
+    static final MethodDescriptor ADD_BLOCKING_CLIENT_INTERCEPTOR = MethodDescriptor.ofMethod(GrpcClientConfigProvider.class,
+            "addBlockingClientInterceptor", AbstractStub.class, AbstractStub.class);
     static final MethodDescriptor GET_STUB_CONFIGURATOR = MethodDescriptor.ofMethod(GrpcClientConfigProvider.class,
             "getStubConfigurator", BiFunction.class);
 

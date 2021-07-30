@@ -3,743 +3,389 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using Eclipse Vert.x
+= Using Eclipse Vert.x API from a Quarkus Application
 
 include::./attributes.adoc[]
 
-Eclipse https://vertx.io[Vert.x] is a toolkit for building reactive applications.
-It is designed to be lightweight and embeddable.
-Vert.x defines a reactive execution model and provides a large ecosystem.
+https://vertx.io[Vert.x] is a toolkit for building reactive applications.
+As described in the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture], Quarkus uses Vert.x underneath.
 
-Quarkus is based on Vert.x, and almost all network-related features rely on Vert.x.
-While lots of reactive features from Quarkus don't _show_ Vert.x, it's used underneath.
-Quarkus also integrates smoothly with the Vert.x event bus (to enable asynchronous messaging passing between application components) and some reactive clients.
-You can also use various Vert.x APIs in your Quarkus application, such as deploying _verticles_, instantiating clients...
+image::quarkus-reactive-core.png[Quarkus Reactive Core,width=50%, align=center]
+
+Quarkus applications can access and uses the Vert.x APIs.
+
+This guide presents how you can build a Quarkus application using:
+
+* the managed instance of Vert.x
+* the Vert.x event bus
+* the Vert.x Web Client
+
+It's an introductory guide.
+The xref:vertx-reference.adoc[Vert.x reference guide] covers more advanced features such as verticles, and native transports.
+
+== Architecture
+
+We are going to build a simple application exposing four HTTP endpoints:
+
+1. `/vertx/lorem` returns the content from a small file
+2. `/vertx/book` returns the content from a large file (a book)
+3. `/vertx/hello` uses the Vert.x event bus to produce the response
+4. `/vertx/web` uses the Vert.x Web Client to retrieve data from Wikipedia
+
+image::quarkus-vertx-guide-architecture.png[Architecture of the Vert.x guide,width=50%, align=center]
 
 == Solution
 
-We recommend that you follow the instructions in the next sections and create the application step by step.
+We recommend that you follow the instructions in the following sections and create the application step by step.
 However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
 The solution is located in the `vertx-quickstart` {quickstarts-tree-url}/vertx-quickstart[directory].
 
-== Installing
-
-To access Vert.x, well, you need to enable the `vertx` extension to use this feature.
-If you are creating a new project, set the `extensions` parameter are follows:
-
-[source,bash, subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=vertx-quickstart \
-    -DclassName="org.acme.vertx.GreetingResource" \
-    -Dpath="/hello" \
-    -Dextensions="resteasy,vertx"
-cd vertx-quickstart
-----
-
-If you have an already created project, the `vertx` extension can be added to an existing Quarkus project with
-the `add-extension` command:
-
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="vertx"
-----
-
-Otherwise, you can manually add this to the dependencies section of your `pom.xml` file:
-
-[source,xml]
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-vertx</artifactId>
-</dependency>
-----
-
-== Native Transport
-
-Vert.x is capable of using https://netty.io/wiki/native-transports.html[Netty's native transports] which offers
-performance improvements on certain platforms. To enable them you must include the appropriate dependency for your
-platform. It's usually a good idea to include both to keep your application platform agnostic. Netty is smart enough
-to use the correct one, that includes none at all on unsupported platforms:
-
-[source,xml]
-----
-<dependency>
-  <groupId>io.netty</groupId>
-  <artifactId>netty-transport-native-epoll</artifactId>
-  <classifier>linux-x86_64</classifier>
-</dependency>
-
-<dependency>
-  <groupId>io.netty</groupId>
-  <artifactId>netty-transport-native-kqueue</artifactId>
-  <classifier>osx-x86_64</classifier>
-</dependency>
-----
-
-You will also have to explicitly configure Vert.x to use the native transport. In `application.properties` add:
-
-[source,properties]
-----
-quarkus.vertx.prefer-native-transport=true
-----
-
-Or in `application.yml`:
-
-[source,yml]
-----
-quarkus:
-  vertx:
-    prefer-native-transport: true
-----
-
-If all is well quarkus will log:
-
-----
-[io.qua.ver.cor.run.VertxCoreRecorder] (main) Vertx has Native Transport Enabled: true
-----
-
-=== Native Linux Transport
-
-On Linux you can enable the following socket options:
-
-* SO_REUSEPORT
-----
-quarkus.http.so-reuse-port=true
-----
-* TCP_QUICKACK
-----
-quarkus.http.tcp-quick-ack=true
-----
-* TCP_CORK
-----
-quarkus.http.tcp-cork=true
-----
-* TCP_FASTOPEN
-----
-quarkus.http.tcp-fast-open=true
-----
-
-=== Native MacOS Transport
-
-On MacOS Sierra and above you can enable the following socket options:
-
-* SO_REUSEPORT
-----
-quarkus.http.so-reuse-port=true
-----
-
-== Accessing Vert.x
-
-Once the extension has been added, you can access the _managed_ Vert.x instance using `@Inject`:
-
-[source, java]
-----
-@Inject Vertx vertx;
-----
-
-If you are familiar with Vert.x, you know that Vert.x provides different API models.
-The _bare_ Vert.x uses callbacks, while the Mutiny variant uses `Uni` and `Multi`.
-
-Quarkus provides 2 Vert.x APIs:
-
-[options="header"]
-|===
-
-| Name | Code | Description
-
-| _bare_ | `@Inject io.vertx.core.Vertx vertx` | _bare_ Vert.x instance, the API uses callbacks.
-
-| https://smallrye.io/smallrye-mutiny/[Mutiny] | `@Inject io.vertx.mutiny.core.Vertx vertx` | The Mutiny API for Vert.x.
-
-|===
-
-TIP: You may inject any of the 2 flavors of `Vertx` as well as the `EventBus` in your Quarkus application beans: `bare` and `Mutiny`.
-They are just shims and rely on a single _managed_ Vert.x instance.
-
-You will pick one or the other depending on your use cases.
-
-- `bare`: for advanced usage or if you have existing Vert.x code you want to reuse in your Quarkus application
-- `mutiny`: Mutiny is an event-driven reactive programming API. It uses 2 types: `Uni` and `Multi`. This is the recommended API.
-
-The following snippets illustrate the difference between these 4 APIs:
-
-[source, java]
-----
-// Bare Vert.x:
-vertx.fileSystem().readFile("lorem-ipsum.txt", ar -> {
-    if (ar.succeeded()) {
-        System.out.println("Content:" + ar.result().toString("UTF-8"));
-    } else {
-        System.out.println("Cannot read the file: " + ar.cause().getMessage());
-    }
-});
-
-// Mutiny Vert.x:
-vertx.fileSystem().readFile("lorem-ipsum.txt")
-    .onItem().transform(buffer -> buffer.toString("UTF-8"))
-    .subscribe()
-    .with(
-            content -> System.out.println("Content: " + content),
-            err -> System.out.println("Cannot read the file: " + err.getMessage())
-    );
-----
-
 [TIP]
 .Mutiny
 ====
-If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an intuitive reactive programming library].
+This guide uses the Mutiny API.
+If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an intuitive, reactive programming library].
 ====
 
-== Using Vert.x in Reactive JAX-RS resources
 
-Quarkus web resources support asynchronous processing and streaming results over https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events[server-sent events].
+== Bootstrapping the application
 
-=== Asynchronous processing
+Click on https://code.quarkus.io/?a=quarkus-getting-started-vertx&nc=true&e=resteasy-reactive-jackson&e=vertx[this link] to configure your application.
+It selected a few extensions:
 
-To asynchronously handle the HTTP request, the endpoint method must return a `java.util.concurrent.CompletionStage` or an `io.smallrye.mutiny.Uni` (requires the `quarkus-resteasy-mutiny` extension):
+* `resteasy-reactive-jackson`, which also brings `resteasy reactive`. We are going to use it to expose our HTTP endpoints.
+* `vertx`, which provides access to the underlying managed Vert.x
 
-[source,java]
+Click on the `Generate your application` button, download the zip file and unzip it.
+Then, open the project in your favorite IDE.
+
+If you open the generated `pom.xml` file, you can see the selected extensions:
+
+[source, xml]
 ----
-@Path("/lorem")
-public class GreetingResource {
-
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public Uni<String> doSomethingAsync() {
-        // Mimic an asynchronous computation.
-        return Uni.createFrom()
-                .item(() -> "Hello!")
-                .onItem().delayIt().by(Duration.ofMillis(10));
-    }
-}
-----
-
-
-[source,bash]
-----
-./mvnw compile quarkus:dev
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+</dependency>
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-vertx</artifactId>
+</dependency>
 ----
 
-Then, open your browser to http://localhost:8080/lorem and you should get the message.
+While you are in the `pom.xml`, add the following dependency:
 
-So far so good.
-Now let's use the Vert.x API instead of this artificial delay:
-
-[source,java]
+[source, xml]
 ----
-package org.acme.vertx;
-
-import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.core.Vertx;
-
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
-@Path("/lorem")
-public class GreetingResource {
-
-    @Inject
-    Vertx vertx;
-
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public Uni<String> doSomethingAsync() {
-        return vertx.fileSystem().readFile("/META-INF/resources/lorem.txt")
-                .onItem().transform(b -> b.toString("UTF-8"));
-    }
-}
+<dependency>
+  <groupId>io.smallrye.reactive</groupId>
+  <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
+</dependency>
 ----
 
-In this code, we inject the `vertx` instance (`io.vertx.mutiny.core.Vertx`) and read a file from the file system.
+This dependency provides the Vert.x Web Client, which we will be using to implement the `/web` endpoint.
 
-Create the `src/main/resources/META_INF/resources/lorem.txt` file with the following content:
 
-[source,text]
-----
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-----
+== Accessing the managed Vert.x instance
 
-Then, refresh the page, you should see the _lorem ipsum_ text.
+Create the `src/main/java/org/acme/VertxResource.java` file.
+It will contain our HTTP endpoints.
 
-=== Streaming using Server-Sent Events
-
-Quarkus web resources that need to send content as https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events[server-sent events] must have a method:
-
-* declaring the `text/event-stream` response content type
-* returning a https://www.reactive-streams.org/[Reactive Streams] `Publisher` or Mutiny `Multi`  (requires the `quarkus-resteasy-mutiny` extension)
-
-In practice, a streaming greeting service would look like:
-
-[source,java]
-----
-@Path("/hello")
-public class StreamingResource {
-
-    @GET
-    @Produces(MediaType.SERVER_SENT_EVENTS)
-    @Path("/{name}")
-    public Multi<String> greeting(@PathParam String name) {
-        // TODO: create a Reactive Streams publisher or a Mutiny Multi
-        return publisher;
-    }
-}
-----
-
-Now we just need to return our `Publisher` or `Multi`:
+In this file, copy the following code:
 
 [source, java]
 ----
-package org.acme.vertx;
+package org.acme;
 
-import io.smallrye.mutiny.Multi;
 import io.vertx.mutiny.core.Vertx;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import javax.inject.Inject;
-import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import java.util.Date;
 
-@Path("/stream")
-public class StreamingResource {
+@Path("/vertx")                        // <1>
+public class VertxResource {
 
-    @Inject
-    Vertx vertx;
+    private final Vertx vertx;
 
-    @GET
-    @Produces(MediaType.SERVER_SENT_EVENTS)
-    @Path("/{name}")
-    public Multi<String> greeting(@PathParam String name) {
-        return vertx.periodicStream(2000).toMulti()
-                .map(l -> String.format("Hello %s! (%s)%n", name, new Date()));
+    @Inject                             // <2>
+    public VertxResource(Vertx vertx) { // <3>
+        this.vertx = vertx;             // <4>
     }
 }
 ----
+1. Declare the root HTTP path.
+2. We use constructor injection to receive the managed Vert.x instance. Field injection works too.
+3. Receives the Vert.x instance as a constructor parameter
+4. Store the managed Vert.x instance into a field.
 
-The server side is ready.
-In order to see the result in the browser, we need a web page.
+With this, we can start implementing the endpoints.
 
-[source,html]
-.META-INF/resources/streaming.html
-----
-<!doctype html>
-<html>
-<head>
-    <meta charset="utf-8"/>
-    <title>SSE with Vert.x - Quarkus</title>
-    <script type="application/javascript" src="streaming.js"></script>
-</head>
-<body>
-<div id="container"></div>
-</body>
-</html>
-----
+== Using Vert.x Core API
 
-Our web page just has an empty `<div>` container.
-The magic, as always, lies in the Javascript code:
+The injected Vert.x instance provides a set of APIs you can use.
+The one we are going to use in this section is the Vert.x File System.
+It provides a non-blocking API to access files.
 
-[source,javascript]
-.META-INF/resources/streaming.js
-----
-if (!!window.EventSource) {
-    var eventSource = new EventSource("/stream/Quarkus");
-    eventSource.onmessage = function (event) {
-        var container = document.getElementById("container");
-        var paragraph = document.createElement("p");
-        paragraph.innerHTML = event.data;
-        container.appendChild(paragraph);
-    };
-} else {
-    window.alert("EventSource not available on this browser.")
-}
-----
 
-IMPORTANT: Most browsers support SSE but some don't.
-More about this in  Mozilla's https://developer.mozilla.org/en-US/docs/Web/API/EventSource#Browser_compatibility[SSE browser-compatibility list].
-
-Navigate to http://localhost:8080/streaming.html.
-A new greeting should show-up every 2 seconds.
+In the `src/main/resource` directory, create a `lorem.txt` file with the following content:
 
 [source, text]
 ----
-Hello Quarkus! (Wed Feb 12 17:13:55 CET 2020)
+Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
+----
 
-Hello Quarkus! (Wed Feb 12 17:13:57 CET 2020)
+Then, in the `VertxResource` file add the following method:
 
-Hello Quarkus! (Wed Feb 12 17:13:59 CET 2020)
+[source, java]
+----
+@GET                                                                    // <1>
+@Path("/lorem")
+public Uni<String> readShortFile() {                                    // <2>
+    return vertx.fileSystem().readFile("lorem.txt")                     // <3>
+            .onItem().transform(content -> content.toString("UTF-8"));  // <4>
+}
+----
+1. This endpoint handles HTTP `GET` request on path `/lorem` (so the full path will be `vertx/lorem`)
+2. As the Vert.x API is asynchronous, our method returns a `Uni`. The content is written into the HTTP response when the asynchronous operation represented by the Uni completes.
+3. We use the Vert.x file system API to read the created file
+4. Once the file is read, the content is stored in an in-memory buffer.  We transform this buffer into a String.
 
-Hello Quarkus! (Wed Feb 12 17:14:01 CET 2020)
+In a terminal, navigate to the root of the project and run:
 
-Hello Quarkus! (Wed Feb 12 17:14:03 CET 2020)
 
+[source, bash]
+----
+> ./mvnw quarkus:dev
+----
+
+In another terminal, run:
+
+[source, bash]
+----
+> curl http://localhost:8080/vertx/lorem
+----
+
+You should see the content of the file printed in the console.
+
+IMPORTANT: Quarkus provides other ways to serve static files. This is an example made for the guide.
+
+== Using Vert.x stream capability
+
+Reading a file and storing the content in memory works for small files, but not big ones.
+In this section, we will see how you can use Vert.x streaming capability.
+
+First, download https://www.gutenberg.org/files/2600/2600-0.txt[War and Peace] and store it in `src/main/resources/book.txt`.
+It's a 3.2 Mb file, which, while not being huge, illustrates the purpose of streams.
+This time, we will not accumulate the file's content in memory and write it in one batch, but read it chunk by chunk and write these chunks into the HTTP response one by one.
+
+So, you should have the following files in your project:
+
+
+[source, text]
+----
+.
+├── mvnw
+├── mvnw.cmd
+├── pom.xml
+├── README.md
+├── src
+│  └── main
+│     ├── docker
+│     │  ├── ...
+│     ├── java
+│     │  └── org
+│     │     └── acme
+│     │        └── VertxResource.java
+│     └── resources
+│        ├── application.properties
+│        ├── book.txt
+│        └── lorem.txt
+----
+
+Add the following method to the `VertxResource` class:
+
+[source, java]
+----
+@GET
+@Path("/book")
+public Multi<String> readLargeFile() {                              // <1>
+    return vertx.fileSystem().open("book.txt",                      // <2>
+                    new OpenOptions().setRead(true)
+            )
+            .onItem().transformToMulti(file -> file.toMulti())       // <3>
+            .onItem().transform(content -> content.toString("UTF-8") // <4>
+                    + "\n------------\n");                           // <5>
+}
+----
+1. This time, we return a Multi as we want to stream the chunks
+2. We open the file using the `open` method. It returns a `Uni<AsyncFile>`
+3. When the file is opened, we retrieve a `Multi` which will contain the chunks.
+4. For each chunk, we produce a String
+5. To visually see the chunks in the response, we append a separator
+
+Then, in a terminal, run:
+
+[source, bash]
+----
+> curl http://localhost:8080/vertx/book
+----
+
+It should retrieve the book content.
+In the output you should see the separator like:
+
+[source, text]
+----
+...
+The little princess had also left the tea table and followed Hélène.
+
+“Wait a moment, I’ll get my work.... Now then, what
+------------
+ are you
+thinking of?” she went on, turning to Prince Hippolyte. “Fetch me my
+workbag.”
 ...
 ----
 
-=== Using Vert.x JSON
+== Using the event bus
 
-Vert.x API heavily relies on JSON, namely the `io.vertx.core.json.JsonObject` and `io.vertx.core.json.JsonArray` types.
-They are both supported as Quarkus web resource request and response bodies.
+One of the core features of Vert.x is the https://vertx.io/docs/vertx-core/java/#event_bus[event bus].
+It provides a message-based backbone to your application.
+So, you can have components interacting using asynchronous message passing, and so decouple your components.
+You can send a message to a single consumer, or dispatch to multiple consumers, or implement a request-reply interaction, where you send a message (request) and expect a response.
+This is what we are going to use in this section.
+Our `VertxResource` will send a message containing a name to the `greetings` address.
+Another component will receive the message and produce the "hello $name" response.
+The `VertxResource` will receive the response and return it as the HTTP response.
 
-Consider these endpoints:
+So, first, let's extend our `VertxResource` class with the following code:
 
-[source,java]
+
+[source, java]
 ----
+@Inject
+EventBus bus;                                                   // <1>
+
+@GET
 @Path("/hello")
-@Produces(MediaType.APPLICATION_JSON)
-public class VertxJsonResource {
+public Uni<String> hello(@QueryParam("name") String name) {     // <2>
+    return bus.<String>request("greetings", name)               // <3>
+            .onItem().transform(response -> response.body());   // <4>
+}
+----
+1. Inject the event bus. Alternatively you can use `vertx.eventBus()`.
+2. We receive a _name_ as a query parameter
+3. We use the `request` method to initiate the request-reply interaction. We send the name to the "greetings" address.
+4. When the response is received, we extract the body and return it as the HTTP response
 
-    @GET
-    @Path("{name}/object")
-    public JsonObject jsonObject(@PathParam String name) {
-        return new JsonObject().put("Hello", name);
-    }
+Now, we need the other side: the component receiving the name and replying.
+Create the `src/main/java/org/acme/GreetingService.java` file with the following content:
 
-    @GET
-    @Path("{name}/array")
-    public JsonArray jsonArray(@PathParam String name) {
-        return new JsonArray().add("Hello").add(name);
+[source, java]
+----
+package org.acme;
+
+import io.quarkus.vertx.ConsumeEvent;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped                          // <1>
+public class GreetingService {
+
+    @ConsumeEvent("greetings")              // <2>
+    public String hello(String name) {      // <3>
+        return "Hello " + name;             // <4>
     }
 }
 ----
+1. Declaring a CDI Bean in the Application scope. Quarkus will create a single instance of this class.
+2. Use the `@ConsumeEvent` annotation to declare a consumer. It is possible to use the Vert.x API directly too. TODO LINK REF
+3. Receive the message payload as a method parameter. The returned object will be the reply.
+4. Return the response. This response is sent back to the `VertxResource` class
 
-In your browser, navigate to http://localhost:8080/hello/Quarkus/object. You should see:
+Let's try this.
+In a terminal, run:
 
-[source, text]
+
+[source, bash]
 ----
-{"Hello":"Quarkus"}
+> curl "http://localhost:8080/vertx/hello?name=bob"
 ----
 
-Then, navigate to http://localhost:8080/hello/Quarkus/array:
-
-[source, text]
-----
-["Hello","Quarkus"]
-----
-
-Needless to say, this works equally well when the JSON content is a request body or is wrapped in a `Uni`, `Multi`, `CompletionStage` or `Publisher`.
+You should get the expected `Hello bob` message back.
 
 == Using Vert.x Clients
 
-As you can inject a Vert.x instance, you can use Vert.x clients in a Quarkus application.
-This section gives an example with the `WebClient`.
+So far, we have used the Vert.x Core API.
+Vert.x offers much more.
+It provides a vast ecosystem.
+In this section, we will see how you can use the Vert.x Web Client, a reactive HTTP client.
 
-=== Picking the right dependency
+Note that some Quarkus extensions are wrapping Vert.x clients and manage them for you.
+That's the case for the reactive data sources, Redis, mail...
+That's not the case with the Web Client.
 
-Depending on the API model you want to use you need to add the right dependency to your `pom.xml` file:
+Remember, at the beginning of the guide,  we added the `smallrye-mutiny-vertx-web-client` dependency to our `pom.xml` file.
+It's now time to use it.
 
-[source, xml, subs=attributes+]
-----
-<!-- bare API -->
-<dependency>
-  <groupId>io.vertx</groupId>
-  <artifactId>vertx-web-client</artifactId>
-</dependency>
-
-<!-- Mutiny API -->
-<dependency>
-  <groupId>io.smallrye.reactive</groupId>
-  <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
-</dependency>
-----
-
-In this guide, we are going to use the Mutiny API, so:
-
-[source, xml, subs=attributes+]
-----
-<dependency>
-  <groupId>io.smallrye.reactive</groupId>
-  <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
-</dependency>
-----
-
-Now, create a new resource in your project with the following content:
-
-[source, java]
-.src/main/java/org/acme/vertx/ResourceUsingWebClient.java
-----
-package org.acme.vertx;
-
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
-import io.smallrye.mutiny.Uni;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
-
-import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.ext.web.client.WebClient;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.WebClientOptions;
-
-@Path("/fruit-data")
-public class ResourceUsingWebClient {
-
-    @Inject
-    Vertx vertx;
-
-    private WebClient client;
-
-    @PostConstruct
-    void initialize() {
-        this.client = WebClient.create(vertx,
-                new WebClientOptions().setDefaultHost("fruityvice.com")
-                    .setDefaultPort(443).setSsl(true).setTrustAll(true));
-    }
-
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{name}")
-    public Uni<JsonObject> getFruitData(@PathParam("name") String name) {
-        return client.get("/api/fruit/" + name)
-                .send()
-                .onItem().transform(resp -> {
-                    if (resp.statusCode() == 200) {
-                        return resp.bodyAsJsonObject();
-                    } else {
-                        return new JsonObject()
-                                .put("code", resp.statusCode())
-                                .put("message", resp.bodyAsString());
-                    }
-                });
-    }
-
-}
-
-----
-
-This resource creates a `WebClient` and upon request use this client to invoke the _fruityvice_ API.
-Depending on the result the response is forwarded as it's received, or a new JSON object is created with the status and body.
-The `WebClient` is obviously asynchronous (and non-blocking), to the endpoint returns a `Uni`.
-
-Run the application with:
-
-[source,bash]
-----
-./mvnw compile quarkus:dev
-----
-
-And then, open a browser to: `http://localhost:8080/fruit-data/pear`. You should get some details about pears.
-
-The application can also run as a native executable.
-But, first, we need to instruct Quarkus to enable _ssl_.
-Open the `src/main/resources/application.properties` and add:
-
-[source,properties]
-----
-quarkus.ssl.native=true
-----
-
-Then, create the native executable with:
-
-[source,bash]
-----
-./mvnw package -Pnative
-----
-
-== Deploying verticles
-
-link:https://vertx.io/docs/vertx-core/java/#\_verticles[Verticles] is "a simple, scalable, actor-like deployment and concurrency model" provided by _Vert.x_.
-This model does not claim to be a strict actor-model implementation, but it does share similarities especially with respect to concurrency, scaling and deployment.
-To use this model, you write and _deploy_ verticles, communicating with each other by sending messages on the event bus.
-
-You can deploy _verticles_ in Quarkus.
-It supports:
-
-* _bare_ verticle - Java classes extending `io.vertx.core.AbstractVerticle`
-* _Mutiny_ verticle - Java classes extending `io.smallrye.mutiny.vertx.core.AbstractVerticle`
-
-To deploy verticles, use the regular Vert.x API:
+First, we need to create an instance of `WebClient`.
+Extend the `VertxResource` class with the `client` field and the creation of the web client in the constructor:
 
 [source, java]
 ----
-@Inject Vertx vertx;
+private final Vertx vertx;
+private final WebClient client;            // <1>
 
-// ...
-vertx.deployVerticle(MyVerticle.class.getName(), ar -> { });
-vertx.deployVerticle(new MyVerticle(), ar -> { });
-----
-
-You can also pass deployment options to configure the verticle as well as set the number of instances.
-
-Verticles are not _beans_ by default.
-However, you can implement them as _ApplicationScoped_ beans and get injection support:
-
-[source, java]
-----
-package io.quarkus.vertx.verticles;
-
-import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.vertx.core.AbstractVerticle;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
-import javax.enterprise.context.ApplicationScoped;
-
-@ApplicationScoped
-public class MyBeanVerticle extends AbstractVerticle {
-
-    @ConfigProperty(name = "address") String address;
-
-    @Override
-    public Uni<Void> asyncStart() {
-        return vertx.eventBus().consumer(address)
-                .handler(m -> m.replyAndForget("hello"))
-                .completionHandler();
-    }
+@Inject
+public VertxResource(Vertx vertx) {
+    this.vertx = vertx;
+    this.client = WebClient.create(vertx); // <2>
 }
 ----
+1. Store the `WebClient`, so we will be able to use it in our HTTP endpoint
+2. Create the `WebClient`. Be sure to use the `io.vertx.mutiny.ext.web.client.WebClient` class
 
-You don't have to inject the `vertx` instance but instead leverage the instance stored in the protected field of `AbstractVerticle`.
-
-Then, deploy the verticle instance with:
-
-[source, java]
-----
-package io.quarkus.vertx.verticles;
-
-import io.quarkus.runtime.StartupEvent;
-import io.vertx.mutiny.core.Vertx;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-
-@ApplicationScoped
-public class VerticleDeployer {
-
-    public void init(@Observes StartupEvent e, Vertx vertx, MyBeanVerticle verticle) {
-         vertx.deployVerticle(verticle).await().indefinitely();
-    }
-}
-----
-
-If you want to deploy every exposed `AbstractVerticle`, you can use:
+Let's now implement a new HTTP endpoint that queries the Wikipedia API to retrieve the pages about Quarkus in the different languages.
+Add the following method to the `VertxResource` class:
 
 [source, java]
 ----
-public void init(@Observes StartupEvent e, Vertx vertx, Instance<AbstractVerticle> verticles) {
-    for (AbstractVerticle verticle : verticles) {
-        vertx.deployVerticle(verticle).await().indefinitely();
-    }
+private static final String URL = "https://en.wikipedia.org/w/api.php?action=parse&page=Quarkus&format=json&prop=langlinks";
+
+@GET
+@Path("/web")
+public Uni<JsonArray> retrieveDataFromWikipedia() {                     // <1>
+    return client.getAbs(URL).send()                                    // <2>
+            .onItem().transform(HttpResponse::bodyAsJsonObject)         // <3>
+            .onItem().transform(json -> json.getJsonObject("parse")     // <4>
+                                        .getJsonArray("langlinks"));
 }
 ----
+1. This endpoint returns a JSON Array. Vert.x provides a convenient way to manipulate JSON Object and Array. More details about these in xref:vertx-reference.adoc#using-vert-x-json[the reference guide].
+2. Send a `GET` request to the Wikipedia API
+3. Once the response is received, extract it as a JSON Object
+4. Extract the `langlinks` array from the response.
 
-== Listening to a Unix Domain Socket
+Then, invoke the endpoint using:
 
-Listening on a unix domain socket allows us to dispense with the overhead of TCP
-if the connection to the quarkus service is established from the same host. This can happen
-if access to the service goes through a proxy which is often the case
-if you're setting up a service mesh with a proxy like Envoy.
-
-IMPORTANT: This will only work on platforms that support <<native-transport>>.
-
-To setup please enable the appropriate <<native-transport>> and set the following
-environment property:
-
+[source, bash]
 ----
-quarkus.http.domain-socket=/var/run/io.quarkus.app.socket
-quarkus.http.domain-socket-enabled=true
+> curl http://localhost:8080/vertx/web
+[{"lang":"de","url":"https://de.wikipedia.org/wiki/Quarkus","langname":"German","autonym":"Deutsch","*":"Quarkus"},{"lang":"fr","url":"https://fr.wikipedia.org/wiki/Quarkus","langname":"French","autonym":"français","*":"Quarkus"}]
 ----
 
-By itself this will not disable the tcp socket which by default will open on
-`0.0.0.0:8080`. It can be explicitly disabled:
-
-----
-quarkus.http.host-enabled=false
-----
-
-These properties can be set through Java's `-D` command line parameter or
-on `application.properties`.
-
-== Read only deployment environments
-
-In environments with read only file systems you may receive errors of the form:
-
-[source]
-----
-java.lang.IllegalStateException: Failed to create cache dir
-----
-
-Assuming `/tmp/` is writable this can be fixed by setting the `vertx.cacheDirBase` property to point to a directory in `/tmp/` for instance in OpenShift by creating an environment variable `JAVA_OPTS` with the value `-Dvertx.cacheDirBase=/tmp/vertx`.
-
-[[reverse-proxy]]
-== Running behind a reverse proxy
-
-Quarkus could be accessed through proxies that additionally generate headers (e.g. `X-Forwarded-Host`) to keep
-information from the client-facing side of the proxy servers that is altered or lost when they are involved.
-In those scenarios, Quarkus can be configured to automatically update information like protocol, host, port and URI
-reflecting the values in these headers.
-
-IMPORTANT: Activating this feature makes the server exposed to several security issues (i.e. information spoofing).
-Consider activate it only when running behind a reverse proxy.
-
-To setup this feature, please include the following lines in `src/main/resources/application.properties`:
-[source,properties]
-----
-quarkus.http.proxy-address-forwarding=true
-----
-
-To consider only de-facto standard header (`Forwarded` header), please include the following lines in `src/main/resources/application.properties`:
-[source,properties]
-----
-quarkus.http.proxy.allow-forwarded=true
-----
-
-To consider only non-standard headers, please include the following lines instead in `src/main/resources/application.properties`:
-
-[source,properties]
-----
-quarkus.http.proxy.proxy-address-forwarding=true
-quarkus.http.proxy.enable-forwarded-host=true
-quarkus.http.proxy.enable-forwarded-prefix=true
-----
-
-Both configurations related to standard and non-standard headers can be combined, although the standard headers configuration will have precedence.
-
-Supported forwarding address headers are:
-
-* `Forwarded`
-* `X-Forwarded-Proto`
-* `X-Forwarded-Host`
-* `X-Forwarded-Port`
-* `X-Forwarded-Ssl`
-* `X-Forwarded-Prefix`
-
-[[same-site-cookie]]
-== SameSite cookies
-
-One can easily add a https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite[SameSite] cookie property to any of the cookies set by a Quarkus endpoint by listing a cookie name and a `SameSite` attribute, for example:
-
-[source]
-----
-quarkus.http.same-site-cookie.jwt.value=Lax
-quarkus.http.same-site-cookie.session.value=Strict
-----
-
-Given this configuration, the `jwt` cookie will have a `SameSite=Lax` attribute and the `session` cookie will have a `SameSite=Strict` attribute.
+The response indicates that, in addition to the English page, there are a German and a French page about Quarkus on wikipedia.
 
 == Going further
 
-There are many other facets of Quarkus using Vert.x underneath:
+This guide introduced how you can use Vert.x APIs from a Quarkus application.
+It's just a brief overview.
+If you want to know more, check the xref:vertx-reference.adoc[reference guide about Vert.x in Quarkus].
 
-* The event bus is the connecting tissue of Vert.x applications.
+As we have seen, the event bus is the connecting tissue of Vert.x applications.
 Quarkus integrates it so different beans can interact with asynchronous messages.
 This part is covered in the link:reactive-event-bus[event bus documentation].
 
-* Data streaming and Apache Kafka are an important part of modern systems.
-Quarkus integrates data streaming using Reactive Messaging.
-More details on link:kafka[Interacting with Kafka].
-
-* Learn how to implement highly performant, low-overhead database applications on Quarkus with the link:reactive-sql-clients[Reactive SQL Clients].
+Learn how to implement highly performant, low-overhead database applications on Quarkus with the link:reactive-sql-clients[Reactive SQL Clients].

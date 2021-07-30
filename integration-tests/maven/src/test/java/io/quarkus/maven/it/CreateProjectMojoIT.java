@@ -313,10 +313,6 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         assertThat(new File(testDir, "gradle/wrapper")).isDirectory();
         assertThat(new File(testDir, "src/main/kotlin")).isDirectory();
 
-        File gradleProperties = new File(testDir, "gradle.properties");
-        assertThat(gradleProperties).isFile();
-        check(gradleProperties, "org.gradle.logging.level=INFO");
-
         check(new File(testDir, "src/main/kotlin/org/acme/MyResource.kt"), "package org.acme");
 
         assertThat(FileUtils.readFileToString(new File(testDir, "build.gradle"), "UTF-8"))

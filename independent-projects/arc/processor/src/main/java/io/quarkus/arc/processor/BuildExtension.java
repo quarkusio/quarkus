@@ -55,6 +55,7 @@ public interface BuildExtension {
         static Key<Collection<BeanInfo>> BEANS = new SimpleKey<>(BUILT_IN_PREFIX + "beans");
         static Key<Collection<BeanInfo>> REMOVED_BEANS = new SimpleKey<>(BUILT_IN_PREFIX + "removedBeans");
         static Key<Collection<ObserverInfo>> OBSERVERS = new SimpleKey<>(BUILT_IN_PREFIX + "observers");
+        static Key<Collection<InterceptorInfo>> INTERCEPTORS = new SimpleKey<>(BUILT_IN_PREFIX + "interceptors");
         static Key<AnnotationStore> ANNOTATION_STORE = new SimpleKey<>(BUILT_IN_PREFIX + "annotationStore");
         static Key<Collection<ScopeInfo>> SCOPES = new SimpleKey<>(BUILT_IN_PREFIX + "scopes");
         static Key<Map<DotName, ClassInfo>> QUALIFIERS = new SimpleKey<>(BUILT_IN_PREFIX + "qualifiers");

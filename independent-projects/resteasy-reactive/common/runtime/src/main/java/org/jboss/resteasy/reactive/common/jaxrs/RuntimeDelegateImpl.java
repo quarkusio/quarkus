@@ -14,6 +14,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.RuntimeDelegate;
+import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
 import org.jboss.resteasy.reactive.common.core.ResponseBuilderFactory;
 import org.jboss.resteasy.reactive.common.headers.CacheControlDelegate;
 import org.jboss.resteasy.reactive.common.headers.CookieHeaderDelegate;
@@ -40,6 +42,11 @@ public class RuntimeDelegateImpl extends RuntimeDelegate {
             public int priority() {
                 return 0;
             }
+
+            @Override
+            public <T> ResponseBuilder<T> createRestResponse() {
+                throw new RuntimeException("Resteasy Reactive server side components are not installed.");
+            }
         };
         ServiceLoader<ResponseBuilderFactory> sl = ServiceLoader.load(ResponseBuilderFactory.class,
                 RuntimeDelegateImpl.class.getClassLoader());
@@ -59,6 +66,10 @@ public class RuntimeDelegateImpl extends RuntimeDelegate {
     @Override
     public Response.ResponseBuilder createResponseBuilder() {
         return factory.create();
+    }
+
+    public <T> RestResponse.ResponseBuilder<T> createRestResponseBuilder() {
+        return factory.createRestResponse();
     }
 
     @Override

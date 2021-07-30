@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Amazon Lambda
+= Amazon Lambda
 :extension-status: preview
 
 include::./attributes.adoc[]
@@ -322,7 +322,7 @@ dependencies {
     implementation 'io.quarkus:quarkus-resteasy'
     implementation 'io.quarkus:quarkus-amazon-lambda'
 
-    testimplementation  "io.quarkus:quarkus-test-amazon-lambda"
+    testImplementation  "io.quarkus:quarkus-test-amazon-lambda"
 
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation 'io.rest-assured:rest-assured'

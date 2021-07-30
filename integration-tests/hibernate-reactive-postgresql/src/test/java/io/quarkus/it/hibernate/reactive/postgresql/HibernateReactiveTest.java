@@ -17,14 +17,6 @@ import io.restassured.RestAssured;
 public class HibernateReactiveTest {
 
     @Test
-    public void reactiveFind() {
-        RestAssured.when()
-                .get("/reactiveFind")
-                .then()
-                .body(is("{\"id\":5,\"name\":\"Aloi\"}"));
-    }
-
-    @Test
     public void reactiveCowPersist() {
         RestAssured.when()
                 .get("/reactiveCowPersist")

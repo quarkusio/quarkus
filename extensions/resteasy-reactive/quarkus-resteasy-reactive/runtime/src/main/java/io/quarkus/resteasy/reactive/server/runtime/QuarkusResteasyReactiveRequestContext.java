@@ -55,6 +55,11 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
     }
 
     @Override
+    public boolean handlesUnmappedException() {
+        return false; // false because handleUnmappedException just throws and lets QuarkusErrorHandler return the final response
+    }
+
+    @Override
     public void handleUnmappedException(Throwable throwable) {
         throw sneakyThrow(throwable);
     }

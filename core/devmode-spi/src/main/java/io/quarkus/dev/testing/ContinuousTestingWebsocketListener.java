@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 public class ContinuousTestingWebsocketListener {
 
     private static Consumer<State> stateListener;
-    private static volatile State lastState = new State(false, false, 0, 0, 0, 0, false, false, false);
+    private static volatile State lastState = new State(false, false, 0, 0, 0, 0, false, false, false, true);
 
     public static Consumer<State> getStateListener() {
         return stateListener;
@@ -14,7 +14,7 @@ public class ContinuousTestingWebsocketListener {
 
     public static void setStateListener(Consumer<State> stateListener) {
         ContinuousTestingWebsocketListener.stateListener = stateListener;
-        if (lastState != null) {
+        if (lastState != null && stateListener != null) {
             stateListener.accept(lastState);
         }
     }
@@ -35,7 +35,7 @@ public class ContinuousTestingWebsocketListener {
         State state = lastState;
         if (state != null) {
             setLastState(new State(state.running, inProgress, state.run, state.passed, state.failed, state.skipped,
-                    state.isBrokenOnly, state.isTestOutput, state.isInstrumentationBasedReload));
+                    state.isBrokenOnly, state.isTestOutput, state.isInstrumentationBasedReload, state.isLiveReload));
         }
     }
 
@@ -43,7 +43,7 @@ public class ContinuousTestingWebsocketListener {
         State state = lastState;
         if (state != null) {
             setLastState(new State(running, running && state.inProgress, state.run, state.passed, state.failed, state.skipped,
-                    state.isBrokenOnly, state.isTestOutput, state.isInstrumentationBasedReload));
+                    state.isBrokenOnly, state.isTestOutput, state.isInstrumentationBasedReload, state.isLiveReload));
         }
     }
 
@@ -51,7 +51,7 @@ public class ContinuousTestingWebsocketListener {
         State state = lastState;
         if (state != null) {
             setLastState(new State(state.running, state.inProgress, state.run, state.passed, state.failed, state.skipped,
-                    brokenOnly, state.isTestOutput, state.isInstrumentationBasedReload));
+                    brokenOnly, state.isTestOutput, state.isInstrumentationBasedReload, state.isLiveReload));
         }
     }
 
@@ -59,7 +59,7 @@ public class ContinuousTestingWebsocketListener {
         State state = lastState;
         if (state != null) {
             setLastState(new State(state.running, state.inProgress, state.run, state.passed, state.failed, state.skipped,
-                    state.isBrokenOnly, testOutput, state.isInstrumentationBasedReload));
+                    state.isBrokenOnly, testOutput, state.isInstrumentationBasedReload, state.isLiveReload));
         }
     }
 
@@ -67,7 +67,15 @@ public class ContinuousTestingWebsocketListener {
         State state = lastState;
         if (state != null) {
             setLastState(new State(state.running, state.inProgress, state.run, state.passed, state.failed, state.skipped,
-                    state.isBrokenOnly, state.isTestOutput, instrumentationBasedReload));
+                    state.isBrokenOnly, state.isTestOutput, instrumentationBasedReload, state.isLiveReload));
+        }
+    }
+
+    public static void setLiveReloadEnabled(boolean liveReload) {
+        State state = lastState;
+        if (state != null) {
+            setLastState(new State(state.running, state.inProgress, state.run, state.passed, state.failed, state.skipped,
+                    state.isBrokenOnly, state.isTestOutput, state.isInstrumentationBasedReload, liveReload));
         }
     }
 
@@ -81,9 +89,10 @@ public class ContinuousTestingWebsocketListener {
         public final boolean isBrokenOnly;
         public final boolean isTestOutput;
         public final boolean isInstrumentationBasedReload;
+        public final boolean isLiveReload;
 
         public State(boolean running, boolean inProgress, long run, long passed, long failed, long skipped,
-                boolean isBrokenOnly, boolean isTestOutput, boolean isInstrumentationBasedReload) {
+                boolean isBrokenOnly, boolean isTestOutput, boolean isInstrumentationBasedReload, boolean isLiveReload) {
             this.running = running;
             this.inProgress = inProgress;
             this.run = run;
@@ -93,6 +102,7 @@ public class ContinuousTestingWebsocketListener {
             this.isBrokenOnly = isBrokenOnly;
             this.isTestOutput = isTestOutput;
             this.isInstrumentationBasedReload = isInstrumentationBasedReload;
+            this.isLiveReload = isLiveReload;
         }
     }
 }

@@ -6,6 +6,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.Socket;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
@@ -29,6 +32,25 @@ public class IsDockerWorking implements BooleanSupplier {
 
     @Override
     public boolean getAsBoolean() {
+        //remote docker detection
+        //we don't want to pull in the docker API here
+        //so we just see if the DOCKER_HOST is set and we can connect to it
+        //we can't actually verify it is docker listening on the other end
+        String dockerHost = System.getenv("DOCKER_HOST");
+        if (dockerHost != null && !dockerHost.startsWith("unix:")) {
+            try {
+                URI url = new URI(dockerHost);
+                try (Socket s = new Socket(url.getHost(), url.getPort())) {
+                    return true;
+                } catch (IOException e) {
+                    LOGGER.warnf("Unable to connect to DOCKER_HOST URI %s, make sure docker is running on the specified host",
+                            dockerHost);
+                }
+            } catch (URISyntaxException e) {
+                LOGGER.warnf("Unable to parse DOCKER_HOST URI %s, it will be ignored for working docker detection", dockerHost);
+            }
+        }
+
         try {
             if (!ExecUtil.execSilent("docker", "-v")) {
                 LOGGER.warn("'docker -v' returned an error code. Make sure your Docker binary is correct");

@@ -120,6 +120,10 @@ public class QuarkusUnitTest
     private List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
 
     public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
+        return setExpectedException(expectedException, false);
+    }
+
+    public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException, boolean logMessage) {
         return assertException(t -> {
             Throwable i = t;
             boolean found = false;
@@ -130,8 +134,10 @@ public class QuarkusUnitTest
                 }
                 i = i.getCause();
             }
-
-            assertTrue(found, "Build failed with wrong exception, expected " + expectedException + " but got " + t);
+            if (found && logMessage) {
+                System.out.println("Build failed with the expected exception:" + i);
+            }
+            assertTrue(found, "Build failed with a wrong exception, expected " + expectedException + " but got " + t);
         });
     }
 
@@ -568,6 +574,7 @@ public class QuarkusUnitTest
         }
         rootLogger.setHandlers(originalHandlers);
         inMemoryLogHandler.clearRecords();
+        inMemoryLogHandler.setFilter(null);
 
         try {
             if (runningQuarkusApplication != null) {
@@ -587,6 +594,7 @@ public class QuarkusUnitTest
             originalClassLoader = null;
             timeoutTask.cancel();
             timeoutTask = null;
+            timeoutTimer.cancel();
             timeoutTimer = null;
             if (deploymentDir != null) {
                 FileUtil.deleteDirectory(deploymentDir);

@@ -34,6 +34,7 @@ import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
+import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
@@ -98,12 +99,13 @@ public class VanillaKubernetesProcessor {
             Optional<ContainerImageInfoBuildItem> image, Optional<KubernetesCommandBuildItem> command,
             List<KubernetesPortBuildItem> ports, Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath, List<KubernetesRoleBuildItem> roles,
-            List<KubernetesRoleBindingBuildItem> roleBindings) {
+            List<KubernetesRoleBindingBuildItem> roleBindings, Optional<CustomProjectRootBuildItem> customProjectRoot) {
 
         final List<DecoratorBuildItem> result = new ArrayList<>();
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
 
-        Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, outputTarget, packageConfig);
+        Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
+                packageConfig);
         result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, config,
                 metricsConfiguration,
                 annotations, labels, command, ports, livenessPath, readinessPath, roles, roleBindings));
@@ -117,6 +119,7 @@ public class VanillaKubernetesProcessor {
 
         result
                 .add(new DecoratorBuildItem(KUBERNETES, new ApplyImagePullPolicyDecorator(name, config.getImagePullPolicy())));
+        result.add(new DecoratorBuildItem(KUBERNETES, new AddSelectorToDeploymentDecorator(name)));
 
         Stream.concat(config.convertToBuildItems().stream(),
                 envs.stream().filter(e -> e.getTarget() == null || KUBERNETES.equals(e.getTarget()))).forEach(e -> {

@@ -6,6 +6,7 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import javax.security.cert.X509Certificate;
 
+import io.netty.handler.codec.DecoderResult;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
@@ -363,5 +364,10 @@ class ForwardedServerRequestWrapper implements HttpServerRequest, HttpServerRequ
     @Override
     public Object metric() {
         return delegate.metric();
+    }
+
+    @Override
+    public DecoderResult decoderResult() {
+        return delegate.decoderResult();
     }
 }

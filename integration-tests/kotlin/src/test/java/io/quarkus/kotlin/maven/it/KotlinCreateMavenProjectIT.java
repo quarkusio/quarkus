@@ -75,14 +75,16 @@ public class KotlinCreateMavenProjectIT extends QuarkusPlatformAwareMojoTestBase
     private InvocationResult setup(Properties params)
             throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
 
-        params.setProperty("platformArtifactId", "quarkus-bom");
-        params.setProperty("platformVersion", getQuarkusCoreVersion());
+        params.setProperty("platformGroupId", getBomGroupId());
+        params.setProperty("platformArtifactId", getBomArtifactId());
+        params.setProperty("platformVersion", getBomVersion());
 
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
                 getMavenPluginGroupId() + ":" + getMavenPluginArtifactId() + ":" + getMavenPluginVersion() + ":create"));
         request.setProperties(params);
+        request.setShowErrors(true);
         File log = new File(testDir, "build-create-" + testDir.getName() + ".log");
         PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
                 InvokerLogger.DEBUG);

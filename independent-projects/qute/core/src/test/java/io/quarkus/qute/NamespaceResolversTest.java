@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.quarkus.qute.Results.Result;
 import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.Test;
 
@@ -42,7 +41,7 @@ public class NamespaceResolversTest {
                     return "foo1";
                 }).build()).addNamespaceResolver(NamespaceResolver.builder("foo").priority(50).resolve(e -> {
                     // This one should we used first but returns NOT_FOUND and so the other resolver is used
-                    return Result.NOT_FOUND;
+                    return Results.NotFound.from(e);
                 }).build()).build();
         assertEquals("FOO1", engine.parse("{foo:baz.toUpperCase}").render());
     }

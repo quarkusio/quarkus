@@ -226,9 +226,11 @@ public class StartupActionImpl implements StartupAction {
         TransformedClassesBuildItem transformers = buildResult.consume(TransformedClassesBuildItem.class);
         for (Set<TransformedClassesBuildItem.TransformedClass> i : transformers.getTransformedClassesByJar().values()) {
             for (TransformedClassesBuildItem.TransformedClass clazz : i) {
-                ret.put(clazz.getFileName(), clazz.getData());
-                if (clazz.isEager()) {
-                    eagerClasses.add(clazz.getClassName());
+                if (clazz.getData() != null) {
+                    ret.put(clazz.getFileName(), clazz.getData());
+                    if (clazz.isEager()) {
+                        eagerClasses.add(clazz.getClassName());
+                    }
                 }
             }
         }
@@ -239,7 +241,7 @@ public class StartupActionImpl implements StartupAction {
         Map<String, byte[]> data = new HashMap<>();
         for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
             if (i.isApplicationClass() == applicationClasses) {
-                data.put(i.getName().replace(".", "/") + ".class", i.getClassData());
+                data.put(i.getName().replace('.', '/') + ".class", i.getClassData());
                 if (BootstrapDebug.DEBUG_CLASSES_DIR != null) {
                     try {
                         File debugPath = new File(BootstrapDebug.DEBUG_CLASSES_DIR);

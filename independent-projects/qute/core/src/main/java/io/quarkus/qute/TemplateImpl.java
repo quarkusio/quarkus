@@ -86,7 +86,7 @@ class TemplateImpl implements Template {
 
         @Override
         public CompletionStage<String> renderAsync() {
-            StringBuilder builder = new StringBuilder();
+            StringBuilder builder = new StringBuilder(1028);
             return renderData(data(), builder::append).thenApply(v -> builder.toString());
         }
 

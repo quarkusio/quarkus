@@ -29,14 +29,19 @@ import org.objectweb.asm.ClassWriter;
 import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
+import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
+import io.quarkus.deployment.configuration.ClassLoadingConfig;
 import io.quarkus.deployment.index.ConstPoolScanner;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
 public class ClassTransformingBuildStep {
@@ -60,9 +65,11 @@ public class ClassTransformingBuildStep {
     @BuildStep
     TransformedClassesBuildItem handleClassTransformation(List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems,
             ApplicationArchivesBuildItem appArchives, LiveReloadBuildItem liveReloadBuildItem,
-            LaunchModeBuildItem launchModeBuildItem)
+            LaunchModeBuildItem launchModeBuildItem, ClassLoadingConfig classLoadingConfig,
+            CurateOutcomeBuildItem curateOutcomeBuildItem, List<RemovedResourceBuildItem> removedResourceBuildItems)
             throws ExecutionException, InterruptedException {
-        if (bytecodeTransformerBuildItems.isEmpty()) {
+        if (bytecodeTransformerBuildItems.isEmpty() && classLoadingConfig.removedResources.isEmpty()
+                && removedResourceBuildItems.isEmpty()) {
             return new TransformedClassesBuildItem(Collections.emptyMap());
         }
         final Map<String, List<BytecodeTransformerBuildItem>> bytecodeTransformers = new HashMap<>(
@@ -113,7 +120,7 @@ public class ClassTransformingBuildStep {
                 ClassLoader old = Thread.currentThread().getContextClassLoader();
                 try {
                     Thread.currentThread().setContextClassLoader(transformCl);
-                    String classFileName = className.replace(".", "/") + ".class";
+                    String classFileName = className.replace('.', '/') + ".class";
                     List<ClassPathElement> archives = cl.getElementsWithResource(classFileName);
                     if (!archives.isEmpty()) {
                         ClassPathElement classPathElement = archives.get(0);
@@ -153,7 +160,7 @@ public class ClassTransformingBuildStep {
                         }
                     }
                 }
-                String classFileName = className.replace(".", "/") + ".class";
+                String classFileName = className.replace('.', '/') + ".class";
                 List<ClassPathElement> archives = cl.getElementsWithResource(classFileName);
                 if (!archives.isEmpty()) {
                     ClassPathElement classPathElement = archives.get(0);
@@ -187,7 +194,8 @@ public class ClassTransformingBuildStep {
                                 TransformedClassesBuildItem.TransformedClass transformedClass = new TransformedClassesBuildItem.TransformedClass(
                                         className, data,
                                         classFileName, eager.contains(className));
-                                if (cacheable && launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT) {
+                                if (cacheable && launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT
+                                        && classData != null) {
                                     transformedClassesCache.put(className, transformedClass);
                                 }
                                 return transformedClass;
@@ -205,6 +213,7 @@ public class ClassTransformingBuildStep {
         } finally {
             executorPool.shutdown();
         }
+        handleRemovedResources(classLoadingConfig, curateOutcomeBuildItem, transformedClassesByJar, removedResourceBuildItems);
         if (!transformed.isEmpty()) {
             for (Future<TransformedClassesBuildItem.TransformedClass> i : transformed) {
                 final TransformedClassesBuildItem.TransformedClass res = i.get();
@@ -216,10 +225,43 @@ public class ClassTransformingBuildStep {
         return new TransformedClassesBuildItem(transformedClassesByJar);
     }
 
+    private void handleRemovedResources(ClassLoadingConfig classLoadingConfig, CurateOutcomeBuildItem curateOutcomeBuildItem,
+            Map<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJar,
+            List<RemovedResourceBuildItem> removedResourceBuildItems) {
+        //a little bit of a hack, but we use an empty transformed class to represent removed resources, as transforming a class removes it from the original archive
+        Map<AppArtifactKey, Set<String>> removed = new HashMap<>();
+        for (Map.Entry<String, Set<String>> entry : classLoadingConfig.removedResources.entrySet()) {
+            removed.put(new AppArtifactKey(entry.getKey().split(":")), entry.getValue());
+        }
+        for (RemovedResourceBuildItem i : removedResourceBuildItems) {
+            removed.computeIfAbsent(i.getArtifact(), k -> new HashSet<>()).addAll(i.getResources());
+        }
+        if (!removed.isEmpty()) {
+            for (AppDependency i : curateOutcomeBuildItem.getEffectiveModel().getUserDependencies()) {
+                Set<String> filtered = removed.remove(i.getArtifact().getKey());
+                if (filtered != null) {
+                    for (Path path : i.getArtifact().getPaths()) {
+                        transformedClassesByJar.computeIfAbsent(path, s -> new HashSet<>())
+                                .addAll(filtered.stream()
+                                        .map(file -> new TransformedClassesBuildItem.TransformedClass(null, null, file, false))
+                                        .collect(Collectors.toSet()));
+                    }
+                }
+            }
+        }
+        if (!removed.isEmpty()) {
+            log.warn("Could not removed configured resources from the following artifacts as they were not found in the model: "
+                    + removed.keySet());
+        }
+    }
+
     private byte[] transformClass(String className, List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors,
             byte[] classData, List<BiFunction<String, byte[], byte[]>> preVisitFunctions) {
         for (BiFunction<String, byte[], byte[]> i : preVisitFunctions) {
             classData = i.apply(className, classData);
+            if (classData == null) {
+                return null;
+            }
         }
         byte[] data;
         if (!visitors.isEmpty()) {
@@ -240,7 +282,7 @@ public class ClassTransformingBuildStep {
             if (!debugPath.exists()) {
                 debugPath.mkdir();
             }
-            File classFile = new File(debugPath, className.replace(".", "/") + ".class");
+            File classFile = new File(debugPath, className.replace('.', '/') + ".class");
             classFile.getParentFile().mkdirs();
             try (FileOutputStream classWriter = new FileOutputStream(classFile)) {
                 classWriter.write(data);

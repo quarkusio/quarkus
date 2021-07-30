@@ -45,6 +45,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.wildfly.common.Assert;
 
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.proxy.ProxyConfiguration;
 import io.quarkus.deployment.proxy.ProxyFactory;
 import io.quarkus.deployment.recording.AnnotationProxyProvider.AnnotationProxy;
@@ -194,7 +195,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
     @Override
     public <F, T> void registerSubstitution(Class<F> from, Class<T> to,
-            Class<? extends ObjectSubstitution<F, T>> substitution) {
+            Class<? extends ObjectSubstitution<? super F, ? super T>> substitution) {
         substitutions.put(from, new SubstitutionHolder(from, to, substitution));
     }
 
@@ -339,6 +340,15 @@ public class BytecodeRecorderImpl implements RecorderContext {
             T recordingProxy = factory.newInstance(invocationHandler);
             existingProxyClasses.put(theClass, recordingProxy);
             recordingProxyFactories.put(theClass, factory);
+
+            if (theClass.getClassLoader() instanceof QuarkusClassLoader) {
+                ((QuarkusClassLoader) theClass.getClassLoader()).addCloseTask(new Runnable() {
+                    @Override
+                    public void run() {
+                        recordingProxyFactories.remove(theClass);
+                    }
+                });
+            }
             return recordingProxy;
         } catch (IllegalAccessException | InstantiationException e) {
             throw new RuntimeException(e);

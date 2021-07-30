@@ -7,17 +7,12 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
 
 @SuppressWarnings("rawtypes")
 public final class EvaluatedParams {
 
-    static final EvaluatedParams EMPTY;
-
-    static {
-        CompletableFuture<Void> empty = new CompletableFuture<Void>();
-        empty.complete(null);
-        EMPTY = new EvaluatedParams(empty, new CompletableFuture<?>[0]);
-    }
+    static final EvaluatedParams EMPTY = new EvaluatedParams(CompletedStage.VOID, new Supplier<?>[0]);
 
     /**
      * 
@@ -31,28 +26,33 @@ public final class EvaluatedParams {
         } else if (params.size() == 1) {
             return new EvaluatedParams(context.evaluate(params.get(0)));
         }
-        CompletableFuture<?>[] allResults = new CompletableFuture<?>[params.size()];
-        List<CompletableFuture<?>> results = null;
+        Supplier<?>[] allResults = new Supplier[params.size()];
+        List<CompletableFuture<?>> asyncResults = null;
         int i = 0;
         Iterator<Expression> it = params.iterator();
         while (it.hasNext()) {
             Expression expression = it.next();
-            CompletableFuture<Object> result = context.evaluate(expression).toCompletableFuture();
-            allResults[i++] = result;
-            if (!expression.isLiteral()) {
-                if (results == null) {
-                    results = new LinkedList<>();
+            CompletionStage<?> result = context.evaluate(expression);
+            if (result instanceof CompletedStage) {
+                allResults[i++] = (CompletedStage<?>) result;
+                // No async computation needed
+                continue;
+            } else {
+                CompletableFuture<?> fu = result.toCompletableFuture();
+                if (asyncResults == null) {
+                    asyncResults = new LinkedList<>();
                 }
-                results.add(result);
+                asyncResults.add(fu);
+                allResults[i++] = Futures.toSupplier(fu);
             }
         }
         CompletionStage<?> cs;
-        if (results == null) {
-            cs = Futures.COMPLETED;
-        } else if (results.size() == 1) {
-            cs = results.get(0);
+        if (asyncResults == null) {
+            cs = CompletedStage.VOID;
+        } else if (asyncResults.size() == 1) {
+            cs = asyncResults.get(0);
         } else {
-            cs = CompletableFuture.allOf(results.toArray(new CompletableFuture[0]));
+            cs = CompletableFuture.allOf(asyncResults.toArray(new CompletableFuture[0]));
         }
         return new EvaluatedParams(cs, allResults);
     }
@@ -70,24 +70,50 @@ public final class EvaluatedParams {
         if (params.size() < 2) {
             return EMPTY;
         }
-        CompletableFuture<?>[] results = new CompletableFuture<?>[params.size() - 1];
+        Supplier<?>[] allResults = new Supplier[params.size()];
+        List<CompletableFuture<Object>> asyncResults = null;
+
         int i = 0;
         Iterator<Expression> it = params.subList(1, params.size()).iterator();
         while (it.hasNext()) {
-            results[i++] = context.evaluate(it.next()).toCompletableFuture();
+            CompletionStage<Object> result = context.evaluate(it.next());
+            if (result instanceof CompletedStage) {
+                allResults[i++] = (CompletedStage<Object>) result;
+                // No async computation needed
+                continue;
+            } else {
+                CompletableFuture<Object> fu = result.toCompletableFuture();
+                if (asyncResults == null) {
+                    asyncResults = new LinkedList<>();
+                }
+                asyncResults.add(fu);
+                allResults[i++] = Futures.toSupplier(fu);
+            }
         }
-        return new EvaluatedParams(CompletableFuture.allOf(results), results);
+        CompletionStage<?> cs;
+        if (asyncResults == null) {
+            cs = CompletedStage.VOID;
+        } else if (asyncResults.size() == 1) {
+            cs = asyncResults.get(0);
+        } else {
+            cs = CompletableFuture.allOf(asyncResults.toArray(new CompletableFuture[0]));
+        }
+        return new EvaluatedParams(cs, allResults);
     }
 
     public final CompletionStage<?> stage;
-    private final CompletableFuture<?>[] results;
+    private final Supplier<?>[] results;
 
     EvaluatedParams(CompletionStage<?> stage) {
         this.stage = stage;
-        this.results = new CompletableFuture<?>[] { stage.toCompletableFuture() };
+        if (stage instanceof CompletedStage) {
+            this.results = new Supplier[] { (CompletedStage) stage };
+        } else {
+            this.results = new Supplier[] { Futures.toSupplier(stage.toCompletableFuture()) };
+        }
     }
 
-    EvaluatedParams(CompletionStage<?> stage, CompletableFuture[] results) {
+    EvaluatedParams(CompletionStage<?> stage, Supplier<?>[] results) {
         this.stage = stage;
         this.results = results;
     }

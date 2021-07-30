@@ -124,15 +124,29 @@ public class BootstrapMavenOptions {
         if (mvnCmd != null) {
             return mvnCmd;
         }
+
         final String mvnLine = System.getenv(MAVEN_CMD_LINE_ARGS);
         if (mvnLine == null) {
             // if the maven command line isn't available we are not checking for MAVEN_OPTS
             return null;
         }
-        final String mvnOpts = System.getenv("MAVEN_OPTS");
-        if (mvnOpts == null || mvnOpts.isEmpty()) {
+
+        String mvnOpts = System.getenv("MAVEN_OPTS");
+        if (mvnOpts == null) {
             return mvnLine;
         }
+        // only retain system properties from MAVEN_OPTS, not something like --add-opens
+        try {
+            mvnOpts = Arrays.stream(CommandLineUtils.translateCommandline(mvnOpts))
+                    .filter(part -> part.startsWith("-" + SYSTEM_PROPERTY))
+                    .collect(Collectors.joining(" "));
+        } catch (CommandLineException e) {
+            throw new IllegalStateException("Failed to parse MAVEN_OPTS=" + mvnOpts, e);
+        }
+        if (mvnOpts.isEmpty()) {
+            return mvnLine;
+        }
+
         final StringBuilder buf = new StringBuilder(mvnLine.length() + mvnOpts.length() + 1);
         buf.append(mvnOpts);
         if (!Character.isWhitespace(mvnLine.charAt(0))) {

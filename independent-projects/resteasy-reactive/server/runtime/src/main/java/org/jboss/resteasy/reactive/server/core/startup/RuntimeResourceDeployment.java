@@ -27,6 +27,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
@@ -184,8 +185,9 @@ public class RuntimeResourceDeployment {
                     "Endpoints that return an AsyncFile cannot have any WriterInterceptor set");
         }
 
-        //spec doesn't seem to test this, but RESTEasy does not run request filters again for sub resources (which makes sense)
-        if (!locatableResource) {
+        //spec doesn't seem to test this, but RESTEasy does not run request filters for both root and sub resources (which makes sense)
+        //so only only run request filters for methods that are leaf resources - i.e. have a HTTP method annotation so we ensure only one will run
+        if (method.getHttpMethod() != null) {
             List<ResourceRequestFilterHandler> containerRequestFilterHandlers = interceptorDeployment
                     .setupRequestFilterHandler();
             if (blockingHandlerIndex.isPresent()) {
@@ -547,6 +549,9 @@ public class RuntimeResourceDeployment {
                 return type.getActualTypeArguments()[0];
             }
             if (type.getRawType() == Multi.class) {
+                return type.getActualTypeArguments()[0];
+            }
+            if (type.getRawType() == RestResponse.class) {
                 return type.getActualTypeArguments()[0];
             }
             return returnType;

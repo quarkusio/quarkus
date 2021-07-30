@@ -9,12 +9,15 @@ public class TestClassResult implements Comparable<TestClassResult> {
     final List<TestResult> failing;
     final List<TestResult> skipped;
     final long latestRunId;
+    final long time;
 
-    public TestClassResult(String className, List<TestResult> passing, List<TestResult> failing, List<TestResult> skipped) {
+    public TestClassResult(String className, List<TestResult> passing, List<TestResult> failing, List<TestResult> skipped,
+            long time) {
         this.className = className;
         this.passing = passing;
         this.failing = failing;
         this.skipped = skipped;
+        this.time = time;
         long runId = 0;
         for (TestResult i : passing) {
             runId = Math.max(i.runId, runId);
@@ -43,6 +46,10 @@ public class TestClassResult implements Comparable<TestClassResult> {
 
     public long getLatestRunId() {
         return latestRunId;
+    }
+
+    public long getTime() {
+        return time;
     }
 
     @Override

@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.security.DenyAll;
+import javax.annotation.security.RolesAllowed;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -16,6 +17,7 @@ import org.jboss.jandex.MethodInfo;
  */
 public class SecurityTransformerUtils {
     public static final DotName DENY_ALL = DotName.createSimple(DenyAll.class.getName());
+    public static final DotName ROLES_ALLOWED = DotName.createSimple(RolesAllowed.class.getName());
     private static final Set<DotName> SECURITY_ANNOTATIONS = SecurityAnnotationsRegistrar.SECURITY_BINDINGS.keySet();
 
     public static boolean hasStandardSecurityAnnotation(MethodInfo methodInfo) {

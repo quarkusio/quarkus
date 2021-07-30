@@ -1,8 +1,15 @@
 package io.quarkus.jaeger.runtime;
 
+import javax.enterprise.inject.Default;
+import javax.enterprise.inject.Instance;
+import javax.enterprise.inject.spi.CDI;
+
+import org.jboss.logging.Logger;
+
 import io.jaegertracing.Configuration;
 import io.jaegertracing.internal.JaegerTracer;
 import io.jaegertracing.spi.MetricsFactory;
+import io.jaegertracing.spi.Reporter;
 import io.opentracing.Scope;
 import io.opentracing.ScopeManager;
 import io.opentracing.Span;
@@ -17,6 +24,10 @@ public class QuarkusJaegerTracer implements Tracer {
 
     private boolean logTraceContext;
     private MetricsFactory metricsFactory;
+    private boolean zipkinCompatibilityMode = false;
+    private String endpoint = null;
+
+    private static final Logger log = Logger.getLogger(QuarkusJaegerTracer.class);
 
     private final ScopeManager scopeManager = new ScopeManager() {
 
@@ -75,11 +86,31 @@ public class QuarkusJaegerTracer implements Tracer {
                             .withMetricsFactory(metricsFactory)
                             .getTracerBuilder()
                             .withScopeManager(scopeManager)
+                            .withReporter(createReporter())
                             .build();
                 }
             }
         }
         return tracer;
+    }
+
+    private Reporter createReporter() {
+        Reporter reporter = null;
+        if (zipkinCompatibilityMode) {
+            Instance<ReporterFactory> registries = CDI.current().select(ReporterFactory.class,
+                    Default.Literal.INSTANCE);
+            ReporterFactory factory = null;
+            if (registries.isAmbiguous()) {
+                factory = registries.iterator().next();
+                log.warnf("Multiple reporters present, using %s", factory.getClass().getName());
+            } else if (!registries.isUnsatisfied()) {
+                factory = registries.get();
+            }
+            if (factory != null) {
+                reporter = factory.createReporter(endpoint);
+            }
+        }
+        return reporter;
     }
 
     private ScopeManager getScopeManager() {
@@ -123,5 +154,13 @@ public class QuarkusJaegerTracer implements Tracer {
     @Override
     public Scope activateSpan(final Span span) {
         return tracer.activateSpan(span);
+    }
+
+    public void setZipkinCompatibilityMode(boolean zipkinCompatibilityMode) {
+        this.zipkinCompatibilityMode = zipkinCompatibilityMode;
+    }
+
+    public void setEndpoint(String endpoint) {
+        this.endpoint = endpoint;
     }
 }

@@ -28,6 +28,7 @@ import io.quarkus.devtools.project.buildfile.GradleKotlinProjectBuildFile;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.ExtensionCatalogResolver;
+import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public abstract class QuarkusPlatformTask extends QuarkusTask {
@@ -38,13 +39,17 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
 
     private ExtensionCatalog extensionsCatalog(boolean limitExtensionsToImportedPlatforms, MessageWriter log) {
         final List<ArtifactCoords> platforms = importedPlatforms();
-        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
-                ? QuarkusProjectHelper.getCatalogResolver(log)
-                : ExtensionCatalogResolver.empty();
-        if (catalogResolver.hasRegistries()) {
+        ExtensionCatalogResolver catalogResolver;
+        try {
+            catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
+                    ? QuarkusProjectHelper.getCatalogResolver(log)
+                    : ExtensionCatalogResolver.empty();
+        } catch (RegistryResolutionException e) {
+            throw new RuntimeException("Failed to initialize Quarkus extension catalog resolver", e);
+        }
+        if (catalogResolver.hasRegistries() && !limitExtensionsToImportedPlatforms) {
             try {
-                return limitExtensionsToImportedPlatforms ? catalogResolver.resolveExtensionCatalog(platforms)
-                        : catalogResolver.resolveExtensionCatalog(quarkusCoreVersion());
+                return catalogResolver.resolveExtensionCatalog(platforms);
             } catch (Exception e) {
                 throw new RuntimeException("Failed to resolve extensions catalog", e);
             }

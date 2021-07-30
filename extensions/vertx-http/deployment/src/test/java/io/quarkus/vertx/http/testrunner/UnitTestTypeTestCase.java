@@ -33,12 +33,11 @@ public class UnitTestTypeTestCase {
 
     @Test
     public void testUnitMode() throws InterruptedException {
-        TestStatus ts = ContinuousTestingTestUtils.waitForFirstRunToComplete();
-        Assertions.assertEquals(1L, ts.getLastRun());
+        ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
+        TestStatus ts = utils.waitForNextCompletion();
+
         Assertions.assertEquals(2L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
-
     }
 }

@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Contexts and Dependency Injection
+= Contexts and Dependency Injection
 
 include::./attributes.adoc[]
 :numbered:
@@ -136,7 +136,7 @@ quarkus.arc.exclude-dependency.acme.artifact-id=acme-services <2>
 == Native Executables and Private Members
 
 Quarkus is using GraalVM to build a native executable.
-One of the limitations of GraalVM is the usage of https://github.com/oracle/graal/blob/master/substratevm/Limitations.md#reflection[Reflection, window="_blank"].
+One of the limitations of GraalVM is the usage of https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/Limitations.md#reflection[Reflection, window="_blank"].
 Reflective operations are supported but all relevant members must be registered for reflection explicitly.
 Those registrations result in a bigger native executable.
 

@@ -37,7 +37,7 @@ public class PersistentAppModel implements Serializable {
         this.baseName = baseName;
         this.userProvidersDirectory = userProvidersDirectory;
         appArtifact = new SerializedDep(appModel.getAppArtifact(), paths);
-        appArtifact.paths = Collections.singletonList(appArchivePath.replace("\\", "/"));
+        appArtifact.paths = Collections.singletonList(appArchivePath.replace('\\', '/'));
         deploymentDeps = new ArrayList<>(appModel.getDeploymentDependencies().size());
         for (AppDependency i : appModel.getDeploymentDependencies()) {
             deploymentDeps.add(new SerializedDep(i, paths));
@@ -110,7 +110,7 @@ public class PersistentAppModel implements Serializable {
             if (pathList == null) {
                 pathList = Collections.emptyList();
             }
-            this.paths = pathList.stream().map(s -> s.replace("\\", "/")).collect(Collectors.toList());
+            this.paths = pathList.stream().map(s -> s.replace('\\', '/')).collect(Collectors.toList());
         }
 
         public SerializedDep(AppDependency dependency, Map<AppArtifactKey, List<String>> paths) {

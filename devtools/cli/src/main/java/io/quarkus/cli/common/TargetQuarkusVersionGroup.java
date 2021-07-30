@@ -18,7 +18,7 @@ public class TargetQuarkusVersionGroup {
     CommandSpec spec;
 
     @CommandLine.Option(paramLabel = "platformKey:streamId", names = { "-S",
-            "--stream" }, description = "A target stream, for example:%n  io.quarkus.platform:999-SNAPSHOT%n  io.quarkus:1.13")
+            "--stream" }, description = "A target stream, for example:%n  io.quarkus.platform:999-SNAPSHOT%n  io.quarkus.platform:2.0")
     void setStream(String stream) {
         stream = stream.trim();
         if (!stream.isEmpty()) {
@@ -34,7 +34,7 @@ public class TargetQuarkusVersionGroup {
     }
 
     @CommandLine.Option(paramLabel = "groupId:artifactId:version", names = { "-P",
-            "--platform-bom" }, description = "A specific Quarkus platform BOM, for example:%n  io.quarkus:quarkus-bom:1.13.4.Final")
+            "--platform-bom" }, description = "A specific Quarkus platform BOM, for example:%n  io.quarkus:quarkus-bom:2.0.0.Final")
     void setPlatformBom(String bom) {
         bom = bom.replaceFirst("^::", "").trim();
         if (!bom.isEmpty()) {
@@ -70,7 +70,7 @@ public class TargetQuarkusVersionGroup {
             } catch (IllegalArgumentException iex) {
                 throw new CommandLine.ParameterException(spec.commandLine(),
                         String.format("Invalid value '%s' for option '--platform-bom'. " +
-                                "Value should be specified as 'groupId:artifactId:version'. %s", bom, iex.getMessage()));
+                                "Value should be specified as 'GROUP-ID:ARTIFACT-ID:VERSION'. %s", bom, iex.getMessage()));
             }
         }
     }

@@ -28,7 +28,8 @@ public class TemplateExtensionMethodsTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(Foo.class, Extensions.class, PrioritizedExtensions.class)
-                    .addAsResource(new StringAsset("{foo.name.toLower} {foo.name.ignored} {foo.callMe(1)} {foo.baz}"),
+                    .addAsResource(
+                            new StringAsset("{foo.name.toLower} {foo.name.ignored ?: 'NOT_FOUND'} {foo.callMe(1)} {foo.baz}"),
                             "templates/foo.txt")
                     .addAsResource(new StringAsset("{baz.setScale(baz.defaultScale,roundingMode)}"),
                             "templates/baz.txt")
@@ -80,7 +81,7 @@ public class TemplateExtensionMethodsTest {
         map.put("charlie", "3");
         assertEquals("3:1:NOT_FOUND:1:false:true",
                 engine.parse(
-                        "{myMap.size}:{myMap.alpha}:{myMap.missing}:{myMap.get(key)}:{myMap.empty}:{myMap.containsKey('charlie')}")
+                        "{myMap.size}:{myMap.alpha}:{myMap.missing ?: 'NOT_FOUND'}:{myMap.get(key)}:{myMap.empty}:{myMap.containsKey('charlie')}")
                         .data("myMap", map).data("key", "alpha").render());
 
     }

@@ -55,17 +55,17 @@ public class ReflectionAgent {
                                         boolean isInterface) {
                                     if (owner.equals("java/lang/Class") && name.equals("forName")) {
                                         modified.set(true);
-                                        super.visitMethodInsn(opcode, ReflectionAgent.class.getName().replace(".", "/"), name,
+                                        super.visitMethodInsn(opcode, ReflectionAgent.class.getName().replace('.', '/'), name,
                                                 descriptor, isInterface);
                                     } else if (owner.equals("java/lang/ClassLoader") && name.equals("loadClass")) {
                                         modified.set(true);
                                         if (descriptor.equals("(Ljava/lang/String;)Ljava/lang/Class;")) {
                                             super.visitMethodInsn(Opcodes.INVOKESTATIC,
-                                                    ReflectionAgent.class.getName().replace(".", "/"), name,
+                                                    ReflectionAgent.class.getName().replace('.', '/'), name,
                                                     "(Ljava/lang/ClassLoader;Ljava/lang/String;)Ljava/lang/Class;", false);
                                         } else {
                                             super.visitMethodInsn(Opcodes.INVOKESTATIC,
-                                                    ReflectionAgent.class.getName().replace(".", "/"), name,
+                                                    ReflectionAgent.class.getName().replace('.', '/'), name,
                                                     "(Ljava/lang/ClassLoader;Ljava/lang/String;Z)Ljava/lang/Class;", false);
                                         }
                                     } else {

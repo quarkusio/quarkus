@@ -1,9 +1,12 @@
 package io.quarkus.runtime.configuration;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -11,6 +14,8 @@ import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
+
+import io.smallrye.config.common.utils.StringUtil;
 
 /**
  * Utility methods to log configuration problems.
@@ -20,6 +25,7 @@ public final class ConfigDiagnostic {
 
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
     private static final List<String> errorsMessages = new CopyOnWriteArrayList<>();
+    private static final Set<String> errorKeys = new CopyOnWriteArraySet<>();
 
     private ConfigDiagnostic() {
     }
@@ -29,6 +35,7 @@ public final class ConfigDiagnostic {
         final String loggedMessage = message != null ? message
                 : String.format("An invalid value was given for configuration key \"%s\"", name);
         errorsMessages.add(loggedMessage);
+        errorKeys.add(name);
     }
 
     public static void missingValue(String name, NoSuchElementException ex) {
@@ -36,11 +43,13 @@ public final class ConfigDiagnostic {
         final String loggedMessage = message != null ? message
                 : String.format("Configuration key \"%s\" is required, but its value is empty/missing", name);
         errorsMessages.add(loggedMessage);
+        errorKeys.add(name);
     }
 
     public static void duplicate(String name) {
         final String loggedMessage = String.format("Configuration key \"%s\" was specified more than once", name);
         errorsMessages.add(loggedMessage);
+        errorKeys.add(name);
     }
 
     public static void deprecated(String name) {
@@ -77,14 +86,14 @@ public final class ConfigDiagnostic {
                 continue;
             }
 
-            usedProperties.add(replaceNonAlphanumericByUnderscores(property));
+            usedProperties.add(StringUtil.replaceNonAlphanumericByUnderscores(property));
         }
         usedProperties.removeAll(properties);
 
         for (String property : properties) {
             boolean found = false;
             for (String usedProperty : usedProperties) {
-                if (usedProperty.equalsIgnoreCase(replaceNonAlphanumericByUnderscores(property))) {
+                if (usedProperty.equalsIgnoreCase(StringUtil.replaceNonAlphanumericByUnderscores(property))) {
                     found = true;
                     break;
                 }
@@ -125,6 +134,7 @@ public final class ConfigDiagnostic {
      * Reset the config error status (for e.g. testing).
      */
     public static void resetError() {
+        errorKeys.clear();
         errorsMessages.clear();
     }
 
@@ -138,19 +148,7 @@ public final class ConfigDiagnostic {
         return b.toString();
     }
 
-    private static String replaceNonAlphanumericByUnderscores(final String name) {
-        int length = name.length();
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < length; i++) {
-            char c = name.charAt(i);
-            if ('a' <= c && c <= 'z' ||
-                    'A' <= c && c <= 'Z' ||
-                    '0' <= c && c <= '9') {
-                sb.append(c);
-            } else {
-                sb.append('_');
-            }
-        }
-        return sb.toString();
+    public static Set<String> getErrorKeys() {
+        return new HashSet<>(errorKeys);
     }
 }

@@ -35,7 +35,7 @@ public class AdditionalJpaOperations {
         EntityManager em = jpaOperations.getEntityManager();
         Query jpaQuery = em.createQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
         JpaOperations.bindParameters(jpaQuery, params);
-        return new CustomCountPanacheQuery(em, jpaQuery, findQuery, countQuery, params);
+        return new CustomCountPanacheQuery(em, jpaQuery, countQuery, params);
     }
 
     public static PanacheQuery<?> find(AbstractJpaOperations<?> jpaOperations, Class<?> entityClass, String query,
@@ -50,7 +50,7 @@ public class AdditionalJpaOperations {
         EntityManager em = jpaOperations.getEntityManager();
         Query jpaQuery = em.createQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
         JpaOperations.bindParameters(jpaQuery, params);
-        return new CustomCountPanacheQuery(em, jpaQuery, findQuery, countQuery, params);
+        return new CustomCountPanacheQuery(em, jpaQuery, countQuery, params);
     }
 
     public static long deleteAllWithCascade(AbstractJpaOperations<?> jpaOperations, Class<?> entityClass) {

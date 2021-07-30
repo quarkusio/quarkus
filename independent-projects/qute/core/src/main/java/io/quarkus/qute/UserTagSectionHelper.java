@@ -79,14 +79,32 @@ public class UserTagSectionHelper implements SectionHelper {
 
         @Override
         public ParametersInfo getParameters() {
-            return ParametersInfo.builder().addParameter(new Parameter(IT, "it", false)).build();
+            return ParametersInfo.builder().addParameter(new Parameter(IT, IT, false)).build();
+        }
+
+        @Override
+        public Scope initializeBlock(Scope outerScope, BlockInfo block) {
+            if (block.getLabel().equals(MAIN_BLOCK_NAME)) {
+                for (Entry<String, String> entry : block.getParameters().entrySet()) {
+                    if (entry.getKey().equals(IT) && entry.getValue().equals(IT)) {
+                        continue;
+                    }
+                    block.addExpression(entry.getKey(), entry.getValue());
+                }
+                return outerScope;
+            } else {
+                return outerScope;
+            }
         }
 
         @Override
         public UserTagSectionHelper initialize(SectionInitContext context) {
             Map<String, Expression> params = new HashMap<>();
             for (Entry<String, String> entry : context.getParameters().entrySet()) {
-                params.put(entry.getKey(), context.parseValue(entry.getValue()));
+                if (entry.getKey().equals(IT) && entry.getValue().equals(IT)) {
+                    continue;
+                }
+                params.put(entry.getKey(), context.getExpression(entry.getKey()));
             }
             boolean isEmpty = context.getBlocks().size() == 1 && context.getBlocks().get(0).isEmpty();
             final Engine engine = context.getEngine();

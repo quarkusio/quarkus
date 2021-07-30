@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Funqy HTTP Binding with Azure Functions
+= Funqy HTTP Binding with Azure Functions
 :extension-status: preview
 
 include::./attributes.adoc[]

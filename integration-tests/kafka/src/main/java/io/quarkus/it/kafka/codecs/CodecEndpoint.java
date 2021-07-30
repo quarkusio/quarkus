@@ -2,6 +2,7 @@ package io.quarkus.it.kafka.codecs;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 
 import javax.annotation.PostConstruct;
@@ -54,10 +55,28 @@ public class CodecEndpoint {
         return new KafkaProducer<>(props);
     }
 
+    public Producer<String, List<Person>> createPersonListProducer() {
+        Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bs);
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, "person-list");
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonbSerializer.class.getName());
+        return new KafkaProducer<>(props);
+    }
+
     public Producer<String, Movie> createMovieProducer() {
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bs);
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "movie");
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ObjectMapperSerializer.class.getName());
+        return new KafkaProducer<>(props);
+    }
+
+    public Producer<String, List<Movie>> createMovieListProducer() {
+        Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bs);
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, "movie-list");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ObjectMapperSerializer.class.getName());
         return new KafkaProducer<>(props);
@@ -89,6 +108,19 @@ public class CodecEndpoint {
         return consumer;
     }
 
+    public KafkaConsumer<String, List<Person>> createPersonListConsumer() {
+        Properties props = new Properties();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bs);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "person-list");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, PersonListDeserializer.class.getName());
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        KafkaConsumer<String, List<Person>> consumer = new KafkaConsumer<>(props);
+        consumer.subscribe(Collections.singletonList("person-list"));
+        return consumer;
+    }
+
     public KafkaConsumer<String, Movie> createMovieConsumer() {
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bs);
@@ -102,12 +134,29 @@ public class CodecEndpoint {
         return consumer;
     }
 
+    public KafkaConsumer<String, List<Movie>> createMovieListConsumer() {
+        Properties props = new Properties();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bs);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "movie-list");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, MovieListDeserializer.class.getName());
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        KafkaConsumer<String, List<Movie>> consumer = new KafkaConsumer<>(props);
+        consumer.subscribe(Collections.singletonList("movie-list"));
+        return consumer;
+    }
+
     private Producer<String, Pet> petProducer;
     private Producer<String, Person> personProducer;
     private Consumer<String, Pet> petConsumer;
     private Consumer<String, Person> personConsumer;
     private KafkaConsumer<String, Movie> movieConsumer;
     private Producer<String, Movie> movieProducer;
+    private Producer<String, List<Person>> personListProducer;
+    private Consumer<String, List<Person>> personListConsumer;
+    private Producer<String, List<Movie>> movieListProducer;
+    private Consumer<String, List<Movie>> movieListConsumer;
 
     @PostConstruct
     public void create() {
@@ -117,6 +166,10 @@ public class CodecEndpoint {
         personConsumer = createPersonConsumer();
         movieProducer = createMovieProducer();
         movieConsumer = createMovieConsumer();
+        personListProducer = createPersonListProducer();
+        personListConsumer = createPersonListConsumer();
+        movieListProducer = createMovieListProducer();
+        movieListConsumer = createMovieListConsumer();
     }
 
     @POST
@@ -134,10 +187,24 @@ public class CodecEndpoint {
     }
 
     @POST
+    @Path("/person-list")
+    public void postListOfPersons(List<Person> persons) {
+        personListProducer.send(new ProducerRecord<>("person-list", persons));
+        personListProducer.flush();
+    }
+
+    @POST
     @Path("/movies")
     public void post(Movie movie) {
         movieProducer.send(new ProducerRecord<>("movies", movie));
         movieProducer.flush();
+    }
+
+    @POST
+    @Path("/movie-list")
+    public void postListOfMovies(List<Movie> movies) {
+        movieListProducer.send(new ProducerRecord<>("movie-list", movies));
+        movieListProducer.flush();
     }
 
     @GET
@@ -161,9 +228,29 @@ public class CodecEndpoint {
     }
 
     @GET
+    @Path("/person-list")
+    public List<Person> listPersons() {
+        final ConsumerRecords<String, List<Person>> records = personListConsumer.poll(Duration.ofMillis(60000));
+        if (records.isEmpty()) {
+            return null;
+        }
+        return records.iterator().next().value();
+    }
+
+    @GET
     @Path("/movies")
     public Movie getMovie() {
         final ConsumerRecords<String, Movie> records = movieConsumer.poll(Duration.ofMillis(60000));
+        if (records.isEmpty()) {
+            return null;
+        }
+        return records.iterator().next().value();
+    }
+
+    @GET
+    @Path("/movie-list")
+    public List<Movie> listMovie() {
+        final ConsumerRecords<String, List<Movie>> records = movieListConsumer.poll(Duration.ofMillis(60000));
         if (records.isEmpty()) {
             return null;
         }

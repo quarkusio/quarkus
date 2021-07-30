@@ -1,30 +1,25 @@
 package io.quarkus.smallrye.reactivemessaging.amqp.deployment;
 
 import java.io.Closeable;
-import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
-
-import com.github.dockerjava.api.model.Container;
-import com.github.dockerjava.api.model.ContainerPort;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -44,6 +39,8 @@ public class DevServicesAmqpProcessor {
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-amqp";
 
     private static final int AMQP_PORT = 5672;
+
+    private static final ContainerLocator amqpContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL, AMQP_PORT);
     private static final String AMQP_HOST_PROP = "amqp-host";
     private static final String AMQP_PORT_PROP = "amqp-port";
     private static final String AMQP_USER_PROP = "amqp-user";
@@ -62,17 +59,12 @@ public class DevServicesAmqpProcessor {
     public DevServicesAmqpBrokerBuildItem startAmqpDevService(
             LaunchModeBuildItem launchMode,
             AmqpBuildTimeConfig amqpClientBuildTimeConfig,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
-            BuildProducer<DevServicesNativeConfigResultBuildItem> devServicePropertiesProducer,
-            BuildProducer<ServiceStartBuildItem> serviceStartBuildItemBuildProducer) {
+            BuildProducer<DevServicesConfigResultBuildItem> devServicePropertiesProducer) {
 
         AmqpDevServiceCfg configuration = getConfiguration(amqpClientBuildTimeConfig);
 
         if (closeable != null) {
-            boolean shouldShutdownTheBroker = launchMode.getLaunchMode() == LaunchMode.TEST;
-            if (!shouldShutdownTheBroker) {
-                shouldShutdownTheBroker = !configuration.equals(cfg);
-            }
+            boolean shouldShutdownTheBroker = !configuration.equals(cfg);
             if (!shouldShutdownTheBroker) {
                 return null;
             }
@@ -84,61 +76,41 @@ public class DevServicesAmqpProcessor {
         DevServicesAmqpBrokerBuildItem artemis = null;
         if (broker != null) {
             closeable = broker.getCloseable();
-            runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(AMQP_HOST_PROP, broker.host));
-            runTimeConfiguration
-                    .produce(new RunTimeConfigurationDefaultBuildItem(AMQP_PORT_PROP, Integer.toString(broker.port)));
-            runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(AMQP_USER_PROP, broker.user));
-            runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(AMQP_PASSWORD_PROP, broker.password));
+            devServicePropertiesProducer.produce(new DevServicesConfigResultBuildItem(AMQP_HOST_PROP, broker.host));
+            devServicePropertiesProducer
+                    .produce(new DevServicesConfigResultBuildItem(AMQP_PORT_PROP, Integer.toString(broker.port)));
+            devServicePropertiesProducer.produce(new DevServicesConfigResultBuildItem(AMQP_USER_PROP, broker.user));
+            devServicePropertiesProducer.produce(new DevServicesConfigResultBuildItem(AMQP_PASSWORD_PROP, broker.password));
 
             artemis = new DevServicesAmqpBrokerBuildItem(broker.host, broker.port, broker.user, broker.password);
-        }
 
-        // Configure the watch dog
-        if (first) {
-            first = false;
-            Runnable closeTask = new Runnable() {
-                @Override
-                public void run() {
-                    if (closeable != null) {
-                        shutdownBroker();
-                    }
-                    first = true;
-                    closeable = null;
-                    cfg = null;
-                }
-            };
-            QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
-            Thread closeHookThread = new Thread(closeTask, "AMQP container shutdown thread");
-            Runtime.getRuntime().addShutdownHook(closeHookThread);
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(new Runnable() {
-                @Override
-                public void run() {
-                    Runtime.getRuntime().removeShutdownHook(closeHookThread);
-                }
-            });
-        }
-        cfg = configuration;
-
-        if (broker != null) {
             if (broker.isOwner()) {
                 log.infof(
                         "Dev Services for AMQP started. Other Quarkus applications in dev mode will find the "
                                 + "broker automatically. For Quarkus applications in production mode, you can connect to"
                                 + " this by starting your application with -Damqp.host=%s -Damqp.port=%d -Damqp.user=%s -Damqp.password=%s",
                         broker.host, broker.port, broker.user, broker.password);
-                devServicePropertiesProducer
-                        .produce(new DevServicesNativeConfigResultBuildItem(AMQP_HOST_PROP, broker.host));
-                devServicePropertiesProducer
-                        .produce(new DevServicesNativeConfigResultBuildItem(AMQP_PORT_PROP,
-                                Integer.toString(broker.port)));
-                devServicePropertiesProducer
-                        .produce(new DevServicesNativeConfigResultBuildItem(AMQP_USER_PROP, broker.user));
-                devServicePropertiesProducer
-                        .produce(new DevServicesNativeConfigResultBuildItem(AMQP_PASSWORD_PROP, broker.password));
             }
         }
 
+        // Configure the watch dog
+        if (first) {
+            first = false;
+            Runnable closeTask = () -> {
+                if (closeable != null) {
+                    shutdownBroker();
+                }
+                first = true;
+                closeable = null;
+                cfg = null;
+            };
+            QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
+            ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
+            Thread closeHookThread = new Thread(closeTask, "AMQP container shutdown thread");
+            Runtime.getRuntime().addShutdownHook(closeHookThread);
+            ((QuarkusClassLoader) cl.parent()).addCloseTask(() -> Runtime.getRuntime().removeShutdownHook(closeHookThread));
+        }
+        cfg = configuration;
         return artemis;
     }
 
@@ -152,28 +124,6 @@ public class DevServicesAmqpProcessor {
                 closeable = null;
             }
         }
-    }
-
-    private static Container lookup(String expectedLabelValue) {
-        List<Container> containers = DockerClientFactory.lazyClient().listContainersCmd().exec();
-        for (Container container : containers) {
-            String s = container.getLabels().get(DEV_SERVICE_LABEL);
-            if (expectedLabelValue.equalsIgnoreCase(s)) {
-                return container;
-            }
-        }
-        return null;
-    }
-
-    private static ContainerPort getMappedPort(Container container, int port) {
-        for (ContainerPort p : container.getPorts()) {
-            Integer mapped = p.getPrivatePort();
-            Integer publicPort = p.getPublicPort();
-            if (mapped != null && mapped == port && publicPort != null) {
-                return p;
-            }
-        }
-        return null;
     }
 
     private AmqpBroker startAmqpBroker(AmqpDevServiceCfg config, LaunchModeBuildItem launchMode) {
@@ -200,42 +150,28 @@ public class DevServicesAmqpProcessor {
             return null;
         }
 
-        if (config.shared && launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
-            // Detect if there is a broker already started using container labels.
-            Container container = lookup(config.serviceName);
-            if (container != null) {
-                ContainerPort port = getMappedPort(container, AMQP_PORT);
-                if (port != null) {
-                    Integer p = port.getPublicPort();
-                    String url = port.getIp() + ":" + p;
-                    log.infof("Dev Services for AMQP container found: %s (%s). "
-                            + "Connecting to: %s.",
-                            container.getId(),
-                            container.getImage(), url);
-                    return new AmqpBroker(port.getIp(), p, "admin", "admin", null);
-                }
-            }
-        }
+        final Supplier<AmqpBroker> defaultAmqpBrokerSupplier = () -> {
+            // Starting the broker
+            ArtemisContainer container = new ArtemisContainer(
+                    DockerImageName.parse(config.imageName),
+                    config.extra,
+                    config.fixedExposedPort,
+                    launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null);
 
-        // Starting the broker
-        ArtemisContainer container = new ArtemisContainer(
-                DockerImageName.parse(config.imageName),
-                config.extra,
-                config.fixedExposedPort,
-                launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null);
-        container.start();
+            container.start();
 
-        return new AmqpBroker(
-                container.getHost(),
-                container.getPort(),
-                DEFAULT_USER,
-                DEFAULT_PASSWORD,
-                new Closeable() {
-                    @Override
-                    public void close() {
-                        container.close();
-                    }
-                });
+            return new AmqpBroker(
+                    container.getHost(),
+                    container.getPort(),
+                    DEFAULT_USER,
+                    DEFAULT_PASSWORD,
+                    container::close);
+        };
+
+        return amqpContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
+                .map(containerAddress -> new AmqpBroker(containerAddress.getHost(), containerAddress.getPort(), "admin",
+                        "admin", null))
+                .orElseGet(defaultAmqpBrokerSupplier);
     }
 
     private boolean hasAmqpChannelWithoutHostAndPort() {

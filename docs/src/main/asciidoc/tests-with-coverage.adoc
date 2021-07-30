@@ -4,7 +4,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Measuring the coverage of your tests
+= Measuring the coverage of your tests
 
 include::./attributes.adoc[]
 
@@ -52,7 +52,7 @@ The solution is located in the `tests-with-coverage-quickstart` {quickstarts-tre
 
 == Starting from a simple project and two tests
 
-Let's start from an empty application created with the Quarkus Maven plugin: 
+Let's start from an empty application created with the Quarkus Maven plugin:
 
 [source,bash,subs=attributes+]
 ----
@@ -143,7 +143,7 @@ public class GreetingResourceTest {
         given()
           .when().get("/hello")
           .then()
-             .statusCode(200)  
+             .statusCode(200)
              .body(is("hello"));
     }
 
@@ -301,10 +301,7 @@ In order to run the integration tests as a jar with the Jacoco agent, add the fo
                         <systemPropertyVariables>
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                             <maven.home>${maven.home}</maven.home>
-                            <quarkus.test.argLine>${argLine}</quarkus.test.argLine>
-                            <!-- If your integration tests require a different profile, you can set that here as well.
-                            <quarkus.test.native-image-profile>it</quarkus.test.native-image-profile>
-                            -->
+                            <quarkus.test.arg-line>${argLine}</quarkus.test.arg-line>
                         </systemPropertyVariables>
                     </configuration>
                 </execution>
@@ -315,6 +312,58 @@ In order to run the integration tests as a jar with the Jacoco agent, add the fo
     ...
 </build>
 
+----
+
+WARNING: Sharing the same value for `quarkus.test.arg-line` might break integration test runs that test different types of Quarkus artifacts. In such cases, the use of maven profiles is advised.
+
+== Setting coverage thresholds for the Maven build
+
+You can set thresholds for code coverage using the Jacoco Maven plugin. Note the element `<dataFile>${project.build.directory}/jacoco-quarkus.exec</dataFile>`. You must set it matching your choice for `quarkus.jacoco.data-file`.
+
+[source, xml]
+----
+<build>
+    ...
+    <plugins>
+        ...
+        <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>${jacoco.version}</version>
+            <executions>
+                <execution>
+                    <id>jacoco-check</id>
+                    <goals>
+                        <goal>check</goal>
+                    </goals>
+                    <phase>test</phase>
+                    <configuration>
+                        <dataFile>${project.build.directory}/jacoco-quarkus.exec</dataFile>
+                        <rules>
+                            <rule>
+                                <element>BUNDLE</element>
+                                <limits>
+                                    <limit>
+                                        <counter>LINE</counter>
+                                        <value>COVEREDRATIO</value>
+                                        <minimum>0.8</minimum>
+                                    </limit>
+                                    <limit>
+                                        <counter>BRANCH</counter>
+                                        <value>COVEREDRATIO</value>
+                                        <minimum>0.72</minimum>
+                                    </limit>
+                                </limits>
+                            </rule>
+                        </rules>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+        ...
+    </plugins>
+    ...
+</build>
 ----
 
 == Conclusion

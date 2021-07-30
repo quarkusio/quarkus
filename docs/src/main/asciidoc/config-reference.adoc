@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Configuration Reference Guide
+= Configuration Reference Guide
 
 include::./attributes.adoc[]
 
@@ -125,7 +125,7 @@ Quarkus provides additional extensions which cover other configuration formats a
 * xref:consul-config.adoc[Consul]
 * xref:spring-cloud-config-client.adoc[Spring Cloud]
 
-TIP: It is also possible to create a xref:config-custom.adoc#custom-config-source[Custom Config Source].
+TIP: It is also possible to create a xref:config-extending-support.adoc#custom-config-source[Custom Config Source].
 
 == Inject
 
@@ -259,17 +259,21 @@ example may be expressed as:
 [source,properties]
 ----
 quarkus.http.port=9090
+%staging.quarkus.http.test-port=9091
 ----
 
 .application-staging.properties
 [source,properties]
 ----
-quarkus.http.port=9999
+quarkus.http.port=9190
+quarkus.http.test-port=9191
 ----
 
 [NOTE]
 ====
 In this style, the configuration names in the profile aware file do not need to be prefixed with the profile name.
+
+Properties in the profile aware file have priority over profile aware properties defined in the main file.
 ====
 
 === Parent Profile
@@ -376,6 +380,21 @@ application.host=${HOST:${remote.host}}
 This will expand the `HOST` environment variable and use the value of the property `remote.host` as the default value
 if `HOST` is not set.
 
+== Accessing a generating UUID
+
+The default config source from Quarkus provides a random UUID value.
+It generates the UUID at startup time.
+So, the value changes between startups, including reloads in dev mode.
+
+You can access the generated value using the `quarkus.uuid` property.
+Use <<property-expressions, expressions>> to access it: `${quarkus.uuid}`.
+For example, it can be useful to configure a Kafka client with a unique consumer group:
+
+[source, properties]
+----
+mp.messaging.incoming.prices.group.id=${quarkus.uuid}
+----
+
 == Clearing properties
 
 Run time properties which are optional, and which have had values set at build time or which have a default value,
@@ -420,6 +439,8 @@ value has priority.
 The indexed property is sorted by their index before being added to the target `Collection`. Any gaps contained in the
 indexes do not resolve to the target `Collection`, which means that the `Collection` result will store all values
 without any gaps.
+
+IMPORTANT: Indexed Properties are not supported in Environment Variables.
 
 == Generate Configuration
 

@@ -28,7 +28,7 @@ public class CollectionTemplateExtensionsTest {
     @Test
     public void testListGetByIndex() {
         assertEquals("true=true=NOT_FOUND",
-                engine.parse("{@java.util.List<Boolean> list}{list.0.booleanValue}={list[0]}={list[100]}")
+                engine.parse("{@java.util.List<Boolean> list}{list.0.booleanValue}={list[0]}={list[100] ?: 'NOT_FOUND'}")
                         .data("list", Collections.singletonList(true)).render());
     }
 
@@ -40,6 +40,30 @@ public class CollectionTemplateExtensionsTest {
         names.add("charlie");
         assertEquals("CHARLIE::BRAVO::ALPHA::",
                 engine.parse("{@java.util.List<String> list}{#each list.reversed}{it.toUpperCase}::{/each}").data("list", names)
+                        .render());
+    }
+
+    @Test
+    public void testTake() {
+        List<String> names = new ArrayList<>();
+        names.add("alpha");
+        names.add("bravo");
+        names.add("charlie");
+        assertEquals(
+                "alpha::bravo::",
+                engine.parse("{@java.util.List<String> list}{#each list.take(2)}{it}::{/each}").data("list", names)
+                        .render());
+    }
+
+    @Test
+    public void testTakeLast() {
+        List<String> names = new ArrayList<>();
+        names.add("alpha");
+        names.add("bravo");
+        names.add("charlie");
+        assertEquals(
+                "bravo::charlie::",
+                engine.parse("{@java.util.List<String> list}{#each list.takeLast(2)}{it}::{/each}").data("list", names)
                         .render());
     }
 

@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -656,7 +655,7 @@ public class QuteProcessor {
                 if (match.isArray()) {
                     if (info.isProperty()) {
                         String name = info.asProperty().name;
-                        if (name.equals("length")) {
+                        if (name.equals("length") || name.equals("size")) {
                             // myArray.length
                             match.setValues(null, PrimitiveType.INT);
                             continue;
@@ -670,21 +669,20 @@ public class QuteProcessor {
                                 // not an integer index
                             }
                         }
-                    } else if (info.isVirtualMethod() && info.asVirtualMethod().name.equals("get")) {
-                        // array.get(84)
+                    } else if (info.isVirtualMethod()) {
                         List<Expression> params = info.asVirtualMethod().part.asVirtualMethod().getParameters();
-                        if (params.size() == 1) {
+                        String name = info.asVirtualMethod().name;
+                        if (name.equals("get") && params.size() == 1) {
+                            // array.get(84)
                             Expression param = params.get(0);
-                            Object literalValue;
-                            try {
-                                literalValue = param.getLiteralValue().get();
-                            } catch (InterruptedException | ExecutionException e) {
-                                literalValue = null;
-                            }
+                            Object literalValue = param.getLiteral();
                             if (literalValue == null || literalValue instanceof Integer) {
                                 match.setValues(null, match.type().asArrayType().component());
                                 continue;
                             }
+                        } else if (name.equals("take") || name.equals("takeLast")) {
+                            // The returned array has the same component type
+                            continue;
                         }
                     }
                 }
@@ -1072,8 +1070,17 @@ public class QuteProcessor {
             throws IOException {
         ApplicationArchive applicationArchive = applicationArchivesBuildItem.getRootArchive();
         String basePath = "templates";
-        Path templatesPath = applicationArchive.getChildPath(basePath);
-
+        Path templatesPath = null;
+        for (Path rootDir : applicationArchive.getRootDirs()) {
+            // Note that we cannot use ApplicationArchive.getChildPath(String) here because we would not be able to detect 
+            // a wrong directory name on case-insensitive file systems 
+            templatesPath = Files.list(rootDir).filter(p -> p.getFileName().toString().equals(basePath)).findFirst()
+                    .orElse(null);
+            if (templatesPath != null) {
+                break;
+            }
+        }
+        LOGGER.debugf("Found templates dir: %s", templatesPath);
         if (templatesPath != null) {
             scan(templatesPath, templatesPath, basePath + "/", watchedPaths, templatePaths, nativeImageResources);
         }
@@ -1448,12 +1455,7 @@ public class QuteProcessor {
             IndexView index) {
         if (valueExpr != null) {
             if (valueExpr.isLiteral()) {
-                Object literalValue;
-                try {
-                    literalValue = valueExpr.getLiteralValue().get();
-                } catch (InterruptedException | ExecutionException e) {
-                    literalValue = null;
-                }
+                Object literalValue = valueExpr.getLiteral();
                 if (literalValue == null) {
                     match.clearValues();
                 } else {

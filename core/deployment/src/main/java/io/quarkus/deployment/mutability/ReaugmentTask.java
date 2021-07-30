@@ -3,6 +3,7 @@ package io.quarkus.deployment.mutability;
 import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.BUILD_SYSTEM_PROPERTIES;
 import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.DEPLOYMENT_LIB;
 import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.LIB;
+import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.QUARKUS;
 
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -26,11 +27,12 @@ public class ReaugmentTask {
     public static void main(Path appRoot) throws Exception {
 
         Path deploymentLib = appRoot.resolve(LIB).resolve(DEPLOYMENT_LIB);
+        Path buildSystemProps = appRoot.resolve(QUARKUS).resolve(BUILD_SYSTEM_PROPERTIES);
         try (ObjectInputStream in = new ObjectInputStream(
                 Files.newInputStream(deploymentLib.resolve(JarResultBuildStep.APPMODEL_DAT)))) {
             Properties buildSystemProperties = new Properties();
             try (InputStream buildIn = Files
-                    .newInputStream(deploymentLib.resolve(BUILD_SYSTEM_PROPERTIES))) {
+                    .newInputStream(buildSystemProps)) {
                 buildSystemProperties.load(buildIn);
             }
 

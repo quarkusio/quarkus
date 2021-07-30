@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Creating Your First Application
+= Creating Your First Application
 
 include::./attributes.adoc[]
 
@@ -464,22 +464,6 @@ You can run the application using: `java -jar target/quarkus-app/quarkus-run.jar
 NOTE: If you want to deploy your application somewhere (typically in a container), you need to deploy the whole `quarkus-app` directory.
 
 NOTE: Before running the application, don't forget to stop the hot reload mode (hit `CTRL+C`), or you will have a port conflict.
-
-=== Using fast-jar
-
-The previous section assumes that the configuration property `quarkus.package.type` has either not been configured explicitly,
-or that it has been set to `legacy-jar` (in `application.properties` or any of the other supported configuration sources).
-When the property has been set to `fast-jar` (which will become in Quarkus 1.12), then the result of executing
-`./mvnw package` is a new directory under `target` named `quarkus-app`.
-
-You can run the application using: `java -jar target/quarkus-app/quarkus-run.jar`.
-
-WARNING: In order to successfully run the produced jar, you need to have the entire contents of the `quarkus-app` directory. If any of the files are missing, the application will not start or
-might not function correctly.
-
-TIP: The `fast-jar` packaging results in creating an artifact that starts a little faster and consumes slightly less memory than a legacy Quarkus jar
-because it has indexed information about which dependency jar contains classes and resources. It can thus avoid the lookup into potentially every jar
-on the classpath that the legacy jar necessitates, when loading a class or resource.
 
 [#banner]
 == Configuring the banner

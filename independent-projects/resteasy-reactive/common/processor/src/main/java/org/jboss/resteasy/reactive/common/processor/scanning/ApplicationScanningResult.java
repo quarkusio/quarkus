@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.common.processor.scanning;
 import java.util.Set;
 import javax.ws.rs.core.Application;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.resteasy.reactive.common.processor.BlockingDefault;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 public final class ApplicationScanningResult {
@@ -14,11 +15,11 @@ public final class ApplicationScanningResult {
     final boolean filterClasses;
     final Application application;
     final ClassInfo selectedAppClass;
-    final boolean blocking;
+    final BlockingDefault blocking;
 
     public ApplicationScanningResult(Set<String> allowedClasses, Set<String> singletonClasses, Set<String> excludedClasses,
             Set<String> globalNameBindings, boolean filterClasses, Application application,
-            ClassInfo selectedAppClass, boolean blocking) {
+            ClassInfo selectedAppClass, BlockingDefault blocking) {
         this.allowedClasses = allowedClasses;
         this.singletonClasses = singletonClasses;
         this.excludedClasses = excludedClasses;
@@ -83,7 +84,7 @@ public final class ApplicationScanningResult {
         return selectedAppClass;
     }
 
-    public boolean isBlocking() {
+    public BlockingDefault getBlockingDefault() {
         return blocking;
     }
 

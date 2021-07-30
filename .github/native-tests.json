@@ -9,13 +9,13 @@
         {
             "category": "Data1",
             "timeout": 65,
-            "test-modules": "jpa-h2, jpa-mariadb, jpa-mssql, jpa-derby, jpa-without-entity, hibernate-tenancy",
+            "test-modules": "jpa-h2, jpa-mariadb, jpa-mssql, jpa-derby, jpa-without-entity, hibernate-orm-tenancy/datasource, hibernate-orm-tenancy/connection-resolver",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Data2",
             "timeout": 65,
-            "test-modules": "jpa, jpa-mysql, jpa-db2, jpa-oracle",
+            "test-modules": "jpa, jpa-mapping-xml/legacy-app, jpa-mapping-xml/modern-app, jpa-mysql, jpa-db2, jpa-oracle",
             "os-name": "ubuntu-latest"
         },
         {
@@ -39,7 +39,7 @@
         {
             "category": "Data6",
             "timeout": 50,
-            "test-modules": "elasticsearch-rest-client, elasticsearch-rest-high-level-client, hibernate-search-orm-elasticsearch, hibernate-reactive-panache",
+            "test-modules": "elasticsearch-rest-client, elasticsearch-rest-high-level-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-aws, hibernate-reactive-panache",
             "os-name": "ubuntu-latest"
         },
         {
@@ -111,7 +111,7 @@
         {
             "category": "Misc3",
             "timeout": 65,
-            "test-modules": "kubernetes-client, openshift-client, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-metrics",
+            "test-modules": "kubernetes-client, openshift-client, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-metrics, smallrye-opentracing",
             "os-name": "ubuntu-latest"
         },
         {
@@ -137,6 +137,12 @@
             "timeout": 20,
             "test-modules": "hibernate-validator",
             "os-name": "windows-latest"
+        },
+        {
+            "category": "DevTools Integration Tests",
+            "timeout": 70,
+            "test-modules": "devtools-registry-client",
+            "os-name": "ubuntu-latest"
         }
     ]
 }

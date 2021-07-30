@@ -36,12 +36,12 @@ public class TestBrokenOnlyTestCase {
 
     @Test
     public void testBrokenOnlyMode() throws InterruptedException {
-        TestStatus ts = ContinuousTestingTestUtils.waitForFirstRunToComplete();
-        Assertions.assertEquals(1L, ts.getLastRun());
+        ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
+        TestStatus ts = utils.waitForNextCompletion();
+
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         //start broken only mode
         RestAssured.post("q/dev/io.quarkus.quarkus-vertx-http/tests/toggle-broken-only");
@@ -52,12 +52,11 @@ public class TestBrokenOnlyTestCase {
                 return s.replace("@QuarkusTest", "@QuarkusTest //noop change");
             }
         });
-        ts = ContinuousTestingTestUtils.waitForRun(2);
-        Assertions.assertEquals(2L, ts.getLastRun());
+        ts = utils.waitForNextCompletion();
+
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed()); //passing test should not have been run
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         test.modifySourceFile(BrokenOnlyResource.class, new Function<String, String>() {
             @Override
@@ -65,12 +64,11 @@ public class TestBrokenOnlyTestCase {
                 return s.replace("//setup(router);", "setup(router);");
             }
         });
-        ts = ContinuousTestingTestUtils.waitForRun(3);
-        Assertions.assertEquals(3L, ts.getLastRun());
+        ts = utils.waitForNextCompletion();
+
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         //now add a new failing test
         test.modifyTestSourceFile(SimpleET.class, new Function<String, String>() {
@@ -79,12 +77,11 @@ public class TestBrokenOnlyTestCase {
                 return s.replace("//failannotation", "@Test");
             }
         });
-        ts = ContinuousTestingTestUtils.waitForRun(4);
-        Assertions.assertEquals(4L, ts.getLastRun());
+        ts = utils.waitForNextCompletion();
+
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         //now make it pass
         test.modifyTestSourceFile(SimpleET.class, new Function<String, String>() {
@@ -93,12 +90,10 @@ public class TestBrokenOnlyTestCase {
                 return s.replace("Assertions.fail();", "//noop");
             }
         });
-        ts = ContinuousTestingTestUtils.waitForRun(5);
-        Assertions.assertEquals(5L, ts.getLastRun());
+        ts = utils.waitForNextCompletion();
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
     }
 }

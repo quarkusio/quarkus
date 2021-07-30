@@ -13,6 +13,8 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 public abstract class AbstractRawDefaultConfigSource implements ConfigSource, Serializable {
     private static final long serialVersionUID = 2524612253582530249L;
 
+    public static final String NAME = "default values";
+
     protected AbstractRawDefaultConfigSource() {
     }
 
@@ -31,7 +33,7 @@ public abstract class AbstractRawDefaultConfigSource implements ConfigSource, Se
     protected abstract String getValue(final NameIterator nameIterator);
 
     public String getName() {
-        return "default values";
+        return NAME;
     }
 
     public int getOrdinal() {

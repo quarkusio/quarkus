@@ -1,7 +1,5 @@
 package io.quarkus.oidc.runtime;
 
-import java.net.ConnectException;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -21,7 +19,6 @@ import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.OidcTenantConfig.TokenStateManager.Strategy;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
-import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.TlsConfig;
@@ -38,7 +35,6 @@ public class OidcRecorder {
 
     private static final Logger LOG = Logger.getLogger(OidcRecorder.class);
     private static final String DEFAULT_TENANT_ID = "Default";
-    private static final Duration CONNECTION_BACKOFF_DURATION = Duration.ofSeconds(2);
 
     private static final Map<String, TenantConfigContext> dynamicTenantsConfig = new ConcurrentHashMap<>();
 
@@ -63,13 +59,7 @@ public class OidcRecorder {
                         new Function<OidcTenantConfig, Uni<TenantConfigContext>>() {
                             @Override
                             public Uni<TenantConfigContext> apply(OidcTenantConfig config) {
-                                return createDynamicTenantContext(vertxValue, config, tlsConfig, config.getTenantId().get())
-                                        .plug(u -> {
-                                            if (!BlockingOperationControl.isBlockingAllowed()) {
-                                                return u.runSubscriptionOn(ExecutorRecorder.getCurrent());
-                                            }
-                                            return u;
-                                        });
+                                return createDynamicTenantContext(vertxValue, config, tlsConfig, config.getTenantId().get());
                             }
                         },
                         ExecutorRecorder.getCurrent());
@@ -230,11 +220,11 @@ public class OidcRecorder {
                     @Override
                     public Uni<OidcProvider> apply(OidcProviderClient client) {
                         if (client.getMetadata().getJsonWebKeySetUri() != null) {
-                            return client.getJsonWebKeySet().onItem()
-                                    .transform(new Function<JsonWebKeyCache, OidcProvider>() {
+                            return getJsonWebSetUni(client, oidcConfig).onItem()
+                                    .transform(new Function<JsonWebKeySet, OidcProvider>() {
 
                                         @Override
-                                        public OidcProvider apply(JsonWebKeyCache jwks) {
+                                        public OidcProvider apply(JsonWebKeySet jwks) {
                                             return new OidcProvider(client, oidcConfig, jwks);
                                         }
 
@@ -244,6 +234,18 @@ public class OidcRecorder {
                         }
                     }
                 });
+    }
+
+    protected static Uni<JsonWebKeySet> getJsonWebSetUni(OidcProviderClient client, OidcTenantConfig oidcConfig) {
+        if (!oidcConfig.isDiscoveryEnabled()) {
+            final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
+            return client.getJsonWebKeySet().onFailure(OidcCommonUtils.oidcEndpointNotAvailable())
+                    .retry()
+                    .withBackOff(OidcCommonUtils.CONNECTION_BACKOFF_DURATION, OidcCommonUtils.CONNECTION_BACKOFF_DURATION)
+                    .expireIn(connectionDelayInMillisecs);
+        } else {
+            return client.getJsonWebKeySet();
+        }
     }
 
     protected static Uni<OidcProviderClient> createOidcClientUni(OidcTenantConfig oidcConfig,
@@ -271,16 +273,9 @@ public class OidcRecorder {
                     introspectionUri, authorizationUri, jwksUri, userInfoUri, endSessionUri,
                     oidcConfig.token.issuer.orElse(null)));
         } else {
-            final long connectionRetryCount = OidcCommonUtils.getConnectionRetryCount(oidcConfig);
-            final long expireInDelay = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
-            if (connectionRetryCount > 1) {
-                LOG.infof("Connecting to IDP for up to %d times every 2 seconds", connectionRetryCount);
-            }
-            metadataUni = discoverMetadata(client, authServerUriString, oidcConfig).onFailure(ConnectException.class)
-                    .retry()
-                    .withBackOff(CONNECTION_BACKOFF_DURATION, CONNECTION_BACKOFF_DURATION)
-                    .expireIn(expireInDelay)
-                    .onFailure().transform(e -> e.getCause());
+            final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
+            metadataUni = OidcCommonUtils.discoverMetadata(client, authServerUriString, connectionDelayInMillisecs)
+                    .onItem().transform(json -> new OidcConfigurationMetadata(json));
         }
         return metadataUni.onItemOrFailure()
                 .transformToUni(new BiFunction<OidcConfigurationMetadata, Throwable, Uni<? extends OidcProviderClient>>() {
@@ -303,18 +298,6 @@ public class OidcRecorder {
                         return Uni.createFrom().item(new OidcProviderClient(client, metadata, oidcConfig));
                     }
                 });
-    }
-
-    private static Uni<OidcConfigurationMetadata> discoverMetadata(WebClient client, String authServerUrl,
-            OidcTenantConfig oidcConfig) {
-        final String discoveryUrl = authServerUrl + "/.well-known/openid-configuration";
-        return client.getAbs(discoveryUrl).send().onItem().transform(resp -> {
-            if (resp.statusCode() == 200) {
-                return new OidcConfigurationMetadata(resp.bodyAsJsonObject());
-            } else {
-                return null;
-            }
-        });
     }
 
     private static boolean isServiceApp(OidcTenantConfig oidcConfig) {

@@ -33,9 +33,9 @@ If `jbang` has already been installed, you can it directly:
 [source,bash]
 ----
 # This can also be used to update to the latest version
-$ jbang app install --fresh --force quarkus@quarkusio
+jbang app install --fresh --force quarkus@quarkusio
 # Use the latest (or locally built) snapshot (with qss as an alias)
-$ jbang app install --force --name qss io.quarkus:quarkus-cli:999-SNAPSHOT:runner
+jbang app install --force --name qss ~/.m2/repository/io/quarkus/quarkus-cli/999-SNAPSHOT/quarkus-cli-999-SNAPSHOT-runner.jar
 ----
 
 Note: if you get an error about `app` not being readable then you probably
@@ -47,7 +47,7 @@ Once installed `quarkus` will be in your PATH and if you run `quarkus --version`
 
 [source,shell]
 ----
-$ quarkus --version
+quarkus --version
 Client Version {quarkus-version}
 ----
 
@@ -57,7 +57,7 @@ Use `--help` to display help information with all the available commands:
 
 [source,shell]
 ----
-$ quarkus --help
+quarkus --help
 Usage: quarkus [-ehV] [--verbose] [COMMAND]
   -e, --errors    Display error messages.
   -h, --help      Show this help message and exit.
@@ -77,6 +77,13 @@ Commands:
   version          Display version information
 ----
 
+[TIP]
+====
+While this document is a useful reference, the client help is the definitive source.
+
+If you don't see the output you expect, use `--help` to verify that you are invoking the command with the right arguments.
+====
+
 [[project-creation]]
 == Creating a new project
 
@@ -85,7 +92,7 @@ To create a new project we use the `create` command
 
 [source,shell]
 ----
-$ quarkus create
+quarkus create
 -----------
 
 applying codestarts...
@@ -107,13 +114,24 @@ This will create a folder called 'code-with-quarkus' in your current working dir
 
 Note: the emoji shown above may not match precisely. The appearance of emoji can vary by font, and terminal/environment. IntelliJ IDEA, for example, has several long-running issues open regarding the behavior/rendering of emoji in the terminal.
 
-To specify the groupId, artifactId and version values, 
-use the '--group-id', '--artifact-id' and '--version' options:
+As of 2.0.2.Final, you should specify the groupId, artifactId and version using group:artifactId:version coordinate syntax directly on the command line. You can selectively omit segments to use default values:
 
 [source,shell]
 ----
-$ quarkus create app --group-id com.foo --artifact-id bar --version 1.0
-version 1.0
+# Create a project with groupId=org.acme, artifactId=bar, and version=1.0.0-SNAPSHOT
+quarkus create app bar
+
+# Create a project with groupId=com.foo, artifactId=bar, and version=1.0.0-SNAPSHOT
+quarkus create app com.foo:bar
+
+# Create a project with groupId=com.foo, artifactId=bar, and version=1.0
+quarkus create app com.foo:bar:1.0
+----
+
+The output will show your project being created:
+
+[source,shell]
+----
 -----------
 
 applying codestarts...
@@ -131,25 +149,22 @@ applying codestarts...
 -----------
 ----
 
-[TIP]
-====
-`-g`,`-a`,`-v` are short hand options for the full name counterparts:
-`--group-id`,`--artifact-id` and `--version`.
-We use both short and full names in this guide interchangeably.
-====
-
 Use the help option to display options for creating projects:
 
 [source,shell]
 ----
-$ quarkus create app --help
-$ quarkus create cli --help
+quarkus create app --help
+quarkus create cli --help
 ----
 
-[[specifying-quarkus-version]]
-[NOTE]
-.Specifying the Quarkus version
+[WARNING]
 ====
+Previous versions of the CLI used options `--group-id` (`-g`),`--artifact-id` (`-a`) and `--version` (`-v`) to specify the groupId, artifactId, and version. If the output isn't what you expect, double check your client version `quarkus version` and help `quarkus create app --help`.
+====
+
+[[specifying-quarkus-version]]
+== Specifying the Quarkus version
+
 Both `quarkus create` and `quarkus extension list` allow you to explicitly specify a version of Quarkus in one of two ways:
 
 1. Specify a specific Platform Release BOM
@@ -161,24 +176,23 @@ For example:
 - Given the `2.0.0.Final` version of the CLI, specifying `-P :quarkus-universe-bom:` is equivalent to `-P io.quarkus:quarkus-universe-bom:2.0.0.Final`.
 - Specifying `-P 999-SNAPSHOT` is equivalent to `-P io.quarkus:quarkus-bom:999-SNAPSHOT`
 +
-Note: default values are subject to change. Using the `--dryRun` option will show you the computed value.
+Note: default values are subject to change. Using the `--dry-run` option will show you the computed value.
 
 2. Specify a Platform Stream
 +
 Platform streams are new in Quarkus 2.0. 
 +
-A platform stream operates against the concept of a "registry". Each registry defines one or more platform streams, and each stream defines one or more platform release BOM files that define how projects using that stream should be configured.
+A platform stream operates against a remote registry. Each registry defines one or more platform streams, and each stream defines one or more platform release BOM files that define how projects using that stream should be configured.
 +
 Streams are identified using `platformKey:streamId` syntax. A specific stream can be specified using `-S platformKey:streamId`. When specifying a stream, empty segments will be replaced with _discovered_ defaults, based on stream resource resolution rules.
 +
-For `2.0.0.Final`, you must enable the registry client (`--registry-client`) explicitly to specify a stream. This will not be required in later releases.
-====
+For `2.0.0.Final`, you must enable the registry client (`--registry-client`) explicitly to specify a stream. This is not required for `2.1.0.Final` or later releases.
 
 == Dealing with extensions
 
 [source,shell]
 ----
-$ quarkus ext --help
+quarkus ext --help
 ----
 
 === Listing extensions
@@ -187,7 +201,7 @@ The Quarkus CLI can be used to list Quarkus extensions.
 
 [source,shell]
 ----
-$ quarkus ext ls
+quarkus ext ls
 ----
 
 The format of the result can be controlled with one of four options: 
@@ -217,7 +231,7 @@ You can narrow or filter the list using search (`--search` or `-s`).
 
 [source,shell]
 ----
-$ quarkus ext list --concise -i -s jdbc
+quarkus ext list --concise -i -s jdbc
 JDBC Driver - DB2                                  quarkus-jdbc-db2
 JDBC Driver - PostgreSQL                           quarkus-jdbc-postgresql
 JDBC Driver - H2                                   quarkus-jdbc-h2
@@ -238,7 +252,7 @@ command:
 
 [source,shell]
 ----
-$ quarkus ext add kubernetes health
+quarkus ext add kubernetes health
 [SUCCESS] ✅ Extension io.quarkus:quarkus-kubernetes has been installed
 [SUCCESS] ✅ Extension io.quarkus:quarkus-smallrye-health has been installed
 ----
@@ -250,7 +264,7 @@ command:
 
 [source,shell]
 ----
-$ quarkus ext rm kubernetes
+quarkus ext rm kubernetes
 [SUCCESS] ✅ Extension io.quarkus:quarkus-kubernetes has been uninstalled
 ----
 
@@ -260,7 +274,7 @@ To build your project using the Quarkus CLI (using the default configuration in 
 
 [source,shell]
 ----
-$ quarkus build
+quarkus build
 [INFO] Scanning for projects...
 [INFO]
 [INFO] ---------------------< org.acme:code-with-quarkus >---------------------
@@ -282,14 +296,14 @@ Note: Output will vary depending on the build tool your project is using (`maven
 
 [source,shell]
 ----
-$ quarkus dev --help
+quarkus dev --help
 ----
 
 To start dev mode from the Quarkus CLI do:
 
 [source,shell]
 ----
-$ quarkus dev                                                                 ??return_code?
+quarkus dev                                                                 ??return_code?
 [INFO] Scanning for projects...
 [INFO]
 [INFO] ---------------------< org.acme:code-with-quarkus >---------------------
@@ -313,3 +327,9 @@ Tests paused, press [r] to resume
 Note: Output will vary depending on the build tool your project is using (`maven`, `gradle`, or `jbang`).
 
 
+[[quarkus-version-compatibility]]
+[WARNING]
+.Compatibility with Quarkus 1.x
+====
+The version 2 Quarkus CLI can not be used with 1.x Quarkus projects or releases. Use the maven/gradle plugins when working with Quarkus 1.x projects.
+====

@@ -4,6 +4,7 @@ import static io.quarkus.bootstrap.util.ZipUtils.wrapForJDK8232879;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,6 +12,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileVisitOption;
@@ -256,8 +258,10 @@ public class JarResultBuildStep {
             for (Set<TransformedClassesBuildItem.TransformedClass> transformedClassesSet : transformedClasses
                     .getTransformedClassesByJar().values()) {
                 for (TransformedClassesBuildItem.TransformedClass transformedClass : transformedClassesSet) {
-                    classes.append(transformedClass.getFileName().replace('/', '.').replace(".class", ""))
-                            .append(System.lineSeparator());
+                    if (transformedClass.getData() != null) {
+                        classes.append(transformedClass.getFileName().replace('/', '.').replace(".class", ""))
+                                .append(System.lineSeparator());
+                    }
                 }
             }
 
@@ -590,10 +594,12 @@ public class JarResultBuildStep {
                         .getTransformedClassesByJar().values()) {
                     for (TransformedClassesBuildItem.TransformedClass transformed : transformedSet) {
                         Path target = out.getPath(transformed.getFileName());
-                        if (target.getParent() != null) {
-                            Files.createDirectories(target.getParent());
+                        if (transformed.getData() != null) {
+                            if (target.getParent() != null) {
+                                Files.createDirectories(target.getParent());
+                            }
+                            Files.write(target, transformed.getData());
                         }
-                        Files.write(target, transformed.getData());
                     }
                 }
             }
@@ -606,7 +612,7 @@ public class JarResultBuildStep {
         jars.add(generatedZip);
         try (FileSystem out = ZipUtils.newZip(generatedZip)) {
             for (GeneratedClassBuildItem i : generatedClasses) {
-                String fileName = i.getName().replace(".", "/") + ".class";
+                String fileName = i.getName().replace('.', '/') + ".class";
                 Path target = out.getPath(fileName);
                 if (target.getParent() != null) {
                     Files.createDirectories(target.getParent());
@@ -651,7 +657,7 @@ public class JarResultBuildStep {
                 jars.addAll(appDep.getArtifact().getPaths().toList());
             } else {
                 copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, mainLib, baseLib, jars, true,
-                        classPath, appDep);
+                        classPath, appDep, transformedClasses);
             }
             if (parentFirstKeys.contains(appDep.getArtifact().getKey())) {
                 parentFirst.addAll(appDep.getArtifact().getPaths().toList());
@@ -704,17 +710,18 @@ public class JarResultBuildStep {
             if (packageConfig.type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR)) {
 
                 Path deploymentLib = libDir.resolve(DEPLOYMENT_LIB);
+                Path buildSystemProps = quarkus.resolve(BUILD_SYSTEM_PROPERTIES);
                 Files.createDirectories(deploymentLib);
                 for (AppDependency appDep : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
                     copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, deploymentLib, baseLib, jars,
                             false, classPath,
-                            appDep);
+                            appDep, new TransformedClassesBuildItem(Collections.emptyMap())); //we don't care about transformation here, so just pass in an empty item
                 }
 
                 Map<AppArtifactKey, List<String>> relativePaths = new HashMap<>();
                 for (Map.Entry<AppArtifactKey, List<Path>> e : copiedArtifacts.entrySet()) {
                     relativePaths.put(e.getKey(),
-                            e.getValue().stream().map(s -> buildDir.relativize(s).toString().replace("\\", "/"))
+                            e.getValue().stream().map(s -> buildDir.relativize(s).toString().replace('\\', '/'))
                                     .collect(Collectors.toList()));
                 }
 
@@ -747,9 +754,17 @@ public class JarResultBuildStep {
                     obj.writeObject(paths);
                     obj.close();
                 }
-                Path buildSystemProps = deploymentLib.resolve(BUILD_SYSTEM_PROPERTIES);
-                try (OutputStream out = Files.newOutputStream(buildSystemProps)) {
-                    outputTargetBuildItem.getBuildSystemProperties().store(out, "The original build properties");
+                //we output the properties in a reproducible manner, so we remove the date comment
+                //and sort them
+                //we still use Properties to get the escaping right though, so basically we write out the lines
+                //to memory, split them, discard comments, sort them, then write them to disk
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                outputTargetBuildItem.getBuildSystemProperties().store(out, null);
+                List<String> lines = Arrays.stream(new String(out.toByteArray(), StandardCharsets.UTF_8).split("\n"))
+                        .filter(s -> !s.startsWith("#")).sorted().collect(Collectors.toList());
+
+                try (OutputStream fileOutput = Files.newOutputStream(buildSystemProps)) {
+                    fileOutput.write(String.join("\n", lines).getBytes(StandardCharsets.UTF_8));
                 }
             }
 
@@ -848,7 +863,8 @@ public class JarResultBuildStep {
 
     private void copyDependency(Set<AppArtifactKey> parentFirstArtifacts, OutputTargetBuildItem outputTargetBuildItem,
             Map<AppArtifactKey, List<Path>> runtimeArtifacts, Path libDir, Path baseLib, List<Path> jars,
-            boolean allowParentFirst, StringBuilder classPath, AppDependency appDep)
+            boolean allowParentFirst, StringBuilder classPath, AppDependency appDep,
+            TransformedClassesBuildItem transformedClasses)
             throws IOException {
         final AppArtifact depArtifact = appDep.getArtifact();
 
@@ -879,7 +895,22 @@ public class JarResultBuildStep {
                 // the non-jar dependencies are the Quarkus dependencies picked up on the file system
                 packageClasses(resolvedDep, targetPath);
             } else {
-                Files.copy(resolvedDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                Set<TransformedClassesBuildItem.TransformedClass> transformedFromThisArchive = transformedClasses
+                        .getTransformedClassesByJar().get(resolvedDep);
+                Set<String> removedFromThisArchive = new HashSet<>();
+                if (transformedFromThisArchive != null) {
+                    for (TransformedClassesBuildItem.TransformedClass i : transformedFromThisArchive) {
+                        if (i.getData() == null) {
+                            removedFromThisArchive.add(i.getFileName());
+                        }
+                    }
+                }
+                if (removedFromThisArchive.isEmpty()) {
+                    Files.copy(resolvedDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                } else {
+                    //we have removed classes, we need to handle them correctly
+                    filterZipFile(resolvedDep, targetPath, removedFromThisArchive);
+                }
             }
         }
     }
@@ -1147,16 +1178,18 @@ public class JarResultBuildStep {
         for (Set<TransformedClassesBuildItem.TransformedClass> transformed : transformedClassesBuildItem
                 .getTransformedClassesByJar().values()) {
             for (TransformedClassesBuildItem.TransformedClass i : transformed) {
-                Path target = runnerZipFs.getPath(i.getFileName());
-                handleParent(runnerZipFs, i.getFileName(), seen);
-                try (final OutputStream out = wrapForJDK8232879(Files.newOutputStream(target))) {
-                    out.write(i.getData());
+                if (i.getData() != null) {
+                    Path target = runnerZipFs.getPath(i.getFileName());
+                    handleParent(runnerZipFs, i.getFileName(), seen);
+                    try (final OutputStream out = wrapForJDK8232879(Files.newOutputStream(target))) {
+                        out.write(i.getData());
+                    }
+                    seen.put(i.getFileName(), "Current Application");
                 }
-                seen.put(i.getFileName(), "Current Application");
             }
         }
         for (GeneratedClassBuildItem i : generatedClasses) {
-            String fileName = i.getName().replace(".", "/") + ".class";
+            String fileName = i.getName().replace('.', '/') + ".class";
             seen.put(fileName, "Current Application");
             Path target = runnerZipFs.getPath(fileName);
             handleParent(runnerZipFs, fileName, seen);
@@ -1224,6 +1257,7 @@ public class JarResultBuildStep {
                     while (entries.hasMoreElements()) {
                         ZipEntry entry = entries.nextElement();
                         if (!transformedFromThisArchive.contains(entry.getName())) {
+                            entry.setCompressedSize(-1);
                             out.putNextEntry(entry);
                             try (InputStream inStream = in.getInputStream(entry)) {
                                 int r = 0;

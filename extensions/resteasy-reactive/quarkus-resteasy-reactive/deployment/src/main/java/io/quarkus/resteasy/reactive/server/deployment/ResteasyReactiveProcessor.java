@@ -109,6 +109,7 @@ import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.Authenticati
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.ForbiddenExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.UnauthorizedExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler;
+import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
@@ -342,7 +343,7 @@ public class ResteasyReactiveProcessor {
                     .setHttpAnnotationToMethod(result.getHttpAnnotationToMethod())
                     .setInjectableBeans(injectableBeans)
                     .setAdditionalWriters(additionalWriters)
-                    .setDefaultBlocking(appResult.isBlocking())
+                    .setDefaultBlocking(appResult.getBlockingDefault())
                     .setHasRuntimeConverters(!paramConverterProviders.getParamConverterProviders().isEmpty())
                     .setClassLevelExceptionMappers(
                             classLevelExceptionMappers.isPresent() ? classLevelExceptionMappers.get().getMappers()

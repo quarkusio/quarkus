@@ -3,6 +3,8 @@ package io.quarkus.maven.it;
 import static io.quarkus.maven.it.ApplicationNameAndVersionTestUtil.assertApplicationPropertiesSetCorrectly;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -407,21 +409,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         if (alternatePom.exists()) {
             alternatePom.delete();
         }
-        pom.renameTo(alternatePom);
-        if (pom.exists()) {
-            throw new IllegalStateException(pom + " was expected to be renamed to " + alternatePom);
-        }
-        runAndCheck("-f", alternatePomName);
-
-        // Edit a Java file too
-        final File javaSource = new File(testDir, "src/main/java/org/acme/HelloResource.java");
-        final String uuid = UUID.randomUUID().toString();
-        filter(javaSource, Collections.singletonMap("return \"hello\";", "return \"hello " + uuid + "\";"));
-
-        // edit the application.properties too
-        final File applicationProps = new File(testDir, "src/main/resources/application.properties");
-        filter(applicationProps, Collections.singletonMap("greeting=bonjour", "greeting=" + uuid + ""));
-
+        Files.copy(pom.toPath(), alternatePom.toPath());
         // Now edit the pom.xml to trigger the dev mode restart
         filter(alternatePom, Collections.singletonMap("<!-- insert test dependencies here -->",
                 "        <dependency>\n" +
@@ -429,17 +417,12 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                         "            <artifactId>quarkus-smallrye-openapi</artifactId>\n" +
                         "        </dependency>"));
 
-        // Wait until we get the updated responses
-        await()
-                .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
-                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("hello " + uuid));
+        runAndCheck();
+        assertThat(DevModeTestUtils.getHttpResponse("/q/openapi", true)).contains("Resource not found");
+        shutdownTheApp();
 
-        await()
-                .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
-                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/greeting").contains(uuid));
-
+        runAndCheck("-f", alternatePomName);
+        DevModeTestUtils.getHttpResponse("/q/openapi").contains("hello");
     }
 
     @Test
@@ -838,7 +821,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
-                .until(() -> DevModeTestUtils.getHttpResponse("/lorem.txt").contains("Lorem ipsum"));
+                .until(() -> DevModeTestUtils.getHttpResponse("/lorem.txt"), containsString("Lorem ipsum"));
 
         // Update the resource
         String uuid = UUID.randomUUID().toString();
@@ -846,7 +829,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
-                .until(() -> DevModeTestUtils.getHttpResponse("/lorem.txt").contains(uuid));
+                .until(() -> DevModeTestUtils.getHttpResponse("/lorem.txt"), equalTo(uuid));
 
         // Delete the resource
         source.delete();

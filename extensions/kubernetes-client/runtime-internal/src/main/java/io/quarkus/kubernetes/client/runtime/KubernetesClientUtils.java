@@ -42,6 +42,7 @@ public class KubernetesClientUtils {
                 .withProxyUsername(buildConfig.proxyUsername.orElse(base.getProxyUsername()))
                 .withProxyPassword(buildConfig.proxyPassword.orElse(base.getProxyPassword()))
                 .withNoProxy(buildConfig.noProxy.orElse(base.getNoProxy()))
+                .withHttp2Disable(base.isHttp2Disable())
                 .build();
     }
 

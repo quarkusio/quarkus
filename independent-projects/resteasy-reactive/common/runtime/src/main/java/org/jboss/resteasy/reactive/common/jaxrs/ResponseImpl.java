@@ -42,8 +42,8 @@ public class ResponseImpl extends Response {
     protected Object entity;
     MultivaluedTreeMap<String, Object> headers;
     InputStream entityStream;
-    private StatusTypeImpl statusType;
-    private MultivaluedMap<String, String> stringHeaders;
+    StatusTypeImpl statusType;
+    MultivaluedMap<String, String> stringHeaders;
     Annotation[] entityAnnotations;
     protected boolean consumed;
     protected boolean closed;

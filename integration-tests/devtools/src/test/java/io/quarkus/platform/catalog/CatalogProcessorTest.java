@@ -32,6 +32,7 @@ public class CatalogProcessorTest extends PlatformAwareTestBase {
                 .startsWith("quarkus-resteasy", "quarkus-resteasy-jackson",
                         "quarkus-resteasy-jsonb", "quarkus-apache-httpclient",
                         "quarkus-vertx-http", "quarkus-vertx-graphql",
+                        "quarkus-grpc", "quarkus-grpc-common",
                         "quarkus-hibernate-validator");
     }
 }

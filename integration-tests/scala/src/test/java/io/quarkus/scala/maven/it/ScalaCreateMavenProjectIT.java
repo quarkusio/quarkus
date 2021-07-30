@@ -76,14 +76,9 @@ public class ScalaCreateMavenProjectIT extends QuarkusPlatformAwareMojoTestBase 
     private InvocationResult setup(Properties params)
             throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
 
-        try {
-            params.setProperty("platformGroupId", getBomGroupId());
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
+        params.setProperty("platformGroupId", getBomGroupId());
         params.setProperty("platformArtifactId", getBomArtifactId());
-        params.setProperty("platformVersion", getQuarkusCoreVersion());
+        params.setProperty("platformVersion", getBomVersion());
 
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);

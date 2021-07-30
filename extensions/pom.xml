@@ -70,6 +70,7 @@
         <module>reactive-db2-client</module>
         <module>reactive-pg-client</module>
         <module>reactive-mysql-client</module>
+        <module>reactive-mssql-client</module>
         <module>mailer</module>
         <module>grpc</module>
         <module>redis-client</module>
@@ -86,6 +87,7 @@
         <module>hibernate-validator</module>
         <module>panache</module>
         <module>hibernate-search-orm-elasticsearch</module>
+        <module>hibernate-search-orm-elasticsearch-aws</module>
         <module>elasticsearch-rest-client-common</module>
         <module>elasticsearch-rest-client</module>
         <module>elasticsearch-rest-high-level-client</module>

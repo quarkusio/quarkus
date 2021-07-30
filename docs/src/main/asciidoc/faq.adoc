@@ -1,4 +1,4 @@
-= Quarkus - Frequently Asked Questions
+= Frequently Asked Questions
 
 include::./attributes.adoc[]
 

@@ -87,6 +87,7 @@ public enum Feature {
     QUTE,
     REACTIVE_PG_CLIENT,
     REACTIVE_MYSQL_CLIENT,
+    REACTIVE_MSSQL_CLIENT,
     REACTIVE_DB2_CLIENT,
     REDIS_CLIENT,
     RESTEASY,
@@ -152,7 +153,7 @@ public enum Feature {
     WEBJARS_LOCATOR;
 
     public String getName() {
-        return toString().toLowerCase().replace("_", "-");
+        return toString().toLowerCase().replace('_', '-');
     }
 
 }

@@ -29,7 +29,6 @@ import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
 import io.quarkus.oidc.runtime.OidcAuthenticationMechanism;
-import io.quarkus.oidc.runtime.OidcBuildTimeConfig;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.oidc.runtime.OidcConfigurationMetadataProducer;
 import io.quarkus.oidc.runtime.OidcIdentityProvider;

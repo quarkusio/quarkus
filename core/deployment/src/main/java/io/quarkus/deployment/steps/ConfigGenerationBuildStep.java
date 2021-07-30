@@ -1,5 +1,10 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.deployment.steps.ConfigBuildSteps.SERVICES_PREFIX;
+import static io.quarkus.deployment.util.ServiceUtil.classNamesNamedIn;
+import static java.util.stream.Collectors.toList;
+
+import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,6 +18,8 @@ import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.spi.ConfigSource;
+import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.IsNormal;
@@ -28,7 +35,10 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.StaticInitConfigSourceFactoryBuildItem;
+import io.quarkus.deployment.builditem.StaticInitConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.deployment.configuration.definition.ClassDefinition;
@@ -37,53 +47,91 @@ import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.quarkus.runtime.configuration.ConfigChangeRecorder;
 import io.quarkus.runtime.configuration.ConfigurationRuntimeConfig;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
+import io.smallrye.config.ConfigSourceFactory;
+import io.smallrye.config.PropertiesLocationConfigSourceFactory;
 
 public class ConfigGenerationBuildStep {
+    @BuildStep
+    void deprecatedStaticInitBuildItem(
+            List<AdditionalStaticInitConfigSourceProviderBuildItem> additionalStaticInitConfigSourceProviders,
+            BuildProducer<StaticInitConfigSourceProviderBuildItem> staticInitConfigSourceProviderBuildItem) {
+        for (AdditionalStaticInitConfigSourceProviderBuildItem item : additionalStaticInitConfigSourceProviders) {
+            staticInitConfigSourceProviderBuildItem
+                    .produce(new StaticInitConfigSourceProviderBuildItem(item.getProviderClassName()));
+        }
+    }
+
+    @BuildStep
+    void staticInitSources(
+            BuildProducer<StaticInitConfigSourceProviderBuildItem> staticInitConfigSourceProviderBuildItem,
+            BuildProducer<StaticInitConfigSourceFactoryBuildItem> staticInitConfigSourceFactoryBuildItem) {
+
+        staticInitConfigSourceFactoryBuildItem.produce(new StaticInitConfigSourceFactoryBuildItem(
+                PropertiesLocationConfigSourceFactory.class.getName()));
+    }
 
     /**
      * Generate the Config class that instantiates MP Config and holds all the config objects
      */
     @BuildStep
-    void generateConfigClass(ConfigurationBuildItem configItem, List<RunTimeConfigurationDefaultBuildItem> runTimeDefaults,
+    void generateConfigClass(
+            ConfigurationBuildItem configItem,
+            List<RunTimeConfigurationDefaultBuildItem> runTimeDefaults,
             List<ConfigurationTypeBuildItem> typeItems,
             LaunchModeBuildItem launchModeBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             LiveReloadBuildItem liveReloadBuildItem,
-            List<AdditionalStaticInitConfigSourceProviderBuildItem> additionalStaticInitConfigSourceProviders,
-            List<AdditionalBootstrapConfigSourceProviderBuildItem> additionalBootstrapConfigSourceProviders) {
+            List<AdditionalBootstrapConfigSourceProviderBuildItem> additionalBootstrapConfigSourceProviders,
+            List<StaticInitConfigSourceProviderBuildItem> staticInitConfigSourceProviders,
+            List<StaticInitConfigSourceFactoryBuildItem> staticInitConfigSourceFactories)
+            throws IOException {
+
         if (liveReloadBuildItem.isLiveReload()) {
             return;
         }
-        BuildTimeConfigurationReader.ReadResult readResult = configItem.getReadResult();
+
         Map<String, String> defaults = new HashMap<>();
         for (RunTimeConfigurationDefaultBuildItem item : runTimeDefaults) {
             if (defaults.putIfAbsent(item.getKey(), item.getValue()) != null) {
                 throw new IllegalStateException("More than one default value for " + item.getKey() + " was produced");
             }
         }
-        List<Class<?>> additionalConfigTypes = typeItems.stream().map(ConfigurationTypeBuildItem::getValueType)
-                .collect(Collectors.toList());
 
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, false);
-        RunTimeConfigurationGenerator.generate(readResult, classOutput,
-                launchModeBuildItem.getLaunchMode(), defaults, additionalConfigTypes,
-                getAdditionalStaticInitConfigSourceProviders(additionalStaticInitConfigSourceProviders),
-                getAdditionalBootstrapConfigSourceProviders(additionalBootstrapConfigSourceProviders));
-    }
+        Set<String> discoveredConfigSources = discoverService(ConfigSource.class, reflectiveClass);
+        Set<String> discoveredConfigSourceProviders = discoverService(ConfigSourceProvider.class, reflectiveClass);
+        Set<String> discoveredConfigSourceFactories = discoverService(ConfigSourceFactory.class, reflectiveClass);
 
-    private List<String> getAdditionalStaticInitConfigSourceProviders(
-            List<AdditionalStaticInitConfigSourceProviderBuildItem> additionalStaticInitConfigSourceProviders) {
-        if (additionalStaticInitConfigSourceProviders.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<String> result = new ArrayList<>(additionalStaticInitConfigSourceProviders.size());
-        for (AdditionalStaticInitConfigSourceProviderBuildItem provider : additionalStaticInitConfigSourceProviders) {
-            result.add(provider.getProviderClassName());
-        }
-        return result;
+        Set<String> staticConfigSourceProviders = new HashSet<>();
+        staticConfigSourceProviders.addAll(staticSafeServices(discoveredConfigSourceProviders));
+        staticConfigSourceProviders.addAll(staticInitConfigSourceProviders.stream()
+                .map(StaticInitConfigSourceProviderBuildItem::getProviderClassName).collect(Collectors.toSet()));
+        Set<String> staticConfigSourceFactories = new HashSet<>();
+        staticConfigSourceFactories.addAll(staticSafeServices(discoveredConfigSourceFactories));
+        staticConfigSourceFactories.addAll(staticInitConfigSourceFactories.stream()
+                .map(StaticInitConfigSourceFactoryBuildItem::getFactoryClassName).collect(Collectors.toSet()));
+
+        RunTimeConfigurationGenerator.GenerateOperation
+                .builder()
+                .setBuildTimeReadResult(configItem.getReadResult())
+                .setClassOutput(new GeneratedClassGizmoAdaptor(generatedClass, false))
+                .setLaunchMode(launchModeBuildItem.getLaunchMode())
+                .setRunTimeDefaults(defaults)
+                .setAdditionalTypes(typeItems.stream().map(ConfigurationTypeBuildItem::getValueType).collect(toList()))
+                .setAdditionalBootstrapConfigSourceProviders(
+                        getAdditionalBootstrapConfigSourceProviders(additionalBootstrapConfigSourceProviders))
+                .setStaticConfigSources(staticSafeServices(discoveredConfigSources))
+                .setStaticConfigSourceProviders(staticConfigSourceProviders)
+                .setStaticConfigSourceFactories(staticConfigSourceFactories)
+                .setRuntimeConfigSources(discoveredConfigSources)
+                .setRuntimeConfigSourceProviders(discoveredConfigSourceProviders)
+                .setRuntimeConfigSourceFactories(discoveredConfigSourceFactories)
+                .build()
+                .run();
     }
 
     private List<String> getAdditionalBootstrapConfigSourceProviders(
@@ -167,4 +215,32 @@ public class ConfigGenerationBuildStep {
         }
     }
 
+    private static Set<String> discoverService(
+            Class<?> serviceClass,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws IOException {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        Set<String> services = new HashSet<>();
+        for (String service : classNamesNamedIn(classLoader, SERVICES_PREFIX + serviceClass.getName())) {
+            services.add(service);
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, service));
+        }
+        return services;
+    }
+
+    private static Set<String> staticSafeServices(Set<String> services) {
+        // TODO - Replace with Jandex? The issue is that the sources may not be in the index...
+        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+        Set<String> staticSafe = new HashSet<>();
+        for (String service : services) {
+            try {
+                Class<?> serviceClass = classloader.loadClass(service);
+                if (serviceClass.isAnnotationPresent(StaticInitSafe.class)) {
+                    staticSafe.add(service);
+                }
+            } catch (ClassNotFoundException e) {
+                // Ignore
+            }
+        }
+        return staticSafe;
+    }
 }

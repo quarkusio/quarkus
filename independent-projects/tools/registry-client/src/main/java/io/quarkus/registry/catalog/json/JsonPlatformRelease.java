@@ -9,7 +9,7 @@ import io.quarkus.registry.catalog.PlatformReleaseVersion;
 import java.util.Collection;
 import java.util.Collections;
 
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonInclude(JsonInclude.Include.NON_DEFAULT)
 public class JsonPlatformRelease extends JsonEntityWithAnySupport implements PlatformRelease {
 
     private PlatformReleaseVersion version;

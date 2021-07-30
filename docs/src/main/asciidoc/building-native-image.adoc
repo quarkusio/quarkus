@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Building a Native Executable
+= Building a Native Executable
 
 include::./attributes.adoc[]
 
@@ -325,8 +325,8 @@ Executing [/data/home/gsmet/git/quarkus-quickstarts/getting-started/target/getti
 [TIP]
 ====
 By default, Quarkus waits for 60 seconds for the native image to start before automatically failing the native tests. This
-duration can be changed using the `quarkus.test.native-image-wait-time` system property. For example, to increase the duration
-to 300 seconds, use: `./mvnw verify -Pnative -Dquarkus.test.native-image-wait-time=300`.
+duration can be changed using the `quarkus.test.wait-time` system property. For example, to increase the duration
+to 300 seconds, use: `./mvnw verify -Pnative -Dquarkus.test.wait-time=300`.
 ====
 
 [WARNING]
@@ -494,6 +494,7 @@ And finally, run it with:
 docker run -i --rm -p 8080:8080 quarkus-quickstart/getting-started
 ----
 
+[#multistage-docker]
 === Using a multi-stage Docker build
 
 The previous section showed you how to build a native executable using Maven or Gradle, but it requires you to have created the native executable first.
@@ -622,6 +623,81 @@ TIP: Projects generated with https://code.quarkus.io already have this Dockerfil
 Quarkus provides the `quay.io/quarkus/quarkus-distroless-image:1.0` image.
 It contains the required packages to run a native executable and is only **9Mb**.
 Just add your application on top of this image, and you will get a tiny container image.
+
+=== Separating Java and native image compilation
+
+In certain circumstances, you may want to build the native image in a separate step.
+For example, in a CI/CD pipeline, you may want to have one step to generate the source that will be used for the native image generation and another step to use these sources to actually build the native executable.
+For this use case, you can set the `quarkus.package.type=native-sources`.
+This will execute the java compilation as if you would have started native compilation (`-Pnative`), but stops before triggering the actual call to GraalVM's `native-image`.
+
+[source,bash]
+---
+$ ./mvnw clean package -Dquarkus.package.type=native-sources
+---
+
+After compilation has finished, you find the build artifact in `target/native-sources`:
+
+[source,bash]
+---
+$ cd target/native-sources
+$ ls
+native-image.args  getting-started-1.0.0-SNAPSHOT-runner.jar
+---
+
+You see that, beside the expected JAR, a file `native-image.args` was created.
+This file holds all parameters (including the name of the JAR to compile) to pass along to GraalVM's `native-image` command.
+If you have GraalVM installed, you can start the native compilation by executing:
+
+[source,bash]
+---
+$ cd target/native-source
+$ native-image $(cat native-image.args)
+...
+$ ls
+native-image.args
+getting-started-1.0.0-SNAPSHOT-runner
+getting-started-1.0.0-SNAPSHOT-runner.build_artifacts.txt
+getting-started-1.0.0-SNAPSHOT-runner.jar
+---
+
+The process for Gradle is analogous.
+
+Running the build process in a container is also possible:
+
+[source,bash]
+---
+cd target/native-image
+docker run \
+  -it \
+  --rm \
+  --v $(pwd):/work <1>
+  -w /work <2>
+  --entrypoint bin/sh \
+  quay.io/quarkus/ubi-quarkus-native-image:21.1.0-java11 \ <3>
+  -c "native-image $(cat native-image.args) -J-Xmx4g" <4>
+---
+
+<1> Mount the host's directory `target/native-image` to the container's `/work`. Thus, the generated binary will also be written to this directory.
+<2> Switch the working directory to `/work`, which we have mounted in <1>.
+<3> Use the `quay.io/quarkus/ubi-quarkus-native-image:21.1.0-java11` docker image introduced in <<#multistage-docker,Using a multi-stage Docker build>> to build the native image.
+<4> Call `native-image` with the content of file `native-image.args` as arguments. We also supply an additional argument to limit the process's maximum memory limitation to 4 Gigabyte.
+
+In a CI/CD setup, we would:
+
+1. register the output of the step executing `./mvnw ...` command (i.e. directory `target/native-image`) as build artifact,
+2. require this artifact in the step executing the `native-image ...` command, and
+3. register the output of the step executing the `native-image ...` command (i.e. files matching `target/*runner`) as build artifact.
+
+The environment executing `1` only needs access to a Java- and a Maven- (or Gradle)-installation, while the environment executing `3` only needs access to a GraalVM installation (including the `native-image` feature).
+
+The generated binary can then be used to create a container image, as explained above.
+
+[WARNING]
+===
+If you are running on a Windows machine, please keep in mind that the binary was created within a Linux docker container.
+Hence, the binary will not be executable on the host Windows machine.
+===
 
 == Debugging native executable
 

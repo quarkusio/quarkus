@@ -33,6 +33,7 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -119,8 +120,9 @@ public class SecurityProcessor {
     @BuildStep
     void prepareBouncyCastleProviders(BuildProducer<ReflectiveClassBuildItem> reflection,
             BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitialized,
-            Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider,
-            Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider) throws Exception {
+            List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
+            List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) throws Exception {
+        Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
         if (bouncyCastleJsseProvider.isPresent()) {
             reflection.produce(
                     new ReflectiveClassBuildItem(true, true, SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME));
@@ -130,8 +132,11 @@ public class SecurityProcessor {
                     .produce(new RuntimeReinitializedClassBuildItem(
                             "org.bouncycastle.jsse.provider.DefaultSSLContextSpi$LazyManagers"));
             prepareBouncyCastleProvider(reflection, runtimeReInitialized, bouncyCastleJsseProvider.get().isInFipsMode());
-        } else if (bouncyCastleProvider.isPresent()) {
-            prepareBouncyCastleProvider(reflection, runtimeReInitialized, bouncyCastleProvider.get().isInFipsMode());
+        } else {
+            Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider = getOne(bouncyCastleProviders);
+            if (bouncyCastleProvider.isPresent()) {
+                prepareBouncyCastleProvider(reflection, runtimeReInitialized, bouncyCastleProvider.get().isInFipsMode());
+            }
         }
     }
 
@@ -191,23 +196,28 @@ public class SecurityProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void recordBouncyCastleProviders(SecurityProviderRecorder recorder,
-            Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider,
-            Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider) {
+            List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
+            List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) {
+        Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
         if (bouncyCastleJsseProvider.isPresent()) {
             if (bouncyCastleJsseProvider.get().isInFipsMode()) {
                 recorder.addBouncyCastleFipsJsseProvider();
             } else {
                 recorder.addBouncyCastleJsseProvider();
             }
-        } else if (bouncyCastleProvider.isPresent()) {
-            recorder.addBouncyCastleProvider(bouncyCastleProvider.get().isInFipsMode());
+        } else {
+            Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider = getOne(bouncyCastleProviders);
+            if (bouncyCastleProvider.isPresent()) {
+                recorder.addBouncyCastleProvider(bouncyCastleProvider.get().isInFipsMode());
+            }
         }
     }
 
     @BuildStep
     void addBouncyCastleProvidersToNativeImage(BuildProducer<NativeImageSecurityProviderBuildItem> additionalProviders,
-            Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider,
-            Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider) {
+            List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
+            List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) {
+        Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
         if (bouncyCastleJsseProvider.isPresent()) {
             additionalProviders.produce(
                     new NativeImageSecurityProviderBuildItem(SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME));
@@ -215,12 +225,22 @@ public class SecurityProcessor {
                     ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
                     : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME;
             additionalProviders.produce(new NativeImageSecurityProviderBuildItem(providerName));
-        } else if (bouncyCastleProvider.isPresent()) {
-            final String providerName = bouncyCastleProvider.get().isInFipsMode()
-                    ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
-                    : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME;
-            additionalProviders.produce(new NativeImageSecurityProviderBuildItem(providerName));
+        } else {
+            Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider = getOne(bouncyCastleProviders);
+            if (bouncyCastleProvider.isPresent()) {
+                final String providerName = bouncyCastleProvider.get().isInFipsMode()
+                        ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
+                        : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME;
+                additionalProviders.produce(new NativeImageSecurityProviderBuildItem(providerName));
+            }
         }
+    }
+
+    private <BI extends MultiBuildItem> Optional<BI> getOne(List<BI> items) {
+        if (items.size() > 1) {
+            throw new IllegalStateException("Only a single Bouncy Castle registration can be provided.");
+        }
+        return items.stream().findFirst();
     }
 
     /**
@@ -269,14 +289,21 @@ public class SecurityProcessor {
             transformers.produce(new AnnotationsTransformerBuildItem(new DenyingUnannotatedTransformer()));
         }
         if (!additionalSecuredClasses.isEmpty()) {
-            Set<String> additionalSecured = new HashSet<>();
             for (AdditionalSecuredClassesBuildItem securedClasses : additionalSecuredClasses) {
+                Set<String> additionalSecured = new HashSet<>();
                 for (ClassInfo additionalSecuredClass : securedClasses.additionalSecuredClasses) {
                     additionalSecured.add(additionalSecuredClass.name().toString());
                 }
+                if (securedClasses.rolesAllowed.isPresent()) {
+                    transformers.produce(
+                            new AnnotationsTransformerBuildItem(new AdditionalRolesAllowedTransformer(additionalSecured,
+                                    securedClasses.rolesAllowed.get())));
+                } else {
+                    transformers.produce(
+                            new AnnotationsTransformerBuildItem(
+                                    new AdditionalDenyingUnannotatedTransformer(additionalSecured)));
+                }
             }
-            transformers.produce(
-                    new AnnotationsTransformerBuildItem(new AdditionalDenyingUnannotatedTransformer(additionalSecured)));
         }
     }
 
@@ -290,11 +317,11 @@ public class SecurityProcessor {
             List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config) {
         classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorage.AppPredicate()));
 
-        final Map<DotName, ClassInfo> additionalSecured = new HashMap<>();
+        final Map<DotName, AdditionalSecured> additionalSecured = new HashMap<>();
         for (AdditionalSecuredClassesBuildItem securedClasses : additionalSecuredClasses) {
             securedClasses.additionalSecuredClasses.forEach(c -> {
                 if (!additionalSecured.containsKey(c.name())) {
-                    additionalSecured.put(c.name(), c);
+                    additionalSecured.put(c.name(), new AdditionalSecured(c, securedClasses.rolesAllowed));
                 }
             });
         }
@@ -332,7 +359,7 @@ public class SecurityProcessor {
 
     private Map<MethodInfo, SecurityCheck> gatherSecurityAnnotations(
             IndexView index,
-            Map<DotName, ClassInfo> additionalSecuredClasses, boolean denyUnannotated, SecurityCheckRecorder recorder) {
+            Map<DotName, AdditionalSecured> additionalSecuredClasses, boolean denyUnannotated, SecurityCheckRecorder recorder) {
 
         Map<MethodInfo, AnnotationInstance> methodToInstanceCollector = new HashMap<>();
         Map<ClassInfo, AnnotationInstance> classAnnotations = new HashMap<>();
@@ -351,14 +378,19 @@ public class SecurityProcessor {
          * Handle additional secured classes by adding the denyAll check to all public non-static methods
          * that don't have security annotations
          */
-        for (Map.Entry<DotName, ClassInfo> additionalSecureClassInfo : additionalSecuredClasses.entrySet()) {
-            for (MethodInfo methodInfo : additionalSecureClassInfo.getValue().methods()) {
+        for (Map.Entry<DotName, AdditionalSecured> additionalSecureClassInfo : additionalSecuredClasses.entrySet()) {
+            for (MethodInfo methodInfo : additionalSecureClassInfo.getValue().classInfo.methods()) {
                 if (!isPublicNonStaticNonConstructor(methodInfo)) {
                     continue;
                 }
                 AnnotationInstance alreadyExistingInstance = methodToInstanceCollector.get(methodInfo);
                 if ((alreadyExistingInstance == null)) {
-                    result.put(methodInfo, recorder.denyAll());
+                    if (additionalSecureClassInfo.getValue().rolesAllowed.isPresent()) {
+                        result.put(methodInfo, recorder
+                                .rolesAllowed(additionalSecureClassInfo.getValue().rolesAllowed.get().toArray(String[]::new)));
+                    } else {
+                        result.put(methodInfo, recorder.denyAll());
+                    }
                 } else if (alreadyExistingInstance.target().kind() == AnnotationTarget.Kind.CLASS) {
                     throw new IllegalStateException("Class " + methodInfo.declaringClass()
                             + " should not have been added as an additional secured class");
@@ -460,5 +492,16 @@ public class SecurityProcessor {
     @BuildStep
     AdditionalBeanBuildItem authorizationController() {
         return AdditionalBeanBuildItem.builder().addBeanClass(AuthorizationController.class).build();
+    }
+
+    static class AdditionalSecured {
+
+        final ClassInfo classInfo;
+        final Optional<List<String>> rolesAllowed;
+
+        AdditionalSecured(ClassInfo classInfo, Optional<List<String>> rolesAllowed) {
+            this.classInfo = classInfo;
+            this.rolesAllowed = rolesAllowed;
+        }
     }
 }

@@ -7,22 +7,22 @@ import java.util.Set;
 import org.gradle.api.GradleException;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
-import org.gradle.api.artifacts.ModuleVersionSelector;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 
 public class ExtensionDependency {
 
     ModuleVersionIdentifier extensionId;
     AppArtifactCoords deploymentModule;
     List<Dependency> conditionalDependencies;
-    List<Dependency> dependencyConditions;
+    List<AppArtifactKey> dependencyConditions;
 
     ExtensionDependency(ModuleVersionIdentifier extensionId, AppArtifactCoords deploymentModule,
             List<Dependency> conditionalDependencies,
-            List<Dependency> dependencyConditions) {
+            List<AppArtifactKey> dependencyConditions) {
         this.extensionId = extensionId;
         this.deploymentModule = deploymentModule;
         this.conditionalDependencies = conditionalDependencies;
@@ -78,12 +78,6 @@ public class ExtensionDependency {
 
     public String asDependencyNotation() {
         return String.join(":", this.extensionId.getGroup(), this.extensionId.getName(), this.extensionId.getVersion());
-    }
-
-    public boolean match(ModuleVersionSelector selector) {
-        return selector.getGroup().equals(extensionId.getGroup())
-                && selector.getName().equals(extensionId.getName())
-                && selector.getVersion().equals(extensionId.getVersion());
     }
 
     private Dependency findConditionalDependency(ModuleVersionIdentifier capability) {

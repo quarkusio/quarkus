@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using OpenID Connect to Protect Service Applications using Bearer Token Authorization
+= Using OpenID Connect to Protect Service Applications using Bearer Token Authorization
 
 include::./attributes.adoc[]
 :toc:
@@ -448,8 +448,8 @@ Alternatively, if the discovery endpoint is not available or you would like to s
 ----
 quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
 quarkus.oidc.discovery-enabled=false
-# Token endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens
-quarkus.oidc.token-path=/protocol/openid-connect/tokens
+# Token endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/token
+quarkus.oidc.token-path=/protocol/openid-connect/token
 # JWK set endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/certs
 quarkus.oidc.jwks-path=/protocol/openid-connect/certs
 # UserInfo endoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/userinfo
@@ -506,6 +506,11 @@ Note it is also recommended to use `quarkus.oidc.token.audience` property to ver
 == Token Propagation
 
 Please see link:security-openid-connect-client#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
+
+[[oidc-provider-authentication]]
+=== Oidc Provider Client Authentication
+
+`quarkus.oidc.runtime.OidcProviderClient` is used when a remote request to an OpenId Connect Provider has to be done. If the bearer token has to be introspected then `OidcProviderClient` has to authenticate to the OpenId Connect Provider. Please see link:security-openid-connect-web-authentication#oidc-provider-client-authentication[OidcProviderClient Authentication] for more information about all the supported authentication options.
 
 [[integration-testing]]
 == Testing
@@ -690,7 +695,7 @@ You can also use a local inlined public key for testing your `quarkus-oidc` `ser
 quarkus.oidc.client-id=test
 quarkus.oidc.public-key=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlivFI8qB4D0y2jy0CfEqFyy46R0o7S8TKpsx5xbHKoU1VWg6QkQm+ntyIv1p4kE1sPEQO73+HY8+Bzs75XwRTYL1BmR1w8J5hmjVWjc6R2BTBGAYRPFRhor3kpM6ni2SPmNNhurEAHw7TaqszP5eUF/F9+KEBWkwVta+PZ37bwqSE4sCb1soZFrVz/UT/LF4tYpuVYt3YbqToZ3pZOZ9AX2o1GCG3xwOjkc4x0W7ezbQZdC9iftPxVHR8irOijJRRjcPDtA6vPKpzLl6CyYnsIYPd99ltwxTHjr3npfv/3Lw50bAkbT4HeLFxTx4flEoZLKO/g0bAoV2uqBhkA9xnQIDAQAB
 
-smallrye.jwt.sign.key-location=/privateKey.pem
+smallrye.jwt.sign.key.location=/privateKey.pem
 ----
 
 copy `privateKey.pem` from the `integration-tests/oidc-tenancy` in the `main` Quarkus repository and use a test code similar to the one in the `Wiremock` section above to generate JWT tokens. You can use your own test keys if preferred.
@@ -867,6 +872,14 @@ quarkus.log.category."io.quarkus.oidc.runtime.OidcProvider".level=TRACE
 quarkus.log.category."io.quarkus.oidc.runtime.OidcProvider".min-level=TRACE
 ----
 
+Please enable `io.quarkus.oidc.runtime.OidcRecorder` `TRACE` level logging to see more details about the OidcProvider client initialization errors:
+
+[source, properties]
+----
+quarkus.log.category."io.quarkus.oidc.runtime.OidcRecorder".level=TRACE
+quarkus.log.category."io.quarkus.oidc.runtime.OidcRecorder".min-level=TRACE
+----
+
 == External and Internal Access to OpenId Connect Provider
 
 Note that the OpenId Connect Provider externally accessible token and other endpoints may have different HTTP(S) URLs compared to the URLs auto-discovered or configured relative to `quarkus.oidc.auth-server-url` internal URL. For example, if your SPA acquires a token from an external token endpoint address and sends it to Quarkus as a Bearer token then an issuer verification failure may be reported by the endpoint.
@@ -904,4 +917,5 @@ Note Quarkus `web-app` applications always require `quarkus.oidc.client-id` prop
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
 * link:security-openid-connect-client[Quarkus - Using OpenID Connect and OAuth2 Client and Filters to manage access tokens]
+* link:security-openid-connect-dev-services[Dev Services for OpenId Connect]
 * link:security[Quarkus Security]

@@ -25,6 +25,7 @@ import org.infinispan.commons.util.Util;
 import org.infinispan.protostream.BaseMarshaller;
 import org.infinispan.protostream.EnumMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
+import org.infinispan.protostream.GeneratedSchema;
 import org.infinispan.protostream.MessageMarshaller;
 import org.infinispan.protostream.RawProtobufMarshaller;
 import org.infinispan.protostream.SerializationContextInitializer;
@@ -136,7 +137,9 @@ class InfinispanClientProcessor {
 
                         while (protoFiles.hasNext()) {
                             Path path = protoFiles.next();
-                            System.out.println("  " + path.toAbsolutePath());
+                            if (log.isDebugEnabled()) {
+                                log.debug("  " + path.toAbsolutePath());
+                            }
                             byte[] bytes = Files.readAllBytes(path);
                             // This uses the default file encoding - should we enforce UTF-8?
                             properties.put(InfinispanClientProducer.PROTOBUF_FILE_PREFIX + path.getFileName().toString(),
@@ -149,6 +152,9 @@ class InfinispanClientProcessor {
             InfinispanClientProducer.handleProtoStreamRequirements(properties);
             Collection<ClassInfo> initializerClasses = index.getAllKnownImplementors(DotName.createSimple(
                     SerializationContextInitializer.class.getName()));
+            initializerClasses
+                    .addAll(index.getAllKnownImplementors(DotName.createSimple(GeneratedSchema.class.getName())));
+
             Set<SerializationContextInitializer> initializers = new HashSet<>(initializerClasses.size());
             for (ClassInfo ci : initializerClasses) {
                 Class<?> initializerClass = Thread.currentThread().getContextClassLoader().loadClass(ci.toString());

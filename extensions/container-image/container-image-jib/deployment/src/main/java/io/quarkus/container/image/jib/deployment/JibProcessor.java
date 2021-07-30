@@ -4,9 +4,11 @@ import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -131,6 +133,7 @@ public class JibProcessor {
         handleExtraFiles(outputTarget, jibContainerBuilder);
         JibContainer container = containerize(containerImageConfig, jibConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
+        writeOutputFiles(container, jibConfig, outputTarget);
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
                 Map.of("container-image", container.getTargetImage().toString(), "pull-required",
@@ -165,6 +168,7 @@ public class JibProcessor {
         handleExtraFiles(outputTarget, jibContainerBuilder);
         JibContainer container = containerize(containerImageConfig, jibConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
+        writeOutputFiles(container, jibConfig, outputTarget);
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
                 Map.of("container-image", container.getTargetImage().toString(), "pull-required",
@@ -218,6 +222,22 @@ public class JibProcessor {
         containerizer.setAllowInsecureRegistries(containerImageConfig.insecure);
         containerizer.setAlwaysCacheBaseImage(jibConfig.alwaysCacheBaseImage);
         return containerizer;
+    }
+
+    private void writeOutputFiles(JibContainer jibContainer, JibConfig jibConfig, OutputTargetBuildItem outputTarget) {
+        doWriteOutputFile(outputTarget, Paths.get(jibConfig.imageDigestFile), jibContainer.getDigest().toString());
+        doWriteOutputFile(outputTarget, Paths.get(jibConfig.imageIdFile), jibContainer.getImageId().toString());
+    }
+
+    private void doWriteOutputFile(OutputTargetBuildItem outputTarget, Path configPath, String output) {
+        if (!configPath.isAbsolute()) {
+            configPath = outputTarget.getOutputDirectory().resolve(configPath);
+        }
+        try {
+            Files.write(configPath, output.getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            log.errorf(e, "Unable to write file '%s'.", configPath.toAbsolutePath().toString());
+        }
     }
 
     private RegistryImage toRegistryImage(ImageReference imageReference, Optional<String> username, Optional<String> password) {

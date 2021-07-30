@@ -105,7 +105,6 @@ public class JunitTestRunner {
     private final Set<String> excludeTags;
     private final Pattern include;
     private final Pattern exclude;
-    private final boolean displayInConsole;
     private final boolean failingTestsOnly;
     private final TestType testType;
 
@@ -126,7 +125,6 @@ public class JunitTestRunner {
         this.excludeTags = new HashSet<>(builder.excludeTags);
         this.include = builder.include;
         this.exclude = builder.exclude;
-        this.displayInConsole = builder.displayInConsole;
         this.failingTestsOnly = builder.failingTestsOnly;
         this.testType = builder.testType;
     }
@@ -135,6 +133,12 @@ public class JunitTestRunner {
         long start = System.currentTimeMillis();
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try (QuarkusClassLoader tcl = testApplication.createDeploymentClassLoader()) {
+            synchronized (this) {
+                if (aborted) {
+                    return;
+                }
+                testsRunning = true;
+            }
             Thread.currentThread().setContextClassLoader(tcl);
             Consumer currentTestAppConsumer = (Consumer) tcl.loadClass(CurrentTestApplication.class.getName()).newInstance();
             currentTestAppConsumer.accept(testApplication);
@@ -195,6 +199,7 @@ public class JunitTestRunner {
                 QuarkusConsole.INSTANCE.setOutputFilter(logHandler);
 
                 final Deque<Set<String>> touchedClasses = new LinkedBlockingDeque<>();
+                Map<TestIdentifier, Long> startTimes = new HashMap<>();
                 final AtomicReference<Set<String>> startupClasses = new AtomicReference<>();
                 TracingHandler.setTracingHandler(new TracingHandler.TraceListener() {
                     @Override
@@ -219,6 +224,7 @@ public class JunitTestRunner {
                         if (aborted) {
                             return;
                         }
+                        startTimes.put(testIdentifier, System.currentTimeMillis());
                         String className = "";
                         Class<?> clazz = null;
                         if (testIdentifier.getSource().isPresent()) {
@@ -261,7 +267,7 @@ public class JunitTestRunner {
                                     s -> new HashMap<>());
                             TestResult result = new TestResult(displayName, testClass.getName(), id,
                                     TestExecutionResult.aborted(null),
-                                    logHandler.captureOutput(), testIdentifier.isTest(), runId);
+                                    logHandler.captureOutput(), testIdentifier.isTest(), runId, 0);
                             results.put(id, result);
                             if (result.isTest()) {
                                 for (TestRunListener listener : listeners) {
@@ -320,11 +326,30 @@ public class JunitTestRunner {
                             Map<UniqueId, TestResult> results = resultsByClass.computeIfAbsent(testClass.getName(),
                                     s -> new HashMap<>());
                             TestResult result = new TestResult(displayName, testClass.getName(), id, testExecutionResult,
-                                    logHandler.captureOutput(), testIdentifier.isTest(), runId);
+                                    logHandler.captureOutput(), testIdentifier.isTest(), runId,
+                                    System.currentTimeMillis() - startTimes.get(testIdentifier));
                             results.put(id, result);
                             if (result.isTest()) {
                                 for (TestRunListener listener : listeners) {
                                     listener.testComplete(result);
+                                }
+                            } else if (testExecutionResult.getStatus() == TestExecutionResult.Status.FAILED) {
+                                //if a parent fails we fail the children
+                                Set<TestIdentifier> children = testPlan.getChildren(testIdentifier);
+                                for (TestIdentifier child : children) {
+                                    UniqueId childId = UniqueId.parse(child.getUniqueId());
+                                    result = new TestResult(child.getDisplayName(), testClass.getName(),
+                                            childId,
+                                            testExecutionResult,
+                                            logHandler.captureOutput(), child.isTest(), runId,
+                                            System.currentTimeMillis() - startTimes.get(testIdentifier));
+                                    results.put(childId, result);
+                                    if (child.isTest()) {
+                                        for (TestRunListener listener : listeners) {
+                                            listener.testStarted(child, testClass.getName());
+                                            listener.testComplete(result);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -389,9 +414,18 @@ public class JunitTestRunner {
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
-            TracingHandler.setTracingHandler(null);
-            QuarkusConsole.INSTANCE.setOutputFilter(null);
-            Thread.currentThread().setContextClassLoader(old);
+            try {
+                TracingHandler.setTracingHandler(null);
+                QuarkusConsole.INSTANCE.setOutputFilter(null);
+                Thread.currentThread().setContextClassLoader(old);
+            } finally {
+                synchronized (this) {
+                    testsRunning = false;
+                    if (aborted) {
+                        notifyAll();
+                    }
+                }
+            }
         }
     }
 
@@ -405,6 +439,13 @@ public class JunitTestRunner {
         }
         aborted = true;
         notifyAll();
+        while (testsRunning) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                //ignore
+            }
+        }
     }
 
     public synchronized void pause() {
@@ -425,6 +466,7 @@ public class JunitTestRunner {
             List<TestResult> passing = new ArrayList<>();
             List<TestResult> failing = new ArrayList<>();
             List<TestResult> skipped = new ArrayList<>();
+            long time = 0;
             for (TestResult i : Optional.ofNullable(resultsByClass.get(clazz)).orElse(Collections.emptyMap()).values()) {
                 if (i.getTestExecutionResult().getStatus() == TestExecutionResult.Status.FAILED) {
                     failing.add(i);
@@ -433,8 +475,11 @@ public class JunitTestRunner {
                 } else {
                     passing.add(i);
                 }
+                if (i.getUniqueId().getLastSegment().getType().equals("class")) {
+                    time = i.time;
+                }
             }
-            resultMap.put(clazz, new TestClassResult(clazz, passing, failing, skipped));
+            resultMap.put(clazz, new TestClassResult(clazz, passing, failing, skipped, time));
         }
         return resultMap;
     }
@@ -551,12 +596,12 @@ public class JunitTestRunner {
             for (String i : classesToTransform) {
                 try {
                     byte[] classData = IoUtil
-                            .readBytes(deploymentClassLoader.getResourceAsStream(i.replace(".", "/") + ".class"));
+                            .readBytes(deploymentClassLoader.getResourceAsStream(i.replace('.', '/') + ".class"));
                     ClassReader cr = new ClassReader(classData);
                     ClassWriter writer = new QuarkusClassWriter(cr,
                             ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
                     cr.accept(new TestTracingProcessor.TracingClassVisitor(writer, i), 0);
-                    transformedClasses.put(i.replace(".", "/") + ".class", writer.toByteArray());
+                    transformedClasses.put(i.replace('.', '/') + ".class", writer.toByteArray());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -639,6 +684,9 @@ public class JunitTestRunner {
         public boolean test(String logRecord) {
             Thread thread = Thread.currentThread();
             ClassLoader cl = thread.getContextClassLoader();
+            if (cl == null) {
+                return true;
+            }
             while (cl.getParent() != null) {
                 if (cl == testApplication.getAugmentClassLoader()
                         || cl == testApplication.getBaseRuntimeClassLoader()) {
@@ -655,7 +703,7 @@ public class JunitTestRunner {
                             logOutput.add(logRecord);
                         }
                     }
-                    return displayInConsole;
+                    return TestSupport.instance().get().isDisplayTestOutput();
                 }
                 cl = cl.getParent();
             }
@@ -677,7 +725,6 @@ public class JunitTestRunner {
         private List<String> excludeTags = Collections.emptyList();
         private Pattern include;
         private Pattern exclude;
-        private boolean displayInConsole;
         private boolean failingTestsOnly;
 
         public Builder setRunId(long runId) {
@@ -742,11 +789,6 @@ public class JunitTestRunner {
 
         public Builder setExclude(Pattern exclude) {
             this.exclude = exclude;
-            return this;
-        }
-
-        public Builder setDisplayInConsole(boolean displayInConsole) {
-            this.displayInConsole = displayInConsole;
             return this;
         }
 

@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Kubernetes Client
+= Kubernetes Client
 
 include::./attributes.adoc[]
 
@@ -381,6 +381,20 @@ public class OpenShiftClientTest {
 
     @MockServer
     private OpenShiftMockServer mockServer;
+...
+----
+
+Or by using the `@WithOpenShiftTestServer` similar to the `@WithKubernetesTestServer` explained in the
+previous section:
+
+[source, java]
+----
+@WithOpenShiftTestServer
+@QuarkusTest
+public class OpenShiftClientTest {
+
+    @OpenShiftTestServer
+    private OpenShiftServer mockOpenShiftServer;
 ...
 ----
 

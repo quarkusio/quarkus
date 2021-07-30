@@ -918,6 +918,19 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-hibernate-search-orm-elasticsearch-aws</artifactId>
+                    <version>${project.version}</version>
+                    <type>pom</type>
+                    <scope>test</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>*</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-hibernate-validator</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
@@ -1698,19 +1711,6 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-opentelemetry-rest-client</artifactId>
-                    <version>${project.version}</version>
-                    <type>pom</type>
-                    <scope>test</scope>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>*</groupId>
-                            <artifactId>*</artifactId>
-                        </exclusion>
-                    </exclusions>
-                </dependency>
-                <dependency>
-                    <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-picocli</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
@@ -1777,6 +1777,19 @@
                 <dependency>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-reactive-messaging-http</artifactId>
+                    <version>${project.version}</version>
+                    <type>pom</type>
+                    <scope>test</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>*</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-reactive-mssql-client</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>
@@ -2089,6 +2102,19 @@
                 <dependency>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-resteasy-reactive-jsonb</artifactId>
+                    <version>${project.version}</version>
+                    <type>pom</type>
+                    <scope>test</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>*</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-resteasy-reactive-kotlin</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>

@@ -99,10 +99,6 @@ public class S2iProcessor {
         String jarDirectory = s2iConfig.jarDirectory;
         String pathToJar = concatUnixPaths(jarDirectory, jarFileName);
 
-        List<String> args = new ArrayList<>();
-        args.addAll(Arrays.asList("-jar", pathToJar, "-cp", classpath));
-        args.addAll(s2iConfig.jvmArguments);
-
         builderImageProducer.produce(new BaseImageInfoBuildItem(s2iConfig.baseJvmImage));
         Optional<S2iBaseJavaImage> baseImage = S2iBaseJavaImage.findMatching(s2iConfig.baseJvmImage);
 
@@ -116,7 +112,11 @@ public class S2iProcessor {
         });
 
         if (!baseImage.isPresent()) {
-            commandProducer.produce(new KubernetesCommandBuildItem("java", args.toArray(new String[args.size()])));
+            List<String> cmd = new ArrayList<>();
+            cmd.add("java");
+            cmd.addAll(s2iConfig.jvmArguments);
+            cmd.addAll(Arrays.asList("-jar", pathToJar, "-cp", classpath));
+            commandProducer.produce(KubernetesCommandBuildItem.command(cmd));
         }
     }
 
@@ -158,7 +158,7 @@ public class S2iProcessor {
         });
 
         if (!baseImage.isPresent()) {
-            commandProducer.produce(new KubernetesCommandBuildItem(pathToNativeBinary, nativeArguments.toArray(new String[0])));
+            commandProducer.produce(KubernetesCommandBuildItem.commandWithArgs(pathToNativeBinary, nativeArguments));
         }
     }
 
@@ -285,8 +285,6 @@ public class S2iProcessor {
                     } catch (IllegalArgumentException e) {
                         // We should ignore that, as its expected to be thrown when item is actually
                         // deleted.
-                    } catch (InterruptedException e) {
-                        s2iException(e);
                     }
                 } else if (i instanceof ImageStream) {
                     ImageStream is = (ImageStream) i;
@@ -361,8 +359,6 @@ public class S2iProcessor {
             try {
                 client.builds().withName(buildName).waitUntilCondition(b -> !RUNNING.equalsIgnoreCase(b.getStatus().getPhase()),
                         s2iConfig.buildTimeout.toMillis(), TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                s2iException(e);
             } finally {
                 try {
                     watch.close();

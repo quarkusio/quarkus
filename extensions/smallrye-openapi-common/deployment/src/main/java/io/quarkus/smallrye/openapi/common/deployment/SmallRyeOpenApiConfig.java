@@ -22,6 +22,18 @@ public final class SmallRyeOpenApiConfig {
     public Optional<Path> storeSchemaDirectory;
 
     /**
+     * Do not run the filter only at startup, but every time the document is requested (dynamic).
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean alwaysRunFilter;
+
+    /**
+     * Do not include the provided static openapi document (eg. META-INF/openapi.yaml)
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean ignoreStaticDocument;
+
+    /**
      * Add a certain SecurityScheme with config
      */
     public Optional<SecurityScheme> securityScheme;

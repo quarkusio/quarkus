@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonInclude(JsonInclude.Include.NON_DEFAULT)
 public class JsonExtensionCatalog extends JsonExtensionOrigin implements ExtensionCatalog {
 
     private String quarkusCore;

@@ -16,6 +16,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.resteasy.reactive.server.runtime.websocket.VertxWebSocketParamExtractor;
 import io.quarkus.resteasy.reactive.server.runtime.websocket.VertxWebSocketRestHandler;
+import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.vertx.core.http.ServerWebSocket;
 
 public class ResteasyReactiveVertxWebSocketIntegrationProcessor {
@@ -43,6 +44,16 @@ public class ResteasyReactiveVertxWebSocketIntegrationProcessor {
                     return new VertxWebSocketParamExtractor();
                 }
                 return null;
+            }
+
+            @Override
+            public boolean isMethodSignatureAsync(MethodInfo info) {
+                for (var param : info.parameters()) {
+                    if (param.name().equals(SERVER_WEB_SOCKET)) {
+                        return true;
+                    }
+                }
+                return false;
             }
         });
     }

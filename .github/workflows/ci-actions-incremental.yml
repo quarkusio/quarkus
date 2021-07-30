@@ -239,12 +239,11 @@ jobs:
             maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g",
             os-name: "ubuntu-latest"
           }
-          # all the jdk.compiler ones are for Kotlin Kapt
           - {
             name: "16",
             java-version: 16,
-            maven_args: "$JVM_TEST_MAVEN_ARGS -pl '!devtools/gradle' -Dno-descriptor-tests",
-            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g --add-opens java.base/java.util=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.jvm=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+            maven_args: "$JVM_TEST_MAVEN_ARGS -pl '!devtools/gradle'",
+            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g",
             os-name: "ubuntu-latest"
           }
           - {
@@ -296,7 +295,7 @@ jobs:
       - name: Build
         shell: bash
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=600 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash

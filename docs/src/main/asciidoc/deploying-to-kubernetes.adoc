@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Kubernetes extension
+= Kubernetes extension
 
 include::./attributes.adoc[]
 
@@ -1107,7 +1107,7 @@ Each time deployment is requested, a container image build will be implicitly tr
 
 === Deploying
 
-When deployment is enabled, the Kubernetes extension will select the resources specified by `quarkus.kubernetes.deployment.target` and deploy them.
+When deployment is enabled, the Kubernetes extension will select the resources specified by `quarkus.kubernetes.deployment-target` and deploy them.
 This assumes that a `.kube/config` is available in your user directory that points to the target Kubernetes cluster.
 In other words the extension will use whatever cluster `kubectl` uses. The same applies to credentials.
 

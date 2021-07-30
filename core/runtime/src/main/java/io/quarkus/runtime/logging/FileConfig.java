@@ -46,7 +46,10 @@ public class FileConfig {
     AsyncConfig async;
 
     /**
-     * File rotation config
+     * File rotation config.
+     * The time interval is determined by the content of the <code>fileSuffix</code> property.
+     * The size interval is determined by the content of the <code>maxFileSize</code> property.
+     * If both are used, the rotating will be based on time then size.
      */
     RotationConfig rotation;
 
@@ -55,7 +58,7 @@ public class FileConfig {
         /**
          * The maximum file size of the log file after which a rotation is executed.
          */
-        @ConfigItem
+        @ConfigItem(defaultValueDocumentation = "10")
         Optional<MemorySize> maxFileSize;
 
         /**
@@ -66,6 +69,7 @@ public class FileConfig {
 
         /**
          * File handler rotation file suffix.
+         * When used, the file will be rotated based on its suffix.
          *
          * Example fileSuffix: .yyyy-MM-dd
          */

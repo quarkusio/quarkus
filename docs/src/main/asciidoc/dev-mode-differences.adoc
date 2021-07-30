@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - How dev-mode differs from a production application
+= How dev-mode differs from a production application
 
 include::./attributes.adoc[]
 
@@ -19,7 +19,7 @@ during development but should *NEVER* be used in production.
 
 Feature sets aside, the Quarkus application that is run under dev-mode differs architecturally from the production application (i.e. the one that is run using `java -jar ...`).
 
-In dev-mode, Quarkus uses a ClassLoader hierarchy (explained in detail link:class-loading-reference.adoc[here]) that enables the live reload of user code
+In dev-mode, Quarkus uses a ClassLoader hierarchy (explained in detail link:class-loading-reference[here]) that enables the live reload of user code
 without requiring a rebuild and restart of the application.
 
 In a production application, the aforementioned class loading infrastructure is entirely absent - there is a single, purpose built ClassLoader that loads (almost) all classes and dependencies.
@@ -34,7 +34,7 @@ This mightily important feature needs no introduction and has already been menti
 
 === Dev UI
 
-Quarkus provides a very useful link:dev-ui.adoc[UI] accessible from the browser at `/q/dev`. This UI allows a developer to see the state of the application, but
+Quarkus provides a very useful link:dev-ui[UI] accessible from the browser at `/q/dev`. This UI allows a developer to see the state of the application, but
 also provides access to various actions that can change that state (depending on the extensions that are present).
 Examples of such operations are:
 
@@ -54,7 +54,7 @@ The `quarkus-hibernate-orm` extension will run the `import.sql` script in `src/m
 
 === Dev Services
 
-When testing or running in dev-mode Quarkus can even provide you with a zero config database out of the box, a feature we refer to as DevServices.
+When testing or running in dev-mode Quarkus can even provide you with a zero config database out of the box, a feature we refer to as Dev Services.
 More information can be found link:datasource.adoc#dev-services[here].
 
 === Swagger UI
@@ -71,7 +71,7 @@ The `quarkus-smallrye-health` extension will expose the Health UI when Quarkus i
 
 === Mock mailer
 
-The `quarkus-mailer` extension will enable an in-memory mock mail server when Quarkus is running in dev-mode. See link:mailer.adoc#testing[this] for more details.
+The `quarkus-mailer` extension will enable an in-memory mock mail server when Quarkus is running in dev-mode. See link:mailer-reference.adoc#testing[this] for more details.
 
 
 === gRPC

@@ -1,5 +1,6 @@
 package io.quarkus.oidc.common.runtime;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -135,6 +136,14 @@ public class OidcCommonConfig {
             this.clientSecret = clientSecret;
         }
 
+        public Jwt getJwt() {
+            return jwt;
+        }
+
+        public void setJwt(Jwt jwt) {
+            this.jwt = jwt;
+        }
+
         /**
          * Supports the client authentication methods which involve sending a client secret.
          *
@@ -158,10 +167,16 @@ public class OidcCommonConfig {
             }
 
             /**
-             * The client secret
+             * The client secret value - it will be ignored if 'secret.key' is set
              */
             @ConfigItem
             public Optional<String> value = Optional.empty();
+
+            /**
+             * The Secret CredentialsProvider
+             */
+            @ConfigItem
+            public Provider provider = new Provider();
 
             /**
              * Authentication method.
@@ -184,6 +199,14 @@ public class OidcCommonConfig {
             public void setMethod(Method method) {
                 this.method = Optional.of(method);
             }
+
+            public Provider getSecretProvider() {
+                return provider;
+            }
+
+            public void setSecretProvider(Provider secretProvider) {
+                this.provider = secretProvider;
+            }
         }
 
         /**
@@ -201,6 +224,12 @@ public class OidcCommonConfig {
              */
             @ConfigItem
             public Optional<String> secret = Optional.empty();
+
+            /**
+             * If provided, indicates that JWT is signed using a secret key provided by Secret CredentialsProvider
+             */
+            @ConfigItem
+            public Provider secretProvider = new Provider();
 
             /**
              * If provided, indicates that JWT is signed using a private key in PEM or JWK format
@@ -259,6 +288,58 @@ public class OidcCommonConfig {
             public void setLifespan(int lifespan) {
                 this.lifespan = lifespan;
             }
+
+            public Optional<String> getTokenKeyId() {
+                return tokenKeyId;
+            }
+
+            public void setTokenKeyId(String tokenKeyId) {
+                this.tokenKeyId = Optional.of(tokenKeyId);
+            }
+
+            public Provider getSecretProvider() {
+                return secretProvider;
+            }
+
+            public void setSecretProvider(Provider secretProvider) {
+                this.secretProvider = secretProvider;
+            }
+
+        }
+
+        /**
+         * CredentialsProvider which provides a client secret
+         */
+        @ConfigGroup
+        public static class Provider {
+
+            /**
+             * The CredentialsProvider name which should only be set if more than one CredentialsProvider is registered
+             */
+            @ConfigItem
+            public Optional<String> name = Optional.empty();
+
+            /**
+             * The CredentialsProvider client secret key
+             */
+            @ConfigItem
+            public Optional<String> key = Optional.empty();
+
+            public Optional<String> getName() {
+                return name;
+            }
+
+            public void setName(String name) {
+                this.name = Optional.of(name);
+            }
+
+            public Optional<String> getKey() {
+                return key;
+            }
+
+            public void setKey(String key) {
+                this.key = Optional.of(key);
+            }
         }
     }
 
@@ -269,6 +350,12 @@ public class OidcCommonConfig {
              * Certificates are validated and hostname verification is enabled. This is the default value.
              */
             REQUIRED,
+
+            /**
+             * Certificates are validated but hostname verification is disabled.
+             */
+            CERTIFICATE_VALIDATION,
+
             /**
              * All certificated are trusted and hostname verification is disabled.
              */
@@ -282,12 +369,54 @@ public class OidcCommonConfig {
         @ConfigItem
         public Optional<Verification> verification = Optional.empty();
 
+        /**
+         * An optional trust store which holds the certificate information of the certificates to trust
+         */
+        @ConfigItem
+        public Optional<Path> trustStoreFile = Optional.empty();
+
+        /**
+         * A parameter to specify the password of the trust store file.
+         */
+        @ConfigItem
+        public Optional<String> trustStorePassword = Optional.empty();
+
+        /**
+         * A parameter to specify the alias of the trust store certificate.
+         */
+        @ConfigItem
+        public Optional<String> trustStoreCertAlias = Optional.empty();
+
         public Optional<Verification> getVerification() {
             return verification;
         }
 
         public void setVerification(Verification verification) {
             this.verification = Optional.of(verification);
+        }
+
+        public Optional<Path> getTrustStoreFile() {
+            return trustStoreFile;
+        }
+
+        public void setTrustStoreFile(Path trustStoreFile) {
+            this.trustStoreFile = Optional.of(trustStoreFile);
+        }
+
+        public Optional<String> getTrustStorePassword() {
+            return trustStorePassword;
+        }
+
+        public void setTrustStorePassword(String trustStorePassword) {
+            this.trustStorePassword = Optional.of(trustStorePassword);
+        }
+
+        public Optional<String> getTrustStoreCertAlias() {
+            return trustStoreCertAlias;
+        }
+
+        public void setTrustStoreCertAlias(String trustStoreCertAlias) {
+            this.trustStoreCertAlias = Optional.of(trustStoreCertAlias);
         }
 
     }

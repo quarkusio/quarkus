@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Writing Your Own Extension
+= Writing Your Own Extension
 
 :numbered:
 :sectnums:
@@ -71,7 +71,7 @@ But many properties like enable caching or setting the JDBC driver can safely re
 
 ==== Static Init Config
 
-If the extension provides additional Config Sources and if these are required during Static Init, these must be registered with `AdditionalStaticInitConfigSourceProviderBuildItem`. Configuration in Static Init does not scan for additional sources to avoid double initialization at application startup time.
+If the extension provides additional Config Sources and if these are required during Static Init, these must be registered with `StaticInitConfigSourceProviderBuildItem`. Configuration in Static Init does not scan for additional sources to avoid double initialization at application startup time.
 
 ////
 === API
@@ -1820,6 +1820,30 @@ If you need more customization capabilities than registering a serializer or a d
 you can produce a CDI bean that implements `io.quarkus.jsonb.JsonbConfigCustomizer` via an `AdditionalBeanBuildItem`.
 More info about customizing JSON-B can be found on the JSON guide link:rest-json#configuring-json-support[Configuring JSON support]
 
+=== Integrating with Development Mode
+
+There are various APIS that you can use to integrate with development mode, and to get information about the current state.
+
+==== Handling restarts
+
+When Quarkus is starting the `io.quarkus.deployment.builditem.LiveReloadBuildItem` is guaranteed to be present that gives
+information about this start, in particular:
+
+- Is this a clean start or a live reload
+- If this is a live reload which changed files / classes triggered the reload
+
+It also provides a global context map you can use to store information between restarts, without needing to resort to
+static fields.
+
+==== Triggering Live Reload
+
+Live reload is generally triggered by a HTTP request, however not all applications are HTTP applications and some extensions
+may want to trigger live reload based on other events. To do this you need to implement `io.quarkus.dev.spi.HotReplacementSetup`
+in your runtime module, and add a `META-INF/services/io.quarkus.dev.spi.HotReplacementSetup` that lists your implementation.
+
+On startup the `setupHotDeployment` method will be called, and you can use the provided `io.quarkus.dev.spi.HotReplacementContext`
+to initiate a scan for changed files.
+
 === Testing Extensions
 
 Testing of Quarkus extensions should be done with the `io.quarkus.test.QuarkusUnitTest` JUnit 5 extension. 
@@ -3049,6 +3073,6 @@ Finally, generate the documentation and check it out.
 == Continuous testing of your extension
 
 In order to make it easy for extension authors to test their extensions daily against the latest snapshot of Quarkus, Quarkus has introduced
-the notion of Ecosystem CI. The Ecosystem CI link:https://github.com/quarkusio/quarkus-ecosystem-ci/blob/master/README.adoc[README]
+the notion of Ecosystem CI. The Ecosystem CI link:https://github.com/quarkusio/quarkus-ecosystem-ci/blob/main/README.adoc[README]
 has all the details on how to set up a GitHub Actions job to take advantage of this capability, while this link:https://www.youtube.com/watch?v=VpbRA1n0hHQ[video] provides an overview
 of what the process looks like.

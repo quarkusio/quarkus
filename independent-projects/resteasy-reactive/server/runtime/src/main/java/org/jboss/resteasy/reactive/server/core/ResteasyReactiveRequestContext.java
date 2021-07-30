@@ -318,6 +318,10 @@ public abstract class ResteasyReactiveRequestContext
         return this;
     }
 
+    public boolean handlesUnmappedException() {
+        return true;
+    }
+
     public void handleUnmappedException(Throwable throwable) {
         setResult(Response.serverError().build());
     }

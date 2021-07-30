@@ -147,7 +147,8 @@ public class ReflectiveHierarchyStep {
                     unindexedClasses, finalFieldsWritable, reflectiveClass);
         } else if (type instanceof ParameterizedType) {
             ParameterizedType parameterizedType = (ParameterizedType) type;
-            if (!reflectiveHierarchyBuildItem.getIgnoreTypePredicate().test(parameterizedType.name())) {
+            if (!reflectiveHierarchyBuildItem.getIgnoreTypePredicate().test(parameterizedType.name())
+                    && !processedReflectiveHierarchies.contains(parameterizedType.name())) {
                 addClassTypeHierarchy(combinedIndexBuildItem, reflectiveHierarchyBuildItem, source, parameterizedType.name(),
                         parameterizedType.name(),
                         processedReflectiveHierarchies,
@@ -195,6 +196,7 @@ public class ReflectiveHierarchyStep {
                         .methods(true)
                         .fields(true)
                         .finalFieldsWritable(doFinalFieldsNeedToBeWritable(info, finalFieldsWritable))
+                        .serialization(reflectiveHierarchyBuildItem.isSerialization())
                         .build());
 
         processedReflectiveHierarchies.add(name);

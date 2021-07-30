@@ -3,10 +3,9 @@ package io.quarkus.deployment.builditem;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Configuration property that is the result of start dev services.
- *
- * Used to start and configure dev services in native mode.
+ * see {@link DevServicesConfigResultBuildItem} and {@link DevServicesLauncherConfigResultBuildItem}
  */
+@Deprecated
 public final class DevServicesNativeConfigResultBuildItem extends MultiBuildItem {
 
     final String key;

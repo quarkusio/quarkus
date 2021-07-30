@@ -15,19 +15,20 @@ import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.registry.RegistryResolutionException;
 import picocli.CommandLine;
 import picocli.CommandLine.Mixin;
 
-@CommandLine.Command(name = "categories", aliases = "cat", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, description = "List existing extension categories.")
+@CommandLine.Command(name = "categories", aliases = "cat", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "List extension categories.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "%nOptions:%n")
 public class ProjectExtensionsCategories extends BaseBuildCommand implements Callable<Integer> {
 
     @Mixin
     RunModeOption runMode;
 
-    @CommandLine.ArgGroup(heading = "%nOutput format%n")
+    @CommandLine.ArgGroup(heading = "%nOutput format:%n")
     CategoryListFormatOptions format = new CategoryListFormatOptions();
 
-    @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version%n")
+    @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version:%n")
     TargetQuarkusVersionGroup targetQuarkusVersion = new TargetQuarkusVersionGroup();
 
     @Override
@@ -86,7 +87,7 @@ public class ProjectExtensionsCategories extends BaseBuildCommand implements Cal
         return CommandLine.ExitCode.OK;
     }
 
-    Integer listPlatformCategories() throws QuarkusCommandException {
+    Integer listPlatformCategories() throws QuarkusCommandException, RegistryResolutionException {
         QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetQuarkusVersion,
                 BuildTool.MAVEN, output);
 

@@ -36,7 +36,7 @@ public class BlockingCoroutinesTest {
 
         @Path("hello")
         @Blocking
-        public Object hello(kotlin.coroutines.Continuation<?> cont) {
+        public Object hello(kotlin.coroutines.Continuation<? super Object> cont) {
             throw new IllegalStateException("should never be called");
         }
     }

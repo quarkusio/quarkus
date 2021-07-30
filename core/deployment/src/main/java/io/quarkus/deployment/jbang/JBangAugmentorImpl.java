@@ -10,6 +10,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
@@ -25,11 +27,15 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
+import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.LaunchMode;
 
 public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<String, Object>> {
+
+    private static final Logger log = Logger.getLogger(JBangAugmentorImpl.class);
 
     @Override
     public void accept(CuratedApplication curatedApplication, Map<String, Object> resultMap) {
@@ -49,7 +55,11 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
             builder.setBaseName(quarkusBootstrap.getBaseName());
         }
 
-        builder.setAuxiliaryApplication(curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication());
+        boolean auxiliaryApplication = curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication();
+        builder.setAuxiliaryApplication(auxiliaryApplication);
+        builder.setAuxiliaryDevModeType(
+                curatedApplication.getQuarkusBootstrap().isHostApplicationIsTestOnly() ? DevModeType.TEST_ONLY
+                        : (auxiliaryApplication ? DevModeType.LOCAL : null));
         builder.setLaunchMode(LaunchMode.NORMAL);
         builder.setRebuild(quarkusBootstrap.isRebuild());
         builder.setLiveReloadState(
@@ -76,6 +86,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
         builder.addFinal(MainClassBuildItem.class);
         builder.addFinal(GeneratedResourceBuildItem.class);
         builder.addFinal(TransformedClassesBuildItem.class);
+        builder.addFinal(DeploymentResultBuildItem.class);
         boolean nativeRequested = "native".equals(System.getProperty("quarkus.package.type"));
         boolean containerBuildRequested = Boolean.getBoolean("quarkus.container-image.build");
         if (nativeRequested) {
@@ -102,7 +113,12 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
             for (Map.Entry<Path, Set<TransformedClassesBuildItem.TransformedClass>> entry : buildResult
                     .consume(TransformedClassesBuildItem.class).getTransformedClassesByJar().entrySet()) {
                 for (TransformedClassesBuildItem.TransformedClass transformed : entry.getValue()) {
-                    result.put(transformed.getFileName(), transformed.getData());
+                    if (transformed.getData() != null) {
+                        result.put(transformed.getFileName(), transformed.getData());
+                    } else {
+                        log.warn("Unable to remove resource " + transformed.getFileName()
+                                + " as this is not supported in JBangf");
+                    }
                 }
             }
             resultMap.put("files", result);

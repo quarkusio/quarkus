@@ -35,6 +35,7 @@ import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.ElasticsearchVersionSubstitution;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit;
@@ -141,13 +142,22 @@ class HibernateSearchElasticsearchProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void setRuntimeConfig(HibernateSearchElasticsearchRecorder recorder,
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
+            List<HibernateSearchIntegrationRuntimeConfiguredBuildItem> integrationRuntimeConfigBuildItems,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
-            runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
-                    puDescriptor.getPersistenceUnitName())
+            String puName = puDescriptor.getPersistenceUnitName();
+            List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners = new ArrayList<>();
+            for (HibernateSearchIntegrationRuntimeConfiguredBuildItem item : integrationRuntimeConfigBuildItems) {
+                if (item.getPersistenceUnitName().equals(puName)) {
+                    integrationRuntimeInitListeners.add(item.getInitListener());
+                }
+            }
+            runtimeConfigured.produce(
+                    new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
                             .setInitListener(
-                                    recorder.createRuntimeInitListener(runtimeConfig, puDescriptor.getPersistenceUnitName())));
+                                    recorder.createRuntimeInitListener(runtimeConfig, puDescriptor.getPersistenceUnitName(),
+                                            integrationRuntimeInitListeners)));
         }
     }
 

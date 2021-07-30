@@ -20,7 +20,6 @@ import javax.inject.Inject;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.RemoteCounterManagerFactory;
-import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.client.hotrod.logging.Log;
@@ -56,41 +55,44 @@ public class InfinispanClientProducer {
 
     private void initialize() {
         log.debug("Initializing CacheManager");
-        Configuration conf;
         if (properties == null) {
-            // We already loaded and it wasn't present - so use an empty config
-            conf = new ConfigurationBuilder().build();
-        } else {
-            conf = builderFromProperties(properties).build();
-        }
-        cacheManager = new RemoteCacheManager(conf);
-
-        // TODO: do we want to automatically register all the proto file definitions?
-        RemoteCache<String, String> protobufMetadataCache = null;
-
-        Set<SerializationContextInitializer> initializers = (Set) properties.remove(PROTOBUF_INITIALIZERS);
-        if (initializers != null) {
-            for (SerializationContextInitializer initializer : initializers) {
-                if (protobufMetadataCache == null) {
-                    protobufMetadataCache = cacheManager.getCache(
-                            ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
-                }
-                protobufMetadataCache.put(initializer.getProtoFileName(), initializer.getProtoFile());
-            }
+            // We already loaded and it wasn't present - so don't initialize the cache manager
+            return;
         }
 
-        for (Map.Entry<Object, Object> property : properties.entrySet()) {
-            Object key = property.getKey();
-            if (key instanceof String) {
-                String keyString = (String) key;
-                if (keyString.startsWith(InfinispanClientProducer.PROTOBUF_FILE_PREFIX)) {
-                    String fileName = keyString.substring(InfinispanClientProducer.PROTOBUF_FILE_PREFIX.length());
-                    String fileContents = (String) property.getValue();
+        ConfigurationBuilder conf = builderFromProperties(properties);
+        if (conf.servers().isEmpty()) {
+            return;
+        }
+        // Build de cache manager if the server list is present
+        cacheManager = new RemoteCacheManager(conf.build());
+        InfinispanClientRuntimeConfig infinispanClientRuntimeConfig = this.infinispanClientRuntimeConfig.get();
+
+        if (infinispanClientRuntimeConfig.useSchemaRegistration.orElse(Boolean.TRUE)) {
+            RemoteCache<String, String> protobufMetadataCache = null;
+            Set<SerializationContextInitializer> initializers = (Set) properties.remove(PROTOBUF_INITIALIZERS);
+            if (initializers != null) {
+                for (SerializationContextInitializer initializer : initializers) {
                     if (protobufMetadataCache == null) {
                         protobufMetadataCache = cacheManager.getCache(
                                 ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
                     }
-                    protobufMetadataCache.put(fileName, fileContents);
+                    protobufMetadataCache.put(initializer.getProtoFileName(), initializer.getProtoFile());
+                }
+            }
+            for (Map.Entry<Object, Object> property : properties.entrySet()) {
+                Object key = property.getKey();
+                if (key instanceof String) {
+                    String keyString = (String) key;
+                    if (keyString.startsWith(InfinispanClientProducer.PROTOBUF_FILE_PREFIX)) {
+                        String fileName = keyString.substring(InfinispanClientProducer.PROTOBUF_FILE_PREFIX.length());
+                        String fileContents = (String) property.getValue();
+                        if (protobufMetadataCache == null) {
+                            protobufMetadataCache = cacheManager.getCache(
+                                    ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
+                        }
+                        protobufMetadataCache.put(fileName, fileContents);
+                    }
                 }
             }
         }
@@ -283,16 +285,24 @@ public class InfinispanClientProducer {
 
         final io.quarkus.infinispan.client.Remote remote = getRemoteAnnotation(annotationSet);
 
-        if (remote != null && !remote.value().isEmpty()) {
+        if (cacheManager != null && remote != null && !remote.value().isEmpty()) {
             return cacheManager.getCache(remote.value());
         }
 
-        return cacheManager.getCache();
+        if (cacheManager != null) {
+            return cacheManager.getCache();
+        }
+
+        return null;
     }
 
     @Produces
     public CounterManager counterManager() {
-        return RemoteCounterManagerFactory.asCounterManager(remoteCacheManager());
+        RemoteCacheManager cacheManager = remoteCacheManager();
+        if (cacheManager == null) {
+            return null;
+        }
+        return RemoteCounterManagerFactory.asCounterManager(cacheManager);
     }
 
     @Produces

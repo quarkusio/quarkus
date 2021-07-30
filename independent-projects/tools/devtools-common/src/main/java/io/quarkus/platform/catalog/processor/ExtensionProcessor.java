@@ -2,16 +2,19 @@ package io.quarkus.platform.catalog.processor;
 
 import static io.quarkus.registry.catalog.Extension.*;
 
+import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.catalog.Extension;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public final class ExtensionProcessor {
 
     private static final String STABLE_STATS = "stable";
-    public static final String PROVIDES_CODE_TAG = "provides-code";
+    private static final String QUARKUS_BOM_ARTIFACT_ID = "quarkus-bom";
+    public static final String PROVIDES_CODE_TAG = "code";
 
     public enum CodestartKind {
         CORE,
@@ -53,6 +56,17 @@ public final class ExtensionProcessor {
 
     public static String getCodestartName(Extension extension) {
         return getMetadataValue(extension, MD_NESTED_CODESTART_NAME).asString();
+    }
+
+    public static Optional<ArtifactCoords> getBom(Extension extension) {
+        if (extension == null || extension.getOrigins() == null || extension.getOrigins().isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(extension.getOrigins().get(0).getBom());
+    }
+
+    public static Optional<ArtifactCoords> getNonQuarkusBomOnly(Extension extension) {
+        return getBom(extension).filter(p -> !p.getArtifactId().equals(QUARKUS_BOM_ARTIFACT_ID));
     }
 
     public static List<String> getCodestartLanguages(Extension extension) {

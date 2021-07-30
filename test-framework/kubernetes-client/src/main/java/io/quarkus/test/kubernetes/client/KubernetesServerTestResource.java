@@ -6,10 +6,11 @@ import java.util.Collections;
 import java.util.function.Consumer;
 
 import io.fabric8.kubernetes.client.GenericKubernetesClient;
+import io.fabric8.kubernetes.client.NamespacedKubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
 import io.quarkus.test.common.QuarkusTestResourceConfigurableLifecycleManager;
 
-public class KubernetesServerTestResource extends AbstractKubernetesTestResource<KubernetesServer>
+public class KubernetesServerTestResource extends AbstractKubernetesTestResource<KubernetesServer, NamespacedKubernetesClient>
         implements QuarkusTestResourceConfigurableLifecycleManager<WithKubernetesTestServer> {
 
     private boolean https = false;
@@ -30,7 +31,7 @@ public class KubernetesServerTestResource extends AbstractKubernetesTestResource
     }
 
     @Override
-    protected GenericKubernetesClient<?> getClient() {
+    protected GenericKubernetesClient<NamespacedKubernetesClient> getClient() {
         return server.getClient();
     }
 

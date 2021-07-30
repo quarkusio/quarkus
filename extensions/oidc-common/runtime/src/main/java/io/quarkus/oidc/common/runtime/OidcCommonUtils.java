@@ -1,20 +1,33 @@
 package io.quarkus.oidc.common.runtime;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.ConnectException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.PrivateKey;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import javax.crypto.SecretKey;
 
+import org.jboss.logging.Logger;
+
+import io.quarkus.credentials.CredentialsProvider;
+import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials;
+import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Provider;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Tls.Verification;
 import io.quarkus.runtime.TlsConfig;
@@ -23,15 +36,22 @@ import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtSignatureBuilder;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.ProxyOptions;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class OidcCommonUtils {
+    public static final Duration CONNECTION_BACKOFF_DURATION = Duration.ofSeconds(2);
+
     static final byte AMP = '&';
     static final byte EQ = '=';
+
+    private static final Logger LOG = Logger.getLogger(OidcCommonUtils.class);
 
     private OidcCommonUtils() {
 
@@ -104,6 +124,23 @@ public class OidcCommonUtils {
         if (trustAll) {
             options.setTrustAll(true);
             options.setVerifyHost(false);
+        } else if (oidcConfig.tls.trustStoreFile.isPresent()) {
+            try {
+                byte[] trustStoreData = getFileContent(oidcConfig.tls.trustStoreFile.get());
+                io.vertx.core.net.KeyStoreOptions trustStoreOptions = new KeyStoreOptions()
+                        .setPassword(oidcConfig.tls.getTrustStorePassword().orElse("password"))
+                        .setAlias(oidcConfig.tls.getTrustStoreCertAlias().orElse(null))
+                        .setValue(io.vertx.core.buffer.Buffer.buffer(trustStoreData))
+                        .setType("JKS");
+                options.setTrustOptions(trustStoreOptions);
+                if (Verification.CERTIFICATE_VALIDATION == oidcConfig.tls.verification.orElse(Verification.REQUIRED)) {
+                    options.setVerifyHost(false);
+                }
+            } catch (IOException ex) {
+                throw new ConfigurationException(String.format(
+                        "OIDC truststore file does not exist or can not be read",
+                        oidcConfig.tls.trustStoreFile.get().toString()), ex);
+            }
         }
         Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.getProxy());
         if (proxyOpt.isPresent()) {
@@ -134,11 +171,6 @@ public class OidcCommonUtils {
         }
     }
 
-    public static long getConnectionRetryCount(OidcCommonConfig oidcConfig) {
-        final long connectionDelayInSecs = getConnectionDelay(oidcConfig);
-        return connectionDelayInSecs > 1 ? connectionDelayInSecs / 2 : 1;
-    }
-
     private static long getConnectionDelay(OidcCommonConfig oidcConfig) {
         return oidcConfig.getConnectionDelay().isPresent()
                 ? oidcConfig.getConnectionDelay().get().getSeconds()
@@ -146,7 +178,12 @@ public class OidcCommonUtils {
     }
 
     public static long getConnectionDelayInMillis(OidcCommonConfig oidcConfig) {
-        return getConnectionDelay(oidcConfig) * 1000;
+        final long connectionDelayInSecs = getConnectionDelay(oidcConfig);
+        final long connectionRetryCount = connectionDelayInSecs > 1 ? connectionDelayInSecs / 2 : 1;
+        if (connectionRetryCount > 1) {
+            LOG.infof("Connecting to OpenId Connect Provider for up to %d times every 2 seconds", connectionRetryCount);
+        }
+        return connectionDelayInSecs * 1000;
     }
 
     public static Optional<ProxyOptions> toProxyOptions(OidcCommonConfig.Proxy proxyConfig) {
@@ -173,26 +210,46 @@ public class OidcCommonUtils {
     }
 
     public static boolean isClientSecretBasicAuthRequired(Credentials creds) {
-        return creds.secret.isPresent() || creds.clientSecret.value.isPresent()
-                && creds.clientSecret.method.orElseGet(() -> Secret.Method.BASIC) == Secret.Method.BASIC;
+        return creds.secret.isPresent() ||
+                ((creds.clientSecret.value.isPresent() || creds.clientSecret.provider.key.isPresent())
+                        && creds.clientSecret.method.orElseGet(() -> Secret.Method.BASIC) == Secret.Method.BASIC);
     }
 
     public static boolean isClientJwtAuthRequired(Credentials creds) {
-        return creds.jwt.secret.isPresent() || creds.jwt.keyFile.isPresent() || creds.jwt.keyStoreFile.isPresent();
+        return creds.jwt.secret.isPresent() || creds.jwt.secretProvider.key.isPresent() || creds.jwt.keyFile.isPresent()
+                || creds.jwt.keyStoreFile.isPresent();
     }
 
     public static boolean isClientSecretPostAuthRequired(Credentials creds) {
-        return creds.clientSecret.value.isPresent()
+        return (creds.clientSecret.value.isPresent() || creds.clientSecret.provider.key.isPresent())
                 && creds.clientSecret.method.orElseGet(() -> Secret.Method.BASIC) == Secret.Method.POST;
     }
 
     public static String clientSecret(Credentials creds) {
-        return creds.secret.orElseGet(() -> creds.clientSecret.value.get());
+        return creds.secret.orElse(creds.clientSecret.value.orElseGet(fromCredentialsProvider(creds.clientSecret.provider)));
+    }
+
+    private static Supplier<? extends String> fromCredentialsProvider(Provider provider) {
+        return new Supplier<String>() {
+
+            @Override
+            public String get() {
+                if (provider.key.isPresent()) {
+                    String providerName = provider.name.orElse(null);
+                    CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(providerName);
+                    if (credentialsProvider != null) {
+                        return credentialsProvider.getCredentials(providerName).get(provider.key.get());
+                    }
+                }
+                return null;
+            }
+        };
     }
 
     public static Key clientJwtKey(Credentials creds) {
-        if (creds.jwt.secret.isPresent()) {
-            return KeyUtils.createSecretKeyFromSecret(creds.jwt.secret.get());
+        if (creds.jwt.secret.isPresent() || creds.jwt.secretProvider.key.isPresent()) {
+            return KeyUtils
+                    .createSecretKeyFromSecret(creds.jwt.secret.orElseGet(fromCredentialsProvider(creds.jwt.secretProvider)));
         } else {
             Key key = null;
             try {
@@ -226,8 +283,8 @@ public class OidcCommonUtils {
                 .audience(getAuthServerUrl(oidcConfig))
                 .expiresIn(oidcConfig.credentials.jwt.lifespan)
                 .jws();
-        if (oidcConfig.credentials.jwt.tokenKeyId.isPresent()) {
-            builder.keyId(oidcConfig.credentials.jwt.tokenKeyId.get());
+        if (oidcConfig.credentials.jwt.getTokenKeyId().isPresent()) {
+            builder.keyId(oidcConfig.credentials.jwt.getTokenKeyId().get());
         }
         if (key instanceof SecretKey) {
             return builder.sign((SecretKey) key);
@@ -248,20 +305,65 @@ public class OidcCommonUtils {
     }
 
     public static String initClientSecretBasicAuth(OidcCommonConfig oidcConfig) {
-        if (OidcCommonUtils.isClientSecretBasicAuthRequired(oidcConfig.credentials)) {
+        if (isClientSecretBasicAuthRequired(oidcConfig.credentials)) {
             return OidcConstants.BASIC_SCHEME + " "
                     + Base64.getEncoder().encodeToString(
                             (oidcConfig.getClientId().get() + ":"
-                                    + OidcCommonUtils.clientSecret(oidcConfig.credentials))
-                                            .getBytes(StandardCharsets.UTF_8));
+                                    + clientSecret(oidcConfig.credentials)).getBytes(StandardCharsets.UTF_8));
         }
         return null;
     }
 
     public static Key initClientJwtKey(OidcCommonConfig oidcConfig) {
-        if (OidcCommonUtils.isClientJwtAuthRequired(oidcConfig.credentials)) {
-            return OidcCommonUtils.clientJwtKey(oidcConfig.credentials);
+        if (isClientJwtAuthRequired(oidcConfig.credentials)) {
+            return clientJwtKey(oidcConfig.credentials);
         }
         return null;
+    }
+
+    public static Predicate<? super Throwable> oidcEndpointNotAvailable() {
+        return t -> (t instanceof ConnectException
+                || (t instanceof OidcEndpointAccessException && ((OidcEndpointAccessException) t).getErrorStatus() == 404));
+    }
+
+    public static Uni<JsonObject> discoverMetadata(WebClient client, String authServerUrl, long connectionDelayInMillisecs) {
+        final String discoveryUrl = authServerUrl + OidcConstants.WELL_KNOWN_CONFIGURATION;
+        return client.getAbs(discoveryUrl).send().onItem().transform(resp -> {
+            if (resp.statusCode() == 200) {
+                return resp.bodyAsJsonObject();
+            } else {
+                LOG.tracef("Discovery has failed, status code: %d", resp.statusCode());
+                throw new OidcEndpointAccessException(resp.statusCode());
+            }
+        }).onFailure(oidcEndpointNotAvailable())
+                .retry()
+                .withBackOff(CONNECTION_BACKOFF_DURATION, CONNECTION_BACKOFF_DURATION)
+                .expireIn(connectionDelayInMillisecs)
+                .onFailure().transform(t -> t.getCause());
+    }
+
+    private static byte[] getFileContent(Path path) throws IOException {
+        byte[] data;
+        final InputStream resource = Thread.currentThread().getContextClassLoader().getResourceAsStream(path.toString());
+        if (resource != null) {
+            try (InputStream is = resource) {
+                data = doRead(is);
+            }
+        } else {
+            try (InputStream is = Files.newInputStream(path)) {
+                data = doRead(is);
+            }
+        }
+        return data;
+    }
+
+    private static byte[] doRead(InputStream is) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] buf = new byte[1024];
+        int r;
+        while ((r = is.read(buf)) > 0) {
+            out.write(buf, 0, r);
+        }
+        return out.toByteArray();
     }
 }

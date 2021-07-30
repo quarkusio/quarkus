@@ -79,10 +79,10 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
         assertThat(mainLib.resolve("org.acme.ext-c-1.0-SNAPSHOT.jar")).exists();
         assertThat(mainLib.resolve("org.acme.ext-e-1.0-SNAPSHOT.jar")).exists();
         assertThat(mainLib.resolve("org.acme.ext-d-1.0-SNAPSHOT.jar")).doesNotExist();
-        assertThat(mainLib.resolve("net.bytebuddy.byte-buddy-1.10.22.jar")).doesNotExist();
+        assertThat(mainLib.resolve("net.bytebuddy.byte-buddy-1.11.8.jar")).doesNotExist();
 
         final Path deploymentLib = buildDir.toPath().resolve("quarkus-app").resolve("lib").resolve("deployment");
-        assertThat(deploymentLib.resolve("net.bytebuddy.byte-buddy-1.10.22.jar")).exists();
+        assertThat(deploymentLib.resolve("net.bytebuddy.byte-buddy-1.11.8.jar")).exists();
     }
 
     @Test

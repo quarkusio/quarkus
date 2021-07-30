@@ -34,6 +34,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.ContainerRequestContextImpl;
@@ -60,6 +61,8 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
 final class ServerExceptionMapperGenerator {
+
+    private static final DotName THROWABLE = DotName.createSimple(Throwable.class.getName());
 
     private ServerExceptionMapperGenerator() {
     }
@@ -126,7 +129,7 @@ final class ServerExceptionMapperGenerator {
                 ctor.invokeSpecialMethod(ofConstructor(Object.class), ctor.getThis());
                 ctor.returnValue(null);
 
-                if (returnType == ReturnType.RESPONSE) {
+                if (returnType == ReturnType.RESPONSE || returnType == ReturnType.REST_RESPONSE) {
                     MethodDescriptor specToResponseDescriptor = generateSpecToResponse(handledExceptionType, generatedClassName,
                             cc);
 
@@ -136,25 +139,31 @@ final class ServerExceptionMapperGenerator {
                     MethodDescriptor rrToResponseDescriptor = toResponseDescriptor(handledExceptionType, generatedClassName);
 
                     // bridge toResponse(Throwable, ServerRequestContext) method
-                    generateRRResponseBridge(handledExceptionType, cc, rrToResponseDescriptor);
+                    if (!THROWABLE.equals(handledExceptionType.name())) {
+                        generateRRResponseBridge(handledExceptionType, cc, rrToResponseDescriptor);
+                    }
 
                     // RESTEasy Reactive toResponse(...) method
                     generateRRResponse(targetMethod, targetClass, handledExceptionType, cc, rrToResponseDescriptor,
+                            returnType,
                             (method, contextHandle) -> {
                                 ResultHandle endpointInstanceHandle = method.invokeVirtualMethod(
                                         ofMethod(ResteasyReactiveRequestContext.class, "getEndpointInstance", Object.class),
                                         contextHandle);
                                 return method.checkCast(endpointInstanceHandle, targetClass.name().toString());
                             });
-                } else if (returnType == ReturnType.UNI_RESPONSE) {
+                } else if (returnType == ReturnType.UNI_RESPONSE || returnType == ReturnType.UNI_REST_RESPONSE) {
                     MethodDescriptor rrAsyncResponseDescriptor = asyncResponseDescriptor(handledExceptionType,
                             generatedClassName);
 
                     // bridge asyncResponse(Throwable, AsyncExceptionMapperContext) method
-                    generateRRUniResponseBridge(handledExceptionType, cc, rrAsyncResponseDescriptor);
+                    if (!THROWABLE.equals(handledExceptionType.name())) {
+                        generateRRUniResponseBridge(handledExceptionType, cc, rrAsyncResponseDescriptor);
+                    }
 
                     // RESTEasy Reactive asyncResponse(...) method
                     generateRRUniResponse(targetMethod, targetClass, handledExceptionType, cc, rrAsyncResponseDescriptor,
+                            returnType,
                             (method, contextHandle) -> {
                                 ResultHandle endpointInstanceHandle = method.invokeVirtualMethod(
                                         ofMethod(ResteasyReactiveRequestContext.class, "getEndpointInstance", Object.class),
@@ -250,7 +259,7 @@ final class ServerExceptionMapperGenerator {
                 ctor.writeInstanceField(delegateField, self, config);
                 ctor.returnValue(null);
 
-                if (returnType == ReturnType.RESPONSE) {
+                if (returnType == ReturnType.RESPONSE || returnType == ReturnType.REST_RESPONSE) {
                     // spec toResponse(...) method
                     MethodDescriptor specToResponseDescriptor = generateSpecToResponse(handledExceptionType, generatedClassName,
                             cc);
@@ -261,20 +270,26 @@ final class ServerExceptionMapperGenerator {
                     MethodDescriptor rrToResponseDescriptor = toResponseDescriptor(handledExceptionType, generatedClassName);
 
                     // bridge toResponse(Throwable, ServerRequestContext) method
-                    generateRRResponseBridge(handledExceptionType, cc, rrToResponseDescriptor);
+                    if (!THROWABLE.equals(handledExceptionType.name())) {
+                        generateRRResponseBridge(handledExceptionType, cc, rrToResponseDescriptor);
+                    }
 
                     // RESTEasy Reactive toResponse(...) method
                     generateRRResponse(targetMethod, targetClass, handledExceptionType, cc, rrToResponseDescriptor,
+                            returnType,
                             (method, contextHandle) -> method.readInstanceField(delegateField, method.getThis()));
-                } else if (returnType == ReturnType.UNI_RESPONSE) {
+                } else if (returnType == ReturnType.UNI_RESPONSE || returnType == ReturnType.UNI_REST_RESPONSE) {
                     MethodDescriptor rrAsyncResponseDescriptor = asyncResponseDescriptor(handledExceptionType,
                             generatedClassName);
 
                     // bridge asyncResponse(Throwable, AsyncExceptionMapperContext) method
-                    generateRRUniResponseBridge(handledExceptionType, cc, rrAsyncResponseDescriptor);
+                    if (!THROWABLE.equals(handledExceptionType.name())) {
+                        generateRRUniResponseBridge(handledExceptionType, cc, rrAsyncResponseDescriptor);
+                    }
 
                     // RESTEasy Reactive asyncResponse(...) method
                     generateRRUniResponse(targetMethod, targetClass, handledExceptionType, cc, rrAsyncResponseDescriptor,
+                            returnType,
                             (method, contextHandle) -> method.readInstanceField(delegateField, method.getThis()));
                 } else {
                     throw new IllegalStateException("ReturnType: '" + returnType + "' is not supported");
@@ -338,9 +353,9 @@ final class ServerExceptionMapperGenerator {
     }
 
     private static Class<?> determineInterfaceType(ReturnType returnType) {
-        if (returnType == ReturnType.RESPONSE) {
+        if (returnType == ReturnType.RESPONSE || returnType == ReturnType.REST_RESPONSE) {
             return ResteasyReactiveExceptionMapper.class;
-        } else if (returnType == ReturnType.UNI_RESPONSE) {
+        } else if (returnType == ReturnType.UNI_RESPONSE || returnType == ReturnType.UNI_REST_RESPONSE) {
             return ResteasyReactiveAsyncExceptionMapper.class;
         }
         throw new IllegalStateException("ReturnType: '" + returnType + "' is not supported");
@@ -380,6 +395,7 @@ final class ServerExceptionMapperGenerator {
 
     private static void generateRRResponse(MethodInfo targetMethod, ClassInfo targetClass, Type handledExceptionType,
             ClassCreator cc, MethodDescriptor rrToResponseDescriptor,
+            ReturnType returnType,
             BiFunction<MethodCreator, ResultHandle, ResultHandle> targetInstanceHandleCreator) {
         MethodCreator mc = cc.getMethodCreator(rrToResponseDescriptor);
         ResultHandle exceptionHandle = mc.getMethodParam(0);
@@ -389,16 +405,24 @@ final class ServerExceptionMapperGenerator {
         if (targetMethod.parameters().isEmpty()) {
             // just call the target method with no parameters
             ResultHandle resultHandle = mc.invokeVirtualMethod(
-                    ofMethod(targetClass.name().toString(), targetMethod.name(), Response.class),
+                    ofMethod(targetClass.name().toString(), targetMethod.name(), targetMethod.returnType().name().toString()),
                     targetInstanceHandle);
+            if (returnType == ReturnType.REST_RESPONSE) {
+                resultHandle = mc.invokeVirtualMethod(ofMethod(RestResponse.class, "toResponse", Response.class),
+                        resultHandle);
+            }
             mc.returnValue(resultHandle);
         } else {
             TargetMethodParamsInfo targetMethodParamsInfo = getTargetMethodParamsInfo(targetMethod, targetClass,
                     handledExceptionType, mc, exceptionHandle, contextHandle);
             ResultHandle resultHandle = mc.invokeVirtualMethod(
                     ofMethod(targetClass.name().toString(), targetMethod.name(),
-                            Response.class.getName(), targetMethodParamsInfo.getTypes()),
+                            targetMethod.returnType().name().toString(), targetMethodParamsInfo.getTypes()),
                     targetInstanceHandle, targetMethodParamsInfo.getHandles());
+            if (returnType == ReturnType.REST_RESPONSE) {
+                resultHandle = mc.invokeVirtualMethod(ofMethod(RestResponse.class, "toResponse", Response.class),
+                        resultHandle);
+            }
             mc.returnValue(resultHandle);
         }
     }
@@ -417,6 +441,7 @@ final class ServerExceptionMapperGenerator {
 
     private static void generateRRUniResponse(MethodInfo targetMethod, ClassInfo targetClass, Type handledExceptionType,
             ClassCreator cc, MethodDescriptor rrAsyncResponseDescriptor,
+            ReturnType returnType,
             BiFunction<MethodCreator, ResultHandle, ResultHandle> targetInstanceHandleCreator) {
         MethodCreator mc = cc.getMethodCreator(rrAsyncResponseDescriptor);
         ResultHandle exceptionHandle = mc.getMethodParam(0);
@@ -440,7 +465,8 @@ final class ServerExceptionMapperGenerator {
                             Uni.class.getName(), targetMethodParamsInfo.getTypes()),
                     targetInstanceHandle, targetMethodParamsInfo.getHandles());
         }
-        mc.invokeStaticMethod(ofMethod(AsyncExceptionMappingUtil.class, "handleUniResponse", void.class, Uni.class,
+        String methodName = returnType == ReturnType.UNI_RESPONSE ? "handleUniResponse" : "handleUniRestResponse";
+        mc.invokeStaticMethod(ofMethod(AsyncExceptionMappingUtil.class, methodName, void.class, Uni.class,
                 AsyncExceptionMapperContext.class), uniHandle, asyncContextHandle);
         mc.returnValue(null);
     }
@@ -514,11 +540,16 @@ final class ServerExceptionMapperGenerator {
     private static ReturnType determineReturnType(MethodInfo targetMethod) {
         if (targetMethod.returnType().name().equals(RESPONSE)) {
             return ReturnType.RESPONSE;
+        } else if (targetMethod.returnType().name().equals(REST_RESPONSE)) {
+            return ReturnType.REST_RESPONSE;
         } else if (targetMethod.returnType().kind() == Type.Kind.PARAMETERIZED_TYPE) {
             ParameterizedType parameterizedType = targetMethod.returnType().asParameterizedType();
             if (parameterizedType.name().equals(UNI) && (parameterizedType.arguments().size() == 1)) {
                 if (parameterizedType.arguments().get(0).name().equals(RESPONSE)) {
                     return ReturnType.UNI_RESPONSE;
+                }
+                if (parameterizedType.arguments().get(0).name().equals(REST_RESPONSE)) {
+                    return ReturnType.UNI_REST_RESPONSE;
                 }
             }
         }
@@ -547,7 +578,9 @@ final class ServerExceptionMapperGenerator {
 
     private enum ReturnType {
         RESPONSE,
-        UNI_RESPONSE
+        REST_RESPONSE,
+        UNI_RESPONSE,
+        UNI_REST_RESPONSE
     }
 
     private static class TargetMethodParamsInfo {

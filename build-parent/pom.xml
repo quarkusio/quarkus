@@ -20,8 +20,8 @@
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
+        <kotlin.version>1.5.21</kotlin.version>
         <dokka.version>1.4.32</dokka.version>
-        <kotlin.version>1.4.32</kotlin.version>
         <scala.version>2.12.13</scala.version>
         <scala-maven-plugin.version>4.4.0</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
@@ -38,8 +38,9 @@
            what we work with by self downloading it: -->
         <graal-sdk.version-for-documentation>21.1.0</graal-sdk.version-for-documentation>
         <mandrel.version-for-documentation>21.0</mandrel.version-for-documentation>
-        <rest-assured.version>4.3.2</rest-assured.version>
-        <mutiny-client.version>1.1.0</mutiny-client.version>
+
+        <htmlunit.version>2.40.0</htmlunit.version>
+        <subethasmtp.version>3.1.7</subethasmtp.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.31</freemarker.version>
@@ -61,7 +62,7 @@
         <gradle-wrapper.version>6.9</gradle-wrapper.version>
 
         <!-- MicroProfile TCK versions -->
-        <microprofile-health-api.version>3.0</microprofile-health-api.version>
+        <microprofile-health-api.version>3.1</microprofile-health-api.version>
         <microprofile-config-api.version>2.0</microprofile-config-api.version>
         <microprofile-metrics-api.version>3.0</microprofile-metrics-api.version>
         <microprofile-fault-tolerance-api.version>3.0</microprofile-fault-tolerance-api.version>
@@ -87,7 +88,7 @@
         <wagon-provider-api.version>3.4.3</wagon-provider-api.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml to match the version -->
+        <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
         <keycloak.docker.image>quay.io/keycloak/keycloak:14.0.0</keycloak.docker.image>
 
         <unboundid-ldap.version>4.0.13</unboundid-ldap.version>
@@ -283,6 +284,22 @@
                 <scope>test</scope>
             </dependency>
 
+            <dependency>
+                <groupId>net.sourceforge.htmlunit</groupId>
+                <artifactId>htmlunit</artifactId>
+                <version>${htmlunit.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.httpcomponents</groupId>
+                        <artifactId>httpmime</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
             <!-- Webjars for UI related -->
             <dependency>
                 <groupId>org.webjars</groupId>
@@ -298,6 +315,13 @@
                 <groupId>org.webjars</groupId>
                 <artifactId>jquery</artifactId>
                 <version>${webjar.jquery.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.subethamail</groupId>
+                <artifactId>subethasmtp</artifactId>
+                <version>${subethasmtp.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -315,7 +339,9 @@
                             <maven.home>${maven.home}</maven.home>
                             <maven.repo.local>${settings.localRepository}</maven.repo.local>
                             <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
-                            <project.version>${project.version}</project.version> <!-- some dev tools tests need this -->
+                            <!-- some dev tools tests need the following properties -->
+                            <project.version>${project.version}</project.version>
+                            <project.groupId>${project.groupId}</project.groupId>
                         </systemPropertyVariables>
                         <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
                         <!-- set tmpdir as early as possible because surefire sets it too late for JDK16 -->
@@ -334,7 +360,9 @@
                             <maven.home>${maven.home}</maven.home>
                             <maven.repo.local>${settings.localRepository}</maven.repo.local>
                             <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
-                            <project.version>${project.version}</project.version> <!-- some dev tools tests need this -->
+                            <!-- some dev tools tests need the following properties -->
+                            <project.version>${project.version}</project.version>
+                            <project.groupId>${project.groupId}</project.groupId>
                         </systemPropertyVariables>
                         <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
                         <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
@@ -555,7 +583,7 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.15.0</version>
+                    <version>2.16.0</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
@@ -796,7 +824,7 @@
                 <property>
                     <name>dokka</name>
                 </property>
-                <jdk>[,16)</jdk>
+                <jdk>(,16)</jdk>
                 <file>
                     <exists>src/main/kotlin</exists>
                 </file>

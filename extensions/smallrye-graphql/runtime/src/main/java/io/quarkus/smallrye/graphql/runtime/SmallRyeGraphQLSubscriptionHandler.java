@@ -13,9 +13,7 @@ import org.reactivestreams.Subscription;
 import graphql.ExecutionResult;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
-import io.smallrye.graphql.bootstrap.Config;
 import io.smallrye.graphql.execution.ExecutionResponse;
-import io.smallrye.graphql.execution.error.ExecutionErrorsService;
 import io.smallrye.mutiny.helpers.Subscriptions;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -28,15 +26,11 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class SmallRyeGraphQLSubscriptionHandler extends SmallRyeGraphQLAbstractHandler {
     private static final Logger log = Logger.getLogger(SmallRyeGraphQLSubscriptionHandler.class);
-    private final ExecutionErrorsService executionErrorsService;
-    private final Config config;
     private final ConcurrentHashMap<String, AtomicReference<Subscription>> subscriptionRefs = new ConcurrentHashMap<>();
 
-    public SmallRyeGraphQLSubscriptionHandler(Config config, CurrentIdentityAssociation currentIdentityAssociation,
+    public SmallRyeGraphQLSubscriptionHandler(CurrentIdentityAssociation currentIdentityAssociation,
             CurrentVertxRequest currentVertxRequest) {
         super(currentIdentityAssociation, currentVertxRequest);
-        this.config = config;
-        this.executionErrorsService = new ExecutionErrorsService(config);
     }
 
     @Override
@@ -172,7 +166,7 @@ public class SmallRyeGraphQLSubscriptionHandler extends SmallRyeGraphQLAbstractH
         @Override
         public void onNext(ExecutionResult executionResult) {
             if (serverWebSocket != null && !serverWebSocket.isClosed()) {
-                ExecutionResponse executionResponse = new ExecutionResponse(executionResult, config);
+                ExecutionResponse executionResponse = new ExecutionResponse(executionResult);
                 serverWebSocket.writeTextMessage(executionResponse.getExecutionResultAsString());
                 Subscription s = subscriptionRefs.get(textHandlerId).get();
                 s.request(1);

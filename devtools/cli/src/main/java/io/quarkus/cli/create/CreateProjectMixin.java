@@ -1,7 +1,5 @@
 package io.quarkus.cli.create;
 
-import static java.util.Objects.requireNonNull;
-
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -9,8 +7,8 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import io.quarkus.cli.common.OutputOptionMixin;
-import io.quarkus.cli.common.RegistryClientMixin;
 import io.quarkus.cli.common.TargetQuarkusVersionGroup;
+import io.quarkus.cli.registry.ToggleRegistryClientMixin;
 import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.project.BuildTool;
@@ -39,7 +37,7 @@ public class CreateProjectMixin {
     String targetDirectory;
 
     @Mixin
-    RegistryClientMixin registryClient;
+    ToggleRegistryClientMixin registryClient;
 
     public void setTestOutputDirectory(Path testOutputDirectory) {
         if (testOutputDirectory != null && targetDirectory == null) {
@@ -54,11 +52,36 @@ public class CreateProjectMixin {
         return outputPath;
     }
 
+    /**
+     * Resolve and remember the configured project directory.
+     *
+     * @param log Output Mixin that will be used to emit error messages
+     * @param dryRun
+     * @return true IFF configured project root directory already exists
+     */
+    public boolean checkProjectRootAlreadyExists(OutputOptionMixin log, boolean dryRun) {
+        if (projectRootPath == null) {
+            try {
+                projectRootPath = CreateProjectHelper.checkProjectRootPath(outputDirectory(), projectDirName, dryRun);
+                return false;
+            } catch (IllegalArgumentException iex) {
+                if (dryRun) {
+                    log.warn("A directory named '" + projectDirName + "' already exists.");
+                    projectRootPath = outputDirectory().resolve(projectDirName);
+                } else {
+                    log.error(iex.getMessage());
+                    log.out().printf("Specify a different artifactId / directory name.%n");
+                    log.out().printf("See '%s --help' for more information.%n", mixee.qualifiedName());
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public Path projectRoot() {
         if (projectRootPath == null) {
-            requireNonNull(projectDirName,
-                    "Must configure project directory name (e.g. using setSingleProjectGAV or equivalent");
-            projectRootPath = CreateProjectHelper.checkProjectRootPath(outputDirectory(), projectDirName);
+            projectRootPath = CreateProjectHelper.checkProjectRootPath(outputDirectory(), projectDirName, false);
         }
         return projectRootPath;
     }
@@ -83,7 +106,7 @@ public class CreateProjectMixin {
         setValue(ProjectGenerator.PACKAGE_NAME, codeGeneration.packageName);
         setValue(ProjectGenerator.APP_CONFIG, codeGeneration.getAppConfig());
 
-        // TODO: Can we drop the negative constant? Can we use the same one for JBang?
+        setValue(CreateProject.NO_CODE, !codeGeneration.includeCode);
         setValue(CreateProject.NO_BUILDTOOL_WRAPPER, !codeGeneration.includeWrapper);
     }
 
@@ -97,17 +120,10 @@ public class CreateProjectMixin {
             OutputOptionMixin log, Map<String, String> properties)
             throws RegistryResolutionException {
 
-        // TODO: Allow this to be configured? infer from active Java version?
+        // TODO: Allow the Java version to be configured? infer from active Java version?
         CreateProjectHelper.setJavaVersion(values, null);
         CreateProjectHelper.handleSpringConfiguration(values);
         log.debug("Creating an app using the following settings: %s", values);
-
-        if (buildTool == null) {
-            // Adapt some settings for JBang
-            setValue("noJBangWrapper", values.get(CreateProject.NO_BUILDTOOL_WRAPPER));
-            // TODO: JBang should be a proper build tool
-            buildTool = BuildTool.MAVEN;
-        }
 
         QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetVersion, buildTool, log);
 

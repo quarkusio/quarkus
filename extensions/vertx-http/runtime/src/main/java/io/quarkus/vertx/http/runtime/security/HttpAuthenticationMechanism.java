@@ -14,6 +14,8 @@ import io.vertx.ext.web.RoutingContext;
  */
 public interface HttpAuthenticationMechanism {
 
+    int DEFAULT_PRIORITY = 1000;
+
     Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager);
 
     Uni<ChallengeData> getChallenge(RoutingContext context);
@@ -54,5 +56,21 @@ public interface HttpAuthenticationMechanism {
             }
             return true;
         }
+    }
+
+    /**
+     * Returns a priority which determines in which order HttpAuthenticationMechanisms handle the authentication and challenge
+     * requests
+     * when it is not possible to select the best candidate authentication mechanism based on the request credentials or path
+     * specific
+     * configuration.
+     *
+     * Multiple mechanisms are sorted in descending order, so highest priority gets the first chance to send a challenge. The
+     * default priority is equal to 1000.
+     *
+     * @return priority
+     */
+    default int getPriority() {
+        return DEFAULT_PRIORITY;
     }
 }

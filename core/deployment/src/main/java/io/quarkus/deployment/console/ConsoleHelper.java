@@ -25,19 +25,13 @@ public class ConsoleHelper {
         boolean colorEnabled = ColorSupport.isColorEnabled(consoleRuntimeConfig, logConfig);
         QuarkusConsole.installed = true;
         //if there is no color we need a basic console
-        Consumer<String> consumer = System.out::print;
-        if (System.console() != null) {
-            consumer = (s) -> {
-                System.console().writer().print(s);
-                System.console().writer().flush();
-            };
-        }
         //note that we never enable input for tests
         //surefire communicates of stdin, so this can mess with it
         boolean inputSupport = !test && !config.disableConsoleInput.orElse(consoleConfig.disableInput);
         if (!inputSupport) {
-            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled,
-                    inputSupport, consumer);
+            //note that in this case we don't hold onto anything from this class loader
+            //which is important for the test suite
+            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled, false, System.out, System.console());
             return;
         }
         try {
@@ -96,8 +90,7 @@ public class ConsoleHelper {
                 }
             });
         } catch (IOException e) {
-            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled,
-                    inputSupport, consumer);
+            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled, false, System.out, System.console());
         }
 
         RedirectPrintStream ps = new RedirectPrintStream();

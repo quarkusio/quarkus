@@ -20,11 +20,11 @@ You can play with the extension codestarts in the Quarkus tooling:
 mvn io.quarkus:quarkus-maven-plugin:create
 ----
 
-* The experimental Quarkus CLI (using JBang until it gets a proper installer):
+* The Quarkus CLI:
 +
 [source,bash]
 ----
-jbang qs@quarkusio create
+quarkus create app
 ----
 
 Glossary:

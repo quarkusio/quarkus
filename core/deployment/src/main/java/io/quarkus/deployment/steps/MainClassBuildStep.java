@@ -298,17 +298,23 @@ public class MainClassBuildStep {
         cb = tryBlock.addCatch(Throwable.class);
 
         // an exception was thrown before logging was actually setup, we simply dump everything to the console
-        ResultHandle delayedHandler = cb
-                .readStaticField(FieldDescriptor.of(InitialConfigurator.class, "DELAYED_HANDLER", QuarkusDelayedHandler.class));
-        ResultHandle isActivated = cb.invokeVirtualMethod(ofMethod(QuarkusDelayedHandler.class, "isActivated", boolean.class),
-                delayedHandler);
-        BytecodeCreator isActivatedFalse = cb.ifNonZero(isActivated).falseBranch();
-        ResultHandle handlersArray = isActivatedFalse.newArray(Handler.class, 1);
-        isActivatedFalse.writeArrayValue(handlersArray, 0, isActivatedFalse.newInstance(ofConstructor(ConsoleHandler.class)));
-        isActivatedFalse.invokeVirtualMethod(
-                ofMethod(QuarkusDelayedHandler.class, "setHandlers", Handler[].class, Handler[].class),
-                delayedHandler, handlersArray);
-        isActivatedFalse.breakScope();
+        // we don't do this for dev mode, as on startup failure dev mode sets up its own logging
+        if (launchMode.getLaunchMode() != LaunchMode.DEVELOPMENT) {
+            ResultHandle delayedHandler = cb
+                    .readStaticField(
+                            FieldDescriptor.of(InitialConfigurator.class, "DELAYED_HANDLER", QuarkusDelayedHandler.class));
+            ResultHandle isActivated = cb.invokeVirtualMethod(
+                    ofMethod(QuarkusDelayedHandler.class, "isActivated", boolean.class),
+                    delayedHandler);
+            BytecodeCreator isActivatedFalse = cb.ifNonZero(isActivated).falseBranch();
+            ResultHandle handlersArray = isActivatedFalse.newArray(Handler.class, 1);
+            isActivatedFalse.writeArrayValue(handlersArray, 0,
+                    isActivatedFalse.newInstance(ofConstructor(ConsoleHandler.class)));
+            isActivatedFalse.invokeVirtualMethod(
+                    ofMethod(QuarkusDelayedHandler.class, "setHandlers", Handler[].class, Handler[].class),
+                    delayedHandler, handlersArray);
+            isActivatedFalse.breakScope();
+        }
 
         cb.invokeVirtualMethod(ofMethod(StartupContext.class, "close", void.class), startupContext);
         cb.throwException(RuntimeException.class, "Failed to start quarkus", cb.getCaughtException());

@@ -36,11 +36,13 @@ public class HealthOpenAPIFilter implements OASFilter {
     private final String rootPath;
     private final String livenessPath;
     private final String readinessPath;
+    private final String startupPath;
 
-    public HealthOpenAPIFilter(String rootPath, String livenessPath, String readinessPath) {
+    public HealthOpenAPIFilter(String rootPath, String livenessPath, String readinessPath, String startupPath) {
         this.rootPath = rootPath;
         this.livenessPath = livenessPath;
         this.readinessPath = readinessPath;
+        this.startupPath = startupPath;
     }
 
     @Override
@@ -64,6 +66,9 @@ public class HealthOpenAPIFilter implements OASFilter {
 
         // Readiness
         paths.addPathItem(readinessPath, createReadinessPathItem());
+
+        // Startup
+        paths.addPathItem(startupPath, createStartupPathItem());
     }
 
     private PathItem createHealthPathItem() {
@@ -93,12 +98,21 @@ public class HealthOpenAPIFilter implements OASFilter {
         return pathItem;
     }
 
+    private PathItem createStartupPathItem() {
+        PathItem pathItem = new PathItemImpl();
+        pathItem.setDescription("MicroProfile Health - Startup Endpoint");
+        pathItem.setSummary(
+                "Startup checks are an used to tell when the application has started");
+        pathItem.setGET(createStartupOperation());
+        return pathItem;
+    }
+
     private Operation createHealthOperation() {
         Operation operation = new OperationImpl();
         operation.setDescription("Check the health of the application");
         operation.setOperationId("microprofile_health_root");
         operation.setTags(MICROPROFILE_HEALTH_TAG);
-        operation.setSummary("An aggregated view of the Liveness and Readiness of this application");
+        operation.setSummary("An aggregated view of the Liveness, Readiness and Startup of this application");
         operation.setResponses(createAPIResponses());
         return operation;
     }
@@ -119,6 +133,16 @@ public class HealthOpenAPIFilter implements OASFilter {
         operation.setOperationId("microprofile_health_readiness");
         operation.setTags(MICROPROFILE_HEALTH_TAG);
         operation.setSummary("The Readiness check of this application");
+        operation.setResponses(createAPIResponses());
+        return operation;
+    }
+
+    private Operation createStartupOperation() {
+        Operation operation = new OperationImpl();
+        operation.setDescription("Check the startup of the application");
+        operation.setOperationId("microprofile_health_startup");
+        operation.setTags(MICROPROFILE_HEALTH_TAG);
+        operation.setSummary("The Startup check of this application");
         operation.setResponses(createAPIResponses());
         return operation;
     }

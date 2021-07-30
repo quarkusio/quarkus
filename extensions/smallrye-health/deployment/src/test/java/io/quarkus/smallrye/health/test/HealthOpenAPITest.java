@@ -32,6 +32,7 @@ public class HealthOpenAPITest {
                 .header("Content-Type", "application/json;charset=UTF-8")
                 .body("paths", Matchers.hasKey("/q/health/ready"))
                 .body("paths", Matchers.hasKey("/q/health/live"))
+                .body("paths", Matchers.hasKey("/q/health/started"))
                 .body("paths", Matchers.hasKey("/q/health"))
                 .body("components.schemas.HealthCheckResponse.type", Matchers.equalTo("object"));
 

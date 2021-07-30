@@ -1,0 +1,155 @@
+.Incoming Attributes of the 'smallrye-kafka' connector
+[cols="25, 30, 15, 20",options="header"]
+|===
+|Attribute (_alias_) | Description | Mandatory | Default
+
+| *bootstrap.servers*
+
+_(kafka.bootstrap.servers)_ | A comma-separated list of host:port to use for establishing the initial connection to the Kafka cluster.
+
+Type: _string_ | false | `localhost:9092`
+
+| *topic* | The consumed / populated Kafka topic. If neither this property nor the `topics` properties are set, the channel name is used
+
+Type: _string_ | false |
+
+| *health-enabled* | Whether health reporting is enabled (default) or disabled
+
+Type: _boolean_ | false | `true`
+
+| *health-readiness-enabled* | Whether readiness health reporting is enabled (default) or disabled
+
+Type: _boolean_ | false | `true`
+
+| *health-readiness-topic-verification* | _deprecated_ - Whether the readiness check should verify that topics exist on the broker. Default to false. Enabling it requires an admin connection. Deprecated: Use 'health-topic-verification-enabled' instead.
+
+Type: _boolean_ | false |
+
+| *health-readiness-timeout* | _deprecated_ - During the readiness health check, the connector connects to the broker and retrieves the list of topics. This attribute specifies the maximum duration (in ms) for the retrieval. If exceeded, the channel is considered not-ready. Deprecated: Use 'health-topic-verification-timeout' instead.
+
+Type: _long_ | false |
+
+| *health-topic-verification-enabled* | Whether the startup and readiness check should verify that topics exist on the broker. Default to false. Enabling it requires an admin client connection.
+
+Type: _boolean_ | false | `false`
+
+| *health-topic-verification-timeout* | During the startup and readiness health check, the connector connects to the broker and retrieves the list of topics. This attribute specifies the maximum duration (in ms) for the retrieval. If exceeded, the channel is considered not-ready.
+
+Type: _long_ | false | `2000`
+
+| *tracing-enabled* | Whether tracing is enabled (default) or disabled
+
+Type: _boolean_ | false | `true`
+
+| *cloud-events* | Enables (default) or disables the Cloud Event support. If enabled on an _incoming_ channel, the connector analyzes the incoming records and try to create Cloud Event metadata. If enabled on an _outgoing_, the connector sends the outgoing messages as Cloud Event if the message includes Cloud Event Metadata.
+
+Type: _boolean_ | false | `true`
+
+| *topics* | A comma-separating list of topics to be consumed. Cannot be used with the `topic` or `pattern` properties
+
+Type: _string_ | false |
+
+| *pattern* | Indicate that the `topic` property is a regular expression. Must be used with the `topic` property. Cannot be used with the `topics` property
+
+Type: _boolean_ | false | `false`
+
+| *key.deserializer* | The deserializer classname used to deserialize the record's key
+
+Type: _string_ | false | `org.apache.kafka.common.serialization.StringDeserializer`
+
+| *value.deserializer* | The deserializer classname used to deserialize the record's value
+
+Type: _string_ | true |
+
+| *fetch.min.bytes* | The minimum amount of data the server should return for a fetch request. The default setting of 1 byte means that fetch requests are answered as soon as a single byte of data is available or the fetch request times out waiting for data to arrive.
+
+Type: _int_ | false | `1`
+
+| *group.id* | A unique string that identifies the consumer group the application belongs to.
+
+If not set, defaults to the application name as set by the `quarkus.application.name` configuration property.
+
+If that is not set either, a unique, generated id is used.
+
+It is recommended to always define a `group.id`, the automatic generation is only a convenient feature for development.
+You can explicitly ask for automatically generated unique id by setting this property to `${quarkus.uuid}`.
+
+Type: _string_ | false |
+
+| *enable.auto.commit* | If enabled, consumer's offset will be periodically committed in the background by the underlying Kafka client, ignoring the actual processing outcome of the records. It is recommended to NOT enable this setting and let Reactive Messaging handles the commit.
+
+Type: _boolean_ | false | `false`
+
+| *retry* | Whether or not the connection to the broker is re-attempted in case of failure
+
+Type: _boolean_ | false | `true`
+
+| *retry-attempts* | The maximum number of reconnection before failing. -1 means infinite retry
+
+Type: _int_ | false | `-1`
+
+| *retry-max-wait* | The max delay (in seconds) between 2 reconnects
+
+Type: _int_ | false | `30`
+
+| *broadcast* | Whether the Kafka records should be dispatched to multiple consumer
+
+Type: _boolean_ | false | `false`
+
+| *auto.offset.reset* | What to do when there is no initial offset in Kafka.Accepted values are earliest, latest and none
+
+Type: _string_ | false | `latest`
+
+| *failure-strategy* | Specify the failure strategy to apply when a message produced from a record is acknowledged negatively (nack). Values can be `fail` (default), `ignore`, or `dead-letter-queue`
+
+Type: _string_ | false | `fail`
+
+| *commit-strategy* | Specify the commit strategy to apply when a message produced from a record is acknowledged. Values can be `latest`, `ignore` or `throttled`. If `enable.auto.commit` is true then the default is `ignore` otherwise it is `throttled`
+
+Type: _string_ | false |
+
+| *throttled.unprocessed-record-max-age.ms* | While using the `throttled` commit-strategy, specify the max age in milliseconds that an unprocessed message can be before the connector is marked as unhealthy.
+
+Type: _int_ | false | `60000`
+
+| *dead-letter-queue.topic* | When the `failure-strategy` is set to `dead-letter-queue` indicates on which topic the record is sent. Defaults is `dead-letter-topic-$channel`
+
+Type: _string_ | false |
+
+| *dead-letter-queue.key.serializer* | When the `failure-strategy` is set to `dead-letter-queue` indicates the key serializer to use. If not set the serializer associated to the key deserializer is used
+
+Type: _string_ | false |
+
+| *dead-letter-queue.value.serializer* | When the `failure-strategy` is set to `dead-letter-queue` indicates the value serializer to use. If not set the serializer associated to the value deserializer is used
+
+Type: _string_ | false |
+
+| *partitions* | The number of partitions to be consumed concurrently. The connector creates the specified amount of Kafka consumers. It should match the number of partition of the targeted topic
+
+Type: _int_ | false | `1`
+
+| *consumer-rebalance-listener.name* | The name set in `@Identifier` of a bean that implements `io.smallrye.reactive.messaging.kafka.KafkaConsumerRebalanceListener`. If set, this rebalance listener is applied to the consumer.
+
+Type: _string_ | false |
+
+| *key-deserialization-failure-handler* | The name set in `@Identifier` of a bean that implements `io.smallrye.reactive.messaging.kafka.DeserializationFailureHandler`. If set, deserialization failure happening when deserializing keys are delegated to this handler which may provide a fallback value.
+
+Type: _string_ | false |
+
+| *value-deserialization-failure-handler* | The name set in `@Identifier` of a bean that implements `io.smallrye.reactive.messaging.kafka.DeserializationFailureHandler`. If set, deserialization failure happening when deserializing values are delegated to this handler which may provide a fallback value.
+
+Type: _string_ | false |
+
+| *graceful-shutdown* | Whether or not a graceful shutdown should be attempted when the application terminates.
+
+Type: _boolean_ | false | `true`
+
+| *poll-timeout* | The polling timeout in milliseconds. When polling records, the poll will wait at most that duration before returning records. Default is 1000ms
+
+Type: _int_ | false | `1000`
+
+| *pause-if-no-requests* | Whether the polling must be paused when the application does not request items and resume when it does. This allows implementing back-pressure based on the application capacity. Note that polling is not stopped, but will not retrieve any records when paused.
+
+Type: _boolean_ | false | `true`
+
+|===

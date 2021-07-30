@@ -16,6 +16,7 @@ import org.jboss.resteasy.reactive.RestQuery;
 
 import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
 
 @Path("/multipart")
 public class MultipartResource {
@@ -63,6 +64,20 @@ public class MultipartResource {
         }
         return formData.status + " - " + formData.getHtmlFiles().size() + " - " + formData.txtFiles.size() + " - "
                 + formData.xmlFiles.size();
+    }
+
+    @POST
+    @Produces(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Path("/optional")
+    @NonBlocking
+    public String optional(@MultipartForm FormData formData) {
+        if (BlockingOperationControl.isBlockingAllowed()) {
+            throw new RuntimeException("should not have dispatched");
+        }
+        return formData.getName() + " - " + formData.active + " - " + formData.getNum() + " - " + formData.getStatus()
+                + " - " + (formData.getHtmlPart() != null) + " - " + (formData.xmlPart != null) + " - "
+                + (formData.txtFile != null);
     }
 
 }

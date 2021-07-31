@@ -54,9 +54,9 @@ import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
-import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.WebSocketLogHandlerBuildItem;
 import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
 import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
@@ -100,8 +100,8 @@ import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
 import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
 import io.quarkus.vertx.http.runtime.devmode.RuntimeDevConsoleRoute;
-import io.quarkus.vertx.http.runtime.logstream.HistoryHandler;
 import io.quarkus.vertx.http.runtime.logstream.LogStreamRecorder;
+import io.quarkus.vertx.http.runtime.logstream.WebSocketLogHandler;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -326,11 +326,13 @@ public class DevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
-    public HistoryHandlerBuildItem handler(BuildProducer<LogHandlerBuildItem> logHandlerBuildItemBuildProducer,
+    public void handler(BuildProducer<HistoryHandlerBuildItem> historyProducer,
+            BuildProducer<WebSocketLogHandlerBuildItem> webSocketLogHandlerBuildItem,
             LogStreamRecorder recorder, DevUIConfig devUiConfig) {
-        RuntimeValue<Optional<HistoryHandler>> handler = recorder.handler(devUiConfig.historySize);
-        logHandlerBuildItemBuildProducer.produce(new LogHandlerBuildItem((RuntimeValue) handler));
-        return new HistoryHandlerBuildItem(handler);
+        RuntimeValue<Optional<WebSocketLogHandler>> handler = recorder.logHandler(devUiConfig.historySize);
+
+        webSocketLogHandlerBuildItem.produce(new WebSocketLogHandlerBuildItem((RuntimeValue) handler));
+        historyProducer.produce(new HistoryHandlerBuildItem(handler));
     }
 
     @Consume(LoggingSetupBuildItem.class)
@@ -788,9 +790,9 @@ public class DevConsoleProcessor {
     }
 
     public static final class HistoryHandlerBuildItem extends SimpleBuildItem {
-        final RuntimeValue<Optional<HistoryHandler>> value;
+        final RuntimeValue<Optional<WebSocketLogHandler>> value;
 
-        public HistoryHandlerBuildItem(RuntimeValue<Optional<HistoryHandler>> value) {
+        public HistoryHandlerBuildItem(RuntimeValue<Optional<WebSocketLogHandler>> value) {
             this.value = value;
         }
     }

@@ -31,7 +31,7 @@ public class SwaggerOptionsTest {
                         containsString("https://petstore.swagger.io/v2/swagger.json"),
                         containsString("theme-newspaper.css"),
                         containsString("docExpansion: 'full'"),
-                        containsString("oauth2RedirectUrl: '/somesecure/page/oauth.html'"),
+                        containsString("var oar = \"/somesecure/page/oauth.html\";"),
                         containsString("validatorUrl: 'localhost'"),
                         containsString("displayRequestDuration: true"),
                         containsString("supportedSubmitMethods: ['get', 'post']"),

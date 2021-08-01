@@ -3,12 +3,12 @@ package io.quarkus.micrometer.runtime.binder.mpmetrics;
 import javax.annotation.Priority;
 import javax.interceptor.AroundConstruct;
 import javax.interceptor.AroundInvoke;
-import javax.interceptor.AroundTimeout;
 import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
 
 import org.eclipse.microprofile.metrics.MetricType;
 import org.eclipse.microprofile.metrics.annotation.Counted;
+
+import io.quarkus.arc.ArcInvocationContext;
 
 @SuppressWarnings("unused")
 @Counted
@@ -24,22 +24,17 @@ class CountedInterceptor {
     }
 
     @AroundConstruct
-    Object countedConstructor(InvocationContext context) throws Exception {
+    Object countedConstructor(ArcInvocationContext context) throws Exception {
         return increment(context, context.getConstructor().getDeclaringClass().getSimpleName());
     }
 
     @AroundInvoke
-    Object countedMethod(InvocationContext context) throws Exception {
+    Object countedMethod(ArcInvocationContext context) throws Exception {
         return increment(context, context.getMethod().getName());
     }
 
-    @AroundTimeout
-    Object countedTimeout(InvocationContext context) throws Exception {
-        return increment(context, context.getMethod().getName());
-    }
-
-    Object increment(InvocationContext context, String methodName) throws Exception {
-        Counted annotation = MpMetricsRegistryProducer.getAnnotation(context, Counted.class);
+    Object increment(ArcInvocationContext context, String methodName) throws Exception {
+        Counted annotation = context.findIterceptorBinding(Counted.class);
         if (annotation != null) {
             MpMetadata metadata = new MpMetadata(annotation.name().replace("<method>", methodName),
                     annotation.description().replace("<method>", methodName),

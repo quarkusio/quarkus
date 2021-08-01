@@ -42,4 +42,12 @@ public class TimedResource {
         }
         return supplyAsync(guardedResult::get);
     }
+
+    @Timed(value = "alpha", extraTags = { "extra", "tag" })
+    @Timed(value = "bravo", extraTags = { "extra", "tag" })
+    public void repeatableCall(boolean fail) {
+        if (fail) {
+            throw new NullPointerException("Failed on purpose");
+        }
+    }
 }

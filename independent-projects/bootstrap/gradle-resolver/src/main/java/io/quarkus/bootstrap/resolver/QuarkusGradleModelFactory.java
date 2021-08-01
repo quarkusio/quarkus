@@ -18,9 +18,7 @@ public class QuarkusGradleModelFactory {
         try (ProjectConnection connection = GradleConnector.newConnector()
                 .forProjectDirectory(projectDir)
                 .connect()) {
-            connection.newBuild().forTasks(tasks).addJvmArguments(jvmArgs).run();
-
-            return connection.action(new QuarkusModelBuildAction(mode)).run();
+            return connection.action(new QuarkusModelBuildAction(mode)).forTasks(tasks).addJvmArguments(jvmArgs).run();
         }
     }
 

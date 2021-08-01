@@ -564,6 +564,14 @@ public class SmallRyeOpenApiProcessor {
     private OpenApiDocument loadDocument(OpenAPI staticModel, OpenAPI annotationModel,
             List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems) {
         OpenApiDocument document = prepareOpenApiDocument(staticModel, annotationModel, openAPIBuildItems);
+
+        Config c = ConfigProvider.getConfig();
+        String title = c.getOptionalValue("quarkus.application.name", String.class).orElse("Generated");
+        String version = c.getOptionalValue("quarkus.application.version", String.class).orElse("1.0");
+
+        document.archiveName(title);
+        document.version(version);
+
         document.initialize();
         return document;
     }

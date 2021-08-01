@@ -51,11 +51,11 @@ If you set `quarkus.keycloak.devservices.grant.type=code` in `applicatin.propert
 
 First you will see an option to `Log into Single Page Application`:
 
-image::dev-ui-keycloak-sign-in-to-spa.png[alt=Dev UI OpenId Connect Keycloak Page - Log into Single Page Application,role="center"].
+image::dev-ui-keycloak-sign-in-to-spa.png[alt=Dev UI OpenId Connect Keycloak Page - Log into Single Page Application,role="center"]
 
 Next, after you select this option, you will be redirected to Keycloak to authenticate, example, as `alice:alice` and then returned to the page representing the SPA:  
 
-image::dev-ui-keycloak-test-service-from-spa.png[alt=Dev UI OpenId Connect Keycloak Single Page Application,role="center"].
+image::dev-ui-keycloak-test-service-from-spa.png[alt=Dev UI OpenId Connect Keycloak Single Page Application,role="center"]
 
 Here you can test the service with either the access token or ID token (note that the ID token will be sent as a regular bearer token).
 
@@ -125,7 +125,7 @@ This is why `quarkus.keycloak.devservices.realm-path` is always checked first be
 
 Also the Keycloak page offers an option to `Sign In To Keycloak To Configure Realms` using a `Keycloak Admin` option in the right top corner:
 
-image::dev-ui-keycloak-admin.png[alt=Dev UI OpenId Connect Keycloak Page - Keycloak Admin,role="center"].
+image::dev-ui-keycloak-admin.png[alt=Dev UI OpenId Connect Keycloak Page - Keycloak Admin,role="center"]
 
 Sign in to Keycloak as `admin:admin` in order to further customize the realm properties or create a new realm, export the realm and have Keycloak initialized with the custom realm after a restart.
 

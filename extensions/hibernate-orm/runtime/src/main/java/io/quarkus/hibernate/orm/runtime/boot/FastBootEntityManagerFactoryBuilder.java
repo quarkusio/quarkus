@@ -1,9 +1,7 @@
 package io.quarkus.hibernate.orm.runtime.boot;
 
 import java.io.Serializable;
-import java.io.Writer;
 import java.security.NoSuchAlgorithmException;
-import java.util.EnumSet;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityNotFoundException;
@@ -26,14 +24,9 @@ import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.proxy.EntityNotFoundDelegate;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
-import org.hibernate.tool.hbm2ddl.SchemaExport;
-import org.hibernate.tool.schema.TargetType;
-import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToWriter;
 import org.hibernate.tool.schema.spi.CommandAcceptanceException;
 import org.hibernate.tool.schema.spi.DelayedDropRegistryNotAvailableImpl;
 import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
-import org.hibernate.tool.schema.spi.ScriptTargetOutput;
-import org.hibernate.tool.schema.spi.TargetDescriptor;
 
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
@@ -91,43 +84,6 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         try {
             SchemaManagementToolCoordinator.process(metadata, standardServiceRegistry, runtimeSettings.getSettings(),
                     DelayedDropRegistryNotAvailableImpl.INSTANCE);
-        } catch (Exception e) {
-            throw persistenceException("Error performing schema management", e);
-        }
-
-        // release this builder
-        cancel();
-    }
-
-    /**
-     * TODO: provide a second writer parameter for "drop" script, or create a second method.
-     *
-     * @param createWriter
-     */
-    public void generateSchema(final Writer createWriter) {
-        try {
-            SchemaExport schemaExport = new SchemaExport();
-            schemaExport.setFormat(true);
-            schemaExport.setDelimiter(";");
-            schemaExport.doExecution(SchemaExport.Action.CREATE, false, metadata, standardServiceRegistry,
-                    new TargetDescriptor() {
-
-                        @Override
-                        public EnumSet<TargetType> getTargetTypes() {
-                            return EnumSet.of(TargetType.SCRIPT);
-                        }
-
-                        @Override
-                        public ScriptTargetOutput getScriptTargetOutput() {
-                            return new ScriptTargetOutputToWriter(createWriter) {
-                                @Override
-                                public void accept(String command) {
-                                    super.accept(command);
-                                }
-                            };
-                        }
-                    });
-
         } catch (Exception e) {
             throw persistenceException("Error performing schema management", e);
         }

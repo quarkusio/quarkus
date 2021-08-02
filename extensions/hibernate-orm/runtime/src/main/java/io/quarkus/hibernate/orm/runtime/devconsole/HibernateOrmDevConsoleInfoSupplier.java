@@ -1,70 +1,89 @@
 package io.quarkus.hibernate.orm.runtime.devconsole;
 
+import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import javax.persistence.spi.PersistenceProviderResolverHolder;
-
-import io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider;
-import io.quarkus.hibernate.orm.runtime.PersistenceUnitsHolder;
 import org.hibernate.LockOptions;
+import org.hibernate.boot.Metadata;
 import org.hibernate.engine.spi.NamedQueryDefinition;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;
-import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.mapping.PersistentClass;
+import org.hibernate.service.ServiceRegistry;
+import org.hibernate.tool.hbm2ddl.SchemaExport;
+import org.hibernate.tool.schema.TargetType;
+import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToWriter;
+import org.hibernate.tool.schema.spi.ScriptTargetOutput;
+import org.hibernate.tool.schema.spi.TargetDescriptor;
 
-import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
+public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrmDevConsoleInfoSupplier.PersistenceUnitsInfo> {
 
-public class PersistenceUnitInfoSupplier implements Supplier<PersistenceUnitInfoSupplier.PersistenceUnitsInfo> {
+    private static final PersistenceUnitsInfo INSTANCE = new PersistenceUnitsInfo();
 
     @Override
     public PersistenceUnitsInfo get() {
-        return composePersistenceUnitsInfo(PersistenceUnitsHolder.getPersistenceUnitDescriptors());
+        return INSTANCE;
     }
 
-    private PersistenceUnitsInfo composePersistenceUnitsInfo(List<PersistenceUnitDescriptor> persistenceUnits) {
-        PersistenceUnitsInfo persistenceUnitsInfo = new PersistenceUnitsInfo();
+    public static void pushPersistenceUnit(String persistenceUnitName,
+            Metadata metadata, ServiceRegistry serviceRegistry) {
+        INSTANCE.getPersistenceUnits().add(persistenceUnitName);
 
-        FastBootHibernatePersistenceProvider persistenceProvider = (FastBootHibernatePersistenceProvider) PersistenceProviderResolverHolder
-                .getPersistenceProviderResolver().getPersistenceProviders().get(0);
+        String schema = generateDDL(SchemaExport.Action.CREATE, metadata, serviceRegistry);
+        INSTANCE.createDDLs.put(persistenceUnitName, schema);
 
-        for (PersistenceUnitDescriptor descriptor : persistenceUnits) {
-            persistenceUnitsInfo.getPersistenceUnits().add(descriptor);
-            RecordedState recordedState = PersistenceUnitsHolder.popRecordedState(descriptor.getName());
-
-            String schema = persistenceProvider.generateSchemaToString(descriptor.getName(), null);
-            persistenceUnitsInfo.createDDLs.put(descriptor.getName(), schema);
-
-            for (String className : descriptor.getManagedClassNames()) {
-                PersistentClass entityBinding = recordedState.getMetadata().getEntityBinding(className);
-                persistenceUnitsInfo.managedEntities.add(new PersistenceUnitInfoSupplier.EntityInfo(className,
-                        entityBinding.getTable().getName(), descriptor.getName()));
-            }
-
-            for (NamedQueryDefinition queryDefinition : recordedState.getMetadata().getNamedQueryDefinitions()) {
-                persistenceUnitsInfo.namedQueries.add(new QueryInfo(queryDefinition));
-            }
-
-            for (NamedSQLQueryDefinition staticQueryDefinition : recordedState.getMetadata().getNamedNativeQueryDefinitions()) {
-                persistenceUnitsInfo.namedNativeQueries.add(new QueryInfo(staticQueryDefinition));
-            }
+        for (PersistentClass entityBinding : metadata.getEntityBindings()) {
+            INSTANCE.managedEntities.add(new HibernateOrmDevConsoleInfoSupplier.EntityInfo(entityBinding.getClassName(),
+                    entityBinding.getTable().getName(), persistenceUnitName));
         }
 
-        return persistenceUnitsInfo;
+        for (NamedQueryDefinition queryDefinition : metadata.getNamedQueryDefinitions()) {
+            INSTANCE.namedQueries.add(new QueryInfo(queryDefinition));
+        }
+
+        for (NamedSQLQueryDefinition staticQueryDefinition : metadata.getNamedNativeQueryDefinitions()) {
+            INSTANCE.namedNativeQueries.add(new QueryInfo(staticQueryDefinition));
+        }
+    }
+
+    private static String generateDDL(SchemaExport.Action action, Metadata metadata, ServiceRegistry serviceRegistry) {
+        SchemaExport schemaExport = new SchemaExport();
+        schemaExport.setFormat(true);
+        schemaExport.setDelimiter(";");
+        StringWriter writer = new StringWriter();
+        schemaExport.doExecution(action, false, metadata, serviceRegistry,
+                new TargetDescriptor() {
+                    @Override
+                    public EnumSet<TargetType> getTargetTypes() {
+                        return EnumSet.of(TargetType.SCRIPT);
+                    }
+
+                    @Override
+                    public ScriptTargetOutput getScriptTargetOutput() {
+                        return new ScriptTargetOutputToWriter(writer) {
+                            @Override
+                            public void accept(String command) {
+                                super.accept(command);
+                            }
+                        };
+                    }
+                });
+        return writer.toString();
     }
 
     public static class PersistenceUnitsInfo {
 
-        private final List<PersistenceUnitDescriptor> persistenceUnits = new ArrayList<>();
+        private final List<String> persistenceUnits = new ArrayList<>();
         private final List<EntityInfo> managedEntities = new ArrayList<>();
         private final List<QueryInfo> namedQueries = new ArrayList<>();
         private final List<QueryInfo> namedNativeQueries = new ArrayList<>();
         private final Map<String, String> createDDLs = new HashMap<>();
 
-        public List<PersistenceUnitDescriptor> getPersistenceUnits() {
+        public List<String> getPersistenceUnits() {
             return persistenceUnits;
         }
 

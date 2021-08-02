@@ -23,14 +23,14 @@
     {#for unit in info:persistence.persistenceUnits}
     <tr>
         <td>{count}.</td>
-        <td>{unit.name}</td>
+        <td>{unit}</td>
         <td>
             <p>
                 <b>Create script:</b>
                 <a href="#" onclick="copyToClipboard('create-script-{count}');">
                     <i class="fa fa-clipboard"></i><span class="badge">Copy</span></a>
             </p>
-            <pre id="create-script-{count}" class="ddl-script">{info:persistence.createDDLs.get(unit.getName())}</pre>
+            <pre id="create-script-{count}" class="ddl-script">{info:persistence.createDDLs.get(unit)}</pre>
         </td>
     </tr>
     {/for}

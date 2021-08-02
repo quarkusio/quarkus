@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.orm.runtime;
 
-import java.io.StringWriter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -98,28 +97,6 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         }
         builder.generateSchema();
         return true;
-    }
-
-    /**
-     * TODO: Figure out how to provide separate "create" and "drop" scripts. Currently this only do "create".
-     *
-     * A variant of {@link #generateSchema(String persistenceUnitName, Map map)} that returns the SQL script as a string.
-     *
-     * @param persistenceUnitName PU name
-     * @param map should be always null, as Quarkus doesn't allow to provide any properties in runtime.
-     * @return schema as string
-     */
-    @SuppressWarnings("rawtypes")
-    public String generateSchemaToString(String persistenceUnitName, Map map) {
-        final FastBootEntityManagerFactoryBuilder builder = (FastBootEntityManagerFactoryBuilder) getEntityManagerFactoryBuilderOrNull(
-                persistenceUnitName, map);
-        if (builder == null) {
-            log.trace("Could not obtain matching EntityManagerFactoryBuilder, returning null");
-            return null;
-        }
-        StringWriter createWriter = new StringWriter();
-        builder.generateSchema(createWriter);
-        return createWriter.toString();
     }
 
     @Override

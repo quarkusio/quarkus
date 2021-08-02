@@ -16,6 +16,7 @@
     <modules>
         <module>datasource</module>
         <module>connection-resolver</module>
+        <module>schema</module>
     </modules>
 
 </project>

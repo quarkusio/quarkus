@@ -237,9 +237,9 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                     if (fileName != null && fileSizeThreshold == 0) {
                         try {
                             if (tempFileLocation != null) {
-                                file = Files.createTempFile(tempFileLocation, "undertow", "upload");
+                                file = Files.createTempFile(tempFileLocation, "resteasy-reactive", "upload");
                             } else {
-                                file = Files.createTempFile("undertow", "upload");
+                                file = Files.createTempFile("resteasy-reactive", "upload");
                             }
                             createdFiles.add(file);
                             fileChannel = FileChannel.open(file, StandardOpenOption.READ, StandardOpenOption.WRITE);
@@ -266,9 +266,9 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
             if (file == null && fileName != null && fileSizeThreshold < this.currentFileSize) {
                 try {
                     if (tempFileLocation != null) {
-                        file = Files.createTempFile(tempFileLocation, "undertow", "upload");
+                        file = Files.createTempFile(tempFileLocation, "resteasy-reactive", "upload");
                     } else {
-                        file = Files.createTempFile("undertow", "upload");
+                        file = Files.createTempFile("resteasy-reactive", "upload");
                     }
                     createdFiles.add(file);
 
@@ -321,7 +321,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                         }
                     }
 
-                    data.add(currentName, new String(contentBytes.toByteArray(), charset), charset, headers);
+                    data.add(currentName, contentBytes.toString(charset), charset, headers);
                 } catch (UnsupportedEncodingException e) {
                     throw new RuntimeException(e);
                 }

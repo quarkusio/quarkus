@@ -14,7 +14,9 @@ import org.hibernate.reactive.mutiny.Mutiny.Transaction;
 import io.smallrye.mutiny.Uni;
 
 public abstract class ReactiveTransactionalInterceptorBase {
-    private static final String JUNIT_TEST_CLASS = "org.junit.jupiter.api.Test";
+    private static final String JUNIT_TEST_ANN = "org.junit.jupiter.api.Test";
+    private static final String JUNIT_BEFORE_EACH_ANN = "org.junit.jupiter.api.BeforeEach";
+    private static final String JUNIT_AFTER_EACH_ANN = "org.junit.jupiter.api.AfterEach";
     private static final String UNI_ASSERTER_CLASS = "io.quarkus.test.junit.vertx.UniAsserter";
 
     @SuppressWarnings("unchecked")
@@ -57,8 +59,10 @@ public abstract class ReactiveTransactionalInterceptorBase {
 
     protected boolean isSpecialTestMethod(InvocationContext ic) {
         Method method = ic.getMethod();
-        return hasAnnotation(JUNIT_TEST_CLASS, method)
-                && hasParameter(UNI_ASSERTER_CLASS, method);
+        return hasParameter(UNI_ASSERTER_CLASS, method)
+                && (hasAnnotation(JUNIT_TEST_ANN, method)
+                        || hasAnnotation(JUNIT_BEFORE_EACH_ANN, method)
+                        || hasAnnotation(JUNIT_AFTER_EACH_ANN, method));
     }
 
     protected Object handleSpecialTestMethod(InvocationContext ic) {

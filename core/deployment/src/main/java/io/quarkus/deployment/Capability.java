@@ -53,6 +53,7 @@ public interface Capability {
 
     String TIKA = QUARKUS_PREFIX + "tika";
 
+    String MONGODB_CLIENT = QUARKUS_PREFIX + "mongodb-client";
     String MONGODB_PANACHE = QUARKUS_PREFIX + "mongodb.panache";
     String MONGODB_PANACHE_KOTLIN = MONGODB_PANACHE + ".kotlin";
 

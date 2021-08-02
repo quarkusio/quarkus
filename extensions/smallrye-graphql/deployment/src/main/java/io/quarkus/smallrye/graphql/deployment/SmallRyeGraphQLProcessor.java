@@ -193,7 +193,8 @@ public class SmallRyeGraphQLProcessor {
             SmallRyeGraphQLRecorder recorder,
             SmallRyeGraphQLConfig graphQLConfig) {
 
-        Handler<RoutingContext> schemaHandler = recorder.schemaHandler(graphQLInitializedBuildItem.getInitialized());
+        Handler<RoutingContext> schemaHandler = recorder.schemaHandler(graphQLInitializedBuildItem.getInitialized(),
+                graphQLConfig.schemaAvailable);
 
         routeProducer.produce(httpRootPathBuildItem.routeBuilder()
                 .nestedRoute(graphQLConfig.rootPath, SCHEMA_PATH)

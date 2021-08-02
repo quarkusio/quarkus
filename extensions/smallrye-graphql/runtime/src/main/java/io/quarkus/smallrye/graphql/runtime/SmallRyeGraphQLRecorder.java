@@ -43,8 +43,8 @@ public class SmallRyeGraphQLRecorder {
                 CDI.current().select(CurrentVertxRequest.class).get());
     }
 
-    public Handler<RoutingContext> schemaHandler(RuntimeValue<Boolean> initialized) {
-        if (initialized.getValue()) {
+    public Handler<RoutingContext> schemaHandler(RuntimeValue<Boolean> initialized, boolean schemaAvailable) {
+        if (initialized.getValue() && schemaAvailable) {
             return new SmallRyeGraphQLSchemaHandler();
         } else {
             return new SmallRyeGraphQLNoEndpointHandler();

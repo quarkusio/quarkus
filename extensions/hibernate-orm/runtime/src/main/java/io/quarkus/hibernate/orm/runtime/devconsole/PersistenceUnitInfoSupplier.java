@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.runtime;
+package io.quarkus.hibernate.orm.runtime.devconsole;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,6 +8,8 @@ import java.util.function.Supplier;
 
 import javax.persistence.spi.PersistenceProviderResolverHolder;
 
+import io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitsHolder;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.NamedQueryDefinition;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;

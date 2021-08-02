@@ -1,7 +1,9 @@
 package io.quarkus.smallrye.openapi.deployment;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -82,6 +84,7 @@ import io.smallrye.openapi.api.OpenApiConfigImpl;
 import io.smallrye.openapi.api.OpenApiDocument;
 import io.smallrye.openapi.api.constants.SecurityConstants;
 import io.smallrye.openapi.api.models.OpenAPIImpl;
+import io.smallrye.openapi.api.util.MergeUtil;
 import io.smallrye.openapi.jaxrs.JaxRsConstants;
 import io.smallrye.openapi.runtime.OpenApiProcessor;
 import io.smallrye.openapi.runtime.OpenApiStaticFile;
@@ -470,12 +473,17 @@ public class SmallRyeOpenApiProcessor {
         if (openApiConfig.ignoreStaticDocument) {
             return null;
         } else {
-            Result result = findStaticModel();
-            if (result != null) {
-                try (InputStream is = result.inputStream;
-                        OpenApiStaticFile staticFile = new OpenApiStaticFile(is, result.format)) {
-                    return io.smallrye.openapi.runtime.OpenApiProcessor.modelFromStaticFile(staticFile);
+            List<Result> results = findStaticModels(openApiConfig);
+            if (!results.isEmpty()) {
+                OpenAPI mergedStaticModel = new OpenAPIImpl();
+                for (Result result : results) {
+                    try (InputStream is = result.inputStream;
+                            OpenApiStaticFile staticFile = new OpenApiStaticFile(is, result.format)) {
+                        OpenAPI staticFileModel = io.smallrye.openapi.runtime.OpenApiProcessor.modelFromStaticFile(staticFile);
+                        mergedStaticModel = MergeUtil.mergeObjects(mergedStaticModel, staticFileModel);
+                    }
                 }
+                return mergedStaticModel;
             }
             return null;
         }
@@ -521,34 +529,74 @@ public class SmallRyeOpenApiProcessor {
         return scanners.toArray(new String[] {});
     }
 
-    private Result findStaticModel() {
+    private List<Result> findStaticModels(SmallRyeOpenApiConfig openApiConfig) {
+        List<Result> results = new ArrayList<>();
+
+        // First check for the file in both META-INF and WEB-INF/classes/META-INF
+        results = addStaticModelIfExist(results, Format.YAML, META_INF_OPENAPI_YAML);
+        results = addStaticModelIfExist(results, Format.YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YAML);
+        results = addStaticModelIfExist(results, Format.YAML, META_INF_OPENAPI_YML);
+        results = addStaticModelIfExist(results, Format.YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YML);
+        results = addStaticModelIfExist(results, Format.JSON, META_INF_OPENAPI_JSON);
+        results = addStaticModelIfExist(results, Format.JSON, WEB_INF_CLASSES_META_INF_OPENAPI_JSON);
+
+        // Add any aditional directories if configured
+        if (openApiConfig.additionalDocsDirectory.isPresent()) {
+            List<Path> additionalStaticDocuments = openApiConfig.additionalDocsDirectory.get();
+            for (Path path : additionalStaticDocuments) {
+                // Scan all yaml and json files
+                try {
+                    List<String> filesInDir = getResourceFiles(path.toString());
+                    for (String possibleModelFile : filesInDir) {
+                        results = addStaticModelIfExist(results, possibleModelFile);
+                    }
+                } catch (IOException ioe) {
+                    ioe.printStackTrace();
+                }
+            }
+        }
+
+        return results;
+    }
+
+    private List<Result> addStaticModelIfExist(List<Result> results, String path) {
+        if (path.endsWith(".json")) {
+            // Scan a specific json file
+            results = addStaticModelIfExist(results, Format.JSON, path);
+        } else if (path.endsWith(".yaml") || path.endsWith(".yml")) {
+            // Scan a specific yaml file
+            results = addStaticModelIfExist(results, Format.YAML, path);
+        }
+        return results;
+    }
+
+    private List<Result> addStaticModelIfExist(List<Result> results, Format format, String path) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        // Check for the file in both META-INF and WEB-INF/classes/META-INF
-        Format format = Format.YAML;
-        InputStream inputStream = cl.getResourceAsStream(META_INF_OPENAPI_YAML);
-        if (inputStream == null) {
-            inputStream = cl.getResourceAsStream(WEB_INF_CLASSES_META_INF_OPENAPI_YAML);
+        try (InputStream inputStream = cl.getResourceAsStream(path)) {
+            if (inputStream != null) {
+                results.add(new Result(format, inputStream));
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
         }
-        if (inputStream == null) {
-            inputStream = cl.getResourceAsStream(META_INF_OPENAPI_YML);
-        }
-        if (inputStream == null) {
-            inputStream = cl.getResourceAsStream(WEB_INF_CLASSES_META_INF_OPENAPI_YML);
-        }
-        if (inputStream == null) {
-            inputStream = cl.getResourceAsStream(META_INF_OPENAPI_JSON);
-            format = Format.JSON;
-        }
-        if (inputStream == null) {
-            inputStream = cl.getResourceAsStream(WEB_INF_CLASSES_META_INF_OPENAPI_JSON);
-            format = Format.JSON;
+        return results;
+    }
+
+    private List<String> getResourceFiles(String path) throws IOException {
+        List<String> filenames = new ArrayList<>();
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        try (InputStream inputStream = cl.getResourceAsStream(path)) {
+            if (inputStream != null) {
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
+                    String resource;
+                    while ((resource = br.readLine()) != null) {
+                        filenames.add(path + "/" + resource);
+                    }
+                }
+            }
         }
 
-        if (inputStream == null) {
-            return null;
-        }
-
-        return new Result(format, inputStream);
+        return filenames;
     }
 
     static class Result {

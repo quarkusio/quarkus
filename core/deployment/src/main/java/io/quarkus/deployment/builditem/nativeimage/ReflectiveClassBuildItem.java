@@ -50,6 +50,14 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this.finalFieldsWritable = finalFieldsWritable;
         this.weak = weak;
         this.serialization = serialization;
+        if (weak) {
+            if (serialization) {
+                throw new RuntimeException("Weak reflection not supported with serialization");
+            }
+            if (finalFieldsWritable) {
+                throw new RuntimeException("Weak reflection not supported with finalFieldsWritable");
+            }
+        }
     }
 
     public ReflectiveClassBuildItem(boolean methods, boolean fields, String... className) {

@@ -450,7 +450,7 @@ The `Server` can be injected as a mock into a Quarkus test class with `@InjectMo
 ----
 @QuarkusTest
 class ServerMockTest {
-    @InjectMock
+    @Inject
     Server server;
 
     @Test
@@ -489,7 +489,7 @@ public static class AppConfigProducer {
 
     @Produces
     @ApplicationScoped
-    @Mock
+    @io.quarkus.test.Mock
     AppConfig appConfig() {
         AppConfig appConfig = config.unwrap(SmallRyeConfig.class).getConfigMapping(AppConfig.class);
         AppConfig appConfigSpy = Mockito.spy(appConfig);
@@ -506,7 +506,7 @@ The `AppConfig` can be injected as a mock into a Quarkus test class with `@Injec
 ----
 @QuarkusTest
 class AppConfigTest {
-    @InjectMock
+    @Inject
     AppConfig appConfig;
 
     @Test

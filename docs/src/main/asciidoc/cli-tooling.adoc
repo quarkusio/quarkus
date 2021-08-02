@@ -4,12 +4,12 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Building Quarkus apps with Quarkus Command Line Interface (CLI)
-:extension-status: experimental
+:extension-status: preview
 
 include::./attributes.adoc[]
 
-The Quarkus CLI, `quarkus`, lets you create projects, manage extensions and
-do essential build and dev commands using the underlying project's build tool.
+The `quarkus` command lets you create projects, manage extensions and
+do essential build and dev commands using the underlying project build tool.
 
 include::./status-include.adoc[]
 
@@ -38,11 +38,6 @@ jbang app install --fresh --force quarkus@quarkusio
 jbang app install --force --name qss ~/.m2/repository/io/quarkus/quarkus-cli/999-SNAPSHOT/quarkus-cli-999-SNAPSHOT-runner.jar
 ----
 
-Note: if you get an error about `app` not being readable then you probably
-have a `jbang` version older than v0.56.0 installed. Please remove or upgrade it to a recent version.
-
-If you are installing `jbang` for the first time, start a new session to update your `PATH`.
-
 Once installed `quarkus` will be in your PATH and if you run `quarkus --version` it will print the installed version:
 
 [source,shell]
@@ -50,6 +45,15 @@ Once installed `quarkus` will be in your PATH and if you run `quarkus --version`
 quarkus --version
 Client Version {quarkus-version}
 ----
+
+[CAUTION]
+.Use a recent JBang version
+====
+If you get an error about `app` not being readable then you probably
+have a `jbang` version older than v0.56.0 installed. Please remove or upgrade it to a recent version.
+
+If you are installing `jbang` for the first time, start a new session to update your `PATH`.
+====
 
 === Using the CLI
 
@@ -188,7 +192,7 @@ Streams are identified using `platformKey:streamId` syntax. A specific stream ca
 +
 For `2.0.0.Final`, you must enable the registry client (`--registry-client`) explicitly to specify a stream. This is not required for `2.1.0.Final` or later releases.
 
-== Dealing with extensions
+== Working with extensions
 
 [source,shell]
 ----
@@ -333,3 +337,23 @@ Note: Output will vary depending on the build tool your project is using (`maven
 ====
 The version 2 Quarkus CLI can not be used with 1.x Quarkus projects or releases. Use the maven/gradle plugins when working with Quarkus 1.x projects.
 ====
+
+== Shell autocomplete and aliases
+
+Automatic command completion is available for Bash and Zsh:
+
+[source,shell]
+----
+# Setup autocompletion in the current shell
+source <(quarkus completion)
+----
+
+If you choose to use an alias for the quarkus command, adjust command completion with the following commands:
+
+[source,shell]
+----
+# Add an alias for the quarkus command
+alias q=quarkus
+# Add q to list of commands included in quarkus autocompletion
+complete -F _complete_quarkus q
+----

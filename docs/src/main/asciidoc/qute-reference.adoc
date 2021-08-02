@@ -1476,7 +1476,16 @@ TIP: A list element can be accessed directly: `{list.10}` or `{list[10]}`.
 ** `{config:foo}` or `{config:['property.with.dot.in.name']}`
 
 * `config:property(name)`: Returns the config value for the given property name; the name can be obtained dynamically by an expression 
-** `{config:property('quarkus.foo')}` or `{config:property(foo.getPropertyName())}`
+** `{config:property('quarkus.foo')}`
+** `{config:property(foo.getPropertyName())}`
+
+* `config:boolean(name)`: Returns the config value for the given property name as a boolean; the name can be obtained dynamically by an expression
+** `{config:boolean('quarkus.foo.boolean') ?: 'Not Found'}`
+** `{config:boolean(foo.getPropertyName()) ?: 'property is false'}`
+
+* `config:integer(name)`: Returns the config value for the given property name as an integer; the name can be obtained dynamically by an expression
+** `{config:integer('quarkus.foo')}`
+** `{config:integer(foo.getPropertyName())}`
 
 ===== Time
 

@@ -97,6 +97,12 @@ public class SmallRyeGraphQLConfig {
     boolean printDataFetcherException;
 
     /**
+     * Make the schema available over HTTP.
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean schemaAvailable;
+
+    /**
      * Include the Scalar definitions in the schema.
      */
     @ConfigItem(defaultValue = "false")

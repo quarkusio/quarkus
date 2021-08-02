@@ -10,9 +10,12 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -23,13 +26,16 @@ import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
@@ -74,7 +80,9 @@ import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
 import io.smallrye.openapi.api.OpenApiDocument;
+import io.smallrye.openapi.api.constants.SecurityConstants;
 import io.smallrye.openapi.api.models.OpenAPIImpl;
+import io.smallrye.openapi.jaxrs.JaxRsConstants;
 import io.smallrye.openapi.runtime.OpenApiProcessor;
 import io.smallrye.openapi.runtime.OpenApiStaticFile;
 import io.smallrye.openapi.runtime.io.Format;
@@ -82,6 +90,8 @@ import io.smallrye.openapi.runtime.io.OpenApiSerializer;
 import io.smallrye.openapi.runtime.scanner.AnnotationScannerExtension;
 import io.smallrye.openapi.runtime.scanner.FilteredIndexView;
 import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
+import io.smallrye.openapi.runtime.util.JandexUtil;
+import io.smallrye.openapi.spring.SpringConstants;
 import io.smallrye.openapi.vertx.VertxConstants;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
@@ -183,14 +193,6 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    void addSecurityFilter(BuildProducer<AddToOpenAPIDefinitionBuildItem> addToOpenAPIDefinitionProducer,
-            SmallRyeOpenApiConfig config) {
-
-        addToOpenAPIDefinitionProducer
-                .produce(new AddToOpenAPIDefinitionBuildItem(new SecurityConfigFilter(config)));
-    }
-
-    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void classLoaderHack(OpenApiRecorder recorder) {
         recorder.classLoaderHack();
@@ -212,6 +214,48 @@ public class SmallRyeOpenApiProcessor {
                 new FilteredIndexView(
                         compositeIndex,
                         new OpenApiConfigImpl(ConfigProvider.getConfig())));
+    }
+
+    @BuildStep
+    void addSecurityFilter(BuildProducer<AddToOpenAPIDefinitionBuildItem> addToOpenAPIDefinitionProducer,
+            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
+            SmallRyeOpenApiConfig config) {
+
+        List<AnnotationInstance> rolesAllowedAnnotations = new ArrayList<>();
+        for (DotName rolesAllowed : SecurityConstants.ROLES_ALLOWED) {
+            rolesAllowedAnnotations.addAll(apiFilteredIndexViewBuildItem.getIndex().getAnnotations(rolesAllowed));
+        }
+
+        Map<String, List<String>> methodReferences = new HashMap<>();
+        DotName securityRequirement = DotName.createSimple(SecurityRequirement.class.getName());
+        for (AnnotationInstance ai : rolesAllowedAnnotations) {
+            if (ai.target().kind().equals(AnnotationTarget.Kind.METHOD)) {
+                MethodInfo method = ai.target().asMethod();
+                if (isValidOpenAPIMethodForAutoAdd(method, securityRequirement)) {
+                    String ref = JandexUtil.createUniqueMethodReference(method);
+                    methodReferences.put(ref, List.of(ai.value().asStringArray()));
+                }
+            }
+            if (ai.target().kind().equals(AnnotationTarget.Kind.CLASS)) {
+                ClassInfo classInfo = ai.target().asClass();
+                List<MethodInfo> methods = classInfo.methods();
+                for (MethodInfo method : methods) {
+                    if (isValidOpenAPIMethodForAutoAdd(method, securityRequirement)) {
+                        String ref = JandexUtil.createUniqueMethodReference(method);
+                        methodReferences.put(ref, List.of(ai.value().asStringArray()));
+                    }
+                }
+
+            }
+        }
+
+        addToOpenAPIDefinitionProducer
+                .produce(new AddToOpenAPIDefinitionBuildItem(new SecurityConfigFilter(config, methodReferences)));
+    }
+
+    private boolean isValidOpenAPIMethodForAutoAdd(MethodInfo method, DotName securityRequirement) {
+        return isOpenAPIEndpoint(method) && !method.hasAnnotation(securityRequirement)
+                && method.declaringClass().classAnnotation(securityRequirement) == null;
     }
 
     @BuildStep
@@ -260,6 +304,18 @@ public class SmallRyeOpenApiProcessor {
                         Arrays.asList(apiResponsesAnnotationValue.asNestedArray()));
             }
         }
+    }
+
+    private boolean isOpenAPIEndpoint(MethodInfo method) {
+        Set<DotName> httpAnnotations = new HashSet<>();
+        httpAnnotations.addAll(JaxRsConstants.HTTP_METHODS);
+        httpAnnotations.addAll(SpringConstants.HTTP_METHODS);
+        for (DotName httpAnnotation : httpAnnotations) {
+            if (method.hasAnnotation(httpAnnotation)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void registerReflectionForApiResponseSchemaSerialization(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -436,7 +492,6 @@ public class SmallRyeOpenApiProcessor {
         if (capabilities.isPresent(Capability.RESTEASY)) {
             extensions.add(new RESTEasyExtension(indexView));
         }
-        // TODO: add a Quarkus-REST specific extension that knows the Quarkus REST specific annotations as well as the fact that *param annotations aren't necessary
 
         String defaultPath;
         if (resteasyJaxrsConfig.isPresent()) {

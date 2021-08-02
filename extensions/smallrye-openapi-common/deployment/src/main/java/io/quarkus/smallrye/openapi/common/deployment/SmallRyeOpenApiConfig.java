@@ -51,6 +51,12 @@ public final class SmallRyeOpenApiConfig {
     public String securitySchemeDescription;
 
     /**
+     * This will automatically add the security requirement to all methods/classes that has a `RolesAllowed` annotation.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean autoAddSecurityRequirement;
+
+    /**
      * Add a scheme value to the Basic HTTP Security Scheme
      */
     @ConfigItem(defaultValue = "basic")

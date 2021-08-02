@@ -345,6 +345,8 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     /**
+     * Note that the interceptors are not available until the bean is fully initialized, i.e. they are available after
+     * {@link BeanProcessor#initialize(Consumer, List)}.
      *
      * @return an ordered list of all interceptors associated with the bean
      */
@@ -371,6 +373,12 @@ public class BeanInfo implements InjectionTargetInfo {
         return bound;
     }
 
+    /**
+     * Note that the decorators are not available until the bean is fully initialized, i.e. they are available after
+     * {@link BeanProcessor#initialize(Consumer, List)}.
+     * 
+     * @return an ordered list of all decorators associated with the bean
+     */
     public List<DecoratorInfo> getBoundDecorators() {
         if (decoratedMethods.isEmpty()) {
             return Collections.emptyList();

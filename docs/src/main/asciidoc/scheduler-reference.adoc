@@ -320,6 +320,14 @@ The scheduler can be disabled through the runtime config property `quarkus.sched
 If set to `false` the scheduler is not started even though the application contains scheduled methods.
 You can even disable the scheduler for particular <<getting-started-testing#testing_different_profiles,Test Profiles>>.
 
+== Metrics
+
+Some basic metrics are published out of the box if `quarkus.scheduler.metrics.enabled` is set to `true` and a metrics extension is present. 
+
+If the link:micrometer[Micrometer extension] is present, then a `@io.micrometer.core.annotation.Timed` interceptor binding is added to all `@Scheduled` methods automatically (unless it's already present) and a `io.micrometer.core.instrument.Timer` with name `scheduled.methods` and a `io.micrometer.core.instrument.LongTaskTimer` with name `scheduled.methods.running` are registered. The fully qualified name of the declaring class and the name of a `@Scheduled` method are used as tags.
+
+If the link:smallrye-metrics[SmallRye Metrics extension] is present, then a `@org.eclipse.microprofile.metrics.annotation.Timed`  interceptor binding is added to all `@Scheduled` methods automatically (unless it's already present) and a `org.eclipse.microprofile.metrics.Timer` is created for each `@Scheduled` method. The name consists of the fully qualified name of the declaring class and the name of a `@Scheduled` method. The timer has a tag `scheduled=true`.
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-scheduler.adoc[leveloffset=+1, opts=optional]

@@ -53,7 +53,8 @@ public class InjectionEnricher implements TestEnricher {
                 ClassLoader cl = appClassloader.get() != null ? appClassloader.get() : getClass().getClassLoader();
                 Thread.currentThread().setContextClassLoader(cl);
                 Class<?> c = cl.loadClass(IsolatedEnricher.class.getName());
-                BiFunction<Method, Object, Object[]> function = (BiFunction<Method, Object, Object[]>) c.newInstance();
+                BiFunction<Method, Object, Object[]> function = (BiFunction<Method, Object, Object[]>) c
+                        .getDeclaredConstructor().newInstance();
                 return function.apply(method, holder.creationalContext);
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -68,7 +69,8 @@ public class InjectionEnricher implements TestEnricher {
         try {
             ClassLoader cl = appClassloader.get() != null ? appClassloader.get() : getClass().getClassLoader();
             Class<?> c = cl.loadClass(IsolatedCreationContextCreator.class.getName());
-            Supplier<Map.Entry<Closeable, Object>> supplier = (Supplier<Map.Entry<Closeable, Object>>) c.newInstance();
+            Supplier<Map.Entry<Closeable, Object>> supplier = (Supplier<Map.Entry<Closeable, Object>>) c
+                    .getDeclaredConstructor().newInstance();
             Map.Entry<Closeable, Object> val = supplier.get();
             return new CreationContextHolder(val.getKey(), val.getValue());
         } catch (Exception e) {

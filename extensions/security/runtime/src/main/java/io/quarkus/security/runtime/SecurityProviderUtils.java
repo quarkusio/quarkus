@@ -42,7 +42,8 @@ public final class SecurityProviderUtils {
 
     public static Provider loadProvider(String providerClassName) {
         try {
-            return (Provider) Thread.currentThread().getContextClassLoader().loadClass(providerClassName).newInstance();
+            return (Provider) Thread.currentThread().getContextClassLoader().loadClass(providerClassName)
+                    .getDeclaredConstructor().newInstance();
         } catch (Exception t) {
             final String errorMessage = String.format("Security provider %s can not be registered", providerClassName);
             throw new ConfigurationException(errorMessage, t);

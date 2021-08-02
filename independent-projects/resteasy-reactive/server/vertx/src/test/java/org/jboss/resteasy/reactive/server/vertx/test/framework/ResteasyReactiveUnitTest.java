@@ -8,6 +8,7 @@ import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -277,8 +278,10 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                                 return (Application) Class
                                         .forName(applicationScanningResult.getSelectedAppClass().name().toString(), false,
                                                 Thread.currentThread().getContextClassLoader())
+                                        .getDeclaredConstructor()
                                         .newInstance();
-                            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+                            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException
+                                    | NoSuchMethodException | InvocationTargetException e) {
                                 throw new RuntimeException(e);
                             }
                         }

@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.openapi.common.deployment;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -34,6 +35,13 @@ public final class SmallRyeOpenApiConfig {
     public boolean ignoreStaticDocument;
 
     /**
+     * A list of local directories that should be scanned for yaml and/or json files to be included in the static model.
+     * Example: `META-INF/openapi/`
+     */
+    @ConfigItem
+    public Optional<List<Path>> additionalDocsDirectory;
+
+    /**
      * Add a certain SecurityScheme with config
      */
     public Optional<SecurityScheme> securityScheme;
@@ -49,6 +57,12 @@ public final class SmallRyeOpenApiConfig {
      */
     @ConfigItem(defaultValue = "Authentication")
     public String securitySchemeDescription;
+
+    /**
+     * This will automatically add the security requirement to all methods/classes that has a `RolesAllowed` annotation.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean autoAddSecurityRequirement;
 
     /**
      * Add a scheme value to the Basic HTTP Security Scheme

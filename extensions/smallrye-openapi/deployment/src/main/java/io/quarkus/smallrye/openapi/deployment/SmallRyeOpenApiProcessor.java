@@ -1,7 +1,9 @@
 package io.quarkus.smallrye.openapi.deployment;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,9 +12,12 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -23,13 +28,16 @@ import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
@@ -74,7 +82,10 @@ import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
 import io.smallrye.openapi.api.OpenApiDocument;
+import io.smallrye.openapi.api.constants.SecurityConstants;
 import io.smallrye.openapi.api.models.OpenAPIImpl;
+import io.smallrye.openapi.api.util.MergeUtil;
+import io.smallrye.openapi.jaxrs.JaxRsConstants;
 import io.smallrye.openapi.runtime.OpenApiProcessor;
 import io.smallrye.openapi.runtime.OpenApiStaticFile;
 import io.smallrye.openapi.runtime.io.Format;
@@ -82,6 +93,8 @@ import io.smallrye.openapi.runtime.io.OpenApiSerializer;
 import io.smallrye.openapi.runtime.scanner.AnnotationScannerExtension;
 import io.smallrye.openapi.runtime.scanner.FilteredIndexView;
 import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
+import io.smallrye.openapi.runtime.util.JandexUtil;
+import io.smallrye.openapi.spring.SpringConstants;
 import io.smallrye.openapi.vertx.VertxConstants;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
@@ -183,14 +196,6 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    void addSecurityFilter(BuildProducer<AddToOpenAPIDefinitionBuildItem> addToOpenAPIDefinitionProducer,
-            SmallRyeOpenApiConfig config) {
-
-        addToOpenAPIDefinitionProducer
-                .produce(new AddToOpenAPIDefinitionBuildItem(new SecurityConfigFilter(config)));
-    }
-
-    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void classLoaderHack(OpenApiRecorder recorder) {
         recorder.classLoaderHack();
@@ -212,6 +217,48 @@ public class SmallRyeOpenApiProcessor {
                 new FilteredIndexView(
                         compositeIndex,
                         new OpenApiConfigImpl(ConfigProvider.getConfig())));
+    }
+
+    @BuildStep
+    void addSecurityFilter(BuildProducer<AddToOpenAPIDefinitionBuildItem> addToOpenAPIDefinitionProducer,
+            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
+            SmallRyeOpenApiConfig config) {
+
+        List<AnnotationInstance> rolesAllowedAnnotations = new ArrayList<>();
+        for (DotName rolesAllowed : SecurityConstants.ROLES_ALLOWED) {
+            rolesAllowedAnnotations.addAll(apiFilteredIndexViewBuildItem.getIndex().getAnnotations(rolesAllowed));
+        }
+
+        Map<String, List<String>> methodReferences = new HashMap<>();
+        DotName securityRequirement = DotName.createSimple(SecurityRequirement.class.getName());
+        for (AnnotationInstance ai : rolesAllowedAnnotations) {
+            if (ai.target().kind().equals(AnnotationTarget.Kind.METHOD)) {
+                MethodInfo method = ai.target().asMethod();
+                if (isValidOpenAPIMethodForAutoAdd(method, securityRequirement)) {
+                    String ref = JandexUtil.createUniqueMethodReference(method);
+                    methodReferences.put(ref, List.of(ai.value().asStringArray()));
+                }
+            }
+            if (ai.target().kind().equals(AnnotationTarget.Kind.CLASS)) {
+                ClassInfo classInfo = ai.target().asClass();
+                List<MethodInfo> methods = classInfo.methods();
+                for (MethodInfo method : methods) {
+                    if (isValidOpenAPIMethodForAutoAdd(method, securityRequirement)) {
+                        String ref = JandexUtil.createUniqueMethodReference(method);
+                        methodReferences.put(ref, List.of(ai.value().asStringArray()));
+                    }
+                }
+
+            }
+        }
+
+        addToOpenAPIDefinitionProducer
+                .produce(new AddToOpenAPIDefinitionBuildItem(new SecurityConfigFilter(config, methodReferences)));
+    }
+
+    private boolean isValidOpenAPIMethodForAutoAdd(MethodInfo method, DotName securityRequirement) {
+        return isOpenAPIEndpoint(method) && !method.hasAnnotation(securityRequirement)
+                && method.declaringClass().classAnnotation(securityRequirement) == null;
     }
 
     @BuildStep
@@ -260,6 +307,18 @@ public class SmallRyeOpenApiProcessor {
                         Arrays.asList(apiResponsesAnnotationValue.asNestedArray()));
             }
         }
+    }
+
+    private boolean isOpenAPIEndpoint(MethodInfo method) {
+        Set<DotName> httpAnnotations = new HashSet<>();
+        httpAnnotations.addAll(JaxRsConstants.HTTP_METHODS);
+        httpAnnotations.addAll(SpringConstants.HTTP_METHODS);
+        for (DotName httpAnnotation : httpAnnotations) {
+            if (method.hasAnnotation(httpAnnotation)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void registerReflectionForApiResponseSchemaSerialization(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -414,12 +473,17 @@ public class SmallRyeOpenApiProcessor {
         if (openApiConfig.ignoreStaticDocument) {
             return null;
         } else {
-            Result result = findStaticModel();
-            if (result != null) {
-                try (InputStream is = result.inputStream;
-                        OpenApiStaticFile staticFile = new OpenApiStaticFile(is, result.format)) {
-                    return io.smallrye.openapi.runtime.OpenApiProcessor.modelFromStaticFile(staticFile);
+            List<Result> results = findStaticModels(openApiConfig);
+            if (!results.isEmpty()) {
+                OpenAPI mergedStaticModel = new OpenAPIImpl();
+                for (Result result : results) {
+                    try (InputStream is = result.inputStream;
+                            OpenApiStaticFile staticFile = new OpenApiStaticFile(is, result.format)) {
+                        OpenAPI staticFileModel = io.smallrye.openapi.runtime.OpenApiProcessor.modelFromStaticFile(staticFile);
+                        mergedStaticModel = MergeUtil.mergeObjects(mergedStaticModel, staticFileModel);
+                    }
                 }
+                return mergedStaticModel;
             }
             return null;
         }
@@ -436,7 +500,6 @@ public class SmallRyeOpenApiProcessor {
         if (capabilities.isPresent(Capability.RESTEASY)) {
             extensions.add(new RESTEasyExtension(indexView));
         }
-        // TODO: add a Quarkus-REST specific extension that knows the Quarkus REST specific annotations as well as the fact that *param annotations aren't necessary
 
         String defaultPath;
         if (resteasyJaxrsConfig.isPresent()) {
@@ -466,34 +529,74 @@ public class SmallRyeOpenApiProcessor {
         return scanners.toArray(new String[] {});
     }
 
-    private Result findStaticModel() {
+    private List<Result> findStaticModels(SmallRyeOpenApiConfig openApiConfig) {
+        List<Result> results = new ArrayList<>();
+
+        // First check for the file in both META-INF and WEB-INF/classes/META-INF
+        results = addStaticModelIfExist(results, Format.YAML, META_INF_OPENAPI_YAML);
+        results = addStaticModelIfExist(results, Format.YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YAML);
+        results = addStaticModelIfExist(results, Format.YAML, META_INF_OPENAPI_YML);
+        results = addStaticModelIfExist(results, Format.YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YML);
+        results = addStaticModelIfExist(results, Format.JSON, META_INF_OPENAPI_JSON);
+        results = addStaticModelIfExist(results, Format.JSON, WEB_INF_CLASSES_META_INF_OPENAPI_JSON);
+
+        // Add any aditional directories if configured
+        if (openApiConfig.additionalDocsDirectory.isPresent()) {
+            List<Path> additionalStaticDocuments = openApiConfig.additionalDocsDirectory.get();
+            for (Path path : additionalStaticDocuments) {
+                // Scan all yaml and json files
+                try {
+                    List<String> filesInDir = getResourceFiles(path.toString());
+                    for (String possibleModelFile : filesInDir) {
+                        results = addStaticModelIfExist(results, possibleModelFile);
+                    }
+                } catch (IOException ioe) {
+                    ioe.printStackTrace();
+                }
+            }
+        }
+
+        return results;
+    }
+
+    private List<Result> addStaticModelIfExist(List<Result> results, String path) {
+        if (path.endsWith(".json")) {
+            // Scan a specific json file
+            results = addStaticModelIfExist(results, Format.JSON, path);
+        } else if (path.endsWith(".yaml") || path.endsWith(".yml")) {
+            // Scan a specific yaml file
+            results = addStaticModelIfExist(results, Format.YAML, path);
+        }
+        return results;
+    }
+
+    private List<Result> addStaticModelIfExist(List<Result> results, Format format, String path) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        // Check for the file in both META-INF and WEB-INF/classes/META-INF
-        Format format = Format.YAML;
-        InputStream inputStream = cl.getResourceAsStream(META_INF_OPENAPI_YAML);
-        if (inputStream == null) {
-            inputStream = cl.getResourceAsStream(WEB_INF_CLASSES_META_INF_OPENAPI_YAML);
+        try (InputStream inputStream = cl.getResourceAsStream(path)) {
+            if (inputStream != null) {
+                results.add(new Result(format, inputStream));
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
         }
-        if (inputStream == null) {
-            inputStream = cl.getResourceAsStream(META_INF_OPENAPI_YML);
-        }
-        if (inputStream == null) {
-            inputStream = cl.getResourceAsStream(WEB_INF_CLASSES_META_INF_OPENAPI_YML);
-        }
-        if (inputStream == null) {
-            inputStream = cl.getResourceAsStream(META_INF_OPENAPI_JSON);
-            format = Format.JSON;
-        }
-        if (inputStream == null) {
-            inputStream = cl.getResourceAsStream(WEB_INF_CLASSES_META_INF_OPENAPI_JSON);
-            format = Format.JSON;
+        return results;
+    }
+
+    private List<String> getResourceFiles(String path) throws IOException {
+        List<String> filenames = new ArrayList<>();
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        try (InputStream inputStream = cl.getResourceAsStream(path)) {
+            if (inputStream != null) {
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
+                    String resource;
+                    while ((resource = br.readLine()) != null) {
+                        filenames.add(path + "/" + resource);
+                    }
+                }
+            }
         }
 
-        if (inputStream == null) {
-            return null;
-        }
-
-        return new Result(format, inputStream);
+        return filenames;
     }
 
     static class Result {
@@ -509,6 +612,14 @@ public class SmallRyeOpenApiProcessor {
     private OpenApiDocument loadDocument(OpenAPI staticModel, OpenAPI annotationModel,
             List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems) {
         OpenApiDocument document = prepareOpenApiDocument(staticModel, annotationModel, openAPIBuildItems);
+
+        Config c = ConfigProvider.getConfig();
+        String title = c.getOptionalValue("quarkus.application.name", String.class).orElse("Generated");
+        String version = c.getOptionalValue("quarkus.application.version", String.class).orElse("1.0");
+
+        document.archiveName(title);
+        document.version(version);
+
         document.initialize();
         return document;
     }

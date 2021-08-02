@@ -260,6 +260,8 @@ public class SwaggerUiProcessor {
 
         if (swaggerUiConfig.oauth2RedirectUrl.isPresent()) {
             options.put(Option.oauth2RedirectUrl, swaggerUiConfig.oauth2RedirectUrl.get());
+        } else {
+            options.put(Option.oauth2RedirectUrl, swaggerUiPath + "/oauth2-redirect.html");
         }
 
         if (swaggerUiConfig.requestInterceptor.isPresent()) {

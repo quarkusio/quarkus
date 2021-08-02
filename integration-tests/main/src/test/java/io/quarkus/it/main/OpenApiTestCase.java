@@ -43,7 +43,7 @@ public class OpenApiTestCase {
         Assertions.assertNotNull(obj);
 
         Assertions.assertEquals("3.0.3", obj.getString("openapi"));
-        Assertions.assertEquals("Generated API", obj.getJsonObject("info").getString("title"));
+        Assertions.assertEquals("main-integration-test API", obj.getJsonObject("info").getString("title"));
         Assertions.assertEquals("1.0", obj.getJsonObject("info").getString("version"));
 
         JsonObject paths = obj.getJsonObject("paths");

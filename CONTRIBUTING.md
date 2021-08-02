@@ -63,7 +63,7 @@ Don't forget to indicate your Quarkus, Java, Maven/Gradle and GraalVM version.
 Sometimes a bug has been fixed in the `main` branch of Quarkus and you want to confirm it is fixed for your own application.
 Testing the `main` branch is easy and you have two options:
 
-* either use the snapshots we publish daily on https://oss.sonatype.org/content/repositories/snapshots/
+* either use the snapshots we publish daily on https://s01.oss.sonatype.org/content/repositories/snapshots
 * or build Quarkus all by yourself
 
 This is a quick summary to get you to quickly test main.
@@ -73,9 +73,47 @@ If you are interested in having more details, refer to the [Build section](#buil
 
 Snapshots are published daily so you will have to wait for a snapshot containing the commits you are interested in.
 
-Then just add https://oss.sonatype.org/content/repositories/snapshots/ as a Maven repository **and** a plugin repository.
+Then just add https://s01.oss.sonatype.org/content/repositories/snapshots as a Maven repository **and** a plugin repository in your settings xml:
 
-You can check the last publication date here: https://oss.sonatype.org/content/repositories/snapshots/io/quarkus/ .
+```xml
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <profiles>
+    <profile>
+       <id>quarkus-snapshots</id>
+       <repositories>
+        <repository>
+          <id>quarkus-snapshots-repository</id>
+          <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>quarkus-snapshots-plugin-repository</id>
+          <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+  </profiles>
+  <activeProfiles>
+    <activeProfile>quarkus-snapshots</activeProfile>
+  </activeProfiles>
+</settings>
+```
+You can check the last publication date here: https://s01.oss.sonatype.org/content/repositories/snapshots/io/quarkus/ .
 
 ### Building main
 

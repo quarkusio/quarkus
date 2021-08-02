@@ -161,7 +161,7 @@
         <liquibase.version>4.3.5</liquibase.version>
         <snakeyaml.version>1.29</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
-        <neo4j-java-driver.version>4.3.3</neo4j-java-driver.version>
+        <neo4j-java-driver.version>4.3.4</neo4j-java-driver.version>
         <mongo-client.version>4.3.0</mongo-client.version>
         <mongo-crypt.version>1.2.0</mongo-crypt.version>
         <artemis.version>2.17.0</artemis.version>

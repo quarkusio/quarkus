@@ -82,6 +82,11 @@ class ReactiveMySQLClientProcessor {
         return DevServicesDatasourceConfigurationHandlerBuildItem.reactive(DatabaseKind.MYSQL);
     }
 
+    @BuildStep
+    DefaultDataSourceDbKindBuildItem dbType() {
+        return new DefaultDataSourceDbKindBuildItem(DatabaseKind.MYSQL);
+    }
+
     /**
      * The health check needs to be produced in a separate method to avoid a circular dependency (the Vert.x instance creation
      * consumes the AdditionalBeanBuildItems).

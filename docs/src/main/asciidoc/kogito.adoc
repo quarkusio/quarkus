@@ -13,7 +13,7 @@ to power it up with business processes and rules.
 
 Kogito is a next generation business automation toolkit that originates from well known Open Source projects
 Drools (for business rules) and jBPM (for business processes). Kogito aims at providing another approach
-to business automation where the main message is to expose your business knowledge (processes, rules and decisions)
+to business automation where the main message is to expose your business knowledge (processes, rules, decisions, predictions)
 in a domain specific way.
 
 include::./status-include.adoc[]
@@ -23,27 +23,31 @@ include::./status-include.adoc[]
 To complete this guide, you need:
 
 * less than 15 minutes
-* an IDE (Eclipse is preferred with the BPMN modeller plugin)
+* an IDE (VSCode is preferred with the Red Hat BPMN Editor VSCode Extension)
 * JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * Docker
 
 === Install modelling plugins in your IDE
 
-Kogito Tooling is currently supported in Eclipse and VSCode:
+Kogito Tooling is currently supported in VSCode, Online and on other platforms:
+
+* VSCode
+
+Download and install the https://marketplace.visualstudio.com/items?itemName=redhat.vscode-extension-bpmn-editor[Red Hat BPMN Editor VSCode Extension] to edit and model process definitions from VSCode IDE.
+
+* Online
+
+To avoid any modeler installation you can use directly use https://bpmn.new[BPMN.new] to design and model your process through your favorite web browser.
+
+* Other platforms
+
+You can reference to https://kiegroup.github.io/kogito-online/#/download[Business Modeler Hub] to download the latest platforms supported for the https://github.com/kiegroup/kogito-tooling/releases[Kogito tooling releases].
 
 * Eclipse
 
 To be able to make use of visual modelling of your processes, download Eclipse IDE and
 install from Market place Eclipse BPMN2 Modeller plugin (with jBPM Runtime Extension)
-
-* VSCode
-
-Download and install the VSCode Extension from https://github.com/kiegroup/kogito-tooling/releases[Kogito Tooling release page] to edit and model process definitions from VSCode IDE.
-
-* Online
-
-To avoid any modeler installation you can use directly use https://bpmn.new[BPMN.new] to design and model your process through your favorite web browser.
 
 == Architecture
 
@@ -63,7 +67,7 @@ At the same time this is the entry point to the service that can be consumed by 
 === Business rule
 
 A business rule allows to externalise decision logic into reusable pieces that can be easily
-used in declarative way. There are multiple ways of writing rules like decision tables,
+used in declarative way. There are multiple ways of writing rules like DMN models, decision tables,
 decision trees, rules, etc. For this example we focus on the rule format backed by DRL
 (Drools Rule Language).
 

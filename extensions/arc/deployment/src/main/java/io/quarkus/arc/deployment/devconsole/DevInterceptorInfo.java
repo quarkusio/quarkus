@@ -26,7 +26,7 @@ public class DevInterceptorInfo implements Comparable<DevInterceptorInfo> {
             intercepts.put(InterceptionType.AROUND_INVOKE, interceptor.getAroundInvoke());
         }
         if (interceptor.intercepts(InterceptionType.AROUND_CONSTRUCT)) {
-            intercepts.put(InterceptionType.AROUND_CONSTRUCT, interceptor.getAroundInvoke());
+            intercepts.put(InterceptionType.AROUND_CONSTRUCT, interceptor.getAroundConstruct());
         }
         if (interceptor.intercepts(InterceptionType.POST_CONSTRUCT)) {
             intercepts.put(InterceptionType.POST_CONSTRUCT, interceptor.getPostConstruct());

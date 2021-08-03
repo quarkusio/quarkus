@@ -355,35 +355,9 @@ public class JunitTestRunner {
                         }
                         if (testExecutionResult.getStatus() == TestExecutionResult.Status.FAILED) {
                             Throwable throwable = testExecutionResult.getThrowable().get();
-                            if (testClass != null) {
-                                //first we cut all the platform stuff out of the stack trace
-                                Throwable cause = throwable;
-                                while (cause != null) {
-                                    StackTraceElement[] st = cause.getStackTrace();
-                                    for (int i = st.length - 1; i >= 0; --i) {
-                                        StackTraceElement elem = st[i];
-                                        if (elem.getClassName().equals(testClass.getName())) {
-                                            StackTraceElement[] newst = new StackTraceElement[i + 1];
-                                            System.arraycopy(st, 0, newst, 0, i + 1);
-                                            st = newst;
-                                            break;
-                                        }
-                                    }
-
-                                    //now cut out all the restassured internals
-                                    //TODO: this should be pluggable
-                                    for (int i = st.length - 1; i >= 0; --i) {
-                                        StackTraceElement elem = st[i];
-                                        if (elem.getClassName().startsWith("io.restassured")) {
-                                            StackTraceElement[] newst = new StackTraceElement[st.length - i];
-                                            System.arraycopy(st, i, newst, 0, st.length - i);
-                                            st = newst;
-                                            break;
-                                        }
-                                    }
-                                    cause.setStackTrace(st);
-                                    cause = cause.getCause();
-                                }
+                            trimStackTrace(testClass, throwable);
+                            for (var i : throwable.getSuppressed()) {
+                                trimStackTrace(testClass, i);
                             }
                         }
                     }
@@ -425,6 +399,39 @@ public class JunitTestRunner {
                         notifyAll();
                     }
                 }
+            }
+        }
+    }
+
+    private void trimStackTrace(Class<?> testClass, Throwable throwable) {
+        if (testClass != null) {
+            //first we cut all the platform stuff out of the stack trace
+            Throwable cause = throwable;
+            while (cause != null) {
+                StackTraceElement[] st = cause.getStackTrace();
+                for (int i = st.length - 1; i >= 0; --i) {
+                    StackTraceElement elem = st[i];
+                    if (elem.getClassName().equals(testClass.getName())) {
+                        StackTraceElement[] newst = new StackTraceElement[i + 1];
+                        System.arraycopy(st, 0, newst, 0, i + 1);
+                        st = newst;
+                        break;
+                    }
+                }
+
+                //now cut out all the restassured internals
+                //TODO: this should be pluggable
+                for (int i = st.length - 1; i >= 0; --i) {
+                    StackTraceElement elem = st[i];
+                    if (elem.getClassName().startsWith("io.restassured")) {
+                        StackTraceElement[] newst = new StackTraceElement[st.length - i];
+                        System.arraycopy(st, i, newst, 0, st.length - i);
+                        st = newst;
+                        break;
+                    }
+                }
+                cause.setStackTrace(st);
+                cause = cause.getCause();
             }
         }
     }

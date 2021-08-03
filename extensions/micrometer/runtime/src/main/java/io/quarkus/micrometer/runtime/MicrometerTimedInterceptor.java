@@ -23,9 +23,7 @@ import io.quarkus.arc.ArcInvocationContext;
  * Quarkus defined interceptor for types or methods annotated with {@link Timed @Timed}.
  */
 @Interceptor
-// For some unknown reason, the default value for Timed#value() is not always available in the Jandex index when the annotation literal is being processed by ArC
-// As a workaround we do specify the value explicitly - note that is has no effect on resolution because it's non-binding 
-@Timed("")
+@Timed
 @Priority(Interceptor.Priority.LIBRARY_BEFORE + 10)
 public class MicrometerTimedInterceptor {
 

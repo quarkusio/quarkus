@@ -389,8 +389,14 @@ public class HibernateOrmConfigPersistenceUnit {
         @ConfigItem(defaultValueDocumentation = "depends on dialect")
         public Optional<Boolean> jdbcWarnings;
 
+        /**
+         * If set, Hibernate will log queries that took more than specified number of milliseconds to execute.
+         */
+        @ConfigItem
+        public Optional<Long> queriesSlowerThanMs;
+
         public boolean isAnyPropertySet() {
-            return sql || !formatSql || jdbcWarnings.isPresent();
+            return sql || !formatSql || jdbcWarnings.isPresent() || queriesSlowerThanMs.isPresent();
         }
     }
 

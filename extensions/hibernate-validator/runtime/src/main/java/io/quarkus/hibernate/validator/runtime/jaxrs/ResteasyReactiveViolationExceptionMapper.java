@@ -12,7 +12,7 @@ import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
 @Provider
-public class QuarkusRestViolationExceptionMapper implements ExceptionMapper<ValidationException> {
+public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper<ValidationException> {
 
     @Override
     public Response toResponse(ValidationException exception) {

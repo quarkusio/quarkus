@@ -304,7 +304,6 @@ public final class HibernateReactiveProcessor {
                 throw new ConfigurationError(
                         "Unable to find file referenced in '"
                                 + HibernateOrmConfig.puPropertyKey(persistenceUnitConfigName, "sql-load-script") + "="
-                                + "sql-load-script="
                                 + persistenceUnitConfig.sqlLoadScript.get() + "'. Remove property or add file to your path.");
             }
         } else {

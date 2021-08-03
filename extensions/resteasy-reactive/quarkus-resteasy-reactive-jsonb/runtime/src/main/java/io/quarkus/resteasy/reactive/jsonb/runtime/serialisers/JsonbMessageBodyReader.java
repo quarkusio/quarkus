@@ -7,15 +7,17 @@ import java.lang.reflect.Type;
 
 import javax.inject.Inject;
 import javax.json.bind.Jsonb;
+import javax.json.bind.JsonbException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
 import org.jboss.resteasy.reactive.common.providers.serialisers.AbstractJsonMessageBodyReader;
-import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
+
+import io.quarkus.resteasy.reactive.server.runtime.StreamUtil;
 
 public class JsonbMessageBodyReader extends AbstractJsonMessageBodyReader implements ServerMessageBodyReader<Object> {
 
@@ -49,9 +51,21 @@ public class JsonbMessageBodyReader extends AbstractJsonMessageBodyReader implem
     }
 
     private Object doReadFrom(Class<Object> type, Type genericType, InputStream entityStream) {
-        if (entityStream instanceof EmptyInputStream) {
+        if (StreamUtil.isEmpty(entityStream)) {
             return null;
         }
-        return json.fromJson(entityStream, genericType != null ? genericType : type);
+        try {
+            return json.fromJson(entityStream, genericType != null ? genericType : type);
+        } catch (JsonbException e) {
+            if (isEmptyInputException(e)) {
+                return null;
+            }
+            throw e;
+        }
+    }
+
+    private boolean isEmptyInputException(Exception e) {
+        // this isn't great, but Yasson doesn't have a specific exception for empty input...
+        return e.getMessage().contains("Invalid token=EOF at (line no=1, column no=0");
     }
 }

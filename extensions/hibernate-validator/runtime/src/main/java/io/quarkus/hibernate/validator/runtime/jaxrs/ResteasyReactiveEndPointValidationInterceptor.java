@@ -11,7 +11,7 @@ import io.quarkus.hibernate.validator.runtime.interceptor.AbstractMethodValidati
 @JaxrsEndPointValidated
 @Interceptor
 @Priority(Interceptor.Priority.PLATFORM_AFTER + 800)
-public class QuarkusRestEndPointValidationInterceptor extends AbstractMethodValidationInterceptor {
+public class ResteasyReactiveEndPointValidationInterceptor extends AbstractMethodValidationInterceptor {
 
     @AroundInvoke
     @Override

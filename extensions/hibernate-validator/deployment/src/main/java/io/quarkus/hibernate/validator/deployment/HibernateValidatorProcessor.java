@@ -75,8 +75,8 @@ import io.quarkus.hibernate.validator.runtime.HibernateValidatorBuildTimeConfig;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
 import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
-import io.quarkus.hibernate.validator.runtime.jaxrs.QuarkusRestViolationExceptionMapper;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
+import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveViolationExceptionMapper;
 import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
@@ -153,7 +153,9 @@ class HibernateValidatorProcessor {
         } else if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
             // The CDI interceptor which will validate the methods annotated with @JaxrsEndPointValidated
             additionalBeans.produce(new AdditionalBeanBuildItem(
-                    "io.quarkus.hibernate.validator.runtime.jaxrs.QuarkusRestEndPointValidationInterceptor"));
+                    "io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveEndPointValidationInterceptor"));
+            additionalBeans.produce(new AdditionalBeanBuildItem(
+                    "io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveContextLocaleResolver"));
         }
 
         // A constraint validator with an injection point but no scope is added as @Singleton
@@ -348,7 +350,7 @@ class HibernateValidatorProcessor {
 
     @BuildStep
     ExceptionMapperBuildItem mapper() {
-        return new ExceptionMapperBuildItem(QuarkusRestViolationExceptionMapper.class.getName(),
+        return new ExceptionMapperBuildItem(ResteasyReactiveViolationExceptionMapper.class.getName(),
                 ValidationException.class.getName(), Priorities.USER + 1, true);
     }
 

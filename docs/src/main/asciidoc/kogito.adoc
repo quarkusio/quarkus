@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using Kogito to add business automation capabilities to an application
 
 include::./attributes.adoc[]
-:extension-status: preview
 
 This guide demonstrates how your Quarkus application can use Kogito to add business automation
 to power it up with business processes and rules.
@@ -15,8 +14,6 @@ Kogito is a next generation business automation toolkit that originates from wel
 Drools (for business rules) and jBPM (for business processes). Kogito aims at providing another approach
 to business automation where the main message is to expose your business knowledge (processes, rules and decisions)
 in a domain specific way.
-
-include::./status-include.adoc[]
 
 == Prerequisites
 

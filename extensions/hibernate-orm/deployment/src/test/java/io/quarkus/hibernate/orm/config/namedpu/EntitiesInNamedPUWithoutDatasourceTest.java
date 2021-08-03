@@ -20,11 +20,10 @@ public class EntitiesInNamedPUWithoutDatasourceTest {
                         .isInstanceOf(ConfigurationException.class)
                         .hasMessageContainingAll("Datasource must be defined for persistence unit 'pu-1'.");
             })
+            .withConfigurationResource("application-named-pu-no-datasource.properties")
             .overrideConfigKey("quarkus.datasource.devservices", "false")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(MyEntity.class.getPackage().getName())
-                    .addAsResource("application-named-pu-no-datasource.properties",
-                            "application.properties"));
+                    .addPackage(MyEntity.class.getPackage().getName()));
 
     @Test
     public void testInvalidConfiguration() {

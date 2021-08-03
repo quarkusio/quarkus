@@ -29,8 +29,8 @@ public class NoHibernatePropertiesTest {
             })
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(MyEntity.class)
-                    .addAsResource(new StringAsset(""), "hibernate.properties")
-                    .addAsResource("application.properties"))
+                    .addAsResource(new StringAsset(""), "hibernate.properties"))
+            .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.datasource.devservices", "false");
 
     @Test

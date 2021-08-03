@@ -12,9 +12,11 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +25,11 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import javax.ws.rs.core.HttpHeaders;
+import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.core.multipart.FormData;
 import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
@@ -201,6 +206,11 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public InputStream createInputStream() {
+        if (context.getBody() != null) {
+            byte[] data = new byte[context.getBody().length()];
+            context.getBody().getBytes(data);
+            return new ByteArrayInputStream(data);
+        }
         return new VertxInputStream(context, 10000, this);
     }
 
@@ -222,6 +232,11 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse setReadListener(ReadCallback callback) {
+        if (context.getBody() != null) {
+            callback.data(context.getBody().getByteBuf().nioBuffer());
+            callback.done();
+            return this;
+        }
         request.pause();
         if (continueState == ContinueState.REQUIRED) {
             continueState = ContinueState.SENT;
@@ -247,6 +262,25 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         });
         request.resume();
         return this;
+    }
+
+    @Override
+    public FormData getExistingParsedForm() {
+        if (context.fileUploads().isEmpty() && request.formAttributes().isEmpty()) {
+            return null;
+        }
+        FormData ret = new FormData(Integer.MAX_VALUE);
+        for (var i : context.fileUploads()) {
+            CaseInsensitiveMap<String> headers = new CaseInsensitiveMap<>();
+            if (i.contentType() != null) {
+                headers.add(HttpHeaders.CONTENT_TYPE, i.contentType());
+            }
+            ret.add(i.name(), Paths.get(i.uploadedFileName()), i.fileName(), headers);
+        }
+        for (var i : request.formAttributes()) {
+            ret.add(i.getKey(), i.getValue());
+        }
+        return ret;
     }
 
     @SuppressWarnings("unchecked")

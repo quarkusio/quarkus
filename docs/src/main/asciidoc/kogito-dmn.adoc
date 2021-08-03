@@ -1,0 +1,266 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Using Kogito DMN support to add decision automation capabilities to an application
+
+include::./attributes.adoc[]
+
+This guide demonstrates how your Quarkus application can use Kogito to add business automation
+and power it up with DMN decision support.
+
+Kogito is a next generation business automation toolkit that originates from well known Open Source projects
+Drools (for business rules) and jBPM (for business processes). Kogito aims at providing a newer approach
+to business automation where the main message is to expose your business knowledge (processes, rules, decisions, predictions)
+in a domain specific way.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE (VSCode is preferred, with the Red Hat DMN Editor VSCode Extension)
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
+* Docker
+
+=== DMN Editor
+
+Kogito Tooling is currently supported via VSCode, web browsers and on other platforms:
+
+* VSCode
++
+Download and install the https://marketplace.visualstudio.com/items?itemName=redhat.vscode-extension-dmn-editor[Red Hat DMN Editor VSCode Extension] to edit and model process definitions from VSCode IDE.
++
+
+* Online
++
+To avoid any modeler installation you can use directly use https://dmn.new[DMN.new] to author your DMN model through your favorite web browser.
++
+
+* Other platforms
++
+You can reference to https://kiegroup.github.io/kogito-online/#/download[Business Modeler Hub] to download the latest platforms supported for the https://github.com/kiegroup/kogito-tooling/releases[Kogito tooling releases].
++
+
+
+// leave the double space above
+== Architecture
+
+In this example, we build a very simple microservice which offers one REST endpoint:
+
+* `/pricing`
+
+This endpoint will be automatically generated based on the defined DMN model.
+
+=== Decision rules as a DMN model
+
+A DMN model is an open standard for visual and semantic execution of declarative logic; DMN allows you to externalise decision logic into reusable pieces that can be easily used in declarative way. There are multiple ways of writing rules other than DMN, like: decision tables, decision trees, rules, etc.
+
+For this example we focus on using the https://drools.org/learn/dmn.html[DMN (Decision Model and Notation)] open standard to describe the decision rules.
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the complete example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `kogito-dmn-quickstart` {quickstarts-tree-url}/kogito-dmn-quickstart[directory].
+
+== Creating the Maven Project
+
+First, we need a new project. Create a new project with the following command:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=kogito-dmn-quickstart \
+    -Dextensions="dmn" \
+    -DnoExamples
+cd kogito-dmn-quickstart
+----
+
+This command generates a Maven project, importing the `kogito-quarkus-decisions` extension
+that comes with all needed dependencies and configuration to equip your application
+with business automation.
+
+The `kogito-quarkus-decisions` is a specialized extension of the Kogito project focusing only on DMN support; if you want to 
+make use of the full capabilities offered by the Kogito platform, you can reference the generic Kogito extension of Quarkus.
+
+If you already have your Quarkus project configured, you can add the `kogito-quarkus-decisions` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="dmn"
+----
+
+or alternatively:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="kogito-quarkus-decisions"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.kie.kogito</groupId>
+    <artifactId>kogito-quarkus-decisions</artifactId>
+</dependency>
+----
+
+== Authoring the DMN model
+
+We will author a DMN model that will provide a base price quotation based on some criteria.
+Create a new file `pricing.dmn` inside the `src/main/resources/` directory of the generated project.
+
+This model should consist of:
+
+* `Age` (InputData element, of type `number`)
+* `Previous incidents?` (InputData element, of type `boolean`)
+* `Base price` (Decision element, of type `number`)
+
+And the Decision Requirement Graph (DRG) should look like:
+
+image:kogito-DMN-guide-screenshot-DRG.png[alt=DMN model definition]
+
+To get started quickly you may copy the DMN model definition file from the
+{quickstarts-tree-url}/kogito-quickstart/src/main/resources/pricing.dmn[quickstart]
+
+The decision logic for the `Base price` Decision node shall be a DMN Decision Table with the following entries:
+
+image:kogito-DMN-guide-screenshot-DT.png[alt=DMN Decision Table definition]
+
+To author the DMN model yourself, just follow these steps:
+
+* drag an InputData node from the palette, name it `Age` and assign it type `number` using the Properties panel.
+* drag an InputData node from the palette, name it `Previous incidents?` and assign it type `boolean` using the Properties panel.
+* drag a Decision node from the palette, name it `Base price` and assign it type `number` using the Properties panel.
+* establish an `InformationRequirement` edge from `Age` to `Base price` nodes, by using the node palette by mouse overing near the element in the graph.
+* establish an `InformationRequirement` edge from `Previous incidents?` to `Base price` nodes, by using the node palette by mouse overing near the element in the graph.
+* select the Edit decision logic option for the node `Base price`.
+** select Decision Table as the decision logic for the node.
+** create the relevant rules (rows) entries as per the above screenshot.
+* save the file
+
+For more information about DMN, you can reference the Kogito documentation at the links below.
+
+== Running and Using the Application
+
+=== Running in Developer Mode
+
+To run the microservice in dev mode, use `./mvnw clean quarkus:dev`.
+
+=== Running in JVM Mode
+
+When you're done playing with dev mode, you can run it as a standard Java application.
+
+First compile it:
+
+[source,bash]
+----
+./mvnw package
+----
+
+Then run it:
+
+[source,bash]
+----
+java -jar target/quarkus-app/quarkus-run.jar
+----
+
+=== Running in Native Mode
+
+This same demo can be compiled into native code: no modifications required.
+
+This implies that you no longer need to install a JVM on your
+production environment, as the runtime technology is included in
+the produced binary, and optimized to run with minimal resource overhead.
+
+Compilation will take a bit longer, so this step is disabled by default;
+let's build again by enabling the `native` profile:
+
+[source,bash]
+----
+./mvnw package -Dnative
+----
+
+Native compilation will always take some time to complete; then, you'll be able to run this binary directly:
+
+[source,bash]
+----
+./target/kogito-dmn-quickstart-1.0.0-SNAPSHOT-runner
+----
+
+== Testing the Application
+
+To test your final decision service application, just send a request to the endpoint by supplying as JSON
+payload the expected inputs:
+
+[source,bash]
+----
+curl -X POST 'http://localhost:8080/pricing' \
+-H 'Accept: application/json' \
+-H 'Content-Type: application/json' \
+-d '{ "Age": 47, "Previous incidents?": false }'
+----
+
+In the response, the `Base price` will be quoted -accordingly to the defined DMN model- for a total amount of `500`; this is visible in the response payload:
+
+[source,JSON]
+----
+{"Previous incidents?":false,"Age":47,"Base price":500}
+----
+
+== Using Test Scenario tool
+
+Kogito allows to define visually test scenarios, and execute them as JUnit tests as part of the normal build of the Quarkus application.
+
+To be able to use Test Scenario assets in your application, an additional dependency is required:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-scenario-simulation</artifactId>
+  <scope>test</scope>
+</dependency>
+----
+
+You can now create a `KogitoScenarioJunitActivatorTest.java` class file in the `src/test/java/testscenario` directory:
+[source,java]
+----
+package testscenario;
+@org.junit.runner.RunWith(org.kogito.scenariosimulation.runner.KogitoJunitActivator.class)
+public class KogitoScenarioJunitActivatorTest {
+}
+----
+
+This activator class is a custom JUnit runner that enables the execution of test scenario files in your application.
+
+You can now create a `PricingTest.scesim` file in the `src/test/resources` directory:
+
+image:kogito-DMN-guide-screenshot-scesim.png[alt=DMN Test scenario]
+
+The test scenarios will be run as part of the JUnit test suite.
+
+For more information about the Test Scenario tool, you can reference the Kogito documentation at the links below.
+
+== Where to go from here
+
+This was a minimal example using a DMN modeling; as you can see the Kogito framework allow to quickly define a decision logic using a visual and standard notation, such as DMN, and create a fully functioning microservice on top of Quarkus!
+
+To see additional capabilities of the Kogito platform, you can reference the Kogito documentation at the links below.
+This includes more detailed guides about integrating with Processes (BPMN2), Rules (Drools' DRL), Prediction (PMML), Test Scenario (visual notation for testing), assisted deployment to OpenShift, and many more.
+
+== References
+
+* https://kogito.kie.org[Kogito Website]
+* https://drools.org/learn/dmn.html[What is DMN]
+* https://docs.jboss.org/kogito/release/latest/html_single[Kogito Documentation]

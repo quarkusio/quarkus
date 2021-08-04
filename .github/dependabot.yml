@@ -121,6 +121,8 @@ updates:
       - dependency-name: org.apache.avro:*
       # gRPC
       - dependency-name: io.grpc:*
+      # jaeger
+      - dependency-name: io.jaegertracing:*
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/integration-tests/gradle"

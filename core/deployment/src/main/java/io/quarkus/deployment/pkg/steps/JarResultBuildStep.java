@@ -698,6 +698,21 @@ public class JarResultBuildStep {
 
         runnerJar.toFile().setReadable(true, false);
         Path initJar = buildDir.resolve(QUARKUS_RUN_JAR);
+        boolean mutableJar = packageConfig.type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR);
+        if (mutableJar) {
+            //we output the properties in a reproducible manner, so we remove the date comment
+            //and sort them
+            //we still use Properties to get the escaping right though, so basically we write out the lines
+            //to memory, split them, discard comments, sort them, then write them to disk
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            outputTargetBuildItem.getBuildSystemProperties().store(out, null);
+            List<String> lines = Arrays.stream(new String(out.toByteArray(), StandardCharsets.UTF_8).split("\n"))
+                    .filter(s -> !s.startsWith("#")).sorted().collect(Collectors.toList());
+            Path buildSystemProps = quarkus.resolve(BUILD_SYSTEM_PROPERTIES);
+            try (OutputStream fileOutput = Files.newOutputStream(buildSystemProps)) {
+                fileOutput.write(String.join("\n", lines).getBytes(StandardCharsets.UTF_8));
+            }
+        }
         if (!rebuild) {
             try (FileSystem runnerZipFs = ZipUtils.newZip(initJar)) {
                 AppArtifact appArtifact = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
@@ -707,10 +722,9 @@ public class JarResultBuildStep {
             }
 
             //now copy the deployment artifacts, if required
-            if (packageConfig.type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR)) {
+            if (mutableJar) {
 
                 Path deploymentLib = libDir.resolve(DEPLOYMENT_LIB);
-                Path buildSystemProps = quarkus.resolve(BUILD_SYSTEM_PROPERTIES);
                 Files.createDirectories(deploymentLib);
                 for (AppDependency appDep : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
                     copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, deploymentLib, baseLib, jars,
@@ -753,18 +767,6 @@ public class JarResultBuildStep {
                     }
                     obj.writeObject(paths);
                     obj.close();
-                }
-                //we output the properties in a reproducible manner, so we remove the date comment
-                //and sort them
-                //we still use Properties to get the escaping right though, so basically we write out the lines
-                //to memory, split them, discard comments, sort them, then write them to disk
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                outputTargetBuildItem.getBuildSystemProperties().store(out, null);
-                List<String> lines = Arrays.stream(new String(out.toByteArray(), StandardCharsets.UTF_8).split("\n"))
-                        .filter(s -> !s.startsWith("#")).sorted().collect(Collectors.toList());
-
-                try (OutputStream fileOutput = Files.newOutputStream(buildSystemProps)) {
-                    fileOutput.write(String.join("\n", lines).getBytes(StandardCharsets.UTF_8));
                 }
             }
 

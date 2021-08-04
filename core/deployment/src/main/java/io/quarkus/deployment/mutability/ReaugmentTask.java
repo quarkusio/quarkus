@@ -54,7 +54,7 @@ public class ReaugmentTask {
             }
 
             AppModel existingModel = appModel.getAppModel(appRoot);
-            System.setProperty("quarkus.package.type", "fast-jar");
+            System.setProperty("quarkus.package.type", "mutable-jar");
             try (CuratedApplication bootstrap = QuarkusBootstrap.builder()
                     .setAppArtifact(existingModel.getAppArtifact())
                     .setExistingModel(existingModel)

@@ -7,12 +7,14 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertO
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -61,6 +63,10 @@ import io.vertx.core.spi.resolver.ResolverProvider;
 
 @Recorder
 public class VertxCoreRecorder {
+
+    static {
+        System.setProperty("vertx.disableTCCL", "true");
+    }
 
     private static final Logger LOGGER = Logger.getLogger(VertxCoreRecorder.class.getName());
     public static final String VERTX_CACHE = "vertx-cache";
@@ -133,12 +139,8 @@ public class VertxCoreRecorder {
         //this is a best effort attempt to clean out the old TCCL from
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
 
-        EnhancedQueueExecutor executor = extractExecutor(devModeVertx);
-
-        final Thread[] runningThreads = executor.getRunningThreads();
-        for (Thread t : runningThreads) {
-            t.setContextClassLoader(cl);
-        }
+        resetExecutorsClassloaderContext(extractWorkerPool(devModeVertx), cl);
+        resetExecutorsClassloaderContext(extractInternalWorkerPool(devModeVertx), cl);
 
         EventLoopGroup group = ((VertxImpl) devModeVertx).getEventLoopGroup();
         for (EventExecutor i : group) {
@@ -154,13 +156,37 @@ public class VertxCoreRecorder {
 
     }
 
+    private WorkerPool extractInternalWorkerPool(Vertx devModeVertx) {
+        VertxImpl vertxImpl = (VertxImpl) devModeVertx;
+        final Object internalWorkerPool;
+        final Field field;
+        try {
+            field = VertxImpl.class.getDeclaredField("internalWorkerPool");
+            field.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            internalWorkerPool = field.get(vertxImpl);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+
+        return (WorkerPool) internalWorkerPool;
+    }
+
+    private WorkerPool extractWorkerPool(Vertx devModeVertx) {
+        final ContextInternal ctx = (ContextInternal) devModeVertx.getOrCreateContext();
+        return ctx.workerPool();
+    }
+
     /**
      * Extract the JBoss Threads EnhancedQueueExecutor from the Vertx instance
-     * this is messy as it needs to use reflection until Vertx can expose it.
+     * and reset all threads to use the given ClassLoader.
+     * This is messy as it needs to use reflection until Vertx can expose it:
+     * - https://github.com/eclipse-vertx/vert.x/pull/4029
      */
-    private EnhancedQueueExecutor extractExecutor(Vertx devModeVertx) {
-        final ContextInternal ctx = (ContextInternal) devModeVertx.getOrCreateContext();
-        final WorkerPool workerPool = ctx.workerPool();
+    private void resetExecutorsClassloaderContext(WorkerPool workerPool, ClassLoader cl) {
         final Method executorMethod;
         try {
             executorMethod = WorkerPool.class.getDeclaredMethod("executor");
@@ -175,7 +201,10 @@ public class VertxCoreRecorder {
             throw new RuntimeException(e);
         }
         EnhancedQueueExecutor executor = (EnhancedQueueExecutor) result;
-        return executor;
+        final Thread[] runningThreads = executor.getRunningThreads();
+        for (Thread t : runningThreads) {
+            t.setContextClassLoader(cl);
+        }
     }
 
     public IOThreadDetector detector() {
@@ -281,9 +310,13 @@ public class VertxCoreRecorder {
                 if (!tmp.mkdirs()) {
                     LOGGER.warnf("Unable to create Vert.x cache directory : %s", tmp.getAbsolutePath());
                 }
-                if (!(tmp.setReadable(true, false) && tmp.setWritable(true, false))) {
-                    LOGGER.warnf("Unable to make the Vert.x cache directory (%s) world readable and writable",
-                            tmp.getAbsolutePath());
+                String os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+                if (!os.contains("windows")) {
+                    // Do not execute the following on windows.
+                    if (!(tmp.setReadable(true, false) && tmp.setWritable(true, false))) {
+                        LOGGER.warnf("Unable to make the Vert.x cache directory (%s) world readable and writable",
+                                tmp.getAbsolutePath());
+                    }
                 }
             }
 

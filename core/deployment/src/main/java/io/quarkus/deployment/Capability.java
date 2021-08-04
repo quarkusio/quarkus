@@ -53,8 +53,11 @@ public interface Capability {
 
     String TIKA = QUARKUS_PREFIX + "tika";
 
+    String MONGODB_CLIENT = QUARKUS_PREFIX + "mongodb-client";
     String MONGODB_PANACHE = QUARKUS_PREFIX + "mongodb.panache";
     String MONGODB_PANACHE_KOTLIN = MONGODB_PANACHE + ".kotlin";
+
+    String ELASTICSEARCH_REST_HIGH_LEVEL_CLIENT = QUARKUS_PREFIX + "elasticsearch-rest-high-level-client";
 
     String FLYWAY = QUARKUS_PREFIX + "flyway";
     String LIQUIBASE = QUARKUS_PREFIX + "liquibase";

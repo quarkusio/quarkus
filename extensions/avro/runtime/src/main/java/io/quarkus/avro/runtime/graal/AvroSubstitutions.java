@@ -1,4 +1,4 @@
-package io.quarkus.avro.graal;
+package io.quarkus.avro.runtime.graal;
 
 import java.lang.reflect.Constructor;
 import java.util.HashMap;

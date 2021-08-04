@@ -1,6 +1,5 @@
 {#include main fluid=true}
 {#title}Keycloak{/title}
-
 {#script}
 
 {#if info:oidcApplicationType is 'service'}
@@ -8,6 +7,7 @@
     var accessToken;
     var idToken;
     var loggedIn = false;
+    var userName;
 
     $( document ).ready(function() {
 
@@ -18,8 +18,10 @@
             var hash = window.location.hash;
             accessToken = hash.match(/access_token=([^&]+)/)[1];
             idToken = hash.match(/id_token=([^&]+)/)[1];
-            $('#accessTokenArea').text(accessToken);
-            $('#idTokenArea').text(idToken);
+            $('#accessTokenEncodedArea').html(prettyToken(accessToken));
+            $('#accessTokenDecodedArea').html(decodeToken(accessToken));
+            $('#idTokenEncodedArea').html(prettyToken(idToken));
+            $('#idTokenDecodedArea').html(decodeToken(idToken));
         }else if(codeInUrl()){
             loggedIn === true;
             $('.implicitLoggedOut').hide();
@@ -33,8 +35,11 @@
             $('.implicitLoggedIn').hide();
             accessToken = null;
             idToken = null;
-            $('#accessTokenArea').text('');
-            $('#idTokenArea').text('');
+            userName = null;
+            $('#accessTokenEncodedArea').text('');
+            $('#accessTokenDecodedArea').text('');
+            $('#idTokenEncodedArea').text('');
+            $('#idTokenDecodedArea').text('');
 
         }
     });
@@ -151,9 +156,50 @@
                 var tokens = JSON.parse(data);
                 accessToken = tokens.access_token
                 idToken = tokens.id_token
-                $('#accessTokenArea').text(accessToken);
-                $('#idTokenArea').text(idToken);
+                $('#accessTokenEncodedArea').html(prettyToken(accessToken));
+                $('#accessTokenDecodedArea').html(decodeToken(accessToken));
+                $('#idTokenEncodedArea').html(prettyToken(idToken));
+                $('#idTokenDecodedArea').html(decodeToken(idToken));
             });
+    }
+    
+    function decodeToken(token) {
+        var parts = token.split(".");
+        if (parts.length == 3) {
+            var headers = window.atob(parts[0]);
+            var payload = window.atob(parts[1]);
+            var jsonPayload = JSON.parse(payload);
+            if (!userName) {
+                if (jsonPayload.upn) {
+                    userName = jsonPayload.upn;
+                } else if (jsonPayload.preferred_username) {
+                    userName = jsonPayload.preferred_username;
+                }
+                if (userName) {
+                    $('#loggedInUser').append("<i class='fas fa-lock fa-xs'></i> Logged in as " + userName);
+                }
+            }
+            return "<pre class='text-danger' title='Header'>" + 
+                    JSON.stringify(JSON.parse(headers), null, 4) + 
+                    "</pre><pre class='text-success' title='Payload'>" + 
+                    JSON.stringify(jsonPayload,null,4) + "</pre><span class='text-primary' title='Signature'>" + 
+                    parts[2] + "</span>";
+        } else {
+          return token;
+        }
+    }
+    
+    function prettyToken(token){
+        var parts = token.split(".");
+        if (parts.length == 3) {
+          var headers = parts[0];
+          var payload = parts[1];
+          var signature = parts[2];
+          
+          return "<span class='text-danger' title='Header'>" + parts[0] + "</span>.<span class='text-success' title='Payload'>" + parts[1] + "</span>.<span class='text-primary' title='Signature'>" + parts[2] + "</span>";
+        } else {
+          return token;
+        }
     }
     
     {/if}
@@ -241,42 +287,77 @@ function signInToService(servicePath) {
                     Your tokens
                 </div>
                 <div class="float-right">
-                    <a onclick="logout();" class="btn btn-link" title="Click to logout and start again">
-                        <i class="fas fa-lock fa-xs"></i> Logged in
+                    <a id="loggedInUser" onclick="logout();" class="btn btn-link" title="Click to logout and start again">
+                        
                     </a>
                 </div>
             </div>
-            <div class="card-body">
-                <a class="btn btn-link shadow-none" data-toggle="collapse" href="#collapseAccessToken" role="button" aria-expanded="false" aria-controls="collapseAccessToken">
-                    View Access Token
-                </a>
+            <div class="card-body mx-0 px-0">
+                <div class="clearfix">
+                    <a class="btn btn-link shadow-none float-left" data-toggle="collapse" href="#collapseAccessToken" role="button" aria-expanded="false" aria-controls="collapseAccessToken">
+                        View Access Token
+                    </a>
+                    <a class="btn btn-link shadow-none text-secondary float-right" title="Copy to clipboard" onclick="accessTokenToClipboard();">
+                        <i class="fas fa-clipboard"></i>
+                    </a>
+                </div>
+                
                 <div class="collapse" id="collapseAccessToken">
-                    <div class="card card-body bg-dark">
-                        <p id="accessTokenArea" class="text-light text-monospace user-select-all">
+                    <div class="card card-body bg-dark border-0 m-0 p-0">
+                        <div class="card-group border-0 m-0 p-0">
+                            <div class="card border-0 m-0">
+                                <div class="card-body bg-dark">
+                                    <h5 class="card-title text-light">Encoded</h5>
+                                    <p id="accessTokenEncodedArea" class="text-wrap text-break bg-dark text-light text-monospace user-select-all mp-0">
 
-                        </p>
-                        <a class="btn btn-link shadow-none text-right text-secondary" title="Copy to clipboard" onclick="accessTokenToClipboard();">
-                            <i class="fas fa-clipboard"></i>
-                        </a>
+                                    </p>
+                                  </div>
+                            </div>
+                            <div class="card border-0 m-0">
+                                <div class="card-body bg-dark">
+                                    <h5 class="card-title text-light">Decoded</h5>
+                                    <p id="accessTokenDecodedArea" class="text-wrap bg-dark text-light text-monospace user-select-auto mp-0">
 
+                                    </p>
+                                </div>
+                            </div>
+                        
+                        </div>
                     </div>
                 </div>
                 <br/>
 
-                <a class="btn btn-link shadow-none" data-toggle="collapse" href="#collapseIdToken" role="button" aria-expanded="false" aria-controls="collapseIdToken">
-                    View ID Token
-                </a>
+                <div class="clearfix">
+                    <a class="btn btn-link shadow-none float-left" data-toggle="collapse" href="#collapseIdToken" role="button" aria-expanded="false" aria-controls="collapseIdToken">
+                        View ID Token
+                    </a>
+                    <a class="btn btn-link shadow-none text-secondary float-right" title="Copy to clipboard" onclick="idTokenToClipboard();">
+                        <i class="fas fa-clipboard"></i>
+                    </a>
+                </div>
+                
                 <div class="collapse" id="collapseIdToken">
-                    <div class="card card-body bg-dark">
-                        <p id="idTokenArea" class="text-light text-monospace user-select-all">
+                    <div class="card card-body bg-dark border-0 m-0 p-0">
+                        <div class="card-group border-0 m-0 p-0">
+                            <div class="card border-0 m-0">
+                                <div class="card-body bg-dark">
+                                    <h5 class="card-title text-light">Encoded</h5>
+                                    <p id="idTokenEncodedArea" class="text-wrap text-break bg-dark text-light text-monospace user-select-all mp-0">
 
-                        </p>
+                                    </p>
+                                  </div>
+                            </div>
+                            <div class="card border-0 m-0">
+                                <div class="card-body bg-dark">
+                                    <h5 class="card-title text-light">Decoded</h5>
+                                    <p id="idTokenDecodedArea" class="text-wrap bg-dark text-light text-monospace user-select-auto mp-0">
 
-                        <a class="btn btn-link shadow-none text-right text-secondary" title="Copy to clipboard" onclick="idTokenToClipboard();">
-                            <i class="fas fa-clipboard"></i>
-                        </a>
+                                    </p>
+                                </div>
+                            </div>
+                        
+                        </div>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -285,7 +366,7 @@ function signInToService(servicePath) {
             <div class="card-header">
                 Test your service
             </div>
-            <div class="card-body">
+            <div class="card-body border-0">
                 <div class="row">
                     <div class="col-2">
                         <label for="servicePath">Service Path</label>

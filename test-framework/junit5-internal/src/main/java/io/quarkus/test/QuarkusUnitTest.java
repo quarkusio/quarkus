@@ -568,6 +568,7 @@ public class QuarkusUnitTest
         }
         rootLogger.setHandlers(originalHandlers);
         inMemoryLogHandler.clearRecords();
+        inMemoryLogHandler.setFilter(null);
 
         try {
             if (runningQuarkusApplication != null) {
@@ -587,6 +588,7 @@ public class QuarkusUnitTest
             originalClassLoader = null;
             timeoutTask.cancel();
             timeoutTask = null;
+            timeoutTimer.cancel();
             timeoutTimer = null;
             if (deploymentDir != null) {
                 FileUtil.deleteDirectory(deploymentDir);

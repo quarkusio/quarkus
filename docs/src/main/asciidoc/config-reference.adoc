@@ -125,7 +125,7 @@ Quarkus provides additional extensions which cover other configuration formats a
 * xref:consul-config.adoc[Consul]
 * xref:spring-cloud-config-client.adoc[Spring Cloud]
 
-TIP: It is also possible to create a xref:config-custom.adoc#custom-config-source[Custom Config Source].
+TIP: It is also possible to create a xref:config-extending-support.adoc#custom-config-source[Custom Config Source].
 
 == Inject
 

@@ -171,6 +171,10 @@ public class DataSources {
         if (dataSourceSupport.disableSslSupport) {
             agroalConnectionConfigurer.disableSslSupport(resolvedDbKind, dataSourceConfiguration);
         }
+        //we use a custom cache for two reasons:
+        //fast thread local cache should be faster
+        //and it prevents a thread local leak
+        dataSourceConfiguration.connectionPoolConfiguration().connectionCache(new QuarkusConnectionCache());
 
         agroalConnectionConfigurer.setExceptionSorter(resolvedDbKind, dataSourceConfiguration);
 
@@ -362,4 +366,5 @@ public class DataSources {
             }
         }
     }
+
 }

@@ -1252,15 +1252,16 @@ The full set of types supported by the serializer/deserializer autodetection is:
 * `io.vertx.core.buffer.Buffer`
 * `io.vertx.core.json.JsonObject`
 * `io.vertx.core.json.JsonArray`
-* classes generated from Avro schemas, if Confluent or Apicurio _serde_ is present
-** see link:kafka-schema-registry-avro[Using Apache Kafka with Schema Registry and Avro] for more information about using Confluent or Apicurio libraries
+* classes generated from Avro schemas, as well as Avro `GenericRecord`, if Confluent or Apicurio Registry _serde_ is present
+** see link:kafka-schema-registry-avro[Using Apache Kafka with Schema Registry and Avro] for more information about using Confluent or Apicurio Registry libraries
 * classes for which a subclass of `ObjectMapperSerializer` / `ObjectMapperDeserializer` is present, as described in <<jackson-serialization>>
 ** it is technically not needed to subclass `ObjectMapperSerializer`, but in such case, autodetection isn't possible
 * classes for which a subclass of `JsonbSerializer` / `JsonbDeserializer` is present, as described in <<jsonb-serialization>>
 ** it is technically not needed to subclass `JsonbSerializer`, but in such case, autodetection isn't possible
 
-In case you have any issues with serializer autodetection, you can switch it off completely by setting `quarkus.reactive-messaging.kafka.serializer-autodetection.enabled=false`.
 If a serializer/deserializer is set by configuration, it won't be replaced by the autodetection.
+
+In case you have any issues with serializer autodetection, you can switch it off completely by setting `quarkus.reactive-messaging.kafka.serializer-autodetection.enabled=false`.
 If you find you need to do this, please file a bug in the link:https://github.com/quarkusio/quarkus/issues[Quarkus issue tracker] so we can fix whatever problem you have.
 
 == Using Schema Registry

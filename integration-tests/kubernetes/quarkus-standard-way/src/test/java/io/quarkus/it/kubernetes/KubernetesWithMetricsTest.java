@@ -7,7 +7,6 @@ import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -35,8 +34,9 @@ public class KubernetesWithMetricsTest {
             .setLogFileName("k8s.log")
             .withConfigurationResource("kubernetes-with-metrics.properties")
             .setForcedDependencies(
-                    Collections.singletonList(
-                            new AppArtifact("io.quarkus", "quarkus-smallrye-metrics", Version.getVersion())));
+                    List.of(
+                            new AppArtifact("io.quarkus", "quarkus-smallrye-metrics", Version.getVersion()),
+                            new AppArtifact("io.quarkus", "quarkus-kubernetes-client", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -64,20 +64,40 @@ public class KubernetesWithMetricsTest {
                 .isDirectoryContaining(p -> p.getFileName().endsWith("kubernetes.yml"));
         List<HasMetadata> kubernetesList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
-        assertThat(kubernetesList.get(0)).isInstanceOfSatisfying(Deployment.class, d -> {
-            assertThat(d.getMetadata()).satisfies(m -> {
-                assertThat(m.getName()).isEqualTo("metrics");
-            });
 
-            assertThat(d.getSpec()).satisfies(deploymentSpec -> {
-                assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
-                    assertThat(t.getMetadata()).satisfies(meta -> {
-                        assertThat(meta.getAnnotations()).contains(entry("prometheus.io/scrape", "true"),
-                                entry("prometheus.io/path", "/q/metrics"), entry("prometheus.io/port", "9090"),
-                                entry("prometheus.io/scheme", "http"));
+        assertThat(kubernetesList).filteredOn(h -> "Deployment".equals(h.getKind())).singleElement()
+                .isInstanceOfSatisfying(Deployment.class, d -> {
+                    assertThat(d.getMetadata()).satisfies(m -> assertThat(m.getName()).isEqualTo("metrics"));
+
+                    assertThat(d.getSpec()).satisfies(deploymentSpec -> {
+                        assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
+                            assertThat(t.getMetadata()).satisfies(meta -> {
+                                assertThat(meta.getAnnotations()).contains(entry("prometheus.io/scrape", "true"),
+                                        entry("prometheus.io/path", "/q/metrics"), entry("prometheus.io/port", "9090"),
+                                        entry("prometheus.io/scheme", "http"));
+                            });
+                        });
                     });
                 });
-            });
+
+        assertThat(kubernetesList).filteredOn(h -> "Service".equals(h.getKind())).singleElement().satisfies(h -> {
+            assertThat(h.getMetadata().getAnnotations()).contains(entry("prometheus.io/scrape", "true"),
+                    entry("prometheus.io/path", "/q/metrics"), entry("prometheus.io/port", "9090"),
+                    entry("prometheus.io/scheme", "http"));
+        });
+
+        assertThat(kubernetesList).filteredOn(h -> "ServiceAccount".equals(h.getKind())).singleElement().satisfies(h -> {
+            if (h.getMetadata().getAnnotations() != null) {
+                assertThat(h.getMetadata().getAnnotations()).doesNotContainKeys("prometheus.io/scrape", "prometheus.io/path",
+                        "prometheus.io/port", "prometheus.io/scheme");
+            }
+        });
+
+        assertThat(kubernetesList).filteredOn(h -> "RoleBinding".equals(h.getKind())).singleElement().satisfies(h -> {
+            if (h.getMetadata().getAnnotations() != null) {
+                assertThat(h.getMetadata().getAnnotations()).doesNotContainKeys("prometheus.io/scrape", "prometheus.io/path",
+                        "prometheus.io/port", "prometheus.io/scheme");
+            }
         });
     }
 

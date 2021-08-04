@@ -1,5 +1,6 @@
 package io.quarkus.bootstrap.classloading;
 
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
@@ -14,6 +15,7 @@ public final class ClassLoaderLimiter implements ClassLoaderEventListener {
 
     private final Set<String> vetoedResources;
     private final Set<String> vetoedClasses;
+    private final Set<String> vetoedRuntimeClasses;
     private final Set<String> atMostOnceResources;
     private final Set<String> onHitPrintStacktrace;
     private final boolean traceAllResourceLoad;
@@ -21,6 +23,7 @@ public final class ClassLoaderLimiter implements ClassLoaderEventListener {
     private ClassLoaderLimiter(Builder builder) {
         vetoedClasses = builder.vetoedClasses;
         vetoedResources = builder.vetoedResources;
+        vetoedRuntimeClasses = builder.vetoedRuntimeClasses;
         atMostOnceResources = builder.atMostOnceResources;
         onHitPrintStacktrace = builder.onHitPrintStacktrace;
         traceAllResourceLoad = builder.traceAllResourceLoad;
@@ -67,6 +70,9 @@ public final class ClassLoaderLimiter implements ClassLoaderEventListener {
         if (vetoedClasses.contains(className)) {
             throw new IllegalStateException(
                     "Attempted to load vetoed class '" + className + "' from classloader " + classLoaderName);
+        } else if (vetoedRuntimeClasses.contains(className) && classLoaderName.toLowerCase(Locale.ROOT).contains("runtime")) {
+            throw new IllegalStateException(
+                    "Attempted to load vetoed class '" + className + "' from classloader " + classLoaderName);
         }
     }
 
@@ -77,6 +83,7 @@ public final class ClassLoaderLimiter implements ClassLoaderEventListener {
     public static class Builder {
         private final Set<String> vetoedResources = new TreeSet<>();
         private final Set<String> vetoedClasses = new TreeSet<>();
+        private final Set<String> vetoedRuntimeClasses = new TreeSet<>();
         private final Set<String> atMostOnceResources = new TreeSet<>();
         private final Set<String> onHitPrintStacktrace = new TreeSet<>();
         private boolean traceAllResourceLoad = false;
@@ -129,6 +136,30 @@ public final class ClassLoaderLimiter implements ClassLoaderEventListener {
         public Builder neverLoadedClassName(String vetoedClassName) {
             Objects.requireNonNull(vetoedClassName);
             final boolean add = vetoedClasses.add(vetoedClassName);
+            if (!add)
+                throw new ClassLoaderLimiterConsistencyException(
+                        "never loaded class listed multiple times: " + vetoedClassName);
+            return this;
+        }
+
+        /**
+         * List a fully qualified class name as one that you don't expect to be loaded at runtime.
+         * If there is an attempt of loading the matched class, a runtime exception will be thrown instead:
+         * useful for running integration tests to verify your assumptions.
+         *
+         * DO NOT list the name by doing using <code>literal.class.getName()</code> as this will implicitly get you
+         * to load the class during the test, and produce a failure.
+         *
+         * Limitations: if the class is being loaded using the bootstrap classloader we
+         * can't check it. Most Quarkus extensions and frameworks will not use the bootstrap classloader,
+         * but some code could make use of it explicitly.
+         *
+         * @param vetoedClassName the fully qualified class name
+         * @return this, for method chaining.
+         */
+        public Builder neverLoadedRuntimeClassName(String vetoedClassName) {
+            Objects.requireNonNull(vetoedClassName);
+            final boolean add = vetoedRuntimeClasses.add(vetoedClassName);
             if (!add)
                 throw new ClassLoaderLimiterConsistencyException(
                         "never loaded class listed multiple times: " + vetoedClassName);

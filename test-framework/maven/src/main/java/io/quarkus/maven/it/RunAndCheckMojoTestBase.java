@@ -25,6 +25,10 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
 
     @AfterEach
     public void cleanup() throws IOException {
+        shutdownTheApp();
+    }
+
+    public void shutdownTheApp() {
         if (running != null) {
             running.stop();
         }

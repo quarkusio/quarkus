@@ -51,6 +51,7 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceInterceptorsContributorBuildItem;
@@ -99,6 +100,7 @@ public class ResteasyReactiveScanningProcessor {
     public ExceptionMappersBuildItem scanForExceptionMappers(CombinedIndexBuildItem combinedIndexBuildItem,
             ApplicationResultBuildItem applicationResultBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<ExceptionMapperBuildItem> mappers, Capabilities capabilities) {
         AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
         ExceptionMapping exceptions = ResteasyReactiveExceptionMappingScanner
@@ -118,6 +120,9 @@ public class ResteasyReactiveScanningProcessor {
         for (ExceptionMapperBuildItem additionalExceptionMapper : mappers) {
             if (additionalExceptionMapper.isRegisterAsBean()) {
                 beanBuilder.addBeanClass(additionalExceptionMapper.getClassName());
+            } else {
+                reflectiveClassBuildItemBuildProducer
+                        .produce(new ReflectiveClassBuildItem(true, false, false, additionalExceptionMapper.getClassName()));
             }
             int priority = Priorities.USER;
             if (additionalExceptionMapper.getPriority() != null) {
@@ -141,6 +146,7 @@ public class ResteasyReactiveScanningProcessor {
     @BuildStep
     public ParamConverterProvidersBuildItem scanForParamConverters(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             ApplicationResultBuildItem applicationResultBuildItem,
             List<ParamConverterBuildItem> paramConverterBuildItems) {
 
@@ -153,6 +159,9 @@ public class ResteasyReactiveScanningProcessor {
         for (ParamConverterBuildItem additionalParamConverter : paramConverterBuildItems) {
             if (additionalParamConverter.isRegisterAsBean()) {
                 beanBuilder.addBeanClass(additionalParamConverter.getClassName());
+            } else {
+                reflectiveClassBuildItemBuildProducer
+                        .produce(new ReflectiveClassBuildItem(true, false, false, additionalParamConverter.getClassName()));
             }
             int priority = Priorities.USER;
             if (additionalParamConverter.getPriority() != null) {
@@ -197,6 +206,7 @@ public class ResteasyReactiveScanningProcessor {
     public ContextResolversBuildItem scanForContextResolvers(CombinedIndexBuildItem combinedIndexBuildItem,
             ApplicationResultBuildItem applicationResultBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<ContextResolverBuildItem> additionalResolvers) {
         IndexView index = combinedIndexBuildItem.getComputingIndex();
         AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
@@ -210,6 +220,9 @@ public class ResteasyReactiveScanningProcessor {
         for (ContextResolverBuildItem i : additionalResolvers) {
             if (i.isRegisterAsBean()) {
                 beanBuilder.addBeanClass(i.getClassName());
+            } else {
+                reflectiveClassBuildItemBuildProducer
+                        .produce(new ReflectiveClassBuildItem(true, false, false, i.getClassName()));
             }
             ResourceContextResolver resolver = new ResourceContextResolver();
             resolver.setClassName(i.getClassName());

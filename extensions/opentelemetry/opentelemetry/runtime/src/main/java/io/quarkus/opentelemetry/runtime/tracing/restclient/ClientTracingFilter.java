@@ -1,6 +1,7 @@
 package io.quarkus.opentelemetry.runtime.tracing.restclient;
 
 import java.io.IOException;
+import java.net.URI;
 
 import javax.annotation.Priority;
 import javax.ws.rs.Priorities;
@@ -44,7 +45,7 @@ public class ClientTracingFilter implements ClientRequestFilter, ClientResponseF
 
         // Add attributes
         builder.setAttribute(SemanticAttributes.HTTP_METHOD, requestContext.getMethod());
-        builder.setAttribute(SemanticAttributes.HTTP_URL, requestContext.getUri().toString());
+        builder.setAttribute(SemanticAttributes.HTTP_URL, filterUserInfo(requestContext.getUri().toString()));
 
         final Span clientSpan = builder.startSpan();
 
@@ -52,6 +53,14 @@ public class ClientTracingFilter implements ClientRequestFilter, ClientResponseF
         requestContext.setProperty(SCOPE_KEY, clientSpan.makeCurrent());
 
         TEXT_MAP_PROPAGATOR.inject(Context.current(), requestContext.getHeaders(), SETTER);
+    }
+
+    String filterUserInfo(String httpUrl) {
+        if (httpUrl.contains("@")) {
+            URI uri = URI.create(httpUrl);
+            httpUrl = httpUrl.replace(uri.getUserInfo() + "@", "");
+        }
+        return httpUrl;
     }
 
     private String getSpanName(ClientRequestContext requestContext) {

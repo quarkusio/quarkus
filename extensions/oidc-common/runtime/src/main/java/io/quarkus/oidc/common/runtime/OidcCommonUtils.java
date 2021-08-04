@@ -1,10 +1,14 @@
 package io.quarkus.oidc.common.runtime;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.PrivateKey;
@@ -35,6 +39,7 @@ import io.smallrye.jwt.util.ResourceUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.ProxyOptions;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.buffer.Buffer;
@@ -119,6 +124,23 @@ public class OidcCommonUtils {
         if (trustAll) {
             options.setTrustAll(true);
             options.setVerifyHost(false);
+        } else if (oidcConfig.tls.trustStoreFile.isPresent()) {
+            try {
+                byte[] trustStoreData = getFileContent(oidcConfig.tls.trustStoreFile.get());
+                io.vertx.core.net.KeyStoreOptions trustStoreOptions = new KeyStoreOptions()
+                        .setPassword(oidcConfig.tls.getTrustStorePassword().orElse("password"))
+                        .setAlias(oidcConfig.tls.getTrustStoreCertAlias().orElse(null))
+                        .setValue(io.vertx.core.buffer.Buffer.buffer(trustStoreData))
+                        .setType("JKS");
+                options.setTrustOptions(trustStoreOptions);
+                if (Verification.CERTIFICATE_VALIDATION == oidcConfig.tls.verification.orElse(Verification.REQUIRED)) {
+                    options.setVerifyHost(false);
+                }
+            } catch (IOException ex) {
+                throw new ConfigurationException(String.format(
+                        "OIDC truststore file does not exist or can not be read",
+                        oidcConfig.tls.trustStoreFile.get().toString()), ex);
+            }
         }
         Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.getProxy());
         if (proxyOpt.isPresent()) {
@@ -318,5 +340,30 @@ public class OidcCommonUtils {
                 .withBackOff(CONNECTION_BACKOFF_DURATION, CONNECTION_BACKOFF_DURATION)
                 .expireIn(connectionDelayInMillisecs)
                 .onFailure().transform(t -> t.getCause());
+    }
+
+    private static byte[] getFileContent(Path path) throws IOException {
+        byte[] data;
+        final InputStream resource = Thread.currentThread().getContextClassLoader().getResourceAsStream(path.toString());
+        if (resource != null) {
+            try (InputStream is = resource) {
+                data = doRead(is);
+            }
+        } else {
+            try (InputStream is = Files.newInputStream(path)) {
+                data = doRead(is);
+            }
+        }
+        return data;
+    }
+
+    private static byte[] doRead(InputStream is) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] buf = new byte[1024];
+        int r;
+        while ((r = is.read(buf)) > 0) {
+            out.write(buf, 0, r);
+        }
+        return out.toByteArray();
     }
 }

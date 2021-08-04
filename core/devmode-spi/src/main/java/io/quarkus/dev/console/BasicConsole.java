@@ -156,4 +156,9 @@ public class BasicConsole extends QuarkusConsole {
         write(new String(buf, off, len, StandardCharsets.UTF_8));
     }
 
+    @Override
+    public boolean isInputSupported() {
+        return inputSupport;
+    }
+
 }

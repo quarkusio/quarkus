@@ -12,6 +12,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.dev.testing.TestClassResult;
 import io.quarkus.deployment.dev.testing.TestListenerBuildItem;
 import io.quarkus.deployment.dev.testing.TestRunResults;
@@ -45,6 +46,7 @@ public class TestsProcessor {
             DevConsoleRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
+            ShutdownContextBuildItem shutdownContextBuildItem,
             BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
             BuildProducer<TestListenerBuildItem> testListenerBuildItemBuildProducer) throws IOException {
         DevModeType devModeType = launchModeBuildItem.getDevModeType().orElse(null);
@@ -56,7 +58,7 @@ public class TestsProcessor {
             // Add continuous testing
             routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .route("dev/test")
-                    .handler(recorder.continousTestHandler())
+                    .handler(recorder.continousTestHandler(shutdownContextBuildItem))
                     .build());
             testListenerBuildItemBuildProducer.produce(new TestListenerBuildItem(new ContinuousTestingWebSocketListener()));
         }

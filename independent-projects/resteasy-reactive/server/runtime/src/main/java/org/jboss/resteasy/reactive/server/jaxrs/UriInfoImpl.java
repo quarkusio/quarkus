@@ -18,6 +18,7 @@ import org.jboss.resteasy.reactive.common.util.UnmodifiableMultivaluedMap;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.UriMatch;
+import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 
 /**
@@ -138,8 +139,11 @@ public class UriInfoImpl implements UriInfo {
             throw encodedNotSupported();
         if (pathParams == null) {
             pathParams = new QuarkusMultivaluedHashMap<>();
-            for (Entry<String, Integer> pathParam : currentRequest.getTarget().getPathParameterIndexes().entrySet()) {
-                pathParams.add(pathParam.getKey(), currentRequest.getPathParam(pathParam.getValue()));
+            RuntimeResource target = currentRequest.getTarget();
+            if (target != null) { // a target can be null if this happens in a filter that runs before the target is set
+                for (Entry<String, Integer> pathParam : target.getPathParameterIndexes().entrySet()) {
+                    pathParams.add(pathParam.getKey(), currentRequest.getPathParam(pathParam.getValue()));
+                }
             }
         }
         return new UnmodifiableMultivaluedMap<>(pathParams);

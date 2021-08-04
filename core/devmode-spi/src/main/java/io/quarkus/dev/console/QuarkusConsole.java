@@ -100,4 +100,7 @@ public abstract class QuarkusConsole {
         this.outputFilter = logHandler;
     }
 
+    public boolean isInputSupported() {
+        return true;
+    }
 }

@@ -104,7 +104,7 @@ public class MicrometerRecorder {
         }
 
         // Base JVM Metrics
-        if (config.binder.jvm) {
+        if (config.checkBinderEnabledWithDefault(() -> config.binder.jvm)) {
             new ClassLoaderMetrics().bindTo(Metrics.globalRegistry);
             new JvmHeapPressureMetrics().bindTo(Metrics.globalRegistry);
             new JvmMemoryMetrics().bindTo(Metrics.globalRegistry);
@@ -115,8 +115,8 @@ public class MicrometerRecorder {
             }
         }
 
-        // System
-        if (config.binder.system) {
+        // System metrics
+        if (config.checkBinderEnabledWithDefault(() -> config.binder.system)) {
             new UptimeMetrics().bindTo(Metrics.globalRegistry);
             new ProcessorMetrics().bindTo(Metrics.globalRegistry);
             new FileDescriptorMetrics().bindTo(Metrics.globalRegistry);

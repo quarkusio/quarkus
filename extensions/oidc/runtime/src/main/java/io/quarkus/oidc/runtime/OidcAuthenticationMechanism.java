@@ -9,6 +9,7 @@ import javax.inject.Inject;
 
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
@@ -79,6 +80,6 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     public HttpCredentialTransport getCredentialTransport() {
         //not 100% correct, but enough for now
         //if OIDC is present we don't really want another bearer mechanism
-        return new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, "bearer");
+        return new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, OidcConstants.BEARER_SCHEME);
     }
 }

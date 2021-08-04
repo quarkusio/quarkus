@@ -77,6 +77,8 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 public class KubernetesCommonHelper {
 
     private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
+    private static final String[] PROMETHEUS_ANNOTATION_TARGETS = { "Service",
+            "Deployment", "DeploymentConfig" };
 
     public static Optional<Project> createProject(ApplicationInfoBuildItem app,
             Optional<CustomProjectRootBuildItem> customProjectRoot, OutputTargetBuildItem outputTarget,
@@ -440,13 +442,16 @@ public class KubernetesCommonHelper {
                 String prefix = config.getPrometheusConfig().prefix;
                 if (!ports.isEmpty() && path != null) {
                     result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
-                            config.getPrometheusConfig().scrape.orElse(prefix + "/scrape"), "true")));
+                            config.getPrometheusConfig().scrape.orElse(prefix + "/scrape"), "true",
+                            PROMETHEUS_ANNOTATION_TARGETS)));
                     result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
-                            config.getPrometheusConfig().path.orElse(prefix + "/path"), path)));
+                            config.getPrometheusConfig().path.orElse(prefix + "/path"), path, PROMETHEUS_ANNOTATION_TARGETS)));
                     result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
-                            config.getPrometheusConfig().port.orElse(prefix + "/port"), "" + ports.get(0).getPort())));
+                            config.getPrometheusConfig().port.orElse(prefix + "/port"), "" + ports.get(0).getPort(),
+                            PROMETHEUS_ANNOTATION_TARGETS)));
                     result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
-                            config.getPrometheusConfig().scheme.orElse(prefix + "/scheme"), "http")));
+                            config.getPrometheusConfig().scheme.orElse(prefix + "/scheme"), "http",
+                            PROMETHEUS_ANNOTATION_TARGETS)));
                 }
             });
         }

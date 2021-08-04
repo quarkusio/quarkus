@@ -144,6 +144,13 @@ public class OidcProvider {
     }
 
     public Uni<TokenVerificationResult> introspectToken(String token) {
+        if (client.getMetadata().getIntrospectionUri() == null) {
+            LOG.debugf(
+                    "Token issued to client %s can not be introspected because the introspection endpoint address is unknown - "
+                            + "please check if your OpenId Connect Provider supports the token introspection",
+                    oidcConfig.clientId.get());
+            throw new AuthenticationFailedException();
+        }
         return client.introspectToken(token).onItemOrFailure()
                 .transform(new BiFunction<TokenIntrospection, Throwable, TokenVerificationResult>() {
 

@@ -12,17 +12,17 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
 
     @Override
     public void handle(RestClientRequestContext context) throws Exception {
-        context.getResult().complete(mapToResponse(context));
+        context.getResult().complete(mapToResponse(context, true));
     }
 
-    public static ResponseImpl mapToResponse(RestClientRequestContext context)
+    public static ResponseImpl mapToResponse(RestClientRequestContext context, boolean parseContent)
             throws IOException {
         ClientResponseContextImpl responseContext = context.getOrCreateClientResponseContext();
         ClientResponseBuilderImpl builder = new ClientResponseBuilderImpl();
         builder.status(responseContext.getStatus(), responseContext.getReasonPhrase());
         builder.setAllHeaders(responseContext.getHeaders());
         builder.invocationState(context);
-        if (context.isResponseTypeSpecified()) { // this case means that a specific response type was requested
+        if (context.isResponseTypeSpecified() && parseContent) { // this case means that a specific response type was requested
             Object entity = context.readEntity(responseContext.getEntityStream(),
                     context.getResponseType(),
                     responseContext.getMediaType(),

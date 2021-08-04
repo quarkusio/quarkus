@@ -7,9 +7,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.pkg.NativeConfig;
@@ -24,6 +26,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
     protected final NativeConfig.ContainerRuntime containerRuntime;
     private final String[] baseContainerRuntimeArgs;
     protected final String outputPath;
+    private final String containerName;
 
     public NativeImageBuildContainerRunner(NativeConfig nativeConfig, Path outputDir) {
         this.nativeConfig = nativeConfig;
@@ -33,7 +36,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
         this.baseContainerRuntimeArgs = new String[] { "--env", "LANG=C", "--rm" };
 
         outputPath = outputDir == null ? null : outputDir.toAbsolutePath().toString();
-
+        containerName = "build-native-" + RandomStringUtils.random(5, true, false);
     }
 
     @Override
@@ -67,7 +70,12 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
 
     @Override
     protected String[] getBuildCommand(List<String> args) {
-        return buildCommand("run", getContainerRuntimeBuildArgs(), args);
+        List<String> containerRuntimeBuildArgs = getContainerRuntimeBuildArgs();
+        List<String> effectiveContainerRuntimeBuildArgs = new ArrayList<>(containerRuntimeBuildArgs.size() + 2);
+        effectiveContainerRuntimeBuildArgs.addAll(containerRuntimeBuildArgs);
+        effectiveContainerRuntimeBuildArgs.add("--name");
+        effectiveContainerRuntimeBuildArgs.add(containerName);
+        return buildCommand("run", effectiveContainerRuntimeBuildArgs, args);
     }
 
     @Override
@@ -79,6 +87,24 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
         objcopyCommand.add("objcopy " + String.join(" ", args));
         final String[] command = buildCommand("run", containerRuntimeBuildArgs, objcopyCommand);
         runCommand(command, null, null);
+    }
+
+    @Override
+    public void addShutdownHook(Process process) {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (process.isAlive()) {
+                try {
+                    Process removeProcess = new ProcessBuilder(
+                            List.of(containerRuntime.getExecutableName(), "rm", "-f", containerName))
+                                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                                    .redirectError(ProcessBuilder.Redirect.DISCARD)
+                                    .start();
+                    removeProcess.waitFor(2, TimeUnit.SECONDS);
+                } catch (IOException | InterruptedException e) {
+                    log.debug("Unable to stop running container", e);
+                }
+            }
+        }));
     }
 
     protected List<String> getContainerRuntimeBuildArgs() {

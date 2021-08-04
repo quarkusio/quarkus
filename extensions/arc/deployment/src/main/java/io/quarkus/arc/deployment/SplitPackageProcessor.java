@@ -1,9 +1,12 @@
 package io.quarkus.arc.deployment;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -27,6 +30,10 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
  * Note that this processor is a best-effort because it only operates on {@code ApplicationArchivesBuildItem} which
  * means that if a 3rd party library isn't indexed, we aren't able to detect it even though it can still be a part of
  * resulting application. See also {@code io.quarkus.arc.processor.BeanArchives.IndexWrapper}.
+ * <p>
+ * This processor can be configured by users and extensions to skip validation for certain packages hence avoiding the
+ * warning in logs.
+ * See also {@link ArcConfig#ignoredSplitPackages} and {@link IgnoreSplitPackageBuildItem}
  */
 public class SplitPackageProcessor {
 
@@ -47,9 +54,21 @@ public class SplitPackageProcessor {
 
     @BuildStep
     void splitPackageDetection(ApplicationArchivesBuildItem archivesBuildItem,
+            ArcConfig config,
+            List<IgnoreSplitPackageBuildItem> excludedPackages,
             // Dummy producer to make sure the build step executes
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> dummy) {
         Map<String, Set<ApplicationArchive>> packageToArchiveMap = new HashMap<>();
+
+        // build up exclusion predicates from user defined config and extensions
+        List<Predicate> packageSkipPredicates = new ArrayList<>();
+        if (config.ignoredSplitPackages.isPresent()) {
+            packageSkipPredicates.addAll(initPredicates(config.ignoredSplitPackages.get()));
+        }
+        for (IgnoreSplitPackageBuildItem exclusionBuildItem : excludedPackages) {
+            packageSkipPredicates.addAll(initPredicates(exclusionBuildItem.getExcludedPackages()));
+        }
+
         // for all app archives
         for (ApplicationArchive archive : archivesBuildItem.getAllApplicationArchives()) {
             // and for each known class in each archive
@@ -67,6 +86,18 @@ public class SplitPackageProcessor {
         StringBuilder splitPackagesWarning = new StringBuilder();
         for (String packageName : packageToArchiveMap.keySet()) {
             if (IGNORE_PACKAGE.test(packageName)) {
+                continue;
+            }
+
+            // skip packages based on pre-built predicates
+            boolean skipEvaluation = false;
+            for (Predicate<String> predicate : packageSkipPredicates) {
+                if (predicate.test(packageName)) {
+                    skipEvaluation = true;
+                    break;
+                }
+            }
+            if (skipEvaluation) {
                 continue;
             }
 
@@ -94,7 +125,8 @@ public class SplitPackageProcessor {
                             }
                         }
                     } else {
-                        splitPackages.add(a.getGroupId() + ":" + a.getArtifactId());
+                        // Generates an app archive information in form of groupId:artifactId:classifier:type
+                        splitPackages.add(a.toString());
                     }
                 }
                 splitPackagesWarning.append(splitPackages.stream().collect(Collectors.joining(", ", "[", "]")));
@@ -105,5 +137,31 @@ public class SplitPackageProcessor {
             LOGGER.warnf("Detected a split package usage which is considered a bad practice and should be avoided. " +
                     "Following packages were detected in multiple archives: %s", splitPackagesWarning.toString());
         }
+    }
+
+    private List<Predicate<String>> initPredicates(Collection<String> exclusions) {
+        final String packMatch = ".*";
+        List<Predicate<String>> predicates = new ArrayList<>();
+        for (String exclusionExpression : exclusions) {
+            if (exclusionExpression.endsWith(packMatch)) {
+                // Package ends with ".*"
+                final String pack = exclusionExpression.substring(0, exclusionExpression.length() - packMatch.length());
+                predicates.add(new Predicate<String>() {
+                    @Override
+                    public boolean test(String packageName) {
+                        return packageName.equals(pack) || packageName.startsWith(pack + ".");
+                    }
+                });
+            } else {
+                // Standard full package name
+                predicates.add(new Predicate<String>() {
+                    @Override
+                    public boolean test(String packageName) {
+                        return packageName.equals(exclusionExpression);
+                    }
+                });
+            }
+        }
+        return predicates;
     }
 }

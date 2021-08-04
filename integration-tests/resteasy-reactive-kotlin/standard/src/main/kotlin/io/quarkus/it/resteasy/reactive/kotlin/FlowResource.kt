@@ -9,16 +9,16 @@ import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
 
 @Path("flow")
-class FlowResource {
+class FlowResource(private val uppercaseService: UppercaseService) {
 
     @GET
     @Path("str")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     fun sseStrings() = flow {
-        emit("Hello")
-        emit("From")
-        emit("Kotlin")
-        emit("Flow")
+        emit(uppercaseService.convert("Hello"))
+        emit(uppercaseService.convert("From"))
+        emit(uppercaseService.convert("Kotlin"))
+        emit(uppercaseService.convert("Flow"))
     }
 
     @GET

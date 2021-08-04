@@ -65,12 +65,24 @@ public class PrometheusRegistryProcessor {
                 .routeFunction(pConfig.path, recorder.route())
                 .handler(recorder.getHandler())
                 .displayOnNotFoundPage("Metrics")
+                .blockingRoute()
                 .build());
 
         // Match paths that begin with the deployment path
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .routeFunction(pConfig.path + (pConfig.path.endsWith("/") ? "*" : "/*"), recorder.route())
                 .handler(recorder.getHandler())
+                .blockingRoute()
+                .build());
+
+        // Fallback paths (for non text/plain requests)
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .routeFunction(pConfig.path, recorder.fallbackRoute())
+                .handler(recorder.getFallbackHandler())
+                .build());
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .routeFunction(pConfig.path + (pConfig.path.endsWith("/") ? "*" : "/*"), recorder.fallbackRoute())
+                .handler(recorder.getFallbackHandler())
                 .build());
     }
 }

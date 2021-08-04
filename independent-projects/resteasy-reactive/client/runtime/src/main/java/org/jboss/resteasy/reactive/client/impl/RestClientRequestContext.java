@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
@@ -202,7 +203,14 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     @Override
     protected Executor getEventLoop() {
         if (httpClientRequest == null) {
-            return restClient.getVertx().nettyEventLoopGroup().next();
+            // make sure we execute the client callbacks on the same context as the current thread
+            Context context = restClient.getVertx().getOrCreateContext();
+            return new Executor() {
+                @Override
+                public void execute(Runnable command) {
+                    context.runOnContext(v -> command.run());
+                }
+            };
         } else {
             return new Executor() {
                 @Override

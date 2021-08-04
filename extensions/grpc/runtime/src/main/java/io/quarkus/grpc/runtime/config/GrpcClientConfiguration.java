@@ -15,7 +15,7 @@ public class GrpcClientConfiguration {
     /**
      * The gRPC service port.
      */
-    @ConfigItem(defaultValue = "9000")
+    @ConfigItem(defaultValue = "${quarkus.grpc.server.port}")
     public int port;
 
     /**

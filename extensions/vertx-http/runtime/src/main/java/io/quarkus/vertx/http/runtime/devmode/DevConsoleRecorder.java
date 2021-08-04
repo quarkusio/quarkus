@@ -14,7 +14,7 @@ import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.dev.devui.DevConsoleManager;
 import io.quarkus.dev.testing.ContinuousTestingWebsocketListener;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;

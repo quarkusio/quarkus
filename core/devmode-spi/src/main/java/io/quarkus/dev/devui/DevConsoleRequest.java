@@ -1,4 +1,4 @@
-package io.quarkus.dev.console;
+package io.quarkus.dev.devui;
 
 import java.util.List;
 import java.util.Map;

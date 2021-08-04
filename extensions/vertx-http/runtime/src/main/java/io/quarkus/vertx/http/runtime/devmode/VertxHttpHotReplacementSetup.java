@@ -13,7 +13,7 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.dev.ErrorPageGenerators;
 import io.quarkus.dev.config.CurrentConfig;
-import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.dev.devui.DevConsoleManager;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;

@@ -3,7 +3,7 @@ package io.quarkus.qute.runtime.devmode;
 import java.util.function.BiFunction;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.dev.devui.DevConsoleManager;
 import io.quarkus.qute.Engine;
 import io.quarkus.runtime.annotations.Recorder;
 

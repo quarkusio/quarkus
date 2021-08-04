@@ -1,4 +1,4 @@
-package io.quarkus.dev.console;
+package io.quarkus.dev.devui;
 
 import java.util.HashMap;
 import java.util.List;

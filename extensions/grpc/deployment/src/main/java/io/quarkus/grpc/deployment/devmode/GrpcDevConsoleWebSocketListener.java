@@ -21,7 +21,7 @@ import io.grpc.MethodDescriptor;
 import io.grpc.ServiceDescriptor;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
-import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.dev.devui.DevConsoleManager;
 import io.quarkus.dev.testing.GrpcWebSocketProxy;
 import io.vertx.core.json.JsonObject;
 

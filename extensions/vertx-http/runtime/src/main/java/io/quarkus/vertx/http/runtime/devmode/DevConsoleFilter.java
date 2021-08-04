@@ -11,9 +11,9 @@ import java.util.function.BiFunction;
 import org.jboss.logging.Logger;
 
 import io.netty.buffer.Unpooled;
-import io.quarkus.dev.console.DevConsoleManager;
-import io.quarkus.dev.console.DevConsoleRequest;
-import io.quarkus.dev.console.DevConsoleResponse;
+import io.quarkus.dev.devui.DevConsoleManager;
+import io.quarkus.dev.devui.DevConsoleRequest;
+import io.quarkus.dev.devui.DevConsoleResponse;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;

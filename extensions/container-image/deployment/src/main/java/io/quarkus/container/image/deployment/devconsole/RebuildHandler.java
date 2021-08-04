@@ -8,7 +8,7 @@ import io.quarkus.bootstrap.app.ArtifactResult;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.dev.devui.DevConsoleManager;
 import io.quarkus.dev.console.TempSystemProperties;
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
 import io.vertx.core.MultiMap;

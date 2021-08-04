@@ -367,34 +367,6 @@ public class HibernateOrmConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public static class HibernateOrmConfigPersistenceUnitLog {
-
-        /**
-         * Show SQL logs and format them nicely.
-         * <p>
-         * Setting it to true is obviously not recommended in production.
-         */
-        @ConfigItem
-        public boolean sql;
-
-        /**
-         * Format the SQL logs if SQL log is enabled
-         */
-        @ConfigItem(defaultValue = "true")
-        public boolean formatSql;
-
-        /**
-         * Whether JDBC warnings should be collected and logged.
-         */
-        @ConfigItem(defaultValueDocumentation = "depends on dialect")
-        public Optional<Boolean> jdbcWarnings;
-
-        public boolean isAnyPropertySet() {
-            return sql || !formatSql || jdbcWarnings.isPresent();
-        }
-    }
-
-    @ConfigGroup
     public static class HibernateOrmConfigPersistenceUnitCache {
         /**
          * The cache expiration configuration.

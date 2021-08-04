@@ -372,6 +372,11 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             runtimeSettingsBuilder.put(AvailableSettings.LOG_JDBC_WARNINGS,
                     persistenceUnitConfig.log.jdbcWarnings.get().toString());
         }
+
+        if (persistenceUnitConfig.log.queriesSlowerThanMs.isPresent()) {
+            runtimeSettingsBuilder.put(AvailableSettings.LOG_SLOW_QUERY,
+                    persistenceUnitConfig.log.queriesSlowerThanMs.get());
+        }
     }
 
 }

@@ -27,4 +27,8 @@ public class TestBean {
                 .build(HelloClient.class);
         return helloClient.echo(name);
     }
+
+    String bug18977() {
+        return client2.bug18977();
+    }
 }

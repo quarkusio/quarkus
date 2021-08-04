@@ -40,6 +40,7 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
         int litChars = 0;
         int capGroups = 0;
         int complexGroups = 0;
+        int bracesCount = 0;
         StringBuilder sb = new StringBuilder();
         int state = 0; //0 = start, 1 = parsing name, 2 = parsing regex
         for (int i = 0; i < template.length(); ++i) {
@@ -85,7 +86,7 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                     }
                     break;
                 case 2:
-                    if (c == '}') {
+                    if (c == '}' && bracesCount == 0) {
                         state = 0;
                         if (sb.length() > 0) {
                             capGroups++;
@@ -99,6 +100,11 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                         sb.setLength(0);
                     } else {
                         sb.append(c);
+                        if (c == '{') {
+                            bracesCount++;
+                        } else if (c == '}') {
+                            bracesCount--;
+                        }
                     }
                     break;
             }
@@ -116,6 +122,9 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
             case 1:
             case 2:
                 throw new IllegalArgumentException("Invalid template " + template);
+        }
+        if (bracesCount > 0) {
+            throw new IllegalArgumentException("Invalid template " + template + " Unmatched { braces");
         }
 
         //coalesce the components

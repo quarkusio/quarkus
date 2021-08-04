@@ -11,13 +11,14 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
-import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+
+import io.quarkus.resteasy.reactive.server.runtime.StreamUtil;
 
 public class ServerJacksonMessageBodyReader extends JacksonBasicMessageBodyReader implements ServerMessageBodyReader<Object> {
 
@@ -53,10 +54,22 @@ public class ServerJacksonMessageBodyReader extends JacksonBasicMessageBodyReade
     }
 
     private Object doReadFrom(Class<Object> type, Type genericType, InputStream entityStream) throws IOException {
-        if (entityStream instanceof EmptyInputStream) {
+        if (StreamUtil.isEmpty(entityStream)) {
             return null;
         }
-        return reader.forType(reader.getTypeFactory().constructType(genericType != null ? genericType : type))
-                .readValue(entityStream);
+        try {
+            return reader.forType(reader.getTypeFactory().constructType(genericType != null ? genericType : type))
+                    .readValue(entityStream);
+        } catch (MismatchedInputException e) {
+            if (isEmptyInputException(e)) {
+                return null;
+            }
+            throw e;
+        }
+    }
+
+    private boolean isEmptyInputException(MismatchedInputException e) {
+        // this isn't great, but Jackson doesn't have a specific exception for empty input...
+        return e.getMessage().startsWith("No content");
     }
 }

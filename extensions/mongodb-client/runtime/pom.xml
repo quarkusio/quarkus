@@ -44,6 +44,11 @@
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-crypt</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kubernetes-service-binding</artifactId>
+            <optional>true</optional>
+        </dependency>
 
         <!-- Add the health extension as optional as we will produce the health check only if it's included -->
         <dependency>
@@ -100,6 +105,18 @@
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!--
         We need this dependency to make MP context propagation work. As these tests do not
         actually start Quarkus the MP CP extension does not run, so it does not exclude the

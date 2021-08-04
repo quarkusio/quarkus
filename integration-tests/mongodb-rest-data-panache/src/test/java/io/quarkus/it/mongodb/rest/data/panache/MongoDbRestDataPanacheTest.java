@@ -18,11 +18,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.response.Response;
 
 @QuarkusTest
 @DisabledOnOs(OS.WINDOWS)
+@QuarkusTestResource(MongoTestResource.class)
 class MongoDbRestDataPanacheTest {
 
     private Author dostoevsky;

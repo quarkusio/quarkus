@@ -51,6 +51,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.mongodb.MongoClientName;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
@@ -58,6 +59,7 @@ import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
 import io.quarkus.mongodb.runtime.MongoClientRecorder;
 import io.quarkus.mongodb.runtime.MongoClientSupport;
 import io.quarkus.mongodb.runtime.MongoClients;
+import io.quarkus.mongodb.runtime.MongoServiceBindingConverter;
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
@@ -68,6 +70,8 @@ public class MongoClientProcessor {
 
     private static final DotName MONGO_CLIENT = DotName.createSimple(MongoClient.class.getName());
     private static final DotName REACTIVE_MONGO_CLIENT = DotName.createSimple(ReactiveMongoClient.class.getName());
+
+    private static final String SERVICE_BINDING_INTERFACE_NAME = "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter";
 
     @BuildStep
     AdditionalIndexedClassesBuildItem includeBsonTypesToIndex() {
@@ -370,5 +374,14 @@ public class MongoClientProcessor {
     HealthBuildItem addHealthCheck(MongoClientBuildTimeConfig buildTimeConfig) {
         return new HealthBuildItem("io.quarkus.mongodb.health.MongoHealthCheck",
                 buildTimeConfig.healthEnabled);
+    }
+
+    @BuildStep
+    void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> buildProducer) {
+        if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
+            buildProducer.produce(
+                    new ServiceProviderBuildItem(SERVICE_BINDING_INTERFACE_NAME,
+                            MongoServiceBindingConverter.class.getName()));
+        }
     }
 }

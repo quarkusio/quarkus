@@ -166,6 +166,10 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         requestOptions.setURI(uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()));
         requestOptions.setFollowRedirects(followRedirects);
         requestOptions.setSsl(isHttps);
+        Object readTimeout = state.getConfiguration().getProperty(QuarkusRestClientProperties.READ_TIMEOUT);
+        if (readTimeout instanceof Long) {
+            requestOptions.setTimeout((Long) readTimeout);
+        }
         return httpClient.request(requestOptions);
     }
 

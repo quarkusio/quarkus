@@ -7,7 +7,7 @@
     <parent>
         <artifactId>quarkus-cache-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>2.1.1.Final</version>
     </parent>
 
     <artifactId>quarkus-cache</artifactId>

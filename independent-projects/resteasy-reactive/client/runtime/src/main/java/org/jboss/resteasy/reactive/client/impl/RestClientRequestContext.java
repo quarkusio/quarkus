@@ -158,11 +158,11 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     @Override
     protected Executor getContextExecutor() {
-        if (httpClientRequest != null) {
-            return ((ConnectionBase) httpClientRequest.connection()).getContext().nettyEventLoop();
-        }
         if (Context.isOnEventLoopThread()) {
             return ((ContextInternal) restClient.getVertx().getOrCreateContext()).nettyEventLoop();
+        }
+        if (httpClientRequest != null) {
+            return ((ConnectionBase) httpClientRequest.connection()).getContext().nettyEventLoop();
         }
         return null;
     }
@@ -215,8 +215,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     @Override
     protected Executor getEventLoop() {
-        if (httpClientRequest == null) {
-            // make sure we execute the client callbacks on the same context as the current thread
+        if (Context.isOnEventLoopThread()) {
             Context context = restClient.getVertx().getOrCreateContext();
             return new Executor() {
                 @Override
@@ -224,13 +223,12 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
                     context.runOnContext(v -> command.run());
                 }
             };
+        } else if (httpClientRequest == null) {
+            //we are on a worker and have no bound event loop
+            //this should never really happen
+            return restClient.getVertx().nettyEventLoopGroup().next();
         } else {
-            return new Executor() {
-                @Override
-                public void execute(Runnable command) {
-                    command.run();
-                }
-            };
+            return ((ConnectionBase) httpClientRequest.connection()).channel().eventLoop();
         }
     }
 

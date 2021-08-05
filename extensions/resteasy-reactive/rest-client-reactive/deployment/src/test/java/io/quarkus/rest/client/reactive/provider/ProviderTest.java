@@ -16,6 +16,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.rest.client.reactive.HelloClient2;
 import io.quarkus.rest.client.reactive.HelloResource;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
@@ -25,11 +26,11 @@ public class ProviderTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(HelloResource.class, HelloClient.class, GlobalRequestFilter.class,
+                    .addClasses(HelloResource.class, HelloClient.class, GlobalRequestFilter.class, HelloClient2.class,
                             GlobalResponseFilter.class, GlobalRequestFilterConstrainedToServer.class,
                             GlobalFeature.class)
                     .addAsResource(
-                            new StringAsset(setUrlForClass(HelloClient.class)),
+                            new StringAsset(setUrlForClass(HelloClient.class) + setUrlForClass(HelloClient2.class)),
                             "application.properties"));
 
     @RestClient

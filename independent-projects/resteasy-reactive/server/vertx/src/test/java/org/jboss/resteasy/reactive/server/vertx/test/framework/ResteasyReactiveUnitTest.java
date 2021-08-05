@@ -72,7 +72,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
 
     static {
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
-        rootLogger = (Logger) LogManager.getLogManager().getLogger("");
+        rootLogger = LogManager.getLogManager().getLogger("");
     }
 
     private Path deploymentDir;
@@ -196,7 +196,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
             vertx = Vertx.vertx();
             HttpServer server = vertx.createHttpServer();
             router = Router.router(vertx);
-            server.requestHandler(router).listen(8080);
+            server.requestHandler(router).listen(8080).toCompletionStage().toCompletableFuture().get();
             store.put(ResteasyReactiveUnitTest.class.getName(), new ExtensionContext.Store.CloseableResource() {
                 @Override
                 public void close() throws Throwable {
@@ -307,6 +307,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
         if (deploymentDir != null) {
             deleteDirectory(deploymentDir);
         }
+        router.clear();
 
     }
 

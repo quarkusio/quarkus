@@ -51,6 +51,7 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
@@ -306,7 +307,9 @@ public class DevConsoleProcessor {
             Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
             List<RouteBuildItem> allRoutes,
             List<DevConsoleRouteBuildItem> routes,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem, LaunchModeBuildItem launchModeBuildItem) {
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            List<ConfigDescriptionBuildItem> configDescriptionBuildItems,
+            LaunchModeBuildItem launchModeBuildItem) {
         if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
             return null;
         }
@@ -317,6 +320,7 @@ public class DevConsoleProcessor {
                 buildSystemTargetBuildItem,
                 effectiveIdeBuildItem,
                 nonApplicationRootPathBuildItem,
+                configDescriptionBuildItems,
                 launchModeBuildItem);
         newRouter(quteEngine, nonApplicationRootPathBuildItem);
 
@@ -469,7 +473,9 @@ public class DevConsoleProcessor {
             List<RouteBuildItem> allRoutes,
             BuildSystemTargetBuildItem buildSystemTargetBuildItem,
             Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem, LaunchModeBuildItem launchModeBuildItem) {
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            List<ConfigDescriptionBuildItem> configDescriptionBuildItems,
+            LaunchModeBuildItem launchModeBuildItem) {
         EngineBuilder builder = Engine.builder().addDefaults();
 
         // Escape some characters for HTML templates
@@ -507,6 +513,8 @@ public class DevConsoleProcessor {
             }
         }
 
+        Map<String, String> defaultValues = getDefaultValues(configDescriptionBuildItems);
+
         // {config:property('quarkus.lambda.handler')}
         // {config:http-path('quarkus.smallrye-graphql.ui.root-path')}
         // Note that the output value is always string!
@@ -522,8 +530,9 @@ public class DevConsoleProcessor {
                 });
             } else {
                 return ctx.evaluate(params.get(0)).thenCompose(propertyName -> {
-                    Optional<String> val = ConfigProvider.getConfig().getOptionalValue(propertyName.toString(), String.class);
-                    return CompletableFuture.completedFuture(val.isPresent() ? val.get() : Results.NotFound.from(ctx));
+                    String val = ConfigProvider.getConfig().getOptionalValue(propertyName.toString(), String.class)
+                            .orElse(defaultValues.get(propertyName.toString()));
+                    return CompletableFuture.completedFuture(val != null ? val : Results.NotFound.from(ctx));
                 });
             }
         }).build());
@@ -591,6 +600,17 @@ public class DevConsoleProcessor {
             }
         }
         return engine;
+    }
+
+    private Map<String, String> getDefaultValues(List<ConfigDescriptionBuildItem> configDescriptionBuildItems) {
+        Map<String, String> defaultValues = new HashMap();
+
+        for (ConfigDescriptionBuildItem configDescriptionBuildItem : configDescriptionBuildItems) {
+            if (configDescriptionBuildItem.getDefaultValue() != null) {
+                defaultValues.put(configDescriptionBuildItem.getPropertyName(), configDescriptionBuildItem.getDefaultValue());
+            }
+        }
+        return defaultValues;
     }
 
     private static Optional<TemplateLocator.TemplateLocation> locateTemplate(String id, Map<String, String> templates) {

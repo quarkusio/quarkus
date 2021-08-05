@@ -2,6 +2,8 @@
 {#title}Keycloak{/title}
 {#script}
 
+var port = {config:property('quarkus.http.port')};
+
 {#if info:oidcApplicationType is 'service'}
     {#if info:oidcGrantType is 'implicit' || info:oidcGrantType is 'code'}
     var accessToken;
@@ -73,13 +75,13 @@
       {#if info:oidcGrantType is 'implicit'}
         window.location.href = '{info:keycloakUrl}' + "/realms/" + '{info:keycloakRealm}' + "/protocol/openid-connect/auth"
           + "?client_id=" + '{info:keycloakClient}'
-          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A8080%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider"
+          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + "%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider"
           + "&scope=openid&response_type=token id_token&response_mode=fragment&prompt=login"
           + "&nonce=" + makeid();
       {#else}
         window.location.href = '{info:keycloakUrl}' + "/realms/" + '{info:keycloakRealm}' + "/protocol/openid-connect/auth"
           + "?client_id=" + '{info:keycloakClient}'
-          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A8080%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider"
+          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + "%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider"
           + "&scope=openid&response_type=code&response_mode=fragment&prompt=login"
           + "&nonce=" + makeid();
       {/if}    
@@ -89,7 +91,7 @@
         var servicePath = $('#servicePath').val();
         $.post("testServiceWithToken",
             {
-              serviceUrl: "http://localhost:8080" + servicePath,
+              serviceUrl: "http://localhost:" + port + servicePath,
               token: accessToken
             },
             function(data, status){
@@ -101,7 +103,7 @@
         var servicePath = $('#servicePath').val();
         $.post("testServiceWithToken",
             {
-              serviceUrl: "http://localhost:8080" + servicePath,
+              serviceUrl: "http://localhost:" + port + servicePath,
               token: idToken
             },
             function(data, status){
@@ -139,7 +141,7 @@
 
     function logout() {
         window.location.assign('{info:keycloakUrl}' + "/realms/" + '{info:keycloakRealm}' + "/protocol/openid-connect/logout"
-          + "?post_logout_redirect_uri=" + "http%3A%2F%2Flocalhost%3A8080%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider");
+          + "?post_logout_redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + "%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider");
     }
         
     function exchangeCodeForTokens(code){
@@ -150,7 +152,7 @@
               client: '{info:keycloakClient}',
               clientSecret: '{info:keycloakClientSecret}',
               authorizationCode: code,
-              redirectUri: "http://localhost:8080/q/dev/io.quarkus.quarkus-oidc/provider"
+              redirectUri: "http://localhost:" + port + "/q/dev/io.quarkus.quarkus-oidc/provider"
             },
             function(data, status){
                 var tokens = JSON.parse(data);
@@ -211,7 +213,7 @@
         $.post("testService",
             {
               keycloakUrl: '{info:keycloakUrl}',
-              serviceUrl: "http://localhost:8080" + servicePath,
+              serviceUrl: "http://localhost:" + port + servicePath,
               realm: '{info:keycloakRealm}',
               client: '{info:keycloakClient}',
               clientSecret: '{info:keycloakClientSecret}',
@@ -229,7 +231,7 @@
         $.post("testService",
             {
               keycloakUrl: '{info:keycloakUrl}',
-              serviceUrl: "http://localhost:8080" + servicePath,
+              serviceUrl: "http://localhost:" + port + servicePath,
               realm: '{info:keycloakRealm}',
               client: '{info:keycloakClient}',
               clientSecret: '{info:keycloakClientSecret}',
@@ -254,7 +256,7 @@ function printResponseData(data, message){
 }
 
 function signInToService(servicePath) {
-    window.open("http://localhost:8080" + servicePath);
+    window.open("http://localhost:" + port + servicePath);
 }
 
 {/script}

@@ -2,6 +2,10 @@ package io.quarkus.scheduler.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
+import static org.jboss.jandex.AnnotationValue.createArrayValue;
+import static org.jboss.jandex.AnnotationValue.createBooleanValue;
+import static org.jboss.jandex.AnnotationValue.createStringValue;
 
 import java.lang.reflect.Modifier;
 import java.time.Duration;
@@ -11,6 +15,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -31,6 +36,7 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
@@ -40,6 +46,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
+import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
@@ -57,6 +64,7 @@ import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.gizmo.ClassCreator;
@@ -64,6 +72,7 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
@@ -261,6 +270,48 @@ public class SchedulerProcessor {
         infos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("configLookup",
                 recorder.getConfigLookup()));
         return new DevConsoleRouteBuildItem("schedules", "POST", recorder.invokeHandler());
+    }
+
+    @BuildStep
+    public AnnotationsTransformerBuildItem metrics(SchedulerConfig config,
+            Optional<MetricsCapabilityBuildItem> metricsCapability) {
+
+        if (config.metricsEnabled && metricsCapability.isPresent()) {
+            DotName micrometerTimed = DotName.createSimple("io.micrometer.core.annotation.Timed");
+            DotName mpTimed = DotName.createSimple("org.eclipse.microprofile.metrics.annotation.Timed");
+
+            return new AnnotationsTransformerBuildItem(AnnotationsTransformer.builder()
+                    .appliesTo(METHOD)
+                    .whenContainsAny(List.of(SCHEDULED_NAME, SCHEDULES_NAME))
+                    .whenContainsNone(List.of(micrometerTimed,
+                            mpTimed, DotName.createSimple("org.eclipse.microprofile.metrics.annotation.SimplyTimed")))
+                    .transform(context -> {
+                        // Transform a @Scheduled method that has no metrics timed annotation
+                        MethodInfo scheduledMethod = context.getTarget().asMethod();
+                        if (metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
+                            // Micrometer
+                            context.transform()
+                                    .add(micrometerTimed, createStringValue("value", "scheduled.methods"))
+                                    .add(micrometerTimed, createStringValue("value", "scheduled.methods.running"),
+                                            createBooleanValue("longTask", true))
+                                    .done();
+                            LOGGER.debugf("Added Micrometer @Timed to a @Scheduled method %s#%s()",
+                                    scheduledMethod.declaringClass().name(),
+                                    scheduledMethod.name());
+                        } else if (metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
+                            // MP metrics
+                            context.transform()
+                                    .add(mpTimed,
+                                            createArrayValue("tags",
+                                                    new AnnotationValue[] { createStringValue("scheduled", "scheduled=true") }))
+                                    .done();
+                            LOGGER.debugf("Added MP Metrics @Timed to a @Scheduled method %s#%s()",
+                                    scheduledMethod.declaringClass().name(),
+                                    scheduledMethod.name());
+                        }
+                    }));
+        }
+        return null;
     }
 
     private String generateInvoker(ScheduledBusinessMethodItem scheduledMethod, ClassOutput classOutput) {

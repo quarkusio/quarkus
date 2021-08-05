@@ -18,4 +18,10 @@ public class SchedulerConfig {
     @ConfigItem(defaultValue = "quartz")
     public CronType cronType;
 
+    /**
+     * Scheduled task metrics will be enabled if a metrics extension is present and this value is true.
+     */
+    @ConfigItem(name = "metrics.enabled")
+    public boolean metricsEnabled;
+
 }

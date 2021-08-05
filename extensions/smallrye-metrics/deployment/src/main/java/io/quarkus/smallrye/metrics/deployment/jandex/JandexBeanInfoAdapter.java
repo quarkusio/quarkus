@@ -10,6 +10,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
+import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames;
 import io.smallrye.metrics.elementdesc.AnnotationInfo;
@@ -20,9 +21,11 @@ import io.smallrye.metrics.elementdesc.adapter.BeanInfoAdapter;
 public class JandexBeanInfoAdapter implements BeanInfoAdapter<ClassInfo> {
     private static final DotName OBJECT = DotName.createSimple(Object.class.getName());
     private final IndexView indexView;
+    private final TransformedAnnotationsBuildItem transformedAnnotations;
 
-    public JandexBeanInfoAdapter(IndexView indexView) {
+    public JandexBeanInfoAdapter(IndexView indexView, TransformedAnnotationsBuildItem transformedAnnotations) {
         this.indexView = indexView;
+        this.transformedAnnotations = transformedAnnotations;
     }
 
     @Override
@@ -39,7 +42,7 @@ public class JandexBeanInfoAdapter implements BeanInfoAdapter<ClassInfo> {
         List<AnnotationInfo> annotations = new ArrayList<>();
         ClassInfo clazz = input;
         while (clazz != null && clazz.superName() != null) {
-            List<AnnotationInfo> annotationsSuper = clazz.classAnnotations()
+            List<AnnotationInfo> annotationsSuper = transformedAnnotations.getAnnotations(clazz)
                     .stream()
                     .filter(SmallRyeMetricsDotNames::isMetricAnnotation)
                     .map(annotationInfoAdapter::convert)
@@ -47,7 +50,7 @@ public class JandexBeanInfoAdapter implements BeanInfoAdapter<ClassInfo> {
             annotations.addAll(annotationsSuper);
 
             // a metric annotation can also be added through a CDI stereotype, so look into stereotypes
-            List<AnnotationInfo> annotationsThroughStereotypes = clazz.classAnnotations()
+            List<AnnotationInfo> annotationsThroughStereotypes = transformedAnnotations.getAnnotations(clazz)
                     .stream()
                     .flatMap(a -> getMetricAnnotationsThroughStereotype(a, indexView))
                     .collect(Collectors.toList());
@@ -67,7 +70,7 @@ public class JandexBeanInfoAdapter implements BeanInfoAdapter<ClassInfo> {
         ClassInfo annotationType = indexView.getClassByName(stereotypeInstance.name());
         if (annotationType.classAnnotation(DotNames.STEREOTYPE) != null) {
             JandexAnnotationInfoAdapter adapter = new JandexAnnotationInfoAdapter(indexView);
-            return annotationType.classAnnotations()
+            return transformedAnnotations.getAnnotations(annotationType)
                     .stream()
                     .filter(SmallRyeMetricsDotNames::isMetricAnnotation)
                     .map(adapter::convert);

@@ -944,6 +944,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             } else if (!field && pathParameters.contains(sourceName)) {
                 builder.setName(sourceName);
                 builder.setType(ParameterType.PATH);
+                builder.setErrorLocation(builder.getErrorLocation()
+                        + " (this parameter name matches the @Path parameter name, so it has been implicitly assumed to be an @PathParam and not the request body)");
                 convertible = true;
             } else {
                 //un-annotated field

@@ -305,10 +305,17 @@ triage:
         - extensions/cache/
         - integration-tests/cache/
     - labels: [area/cli]
-      title: "cli |qs "
+      title: "\\b(cli)\\b"
       directories:
         - devtools/cli/
-      notify: [maxandersen,ebullient,gsmet]
+      notify: [maxandersen,ebullient]
+    - labels: [area/picocli]
+      title: "picocli"
+      directories:
+        - extensions/picocli/
+        - integration-tests/picocli/
+        - integration-tests/picocli-native/
+      notify: [ebullient]
     - labels: [area/config]
       directories:
         - extensions/config-yaml/

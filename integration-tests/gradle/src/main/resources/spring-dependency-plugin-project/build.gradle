@@ -1,0 +1,34 @@
+plugins {
+    id 'java'
+    id 'io.quarkus'
+    id 'io.spring.dependency-management'
+}
+
+repositories {
+    mavenCentral()
+    if (System.properties.containsKey('maven.repo.local')) {
+        maven {
+            url System.properties.get('maven.repo.local')
+        }
+    } else {
+        mavenLocal()
+    }
+}
+
+dependencyManagement {
+    dependencies {
+        dependency "io.quarkus:quarkus-resteasy:${quarkusPlatformVersion}"
+    }
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}") {
+        // We exclude resteasy so Spring dependency management handles it
+        exclude group: 'io.quarkus', module: 'quarkus-resteasy'
+    }
+    implementation "io.quarkus:quarkus-resteasy"
+}
+
+compileJava {
+    options.compilerArgs << '-parameters'
+}

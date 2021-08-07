@@ -132,15 +132,9 @@ public class ConditionalDependenciesEnabler {
 
     private Configuration createConditionalDependenciesConfiguration(Configuration existingDeps,
             List<ExtensionDependency> extensions) {
-        List<Dependency> toResolve = new ArrayList<>();
-        for (Dependency dependency : existingDeps.getDependencies()) {
-            toResolve.add(dependency);
-        }
-        for (Dependency dependency : collectConditionalDependencies(extensions)) {
-            toResolve.add(dependency);
-        }
-        return project.getConfigurations()
-                .detachedConfiguration(toResolve.toArray(new Dependency[0]));
+        Configuration newConfiguration = existingDeps.copy();
+        newConfiguration.getDependencies().addAll(collectConditionalDependencies(extensions));
+        return newConfiguration;
     }
 
     private Set<Dependency> collectConditionalDependencies(List<ExtensionDependency> extensionDependencies) {

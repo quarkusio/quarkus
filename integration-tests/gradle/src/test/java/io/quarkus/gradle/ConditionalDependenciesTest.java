@@ -23,44 +23,44 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
     public void publishTestExtensions() throws IOException, InterruptedException, URISyntaxException {
         File dependencyProject = getProjectDir("conditional-dependencies");
         runGradleWrapper(dependencyProject, ":ext-a:runtime:publishToMavenLocal",
-                ":ext-a:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-b:runtime:publishToMavenLocal",
-                ":ext-b:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-c:runtime:publishToMavenLocal",
-                ":ext-c:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-d:runtime:publishToMavenLocal",
-                ":ext-d:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-e:runtime:publishToMavenLocal",
-                ":ext-e:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-f:runtime:publishToMavenLocal",
-                ":ext-f:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-g:runtime:publishToMavenLocal",
-                ":ext-g:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-h:runtime:publishToMavenLocal",
-                ":ext-h:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-i:runtime:publishToMavenLocal",
-                ":ext-i:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-j:runtime:publishToMavenLocal",
-                ":ext-j:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-k:runtime:publishToMavenLocal",
-                ":ext-k:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-l:runtime:publishToMavenLocal",
-                ":ext-l:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-m:runtime:publishToMavenLocal",
-                ":ext-m:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-n:runtime:publishToMavenLocal",
-                ":ext-n:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-o:runtime:publishToMavenLocal",
-                ":ext-o:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-p:runtime:publishToMavenLocal",
-                ":ext-p:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-r:runtime:publishToMavenLocal",
-                ":ext-r:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-s:runtime:publishToMavenLocal",
-                ":ext-s:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-t:runtime:publishToMavenLocal",
-                ":ext-t:deployment:publishToMavenLocal");
-        runGradleWrapper(dependencyProject, ":ext-u:runtime:publishToMavenLocal",
+                ":ext-a:deployment:publishToMavenLocal",
+                ":ext-b:runtime:publishToMavenLocal",
+                ":ext-b:deployment:publishToMavenLocal",
+                ":ext-c:runtime:publishToMavenLocal",
+                ":ext-c:deployment:publishToMavenLocal",
+                ":ext-d:runtime:publishToMavenLocal",
+                ":ext-d:deployment:publishToMavenLocal",
+                ":ext-e:runtime:publishToMavenLocal",
+                ":ext-e:deployment:publishToMavenLocal",
+                ":ext-f:runtime:publishToMavenLocal",
+                ":ext-f:deployment:publishToMavenLocal",
+                ":ext-g:runtime:publishToMavenLocal",
+                ":ext-g:deployment:publishToMavenLocal",
+                ":ext-h:runtime:publishToMavenLocal",
+                ":ext-h:deployment:publishToMavenLocal",
+                ":ext-i:runtime:publishToMavenLocal",
+                ":ext-i:deployment:publishToMavenLocal",
+                ":ext-j:runtime:publishToMavenLocal",
+                ":ext-j:deployment:publishToMavenLocal",
+                ":ext-k:runtime:publishToMavenLocal",
+                ":ext-k:deployment:publishToMavenLocal",
+                ":ext-l:runtime:publishToMavenLocal",
+                ":ext-l:deployment:publishToMavenLocal",
+                ":ext-m:runtime:publishToMavenLocal",
+                ":ext-m:deployment:publishToMavenLocal",
+                ":ext-n:runtime:publishToMavenLocal",
+                ":ext-n:deployment:publishToMavenLocal",
+                ":ext-o:runtime:publishToMavenLocal",
+                ":ext-o:deployment:publishToMavenLocal",
+                ":ext-p:runtime:publishToMavenLocal",
+                ":ext-p:deployment:publishToMavenLocal",
+                ":ext-r:runtime:publishToMavenLocal",
+                ":ext-r:deployment:publishToMavenLocal",
+                ":ext-s:runtime:publishToMavenLocal",
+                ":ext-s:deployment:publishToMavenLocal",
+                ":ext-t:runtime:publishToMavenLocal",
+                ":ext-t:deployment:publishToMavenLocal",
+                ":ext-u:runtime:publishToMavenLocal",
                 ":ext-u:deployment:publishToMavenLocal");
     }
 

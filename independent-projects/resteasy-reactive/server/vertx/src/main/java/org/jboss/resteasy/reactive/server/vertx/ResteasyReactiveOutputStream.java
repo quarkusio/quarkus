@@ -95,6 +95,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                     if (last) {
                         closed = true;
                     }
+                    data.release();
                 } else {
                     if (last) {
                         request.response().end(createBuffer(data));

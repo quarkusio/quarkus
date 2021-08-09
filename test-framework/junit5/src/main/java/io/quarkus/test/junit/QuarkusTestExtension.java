@@ -890,6 +890,21 @@ public class QuarkusTestExtension
     }
 
     @Override
+    public void interceptDynamicTest(Invocation<Void> invocation, ExtensionContext extensionContext) throws Throwable {
+        if (runningQuarkusApplication == null) {
+            invocation.proceed();
+            return;
+        }
+        var old = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
+            invocation.proceed();
+        } finally {
+            Thread.currentThread().setContextClassLoader(old);
+        }
+    }
+
+    @Override
     public void interceptTestTemplateMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
         if (isNativeOrIntegrationTest(extensionContext.getRequiredTestClass())) {

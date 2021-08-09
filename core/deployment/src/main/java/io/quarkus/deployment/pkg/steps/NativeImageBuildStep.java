@@ -249,6 +249,8 @@ public class NativeImageBuildStep {
                             graalVMVersion.version.toString(),
                             graalVMVersion.javaFeatureVersion,
                             graalVMVersion.distribution.name()));
+        } catch (ImageGenerationFailureException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to build native image", e);
         } finally {
@@ -377,16 +379,16 @@ public class NativeImageBuildStep {
     private RuntimeException imageGenerationFailed(int exitValue, boolean isContainerBuild) {
         if (exitValue == OOM_ERROR_VALUE) {
             if (isContainerBuild && !SystemUtils.IS_OS_LINUX) {
-                return new RuntimeException("Image generation failed. Exit code was " + exitValue
+                return new ImageGenerationFailureException("Image generation failed. Exit code was " + exitValue
                         + " which indicates an out of memory error. The most likely cause is Docker not being given enough memory. Also consider increasing the Xmx value for native image generation by setting the \""
                         + QUARKUS_XMX_PROPERTY + "\" property");
             } else {
-                return new RuntimeException("Image generation failed. Exit code was " + exitValue
+                return new ImageGenerationFailureException("Image generation failed. Exit code was " + exitValue
                         + " which indicates an out of memory error. Consider increasing the Xmx value for native image generation by setting the \""
                         + QUARKUS_XMX_PROPERTY + "\" property");
             }
         } else {
-            return new RuntimeException("Image generation failed. Exit code: " + exitValue);
+            return new ImageGenerationFailureException("Image generation failed. Exit code: " + exitValue);
         }
     }
 
@@ -849,6 +851,13 @@ public class NativeImageBuildStep {
                     }
                 }
             }
+        }
+    }
+
+    private static class ImageGenerationFailureException extends RuntimeException {
+
+        private ImageGenerationFailureException(String message) {
+            super(message);
         }
     }
 }

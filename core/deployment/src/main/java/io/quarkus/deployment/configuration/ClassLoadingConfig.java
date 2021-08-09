@@ -1,5 +1,6 @@
 package io.quarkus.deployment.configuration;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -27,7 +28,7 @@ public class ClassLoadingConfig {
      * WARNING: This config property can only be set in application.properties
      */
     @ConfigItem(defaultValue = "")
-    public Optional<String> parentFirstArtifacts;
+    public Optional<List<String>> parentFirstArtifacts;
 
     /**
      * Artifacts that are loaded in the runtime ClassLoader in dev mode, so they will be dropped
@@ -46,6 +47,13 @@ public class ClassLoadingConfig {
      */
     @ConfigItem(defaultValue = "")
     public Optional<String> reloadableArtifacts;
+
+    /**
+     * Artifacts that will never be loaded by the class loader, and will not be packed into the final application. This allows
+     * you to explicitly remove artifacts from your application even though they may be present on the class path.
+     */
+    @ConfigItem(defaultValue = "")
+    public Optional<List<String>> removedArtifacts;
 
     /**
      * Resources that should be removed/hidden from dependencies.

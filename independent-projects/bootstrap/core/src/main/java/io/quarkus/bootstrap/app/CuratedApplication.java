@@ -202,7 +202,11 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 if (configuredClassLoading.reloadableArtifacts.contains(i.getArtifact().getKey())) {
                     continue;
                 }
-                processCpElement(i.getArtifact(), element -> addCpElement(builder, i.getArtifact(), element));
+                if (configuredClassLoading.removedArtifacts.contains(i.getArtifact().getKey())) {
+                    processCpElement(i.getArtifact(), builder::addBannedElement);
+                } else {
+                    processCpElement(i.getArtifact(), element -> addCpElement(builder, i.getArtifact(), element));
+                }
             }
 
             for (Path i : quarkusBootstrap.getAdditionalDeploymentArchives()) {
@@ -280,7 +284,12 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 if (configuredClassLoading.reloadableArtifacts.contains(dependency.getArtifact().getKey())) {
                     continue;
                 }
-                processCpElement(dependency.getArtifact(), element -> addCpElement(builder, dependency.getArtifact(), element));
+                if (configuredClassLoading.removedArtifacts.contains(dependency.getArtifact().getKey())) {
+                    processCpElement(dependency.getArtifact(), builder::addBannedElement);
+                } else {
+                    processCpElement(dependency.getArtifact(),
+                            element -> addCpElement(builder, dependency.getArtifact(), element));
+                }
             }
 
             baseRuntimeClassLoader = builder.build();

@@ -94,4 +94,18 @@ public class UserTagTest {
                         .data("surnames", Collections.singleton("Kouba")).render());
     }
 
+    @Test
+    public void testEval() {
+        Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver())
+                .addSectionHelper(new UserTagSectionHelper.Factory("itemDetail", "my-tag-id"))
+                .build();
+
+        Template tag = engine.parse("{#set item=items.get(itemId)}{#eval myNestedContent item=item /}{/set}");
+        engine.putTemplate("my-tag-id", tag);
+
+        assertEquals("10 kg",
+                engine.parse("{#itemDetail itemId=1 myNestedContent=\"{item.quantity} {item.unit}\" /}")
+                        .data("items", Map.of(1, Map.of("quantity", 10, "unit", "kg"))).render());
+    }
+
 }

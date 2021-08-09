@@ -37,8 +37,8 @@ The output value returned is based uniquely on the input provided.
 === Business rule
 
 A business rule allows to externalise decision logic into reusable pieces that can be easily
-used in declarative way. There are multiple ways of writing rules like decision tables,
-decision trees, rules, etc. For this example we focus on the rule format backed by DRL
+used in declarative way. There are multiple ways of writing rules like https://drools.org/learn/dmn.html[DMN models],
+decision tables, decision trees, rules, etc. For this example we focus on the rule format backed by DRL
 (Drools Rule Language).
 
 == Solution

@@ -1,10 +1,11 @@
 package io.quarkus.gradle.builder;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -68,7 +69,8 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         return project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
     }
 
-    private static Configuration deploymentClasspathConfig(Project project, LaunchMode mode) {
+    private static Configuration deploymentClasspathConfig(Project project, LaunchMode mode,
+            Collection<org.gradle.api.artifacts.Dependency> platforms) {
 
         Configuration deploymentConfiguration = project.getConfigurations().findByName(DEPLOYMENT_CONFIGURATION);
         if (deploymentConfiguration != null) {
@@ -76,6 +78,7 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         }
 
         deploymentConfiguration = project.getConfigurations().create(DEPLOYMENT_CONFIGURATION)
+                .withDependencies(ds -> ds.addAll(platforms))
                 .extendsFrom(project.getConfigurations().getByName(ApplicationDeploymentClasspathBuilder
                         .toDeploymentConfigurationName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)));
         if (LaunchMode.TEST.equals(mode)) {
@@ -118,7 +121,7 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         final ResolvedConfiguration resolvedConfiguration = classpathConfig.getResolvedConfiguration();
         collectDependencies(resolvedConfiguration, mode, project, appDependencies);
 
-        Configuration deploymentConfig = deploymentClasspathConfig(project, mode);
+        Configuration deploymentConfig = deploymentClasspathConfig(project, mode, deploymentDeps);
         final List<Dependency> extensionDependencies = collectExtensionDependencies(deploymentConfig);
 
         ArtifactCoords appArtifactCoords = new ArtifactCoordsImpl(project.getGroup().toString(), project.getName(),
@@ -126,7 +129,7 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
 
         return new QuarkusModelImpl(
                 new WorkspaceImpl(appArtifactCoords, getWorkspace(project.getRootProject(), mode, appArtifactCoords)),
-                new LinkedList<>(appDependencies.values()),
+                new ArrayList<>(appDependencies.values()),
                 extensionDependencies,
                 deploymentDeps.stream().map(QuarkusModelBuilder::toEnforcedPlatformDependency)
                         .filter(Objects::nonNull).collect(Collectors.toList()),
@@ -209,18 +212,15 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
     }
 
     private List<Dependency> collectExtensionDependencies(Configuration deploymentConfiguration) {
-        final List<Dependency> platformDependencies = new LinkedList<>();
-
+        final List<Dependency> extensionDependencies = new ArrayList<>();
         final ResolvedConfiguration rc = deploymentConfiguration.getResolvedConfiguration();
         for (ResolvedArtifact a : rc.getResolvedArtifacts()) {
-            if (!isDependency(a)) {
-                continue;
+            if (isDependency(a)) {
+                extensionDependencies.add(toDependency(a));
             }
-            final Dependency dependency = toDependency(a);
-            platformDependencies.add(dependency);
         }
 
-        return platformDependencies;
+        return extensionDependencies;
     }
 
     private void collectDependencies(ResolvedConfiguration configuration,

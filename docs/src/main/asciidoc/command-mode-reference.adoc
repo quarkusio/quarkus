@@ -114,7 +114,7 @@ in order to unblock the main thread and initiate the shutdown process.
 
 === Dev mode
 
-Also for command mode applications the dev mode is supported. When running `mvn compile quarkus:dev`, the command mode application is executed and on press of the Enter key, is restarted.
+Also for command mode applications the dev mode is supported. When running `mvn compile quarkus:dev`, the command mode application is executed and on press of the `Space bar` key, is restarted.
 
 As command mode applications will often require arguments to be passed on the commandline, this is also possible in dev mode via:
 

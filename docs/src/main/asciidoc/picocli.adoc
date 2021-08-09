@@ -290,6 +290,10 @@ annotationProcessor enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatfor
 annotationProcessor 'info.picocli:picocli-codegen'
 ----
 
+== Development Mode
+
+In the development mode, i.e. when running `mvn quarkus:dev`, the application is executed and restarted every time the `Space bar` key is pressed. You can also pass arguments to your command line app via the `quarkus.args` system property, e.g. `mvn quarkus:dev -Dquarkus.args='--help'` and `mvn quarkus:dev -Dquarkus.args='-c -w --val 1'`.
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-picocli.adoc[opts=optional, leveloffset=+1]

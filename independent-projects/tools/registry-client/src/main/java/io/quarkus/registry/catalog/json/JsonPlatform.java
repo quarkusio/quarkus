@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
 public class JsonPlatform extends JsonEntityWithAnySupport implements Platform {
@@ -59,6 +60,23 @@ public class JsonPlatform extends JsonEntityWithAnySupport implements Platform {
             streams = new LinkedHashMap<>();
         }
         streams.put(stream.getId(), stream);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        JsonPlatform that = (JsonPlatform) o;
+        return Objects.equals(platformKey, that.platformKey);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(platformKey);
     }
 
     @Override

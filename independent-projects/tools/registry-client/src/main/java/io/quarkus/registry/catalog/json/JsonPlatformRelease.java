@@ -8,6 +8,7 @@ import io.quarkus.registry.catalog.PlatformRelease;
 import io.quarkus.registry.catalog.PlatformReleaseVersion;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
 public class JsonPlatformRelease extends JsonEntityWithAnySupport implements PlatformRelease {
@@ -53,6 +54,23 @@ public class JsonPlatformRelease extends JsonEntityWithAnySupport implements Pla
 
     public void setUpstreamQuarkusCoreVersion(String quarkusCoreVersion) {
         this.upstreamQuarkusCoreVersion = quarkusCoreVersion;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        JsonPlatformRelease that = (JsonPlatformRelease) o;
+        return Objects.equals(version, that.version);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(version);
     }
 
     @Override

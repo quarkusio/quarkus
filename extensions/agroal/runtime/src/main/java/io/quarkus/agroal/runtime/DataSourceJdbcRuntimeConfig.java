@@ -77,6 +77,12 @@ public class DataSourceJdbcRuntimeConfig {
     public Optional<AgroalConnectionFactoryConfiguration.TransactionIsolation> transactionIsolationLevel = Optional.empty();
 
     /**
+     * Collect and display extra troubleshooting info on leaked connections.
+     */
+    @ConfigItem
+    public boolean extendedLeakReport;
+
+    /**
      * When enabled Agroal will be able to produce a warning when a connection is returned
      * to the pool without the application having closed all open statements.
      * This is unrelated with tracking of open connections.

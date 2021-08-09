@@ -2,10 +2,11 @@ package io.quarkus.hibernate.orm.runtime.devconsole;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import org.hibernate.LockOptions;
@@ -33,20 +34,29 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
             Metadata metadata, ServiceRegistry serviceRegistry) {
         INSTANCE.getPersistenceUnits().add(persistenceUnitName);
 
-        String schema = generateDDL(SchemaExport.Action.CREATE, metadata, serviceRegistry);
-        INSTANCE.createDDLs.put(persistenceUnitName, schema);
+        String createSchema = generateDDL(SchemaExport.Action.CREATE, metadata, serviceRegistry);
+        INSTANCE.createDDLs.put(persistenceUnitName, createSchema);
+
+        String dropSchema = generateDDL(SchemaExport.Action.DROP, metadata, serviceRegistry);
+        INSTANCE.dropDDLs.put(persistenceUnitName, dropSchema);
 
         for (PersistentClass entityBinding : metadata.getEntityBindings()) {
-            INSTANCE.managedEntities.add(new HibernateOrmDevConsoleInfoSupplier.EntityInfo(entityBinding.getClassName(),
+            List<EntityInfo> list = INSTANCE.managedEntities.computeIfAbsent(persistenceUnitName,
+                    pu -> new ArrayList<>());
+            list.add(new HibernateOrmDevConsoleInfoSupplier.EntityInfo(entityBinding.getClassName(),
                     entityBinding.getTable().getName(), persistenceUnitName));
         }
 
         for (NamedQueryDefinition queryDefinition : metadata.getNamedQueryDefinitions()) {
-            INSTANCE.namedQueries.add(new QueryInfo(queryDefinition));
+            List<QueryInfo> list = INSTANCE.namedQueries.computeIfAbsent(persistenceUnitName,
+                    pu -> new ArrayList<>());
+            list.add(new QueryInfo(queryDefinition));
         }
 
         for (NamedSQLQueryDefinition staticQueryDefinition : metadata.getNamedNativeQueryDefinitions()) {
-            INSTANCE.namedNativeQueries.add(new QueryInfo(staticQueryDefinition));
+            List<QueryInfo> list = INSTANCE.namedNativeQueries.computeIfAbsent(persistenceUnitName,
+                    pu -> new ArrayList<>());
+            list.add(new QueryInfo(staticQueryDefinition));
         }
     }
 
@@ -77,11 +87,12 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
 
     public static class PersistenceUnitsInfo {
 
-        private final List<String> persistenceUnits = new ArrayList<>();
-        private final List<EntityInfo> managedEntities = new ArrayList<>();
-        private final List<QueryInfo> namedQueries = new ArrayList<>();
-        private final List<QueryInfo> namedNativeQueries = new ArrayList<>();
-        private final Map<String, String> createDDLs = new HashMap<>();
+        private final List<String> persistenceUnits = Collections.synchronizedList(new ArrayList<>());
+        private final Map<String, List<EntityInfo>> managedEntities = new ConcurrentHashMap<>();
+        private final Map<String, List<QueryInfo>> namedQueries = new ConcurrentHashMap<>();
+        private final Map<String, List<QueryInfo>> namedNativeQueries = new ConcurrentHashMap<>();
+        private final Map<String, String> createDDLs = new ConcurrentHashMap<>();
+        private final Map<String, String> dropDDLs = new ConcurrentHashMap<>();
 
         public List<String> getPersistenceUnits() {
             return persistenceUnits;
@@ -91,23 +102,36 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
             return createDDLs;
         }
 
-        public List<EntityInfo> getManagedEntities() {
-            return managedEntities;
+        public Map<String, String> getDropDDLs() {
+            return dropDDLs;
         }
 
-        public List<QueryInfo> getNamedQueries() {
-            return namedQueries;
+        public List<EntityInfo> getManagedEntities(String pu) {
+            return managedEntities.getOrDefault(pu, Collections.emptyList());
         }
 
-        public List<QueryInfo> getNamedNativeQueries() {
-            return namedNativeQueries;
+        public List<QueryInfo> getNamedQueries(String pu) {
+            return namedQueries.getOrDefault(pu, Collections.emptyList());
         }
 
-        public List<QueryInfo> getAllNamedQueries() {
+        public List<QueryInfo> getNamedNativeQueries(String pu) {
+            return namedNativeQueries.getOrDefault(pu, Collections.emptyList());
+        }
+
+        public List<QueryInfo> getAllNamedQueries(String pu) {
             ArrayList<QueryInfo> allQueries = new ArrayList<>();
-            allQueries.addAll(namedQueries);
-            allQueries.addAll(namedNativeQueries);
+            allQueries.addAll(namedQueries.getOrDefault(pu, Collections.emptyList()));
+            allQueries.addAll(namedNativeQueries.getOrDefault(pu, Collections.emptyList()));
             return allQueries;
+        }
+
+        public int getNumberOfNamedQueries() {
+            return namedQueries.values().stream().mapToInt(List::size).reduce(Integer::sum).orElse(0)
+                    + namedNativeQueries.values().stream().mapToInt(List::size).reduce(Integer::sum).orElse(0);
+        }
+
+        public int getNumberOfEntities() {
+            return managedEntities.values().stream().mapToInt(List::size).reduce(Integer::sum).orElse(0);
         }
 
     }

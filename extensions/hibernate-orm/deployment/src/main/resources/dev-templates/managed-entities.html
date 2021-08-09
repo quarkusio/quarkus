@@ -4,7 +4,14 @@
 {#title}Managed Entities{/title}
 {#body}
 
-{#if info:persistence.managedEntities.isEmpty}
+{#if info:persistence.persistenceUnits.isEmpty}
+<p>No persistence units were found.</p>
+{#else}
+
+{#for pu in info:persistence.persistenceUnits}
+<h4><span class="badge">Persistence Unit</span> <i class="badge badge-info">{pu}</i></h4>
+
+{#if info:persistence.getManagedEntities(pu).isEmpty}
 <p>No entities were found.</p>
 {#else}
 <table class="table table-striped">
@@ -13,21 +20,21 @@
         <th scope="col">#</th>
         <th scope="col">Class name</th>
         <th scope="col">Table name</th>
-        <th scope="col">Persistence Unit</th>
     </tr>
     </thead>
     <tbody>
-    {#for entity in info:persistence.managedEntities}
+    {#for entity in info:persistence.getManagedEntities(pu)}
     <tr>
         <td>{count}.</td>
         <td>{entity.className}</td>
         <td>{entity.tableName}</td>
-        <td>{entity.persistenceUnitName}</td>
     </tr>
     {/for}
     </tbody>
 </table>
 {/if}
+{/for}
 
+{/if}
 {/body}
 {/include}

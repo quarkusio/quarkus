@@ -38,8 +38,8 @@ public class QuarkusGenerateCode extends QuarkusTask {
     public static final String QUARKUS_GENERATED_SOURCES = "quarkus-generated-sources";
     public static final String QUARKUS_TEST_GENERATED_SOURCES = "quarkus-test-generated-sources";
     // TODO dynamically load generation provider, or make them write code directly in quarkus-generated-sources
-    public static final String[] CODE_GENERATION_PROVIDER = new String[] { "grpc", "avdl", "avpr", "avsc" };
-    public static final String[] CODE_GENERATION_INPUT = new String[] { "proto", "avro" };
+    public static final String[] CODE_GENERATION_PROVIDER = new String[] { "grpc", "avdl", "avpr", "avsc", "open-api-json", "open-api-yml", "open-api-yaml" };
+    public static final String[] CODE_GENERATION_INPUT = new String[] { "proto", "avro", "openapi" };
 
     public static final String INIT_AND_RUN = "initAndRun";
     private Set<Path> sourcesDirectories;

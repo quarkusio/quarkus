@@ -1,0 +1,19 @@
+package {package};
+
+{#for imp in imports}
+import {imp.import};
+{/for}
+{#if serializableModel}
+
+import java.io.Serializable;
+{/if}
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+{#if useBeanValidation}
+
+import javax.validation.constraints.*;
+import javax.validation.Valid;
+{/if}
+{#for m in models}
+{#if m.model.isEnum}{#include enumOuterClass.qute e=m.model/}
+{#else}{#include pojo.qute m=m.model withXml=withXml/}{/if}
+{/for}

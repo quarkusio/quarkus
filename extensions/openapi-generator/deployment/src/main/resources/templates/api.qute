@@ -1,0 +1,55 @@
+package {package};
+
+{#for imp in imports}
+import {imp.import};
+{/for}
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.List;
+import java.util.Map;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.MediaType;
+
+{#if !disableMultipart && !disableMultipart.Empty}
+import org.apache.cxf.jaxrs.ext.multipart.*;
+{/if}
+
+{#if appName}
+/**
+  * {appName}
+  * {#if appDescription}<p/>{appDescription}{/if}
+  */
+{/if}
+@Path("{#if useAnnotatedBasePath}{contextPath}{/if}{commonPath}")
+@RegisterRestClient
+public interface {classname} {
+
+    {#for op in operations.operation}
+    {#if op.summary}
+    /**
+     * {op.summary}
+     *
+     {#if op.notes}
+     * {op.notes}
+     *
+     {/if}
+     */
+    {/if}
+    @{op.httpMethod}
+    {#if op.subresourceOperation}
+    @Path("{op.path}")
+    {/if}
+    {#if op.hasConsumes}
+    @Consumes(\{{#for consume in op.consumes}"{consume.mediaType}"{#if hasNext}, {/if}{/for}\})
+    {/if}
+    {#if op.hasProduces}
+    @Produces(\{{#for produce in op.produces}"{produce.mediaType}"{#if hasNext}, {/if}{/for}\})
+    {/if}
+    public {#if op.returnType}{op.returnType}{#else}void{/if} {op.nickname}({#for p in op.allParams}{#include pathParams.qute param=p/}{#include queryParams.qute param=p/}{#include bodyParams.qute param=p/}{#include formParams.qute param=p/}{#include headerParams.qute param=p/}{#if hasNext}, {/if}{/for});
+
+    {/for}
+}

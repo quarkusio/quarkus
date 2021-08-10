@@ -1,0 +1,30 @@
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
+/**
+ * {#insert e.description}Gets or Sets {e.name}{/}{#if e.description}{description}{/}
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+{#include additionalEnumTypeAnnotations.qute e=e/}public enum {#if e.datatypeWithEnum}{e.datatypeWithEnum}{#else}{e.classname}{/if} {
+    private {e.dataType} value;
+
+    {#if e.datatypeWithEnum}{e.datatypeWithEnum}{#else}{e.classname}{/if}({e.dataType} value){
+        this.value = value;
+    }
+
+    @Override
+    @JsonValue
+    public String toString() {
+        return String.valueOf(value);
+    }
+
+    @JsonCreator
+    public static {#if e.datatypeWithEnum}{e.datatypeWithEnum}{#else}{e.classname}{/if} fromValue(String text) {
+        for ({#if e.datatypeWithEnum}{e.datatypeWithEnum}{#else}{e.classname}{/if} b : {#if e.datatypeWithEnum}{e.datatypeWithEnum}{#else}{e.classname}{/if}.values()) {
+            if (String.valueOf(b.value).equals(text)) {
+                return b;
+            }
+        }
+        {#if e.useNullForUnknownEnumValue}return null;{#else}throw new IllegalArgumentException("Unexpected value '" + text + "'");{/if}
+    }
+}

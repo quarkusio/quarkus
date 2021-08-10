@@ -1,0 +1,145 @@
+{#if withXml}
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.XmlEnum;
+import javax.xml.bind.annotation.XmlEnumValue;
+{#else}
+import java.lang.reflect.Type;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+{/if}
+
+{#if withXml}
+@XmlAccessorType(XmlAccessType.FIELD)
+{#if m.hasVars}@XmlType(name = "{m.classname}", propOrder =
+    { {#for var in m.vars}"{var.name}"{#if hasNext}, {/if}{/for}
+}){#else}
+@XmlType(name = "{m.classname}")
+{/if}
+{#if !m.parent || m.parent.isEmpty}@XmlRootElement(name = "{m.classname}"){/if}
+{#else}
+@JsonIgnoreProperties(ignoreUnknown = true)
+{/if}
+{#if m.description}
+/**
+  * {m.description}
+ **/
+{/if}
+{#include additionalModelTypeAnnotations.qute m=m/}
+public class {m.classname} {#if m.parent}extends {m.parent}{/if}{#if m.serializableModel} implements Serializable{/if} {
+
+    {#for v in m.vars}
+    {#if v.isEnum}
+    {#if v.isContainer && v.mostInnerItems}
+    {#include enumClass.qute e=v/}
+    {#else if !v.isContainer}
+
+    {#include enumClass.qute e=v/}{/if}
+    {/if}
+    {#if withXml}
+    @XmlElement(name="{v.basename}"{#if v.required}, required = {v.required}{/if})
+    {/if}
+    {#if m.description}
+    /**
+      * {m.description}
+     **/
+    {/if}
+    {#if v.isContainer}
+    private {v.datatypeWithEnum} {v.name}{#if v.required} = {v.defaultValue}{#else} = null{/if};
+    {#else}
+    private {v.datatypeWithEnum} {v.name}{#if v.defaultValue} = {v.defaultValue}{/if};
+    {/if}
+    {/for}
+
+    {#for v in m.vars}
+    /**
+    {#if v.description}
+    * {v.description}
+    {#else}
+    * Get {v.name}
+    {/if}
+    {#if v.minimum}
+    * minimum: {v.minimum}
+    {/if}
+    {#if v.maximum}
+    * maximum: {v.maximum}
+    {/if}
+    * @return {v.name}
+    **/
+    {#if !withXml}
+    @JsonProperty("{v.baseName}")
+    {/if}
+    {#for ext in v.vendorExtensions.x-extra-annotation.orEmpty}
+    {ext}
+    {/for}
+    {#if v.useBeanValidation}{#include beanValidation.qute p=v/}{/if}
+    {#if v.isEnum && !v.isArray && !v.isMap}public {v.dataType} {v.getter}() {
+        if({v.name} == null) {
+            return null;
+        }
+        return {v.name}.value();
+    }{#else if !withXml && v.isEnum && !v.isArray && !v.isMap}public {v.datatypeWithEnum} {v.getter}() {
+        return {v.name};
+    }{#else if v.isEnum && (v.isArray || v.isMap)}public {v.datatypeWithEnum} {v.getter}() {
+        return {v.name};
+    }{#else if !v.isEnum}public {v.datatypeWithEnum} {v.getter}() {
+        return {v.name};
+    }{/if}
+
+    {#if !v.isReadOnly}
+    /**
+     * Set {v.name}
+     **/
+    public void {v.setter}({v.datatypeWithEnum} {v.name}) {
+        this.{v.name} = {v.name};
+    }
+
+    public {m.classname} {v.name}({v.datatypeWithEnum} {v.name}) {
+        this.{v.name} = {v.name};
+        return this;
+    }
+    {#if v.isArray}
+    public {m.classname} add{v.nameInCamelCase}Item({v.items.datatypeWithEnum} {v.name}Item) {
+        this.{v.name}.add({v.name}Item);
+        return this;
+    }
+    {/if}
+    {#if v.isMap}
+    public {m.classname} put{v.nameInCamelCase}Item(String key, {v.items.datatypeWithEnum} {v.name}Item) {
+        this.{v.name}.put(key, {v.name}Item);
+        return this;
+    }
+    {/if}
+    {/if}
+
+    {/for}
+    /**
+     * Create a string representation of this pojo.
+     **/
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("class {m.classname} {\n");
+        {#if m.parent}
+        sb.append("    ").append(toIndentedString(super.toString())).append("\n");{/if}
+        {#for v in m.vars}
+        sb.append("    {v.name}: ").append(toIndentedString({v.name})).append("\n");
+        {/for}
+        sb.append("}");
+        return sb.toString();
+    }
+
+    /**
+     * Convert the given object to string with each line indented by 4 spaces
+     * (except the first line).
+     */
+    private static String toIndentedString(Object o) {
+        if (o == null) {
+            return "null";
+        }
+        return o.toString().replace("\n", "\n    ");
+    }
+}

@@ -605,7 +605,7 @@ You can reference a named query instead of a (simplified) HQL query by prefixing
 [source,java]
 ----
 @Entity
-@NamedQuery(name = "Person.getByName", query = "from Person where name = :name")
+@NamedQuery(name = "Person.getByName", query = "from Person where name = ?1")
 public class Person extends PanacheEntity {
     public String name;
     public LocalDate birth;

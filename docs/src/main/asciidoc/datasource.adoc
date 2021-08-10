@@ -100,7 +100,7 @@ we assume that this should be used in testing.
 
 === Reactive datasource
 
-Add the correct reactive extension for the database you are using: `reactive-pg-client`, `reactive-mysql-client`, or `reactive-db2-client`.
+Add the correct reactive extension for the database you are using: `reactive-pg-client`, `reactive-mssql-client`, `reactive-mysql-client`, or `reactive-db2-client`.
 
 Then configure your reactive datasource:
 

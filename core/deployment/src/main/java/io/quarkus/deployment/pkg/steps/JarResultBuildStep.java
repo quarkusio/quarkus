@@ -230,12 +230,13 @@ public class JarResultBuildStep {
                 || packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR))) {
             return buildUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, uberJarMergedResourceBuildItems,
-                    uberJarIgnoredResourceBuildItems, mainClassBuildItem);
+                    uberJarIgnoredResourceBuildItems, mainClassBuildItem, classLoadingConfig);
         } else if (!legacyJarRequired.isEmpty() || packageConfig.isLegacyJar()
                 || packageConfig.type.equalsIgnoreCase(PackageConfig.LEGACY)) {
             return buildLegacyThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem,
-                    packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem);
+                    packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem,
+                    classLoadingConfig);
         } else {
             return buildThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
                     packageConfig, classLoadingConfig, applicationInfo, generatedClasses, generatedResources,
@@ -281,7 +282,8 @@ public class JarResultBuildStep {
             List<GeneratedResourceBuildItem> generatedResources,
             List<UberJarMergedResourceBuildItem> mergeResources,
             List<UberJarIgnoredResourceBuildItem> ignoredResources,
-            MainClassBuildItem mainClassBuildItem) throws Exception {
+            MainClassBuildItem mainClassBuildItem,
+            ClassLoadingConfig classLoadingConfig) throws Exception {
 
         //we use the -runner jar name, unless we are building both types
         Path runnerJar = outputTargetBuildItem.getOutputDirectory()
@@ -299,6 +301,7 @@ public class JarResultBuildStep {
                 mergeResources,
                 ignoredResources,
                 mainClassBuildItem,
+                classLoadingConfig,
                 runnerJar);
 
         //for uberjars we move the original jar, so there is only a single jar in the output directory
@@ -326,6 +329,7 @@ public class JarResultBuildStep {
             List<UberJarMergedResourceBuildItem> mergedResources,
             List<UberJarIgnoredResourceBuildItem> ignoredResources,
             MainClassBuildItem mainClassBuildItem,
+            ClassLoadingConfig classLoadingConfig,
             Path runnerJar) throws Exception {
         try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {
 
@@ -337,6 +341,7 @@ public class JarResultBuildStep {
             final Set<String> mergeResourcePaths = mergedResources.stream()
                     .map(UberJarMergedResourceBuildItem::getPath)
                     .collect(Collectors.toSet());
+            final Set<AppArtifactKey> removed = getRemovedKeys(classLoadingConfig);
             Set<String> finalIgnoredEntries = new HashSet<>(IGNORED_ENTRIES);
             packageConfig.userConfiguredIgnoredEntries.ifPresent(finalIgnoredEntries::addAll);
             ignoredResources.stream()
@@ -356,7 +361,7 @@ public class JarResultBuildStep {
 
                 // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
                 // and are not part of the optional dependencies to include
-                if (!includeAppDep(appDep, outputTargetBuildItem.getIncludedOptionalDependencies())) {
+                if (!includeAppDep(appDep, outputTargetBuildItem.getIncludedOptionalDependencies(), removed)) {
                     continue;
                 }
 
@@ -416,13 +421,17 @@ public class JarResultBuildStep {
      * @param optionalDependencies the optional dependencies to include into the final package.
      * @return {@code true} if the dependency should be included, {@code false} otherwise.
      */
-    private static boolean includeAppDep(AppDependency appDep, Optional<Set<AppArtifactKey>> optionalDependencies) {
+    private static boolean includeAppDep(AppDependency appDep, Optional<Set<AppArtifactKey>> optionalDependencies,
+            Set<AppArtifactKey> removedArtifacts) {
         if (!"jar".equals(appDep.getArtifact().getType())) {
             return false;
         }
         if (appDep.isOptional()) {
             return optionalDependencies.map(appArtifactKeys -> appArtifactKeys.contains(appDep.getArtifact().getKey()))
                     .orElse(true);
+        }
+        if (removedArtifacts.contains(appDep.getArtifact().getKey())) {
+            return false;
         }
         return true;
     }
@@ -488,7 +497,8 @@ public class JarResultBuildStep {
             ApplicationInfoBuildItem applicationInfo,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
-            MainClassBuildItem mainClassBuildItem) throws Exception {
+            MainClassBuildItem mainClassBuildItem,
+            ClassLoadingConfig classLoadingConfig) throws Exception {
 
         Path runnerJar = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
@@ -502,7 +512,8 @@ public class JarResultBuildStep {
 
             doLegacyThinJarGeneration(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem, applicationInfo,
-                    packageConfig, generatedResources, libDir, generatedClasses, runnerZipFs, mainClassBuildItem);
+                    packageConfig, generatedResources, libDir, generatedClasses, runnerZipFs, mainClassBuildItem,
+                    classLoadingConfig);
         }
         runnerJar.toFile().setReadable(true, false);
 
@@ -652,12 +663,13 @@ public class JarResultBuildStep {
         }
         final Set<AppArtifactKey> parentFirstKeys = getParentFirstKeys(curateOutcomeBuildItem, classLoadingConfig);
         StringBuilder classPath = new StringBuilder();
+        final Set<AppArtifactKey> removed = getRemovedKeys(classLoadingConfig);
         for (AppDependency appDep : curateOutcomeBuildItem.getEffectiveModel().getUserDependencies()) {
             if (rebuild) {
                 jars.addAll(appDep.getArtifact().getPaths().toList());
             } else {
                 copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, mainLib, baseLib, jars, true,
-                        classPath, appDep, transformedClasses);
+                        classPath, appDep, transformedClasses, removed);
             }
             if (parentFirstKeys.contains(appDep.getArtifact().getKey())) {
                 parentFirst.addAll(appDep.getArtifact().getPaths().toList());
@@ -698,6 +710,21 @@ public class JarResultBuildStep {
 
         runnerJar.toFile().setReadable(true, false);
         Path initJar = buildDir.resolve(QUARKUS_RUN_JAR);
+        boolean mutableJar = packageConfig.type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR);
+        if (mutableJar) {
+            //we output the properties in a reproducible manner, so we remove the date comment
+            //and sort them
+            //we still use Properties to get the escaping right though, so basically we write out the lines
+            //to memory, split them, discard comments, sort them, then write them to disk
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            outputTargetBuildItem.getBuildSystemProperties().store(out, null);
+            List<String> lines = Arrays.stream(new String(out.toByteArray(), StandardCharsets.UTF_8).split("\n"))
+                    .filter(s -> !s.startsWith("#")).sorted().collect(Collectors.toList());
+            Path buildSystemProps = quarkus.resolve(BUILD_SYSTEM_PROPERTIES);
+            try (OutputStream fileOutput = Files.newOutputStream(buildSystemProps)) {
+                fileOutput.write(String.join("\n", lines).getBytes(StandardCharsets.UTF_8));
+            }
+        }
         if (!rebuild) {
             try (FileSystem runnerZipFs = ZipUtils.newZip(initJar)) {
                 AppArtifact appArtifact = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
@@ -707,15 +734,14 @@ public class JarResultBuildStep {
             }
 
             //now copy the deployment artifacts, if required
-            if (packageConfig.type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR)) {
+            if (mutableJar) {
 
                 Path deploymentLib = libDir.resolve(DEPLOYMENT_LIB);
-                Path buildSystemProps = quarkus.resolve(BUILD_SYSTEM_PROPERTIES);
                 Files.createDirectories(deploymentLib);
                 for (AppDependency appDep : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
                     copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, deploymentLib, baseLib, jars,
                             false, classPath,
-                            appDep, new TransformedClassesBuildItem(Collections.emptyMap())); //we don't care about transformation here, so just pass in an empty item
+                            appDep, new TransformedClassesBuildItem(Collections.emptyMap()), removed); //we don't care about transformation here, so just pass in an empty item
                 }
 
                 Map<AppArtifactKey, List<String>> relativePaths = new HashMap<>();
@@ -754,18 +780,6 @@ public class JarResultBuildStep {
                     obj.writeObject(paths);
                     obj.close();
                 }
-                //we output the properties in a reproducible manner, so we remove the date comment
-                //and sort them
-                //we still use Properties to get the escaping right though, so basically we write out the lines
-                //to memory, split them, discard comments, sort them, then write them to disk
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                outputTargetBuildItem.getBuildSystemProperties().store(out, null);
-                List<String> lines = Arrays.stream(new String(out.toByteArray(), StandardCharsets.UTF_8).split("\n"))
-                        .filter(s -> !s.startsWith("#")).sorted().collect(Collectors.toList());
-
-                try (OutputStream fileOutput = Files.newOutputStream(buildSystemProps)) {
-                    fileOutput.write(String.join("\n", lines).getBytes(StandardCharsets.UTF_8));
-                }
             }
 
             if (packageConfig.includeDependencyList) {
@@ -801,12 +815,25 @@ public class JarResultBuildStep {
                 curateOutcomeBuildItem.getEffectiveModel().getRunnerParentFirstArtifacts());
         classLoadingConfig.parentFirstArtifacts.ifPresent(
                 parentFirstArtifacts -> {
-                    String[] artifacts = parentFirstArtifacts.split(",");
-                    for (String artifact : artifacts) {
+                    for (String artifact : parentFirstArtifacts) {
                         parentFirstKeys.add(new AppArtifactKey(artifact.split(":")));
                     }
                 });
         return parentFirstKeys;
+    }
+
+    /**
+     * @return a {@code Set} containing the key of the artifacts to load from the parent ClassLoader first.
+     */
+    private Set<AppArtifactKey> getRemovedKeys(ClassLoadingConfig classLoadingConfig) {
+        final Set<AppArtifactKey> removed = new HashSet<>();
+        classLoadingConfig.removedArtifacts.ifPresent(
+                removedArtifacts -> {
+                    for (String artifact : removedArtifacts) {
+                        removed.add(new AppArtifactKey(artifact.split(":")));
+                    }
+                });
+        return removed;
     }
 
     private boolean downloadFernflowerJar(PackageConfig packageConfig, Path fernflowerJar) {
@@ -864,13 +891,13 @@ public class JarResultBuildStep {
     private void copyDependency(Set<AppArtifactKey> parentFirstArtifacts, OutputTargetBuildItem outputTargetBuildItem,
             Map<AppArtifactKey, List<Path>> runtimeArtifacts, Path libDir, Path baseLib, List<Path> jars,
             boolean allowParentFirst, StringBuilder classPath, AppDependency appDep,
-            TransformedClassesBuildItem transformedClasses)
+            TransformedClassesBuildItem transformedClasses, Set<AppArtifactKey> removedDeps)
             throws IOException {
         final AppArtifact depArtifact = appDep.getArtifact();
 
         // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
         // and are not part of the optional dependencies to include
-        if (!includeAppDep(appDep, outputTargetBuildItem.getIncludedOptionalDependencies())) {
+        if (!includeAppDep(appDep, outputTargetBuildItem.getIncludedOptionalDependencies(), removedDeps)) {
             return;
         }
         if (runtimeArtifacts.containsKey(depArtifact.getKey())) {
@@ -950,6 +977,7 @@ public class JarResultBuildStep {
             MainClassBuildItem mainClassBuildItem,
             List<UberJarRequiredBuildItem> uberJarRequired,
             List<UberJarMergedResourceBuildItem> mergeResources,
+            ClassLoadingConfig classLoadingConfig,
             List<UberJarIgnoredResourceBuildItem> ignoreResources) throws Exception {
         Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
@@ -971,7 +999,7 @@ public class JarResultBuildStep {
                     applicationArchivesBuildItem,
                     packageConfig, applicationInfo, allClasses, generatedResources, mergeResources,
                     ignoreResources, mainClassBuildItem,
-                    targetDirectory);
+                    targetDirectory, classLoadingConfig);
             // additionally copy any json config files to a location accessible by native-image tool during
             // native-image generation
             copyJsonConfigFiles(applicationArchivesBuildItem, targetDirectory);
@@ -979,7 +1007,8 @@ public class JarResultBuildStep {
         } else {
             return buildNativeImageThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem,
-                    applicationInfo, packageConfig, allClasses, generatedResources, mainClassBuildItem, targetDirectory);
+                    applicationInfo, packageConfig, allClasses, generatedResources, mainClassBuildItem, targetDirectory,
+                    classLoadingConfig);
         }
     }
 
@@ -992,7 +1021,8 @@ public class JarResultBuildStep {
             List<GeneratedClassBuildItem> allClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             MainClassBuildItem mainClassBuildItem,
-            Path targetDirectory) throws Exception {
+            Path targetDirectory,
+            ClassLoadingConfig classLoadingConfig) throws Exception {
         copyJsonConfigFiles(applicationArchivesBuildItem, targetDirectory);
 
         Path runnerJar = targetDirectory
@@ -1006,7 +1036,7 @@ public class JarResultBuildStep {
 
             doLegacyThinJarGeneration(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem, applicationInfo, packageConfig, generatedResources, libDir, allClasses,
-                    runnerZipFs, mainClassBuildItem);
+                    runnerZipFs, mainClassBuildItem, classLoadingConfig);
         }
         runnerJar.toFile().setReadable(true, false);
         return new NativeImageSourceJarBuildItem(runnerJar, libDir);
@@ -1023,7 +1053,8 @@ public class JarResultBuildStep {
             List<UberJarMergedResourceBuildItem> mergeResources,
             List<UberJarIgnoredResourceBuildItem> ignoreResources,
             MainClassBuildItem mainClassBuildItem,
-            Path targetDirectory) throws Exception {
+            Path targetDirectory,
+            ClassLoadingConfig classLoadingConfig) throws Exception {
         //we use the -runner jar name, unless we are building both types
         Path runnerJar = targetDirectory
                 .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
@@ -1039,6 +1070,7 @@ public class JarResultBuildStep {
                 mergeResources,
                 ignoreResources,
                 mainClassBuildItem,
+                classLoadingConfig,
                 runnerJar);
 
         return new NativeImageSourceJarBuildItem(runnerJar, null);
@@ -1080,7 +1112,8 @@ public class JarResultBuildStep {
             Path libDir,
             List<GeneratedClassBuildItem> allClasses,
             FileSystem runnerZipFs,
-            MainClassBuildItem mainClassBuildItem)
+            MainClassBuildItem mainClassBuildItem,
+            ClassLoadingConfig classLoadingConfig)
             throws IOException {
         final Map<String, String> seen = new HashMap<>();
         final StringBuilder classPath = new StringBuilder();
@@ -1090,8 +1123,9 @@ public class JarResultBuildStep {
         final Set<String> finalIgnoredEntries = new HashSet<>(IGNORED_ENTRIES);
         packageConfig.userConfiguredIgnoredEntries.ifPresent(finalIgnoredEntries::addAll);
 
+        final Set<AppArtifactKey> removed = getRemovedKeys(classLoadingConfig);
         copyLibraryJars(runnerZipFs, outputTargetBuildItem, transformedClasses, libDir, classPath, appDeps, services,
-                finalIgnoredEntries);
+                finalIgnoredEntries, removed);
 
         AppArtifact appArtifact = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
         // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
@@ -1106,14 +1140,14 @@ public class JarResultBuildStep {
     private void copyLibraryJars(FileSystem runnerZipFs, OutputTargetBuildItem outputTargetBuildItem,
             TransformedClassesBuildItem transformedClasses, Path libDir,
             StringBuilder classPath, List<AppDependency> appDeps, Map<String, List<byte[]>> services,
-            Set<String> ignoredEntries) throws IOException {
+            Set<String> ignoredEntries, Set<AppArtifactKey> removedDependencies) throws IOException {
 
         for (AppDependency appDep : appDeps) {
             final AppArtifact depArtifact = appDep.getArtifact();
 
             // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
             // and are not part of the optional dependencies to include
-            if (!includeAppDep(appDep, outputTargetBuildItem.getIncludedOptionalDependencies())) {
+            if (!includeAppDep(appDep, outputTargetBuildItem.getIncludedOptionalDependencies(), removedDependencies)) {
                 continue;
             }
 

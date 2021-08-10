@@ -188,17 +188,21 @@ public class QuarkusBootstrap implements Serializable {
                             p.getProperty(selectKey("quarkus.class-loading.parent-first-artifacts", p, mode)));
                     Set<AppArtifactKey> liveReloadable = toArtifactSet(
                             p.getProperty(selectKey("quarkus.class-loading.reloadable-artifacts", p, mode)));
+                    Set<AppArtifactKey> removedArtifacts = toArtifactSet(
+                            p.getProperty(selectKey("quarkus.class-loading.removed-artifacts", p, mode)));
                     boolean flatClassPath = Boolean.parseBoolean(
                             p.getProperty(selectKey("quarkus.test.flat-class-path", p, mode)));
                     Map<AppArtifactKey, List<String>> removedResources = toArtifactMapList(
                             "quarkus.class-loading.removed-resources.", p, mode);
-                    return new ConfiguredClassLoading(parentFirst, liveReloadable, removedResources, flatClassPath);
+                    return new ConfiguredClassLoading(parentFirst, liveReloadable, removedArtifacts, removedResources,
+                            flatClassPath);
                 } catch (IOException e) {
                     throw new RuntimeException("Failed to load bootstrap classloading config from application.properties", e);
                 }
             }
         }
-        return new ConfiguredClassLoading(Collections.emptySet(), Collections.emptySet(), Collections.emptyMap(), false);
+        return new ConfiguredClassLoading(Collections.emptySet(), Collections.emptySet(), Collections.emptySet(),
+                Collections.emptyMap(), false);
     }
 
     private static Map<AppArtifactKey, List<String>> toArtifactMapList(String baseConfigKey, Properties properties, Mode mode) {

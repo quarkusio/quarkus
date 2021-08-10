@@ -174,7 +174,12 @@ public class DataSources {
         //we use a custom cache for two reasons:
         //fast thread local cache should be faster
         //and it prevents a thread local leak
-        dataSourceConfiguration.connectionPoolConfiguration().connectionCache(new QuarkusConnectionCache());
+        try {
+            Class.forName("io.netty.util.concurrent.FastThreadLocal", true, Thread.currentThread().getContextClassLoader());
+            dataSourceConfiguration.connectionPoolConfiguration().connectionCache(new QuarkusNettyConnectionCache());
+        } catch (ClassNotFoundException e) {
+            dataSourceConfiguration.connectionPoolConfiguration().connectionCache(new QuarkusSimpleConnectionCache());
+        }
 
         agroalConnectionConfigurer.setExceptionSorter(resolvedDbKind, dataSourceConfiguration);
 

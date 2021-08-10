@@ -32,7 +32,7 @@ public class ServerJacksonMessageBodyReader extends JacksonBasicMessageBodyReade
         try {
             return doReadFrom(type, genericType, entityStream);
         } catch (MismatchedInputException e) {
-            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
         }
     }
 

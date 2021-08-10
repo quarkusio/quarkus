@@ -70,7 +70,7 @@ public interface RoutingExchange {
     }
 
     /**
-     * Set the response status code to 200 and return the response.
+     * Set the response status code to 500 and return the response.
      * You must call <code>HttpServerResponse.end()</code> afterwards to end the response.
      * 
      * @return the HTTP response object
@@ -80,7 +80,7 @@ public interface RoutingExchange {
     }
 
     /**
-     * Set the response status code to 200 and return the response.
+     * Set the response status code to 404 and return the response.
      * You must call <code>HttpServerResponse.end()</code> afterwards to end the response.
      * 
      * @return the HTTP response object

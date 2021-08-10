@@ -302,8 +302,9 @@ public class JarRunnerIT extends MojoTestBase {
         }
 
         //add a user jar to the providers dir, and make sure it is picked up in re-augmentation
+        File addedJar = providers.resolve("added.jar").toFile();
         ShrinkWrap.create(JavaArchive.class).addClass(AddedRestEndpoint.class)
-                .as(ZipExporter.class).exportTo(providers.resolve("added.jar").toFile());
+                .as(ZipExporter.class).exportTo(addedJar);
 
         //now reaugment
         List<String> commands = new ArrayList<>();
@@ -337,6 +338,46 @@ public class JarRunnerIT extends MojoTestBase {
         } finally {
             process.destroy();
         }
+
+        //now remove it, and make sure everything is back to the way it was
+
+        //add a user jar to the providers dir, and make sure it is picked up in re-augmentation
+        addedJar.delete();
+
+        //now reaugment
+        commands = new ArrayList<>();
+        commands.add(JavaBinFinder.findBin());
+        commands.add("-Dquarkus.http.root-path=/anothermove");
+        commands.add("-Dquarkus.launch.rebuild=true");
+        commands.add("-jar");
+        commands.add(jar.toString());
+        processBuilder = new ProcessBuilder(commands.toArray(new String[0]));
+        processBuilder.redirectOutput(output);
+        processBuilder.redirectError(output);
+        Assertions.assertEquals(0, processBuilder.start().waitFor());
+
+        process = doLaunch(jar, output).start();
+        try {
+            // Wait until server up
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(1, TimeUnit.MINUTES)
+                    .until(() -> DevModeTestUtils.getHttpResponse("/anothermove/app/hello/package", 200));
+
+            String logs = FileUtils.readFileToString(output, "UTF-8");
+
+            assertThatOutputWorksCorrectly(logs);
+
+            // test that the application name and version are properly set
+            assertApplicationPropertiesSetCorrectly("/anothermove");
+
+            assertResourceReadingFromClassPathWorksCorrectly("/anothermove");
+            assertUsingProtectionDomainWorksCorrectly("/anothermove");
+            performRequest("/anothermove/app/added", 404);
+        } finally {
+            process.destroy();
+        }
+
     }
 
     @Test

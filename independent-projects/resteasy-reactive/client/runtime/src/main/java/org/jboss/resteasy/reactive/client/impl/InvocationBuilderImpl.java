@@ -10,8 +10,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.CompletionStageRxInvoker;
@@ -197,8 +195,8 @@ public class InvocationBuilderImpl implements Invocation.Builder {
             throw new BlockingNotAllowedException();
         }
         try {
-            return c.get(readTimeoutMs, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException | TimeoutException e) {
+            return c.get();
+        } catch (InterruptedException e) {
             throw new ProcessingException(e);
         } catch (ExecutionException e) {
             if (e.getCause() instanceof ProcessingException) {

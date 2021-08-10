@@ -31,13 +31,13 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
     }
 
     public static void pushPersistenceUnit(String persistenceUnitName,
-            Metadata metadata, ServiceRegistry serviceRegistry) {
+            Metadata metadata, ServiceRegistry serviceRegistry, String importFile) {
         INSTANCE.getPersistenceUnits().add(persistenceUnitName);
 
-        String createSchema = generateDDL(SchemaExport.Action.CREATE, metadata, serviceRegistry);
+        String createSchema = generateDDL(SchemaExport.Action.CREATE, metadata, serviceRegistry, importFile);
         INSTANCE.createDDLs.put(persistenceUnitName, createSchema);
 
-        String dropSchema = generateDDL(SchemaExport.Action.DROP, metadata, serviceRegistry);
+        String dropSchema = generateDDL(SchemaExport.Action.DROP, metadata, serviceRegistry, importFile);
         INSTANCE.dropDDLs.put(persistenceUnitName, dropSchema);
 
         for (PersistentClass entityBinding : metadata.getEntityBindings()) {
@@ -60,10 +60,12 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
         }
     }
 
-    private static String generateDDL(SchemaExport.Action action, Metadata metadata, ServiceRegistry serviceRegistry) {
+    private static String generateDDL(SchemaExport.Action action, Metadata metadata, ServiceRegistry serviceRegistry,
+            String importFiles) {
         SchemaExport schemaExport = new SchemaExport();
         schemaExport.setFormat(true);
         schemaExport.setDelimiter(";");
+        schemaExport.setImportFiles(importFiles);
         StringWriter writer = new StringWriter();
         schemaExport.doExecution(action, false, metadata, serviceRegistry,
                 new TargetDescriptor() {

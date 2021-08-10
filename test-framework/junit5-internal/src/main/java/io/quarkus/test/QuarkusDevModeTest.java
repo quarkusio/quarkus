@@ -188,6 +188,7 @@ public class QuarkusDevModeTest
         if (archiveProducer == null) {
             throw new RuntimeException("QuarkusDevModeTest does not have archive producer set");
         }
+        ExclusivityChecker.checkTestType(extensionContext, QuarkusDevModeTest.class);
 
         if (logFileName != null) {
             PropertyTestUtil.setLogFileProperty(logFileName);

@@ -16,6 +16,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -233,11 +234,10 @@ public class SpringDataJPAProcessor {
     }
 
     private Collection<DotName> getAllNoRepositoryBeanInterfaces(IndexView index) {
-        return index.getKnownClasses()
-                .stream()
-                .filter(classInfo -> Modifier.isInterface(classInfo.flags()))
-                .filter(classInfo -> classInfo.classAnnotation(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN) != null)
-                .map(classInfo -> classInfo.name())
+        return index.getAnnotations(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN).stream()
+                .filter(ai -> ai.target().kind() == Kind.CLASS)
+                .filter(ai -> Modifier.isInterface(ai.target().asClass().flags()))
+                .map(ai -> ai.target().asClass().name())
                 .collect(Collectors.toSet());
     }
 

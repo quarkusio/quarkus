@@ -1,0 +1,76 @@
+{#include main}
+{#style}
+.ddl-script {
+    padding: 5px;
+}
+th .badge {
+    font-size: 100%;
+}
+{/style}
+{#title}Persistence Units{/title}
+{#body}
+
+{#if info:persistence.persistenceUnits.isEmpty}
+<p>No persistence units found.</p>
+{#else}
+{#for unit in info:persistence.persistenceUnits}
+<table class="table table-striped">
+    <thead class="thead-dark">
+    <tr>
+        <th scope="col">Persistence Unit <i class="badge badge-info">{unit}</i></th>
+    </tr>
+    </thead>
+    <thead class="thead-light">
+    <tr>
+        <th scope="col">Create Script</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>
+            <pre id="create-script-{count}" class="ddl-script">{info:persistence.createDDLs.get(unit)}</pre>
+            <p class="float-right">
+                <a href="#" onclick="copyToClipboard('create-script-{count}'); return false;">
+                    <i class="fa fa-clipboard"></i><span class="badge">Copy</span></a>
+            </p>
+        </td>
+    </tr>
+    <thead class="thead-light">
+    <tr>
+        <th scope="col">Drop Script</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>
+            <pre id="drop-script-{count}" class="ddl-script">{info:persistence.dropDDLs.get(unit)}</pre>
+            <p class="float-right">
+                <a href="#" onclick="copyToClipboard('drop-script-{count}'); return false;">
+                    <i class="fa fa-clipboard"></i><span class="badge">Copy</span></a>
+            </p>
+        </td>
+    </tr>
+    </tbody>
+</table>
+{/for}
+{/if}
+
+<script>
+<!--
+function copyToClipboard(elementId) {
+    var element = document.getElementById(elementId);
+    var range = document.createRange();
+    range.setStartBefore(element.firstChild);
+    range.setEndAfter(element.lastChild);
+    var selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    document.execCommand('copy');
+    selection.removeAllRanges();
+}
+//-->
+
+</script>
+
+{/body}
+{/include}

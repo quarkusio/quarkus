@@ -1,0 +1,40 @@
+{#include main}
+{#style}
+{/style}
+{#title}Managed Entities{/title}
+{#body}
+
+{#if info:persistence.persistenceUnits.isEmpty}
+<p>No persistence units were found.</p>
+{#else}
+
+{#for pu in info:persistence.persistenceUnits}
+<h4><span class="badge">Persistence Unit</span> <i class="badge badge-info">{pu}</i></h4>
+
+{#if info:persistence.getManagedEntities(pu).isEmpty}
+<p>No entities were found.</p>
+{#else}
+<table class="table table-striped">
+    <thead class="thead-dark">
+    <tr>
+        <th scope="col">#</th>
+        <th scope="col">Class name</th>
+        <th scope="col">Table name</th>
+    </tr>
+    </thead>
+    <tbody>
+    {#for entity in info:persistence.getManagedEntities(pu)}
+    <tr>
+        <td>{count}.</td>
+        <td>{entity.className}</td>
+        <td>{entity.tableName}</td>
+    </tr>
+    {/for}
+    </tbody>
+</table>
+{/if}
+{/for}
+
+{/if}
+{/body}
+{/include}

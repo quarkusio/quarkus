@@ -1,0 +1,47 @@
+{#include main}
+{#style}
+{/style}
+{#title}Named Queries{/title}
+{#body}
+
+{#if info:persistence.persistenceUnits.isEmpty}
+<p>No persistence units were found.</p>
+{#else}
+
+{#for pu in info:persistence.persistenceUnits}
+<h4><span class="badge">Persistence Unit</span> <i class="badge badge-info">{pu}</i></h4>
+
+{#if info:persistence.getAllNamedQueries(pu).isEmpty}
+<p>No named queries were found.</p>
+{#else}
+<table class="table table-striped">
+    <thead class="thead-dark">
+    <tr>
+        <th scope="col">#</th>
+        <th scope="col">Name</th>
+        <th scope="col">Query</th>
+        <th scope="col">Lock Mode</th>
+        <th scope="col">Cacheable</th>
+        <th scope="col">Query Type</th>
+    </tr>
+    </thead>
+    <tbody>
+    {#for query in info:persistence.getAllNamedQueries(pu)}
+    <tr>
+        <td>{count}.</td>
+        <td>{query.name}</td>
+        <td>{query.query}</td>
+        <td>{query.lockMode}</td>
+        <td>{query.cacheable}</td>
+        <td>{query.type}</td>
+    </tr>
+    {/for}
+    </tbody>
+</table>
+{/if}
+
+{/for}
+{/if}
+
+{/body}
+{/include}

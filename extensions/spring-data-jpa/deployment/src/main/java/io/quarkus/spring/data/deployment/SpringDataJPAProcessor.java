@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -232,20 +233,12 @@ public class SpringDataJPAProcessor {
     }
 
     private Collection<DotName> getAllNoRepositoryBeanInterfaces(IndexView index) {
-        Set<DotName> result = new HashSet<>();
-        Collection<ClassInfo> knownClasses = index.getKnownClasses();
-        for (ClassInfo clazz : knownClasses) {
-            if (!Modifier.isInterface(clazz.flags())) {
-                continue;
-            }
-            boolean found = false;
-            for (ClassInfo classInfo : knownClasses) {
-                if (classInfo.classAnnotation(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN) != null) {
-                    result.add(classInfo.name());
-                }
-            }
-        }
-        return result;
+        return index.getKnownClasses()
+                .stream()
+                .filter(classInfo -> Modifier.isInterface(classInfo.flags()))
+                .filter(classInfo -> classInfo.classAnnotation(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN) != null)
+                .map(classInfo -> classInfo.name())
+                .collect(Collectors.toSet());
     }
 
     // generate a concrete class that will be used by Arc to resolve injection points

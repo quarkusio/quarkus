@@ -41,6 +41,7 @@ public class TestResource {
         testUnmatched();
         testI18s();
         testCompletionReflection();
+        testDefaultValueProvider();
         return "OK";
     }
 
@@ -114,5 +115,10 @@ public class TestResource {
     private void testCompletionReflection() {
         CommandLine completionReflectionCommand = new CommandLine(CompletionReflectionCommand.class, factory);
         completionReflectionCommand.execute("one");
+    }
+
+    private void testDefaultValueProvider() {
+        CommandLine cmd = new CommandLine(DefaultValueProviderCommand.class, factory);
+        Assertions.assertThat(cmd.execute()).isZero();
     }
 }

@@ -10,11 +10,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -232,20 +234,11 @@ public class SpringDataJPAProcessor {
     }
 
     private Collection<DotName> getAllNoRepositoryBeanInterfaces(IndexView index) {
-        Set<DotName> result = new HashSet<>();
-        Collection<ClassInfo> knownClasses = index.getKnownClasses();
-        for (ClassInfo clazz : knownClasses) {
-            if (!Modifier.isInterface(clazz.flags())) {
-                continue;
-            }
-            boolean found = false;
-            for (ClassInfo classInfo : knownClasses) {
-                if (classInfo.classAnnotation(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN) != null) {
-                    result.add(classInfo.name());
-                }
-            }
-        }
-        return result;
+        return index.getAnnotations(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN).stream()
+                .filter(ai -> ai.target().kind() == Kind.CLASS)
+                .filter(ai -> Modifier.isInterface(ai.target().asClass().flags()))
+                .map(ai -> ai.target().asClass().name())
+                .collect(Collectors.toSet());
     }
 
     // generate a concrete class that will be used by Arc to resolve injection points

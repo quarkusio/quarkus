@@ -51,6 +51,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.infinispan.client.runtime.InfinispanClientBuildTimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanClientProducer;
@@ -62,6 +63,7 @@ class InfinispanClientProcessor {
     private static final String META_INF = "META-INF";
     private static final String HOTROD_CLIENT_PROPERTIES = META_INF + File.separator + "hotrod-client.properties";
     private static final String PROTO_EXTENSION = ".proto";
+    private static final String SASL_SECURITY_PROVIDER = "com.sun.security.sasl.Provider";
 
     /**
      * The Infinispan client build time configuration.
@@ -76,6 +78,7 @@ class InfinispanClientProcessor {
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
+            BuildProducer<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
             BuildProducer<NativeImageConfigBuildItem> nativeImageConfig,
             CombinedIndexBuildItem applicationIndexBuildItem) throws ClassNotFoundException, IOException {
 
@@ -86,6 +89,7 @@ class InfinispanClientProcessor {
 
         // Enable SSL support by default
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.INFINISPAN_CLIENT));
+        nativeImageSecurityProviders.produce(new NativeImageSecurityProviderBuildItem(SASL_SECURITY_PROVIDER));
 
         InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(HOTROD_CLIENT_PROPERTIES);
         Properties properties;

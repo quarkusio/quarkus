@@ -258,7 +258,7 @@ jobs:
             name: "11 Windows",
             java-version: 11,
             maven_args: "-DskipDocs -Dformat.skip",
-            maven_opts: "-Xmx1500m -XX:MaxMetaspaceSize=1g",
+            maven_opts: "-Xmx1500m -XX:MaxMetaspaceSize=1g -Xlog:gc*=debug:file=windows-java-11.txt",
             os-name: "windows-latest"
           }
 
@@ -323,6 +323,11 @@ jobs:
             **/target/*-reports/TEST-*.xml
             target/build-report.json
           retention-days: 2
+      - name: Upload gc.log
+        uses: actions/upload-artifact@v2
+        with:
+          name: "GC log - JDK ${{matrix.java.name}}"
+          path: "**/windows-java-11.txt"
 
   maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}

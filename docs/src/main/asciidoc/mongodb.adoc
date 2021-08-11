@@ -250,6 +250,8 @@ and automatically configure the connection.
 When running the production version of the application, the MongoDB connection need to be configured as normal, so if you want to include a production database config in your
 `application.properties` and continue to use Dev Services we recommend that you use the `%prod.` profile to define your MongoDB settings.
 
+include::{generated-dir}/config/quarkus-mongodb-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+
 == Multiple MongoDB Clients
 
 MongoDB allows you to configure multiple clients.

@@ -19,6 +19,7 @@ import javax.inject.Singleton;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
+import org.jboss.logmanager.Level;
 import org.jboss.logmanager.LogManager;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -32,6 +33,7 @@ import io.quarkus.deployment.builditem.ContextHandlerBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.IOThreadDetectorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.ThreadFactoryBuildItem;
@@ -75,6 +77,17 @@ class VertxCoreProcessor {
     @BuildStep
     LogCleanupFilterBuildItem cleanupVertxWarnings() {
         return new LogCleanupFilterBuildItem("io.vertx.core.impl.ContextImpl", "You have disabled TCCL checks");
+    }
+
+    @BuildStep
+    LogCategoryBuildItem preventLoggerContention() {
+        //Prevent the Logging warning about the TCCL checks being disabled to be logged;
+        //this is similar to #cleanupVertxWarnings but prevents it by changing the level:
+        // it takes advantage of the fact that there is a single other log in thi class,
+        // and it happens to be at error level.
+        //This is more effective than the LogCleanupFilterBuildItem as we otherwise have
+        //contention since this message could be logged very frequently.
+        return new LogCategoryBuildItem("io.vertx.core.impl.ContextImpl", Level.ERROR);
     }
 
     @BuildStep

@@ -33,6 +33,7 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Providers;
 
+import org.jboss.resteasy.reactive.RestHeader;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 
 import io.quarkus.runtime.BlockingOperationControl;
@@ -138,8 +139,8 @@ public class SimpleQuarkusRestResource {
 
     @GET
     @Path("filters")
-    public Response filters(@Context HttpHeaders headers) {
-        return Response.ok().header("filter-request", headers.getHeaderString("filter-request")).build();
+    public Response filters(@Context HttpHeaders headers, @RestHeader("filter-request") String header) {
+        return Response.ok().header("filter-request", header).build();
     }
 
     @GET

@@ -28,6 +28,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.redis.client.deployment.RedisBuildTimeConfig.DevServiceConfiguration;
 import io.quarkus.redis.client.runtime.RedisClientUtil;
@@ -55,7 +56,7 @@ public class DevServicesRedisProcessor {
     private static volatile Map<String, DevServiceConfiguration> capturedDevServicesConfiguration;
     private static volatile boolean first = true;
 
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = IsDockerRunningSilent.class)
+    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = { IsDockerRunningSilent.class, GlobalDevServicesConfig.Enabled.class })
     public void startRedisContainers(LaunchModeBuildItem launchMode,
             Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             BuildProducer<DevServicesConfigResultBuildItem> devConfigProducer, RedisBuildTimeConfig config) {

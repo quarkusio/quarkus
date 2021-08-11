@@ -18,6 +18,7 @@ import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
+import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.vault.runtime.VaultVersions;
 import io.quarkus.vault.runtime.config.DevServicesConfig;
@@ -36,7 +37,7 @@ public class DevServicesVaultProcessor {
     private static volatile boolean first = true;
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
     public void startVaultContainers(BuildProducer<DevServicesConfigResultBuildItem> devConfig, VaultBuildTimeConfig config) {
 
         DevServicesConfig currentDevServicesConfiguration = config.devservices;

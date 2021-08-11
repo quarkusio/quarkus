@@ -129,7 +129,7 @@
                 <configuration>
                     <skip>false</skip>
                     <systemPropertyVariables>
-                        <quarkus.keycloak.devservices.enabled>false</quarkus.keycloak.devservices.enabled>
+                        <quarkus.devservices.enabled>false</quarkus.devservices.enabled>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

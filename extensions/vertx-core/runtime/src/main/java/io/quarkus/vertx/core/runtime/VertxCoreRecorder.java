@@ -510,11 +510,13 @@ public class VertxCoreRecorder {
     }
 
     public ThreadFactory createThreadFactory() {
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         AtomicInteger threadCount = new AtomicInteger(0);
         return runnable -> {
             VertxThread thread = VertxThreadFactory.INSTANCE.newVertxThread(runnable,
                     "executor-thread-" + threadCount.getAndIncrement(), true, 0, null);
             thread.setDaemon(true);
+            thread.setContextClassLoader(tccl);
             return thread;
         };
     }

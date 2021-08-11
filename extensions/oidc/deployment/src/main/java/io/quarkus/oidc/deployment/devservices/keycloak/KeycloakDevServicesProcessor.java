@@ -39,6 +39,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
+import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 import io.quarkus.oidc.deployment.OidcBuildStep.IsEnabled;
 import io.quarkus.oidc.deployment.devservices.OidcDevServicesBuildItem;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -78,7 +79,7 @@ public class KeycloakDevServicesProcessor {
     private static volatile FileTime capturedRealmFileLastModifiedDate;
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = IsEnabled.class)
+    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = { IsEnabled.class, GlobalDevServicesConfig.Enabled.class })
     public KeycloakDevServicesConfigBuildItem startKeycloakContainer(
             Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             BuildProducer<DevServicesConfigResultBuildItem> devServices,

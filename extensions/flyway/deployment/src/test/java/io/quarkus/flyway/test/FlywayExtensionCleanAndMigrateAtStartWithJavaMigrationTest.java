@@ -96,6 +96,11 @@ public class FlywayExtensionCleanAndMigrateAtStartWithJavaMigrationTest {
                 statement.executeUpdate("INSERT INTO quarked_flyway VALUES (1002, 'test')");
             }
         }
+
+        @Override
+        public boolean isStateScript() {
+            return false;
+        }
     }
 
 }

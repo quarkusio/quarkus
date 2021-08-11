@@ -18,6 +18,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -30,6 +31,9 @@ public class RegistriesConfigLocator {
 
     public static final String CONFIG_RELATIVE_PATH = ".quarkus/config.yaml";
     public static final String CONFIG_FILE_PATH_PROPERTY = "quarkus.tools.config";
+
+    static final String QUARKUS_REGISTRIES = "QUARKUS_REGISTRIES";
+    static final String QUARKUS_REGISTRY_ENV_VAR_PREFIX = "QUARKUS_REGISTRY_";
 
     /**
      * Locate the registry client configuration file and deserialize it.
@@ -48,6 +52,10 @@ public class RegistriesConfigLocator {
      * @return registry client configuration, never null
      */
     public static RegistriesConfig resolveConfig() {
+        final RegistriesConfig config = initFromEnvironmentOrNull(System.getenv());
+        if (config != null) {
+            return config;
+        }
         final Path configYaml = locateConfigYaml();
         if (configYaml == null) {
             return completeRequiredConfig(new JsonRegistriesConfig());
@@ -116,7 +124,7 @@ public class RegistriesConfigLocator {
         return Files.exists(configYaml) ? configYaml : null;
     }
 
-    private static RegistriesConfig completeRequiredConfig(RegistriesConfig original) {
+    static RegistriesConfig completeRequiredConfig(RegistriesConfig original) {
         final JsonRegistriesConfig config = new JsonRegistriesConfig();
         config.setDebug(original.isDebug());
         if (original.getRegistries().isEmpty()) {
@@ -241,5 +249,48 @@ public class RegistriesConfigLocator {
         mavenRepo.setId(Constants.DEFAULT_REGISTRY_ID);
         mavenRepo.setUrl(Constants.DEFAULT_REGISTRY_MAVEN_REPO_URL);
         return qer;
+    }
+
+    static RegistriesConfig initFromEnvironmentOrNull(Map<String, String> map) {
+        final String envRegistries = map.get(QUARKUS_REGISTRIES);
+        if (envRegistries == null || envRegistries.isBlank()) {
+            return null;
+        }
+        final JsonRegistriesConfig registries = new JsonRegistriesConfig();
+        for (String registryId : envRegistries.split(",")) {
+            final JsonRegistryConfig registry = new JsonRegistryConfig();
+            registry.setId(registryId);
+            registries.addRegistry(registry);
+
+            final String envvarPrefix = getEnvVarPrefix(registryId);
+            for (Map.Entry<String, String> var : map.entrySet()) {
+                if (!var.getKey().startsWith(envvarPrefix)) {
+                    continue;
+                }
+
+                if (isEnvVarOption(var.getKey(), envvarPrefix, "UPDATE_POLICY")) {
+                    registry.setUpdatePolicy(var.getValue());
+                    break;
+                }
+            }
+        }
+        return completeRequiredConfig(registries);
+    }
+
+    private static boolean isEnvVarOption(String varName, String registryPrefix, String optionName) {
+        return varName.regionMatches(registryPrefix.length(), optionName, 0, optionName.length());
+    }
+
+    private static String getEnvVarPrefix(String registryId) {
+        final StringBuilder buf = new StringBuilder(QUARKUS_REGISTRY_ENV_VAR_PREFIX);
+        for (int i = 0; i < registryId.length(); ++i) {
+            final char c = registryId.charAt(i);
+            if (c == '.') {
+                buf.append('_');
+            } else {
+                buf.append(Character.toUpperCase(c));
+            }
+        }
+        return buf.append('_').toString();
     }
 }

@@ -440,6 +440,7 @@ jobs:
           name: "build-reports-Gradle Tests - JDK ${{matrix.java.name}}"
           path: |
             **/build/test-results/test/TEST-*.xml
+            **/target/*-reports/TEST-*.xml
             target/build-report.json
           retention-days: 2
 
@@ -635,5 +636,6 @@ jobs:
           name: "build-reports-Native Tests - ${{matrix.category}}"
           path: |
             **/target/*-reports/TEST-*.xml
+            **/build/test-results/test/TEST-*.xml
             target/build-report.json
           retention-days: 2

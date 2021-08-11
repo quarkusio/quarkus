@@ -1458,9 +1458,9 @@ As a CDI based runtime, Quarkus extensions often make CDI beans available as par
 However, Quarkus DI solution does not support CDI Portable Extensions.
 Instead, Quarkus extensions can make use of various link:cdi-reference[Build Time Extension Points].
 
-=== Quarkus DEV UI
+=== Quarkus Dev UI
 
-You can make your extension support the link:dev-ui[Quarkus DEV UI] for a greater developer experience.
+You can make your extension support the link:dev-ui[Quarkus Dev UI] for a greater developer experience.
 
 === Extension-defined endpoints
 

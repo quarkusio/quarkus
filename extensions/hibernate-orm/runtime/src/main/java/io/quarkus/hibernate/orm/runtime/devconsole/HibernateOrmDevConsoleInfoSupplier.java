@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.runtime.devconsole;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -23,16 +24,13 @@ import org.hibernate.tool.schema.spi.TargetDescriptor;
 
 public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrmDevConsoleInfoSupplier.PersistenceUnitsInfo> {
 
-    private static final PersistenceUnitsInfo INSTANCE = new PersistenceUnitsInfo();
+    private static final String DEFAULT = "<default>";
 
-    @Override
-    public PersistenceUnitsInfo get() {
-        return INSTANCE;
-    }
+    private static final PersistenceUnitsInfo INSTANCE = new PersistenceUnitsInfo();
 
     public static void pushPersistenceUnit(String persistenceUnitName,
             Metadata metadata, ServiceRegistry serviceRegistry, String importFile) {
-        INSTANCE.getPersistenceUnits().add(persistenceUnitName);
+        INSTANCE.persistenceUnits.add(persistenceUnitName);
 
         String createSchema = generateDDL(SchemaExport.Action.CREATE, metadata, serviceRegistry, importFile);
         INSTANCE.createDDLs.put(persistenceUnitName, createSchema);
@@ -87,6 +85,11 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
         return writer.toString();
     }
 
+    @Override
+    public PersistenceUnitsInfo get() {
+        return INSTANCE;
+    }
+
     public static class PersistenceUnitsInfo {
 
         private final List<String> persistenceUnits = Collections.synchronizedList(new ArrayList<>());
@@ -95,8 +98,13 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
         private final Map<String, List<QueryInfo>> namedNativeQueries = new ConcurrentHashMap<>();
         private final Map<String, String> createDDLs = new ConcurrentHashMap<>();
         private final Map<String, String> dropDDLs = new ConcurrentHashMap<>();
+        private boolean sorted;
 
         public List<String> getPersistenceUnits() {
+            if (!sorted) {
+                sorted = true;
+                persistenceUnits.sort(new PersistenceUnitNameComparator());
+            }
             return persistenceUnits;
         }
 
@@ -202,5 +210,18 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
             return type;
         }
 
+    }
+
+    static class PersistenceUnitNameComparator implements Comparator<String> {
+        @Override
+        public int compare(String o1, String o2) {
+            if (DEFAULT.equals(o1)) {
+                return -1;
+            } else if (DEFAULT.equals(o2)) {
+                return +1;
+            } else {
+                return o1.compareTo(o2);
+            }
+        }
     }
 }

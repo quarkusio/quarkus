@@ -10,6 +10,7 @@ import java.io.UncheckedIOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -104,11 +105,12 @@ public final class IntegrationTestUtil {
     }
 
     static TestProfileAndProperties determineTestProfileAndProperties(Class<? extends QuarkusTestProfile> profile,
-            Map<String, String> sysPropRestore) throws InstantiationException, IllegalAccessException {
+            Map<String, String> sysPropRestore)
+            throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         final Map<String, String> properties = new HashMap<>();
         QuarkusTestProfile testProfile = null;
         if (profile != null) {
-            testProfile = profile.newInstance();
+            testProfile = profile.getDeclaredConstructor().newInstance();
             properties.putAll(testProfile.getConfigOverrides());
             final Set<Class<?>> enabledAlternatives = testProfile.getEnabledAlternatives();
             if (!enabledAlternatives.isEmpty()) {

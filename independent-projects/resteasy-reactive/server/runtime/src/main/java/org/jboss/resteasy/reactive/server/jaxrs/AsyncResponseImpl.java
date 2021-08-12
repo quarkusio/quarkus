@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.server.jaxrs;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -139,8 +140,8 @@ public class AsyncResponseImpl implements AsyncResponse, Runnable {
         Objects.requireNonNull(callback);
         // FIXME: does this mean we should use CDI to look it up?
         try {
-            return register(callback.newInstance());
-        } catch (InstantiationException | IllegalAccessException e) {
+            return register(callback.getDeclaredConstructor().newInstance());
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }

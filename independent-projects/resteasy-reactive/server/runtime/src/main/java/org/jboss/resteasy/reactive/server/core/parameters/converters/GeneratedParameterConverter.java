@@ -8,6 +8,7 @@ public class GeneratedParameterConverter implements ParameterConverterSupplier {
     public ParameterConverter get() {
         try {
             return (ParameterConverter) Class.forName(className, false, Thread.currentThread().getContextClassLoader())
+                    .getDeclaredConstructor()
                     .newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);

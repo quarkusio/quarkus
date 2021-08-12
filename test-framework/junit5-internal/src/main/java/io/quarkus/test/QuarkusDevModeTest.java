@@ -167,7 +167,7 @@ public class QuarkusDevModeTest
     public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
             throws TestInstantiationException {
         try {
-            Object actualTestInstance = factoryContext.getTestClass().newInstance();
+            Object actualTestInstance = factoryContext.getTestClass().getDeclaredConstructor().newInstance();
             TestHTTPResourceManager.inject(actualTestInstance);
             return actualTestInstance;
         } catch (Exception e) {

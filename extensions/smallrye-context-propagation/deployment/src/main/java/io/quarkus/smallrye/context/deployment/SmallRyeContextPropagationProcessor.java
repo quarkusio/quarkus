@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.context.deployment;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,8 +46,8 @@ class SmallRyeContextPropagationProcessor {
         for (Class<?> provider : ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
                 "META-INF/services/" + ThreadContextProvider.class.getName())) {
             try {
-                discoveredProviders.add((ThreadContextProvider) provider.newInstance());
-            } catch (InstantiationException | IllegalAccessException e) {
+                discoveredProviders.add((ThreadContextProvider) provider.getDeclaredConstructor().newInstance());
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                 throw new RuntimeException("Failed to instantiate declared ThreadContextProvider class: " + provider.getName(),
                         e);
             }
@@ -54,8 +55,8 @@ class SmallRyeContextPropagationProcessor {
         for (Class<?> extension : ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
                 "META-INF/services/" + ContextManagerExtension.class.getName())) {
             try {
-                discoveredExtensions.add((ContextManagerExtension) extension.newInstance());
-            } catch (InstantiationException | IllegalAccessException e) {
+                discoveredExtensions.add((ContextManagerExtension) extension.getDeclaredConstructor().newInstance());
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                 throw new RuntimeException("Failed to instantiate declared ThreadContextProvider class: " + extension.getName(),
                         e);
             }

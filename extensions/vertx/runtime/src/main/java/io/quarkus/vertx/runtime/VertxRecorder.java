@@ -208,7 +208,7 @@ public class VertxRecorder {
             Class<?> codec = codecEntry.getValue();
             try {
                 if (MessageCodec.class.isAssignableFrom(codec)) {
-                    MessageCodec messageCodec = (MessageCodec) codec.newInstance();
+                    MessageCodec messageCodec = (MessageCodec) codec.getDeclaredConstructor().newInstance();
                     if (isDevMode) {
                         // we need to unregister the codecs because in dev mode vert.x is not reloaded
                         // which means that if we don't unregister, we get an exception mentioning that the
@@ -219,7 +219,7 @@ public class VertxRecorder {
                 } else {
                     LOGGER.error(String.format("The codec %s does not inherit from MessageCodec ", target.toString()));
                 }
-            } catch (InstantiationException | IllegalAccessException e) {
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                 LOGGER.error("Cannot instantiate the MessageCodec " + target.toString(), e);
             }
         }

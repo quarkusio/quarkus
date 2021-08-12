@@ -1,6 +1,7 @@
 package io.quarkus.test.kubernetes.client;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.util.Collections;
 import java.util.function.Consumer;
@@ -24,8 +25,8 @@ public class KubernetesServerTestResource extends AbstractKubernetesTestResource
         this.crud = annotation.crud();
         this.port = annotation.port();
         try {
-            this.setup = annotation.setup().newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
+            this.setup = annotation.setup().getDeclaredConstructor().newInstance();
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }

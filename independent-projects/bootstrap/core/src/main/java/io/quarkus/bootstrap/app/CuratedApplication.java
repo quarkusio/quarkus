@@ -117,6 +117,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         try {
             Class<?> augmentor = getAugmentClassLoader().loadClass(AUGMENTOR);
             Function<Object, List<?>> function = (Function<Object, List<?>>) getAugmentClassLoader().loadClass(functionName)
+                    .getDeclaredConstructor()
                     .newInstance();
             List<?> res = function.apply(props);
             return (AugmentAction) augmentor.getConstructor(CuratedApplication.class, List.class).newInstance(this, res);
@@ -132,7 +133,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             Thread.currentThread().setContextClassLoader(cl);
             Class<? extends BiConsumer<CuratedApplication, Map<String, Object>>> clazz = (Class<? extends BiConsumer<CuratedApplication, Map<String, Object>>>) cl
                     .loadClass(consumerName);
-            BiConsumer<CuratedApplication, Map<String, Object>> biConsumer = clazz.newInstance();
+            BiConsumer<CuratedApplication, Map<String, Object>> biConsumer = clazz.getDeclaredConstructor().newInstance();
             biConsumer.accept(this, params);
             return biConsumer;
         } catch (Exception e) {

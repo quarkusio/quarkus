@@ -183,31 +183,31 @@ public class TransactionalTest {
         @Transactional
         public void executeTransactionalThrowException(Class<? extends Throwable> throwable) throws Throwable {
             enlist();
-            throw throwable.newInstance();
+            throw throwable.getDeclaredConstructor().newInstance();
         }
 
         @Transactional(rollbackOn = Exception.class)
         public void executeTransactionalRollbackOnException(Class<? extends Throwable> throwable) throws Throwable {
             enlist();
-            throw throwable.newInstance();
+            throw throwable.getDeclaredConstructor().newInstance();
         }
 
         @Transactional(dontRollbackOn = RuntimeException.class)
         public void executeTransactionalDontRollbackOnRuntimeException(Class<? extends Throwable> throwable) throws Throwable {
             enlist();
-            throw throwable.newInstance();
+            throw throwable.getDeclaredConstructor().newInstance();
         }
 
         @Transactional(dontRollbackOn = Error.class)
         public void executeTransactionalDontRollbackOnError(Class<? extends Throwable> throwable) throws Throwable {
             enlist();
-            throw throwable.newInstance();
+            throw throwable.getDeclaredConstructor().newInstance();
         }
 
         @Transactional(dontRollbackOn = Exception.class, rollbackOn = Exception.class)
         public void executeTransactionalRollbackOnPriority(Class<? extends Throwable> throwable) throws Throwable {
             enlist();
-            throw throwable.newInstance();
+            throw throwable.getDeclaredConstructor().newInstance();
         }
     }
 }

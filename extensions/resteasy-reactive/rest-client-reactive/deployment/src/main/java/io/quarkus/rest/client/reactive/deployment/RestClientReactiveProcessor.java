@@ -423,6 +423,8 @@ class RestClientReactiveProcessor {
             if (annotation.target().kind() == AnnotationTarget.Kind.METHOD
                     && BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.containsKey(annotation.name())) {
                 return true;
+            } else if (annotation.name().equals(ResteasyReactiveDotNames.PATH)) {
+                return true;
             }
         }
         return false;

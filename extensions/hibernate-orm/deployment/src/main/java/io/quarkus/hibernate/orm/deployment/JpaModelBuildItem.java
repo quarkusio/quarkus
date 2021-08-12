@@ -46,7 +46,7 @@ public final class JpaModelBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * @return the list of all model class names: entities, mapped super classes...
+     * @return the list of all model class names: entities, mapped super classes, converters...
      */
     public Set<String> getAllModelClassNames() {
         return allModelClassNames;

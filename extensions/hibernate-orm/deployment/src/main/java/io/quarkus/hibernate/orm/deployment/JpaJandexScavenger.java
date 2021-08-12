@@ -83,8 +83,8 @@ public final class JpaJandexScavenger {
         }
         enlistJPAModelClasses(collector, ClassNames.JPA_ENTITY);
         enlistJPAModelClasses(collector, ClassNames.EMBEDDABLE);
-        enlistJPAModelClasses(collector,
-                ClassNames.MAPPED_SUPERCLASS);
+        enlistJPAModelClasses(collector, ClassNames.MAPPED_SUPERCLASS);
+        enlistJPAModelClasses(collector, ClassNames.CONVERTER);
         enlistEmbeddedsAndElementCollections(collector);
 
         for (JpaModelPersistenceUnitContributionBuildItem persistenceUnitContribution : persistenceUnitContributions) {
@@ -92,7 +92,7 @@ public final class JpaJandexScavenger {
         }
 
         Set<String> allModelClassNames = new HashSet<>(collector.entityTypes);
-        allModelClassNames.addAll(collector.managedTypes);
+        allModelClassNames.addAll(collector.modelTypes);
         for (String className : allModelClassNames) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
         }
@@ -319,7 +319,7 @@ public final class JpaJandexScavenger {
             ClassInfo klass = annotation.target().asClass();
             DotName targetDotName = klass.name();
             addClassHierarchyToReflectiveList(collector, targetDotName);
-            collectDomainObject(collector, klass);
+            collectModelType(collector, klass);
         }
     }
 
@@ -362,7 +362,7 @@ public final class JpaJandexScavenger {
         }
 
         //Capture this one (for various needs: Reflective access enablement, Hibernate enhancement, JPA Template)
-        collectDomainObject(collector, classInfo);
+        collectModelType(collector, classInfo);
 
         // add superclass recursively
         addClassHierarchyToReflectiveList(collector, classInfo.superName());
@@ -378,9 +378,9 @@ public final class JpaJandexScavenger {
         collector.packages.add(packageName);
     }
 
-    private static void collectDomainObject(Collector collector, ClassInfo modelClass) {
+    private static void collectModelType(Collector collector, ClassInfo modelClass) {
         String name = modelClass.name().toString();
-        collector.managedTypes.add(name);
+        collector.modelTypes.add(name);
         if (modelClass.classAnnotation(ClassNames.JPA_ENTITY) != null) {
             collector.entityTypes.add(name);
         }
@@ -427,7 +427,7 @@ public final class JpaJandexScavenger {
     private static class Collector {
         final Set<String> packages = new HashSet<>();
         final Set<String> entityTypes = new HashSet<>();
-        final Set<String> managedTypes = new HashSet<>();
+        final Set<String> modelTypes = new HashSet<>();
         final Set<String> enumTypes = new HashSet<>();
         final Set<String> javaTypes = new HashSet<>();
         final Set<DotName> unindexedClasses = new HashSet<>();

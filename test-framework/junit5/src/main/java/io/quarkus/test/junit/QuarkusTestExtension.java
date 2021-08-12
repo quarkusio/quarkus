@@ -124,6 +124,7 @@ public class QuarkusTestExtension
     protected static final String TEST_LOCATION = "test-location";
     protected static final String TEST_CLASS = "test-class";
     public static final String QUARKUS_TEST_HANG_DETECTION_TIMEOUT = "quarkus.test.hang-detection-timeout";
+    public static final String IO_QUARKUS_TESTING_TYPE = "io.quarkus.testing.type";
 
     private static boolean failedBoot;
 
@@ -659,6 +660,15 @@ public class QuarkusTestExtension
     private ExtensionState ensureStarted(ExtensionContext extensionContext) {
         ExtensionContext root = extensionContext.getRoot();
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
+        Class<?> testType = store.get(IO_QUARKUS_TESTING_TYPE, Class.class);
+        if (testType != null) {
+            if (testType != QuarkusTest.class) {
+                throw new IllegalStateException(
+                        "Cannot mix both @QuarkusTest based tests and " + testType.getName() + " based tests in the same run");
+            }
+        } else {
+            store.put(IO_QUARKUS_TESTING_TYPE, QuarkusTest.class);
+        }
         ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
         Class<? extends QuarkusTestProfile> selectedProfile = getQuarkusTestProfile(extensionContext);
         boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);

@@ -334,6 +334,7 @@ public class QuarkusProdModeTest
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
         ensureNoInjectAnnotationIsUsed(extensionContext.getRequiredTestClass());
+        ExclusivityChecker.checkTestType(extensionContext, QuarkusProdModeTest.class);
 
         originalHandlers = rootLogger.getHandlers();
         rootLogger.addHandler(inMemoryLogHandler);

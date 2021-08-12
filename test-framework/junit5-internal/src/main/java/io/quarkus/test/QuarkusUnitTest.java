@@ -401,6 +401,9 @@ public class QuarkusUnitTest
             PropertyTestUtil.setLogFileProperty();
         }
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
+
+        ExclusivityChecker.checkTestType(extensionContext, QuarkusUnitTest.class);
+
         TestResourceManager testResourceManager = (TestResourceManager) store.get(TestResourceManager.class.getName());
         if (testResourceManager == null) {
             testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());

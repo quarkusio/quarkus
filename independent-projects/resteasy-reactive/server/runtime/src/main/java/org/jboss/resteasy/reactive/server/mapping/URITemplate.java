@@ -51,10 +51,7 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                         state = 1;
                         if (sb.length() > 0) {
                             String literal = sb.toString();
-                            if (components.isEmpty()) {
-                                stem = literal;
-                            }
-                            components.add(new TemplateComponent(Type.LITERAL, literal, null, null, null));
+                            stem = handlePossibleStem((List<TemplateComponent>) components, stem, literal);
                         }
                         sb.setLength(0);
                     } else {
@@ -113,10 +110,7 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
             case 0:
                 if (sb.length() > 0) {
                     String literal = sb.toString();
-                    if (components.isEmpty()) {
-                        stem = literal;
-                    }
-                    components.add(new TemplateComponent(Type.LITERAL, literal, null, null, null));
+                    stem = handlePossibleStem(components, stem, literal);
                 }
                 break;
             case 1:
@@ -169,6 +163,26 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
         this.capturingGroups = capGroups;
         this.complexExpressions = complexGroups;
 
+    }
+
+    private String handlePossibleStem(List<TemplateComponent> components, String stem, String literal) {
+        if (components.isEmpty()) {
+            stem = literal;
+            if (stem.endsWith("/") && stem.length() > 1) {
+                //we don't allow stem to end with a slash
+                //so if have /hello and /hello/ they can both be matched
+                //all JAX-RS paths have an implicit (/.*)? at the end of them
+                //to technically every path has an optional implicit slash
+                stem = stem.substring(0, stem.length() - 1);
+                components.add(new TemplateComponent(Type.LITERAL, stem, null, null, null));
+                components.add(new TemplateComponent(Type.LITERAL, "/", null, null, null));
+            } else {
+                components.add(new TemplateComponent(Type.LITERAL, literal, null, null, null));
+            }
+        } else {
+            components.add(new TemplateComponent(Type.LITERAL, literal, null, null, null));
+        }
+        return stem;
     }
 
     public URITemplate(String template, String stem, int literalCharacterCount,

@@ -17,6 +17,7 @@ import javax.ws.rs.core.Response;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,16 @@ public class SubResourceTest {
 
     @TestHTTPResource
     URI baseUri;
+
+    @RestClient
+    RootClient injectedClient;
+
+    @Test
+    void testInjectedClient() {
+        // should result in sending GET /path/rt/mthd/simple
+        String result = injectedClient.sub("rt", "mthd").simpleGet();
+        assertThat(result).isEqualTo("rt/mthd/simple");
+    }
 
     @Test
     void shouldPassParamsToSubResource() {
@@ -62,7 +73,7 @@ public class SubResourceTest {
     }
 
     @Path("/path/{rootParam}")
-    @RegisterRestClient
+    @RegisterRestClient(baseUri = "http://localhost:8081")
     @Consumes("text/plain")
     @Produces("text/plain")
     @ClientHeaderParam(name = "fromRoot", value = "headerValue")

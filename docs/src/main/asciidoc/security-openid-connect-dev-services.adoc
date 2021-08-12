@@ -147,7 +147,7 @@ Your custom extension would need to extend `quarkus-oidc` only and add the depen
 
 The build step dealing with the `Dev Services` should additionally register two runtime properties into the "io.quarkus.quarkus-oidc" namespace: `oidcProviderName` (for example, `Google`) and `oidcProviderUrlBase` (for example: `mycompany.devservices-google`) for the `OpenId Connect Card` to link to the Dev UI page representing your provider, for example:
 
-[source,shell]
+[source,java]
 ----
 package io.quarkus.oidc.okta.runtime;
 

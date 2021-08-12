@@ -29,7 +29,7 @@
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
         <opentelemetry.version>1.4.1</opentelemetry.version>
         <opentelemetry-alpha.version>1.4.1-alpha</opentelemetry-alpha.version>
-        <jaeger.version>1.4.0</jaeger.version>
+        <jaeger.version>1.6.0</jaeger.version>
         <quarkus-http.version>4.1.1</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <micrometer.version>1.7.2</micrometer.version>

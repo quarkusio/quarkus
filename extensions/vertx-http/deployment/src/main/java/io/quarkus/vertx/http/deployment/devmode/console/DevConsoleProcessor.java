@@ -495,7 +495,7 @@ public class DevConsoleProcessor {
                     rt.exec(new String[] { "xdg-open", url });
                     break;
                 case WINDOWS:
-                    rt.exec(new String[] { "rundll32 url.dll,FileProtocolHandler", url });
+                    rt.exec(new String[] { "rundll32", "url.dll,FileProtocolHandler", url });
                     break;
                 case OTHER:
                     log.error("Cannot launch browser on this operating system");

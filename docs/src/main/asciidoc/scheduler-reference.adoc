@@ -201,6 +201,8 @@ void nonConcurrent() {
 
 TIP: A CDI event of type `io.quarkus.scheduler.SkippedExecution` is fired when an execution of a scheduled method is skipped.
 
+NOTE: Note that only executions within the same application instance are considered. This feature is not intended to work across the cluster.
+
 [[conditional_execution]]
 === Conditional Execution
 

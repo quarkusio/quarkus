@@ -260,13 +260,30 @@ public class ExtensionCatalogResolver {
         final JsonPlatformCatalog result = new JsonPlatformCatalog();
 
         final List<Platform> collectedPlatforms = new ArrayList<>();
-        result.setPlatforms(collectedPlatforms);
 
         final Set<String> collectedPlatformKeys = new HashSet<>();
+        String lastUpdated = null;
+        boolean sawUnknownLastUpdate = false;
         for (PlatformCatalog c : catalogs) {
             collectPlatforms(c, collectedPlatforms, collectedPlatformKeys);
+            if (!sawUnknownLastUpdate) {
+                final Object catalogLastUpdated = c.getMetadata().get(Constants.LAST_UPDATED);
+                if (catalogLastUpdated == null) {
+                    // if for one of the catalogs it's unknown, it's going to be unknown for the merged catalog
+                    lastUpdated = null;
+                    sawUnknownLastUpdate = true;
+                } else if (lastUpdated == null) {
+                    lastUpdated = catalogLastUpdated.toString();
+                } else if (lastUpdated.compareTo(catalogLastUpdated.toString()) < 0) {
+                    lastUpdated = catalogLastUpdated.toString();
+                }
+            }
         }
 
+        if (lastUpdated != null) {
+            result.getMetadata().put(Constants.LAST_UPDATED, lastUpdated);
+        }
+        result.setPlatforms(collectedPlatforms);
         return result;
     }
 

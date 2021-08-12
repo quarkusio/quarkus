@@ -140,7 +140,10 @@ public @interface Scheduled {
     }
 
     /**
-     * Represents a strategy to handle concurrent execution of a scheduled method
+     * Represents a strategy to handle concurrent execution of a scheduled method.
+     * <p>
+     * Note that this strategy only considers executions within the same application instance. It's not intended to work
+     * across the cluster.
      */
     enum ConcurrentExecution {
 

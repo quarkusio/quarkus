@@ -117,7 +117,7 @@
         <quartz.version>2.3.2</quartz.version>
         <h2.version>1.4.197</h2.version>  <!-- keep 1.4.197 as newer versions have severe regressions -->
         <postgresql-jdbc.version>42.2.23</postgresql-jdbc.version>
-        <mariadb-jdbc.version>2.7.3</mariadb-jdbc.version>
+        <mariadb-jdbc.version>2.7.4</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.26</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
         <oracle-jdbc.version>21.1.0.0</oracle-jdbc.version>

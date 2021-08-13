@@ -43,6 +43,13 @@
         <dependency>
             <groupId>org.apache.activemq</groupId>
             <artifactId>artemis-core-client</artifactId>
+            <exclusions>
+                <!-- Excluded as we have the implementation jar and it contains the API -->
+                <exclusion>
+                    <groupId>jakarta.json</groupId>
+                    <artifactId>jakarta.json-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

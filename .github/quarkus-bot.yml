@@ -217,7 +217,7 @@ triage:
       titleBody: "windows"
     - labels: [area/kubernetes]
       titleBody: "kubernetes"
-      notify: [geoand]
+      notify: [geoand, iocanel]
       directories:
         - extensions/kubernetes/
         - extensions/kubernetes-client/
@@ -228,10 +228,10 @@ triage:
       notify: [geoand]
     - labels: [area/kubernetes]
       titleBody: "openshift"
-      notify: [geoand]
+      notify: [geoand, iocanel]
     - labels: [area/kubernetes]
       titleBody: "knative"
-      notify: [geoand]
+      notify: [geoand, iocanel]
     - labels: [area/container-image]
       titleBody: "jib"
       notify: [geoand]

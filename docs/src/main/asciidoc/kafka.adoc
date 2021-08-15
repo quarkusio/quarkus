@@ -836,8 +836,8 @@ When the Kafka producer receives an error from the server, if it is a transient,
 This behavior is controlled by `retries` and `retry.backoff.ms` parameters.
 In addition to this, SmallRye Reactive Messaging will retry individual messages on recoverable errors, depending on the `retries` and `delivery.timeout.ms` parameters.
 
-Note that while having retries in a reliable system is a best practice, the `max.in.flights.requests.per.session` parameter defaults to `5`, meaning that the order of the messages is not guaranteed.
-If the message order is a must for your use case, setting `max.in.flights.requests.per.session` to `1` will make sure a single batch of messages is sent at a time, in the expense of limiting the throughput of the producer.
+Note that while having retries in a reliable system is a best practice, the `max.in.flight.requests.per.connection` parameter defaults to `5`, meaning that the order of the messages is not guaranteed.
+If the message order is a must for your use case, setting `max.in.flight.requests.per.connection` to `1` will make sure a single batch of messages is sent at a time, in the expense of limiting the throughput of the producer.
 
 For applying retry mechanism on processing errors, see the section on <<retrying-processing>>.
 

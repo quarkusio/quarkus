@@ -46,7 +46,7 @@ public class AvroSchemaCodeGenProvider extends AvroCodeGenProviderBase implement
         // allow them to share a single schema so reuse and sharing of schema
         // is possible.
         try {
-            if (options.imports == null) {
+            if (options.imports == AvroOptions.EMPTY) {
                 schema = new Schema.Parser().parse(file);
             } else {
                 schema = schemaParser.parse(file);

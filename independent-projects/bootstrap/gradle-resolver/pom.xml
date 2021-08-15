@@ -33,6 +33,11 @@
         <dependency>
             <groupId>org.gradle</groupId>
             <artifactId>gradle-tooling-api</artifactId>
+            <!--
+                 This will be bundled via shade-plugin (see further down), so don't propagate it.
+                 Note: "provided" scope doesn't work that well with shade-plugin.
+            -->
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.jboss.logging</groupId>

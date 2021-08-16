@@ -1,5 +1,7 @@
 package io.quarkus.agroal.deployment;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+
 import java.sql.Driver;
 import java.util.ArrayList;
 import java.util.HashMap;

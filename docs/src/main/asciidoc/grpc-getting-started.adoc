@@ -34,6 +34,17 @@ Edit the `pom.xml` file to add the Quarkus gRPC extension dependency (just under
 </dependency>
 ----
 
+By default the `quarkus-grpc` extension relies on reactive programming model, in this guide we will follow reactive approach.
+Under the dependencies section of your `pom.xml` file replace the `quarkus-resteasy` dependency with:
+
+[source,bash]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-reactive</artifactId>
+</dependency>
+----
+
 Make sure you have `generate-code` goal of `quarkus-maven-plugin` enabled in your `pom.xml`.
 If you wish to generate code from different `proto` files for tests, also add the `generate-code-tests` goal.
 Please note that no additional task/goal is required for the Gradle plugin.
@@ -272,8 +283,9 @@ public class ExampleResource {
 
     @GET
     @Path("/{name}")
-    public String hello(@PathParam("name") String name) {
-        return client.sayHello(HelloRequest.newBuilder().setName(name).build()).getMessage();  // <3>
+    public Uni<String> hello(@PathParam("name") String name) {
+        return hello.sayHello(HelloRequest.newBuilder().setName(name).build())
+                .onItem().transform(helloReply -> helloReply.getMessage());  // <3>
     }
 }
 ----

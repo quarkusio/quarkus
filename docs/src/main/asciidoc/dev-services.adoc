@@ -13,7 +13,8 @@ Quarkus will automatically start the relevant service (usually using https://www
 application to use this service.
 
 All this functionality is part of the Quarkus `deployment` modules, so does not affect the production application in any
-way.
+way. If you want to disable all Dev Services you can use the `quarkus.devservices.enabled=false` config property, although
+in most cases this is not necessary as simply configuring the service will result in the Dev Service being disabled automatically.
 
 This page lists all the Dev Services that Quarkus supports.
 

@@ -15,6 +15,7 @@ import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
+import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
 /**
@@ -35,7 +36,7 @@ public class DevServicesApicurioRegistryProcessor {
 
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
     public void startApicurioRegistryDevService(ApicurioRegistryDevServicesBuildTimeConfig apicurioRegistryDevServices,
             BuildProducer<DevServicesConfigResultBuildItem> devServicesConfiguration) {
 

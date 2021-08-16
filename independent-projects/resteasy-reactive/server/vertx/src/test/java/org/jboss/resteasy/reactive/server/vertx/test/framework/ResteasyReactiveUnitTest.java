@@ -31,12 +31,14 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
+import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.processor.JandexUtil;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
@@ -46,6 +48,7 @@ import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveSca
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
+import org.jboss.resteasy.reactive.server.core.startup.CustomServerRestHandlers;
 import org.jboss.resteasy.reactive.server.core.startup.RuntimeDeploymentManager;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.processor.ServerEndpointIndexer;
@@ -53,6 +56,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveCon
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveExceptionMappingScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveFeatureScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveParamConverterScanner;
+import org.jboss.resteasy.reactive.server.providers.serialisers.ServerByteArrayMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerStringMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.vertx.ResteasyReactiveVertxHandler;
 import org.jboss.resteasy.reactive.server.vertx.VertxRequestContextFactory;
@@ -252,8 +256,27 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                         };
                     }
                 }));
+        serialisers.addReader(byte[].class, new ResourceReader()
+                .setMediaTypeStrings(Collections.singletonList(MediaType.WILDCARD))
+                .setFactory(new BeanFactory<MessageBodyReader<?>>() {
+                    @Override
+                    public BeanInstance<MessageBodyReader<?>> createInstance() {
+                        return new BeanInstance<MessageBodyReader<?>>() {
+                            @Override
+                            public MessageBodyReader<?> getInstance() {
+                                return new ServerByteArrayMessageBodyHandler();
+                            }
+
+                            @Override
+                            public void close() {
+
+                            }
+                        };
+                    }
+                }));
         DeploymentInfo info = new DeploymentInfo()
                 .setApplicationPath("/")
+                .setConfig(new ResteasyReactiveConfig())
                 .setFeatures(ResteasyReactiveFeatureScanner.createFeatures(index, applicationScanningResult))
                 .setInterceptors(
                         ResteasyReactiveInterceptorScanner.createResourceInterceptors(index, applicationScanningResult))
@@ -284,7 +307,8 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                         }
                     }
                 });
-        RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, () -> executor, null,
+        RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, () -> executor,
+                new CustomServerRestHandlers(null),
                 closeable -> closeTasks.add(closeable), new VertxRequestContextFactory(), ThreadSetupAction.NOOP, "/");
         Deployment deployment = runtimeDeploymentManager.deploy();
         RestInitialHandler initialHandler = new RestInitialHandler(deployment);

@@ -11,6 +11,7 @@ import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,6 +43,10 @@ public class ObjectMapperProducer {
         }
         if (jacksonConfigSupport.isAcceptCaseInsensitiveEnums()) {
             objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+        }
+        JsonInclude.Include serializationInclusion = jacksonConfigSupport.getSerializationInclusion();
+        if (serializationInclusion != null) {
+            objectMapper.setSerializationInclusion(serializationInclusion);
         }
         ZoneId zoneId = jacksonConfigSupport.getTimeZone();
         if ((zoneId != null) && !zoneId.getId().equals("UTC")) { // Jackson uses UTC as the default, so let's not reset it

@@ -3,6 +3,8 @@ package io.quarkus.jackson.runtime;
 import java.time.ZoneId;
 import java.util.Optional;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -43,4 +45,10 @@ public class JacksonBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "UTC")
     public Optional<ZoneId> timezone;
+
+    /**
+     * Define which properties of Java Beans are to be included in serialization.
+     */
+    @ConfigItem
+    public Optional<JsonInclude.Include> serializationInclusion;
 }

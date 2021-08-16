@@ -41,7 +41,7 @@ class PriceResourceET {
         }
 
         Assertions.assertThat(received)
-                .hasSizeGreaterThan(2)
+                .hasSizeGreaterThanOrEqualTo(2)
                 .allMatch(value -> (value >= 0) && (value < 100));
     }
 }

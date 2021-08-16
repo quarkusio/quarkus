@@ -26,6 +26,10 @@
                     <groupId>javax.enterprise</groupId>
                     <artifactId>cdi-api</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>jakarta.activation</groupId>
+                    <artifactId>jakarta.activation-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

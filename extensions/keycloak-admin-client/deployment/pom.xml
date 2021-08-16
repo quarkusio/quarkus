@@ -23,7 +23,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jackson-deployment</artifactId>
+            <artifactId>quarkus-rest-client-jackson-deployment</artifactId>
         </dependency>
         <!-- Test dependencies -->
         <dependency>

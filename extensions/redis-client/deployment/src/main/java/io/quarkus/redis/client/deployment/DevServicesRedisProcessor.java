@@ -94,6 +94,7 @@ public class DevServicesRedisProcessor {
             currentCloseables.add(startResult.closeable);
             String configKey = getConfigPrefix(connectionName) + RedisConfig.HOSTS_CONFIG_NAME;
             devConfigProducer.produce(new DevServicesConfigResultBuildItem(configKey, startResult.url));
+            log.infof("The %s redis server is ready to accept connections on %s", connectionName, startResult.url);
         }
 
         closeables = currentCloseables;

@@ -66,7 +66,7 @@ public class AeshConsole extends QuarkusConsole {
             public void run() {
                 connection.close();
             }
-        }, "Console Shutdown Hoot"));
+        }, "Console Shutdown Hook"));
     }
 
     private void updatePromptOnChange(StringBuilder buffer, int newLines) {
@@ -294,8 +294,15 @@ public class AeshConsole extends QuarkusConsole {
             return;
         }
         if (closed) {
-            connection.write(s);
-            return;
+            // we need to guard against Aesh logging since the connection.write call, in certain error conditions,
+            // can lead to a logger message write, which can trigger an infinite loop
+            IN_WRITE.set(true);
+            try {
+                connection.write(s);
+                return;
+            } finally {
+                IN_WRITE.set(false);
+            }
         }
         if (lastColorCode != null) {
             s = lastColorCode + s;

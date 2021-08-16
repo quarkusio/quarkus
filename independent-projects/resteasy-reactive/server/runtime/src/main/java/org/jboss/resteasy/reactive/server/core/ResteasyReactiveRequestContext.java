@@ -10,6 +10,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
@@ -781,10 +782,22 @@ public abstract class ResteasyReactiveRequestContext
 
     @Override
     public Object getHeader(String name, boolean single) {
-        if (single)
-            return serverRequest().getRequestHeader(name);
-        // empty collections must not be turned to null
-        return serverRequest().getAllRequestHeaders(name);
+        if (httpHeaders == null) {
+            if (single)
+                return serverRequest().getRequestHeader(name);
+            // empty collections must not be turned to null
+            return serverRequest().getAllRequestHeaders(name);
+        } else {
+            if (single)
+                return httpHeaders.getMutableHeaders().getFirst(name);
+            // empty collections must not be turned to null
+            List<String> list = httpHeaders.getMutableHeaders().get(name);
+            if (list == null) {
+                return Collections.emptyList();
+            } else {
+                return list;
+            }
+        }
     }
 
     @Override

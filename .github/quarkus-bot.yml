@@ -103,6 +103,12 @@ triage:
       notify: [kenfinnigan]
       directories:
         - extensions/jaeger/
+    - labels: [area/jackson]
+      title: "jackson"
+      notify: [geoand, gsmet]
+      directories:
+        - extensions/jackson/
+        - integration-tests/jackson/
     - labels: [area/kotlin]
       titleBody: "kotlin"
       notify: [evanchooly]

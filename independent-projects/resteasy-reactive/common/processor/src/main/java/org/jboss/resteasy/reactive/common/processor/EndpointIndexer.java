@@ -947,7 +947,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     // in this case it is safe to assume that we are consuming multipart data
                     // we already don't allow multipart to be used along with body in the same method,
                     // so this is completely safe
-                    builder.setType(ParameterType.MULTI_PART_FORM);
+                    var type = toClassName(paramType, currentClassInfo, actualEndpointInfo, index);
+                    var typeInfo = index.getClassByName(DotName.createSimple(type));
+                    if (typeInfo != null && typeInfo.annotations().containsKey(REST_FORM_PARAM)) {
+                        builder.setType(ParameterType.MULTI_PART_FORM);
+                    } else {
+                        //if the paramater does not have @RestForm annotations we treat it as a normal body
+                        builder.setType(ParameterType.BODY);
+                    }
                 } else {
                     builder.setType(ParameterType.BODY);
                 }

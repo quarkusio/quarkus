@@ -334,8 +334,8 @@ Finally `./greeting-extension/runtime/pom.xml`.
 
     <dependencies>
         <dependency>
-          <groupid>io.quarkus</groupid>
-          <artifactid>quarkus-arc</artifactid> <!--2-->
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-arc</artifactId> <!--2-->
         </dependency>
     </dependencies>
 
@@ -351,7 +351,6 @@ Finally `./greeting-extension/runtime/pom.xml`.
                         <goals>
                             <goal>extension-descriptor</goal>
                         </goals>
-                        <phase>compile</phase>
                         <configuration>
                             <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}
                             </deployment>

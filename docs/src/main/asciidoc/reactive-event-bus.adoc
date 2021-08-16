@@ -179,16 +179,23 @@ public Uni<String> consume2(String name) {
 [NOTE]
 ====
 You can inject an `executor` if you use the Context Propagation extension:
-[source, code]
+[source, java]
 ----
-@Inject Executor executor;
+@Inject ManagedExecutor executor;
+----
+
+Alternatively, you can use the default Quarkus worker pool using:
+
+[source, java]
+----
+Executor executor = Infrastructure.getDefaultWorkerPool();
 ----
 ====
 
 === Implementing fire and forget interactions
 
 You don't have to reply to received messages.
-Typically for a _fire and forget_ interaction, the messages are consumed and the sender does not need to know about it.
+Typically, for a _fire and forget_ interaction, the messages are consumed and the sender does not need to know about it.
 To implement this, your consumer method just returns `void`
 
 [source,java]

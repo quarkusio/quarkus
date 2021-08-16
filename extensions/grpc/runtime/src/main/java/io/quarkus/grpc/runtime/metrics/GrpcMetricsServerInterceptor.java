@@ -7,8 +7,10 @@ import javax.interceptor.Interceptor.Priority;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.grpc.MetricCollectingServerInterceptor;
+import io.quarkus.grpc.GlobalInterceptor;
 
 @Singleton
+@GlobalInterceptor
 public class GrpcMetricsServerInterceptor extends MetricCollectingServerInterceptor implements Prioritized {
 
     @Inject

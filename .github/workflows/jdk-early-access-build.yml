@@ -32,8 +32,9 @@ jobs:
 
       - name: Set up JDK
         # AdoptOpenJDK does not seem to provide EA builds, so use the standard action which provides a Zulu JDK
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: ${{ env.JDK_VERSION }}
       - name: Print Java version
         shell: bash

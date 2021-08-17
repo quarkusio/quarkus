@@ -27,6 +27,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.smallrye.reactivemessaging.kafka.ReactiveMessagingKafkaConfig;
 import io.vertx.kafka.client.consumer.impl.KafkaReadStreamImpl;
 
@@ -47,6 +48,16 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                         .constructors(true)
                         .finalFieldsWritable(true)
                         .build());
+    }
+
+    @BuildStep
+    public void ignoreDuplicateJmxRegistrationInDevAndTestModes(LaunchModeBuildItem launchMode,
+            BuildProducer<LogCleanupFilterBuildItem> log) {
+        if (launchMode.getLaunchMode().isDevOrTest()) {
+            log.produce(new LogCleanupFilterBuildItem(
+                    "org.apache.kafka.common.utils.AppInfoParser",
+                    "Error registering AppInfo mbean"));
+        }
     }
 
     /**

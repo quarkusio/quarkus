@@ -767,24 +767,14 @@ That's why there is the Quarkus Platform.
 
 *Quarkus Platform*
 
-Quarkus proposes a `quarkus-universe-bom` which is a certified list of extensions placed under the Quarkus Platform label. From an application developer, the objectives of the platform are:
-
-* To guarantee a supportability of the extension (bugfix, security issues, dependency upgrades)
-* To ease the extension discovery through the Quarkus CLI or https://code.quarkus.io/
-* To ensure a global consistency of the extension ecosystem
-
-[TIP]
-.Should I publish my extension to the platform?
-If you feel your extensions is for you or a limited group, simply publishing to Maven is fine.
-If the extension solves a general problem, it is very handy for Quarkus users to see it on https://code.quarkus.io.
-But this comes with some responsibility for you, keeping it up to date with Quarkus minor releases (every month or so at the moment).
-When in doubt, have a conversation with the community in the https://groups.google.com/forum/#!forum/quarkus-dev[Quarkus Google Group]. We can make a collective decision.
-
-If you want to contribute a new extension, we strongly suggest you to host it in the Quarkiverse Hub.
+Quarkus platform is a set of extensions that target the primary use-cases of Quarkus as a development framework and can safely be used in any combination in the same application without creating a dependency conflict.
+From an application developer perspective, a Quarkus platform is represented as one or more Maven BOMs, for example `io.quarkus.platform:quarkus-bom:{quarkus-version}`, `io.quarkus.platform:quarkus-kogito-bom:{quarkus-version}`, etc, whose dependency version constraints were globally aligned so that these BOMs can be imported in the same application in any order without introducing a dependency conflict.
 
 *Quarkiverse Hub*
 
 link:https://github.com/quarkiverse[Quarkiverse Hub] is the GitHub organization that provides repository hosting (including build, CI and release publishing setup) for Quarkus extension projects contributed by the community.
+
+In case you are wondering about creating a new Quarkus extension and adding it to the Quarkus ecosystem so that the Quarkus community can discover it using the Quarkus dev tools (including the https://quarkus.io/guides/cli-tooling[Quarkus CLI] and https://code.quarkus.io[code.quarkus.io]), the https://github.com/quarkiverse[Quarkiverse Hub] GitHub organization will be a good home for it.
 
 You can get started by creating an link:https://github.com/quarkusio/quarkus/issues/new/choose[Extension Request] issue (check first if one wasn't already submitted link:https://github.com/quarkusio/quarkus/labels/kind%2Fextension-proposal[here]) and asking to lead it.
 
@@ -794,6 +784,8 @@ We'll take care of provisioning a new repository and set it up to:
 - Publish the documentation you produce for your extension to the Quarkiverse website;
 - Configure your extension to use the link:https://github.com/quarkusio/quarkus-ecosystem-ci#quarkus-ecosystem-ci[Quarkus Ecosystem CI] to build against the latest Quarkus Core changes;
 - Give you the freedom to manage the project and release to Maven Central as you like.
+
+NOTE: Extensions hosted in the Quarkiverse Hub may or may not end up in the Quarkus platform.
 
 For more information, check link:https://github.com/quarkiverse/quarkiverse/wiki[the Quarkiverse Wiki] and link:https://quarkus.io/blog/quarkiverse/[this blog post].
 

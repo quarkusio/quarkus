@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.stream.Stream;
 
+import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
@@ -350,4 +351,25 @@ public class ConfigMappingTest {
         assertEquals("bar", extendsBase.foo());
     }
 
+    @Dependent
+    public static class ConstructorInjection {
+        private String myProp;
+
+        @Inject
+        public ConstructorInjection(@ConfigMapping(prefix = "config") MyConfigMapping myConfigMapping) {
+            this.myProp = myConfigMapping.myProp();
+        }
+
+        public String getMyProp() {
+            return myProp;
+        }
+    }
+
+    @Inject
+    ConstructorInjection constructorInjection;
+
+    @Test
+    void constructorInjection() {
+        assertEquals("1234", constructorInjection.getMyProp());
+    }
 }

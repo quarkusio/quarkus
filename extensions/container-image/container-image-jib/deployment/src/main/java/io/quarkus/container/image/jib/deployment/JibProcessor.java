@@ -422,6 +422,7 @@ public class JibProcessor {
 
             jibContainerBuilder
                     .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.APP)), workDirInContainer)
+                    .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.CONFIG)), workDirInContainer)
                     .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS)), workDirInContainer)
                     .setWorkingDirectory(workDirInContainer)
                     .setEntrypoint(entrypoint)

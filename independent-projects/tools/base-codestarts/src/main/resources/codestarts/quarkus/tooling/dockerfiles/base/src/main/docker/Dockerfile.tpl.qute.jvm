@@ -10,6 +10,7 @@ ARG RUN_JAVA_VERSION={dockerfile.jvm.run-java-version}
 COPY --chown=1001 {buildtool.build-dir}/quarkus-app/lib/ /deployments/lib/
 COPY --chown=1001 {buildtool.build-dir}/quarkus-app/*.jar /deployments/
 COPY --chown=1001 {buildtool.build-dir}/quarkus-app/app/ /deployments/app/
+COPY --chown=1001 {buildtool.build-dir}/quarkus-app/config/ /deployments/config/
 COPY --chown=1001 {buildtool.build-dir}/quarkus-app/quarkus/ /deployments/quarkus/
     {/copy}
 {/include}

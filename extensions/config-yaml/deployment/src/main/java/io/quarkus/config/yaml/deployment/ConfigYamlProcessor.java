@@ -5,6 +5,7 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalBootstrapConfigSourceProviderBuildItem;
+import io.quarkus.deployment.builditem.AdditionalRuntimeConfigFileBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigSourceProviderBuildItem;
@@ -39,5 +40,10 @@ public final class ConfigYamlProcessor {
         String activeProfile = ProfileManager.getActiveProfile();
         items.produce(new HotDeploymentWatchedFileBuildItem(String.format("application-%s.yml", activeProfile)));
         items.produce(new HotDeploymentWatchedFileBuildItem(String.format("application-%s.yaml", activeProfile)));
+    }
+
+    @BuildStep
+    AdditionalRuntimeConfigFileBuildItem configFileBuildItem() {
+        return new AdditionalRuntimeConfigFileBuildItem("application.yaml", "#empty config file");
     }
 }

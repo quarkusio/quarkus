@@ -62,6 +62,7 @@ import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
+import io.quarkus.deployment.builditem.AdditionalRuntimeConfigFileBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -169,6 +170,8 @@ public class JarResultBuildStep {
 
     public static final String QUARKUS = "quarkus";
 
+    public static final String CONFIG = "config";
+
     public static final String DEFAULT_FAST_JAR_DIRECTORY_NAME = "quarkus-app";
 
     public static final String MP_CONFIG_FILE = "META-INF/microprofile-config.properties";
@@ -215,7 +218,8 @@ public class JarResultBuildStep {
             List<LegacyJarRequiredBuildItem> legacyJarRequired,
             QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItems,
-            MainClassBuildItem mainClassBuildItem, Optional<AppCDSRequestedBuildItem> appCDS) throws Exception {
+            MainClassBuildItem mainClassBuildItem, Optional<AppCDSRequestedBuildItem> appCDS,
+            List<AdditionalRuntimeConfigFileBuildItem> additionalRuntimeConfigFileBuildItems) throws Exception {
 
         if (appCDS.isPresent()) {
             handleAppCDSSupportFileGeneration(transformedClasses, generatedClasses, appCDS.get());
@@ -240,7 +244,7 @@ public class JarResultBuildStep {
         } else {
             return buildThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
                     packageConfig, classLoadingConfig, applicationInfo, generatedClasses, generatedResources,
-                    additionalApplicationArchiveBuildItems, mainClassBuildItem);
+                    additionalApplicationArchiveBuildItems, mainClassBuildItem, additionalRuntimeConfigFileBuildItems);
         }
     }
 
@@ -531,7 +535,8 @@ public class JarResultBuildStep {
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItems,
-            MainClassBuildItem mainClassBuildItem) throws Exception {
+            MainClassBuildItem mainClassBuildItem,
+            List<AdditionalRuntimeConfigFileBuildItem> additionalRuntimeConfigFileBuildItems) throws Exception {
 
         boolean rebuild = outputTargetBuildItem.isRebuild();
 
@@ -553,6 +558,7 @@ public class JarResultBuildStep {
         Path appDir = buildDir.resolve(APP);
         Path quarkus = buildDir.resolve(QUARKUS);
         Path userProviders = null;
+
         if (packageConfig.userProvidersDirectory.isPresent()) {
             userProviders = buildDir.resolve(packageConfig.userProvidersDirectory.get());
         }
@@ -791,9 +797,31 @@ public class JarResultBuildStep {
                 lines.sort(Comparator.naturalOrder());
                 Files.write(deplist, lines);
             }
-        } else {
-            //if it is a rebuild we might have classes
+        }
 
+        //create an empty config file, this can be used to add additional config
+        //note that we don't copy the existing one, or system properties provided
+        //during the build would be overridden by the copied application.properties
+        //the values in the existing application.properties are already used by default
+        //TODO: we could potentially copy the existing one and comment it out
+        Path config = buildDir.resolve(CONFIG);
+        Files.createDirectories(config);
+        if (additionalRuntimeConfigFileBuildItems.isEmpty()) {
+            Path appProps = config.resolve("application.properties");
+            if (!Files.exists(appProps)) {
+                try (var f = Files.newOutputStream(appProps)) {
+                    f.write("#Generated empty config file\n".getBytes(StandardCharsets.UTF_8));
+                }
+            }
+        } else {
+            for (var i : additionalRuntimeConfigFileBuildItems) {
+                Path appProps = config.resolve(i.getFileName());
+                if (!Files.exists(appProps)) {
+                    try (var f = Files.newOutputStream(appProps)) {
+                        f.write(i.getDefaultContents().getBytes(StandardCharsets.UTF_8));
+                    }
+                }
+            }
         }
         try (Stream<Path> files = Files.walk(buildDir)) {
             files.forEach(new Consumer<Path>() {

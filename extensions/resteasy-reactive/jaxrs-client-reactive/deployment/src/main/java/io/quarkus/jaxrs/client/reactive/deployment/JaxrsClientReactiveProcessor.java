@@ -6,7 +6,6 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONSUMES;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.WEB_APPLICATION_EXCEPTION;
 
 import java.io.Closeable;
 import java.io.File;
@@ -17,7 +16,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -1292,14 +1291,16 @@ public class JaxrsClientReactiveProcessor {
         String mediaTypeValue = defaultMediaType;
 
         // if a JAXRS method throws an exception, unwrap the ProcessingException and throw the exception instead
-        // Similarly with WebApplicationException
+        // Similarly with RuntimeException's
         TryBlock tryBlock = methodCreator.tryBlock();
 
         List<Type> exceptionTypes = jandexMethod.exceptions();
-        Set<DotName> exceptions = new HashSet<>();
-        exceptions.add(WEB_APPLICATION_EXCEPTION);
+        Set<String> exceptions = new LinkedHashSet<>();
         for (Type exceptionType : exceptionTypes) {
-            exceptions.add(exceptionType.name());
+            exceptions.add(exceptionType.name().toString());
+        }
+        if (!exceptions.contains(Exception.class.getName()) && !exceptions.contains(Throwable.class.getName())) {
+            exceptions.add(RuntimeException.class.getName());
         }
 
         CatchBlockCreator catchBlock = tryBlock.addCatch(ProcessingException.class);
@@ -1307,8 +1308,8 @@ public class JaxrsClientReactiveProcessor {
         ResultHandle cause = catchBlock.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(Throwable.class, "getCause", Throwable.class),
                 caughtException);
-        for (DotName exception : exceptions) {
-            catchBlock.ifTrue(catchBlock.instanceOf(cause, exception.toString()))
+        for (String exception : exceptions) {
+            catchBlock.ifTrue(catchBlock.instanceOf(cause, exception))
                     .trueBranch().throwException(cause);
         }
 

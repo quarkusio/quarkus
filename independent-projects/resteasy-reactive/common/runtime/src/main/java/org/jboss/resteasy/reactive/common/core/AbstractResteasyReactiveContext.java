@@ -293,20 +293,28 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
      */
     public void handleException(Throwable t) {
         if (handlers == abortHandlerChain) {
-            handleUnrecoverableError(t);
+            handleUnrecoverableError(unwrapException(t));
         } else {
-            this.throwable = t;
+            this.throwable = unwrapException(t);
             restart(abortHandlerChain);
         }
     }
 
     public void handleException(Throwable t, boolean keepSameTarget) {
         if (handlers == abortHandlerChain) {
-            handleUnrecoverableError(t);
+            handleUnrecoverableError(unwrapException(t));
         } else {
-            this.throwable = t;
+            this.throwable = unwrapException(t);
             restart(abortHandlerChain, keepSameTarget);
         }
+    }
+
+    private Throwable unwrapException(Throwable t) {
+        if (t instanceof UnwrappableException) {
+            return t.getCause();
+        }
+
+        return t;
     }
 
     protected abstract void handleUnrecoverableError(Throwable throwable);

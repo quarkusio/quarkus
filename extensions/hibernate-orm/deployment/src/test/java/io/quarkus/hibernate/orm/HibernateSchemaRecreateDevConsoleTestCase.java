@@ -24,7 +24,7 @@ public class HibernateSchemaRecreateDevConsoleTestCase {
         RestAssured.when().get("/my-entity/add").then().body(is("MyEntity:added"));
         RestAssured.when().get("/my-entity/count").then().body(is("3"));
         RestAssured.with()
-                .redirects().follow(false).formParam("name", "<default>").post("q/dev/io.quarkus.quarkus-datasource/clean")
+                .redirects().follow(false).formParam("name", "<default>").post("q/dev/io.quarkus.quarkus-datasource/reset")
                 .then()
                 .statusCode(303);
         RestAssured.when().get("/my-entity/count").then().body(is("2"));

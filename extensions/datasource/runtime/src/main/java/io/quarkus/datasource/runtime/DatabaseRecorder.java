@@ -11,7 +11,7 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class DatabaseRecorder {
 
-    public Handler<RoutingContext> devConsoleCleanDatabaseHandler() {
+    public Handler<RoutingContext> devConsoleResetDatabaseHandler() {
         // the usual issue of Vert.x hanging on to the first TCCL and setting it on all its threads
         final ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
         return new DevConsolePostHandler() {
@@ -24,7 +24,7 @@ public class DatabaseRecorder {
                 for (DatabaseSchemaProvider i : dbs) {
                     i.resetDatabase(name);
                 }
-                flashMessage(event, "Action invoked");
+                flashMessage(event, "Database successfully reset");
             }
         };
     }

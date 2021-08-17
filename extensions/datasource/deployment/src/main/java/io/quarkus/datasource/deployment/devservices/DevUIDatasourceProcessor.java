@@ -29,6 +29,6 @@ public class DevUIDatasourceProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(value = STATIC_INIT, optional = true)
     DevConsoleRouteBuildItem devConsoleCleanDatabaseHandler(DatabaseRecorder recorder) {
-        return new DevConsoleRouteBuildItem("clean", "POST", recorder.devConsoleCleanDatabaseHandler());
+        return new DevConsoleRouteBuildItem("reset", "POST", recorder.devConsoleResetDatabaseHandler());
     }
 }

@@ -28,6 +28,20 @@ You can configure the registry URL for all Kafka channels in SmallRye Reactive M
 mp.messaging.connector.smallrye-kafka.apicurio.registry.url=http://localhost:8081/apis/registry/v2
 ----
 
+== Shared registry
+
+Most of the time you need to share the registry between applications.
+Dev Services for Apicurio Registry implements a _service discovery_ mechanism for your multiple Quarkus applications running in _dev_ mode to share a single registry.
+
+NOTE: Dev Services for Apicurio Registry starts the container with the `quarkus-dev-service-apicurio-registry` label which is used to identify the container.
+
+If you need multiple (shared) registries, you can configure the `quarkus.apicurio-registry.devservices.service-name` attribute and indicate the registry name.
+It looks for a container with the same value, or starts a new one if none can be found.
+The default service name is `apicurio-registry`.
+
+Sharing is enabled by default in dev mode, but disabled in test mode.
+You can disable the sharing with `quarkus.apicurio-registry.devservices.shared=false`.
+
 == Setting the port
 
 By default, Dev Services for Apicurio Registry picks a random port and configures the application.

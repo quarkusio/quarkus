@@ -10,7 +10,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
@@ -101,10 +100,7 @@ public class CreateJBangMojo extends AbstractMojo {
         final MessageWriter log = new MojoMessageWriter(getLog());
         ExtensionCatalog catalog;
         try {
-            catalog = CreateProjectMojo.resolveExtensionsCatalog(
-                    StringUtils.defaultIfBlank(bomGroupId, null),
-                    StringUtils.defaultIfBlank(bomArtifactId, null),
-                    StringUtils.defaultIfBlank(bomVersion, null),
+            catalog = CreateProjectMojo.resolveExtensionsCatalog(this, bomGroupId, bomArtifactId, bomVersion,
                     QuarkusProjectHelper.getCatalogResolver(mvn, log), mvn, log);
         } catch (RegistryResolutionException e) {
             throw new MojoExecutionException("Failed to resolve Quarkus extension catalog", e);

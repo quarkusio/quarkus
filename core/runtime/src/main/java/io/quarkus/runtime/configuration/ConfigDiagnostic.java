@@ -84,6 +84,11 @@ public final class ConfigDiagnostic {
         usedProperties.removeAll(properties);
 
         for (String property : properties) {
+            // Indexed properties not supported by @ConfigRoot, but they can show up due to the YAML source. Just ignore them.
+            if (property.contains("[") && property.contains("]")) {
+                continue;
+            }
+
             boolean found = false;
             for (String usedProperty : usedProperties) {
                 if (usedProperty.equalsIgnoreCase(StringUtil.replaceNonAlphanumericByUnderscores(property))) {

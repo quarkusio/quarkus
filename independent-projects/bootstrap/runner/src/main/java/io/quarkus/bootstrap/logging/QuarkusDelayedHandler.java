@@ -95,7 +95,6 @@ public class QuarkusDelayedHandler extends ExtHandler {
                             //still too full, nothing we can do
                             return;
                         }
-                        return;
                     }
                     // Determine if we need to calculate the caller information before we queue the record
                     if (isCallerCalculationRequired()) {

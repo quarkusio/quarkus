@@ -35,6 +35,7 @@ public class ClassNames {
     public static final DotName JPA_ENTITY = createConstant("javax.persistence.Entity");
     public static final DotName MAPPED_SUPERCLASS = createConstant("javax.persistence.MappedSuperclass");
     public static final DotName EMBEDDABLE = createConstant("javax.persistence.Embeddable");
+    public static final DotName CONVERTER = createConstant("javax.persistence.Converter");
     public static final DotName EMBEDDED = createConstant("javax.persistence.Embedded");
     public static final DotName ELEMENT_COLLECTION = createConstant("javax.persistence.ElementCollection");
     public static final DotName PROXY = createConstant("org.hibernate.annotations.Proxy");

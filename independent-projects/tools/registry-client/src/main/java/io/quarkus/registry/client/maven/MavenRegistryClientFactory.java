@@ -161,7 +161,7 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
         }
 
         return new RegistryClientDispatcher(config, platformsResolver,
-                Boolean.TRUE.equals(config.getPlatforms().getExtensionCatalogsIncluded())
+                Boolean.TRUE.equals(platformsConfig == null ? Boolean.FALSE : platformsConfig.getExtensionCatalogsIncluded())
                         ? new MavenPlatformExtensionsResolver(defaultResolver, log)
                         : new MavenPlatformExtensionsResolver(defaultResolver(originalResolver, cleanupTimestampedArtifacts),
                                 log),

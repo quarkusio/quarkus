@@ -572,7 +572,7 @@ public class TestRegistryClientBuilder {
         }
     }
 
-    static Path getRegistryMemberCatalogPath(Path registryDir, ArtifactCoords bom) {
+    public static Path getRegistryMemberCatalogPath(Path registryDir, ArtifactCoords bom) {
         return getMemberCatalogPath(registryDir.resolve("members"), bom);
     }
 
@@ -605,7 +605,7 @@ public class TestRegistryClientBuilder {
         return registryDir.resolve("config.json");
     }
 
-    static Path getRegistryDir(Path baseDir, String registryId) {
+    public static Path getRegistryDir(Path baseDir, String registryId) {
         return baseDir.resolve(registryId);
     }
 

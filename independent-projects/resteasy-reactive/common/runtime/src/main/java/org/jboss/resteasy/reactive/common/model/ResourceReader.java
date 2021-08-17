@@ -21,8 +21,9 @@ public class ResourceReader {
     private volatile List<MediaType> mediaTypes;
     private volatile MessageBodyReader<?> instance;
 
-    public void setFactory(BeanFactory<MessageBodyReader<?>> factory) {
+    public ResourceReader setFactory(BeanFactory<MessageBodyReader<?>> factory) {
         this.factory = factory;
+        return this;
     }
 
     public BeanFactory<MessageBodyReader<?>> getFactory() {

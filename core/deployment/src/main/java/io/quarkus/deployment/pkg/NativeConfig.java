@@ -15,7 +15,8 @@ import io.quarkus.runtime.configuration.TrimmedStringConverter;
 public class NativeConfig {
 
     /**
-     * Additional arguments to pass to the build process
+     * Comma-separated, additional arguments to pass to the build process.
+     * If an argument includes the {@code ,} symbol, it needs to be escaped, e.g. {@code \\,}
      */
     @ConfigItem
     public Optional<List<String>> additionalBuildArgs;

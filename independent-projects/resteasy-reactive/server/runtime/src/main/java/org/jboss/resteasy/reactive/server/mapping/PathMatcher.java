@@ -65,25 +65,9 @@ public class PathMatcher<T> implements Dumpable {
             } else if (pathLength < length) {
                 char c = path.charAt(pathLength);
                 if (c == '/') {
-                    //todo: matches that end with / are a bit weird, maybe this is not the best matching algo
-                    SubstringMap.SubstringMatch<T> next = paths.get(path, pathLength + 1);
-                    if (next != null && next.getKey().endsWith("/")) {
-                        return new PathMatch<>(next.getKey(), path.substring(pathLength), next.getValue());
-                    }
-                    next = paths.get(path, pathLength);
+                    SubstringMap.SubstringMatch<T> next = paths.get(path, pathLength);
                     if (next != null) {
                         return new PathMatch<>(next.getKey(), path.substring(pathLength), next.getValue());
-                    }
-                }
-                // it's also possible that we're looking up /foo/bar/gee and have a current path of /foo/bar/ which
-                // is an acceptable prefix
-                if (pathLength > 0) {
-                    c = path.charAt(pathLength - 1);
-                    if (c == '/') {
-                        SubstringMap.SubstringMatch<T> next = paths.get(path, pathLength);
-                        if (next != null) {
-                            return new PathMatch<>(next.getKey(), path.substring(pathLength), next.getValue());
-                        }
                     }
                 }
             }
@@ -111,6 +95,8 @@ public class PathMatcher<T> implements Dumpable {
         if (PathMatcher.STRING_PATH_SEPARATOR.equals(path)) {
             this.defaultHandler = handler;
             return this;
+        } else if (path.endsWith(STRING_PATH_SEPARATOR)) {
+            throw new RuntimeException("Prefix path cannot end with /");
         }
 
         paths.put(path, handler);

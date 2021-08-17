@@ -9,8 +9,9 @@ import io.quarkus.registry.config.RegistryConfig;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import org.eclipse.aether.artifact.DefaultArtifact;
 
@@ -24,8 +25,15 @@ public class MavenRegistryCache implements RegistryCache {
     public MavenRegistryCache(RegistryConfig config, MavenRegistryArtifactResolver resolver,
             MessageWriter log) {
         this.config = config;
-        this.artifacts = Arrays.asList(config.getDescriptor().getArtifact(),
-                config.getNonPlatformExtensions().getArtifact(), config.getPlatforms().getArtifact());
+        final List<ArtifactCoords> artifacts = new ArrayList<>(3);
+        artifacts.add(config.getDescriptor().getArtifact());
+        if (config.getNonPlatformExtensions() != null) {
+            artifacts.add(config.getNonPlatformExtensions().getArtifact());
+        }
+        if (config.getPlatforms() != null) {
+            artifacts.add(config.getPlatforms().getArtifact());
+        }
+        this.artifacts = artifacts;
         this.resolver = Objects.requireNonNull(resolver);
         this.log = Objects.requireNonNull(log);
     }

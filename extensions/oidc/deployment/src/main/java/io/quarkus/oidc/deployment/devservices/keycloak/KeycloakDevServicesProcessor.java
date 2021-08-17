@@ -281,9 +281,9 @@ public class KeycloakDevServicesProcessor {
             if (useSharedNetwork) {
                 // When a shared network is requested for the launched containers, we need to configure
                 // the container to use it. We also need to create a hostname that will be applied to the returned
-                // Redis URL
+                // Keycloak URL
                 setNetwork(Network.SHARED);
-                hostName = "redis-" + Base58.randomString(5);
+                hostName = "keycloak-" + Base58.randomString(5);
                 setNetworkAliases(Collections.singletonList(hostName));
             } else {
                 if (fixedExposedPort.isPresent()) {

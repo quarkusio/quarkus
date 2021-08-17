@@ -19,7 +19,7 @@ public class OverrideJdbcUrlBuildTimeConfigSource extends MapBackedConfigSource 
 
     @Override
     public String getValue(final String propertyName) {
-        if (!propertyName.equals("quarkus.datasource.jdbc.url")) {
+        if (!propertyName.equals("postgres.url")) {
             return super.getValue(propertyName);
         }
 
@@ -31,10 +31,10 @@ public class OverrideJdbcUrlBuildTimeConfigSource extends MapBackedConfigSource 
             }
         }
 
-        if (isBuildTime) {
-            return "${postgres.url}";
+        if (!isBuildTime) {
+            return "jdbc:postgresql://localhost:5431/hibernate_orm_test";
+        } else {
+            return null;
         }
-
-        return super.getValue(propertyName);
     }
 }

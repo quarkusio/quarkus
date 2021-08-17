@@ -332,7 +332,7 @@ public class ConfiguredBeanTest {
             }
         }
         assertNotNull(defaultValues);
-        assertEquals(Integer.MIN_VALUE + 100, defaultValues.getOrdinal());
+        assertEquals(256, defaultValues.getOrdinal());
 
         // Should be the first
         ConfigSource applicationProperties = config.getConfigSources().iterator().next();

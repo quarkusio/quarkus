@@ -382,8 +382,10 @@ public final class RunTimeConfigurationGenerator {
             // the build time config source field, to feed into the run time config
             cc.getFieldCreator(C_BUILD_TIME_CONFIG_SOURCE)
                     .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+            //in-app application.yaml is 255, file-system application.properties is 260, this needs to be between them
+            //really it could be higher to stop build time config being overridden, but then the warning would not work
             final ResultHandle buildTimeConfigSource = clinit.newInstance(PCS_NEW, buildTimeValues,
-                    clinit.load("Build time config"), clinit.load(100));
+                    clinit.load("Build time config"), clinit.load(256));
             clinit.writeStaticField(C_BUILD_TIME_CONFIG_SOURCE, buildTimeConfigSource);
 
             // the build time run time visible default values config source
@@ -567,7 +569,7 @@ public final class RunTimeConfigurationGenerator {
                 }
             }
             final ResultHandle specifiedRunTimeSource = clinit.newInstance(PCS_NEW, specifiedRunTimeValues,
-                    clinit.load("Specified default values"), clinit.load(Integer.MIN_VALUE + 100));
+                    clinit.load("Specified default values"), clinit.load(256)); //in-app application.yaml is 255, file-system application.properties is 260, this needs to be between them
             cc.getFieldCreator(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE)
                     .setModifiers(Opcodes.ACC_STATIC | (devMode ? Opcodes.ACC_VOLATILE : Opcodes.ACC_FINAL));
             clinit.writeStaticField(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE, specifiedRunTimeSource);

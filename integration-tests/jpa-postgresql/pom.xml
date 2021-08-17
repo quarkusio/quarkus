@@ -86,12 +86,6 @@
     </dependencies>
 
     <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -152,11 +146,9 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <postgres.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.url>
-            </properties>
             <build>
                 <plugins>
+                    <!-- Note that this URL is set in io.quarkus.it.jpa.postgresql.OverrideJdbcUrlBuildTimeConfigSource -->
                     <plugin>
                         <groupId>io.fabric8</groupId>
                         <artifactId>docker-maven-plugin</artifactId>

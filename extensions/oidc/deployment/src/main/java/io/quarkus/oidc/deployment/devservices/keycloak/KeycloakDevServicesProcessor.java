@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
@@ -46,6 +47,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class KeycloakDevServicesProcessor {
@@ -360,11 +362,16 @@ public class KeycloakDevServicesProcessor {
                     keycloakUrl + "/realms/master/protocol/openid-connect/token",
                     "admin-cli", null, "admin", "admin", capturedDevServicesConfiguration.webClienTimeout);
 
-            client.postAbs(keycloakUrl + "/admin/realms")
+            HttpResponse<Buffer> response = client.postAbs(keycloakUrl + "/admin/realms")
                     .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
                     .putHeader(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + token)
                     .sendBuffer(Buffer.buffer().appendString(JsonSerialization.writeValueAsString(realm)))
                     .await().atMost(capturedDevServicesConfiguration.webClienTimeout);
+
+            if (response.statusCode() > 299) {
+                LOG.errorf("Realm %s can not be created %d - %s ", realm.getRealm(), response.statusCode(),
+                        response.statusMessage());
+            }
         } catch (Throwable t) {
             LOG.errorf("Realm %s can not be created: %s", realm.getRealm(), t.getMessage());
         } finally {
@@ -407,7 +414,9 @@ public class KeycloakDevServicesProcessor {
             realm.getRoles().getRealm().add(new RoleRepresentation("user", null, false));
             realm.getRoles().getRealm().add(new RoleRepresentation("admin", null, false));
         } else {
-            for (String role : capturedDevServicesConfiguration.roles.values()) {
+            List<String> distinctRoles = capturedDevServicesConfiguration.roles.values().stream().distinct()
+                    .collect(Collectors.toList());
+            for (String role : distinctRoles) {
                 realm.getRoles().getRealm().add(new RoleRepresentation(role, null, false));
             }
         }

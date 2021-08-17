@@ -13,7 +13,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class DevServicesConfig {
 
     /**
-     * If DevServices has been explicitly enabled or disabled..
+     * If DevServices has been explicitly enabled or disabled.
      * <p>
      * When DevServices is enabled Quarkus will attempt to automatically configure and start
      * Keycloak when running in Dev or Test mode and when Docker is running.

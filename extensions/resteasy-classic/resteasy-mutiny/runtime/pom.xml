@@ -30,16 +30,6 @@
             <artifactId>quarkus-resteasy-mutiny-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-client</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>

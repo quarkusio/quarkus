@@ -85,6 +85,10 @@
                     <groupId>org.jboss.spec.javax.interceptor</groupId>
                     <artifactId>jboss-interceptors-api_1.2_spec</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>jakarta.activation</groupId>
+                    <artifactId>jakarta.activation-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <!-- required by io.confluent.kafka.schemaregistry.client.rest.entities.ServerClusterId -->

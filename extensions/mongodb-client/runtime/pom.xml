@@ -126,6 +126,12 @@
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-core</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>jakarta.activation</groupId>
+                    <artifactId>jakarta.activation-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

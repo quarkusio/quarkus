@@ -453,6 +453,8 @@
                                             <exclude>javax.xml.bind:jaxb-api</exclude>
                                             <exclude>javax.websocket:javax.websocket-api</exclude>
                                             <exclude>javax.ws.rs:javax.ws.rs-api</exclude>
+                                            <!-- Exclude jakarta.activation-api as the implementation contains it -->
+                                            <exclude>jakarta.activation:jakarta.activation-api</exclude>
                                             <!-- use our jboss-logmanager -->
                                             <exclude>org.jboss.logging:jboss-logmanager</exclude>
                                             <exclude>org.jboss.logging:jboss-logging-jdk</exclude>

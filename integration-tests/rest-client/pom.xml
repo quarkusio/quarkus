@@ -27,7 +27,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <!-- Client dependencies -->
@@ -42,6 +41,12 @@
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-multipart-provider</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>jakarta.activation</groupId>
+                    <artifactId>jakarta.activation-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- Test dependencies -->
         <dependency>

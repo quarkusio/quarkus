@@ -25,7 +25,7 @@
             <groupId>io.jaegertracing</groupId>
             <artifactId>jaeger-thrift</artifactId>
             <exclusions>
-                <!-- jaeger-thrift 3.43.3 pulls in a banned version of annotation-api. Remove once we move to jaeger 1.x-->
+                <!-- jaeger-thrift 3.43.3 pulls in a banned version of annotation-api -->
                 <exclusion>
                     <groupId>javax.annotation</groupId>
                     <artifactId>javax.annotation-api</artifactId>
@@ -41,10 +41,10 @@
             <artifactId>jaeger-zipkin</artifactId>
             <optional>true</optional>
         </dependency>
-        <!-- transitive dependency from jaeger-thrift, consider removing once we move to jaeger 1.x -->
+        <!-- transitive dependency from jaeger-thrift -->
         <dependency>
-            <groupId>jakarta.activation</groupId>
-            <artifactId>jakarta.activation-api</artifactId>
+            <groupId>com.sun.activation</groupId>
+            <artifactId>jakarta.activation</artifactId>
         </dependency>
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>

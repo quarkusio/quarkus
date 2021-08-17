@@ -3058,6 +3058,10 @@
                         <artifactId>javax.activation-api</artifactId>
                     </exclusion>
                     <exclusion>
+                        <groupId>jakarta.activation</groupId>
+                        <artifactId>jakarta.activation-api</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <!-- https://github.com/quarkusio/quarkus/issues/1991 -->
                         <groupId>com.sun.xml.bind</groupId>
                         <artifactId>jaxb-osgi</artifactId>

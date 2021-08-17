@@ -25,6 +25,12 @@
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>jakarta.activation</groupId>
+                    <artifactId>jakarta.activation-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -55,6 +61,10 @@
                 <exclusion>
                     <groupId>com.google.code.findbugs</groupId>
                     <artifactId>jsr305</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>jakarta.activation</groupId>
+                    <artifactId>jakarta.activation-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

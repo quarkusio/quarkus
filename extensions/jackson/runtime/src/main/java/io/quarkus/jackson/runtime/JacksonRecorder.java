@@ -16,7 +16,8 @@ public class JacksonRecorder {
                         jacksonBuildTimeConfig.failOnEmptyBeans,
                         jacksonBuildTimeConfig.writeDatesAsTimestamps,
                         jacksonBuildTimeConfig.acceptCaseInsensitiveEnums,
-                        jacksonBuildTimeConfig.timezone.orElse(null));
+                        jacksonBuildTimeConfig.timezone.orElse(null),
+                        jacksonBuildTimeConfig.serializationInclusion.orElse(null));
             }
         };
     }

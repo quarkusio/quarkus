@@ -82,8 +82,15 @@ In Maven, your `pom.xml` file contains these dependencies:
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-universe-bom</artifactId>
+        <groupId>io.quarkus.platform</groupId>
+        <artifactId>quarkus-bom</artifactId>
+        <version>{quarkus-version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus.platform</groupId>
+        <artifactId>quarkus-optaplanner-bom</artifactId>
         <version>{quarkus-version}</version>
         <type>pom</type>
         <scope>import</scope>
@@ -121,7 +128,8 @@ In Maven, your `pom.xml` file contains these dependencies:
 //[source,groovy,subs=attributes+]
 //----
 //dependencies {
-//    implementation enforcedPlatform("io.quarkus:quarkus-universe-bom:{quarkus-version}")
+//    implementation enforcedPlatform("io.quarkus.platform:quarkus-bom:{quarkus-version}")
+//    implementation enforcedPlatform("io.quarkus.platform:quarkus-optaplanner-bom:{quarkus-version}")
 //    implementation 'io.quarkus:quarkus-resteasy'
 //    implementation 'io.quarkus:quarkus-resteasy-jackson'
 //    implementation 'org.optaplanner:optaplanner-quarkus'

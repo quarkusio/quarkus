@@ -545,14 +545,14 @@ By default, Quarkus will not discover CDI beans inside another module.
 The best way to enable CDI bean discovery for a module in a multi-module project would be to include the `jandex-maven-plugin`,
 unless it is the main application module already configured with the quarkus-maven-plugin, in which case it will indexed automatically.
 
-[source,xml]
+[source,xml,subs="attributes+"]
 ----
 <build>
   <plugins>
     <plugin>
       <groupId>org.jboss.jandex</groupId>
       <artifactId>jandex-maven-plugin</artifactId>
-      <version>1.1.0</version>
+      <version>{jandex-maven-plugin-version}</version>
       <executions>
         <execution>
           <id>make-index</id>

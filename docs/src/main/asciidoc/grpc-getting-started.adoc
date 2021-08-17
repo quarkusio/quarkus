@@ -395,15 +395,14 @@ IMPORTANT: When using `protobuf-maven-plugin`, instead of the `quarkus-maven-plu
 When gRPC classes - the classes generated from `proto` files - are in a dependency of the application, then the dependency needs a Jandex index.
 The `jandex-maven-plugin` can be used to create a Jandex index. More information on this topic can be found in the link:cdi-reference#bean_discovery[Bean Discovery] section of the CDI guide.
 
-
-[source,xml]
+[source,xml,subs="attributes+"]
 ----
 <build>
     <plugins>
         <plugin>
             <groupId>org.jboss.jandex</groupId>
             <artifactId>jandex-maven-plugin</artifactId>
-            <version>1.1.0</version>
+            <version>{jandex-maven-plugin-version}</version>
             <executions>
                 <execution>
                 <id>make-index</id>

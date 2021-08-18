@@ -1064,4 +1064,13 @@ class TestEndpoint {
 
         return "OK"
     }
+
+
+    @GET
+    @Path("19420")
+    fun testBug19420(): String {
+        Bug19420Entity.test();
+        return "OK";
+    }
+
 }

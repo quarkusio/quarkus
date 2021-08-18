@@ -69,4 +69,9 @@ open class KotlinPanacheFunctionalityTest {
     fun entityManagerIsInjected() {
         assertNotNull(Dog.getEntityManager())
     }
+
+    @Test
+    fun testBug19420() {
+        RestAssured.`when`()["/test/19420"].then().body(Matchers.`is`("OK"))
+    }
 }

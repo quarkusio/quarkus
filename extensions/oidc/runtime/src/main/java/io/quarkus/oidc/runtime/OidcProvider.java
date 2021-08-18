@@ -1,5 +1,6 @@
 package io.quarkus.oidc.runtime;
 
+import java.io.Closeable;
 import java.security.Key;
 import java.time.Duration;
 import java.util.List;
@@ -31,7 +32,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
-public class OidcProvider {
+public class OidcProvider implements Closeable {
 
     private static final Logger LOG = Logger.getLogger(OidcProvider.class);
     private static final String ANY_ISSUER = "any";
@@ -194,6 +195,13 @@ public class OidcProvider {
 
     public Uni<AuthorizationCodeTokens> refreshTokens(String refreshToken) {
         return client.refreshAuthorizationCodeTokens(refreshToken);
+    }
+
+    @Override
+    public void close() {
+        if (client != null) {
+            client.close();
+        }
     }
 
     private class JsonWebKeyResolver implements RefreshableVerificationKeyResolver {

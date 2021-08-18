@@ -4,6 +4,9 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 
+import javax.enterprise.context.spi.CreationalContext;
+
+import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.smallrye.mutiny.Uni;
 
@@ -40,5 +43,22 @@ public class TenantConfigBean {
 
     public Map<String, TenantConfigContext> getDynamicTenantsConfig() {
         return dynamicTenantsConfig;
+    }
+
+    public static class Destroyer implements BeanDestroyer<TenantConfigBean> {
+
+        @Override
+        public void destroy(TenantConfigBean instance, CreationalContext<TenantConfigBean> creationalContext,
+                Map<String, Object> params) {
+            if (instance.defaultTenant != null) {
+                instance.defaultTenant.provider.close();
+            }
+            for (var i : instance.staticTenantsConfig.values()) {
+                i.provider.close();
+            }
+            for (var i : instance.dynamicTenantsConfig.values()) {
+                i.provider.close();
+            }
+        }
     }
 }

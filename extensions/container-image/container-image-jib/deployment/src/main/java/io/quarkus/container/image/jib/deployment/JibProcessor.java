@@ -221,6 +221,7 @@ public class JibProcessor {
         });
         containerizer.setAllowInsecureRegistries(containerImageConfig.insecure);
         containerizer.setAlwaysCacheBaseImage(jibConfig.alwaysCacheBaseImage);
+        containerizer.setOfflineMode(jibConfig.offlineMode);
         return containerizer;
     }
 

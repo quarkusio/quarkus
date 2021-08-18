@@ -12,7 +12,7 @@
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-ide-config</artifactId>
     <name>Quarkus - IDE/Tools - Config</name>
-    <version>999-SNAPSHOT</version>
+    <version>2.2.0.CR1</version>
     <packaging>jar</packaging>
 
     <licenses>

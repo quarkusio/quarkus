@@ -1,13 +1,28 @@
 package io.quarkus.grpc.examples.hello;
 
+import static io.quarkus.grpc.examples.hello.IncomingInterceptor.EXTRA_BLOCKING_HEADER;
+import static io.quarkus.grpc.examples.hello.IncomingInterceptor.EXTRA_HEADER;
+import static io.quarkus.grpc.examples.hello.IncomingInterceptor.INTERFACE_HEADER;
+
+import java.util.Map;
+
+import javax.inject.Inject;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
 
+import examples.Greeter;
+import examples.GreeterClient;
 import examples.GreeterGrpc;
 import examples.HelloReply;
 import examples.HelloRequest;
 import examples.MutinyGreeterGrpc;
+import io.grpc.Metadata;
+import io.grpc.stub.MetadataUtils;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
 
@@ -15,24 +30,68 @@ import io.smallrye.mutiny.Uni;
 public class HelloWorldEndpoint {
 
     @GrpcClient("hello")
-    GreeterGrpc.GreeterBlockingStub blockingHelloService;
+    GreeterGrpc.GreeterBlockingStub blockingHelloClient;
 
     @GrpcClient("hello")
-    MutinyGreeterGrpc.MutinyGreeterStub mutinyHelloService;
+    MutinyGreeterGrpc.MutinyGreeterStub mutinyHelloClient;
+
+    @GrpcClient("hello")
+    Greeter interfaceHelloClient;
+
+    @Inject
+    IncomingInterceptor interceptor;
 
     @GET
     @Path("/blocking/{name}")
-    public String helloBlocking(@PathParam("name") String name) {
-        HelloReply reply = blockingHelloService.sayHello(HelloRequest.newBuilder().setName(name).build());
+    public String helloBlocking(@PathParam("name") String name, @QueryParam("headers") boolean headers) {
+        Metadata extraHeaders = new Metadata();
+        if (headers) {
+            extraHeaders.put(EXTRA_BLOCKING_HEADER, "my-blocking-value");
+        }
+        HelloReply reply = MetadataUtils.attachHeaders(blockingHelloClient, extraHeaders)
+                .sayHello(HelloRequest.newBuilder().setName(name).build());
         return generateResponse(reply);
 
     }
 
     @GET
     @Path("/mutiny/{name}")
-    public Uni<String> helloMutiny(@PathParam("name") String name) {
-        return mutinyHelloService.sayHello(HelloRequest.newBuilder().setName(name).build())
-                .onItem().transform((reply) -> generateResponse(reply));
+    public Uni<String> helloMutiny(@PathParam("name") String name, @QueryParam("headers") boolean headers) {
+        Metadata extraHeaders = new Metadata();
+        if (headers) {
+            extraHeaders.put(EXTRA_HEADER, "my-extra-value");
+        }
+        MutinyGreeterGrpc.MutinyGreeterStub alteredClient = MetadataUtils.attachHeaders(mutinyHelloClient, extraHeaders);
+        return alteredClient.sayHello(HelloRequest.newBuilder().setName(name).build())
+                .onItem().transform(this::generateResponse);
+    }
+
+    @GET
+    @Path("/interface/{name}")
+    public Uni<String> helloInterface(@PathParam("name") String name, @QueryParam("headers") boolean headers) {
+        Metadata extraHeaders = new Metadata();
+        if (headers) {
+            extraHeaders.put(INTERFACE_HEADER, "my-interface-value");
+        }
+
+        MutinyGreeterGrpc.MutinyGreeterStub stub = ((GreeterClient) interfaceHelloClient).getStub();
+        MutinyGreeterGrpc.MutinyGreeterStub alteredClient = MetadataUtils.attachHeaders(stub, extraHeaders);
+
+        return alteredClient.sayHello(HelloRequest.newBuilder().setName(name).build())
+                .onItem().transform(this::generateResponse);
+
+    }
+
+    @DELETE
+    public void clear() {
+        interceptor.clear();
+    }
+
+    @GET
+    @Path("/headers")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, String> getCollectedHeaders() {
+        return interceptor.getCollectedHeaders();
     }
 
     public String generateResponse(HelloReply reply) {

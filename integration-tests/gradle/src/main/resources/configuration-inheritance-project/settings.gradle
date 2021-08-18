@@ -1,0 +1,21 @@
+pluginManagement {
+    repositories {
+        if (System.properties.containsKey('maven.repo.local')) {
+            maven {
+                url System.properties.get('maven.repo.local')
+            }
+        } else {
+            mavenLocal()
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    //noinspection GroovyAssignabilityCheck
+    plugins {
+        id 'io.quarkus' version "${quarkusPluginVersion}"
+    }
+}
+
+rootProject.name = 'quarkus-configuration-inheritance'
+
+

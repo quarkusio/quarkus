@@ -38,7 +38,7 @@ public class DependencyUtils {
         configurationCopy.getDependencies().addAll(boms);
 
         for (Configuration toDuplicate : toDuplicates) {
-            for (Dependency dependency : toDuplicate.getDependencies()) {
+            for (Dependency dependency : toDuplicate.getAllDependencies()) {
                 if (includedBuild(project, dependency.getName()) != null) {
                     continue;
                 }

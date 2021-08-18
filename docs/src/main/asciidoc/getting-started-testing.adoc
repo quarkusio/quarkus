@@ -1151,6 +1151,51 @@ As a test annotated with `@QuarkusIntegrationTest` tests the result of the build
 These tests will **not** work if run in the same phase as `@QuarkusTest` as Quarkus has not yet created the final artifact.
 ====
 
+== Mixing `@QuarkusTest` with other type of tests
+
+Mixing tests annotated with `@QuarkusTest` with tests annotated with either `@QuarkusDevModeTest`, `@QuarkusProdModeTest` or `@QuarkusUnitTest`
+is not allowed in a single execution run (in a single Maven Surefire Plugin execution, for instance),
+while the latter three can coexist.
+
+The reason of this restriction is that `@QuarkusTest` starts a Quarkus server for the whole lifetime of the tests execution run,
+thus preventing the other tests to start their own Quarkus server.
+
+To alleviate this restriction, the `@QuarkusTest` annotation defines a JUnit 5 `@Tag`: `io.quarkus.test.junit.QuarkusTest`.
+You can use this tag to isolate the `@QuarkusTest` test in a specific execution run, for example with the Maven Surefire Plugin:
+
+[source,xml]
+----
+<plugin>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <version>${surefire-plugin.version}</version>
+    <executions>
+        <execution>
+            <id>default-test</id>
+            <goals>
+                <goal>test</goal>
+            </goals>
+            <configuration>
+                <excludedGroups>io.quarkus.test.junit.QuarkusTest</excludedGroups>
+            </configuration>
+        </execution>
+        <execution>
+            <id>quarkus-test</id>
+            <goals>
+                <goal>test</goal>
+            </goals>
+            <configuration>
+                <groups>io.quarkus.test.junit.QuarkusTest</groups>
+            </configuration>
+        </execution>
+    </executions>
+    <configuration>
+        <systemProperties>
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+        </systemProperties>
+    </configuration>
+</plugin>
+----
+
 [[test-from-ide]]
 == Running `@QuarkusTest` from an IDE
 

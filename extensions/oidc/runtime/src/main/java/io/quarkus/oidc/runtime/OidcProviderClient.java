@@ -1,5 +1,6 @@
 package io.quarkus.oidc.runtime;
 
+import java.io.Closeable;
 import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -24,7 +25,7 @@ import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
-public class OidcProviderClient {
+public class OidcProviderClient implements Closeable {
     private static final Logger LOG = Logger.getLogger(OidcProviderClient.class);
 
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
@@ -153,5 +154,10 @@ public class OidcProviderClient {
         String errorMessage = resp.bodyAsString();
         LOG.debugf("Request has failed: status: %d, error message: %s", resp.statusCode(), errorMessage);
         throw new OIDCException(errorMessage);
+    }
+
+    @Override
+    public void close() {
+        client.close();
     }
 }

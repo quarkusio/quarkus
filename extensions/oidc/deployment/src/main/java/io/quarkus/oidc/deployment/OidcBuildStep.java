@@ -99,6 +99,7 @@ public class OidcBuildStep {
             TlsConfig tlsConfig) {
         return SyntheticBeanBuildItem.configure(TenantConfigBean.class).unremovable().types(TenantConfigBean.class)
                 .supplier(recorder.setup(config, vertxBuildItem.getVertx(), tlsConfig))
+                .destroyer(TenantConfigBean.Destroyer.class)
                 .scope(Singleton.class) // this should have been @ApplicationScoped but fails for some reason
                 .setRuntimeInit()
                 .done();

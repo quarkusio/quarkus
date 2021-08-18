@@ -68,7 +68,9 @@ import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildIt
 import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
-import io.quarkus.smallrye.openapi.deployment.security.SecurityConfigFilter;
+import io.quarkus.smallrye.openapi.deployment.filter.AutoRolesAllowedFilter;
+import io.quarkus.smallrye.openapi.deployment.filter.AutoTagFilter;
+import io.quarkus.smallrye.openapi.deployment.filter.SecurityConfigFilter;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService;
@@ -252,8 +254,105 @@ public class SmallRyeOpenApiProcessor {
             }
         }
 
-        addToOpenAPIDefinitionProducer
-                .produce(new AddToOpenAPIDefinitionBuildItem(new SecurityConfigFilter(config, methodReferences)));
+        // Add a security scheme from config
+        if (config.securityScheme.isPresent()) {
+            addToOpenAPIDefinitionProducer
+                    .produce(new AddToOpenAPIDefinitionBuildItem(
+                            new SecurityConfigFilter(config)));
+        }
+
+        // Add Auto roles allowed
+        OASFilter autoRolesAllowedFilter = getAutoRolesAllowedFilter(config.securitySchemeName, apiFilteredIndexViewBuildItem,
+                config);
+        if (autoRolesAllowedFilter != null) {
+            addToOpenAPIDefinitionProducer.produce(new AddToOpenAPIDefinitionBuildItem(autoRolesAllowedFilter));
+        }
+
+        // Add Auto Tag based on the class name
+        OASFilter autoTagFilter = getAutoTagFilter(apiFilteredIndexViewBuildItem,
+                config);
+        if (autoTagFilter != null) {
+            addToOpenAPIDefinitionProducer.produce(new AddToOpenAPIDefinitionBuildItem(autoTagFilter));
+        }
+
+    }
+
+    private OASFilter getAutoRolesAllowedFilter(String securitySchemeName,
+            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
+            SmallRyeOpenApiConfig config) {
+        if (config.autoAddSecurityRequirement) {
+            Map<String, List<String>> rolesAllowedMethodReferences = getRolesAllowedMethodReferences(
+                    apiFilteredIndexViewBuildItem);
+            if (rolesAllowedMethodReferences != null && !rolesAllowedMethodReferences.isEmpty()) {
+                if (securitySchemeName == null) {
+                    securitySchemeName = config.securitySchemeName;
+                }
+                return new AutoRolesAllowedFilter(securitySchemeName, rolesAllowedMethodReferences);
+            }
+        }
+        return null;
+    }
+
+    private OASFilter getAutoTagFilter(OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
+            SmallRyeOpenApiConfig config) {
+
+        if (config.autoAddTags) {
+
+            Map<String, String> classNamesMethodReferences = getClassNamesMethodReferences(apiFilteredIndexViewBuildItem);
+            if (classNamesMethodReferences != null && !classNamesMethodReferences.isEmpty()) {
+                return new AutoTagFilter(classNamesMethodReferences);
+            }
+        }
+        return null;
+    }
+
+    private Map<String, List<String>> getRolesAllowedMethodReferences(
+            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem) {
+        List<AnnotationInstance> rolesAllowedAnnotations = new ArrayList<>();
+        for (DotName rolesAllowed : SecurityConstants.ROLES_ALLOWED) {
+            rolesAllowedAnnotations.addAll(apiFilteredIndexViewBuildItem.getIndex().getAnnotations(rolesAllowed));
+        }
+        Map<String, List<String>> methodReferences = new HashMap<>();
+        DotName securityRequirement = DotName.createSimple(SecurityRequirement.class.getName());
+        for (AnnotationInstance ai : rolesAllowedAnnotations) {
+            if (ai.target().kind().equals(AnnotationTarget.Kind.METHOD)) {
+                MethodInfo method = ai.target().asMethod();
+                if (isValidOpenAPIMethodForAutoAdd(method, securityRequirement)) {
+                    String ref = JandexUtil.createUniqueMethodReference(method);
+                    methodReferences.put(ref, List.of(ai.value().asStringArray()));
+                }
+            }
+            if (ai.target().kind().equals(AnnotationTarget.Kind.CLASS)) {
+                ClassInfo classInfo = ai.target().asClass();
+                List<MethodInfo> methods = classInfo.methods();
+                for (MethodInfo method : methods) {
+                    if (isValidOpenAPIMethodForAutoAdd(method, securityRequirement)) {
+                        String ref = JandexUtil.createUniqueMethodReference(method);
+                        methodReferences.put(ref, List.of(ai.value().asStringArray()));
+                    }
+                }
+            }
+        }
+        return methodReferences;
+    }
+
+    private Map<String, String> getClassNamesMethodReferences(OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem) {
+        List<AnnotationInstance> openapiAnnotations = new ArrayList<>();
+        Set<DotName> allOpenAPIEndpoints = getAllOpenAPIEndpoints();
+        for (DotName dotName : allOpenAPIEndpoints) {
+            openapiAnnotations.addAll(apiFilteredIndexViewBuildItem.getIndex().getAnnotations(dotName));
+        }
+
+        Map<String, String> classNames = new HashMap<>();
+
+        for (AnnotationInstance ai : openapiAnnotations) {
+            if (ai.target().kind().equals(AnnotationTarget.Kind.METHOD)) {
+                MethodInfo method = ai.target().asMethod();
+                String ref = JandexUtil.createUniqueMethodReference(method);
+                classNames.put(ref, method.declaringClass().simpleName());
+            }
+        }
+        return classNames;
     }
 
     private boolean isValidOpenAPIMethodForAutoAdd(MethodInfo method, DotName securityRequirement) {
@@ -310,15 +409,20 @@ public class SmallRyeOpenApiProcessor {
     }
 
     private boolean isOpenAPIEndpoint(MethodInfo method) {
-        Set<DotName> httpAnnotations = new HashSet<>();
-        httpAnnotations.addAll(JaxRsConstants.HTTP_METHODS);
-        httpAnnotations.addAll(SpringConstants.HTTP_METHODS);
+        Set<DotName> httpAnnotations = getAllOpenAPIEndpoints();
         for (DotName httpAnnotation : httpAnnotations) {
             if (method.hasAnnotation(httpAnnotation)) {
                 return true;
             }
         }
         return false;
+    }
+
+    private Set<DotName> getAllOpenAPIEndpoints() {
+        Set<DotName> httpAnnotations = new HashSet<>();
+        httpAnnotations.addAll(JaxRsConstants.HTTP_METHODS);
+        httpAnnotations.addAll(SpringConstants.HTTP_METHODS);
+        return httpAnnotations;
     }
 
     private void registerReflectionForApiResponseSchemaSerialization(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,

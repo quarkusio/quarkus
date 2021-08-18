@@ -65,6 +65,12 @@ public final class SmallRyeOpenApiConfig {
     public boolean autoAddSecurityRequirement;
 
     /**
+     * This will automatically add tags to operations based on the Java class name.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean autoAddTags;
+
+    /**
      * Add a scheme value to the Basic HTTP Security Scheme
      */
     @ConfigItem(defaultValue = "basic")

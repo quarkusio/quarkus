@@ -25,6 +25,7 @@
                         <test.url>http://localhost:8081</test.url>
                         <!-- Change metrics endpoint to be /metrics -->
                         <quarkus.http.non-application-root-path>/</quarkus.http.non-application-root-path>
+                        <quarkus.smallrye-openapi.auto-add-tags>false</quarkus.smallrye-openapi.auto-add-tags>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->

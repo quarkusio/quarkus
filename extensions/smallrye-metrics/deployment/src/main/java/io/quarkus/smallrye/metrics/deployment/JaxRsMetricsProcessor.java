@@ -32,7 +32,7 @@ public class JaxRsMetricsProcessor {
         SmallRyeMetricsProcessor.SmallRyeMetricsConfig smConfig;
 
         public boolean getAsBoolean() {
-            boolean resteasyConfigEnabled = ConfigProvider.getConfig().getOptionalValue(RESTEASY_CONFIG_PROPERTY, boolean.class)
+            boolean resteasyConfigEnabled = ConfigProvider.getConfig().getOptionalValue(RESTEASY_CONFIG_PROPERTY, Boolean.class)
                     .orElse(false);
             return smConfig.extensionsEnabled && (smConfig.jaxrsEnabled || resteasyConfigEnabled);
         }
@@ -73,7 +73,7 @@ public class JaxRsMetricsProcessor {
     }
 
     private void warnIfDeprecatedResteasyPropertiesPresent() {
-        if (ConfigProvider.getConfig().getOptionalValue(RESTEASY_CONFIG_PROPERTY, boolean.class).isPresent()) {
+        if (ConfigProvider.getConfig().getOptionalValue(RESTEASY_CONFIG_PROPERTY, Boolean.class).isPresent()) {
             SmallRyeMetricsProcessor.LOGGER.warn(
                     "`quarkus.resteasy.metrics.enabled` is deprecated and will be removed in a future version. "
                             + "Use `quarkus.smallrye-metrics.jaxrs.enabled` to enable metrics for REST endpoints "

@@ -713,10 +713,6 @@ public class NativeImageBuildStep {
                 }
 
                 if (graalVMVersion.isNewerThan(GraalVM.Version.VERSION_21_1)) {
-
-                    // Disable single parsing of compiler graphs till https://github.com/oracle/graal/issues/3435 gets fixed
-                    nativeImageArgs.add("-H:-ParseOnce");
-
                     // AdditionalSecurityProviders
                     if (nativeImageSecurityProviders != null && !nativeImageSecurityProviders.isEmpty()) {
                         String additionalSecurityProviders = nativeImageSecurityProviders.stream()

@@ -340,6 +340,26 @@ One way to accomplish this is by executing the following command:
 ./mvnw test -f integration-tests/resteasy-jackson/ -Dtest=GreetingResourceTest
 ```
 
+### Build with multiple threads
+
+The following standard Maven option can be used to build with multiple threads to speed things up (here 0.5 threads per CPU core):
+
+```
+./mvnw install -T0.5C
+```
+
+Please note that running tests in parallel is not supported at the moment!
+
+### Don't build any test modules
+
+To omit building currently way over 100 pure test modules, run:
+
+```
+./mvnw install -Dno-test-modules
+```
+
+This can come in handy when you are only interested in the actual "productive" artifacts, e.g. when bisecting.
+
 #### Automatic incremental build
 
 :information_source: This feature is currently in testing mode. You're invited to give it a go and please reach out via [Zulip](https://quarkusio.zulipchat.com/#narrow/stream/187038-dev) or GitHub in case something doesn't work as expected or you have ideas to improve things.

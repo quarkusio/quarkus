@@ -1,11 +1,12 @@
 package io.quarkus.devtools.utils;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Objects;
-import jline.console.ConsoleReader;
 import org.apache.commons.lang3.StringUtils;
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
 
 /**
  * Prompt implementation.
@@ -14,22 +15,15 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class Prompter {
 
-    private final ConsoleReader console;
+    private final LineReader lineReader;
 
     public Prompter() throws IOException {
-        this.console = new ConsoleReader();
-        console.setHistoryEnabled(false);
-        console.setExpandEvents(false);
-    }
-
-    public Prompter(InputStream in, OutputStream out) throws IOException {
-        this.console = new ConsoleReader(in, out);
-        console.setHistoryEnabled(false);
-        console.setExpandEvents(false);
-    }
-
-    public ConsoleReader getConsole() {
-        return console;
+        // we set dumb to "true" only to prevent any warning when a proper terminal cannot be detected.
+        // If a proper terminal is detected by JLine then that terminal will be used and setting dumb=true
+        // won't force a dumb terminal.
+        // (https://github.com/jline/jline3/issues/291)
+        final Terminal terminal = TerminalBuilder.builder().dumb(true).build();
+        this.lineReader = LineReaderBuilder.builder().terminal(terminal).build();
     }
 
     public String prompt(final String message, final Character mask) throws IOException {
@@ -38,7 +32,7 @@ public class Prompter {
         final String prompt = String.format("%s: ", message);
         String value;
         do {
-            value = console.readLine(prompt, mask);
+            value = lineReader.readLine(prompt, mask);
         } while (StringUtils.isBlank(value));
         return value;
     }
@@ -53,7 +47,7 @@ public class Prompter {
         Objects.requireNonNull(defaultValue);
 
         final String prompt = String.format("%s [%s]: ", message, defaultValue);
-        String value = console.readLine(prompt);
+        String value = lineReader.readLine(prompt);
         if (StringUtils.isBlank(value)) {
             return defaultValue;
         }

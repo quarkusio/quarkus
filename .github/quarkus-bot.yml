@@ -378,6 +378,12 @@ triage:
         - extensions/oidc/
         - integration-tests/oidc/
         - integration-tests/oidc-code-flow/
+    - labels: [area/keycloak]
+      title: "keycloak"
+      notify: [sberyozkin, pedroigor]
+      directories:
+        - extensions/keycloak
+        - integration-tests/keycloak
     - labels: [area/platform]
       directories:
         - independent-projects/tools/
@@ -440,7 +446,6 @@ triage:
       directories:
         - extensions/security/
         - extensions/elytron
-        - extensions/vertx-keycloak/
         - integration-tests/elytron
     - labels: [area/flyway]
       title: "flyway"

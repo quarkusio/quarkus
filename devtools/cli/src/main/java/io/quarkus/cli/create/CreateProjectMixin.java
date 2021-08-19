@@ -102,6 +102,10 @@ public class CreateProjectMixin {
         setValue(ProjectGenerator.PROJECT_VERSION, targetGav.getVersion());
     }
 
+    public void setExtensionId(String extensionId) {
+        projectDirName = extensionId;
+    }
+
     public void setCodegenOptions(CodeGenerationGroup codeGeneration) {
         setValue(ProjectGenerator.PACKAGE_NAME, codeGeneration.packageName);
         setValue(ProjectGenerator.APP_CONFIG, codeGeneration.getAppConfig());
@@ -139,6 +143,11 @@ public class CreateProjectMixin {
         return new QuarkusCommandInvocation(qp, values);
     }
 
+    public QuarkusProject getExtensionVersions(BuildTool buildTool, TargetQuarkusVersionGroup targetVersion,
+            OutputOptionMixin log) throws RegistryResolutionException {
+        return registryClient.createQuarkusProject(outputDirectory(), targetVersion, buildTool, log);
+    }
+
     @Override
     public String toString() {
         return "CreateProjectMixin ["
@@ -166,7 +175,7 @@ public class CreateProjectMixin {
         output.info(help.createTextTable(dryRunOutput).toString());
     }
 
-    String prettyName(String key) {
+    public String prettyName(String key) {
         if (CreateProject.NO_BUILDTOOL_WRAPPER.equals(key)) {
             return "Omit build tool wrapper";
         }

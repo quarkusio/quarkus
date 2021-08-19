@@ -14,7 +14,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.model.Model;
 
@@ -24,23 +26,38 @@ import org.apache.maven.model.Model;
  */
 public class CreateExtensionCommandHandler {
 
-    public QuarkusCommandOutcome execute(MessageWriter log,
-            String groupId,
+    final String artifactId;
+    final String groupId;
+    final QuarkusExtensionCodestartProjectInput input;
+    final Path newExtensionDir;
+    final Path extensionsParentDir;
+    final Path itTestParentDir;
+    final Path bomDir;
+
+    public CreateExtensionCommandHandler(String groupId,
             String artifactId,
             QuarkusExtensionCodestartProjectInput input,
-            Path newExtensionDir)
-            throws QuarkusCommandException {
-        return execute(log, groupId, artifactId, input, newExtensionDir, null, null, null);
+            Path newExtensionDir) {
+        this(groupId, artifactId, input, newExtensionDir, null, null, null);
     }
 
-    public QuarkusCommandOutcome execute(MessageWriter log,
-            String groupId,
+    public CreateExtensionCommandHandler(String groupId,
             String artifactId,
             QuarkusExtensionCodestartProjectInput input,
             Path newExtensionDir,
             Path extensionsParentDir,
             Path itTestParentDir,
-            Path bomDir)
+            Path bomDir) {
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+        this.input = input;
+        this.newExtensionDir = newExtensionDir;
+        this.extensionsParentDir = extensionsParentDir;
+        this.itTestParentDir = itTestParentDir;
+        this.bomDir = bomDir;
+    }
+
+    public QuarkusCommandOutcome execute(MessageWriter log)
             throws QuarkusCommandException {
         try {
             final QuarkusExtensionCodestartCatalog catalog = QuarkusExtensionCodestartCatalog
@@ -75,6 +92,10 @@ public class CreateExtensionCommandHandler {
         } catch (IOException e) {
             throw new QuarkusCommandException("Error while creating Quarkus extension: " + e.getMessage(), e);
         }
+    }
+
+    public Map<String, Object> getData() {
+        return Collections.unmodifiableMap(input.getData());
     }
 
     private void updateBom(String groupId, String artifactId, Path bomDir) throws QuarkusCommandException {

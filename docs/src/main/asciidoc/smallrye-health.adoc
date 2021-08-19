@@ -324,6 +324,36 @@ error along with the health check response.
 
 For the perfomance reasons the context (e.g., CDI or security context) is not propagated into each health check invocation. However, if you need to enable this functionality you can set the config property `quarkus.smallrye-health.context-propagation=true` to allow the context propagation into every health check call.
 
+== Reactive health checks
+
+MicroProfile Health currently doesn't support returning reactive types, but SmallRye Health does.
+
+If you want to provide a reactive health check, you can implement the `io.smallrye.health.api.AsyncHealthCheck` interface instead of the `org.eclipse.microprofile.health.HealthCheck` one.
+The `io.smallrye.health.api.AsyncHealthCheck` interface allows you to return a `Uni<HealthCheckResponse>`.
+
+The following example shows a reactive liveness check:
+
+[source,java]
+----
+import io.smallrye.health.api.AsyncHealthCheck;
+
+import org.eclipse.microprofile.health.Liveness;
+import org.eclipse.microprofile.health.HealthCheckResponse;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@Liveness
+@ApplicationScoped
+public class LivenessAsync implements AsyncHealthCheck {
+
+    @Override
+    public Uni<HealthCheckResponse> call() {
+        return Uni.createFrom().item(HealthCheckResponse.up("liveness-reactive"))
+                .onItem().delayIt().by(Duration.ofMillis(10));
+    }
+}
+----
+
 == Extension health checks
 
 Some extension may provide default health checks, including the extension will automatically register its health checks.

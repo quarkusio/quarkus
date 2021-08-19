@@ -55,6 +55,7 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -1002,11 +1003,13 @@ public class QuarkusTestExtension
 
             // the arguments were not loaded from TCCL so we need to deep clone them into the TCCL
             // because the test method runs from a class loaded from the TCCL
+            //TODO: make this more pluggable
             List<Object> originalArguments = invocationContext.getArguments();
             List<Object> argumentsFromTccl = new ArrayList<>();
             for (int i = 0; i < originalArguments.size(); i++) {
                 Object arg = originalArguments.get(i);
                 boolean cloneRequired = false;
+                Object replacement = null;
                 Class<?> argClass = invocationContext.getExecutable().getParameters()[i].getType();
                 if (arg != null) {
                     Class<?> theclass = argClass;
@@ -1016,6 +1019,10 @@ public class QuarkusTestExtension
                     String className = theclass.getName();
                     if (theclass.isPrimitive()) {
                         cloneRequired = false;
+                    } else if (TestInfo.class.isAssignableFrom(theclass)) {
+                        TestInfo info = (TestInfo) arg;
+                        replacement = new TestInfoImpl(info.getDisplayName(), info.getTags(), Optional.of(testClassFromTCCL),
+                                Optional.of(newMethod));
                     } else if (clonePattern.matcher(className).matches()) {
                         cloneRequired = true;
                     } else {
@@ -1032,7 +1039,9 @@ public class QuarkusTestExtension
                     }
                 }
 
-                if (cloneRequired) {
+                if (replacement != null) {
+                    argumentsFromTccl.add(replacement);
+                } else if (cloneRequired) {
                     argumentsFromTccl.add(deepClone.clone(arg));
                 } else if (testMethodInvokerToUse != null) {
                     argumentsFromTccl.add(testMethodInvokerToUse.getClass().getMethod("methodParamInstance", String.class)

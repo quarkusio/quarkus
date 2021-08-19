@@ -125,6 +125,8 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         //if this is a blocking target we don't activate for the initial non-blocking part
         //unless there are pre-mapping filters as these may require CDI
         boolean disasociateRequestScope = false;
+        boolean aborted = false;
+        Executor exec = null;
         try {
             while (position < handlers.length) {
                 int pos = position;
@@ -132,7 +134,6 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                 try {
                     handlers[pos].handle((T) this);
                     if (suspended) {
-                        Executor exec = null;
                         synchronized (this) {
                             if (isRequestScopeManagementRequired()) {
                                 if (requestScopeActivated) {
@@ -151,40 +152,29 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                                 exec = this.executor;
                                 // prevent future suspensions from re-submitting the task
                                 this.executor = null;
+                                return;
                             } else if (suspended) {
                                 running = false;
                                 processingSuspended = true;
                                 return;
                             }
                         }
-                        if (exec != null) {
-                            //outside sync block
-                            exec.execute(this);
-                            processingSuspended = true;
-                            return;
-                        }
                     }
                 } catch (Throwable t) {
-                    boolean over = handlers == abortHandlerChain;
+                    aborted = handlers == abortHandlerChain;
                     if (t instanceof PreserveTargetException) {
                         handleException(t.getCause(), true);
                     } else {
                         handleException(t);
                     }
-                    if (over) {
-                        running = false;
-                        return;
-                    }
                 }
             }
-            running = false;
         } catch (Throwable t) {
             handleUnrecoverableError(t);
-            running = false;
         } finally {
             // we need to make sure we don't close the underlying stream in the event loop if the task
             // has been offloaded to the executor
-            if (position == handlers.length && !processingSuspended) {
+            if ((position == handlers.length && !processingSuspended) || aborted) {
                 close();
             } else {
                 if (disasociateRequestScope) {
@@ -192,6 +182,13 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                     currentRequestScope.deactivate();
                 }
                 beginAsyncProcessing();
+            }
+            synchronized (this) {
+                running = false;
+            }
+            if (exec != null) {
+                //outside sync block
+                exec.execute(this);
             }
         }
     }

@@ -453,7 +453,7 @@ It is also possible to generate an example `application.properties` with all kno
 
 This creates a `src/main/resources/application.properties.example` file that contains all the config options
 exposed via the extensions currently present in the application. These options are commented out, and have their value
-set to default swhen applicable. For example this HTTP port config entry will appear as:
+set to defaults when applicable. For example this HTTP port config entry will appear as:
 
 .application.properties
 [source,properties]

@@ -270,7 +270,18 @@ public class RegistriesConfigLocator {
 
                 if (isEnvVarOption(var.getKey(), envvarPrefix, "UPDATE_POLICY")) {
                     registry.setUpdatePolicy(var.getValue());
-                    break;
+                } else if (isEnvVarOption(var.getKey(), envvarPrefix, "REPO_URL")) {
+                    JsonRegistryMavenConfig maven = (JsonRegistryMavenConfig) registry.getMaven();
+                    if (maven == null) {
+                        maven = new JsonRegistryMavenConfig();
+                        registry.setMaven(maven);
+                    }
+                    JsonRegistryMavenRepoConfig repository = (JsonRegistryMavenRepoConfig) maven.getRepository();
+                    if (repository == null) {
+                        repository = new JsonRegistryMavenRepoConfig();
+                        maven.setRepository(repository);
+                    }
+                    repository.setUrl(var.getValue());
                 }
             }
         }

@@ -20,6 +20,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
 
+import grpc.health.v1.HealthGrpc;
 import io.grpc.MethodDescriptor;
 import io.grpc.MethodDescriptor.Marshaller;
 import io.grpc.MethodDescriptor.PrototypeMarshaller;
@@ -120,6 +121,7 @@ public class GrpcDevConsoleProcessor {
         for (String className : serviceClassNames) {
             serviceClasses.add(tccl.loadClass(className));
         }
+        serviceClasses.add(HealthGrpc.class);
         return serviceClasses;
     }
 }

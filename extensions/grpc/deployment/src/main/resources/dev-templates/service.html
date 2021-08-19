@@ -99,7 +99,8 @@ span.connected-status {
 
               connection.responseText = data.body + connection.responseText;
               responseElement.value = connection.responseText;
-              responseElement.style.height = Math.min(responseElement.scrollHeight + 5, 500) + "px"
+              responseElement.style.height = "1px";
+              responseElement.style.height = Math.min(responseElement.scrollHeight + 5, 500) + "px";
             } else if (data.status == 'COMPLETED') {
               const connection = connections.get(data.id);
               hideConnected(connection);

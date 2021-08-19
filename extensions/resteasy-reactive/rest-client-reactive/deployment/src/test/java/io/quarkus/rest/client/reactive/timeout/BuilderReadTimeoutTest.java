@@ -4,8 +4,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -16,7 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
-public class ReadTimeoutTest {
+public class BuilderReadTimeoutTest {
 
     @TestHTTPResource
     URI uri;
@@ -54,5 +62,37 @@ public class ReadTimeoutTest {
                 .build(Client.class);
 
         assertThat(client.slow()).isEqualTo("slow-response");
+    }
+
+    @Produces(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.TEXT_PLAIN)
+    public static interface Client {
+        @GET
+        @Path("/slow")
+        String slow();
+
+        @GET
+        @Path("/fast")
+        String fast();
+    }
+
+    @Path("/")
+    @Produces(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.TEXT_PLAIN)
+    public static class Resource {
+
+        @Path("/slow")
+        @GET
+        public String slow() throws InterruptedException {
+            Thread.sleep(5000L);
+            return "slow-response";
+        }
+
+        @Path("/fast")
+        @GET
+        public CompletionStage<String> fast() {
+            return CompletableFuture.completedFuture("fast-response");
+        }
+
     }
 }

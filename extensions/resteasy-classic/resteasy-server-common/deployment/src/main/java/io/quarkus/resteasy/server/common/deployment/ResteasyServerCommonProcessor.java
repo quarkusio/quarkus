@@ -77,6 +77,8 @@ import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamA
 import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildItem;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.NormalizeRootHttpPathConverter;
 
 /**
  * Processor that builds the RESTEasy server configuration.
@@ -135,9 +137,17 @@ public class ResteasyServerCommonProcessor {
 
         /**
          * Set this to override the default path for JAX-RS resources if there are no
-         * annotated application classes.
+         * annotated application classes. This path is specified with a leading {@literal /}, but is resolved relative
+         * to {@literal quarkus.http.root-path}.
+         * <ul>
+         * <li>If {@literal quarkus.http.root-path=/} and {@code quarkus.resteasy.path=/bar}, the JAX-RS resource path will be
+         * {@literal /bar}</li>
+         * <li>If {@literal quarkus.http.root-path=/foo} and {@code quarkus.resteasy.path=/bar}, the JAX-RS resource path will
+         * be {@literal /foo/bar}</li>
+         * </ul>
          */
         @ConfigItem(defaultValue = "/")
+        @ConvertWith(NormalizeRootHttpPathConverter.class)
         String path;
 
         /**

@@ -198,6 +198,7 @@ class VertxHttpProcessor {
             LaunchModeBuildItem launchMode,
             List<DefaultRouteBuildItem> defaultRoutes, List<FilterBuildItem> filters,
             VertxWebRouterBuildItem httpRouteRouter,
+            HttpRootPathBuildItem httpRootPathBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             HttpBuildTimeConfig httpBuildTimeConfig, HttpConfiguration httpConfiguration,
             List<RequireBodyHandlerBuildItem> requireBodyHandlerBuildItems,
@@ -256,7 +257,8 @@ class VertxHttpProcessor {
 
         recorder.finalizeRouter(beanContainer.getValue(),
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
-                listOfFilters, vertx.getVertx(), lrc, mainRouter, httpRouteRouter.getHttpRouter(), httpBuildTimeConfig.rootPath,
+                listOfFilters, vertx.getVertx(), lrc, mainRouter, httpRouteRouter.getHttpRouter(),
+                httpRootPathBuildItem.getRootPath(),
                 launchMode.getLaunchMode(),
                 !requireBodyHandlerBuildItems.isEmpty(), bodyHandler, httpConfiguration, gracefulShutdownFilter,
                 shutdownConfig, executorBuildItem.getExecutorProxy());

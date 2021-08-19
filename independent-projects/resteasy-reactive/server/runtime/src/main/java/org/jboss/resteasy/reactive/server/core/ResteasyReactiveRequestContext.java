@@ -183,11 +183,12 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     /**
-     * Meant to be used when a error occurred early in processing chain
+     * Meant to be used when an error occurred early in processing chain
      */
     @Override
     public void abortWith(Response response) {
         setResult(response);
+        setAbortHandlerChainStarted(true);
         restart(getAbortHandlerChain());
         // this is a valid action after suspend, in which case we must resume
         if (isSuspended()) {

@@ -8,7 +8,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.maven.shared.invoker.MavenInvocationException;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
@@ -56,7 +55,6 @@ public class KotlinDevModeIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
-    @Tag("failsOnJDK16")
     public void testThatTheApplicationIsReloadedOnKotlinChangeWithCustomCompilerArgs()
             throws MavenInvocationException, IOException {
         testDir = initProject("projects/kotlin-compiler-args", "projects/kotlin-compiler-args-change");

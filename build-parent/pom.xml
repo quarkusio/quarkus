@@ -1143,16 +1143,5 @@
             </properties>
         </profile>
 
-        <profile>
-            <id>jdk16-workarounds</id>
-            <activation>
-                <jdk>[16,)</jdk>
-            </activation>
-            <properties>
-                <!-- auto-exclude tests that are known to fail on JDK 16 (tagged via @Tag("failsOnJDK16")) -->
-                <excludedGroups>failsOnJDK16</excludedGroups>
-            </properties>
-        </profile>
-
     </profiles>
 </project>

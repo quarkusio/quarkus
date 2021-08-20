@@ -381,6 +381,13 @@ quarkus.openshift.secret-volumes.my-volume.secret-name=my-secret
 quarkus.openshift.config-map-volumes.my-volume.config-map-name=my-secret
 ----
 
+===== Persistent Volume Claims
+
+[source,properties]
+----
+quarkus.openshift.pvc-volumes.my-pvc.claim-name=my-pvc
+----
+
 === Knative - OpenShift Serverless
 
 OpenShift also provides the ability to use Knative via the link:https://www.openshift.com/learn/topics/serverless[OpenShift Serverless] functionality.

@@ -137,7 +137,7 @@ public class CliDriver {
         Files.walk(path)
                 .sorted(Comparator.reverseOrder())
                 .map(Path::toFile)
-                .forEach(File::delete);
+                .forEach(f -> retryDelete(f));
 
         Assertions.assertFalse(path.toFile().exists());
     }
@@ -350,5 +350,22 @@ public class CliDriver {
             return "-D" + name + "=" + value;
         }
         return null;
+    }
+
+    private static void retryDelete(File file) {
+        if (file.delete()) {
+            return;
+        }
+        int i = 0;
+        while (i++ < 10) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ignored) {
+
+            }
+            if (file.delete()) {
+                break;
+            }
+        }
     }
 }

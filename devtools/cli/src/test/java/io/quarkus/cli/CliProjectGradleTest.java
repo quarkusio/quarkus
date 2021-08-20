@@ -11,7 +11,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.cli.build.ExecuteUtil;
@@ -23,7 +22,6 @@ import picocli.CommandLine;
 /**
  * Similar to CliProjectMavenTest ..
  */
-@Tag("failsOnJDK16")
 public class CliProjectGradleTest {
     static final Path testProjectRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
             .resolve("target/test-project/");

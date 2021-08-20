@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation platform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
     api("org.hibernate:hibernate-core:5.4.9") {
         exclude module: "byte-buddy"
     }

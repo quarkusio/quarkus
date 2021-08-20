@@ -46,7 +46,7 @@ public class ReflectiveHierarchyStep {
 
     @BuildStep
     public ReflectiveHierarchyIgnoreWarningBuildItem ignoreJavaClassWarnings() {
-        return new ReflectiveHierarchyIgnoreWarningBuildItem(ReflectiveHierarchyBuildItem.IgnoreWhiteListedPredicate.INSTANCE);
+        return new ReflectiveHierarchyIgnoreWarningBuildItem(ReflectiveHierarchyBuildItem.IgnoreAllowListedPredicate.INSTANCE);
     }
 
     @BuildStep

@@ -35,17 +35,17 @@ public class SslConfig {
     /**
      * Truststore config
      */
-    public StoreConfig truststore;
+    public TrustStoreConfig truststore;
 
     /**
      * Keystore config
      */
-    public StoreConfig keystore;
+    public KeyStoreConfig keystore;
 
     /**
      * Key config
      */
-    public StoreConfig key;
+    public KeyConfig key;
 
     /**
      * The algorithm used by key manager factory for SSL connections

@@ -6,22 +6,34 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public class StoreConfig {
+public class KeyStoreConfig {
     /**
-     * Store type
+     * Key store type
      */
     @ConfigItem
     public Optional<String> type;
 
     /**
-     * Store location
+     * Key store location
      */
     @ConfigItem
     public Optional<String> location;
 
     /**
-     * Store password
+     * Key store password
      */
     @ConfigItem
     public Optional<String> password;
+
+    /**
+     * Key store private key
+     */
+    @ConfigItem
+    public Optional<String> key;
+
+    /**
+     * Key store certificate chain
+     */
+    @ConfigItem
+    public Optional<String> certificateChain;
 }

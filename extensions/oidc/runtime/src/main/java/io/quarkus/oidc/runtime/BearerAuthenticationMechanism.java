@@ -1,5 +1,7 @@
 package io.quarkus.oidc.runtime;
 
+import java.util.function.Function;
+
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.oidc.AccessTokenCredential;
@@ -20,13 +22,17 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
-        String token = extractBearerToken(context, resolver.resolveConfig(context));
-
-        // if a bearer token is provided try to authenticate
-        if (token != null) {
-            return authenticate(identityProviderManager, context, new AccessTokenCredential(token, context));
-        }
-        return Uni.createFrom().nullItem();
+        return resolver.resolveConfig(context).chain(new Function<OidcTenantConfig, Uni<? extends SecurityIdentity>>() {
+            @Override
+            public Uni<? extends SecurityIdentity> apply(OidcTenantConfig oidcTenantConfig) {
+                String token = extractBearerToken(context, oidcTenantConfig);
+                // if a bearer token is provided try to authenticate
+                if (token != null) {
+                    return authenticate(identityProviderManager, context, new AccessTokenCredential(token, context));
+                }
+                return Uni.createFrom().nullItem();
+            }
+        });
     }
 
     public Uni<ChallengeData> getChallenge(RoutingContext context) {

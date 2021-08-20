@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.Unremovable;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Uni;
 
@@ -31,6 +32,7 @@ public class MailTemplateValidationTest {
         Assertions.fail();
     }
 
+    @Unremovable // Injection points from removed beans are not validated
     @Singleton
     static class MailTemplates {
 

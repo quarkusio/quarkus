@@ -24,7 +24,7 @@ import javax.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-public class RemoveUnusedBeansTest {
+public class RemoveUnusedBeansTest extends RemoveUnusedComponentsTest {
 
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
@@ -39,17 +39,17 @@ public class RemoveUnusedBeansTest {
 
     @Test
     public void testRemoval() {
+        assertPresent(HasObserver.class);
+        assertPresent(HasName.class);
+        assertPresent(InjectedViaInstance.class);
+        assertPresent(InjectedViaInstanceWithWildcard.class);
+        assertPresent(InjectedViaInstanceWithWildcard2.class);
+        assertPresent(InjectedViaProvider.class);
+        assertPresent(String.class);
+        assertPresent(UsedProducers.class);
+        assertNotPresent(UnusedProducers.class);
+        assertNotPresent(BigDecimal.class);
         ArcContainer container = Arc.container();
-        assertTrue(container.instance(HasObserver.class).isAvailable());
-        assertTrue(container.instance(HasName.class).isAvailable());
-        assertTrue(container.instance(InjectedViaInstance.class).isAvailable());
-        assertTrue(container.instance(InjectedViaInstanceWithWildcard.class).isAvailable());
-        assertTrue(container.instance(InjectedViaInstanceWithWildcard2.class).isAvailable());
-        assertTrue(container.instance(InjectedViaProvider.class).isAvailable());
-        assertTrue(container.instance(String.class).isAvailable());
-        assertTrue(container.instance(UsedProducers.class).isAvailable());
-        assertFalse(container.instance(UnusedProducers.class).isAvailable());
-        assertFalse(container.instance(BigDecimal.class).isAvailable());
         // Foo is injected in HasObserver#observe()
         Foo foo = container.instance(Foo.class).get();
         assertEquals(FooAlternative.class.getName(), foo.ping());
@@ -57,12 +57,14 @@ public class RemoveUnusedBeansTest {
         assertEquals(1, container.beanManager().getBeans(Foo.class).size());
         assertEquals("pong", container.instance(Excluded.class).get().ping());
         // Producer is unused but declaring bean is injected
-        assertTrue(container.instance(UnusedProducerButInjected.class).isAvailable());
-        assertFalse(container.instance(BigInteger.class).isAvailable());
+        assertPresent(UnusedProducerButInjected.class);
+        assertNotPresent(BigInteger.class);
         // Producer is unused, declaring bean is only used via Instance
-        assertTrue(container.instance(UsedViaInstanceWithUnusedProducer.class).isAvailable());
-        assertFalse(container.instance(Long.class).isAvailable());
+        assertPresent(UsedViaInstanceWithUnusedProducer.class);
+        assertNotPresent(Long.class);
         assertFalse(ArcContainerImpl.instance().getRemovedBeans().isEmpty());
+        assertNotPresent(UnusedBean.class);
+        assertNotPresent(OnlyInjectedInUnusedBean.class);
     }
 
     @Dependent
@@ -195,11 +197,25 @@ public class RemoveUnusedBeansTest {
         Long unusedLong = Long.valueOf(0);
     }
 
+    @Named // just to make it unremovable
     @Singleton
     static class UsesBeanViaInstance {
 
         @Inject
         Instance<UsedViaInstanceWithUnusedProducer> instance;
+    }
+
+    @Singleton
+    static class UnusedBean {
+
+        @Inject
+        OnlyInjectedInUnusedBean beanB;
+
+    }
+
+    @Singleton
+    static class OnlyInjectedInUnusedBean {
+
     }
 
 }

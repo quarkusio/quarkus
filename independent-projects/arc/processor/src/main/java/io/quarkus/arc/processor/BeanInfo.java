@@ -12,7 +12,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -535,7 +534,7 @@ public class BeanInfo implements InjectionTargetInfo {
             return Collections.emptyMap();
         }
         // A decorator is bound to a bean if the bean is assignable to the delegate injection point
-        List<DecoratorInfo> bound = new LinkedList<>();
+        List<DecoratorInfo> bound = new ArrayList<>();
         for (DecoratorInfo decorator : decorators) {
             if (Beans.matches(this, decorator.getDelegateInjectionPoint().getTypeAndQualifiers())) {
                 bound.add(decorator);

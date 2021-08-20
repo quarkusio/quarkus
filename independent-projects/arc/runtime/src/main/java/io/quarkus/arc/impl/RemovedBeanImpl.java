@@ -27,7 +27,7 @@ public final class RemovedBeanImpl implements RemovedBean {
 
     @Override
     public String getDescription() {
-        return description;
+        return description != null ? description : "";
     }
 
     @Override
@@ -43,7 +43,7 @@ public final class RemovedBeanImpl implements RemovedBean {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        builder.append(kind).append(" bean ").append(description).append(" [types=")
+        builder.append(getKind()).append(" bean ").append(getDescription()).append(" [types=")
                 .append(types).append(", qualifiers=").append(qualifiers).append("]");
         return builder.toString();
     }

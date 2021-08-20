@@ -8,6 +8,7 @@ import io.quarkus.arc.Components;
 import io.quarkus.arc.ComponentsProvider;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.InjectableDecorator;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableObserverMethod;
@@ -51,6 +52,7 @@ import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
+import javax.enterprise.inject.spi.Decorator;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.inject.spi.InterceptionType;
 import javax.enterprise.inject.spi.Interceptor;
@@ -71,6 +73,7 @@ public class ArcContainerImpl implements ArcContainer {
     private final ArrayList<InjectableBean<?>> beans;
     private final ArrayList<RemovedBean> removedBeans;
     private final List<InjectableInterceptor<?>> interceptors;
+    private final List<InjectableDecorator<?>> decorators;
     private final List<InjectableObserverMethod<?>> observers;
     private final Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings;
     private final Map<String, Set<String>> qualifierNonbindingMembers;
@@ -96,6 +99,7 @@ public class ArcContainerImpl implements ArcContainer {
         beans = new ArrayList<>();
         removedBeans = new ArrayList<>();
         interceptors = new ArrayList<>();
+        decorators = new ArrayList<>();
         observers = new ArrayList<>();
         transitiveInterceptorBindings = new HashMap<>();
         qualifierNonbindingMembers = new HashMap<>();
@@ -113,6 +117,8 @@ public class ArcContainerImpl implements ArcContainer {
             for (InjectableBean<?> bean : components.getBeans()) {
                 if (bean instanceof InjectableInterceptor) {
                     interceptors.add((InjectableInterceptor<?>) bean);
+                } else if (bean instanceof InjectableDecorator) {
+                    decorators.add((InjectableDecorator<?>) bean);
                 } else {
                     beans.add(bean);
                 }
@@ -626,10 +632,20 @@ public class ArcContainerImpl implements ArcContainer {
                         + "\t- Application developers can eliminate false positives via the @Unremovable annotation\n"
                         + "\t- Extensions can eliminate false positives via build items, e.g. using the UnremovableBeanBuildItem\n"
                         + "\t- See also https://quarkus.io/guides/cdi-reference#remove_unused_beans\n"
+                        + "\t- Enable the DEBUG log level to see the full stack trace to identify the method that performed the lookup\n"
                         + "%1$s%1$s%1$s%1$s\n";
                 LOGGER.warnf(msg, separator,
                         removedMatching.stream().map(Object::toString).collect(Collectors.joining("\n\t- ")),
                         resolvable.requiredType, Arrays.toString(resolvable.qualifiers));
+                if (LOGGER.isDebugEnabled()) {
+                    StringBuilder stack = new StringBuilder("\nCDI: programmatic lookup stack trace:\n");
+                    for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
+                        stack.append("\t");
+                        stack.append(e.toString());
+                        stack.append("\n");
+                    }
+                    LOGGER.debug(stack);
+                }
             }
         }
         return matching;
@@ -701,6 +717,23 @@ public class ArcContainerImpl implements ArcContainer {
             }
         }
         return interceptors;
+    }
+
+    List<Decorator<?>> resolveDecorators(Set<Type> types, Annotation... qualifiers) {
+        if (decorators.isEmpty()) {
+            return Collections.emptyList();
+        }
+        if (Objects.requireNonNull(types).isEmpty()) {
+            throw new IllegalArgumentException("The set of bean types must not be empty");
+        }
+        List<Decorator<?>> decorators = new ArrayList<>();
+        for (InjectableDecorator<?> decorator : this.decorators) {
+            if (matches(types, Set.of(qualifiers), decorator.getDelegateType(),
+                    decorator.getDelegateQualifiers().toArray(new Annotation[] {}))) {
+                decorators.add(decorator);
+            }
+        }
+        return decorators;
     }
 
     private boolean hasAllInterceptionBindings(InjectableInterceptor<?> interceptor, Iterable<Annotation> bindings) {

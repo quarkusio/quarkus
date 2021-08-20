@@ -78,7 +78,7 @@ public class SmallRyeFaultToleranceProcessor {
 
     @BuildStep
     public void build(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer,
-            BuildProducer<FeatureBuildItem> feature, BuildProducer<AdditionalBeanBuildItem> additionalBean,
+            BuildProducer<FeatureBuildItem> feature, BuildProducer<AdditionalBeanBuildItem> beans,
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<BeanDefiningAnnotationBuildItem> additionalBda,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
@@ -110,7 +110,7 @@ public class SmallRyeFaultToleranceProcessor {
                 reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, fallbackHandler));
                 fallbackHandlersBeans.addBeanClass(fallbackHandler);
             }
-            additionalBean.produce(fallbackHandlersBeans.build());
+            beans.produce(fallbackHandlersBeans.build());
         }
         // Add reflective access to fallback methods
         for (AnnotationInstance annotation : index.getAnnotations(DotNames.FALLBACK)) {
@@ -182,18 +182,25 @@ public class SmallRyeFaultToleranceProcessor {
         for (DotName ftAnnotation : DotNames.FT_ANNOTATIONS) {
             builder.addBeanClass(ftAnnotation.toString());
         }
-        builder.addBeanClasses(FaultToleranceInterceptor.class,
-                ExecutorHolder.class,
-                StrategyCache.class,
-                QuarkusFaultToleranceOperationProvider.class,
-                QuarkusFallbackHandlerProvider.class,
-                QuarkusExistingCircuitBreakerNames.class,
-                QuarkusAsyncExecutorProvider.class,
-                MetricsProvider.class,
-                CircuitBreakerMaintenanceImpl.class,
-                RequestContextIntegration.class,
-                SpecCompatibility.class);
-        additionalBean.produce(builder.build());
+        builder
+                .addBeanClasses(
+                        ExecutorHolder.class,
+                        StrategyCache.class,
+                        QuarkusFallbackHandlerProvider.class,
+                        QuarkusAsyncExecutorProvider.class,
+                        MetricsProvider.class,
+                        CircuitBreakerMaintenanceImpl.class,
+                        RequestContextIntegration.class,
+                        SpecCompatibility.class);
+        beans.produce(builder.build());
+
+        // TODO FT should be smart enough and only initialize the stuff in the recorder if it's really needed
+        // The FaultToleranceInterceptor needs to be registered as unremovable due to the rest-client integration - interceptors 
+        // are currently resolved dynamically at runtime because per the spec interceptor bindings cannot be declared on interfaces
+        beans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                .addBeanClasses(FaultToleranceInterceptor.class, QuarkusFaultToleranceOperationProvider.class,
+                        QuarkusExistingCircuitBreakerNames.class)
+                .build());
 
         if (!metricsCapability.isPresent()) {
             //disable fault tolerance metrics with the MP sys props

@@ -4,6 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 class JsonbDeserializerTest {
@@ -14,6 +18,17 @@ class JsonbDeserializerTest {
         MyEntity actual = deserializer.deserialize("topic", "{\"id\":1,\"name\":\"entity1\"}".getBytes());
         assertNotNull(actual);
         assertEquals(expected, actual);
+    }
+
+    @Test
+    void shouldDeserializeListOfEntities() {
+        Type listType = new ArrayList<MyEntity>() {
+        }.getClass().getGenericSuperclass();
+        JsonbDeserializer<List<MyEntity>> deserializer = new JsonbDeserializer<>(listType);
+        List<MyEntity> actuals = deserializer.deserialize("topic",
+                "[{\"id\":1,\"name\":\"entity1\"},{\"id\":2,\"name\":\"entity2\"}]".getBytes());
+        assertNotNull(actuals);
+        assertEquals(2, actuals.size());
     }
 
     @Test

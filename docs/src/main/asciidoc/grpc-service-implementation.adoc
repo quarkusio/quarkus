@@ -243,11 +243,14 @@ quarkus.grpc.server.ssl.client-auth=REQUIRED
 
 == Server Interceptors
 
-You can implement a gRPC server interceptor by implementing an `@ApplicationScoped` bean implementing `io.grpc.ServerInterceptor`:
+gRPC server interceptors let you perform logic, such as authentication, before your service is invoked.
+
+You can implement a gRPC server interceptor by creating an `@ApplicationScoped` bean implementing `io.grpc.ServerInterceptor`:
 
 [source, java]
 ----
 @ApplicationScoped
+// add @GlobalInterceptor for interceptors meant to be invoked for every service
 public class MyInterceptor implements ServerInterceptor {
 
     @Override
@@ -260,7 +263,22 @@ public class MyInterceptor implements ServerInterceptor {
 
 TIP: Check the https://grpc.github.io/grpc-java/javadoc/io/grpc/ServerInterceptor.html[ServerInterceptor JavaDoc] to properly implement your interceptor.
 
-When you have multiple server interceptors, you can order them by implementing the `javax.enterprise.inject.spi.Prioritized` interface:
+To apply an interceptor to all exposed services, annotate it with `@io.quarkus.grpc.GlobalInterceptor`.
+To apply an interceptor to a single service, register it on the service with `@io.quarkus.grpc.RegisterInterceptor`:
+[source, java]
+----
+import io.quarkus.grpc.GrpcService;
+import io.quarkus.grpc.RegisterInterceptor;
+
+@GrpcService
+@RegisterInterceptor(MyInterceptor.class)
+public class StreamingService implements Streaming {
+    // ...
+}
+----
+
+When you have multiple server interceptors, you can order them by implementing the `javax.enterprise.inject.spi.Prioritized` interface. Please note that all the global interceptors are invoked before the service-specific
+interceptors.
 
 [source, java]
 ----

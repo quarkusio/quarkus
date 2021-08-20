@@ -6,11 +6,15 @@ import org.jboss.jandex.DotName;
 
 import io.grpc.BindableService;
 import io.grpc.Channel;
+import io.grpc.ServerInterceptor;
 import io.grpc.stub.AbstractBlockingStub;
 import io.grpc.stub.AbstractStub;
 import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.grpc.GlobalInterceptor;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
+import io.quarkus.grpc.RegisterInterceptor;
+import io.quarkus.grpc.RegisterInterceptors;
 import io.quarkus.grpc.runtime.MutinyBean;
 import io.quarkus.grpc.runtime.MutinyClient;
 import io.quarkus.grpc.runtime.MutinyGrpc;
@@ -37,6 +41,11 @@ public class GrpcDotNames {
     public static final DotName MUTINY_CLIENT = DotName.createSimple(MutinyClient.class.getName());
     public static final DotName MUTINY_BEAN = DotName.createSimple(MutinyBean.class.getName());
     public static final DotName MUTINY_SERVICE = DotName.createSimple(MutinyService.class.getName());
+
+    public static final DotName GLOBAL_INTERCEPTOR = DotName.createSimple(GlobalInterceptor.class.getName());
+    public static final DotName REGISTER_INTERCEPTOR = DotName.createSimple(RegisterInterceptor.class.getName());
+    public static final DotName REGISTER_INTERCEPTORS = DotName.createSimple(RegisterInterceptors.class.getName());
+    public static final DotName SERVER_INTERCEPTOR = DotName.createSimple(ServerInterceptor.class.getName());
 
     static final MethodDescriptor CREATE_CHANNEL_METHOD = MethodDescriptor.ofMethod(Channels.class, "createChannel",
             Channel.class, String.class);

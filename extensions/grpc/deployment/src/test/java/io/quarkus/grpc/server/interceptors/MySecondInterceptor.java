@@ -9,8 +9,10 @@ import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
+import io.quarkus.grpc.GlobalInterceptor;
 
 @ApplicationScoped
+@GlobalInterceptor
 public class MySecondInterceptor implements ServerInterceptor, Prioritized {
 
     private volatile long callTime;

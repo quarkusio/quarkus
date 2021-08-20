@@ -13,10 +13,12 @@ import io.grpc.ServerInterceptor;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.grpc.GlobalInterceptor;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
 @ApplicationScoped
+@GlobalInterceptor
 public class GrpcRequestContextGrpcInterceptor implements ServerInterceptor, Prioritized {
     private static final Logger log = Logger.getLogger(GrpcRequestContextGrpcInterceptor.class.getName());
 

@@ -376,7 +376,7 @@ class RestClientReactiveProcessor {
 
                     // METHODS:
                     for (MethodInfo method : restMethods) {
-                        // for each method method that corresponds to making a rest call, create a method like:
+                        // for each method that corresponds to making a rest call, create a method like:
                         // public JsonArray get() {
                         //      return ((InterfaceClass)this.getDelegate()).get();
                         // }

@@ -7,8 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import io.quarkus.test.junit.QuarkusTest;
 
@@ -31,6 +33,14 @@ public class QuarkusTestCallbacksTestCase {
     @Order(2)
     public void testBeforeClass() {
         assertEquals(1, SimpleAnnotationCheckerBeforeClassCallback.count.get());
+    }
+
+    @Test
+    @Order(3)
+    public void testInfoTestCase(TestInfo testInfo) throws NoSuchMethodException {
+        Assertions.assertEquals(testInfo.getTestClass().get(), QuarkusTestCallbacksTestCase.class);
+        Assertions.assertEquals(testInfo.getTestMethod().get(),
+                QuarkusTestCallbacksTestCase.class.getDeclaredMethod("testInfoTestCase", TestInfo.class));
     }
 
     @Target({ METHOD })

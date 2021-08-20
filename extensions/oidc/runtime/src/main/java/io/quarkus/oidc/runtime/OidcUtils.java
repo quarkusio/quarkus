@@ -15,8 +15,11 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 
+import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.security.AuthenticationFailedException;
@@ -144,7 +147,13 @@ public final class OidcUtils {
         OidcTenantConfig config = resolvedContext.oidcConfig;
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
         builder.addCredential(credential);
-
+        AuthorizationCodeTokens codeTokens = vertxContext != null ? vertxContext.get(AuthorizationCodeTokens.class.getName())
+                : null;
+        if (codeTokens != null) {
+            RefreshToken refreshTokenCredential = new RefreshToken(codeTokens.getRefreshToken());
+            builder.addCredential(refreshTokenCredential);
+            builder.addCredential(new AccessTokenCredential(codeTokens.getAccessToken(), refreshTokenCredential, vertxContext));
+        }
         JsonWebToken jwtPrincipal;
         try {
             JwtClaims jwtClaims = JwtClaims.parse(tokenJson.encode());

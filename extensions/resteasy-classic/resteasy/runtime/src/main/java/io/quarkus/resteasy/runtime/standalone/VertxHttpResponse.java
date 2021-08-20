@@ -6,11 +6,11 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.ext.RuntimeDelegate;
 
-import org.jboss.resteasy.specimpl.MultivaluedMapImpl;
 import org.jboss.resteasy.spi.HttpResponse;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 
@@ -38,7 +38,7 @@ public class VertxHttpResponse implements HttpResponse {
     public VertxHttpResponse(HttpServerRequest request, ResteasyProviderFactory providerFactory,
             final HttpMethod method, BufferAllocator allocator, VertxOutput output, RoutingContext routingContext) {
         this.routingContext = routingContext;
-        outputHeaders = new MultivaluedMapImpl<String, Object>();
+        outputHeaders = new MultivaluedHashMap<String, Object>();
         this.method = method;
         os = (method == null || !method.equals(HttpMethod.HEAD)) ? new VertxOutputStream(this, allocator)
                 : null;

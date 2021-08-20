@@ -31,6 +31,9 @@ public class GrpcServices extends AbstractMap<String, ServiceDefinitionAndStatus
     @Inject
     GrpcHealthStorage healthStorage;
 
+    @Inject
+    DelegatingGrpcBeansStorage delegatingBeansMapping;
+
     public List<ServiceDefinitionAndStatus> getInfos() {
         List<GrpcServiceDefinition> services = GrpcServerRecorder.getServices();
         List<ServiceDefinitionAndStatus> infos = new ArrayList<>(services.size());
@@ -70,7 +73,12 @@ public class GrpcServices extends AbstractMap<String, ServiceDefinitionAndStatus
             if (definition.service instanceof Subclass) {
                 instanceClass = instanceClass.getSuperclass();
             }
-            return instanceClass.getName();
+
+            String grpcBeanClassName = instanceClass.getName();
+
+            String userClass = delegatingBeansMapping.getUserClassName(grpcBeanClassName);
+
+            return userClass != null ? userClass : grpcBeanClassName;
         }
 
         public Collection<ServerMethodDefinition<?, ?>> getMethods() {

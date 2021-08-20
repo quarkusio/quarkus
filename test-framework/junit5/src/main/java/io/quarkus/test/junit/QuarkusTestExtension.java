@@ -338,6 +338,7 @@ public class QuarkusTestExtension
                         .setTest(true)
                         .build()
                         .bootstrap();
+                shutdownTasks.add(curatedApplication::close);
             }
 
             if (curatedApplication.getAppModel().getUserDependencies().isEmpty()) {
@@ -1260,7 +1261,11 @@ public class QuarkusTestExtension
                         ConfigProviderResolver.setInstance(null);
                     }
                 }
-                Runtime.getRuntime().removeShutdownHook(shutdownHook);
+                try {
+                    Runtime.getRuntime().removeShutdownHook(shutdownHook);
+                } catch (Throwable t) {
+                    //won't work if we are already shutting down
+                }
             }
         }
     }

@@ -260,6 +260,16 @@ quarkus.smallrye-openapi.path=/swagger
 ----
 ====
 
+[NOTE]
+====
+You can request the OpenAPI in JSON format using the `format` query parameter. For example:
+[source, properties]
+----
+/q/openapi?format=json
+----
+====
+
+
 Hit `CTRL+C` to stop the application.
 
 == Providing Application Level OpenAPI Annotations
@@ -272,7 +282,7 @@ There are some MicroProfile OpenAPI annotations which describe global API inform
 * Contact Information
 * License
 
-All of this information (and more) can be included in your Java code by using appropriate OpenAPI annotations 
+All of this information (and more) can be included in your Java code by using appropriate OpenAPI annotations
 on a JAX-RS `Application` class.  Because a JAX-RS `Application` class is not required in Quarkus, you will
 likely have to create one.  It can simply be an empty class that extends `javax.ws.rs.core.Application`.  This
 empty class can then be annotated with various OpenAPI annotations such as `@OpenAPIDefinition`.  For example:
@@ -285,7 +295,7 @@ empty class can then be annotated with various OpenAPI annotations such as `@Ope
             @Tag(name="gasket", description="Operations related to gaskets")
     },
     info = @Info(
-        title="Example API", 
+        title="Example API",
         version = "1.0.1",
         contact = @Contact(
             name = "Example API Support",
@@ -405,7 +415,7 @@ Live reload of static OpenAPI document is supported during development. A modifi
 
 == Changing the OpenAPI version
 
-By default, when the document is generated, the OpenAPI version used will be `3.0.3`. If you use a static file as mentioned above, the version in the file 
+By default, when the document is generated, the OpenAPI version used will be `3.0.3`. If you use a static file as mentioned above, the version in the file
 will be used. You can also define the version in SmallRye using the following configuration:
 
 [source, properties]
@@ -417,7 +427,7 @@ This might be useful if your API goes through a Gateway that needs a certain ver
 
 == Auto-generation of Operation Id
 
-The https://swagger.io/docs/specification/paths-and-operations/[Operation Id] can be set using the `@Operation` annotation, and is in many cases useful when using a tool to generate a client stub from the schema. 
+The https://swagger.io/docs/specification/paths-and-operations/[Operation Id] can be set using the `@Operation` annotation, and is in many cases useful when using a tool to generate a client stub from the schema.
 The Operation Id is typically used for the method name in the client stub. In SmallRye, you can auto-generate this Operation Id by using the following configuration:
 
 [source, properties]

@@ -12,7 +12,7 @@ import io.quarkus.gizmo.ClassOutput;
  * The {@link ClassLoader} passed to the constructor MUST contain a public visibleDefineClass method
  * This ensures that generating proxies works in any JDK version
  */
-class InjectIntoClassloaderClassOutput implements ClassOutput {
+public class InjectIntoClassloaderClassOutput implements ClassOutput {
 
     private final ClassLoader classLoader;
 
@@ -41,5 +41,18 @@ class InjectIntoClassloaderClassOutput implements ClassOutput {
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static ClassOutput wrap(ClassOutput delegate) {
+        InjectIntoClassloaderClassOutput injector = new InjectIntoClassloaderClassOutput(
+                Thread.currentThread().getContextClassLoader());
+
+        return new ClassOutput() {
+            @Override
+            public void write(String name, byte[] data) {
+                delegate.write(name, data);
+                injector.write(name, data);
+            }
+        };
     }
 }

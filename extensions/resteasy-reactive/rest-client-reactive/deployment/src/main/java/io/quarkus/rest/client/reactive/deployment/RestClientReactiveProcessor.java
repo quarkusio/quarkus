@@ -62,6 +62,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.proxy.InjectIntoClassloaderClassOutput;
 import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
@@ -337,7 +338,7 @@ class RestClientReactiveProcessor {
                 String wrapperClassName = jaxrsInterface.name().toString() + CDI_WRAPPER_SUFFIX;
                 try (ClassCreator classCreator = ClassCreator.builder()
                         .className(wrapperClassName)
-                        .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeans))
+                        .classOutput(InjectIntoClassloaderClassOutput.wrap(new GeneratedBeanGizmoAdaptor(generatedBeans)))
                         .interfaces(jaxrsInterface.name().toString())
                         .superClass(RestClientReactiveCDIWrapperBase.class)
                         .build()) {

@@ -80,12 +80,12 @@ This command generates a Maven project, with its pom.xml importing the quarkus-q
 [#starting-the-broker]
 === Starting the broker
 
-Then, we need an AMQP broker. In this case we will use an ActiveMQ Artemis server.
-You can follow the instructions from the https://activemq.apache.org/components/artemis/[Apache Artemis web site] or start a broker via docker:
+Then, we need an AMQP broker. In this case we will use an Apache ActiveMQ Artemis server.
+You can follow the instructions from the https://activemq.apache.org/components/artemis/[Apache Artemis web site] or start a broker via docker using the https://artemiscloud.io/[ArtemisCloud] container image:
 
 [source,bash]
 ----
-docker run -it --rm -p 8161:8161 -p 61616:61616 -p 5672:5672 -e ARTEMIS_USERNAME=quarkus -e ARTEMIS_PASSWORD=quarkus vromero/activemq-artemis:2.11.0-alpine
+docker run -it --rm -p 8161:8161 -p 61616:61616 -p 5672:5672 -e AMQ_USER=quarkus -e AMQ_PASSWORD=quarkus quay.io/artemiscloud/activemq-artemis-broker:0.1.4
 ----
 
 === The price producer

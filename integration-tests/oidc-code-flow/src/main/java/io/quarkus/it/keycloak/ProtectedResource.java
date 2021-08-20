@@ -19,6 +19,7 @@ import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.ext.web.RoutingContext;
@@ -168,9 +169,12 @@ public class ProtectedResource {
     @GET
     @Path("access")
     public String getAccessToken() {
-        if (accessToken.getRawToken() != null && !accessTokenCredential.getToken().equals(accessToken.getRawToken())) {
+        if (accessToken.getRawToken() != null &&
+                (!accessTokenCredential.getToken().equals(accessToken.getRawToken())
+                        || !identity.getAttribute(OidcConstants.ACCESS_TOKEN_VALUE).equals(accessToken.getRawToken()))) {
             throw new OIDCException("Access token values are not equal");
         }
+
         return accessToken.getRawToken() != null && !accessToken.getRawToken().isEmpty() ? "AT injected" : "no access";
     }
 

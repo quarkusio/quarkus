@@ -4,23 +4,18 @@ import java.awt.color.ICC_Profile;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.jdk.JDK16OrEarlier;
+import com.oracle.svm.core.jdk.JDK17OrLater;
 
-@TargetClass(className = "sun.java2d.cmm.lcms.LCMS", onlyWith = JDK16OrEarlier.class)
-final class Target_sun_java2d_cmm_lcms_LCMS {
+@TargetClass(className = "sun.java2d.cmm.lcms.LCMS", onlyWith = JDK17OrLater.class)
+final class Target_sun_java2d_cmm_lcms_LCMS_JDK17 {
 
     @Substitute
-    private long loadProfileNative(byte[] data, Object ref) {
+    static long loadProfileNative(byte[] data, Object ref) {
         throw new UnsupportedOperationException("Not implemented yet for GraalVM native images");
     }
 
     @Substitute
-    private int getProfileSizeNative(long ptr) {
-        throw new UnsupportedOperationException("Not implemented yet for GraalVM native images");
-    }
-
-    @Substitute
-    private void getProfileDataNative(long ptr, byte[] data) {
+    static void getProfileDataNative(long ptr) {
         throw new UnsupportedOperationException("Not implemented yet for GraalVM native images");
     }
 
@@ -30,8 +25,23 @@ final class Target_sun_java2d_cmm_lcms_LCMS {
     }
 
     @Substitute
-    private void setTagDataNative(long ptr, int tagSignature,
+    static void setTagDataNative(long ptr, int tagSignature,
             byte[] data) {
+        throw new UnsupportedOperationException("Not implemented yet for GraalVM native images");
+    }
+
+    @Substitute
+    public byte[] getProfileData(Profile p) {
+        throw new UnsupportedOperationException("Not implemented yet for GraalVM native images");
+    }
+
+    @Substitute
+    public byte[] getTagData(Profile p, int tagSignature) {
+        throw new UnsupportedOperationException("Not implemented yet for GraalVM native images");
+    }
+
+    @Substitute
+    public void setTagData(Profile p, int tagSignature, byte[] data) {
         throw new UnsupportedOperationException("Not implemented yet for GraalVM native images");
     }
 
@@ -50,7 +60,7 @@ final class Target_sun_java2d_cmm_lcms_LCMS {
     }
 
     @Substitute
-    public static synchronized LCMSProfile getProfileID(ICC_Profile profile) {
+    static synchronized LCMSProfile getProfileID(ICC_Profile profile) {
         throw new UnsupportedOperationException("Not implemented yet for GraalVM native images");
     }
 
@@ -59,6 +69,10 @@ final class Target_sun_java2d_cmm_lcms_LCMS {
             LCMSImageLayout src,
             LCMSImageLayout dest) {
         throw new UnsupportedOperationException("Not implemented yet for GraalVM native images");
+    }
+
+    @TargetClass(className = "sun.java2d.cmm.Profile")
+    static final class Profile {
     }
 
     @TargetClass(className = "sun.java2d.cmm.lcms.LCMSProfile")

@@ -731,7 +731,7 @@ public class SmallRyeMetricsRecorder {
     /**
      * Mimics Uptime metrics from Micrometer. Most of the logic here is basically copied from
      * {@link <a href=
-     * "https://github.com/micrometer-metrics/micrometer/blob/master/micrometer-core/src/main/java/io/micrometer/core/instrument/binder/system/UptimeMetrics.java">Micrometer
+     * "https://github.com/micrometer-metrics/micrometer/blob/main/micrometer-core/src/main/java/io/micrometer/core/instrument/binder/system/UptimeMetrics.java">Micrometer
      * Uptime metrics</a>}.
      * 
      * @param registry

@@ -177,7 +177,7 @@
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
         <mockito.version>3.11.2</mockito.version>
         <jna.version>5.3.1</jna.version><!-- should satisfy both testcontainers and mongodb -->
-        <antlr.version>4.8</antlr.version>
+        <antlr.version>4.9.2</antlr.version>
         <quarkus-security.version>1.1.4.Final</quarkus-security.version>
         <keycloak.version>14.0.0</keycloak.version>
         <logstash-gelf.version>1.14.1</logstash-gelf.version>

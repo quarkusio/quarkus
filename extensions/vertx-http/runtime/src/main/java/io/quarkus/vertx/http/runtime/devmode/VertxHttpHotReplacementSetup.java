@@ -11,6 +11,7 @@ import io.quarkus.dev.ErrorPageGenerators;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.HotReplacementSetup;
+import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -94,7 +95,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
             return;
         }
         ClassLoader current = Thread.currentThread().getContextClassLoader();
-        connectionBase.getContext().executeBlocking(new Handler<Promise<Boolean>>() {
+        VertxCoreRecorder.getVertx().get().getOrCreateContext().executeBlocking(new Handler<Promise<Boolean>>() {
             @Override
             public void handle(Promise<Boolean> event) {
                 //the blocking pool may have a stale TCCL

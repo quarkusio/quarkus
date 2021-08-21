@@ -154,6 +154,14 @@ public class CliDriver {
                 "Package directory should be a directory: " + packagePath.toAbsolutePath().toString());
     }
 
+    public static void valdiateGeneratedTestPackage(Path projectRoot, String name) {
+        Path packagePath = projectRoot.resolve("src/test/java/" + name);
+        Assertions.assertTrue(packagePath.toFile().exists(),
+                "Package directory should exist: " + packagePath.toAbsolutePath().toString());
+        Assertions.assertTrue(packagePath.toFile().isDirectory(),
+                "Package directory should be a directory: " + packagePath.toAbsolutePath().toString());
+    }
+
     public static Result invokeValidateExtensionList(Path projectRoot) throws Exception {
         Result result = execute(projectRoot, "extension", "list", "-e", "-B", "--verbose");
 

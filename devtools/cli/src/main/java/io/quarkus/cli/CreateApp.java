@@ -81,8 +81,10 @@ public class CreateApp extends BaseCreateCommand {
             }
 
             if (success) {
-                output.info(
-                        "Navigate into this directory and get started: " + spec.root().qualifiedName() + " dev");
+                if (!runMode.isDryRun()) {
+                    output.info(
+                            "Navigate into this directory and get started: " + spec.root().qualifiedName() + " dev");
+                }
                 return CommandLine.ExitCode.OK;
             }
             return CommandLine.ExitCode.SOFTWARE;

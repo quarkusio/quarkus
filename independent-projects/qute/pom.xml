@@ -173,6 +173,10 @@
                                             <exclude>org.slf4j:slf4j-jdk14</exclude>
                                             <exclude>org.slf4j:slf4j-log4j12</exclude>
                                             <exclude>org.slf4j:slf4j-log4j13</exclude>
+                                            <!-- JLine 2.x (EOLed) version shouldn't be pulled in,
+                                            to prevent version compatibility issues with the
+                                            Jansi library shipped in Maven -->
+                                            <exclude>jline:jline</exclude>
                                         </excludes>
                                     </bannedDependencies>
                                 </rules>

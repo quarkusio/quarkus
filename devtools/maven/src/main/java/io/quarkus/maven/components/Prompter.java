@@ -1,8 +1,6 @@
 package io.quarkus.maven.components;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 import org.codehaus.plexus.component.annotations.Component;
 
@@ -17,7 +15,4 @@ public class Prompter extends io.quarkus.devtools.utils.Prompter {
         super();
     }
 
-    public Prompter(InputStream in, OutputStream out) throws IOException {
-        super(in, out);
-    }
 }

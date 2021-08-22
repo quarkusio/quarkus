@@ -39,7 +39,7 @@
         <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <smallrye-common.version>1.6.0</smallrye-common.version>
-        <gradle-tooling.version>6.8.3</gradle-tooling.version>
+        <gradle-tooling.version>7.2</gradle-tooling.version>
     </properties>
     <dependencyManagement>
         <dependencies>

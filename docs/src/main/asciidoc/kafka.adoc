@@ -1116,6 +1116,10 @@ First, you need to include the `quarkus-jackson` extension.
 There is an existing `ObjectMapperSerializer` that can be used to serialize all data objects via Jackson.
 You may create an empty subclass if you want to use <<serialization-autodetection>>.
 
+NOTE: By default, the `ObjectMapperSerializer` serializes null as the `"null"` String, this can be customized by setting the Kafka configuration
+property `json.serialize.null-as-null=true` which will serialize null as `null`.
+This is handy when using a compacted topic, as `null` is used as a tombstone to know which messages delete during compaction phase.
+
 The corresponding deserializer class needs to be subclassed.
 So, let's create a `FruitDeserializer` that extends the `ObjectMapperDeserializer`.
 
@@ -1150,6 +1154,25 @@ mp.messaging.outgoing.fruit-out.value.serializer=io.quarkus.kafka.client.seriali
 Now, your Kafka messages will contain a Jackson serialized representation of your `Fruit` data object.
 In this case, the `deserializer` configuration is not necessary as the <<serialization-autodetection>> is enabled by default.
 
+If you want to deserialize a list of fruits, you need to create a deserializer with a Jackson `TypeReference` denoted the generic collection used.
+
+[source,java]
+----
+package com.acme.fruit.jackson;
+
+import java.util.List;
+import com.fasterxml.jackson.core.type.TypeReference;
+import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
+
+public class ListOfFruitDeserializer extends ObjectMapperDeserializer<List<Fruit>> {
+    public ListOfFruitDeserializer() {
+        TypeReference<List<Fruit>> listType = new TypeReference<>() {
+        };
+        super(listType);
+    }
+}
+----
+
 [[jsonb-serialization]]
 === Serializing via JSON-B
 
@@ -1165,6 +1188,10 @@ First, you need to include the `quarkus-jsonb` extension.
 
 There is an existing `JsonbSerializer` that can be used to serialize all data objects via JSON-B.
 You may create an empty subclass if you want to use <<serialization-autodetection>>.
+
+NOTE: By default, the `JsonbSerializer` serializes null as the `"null"` String, this can be customized by setting the Kafka configuration
+property `json.serialize.null-as-null=true` which will serialize null as `null`.
+This is handy when using a compacted topic, as `null` is used as a tombstone to know which messages delete during compaction phase.
 
 The corresponding deserializer class needs to be subclassed.
 So, let's create a `FruitDeserializer` that extends the generic `JsonbDeserializer`.
@@ -1198,6 +1225,24 @@ mp.messaging.outgoing.fruit-out.value.serializer=io.quarkus.kafka.client.seriali
 ----
 
 Now, your Kafka messages will contain a JSON-B serialized representation of your `Fruit` data object.
+
+If you want to deserialize a list of fruits, you need to create a deserializer with a `Type` denoted the generic collection used.
+
+[source,java]
+----
+package com.acme.fruit.jsonb;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+import io.quarkus.kafka.client.serialization.JsonbDeserializer;
+
+public class ListOfFruitDeserializer extends JsonbDeserializer<List<Fruit>> {
+    public ListOfFruitDeserializer() {
+        Type listType = new ArrayList<MyEntity>() {}.getClass().getGenericSuperclass();
+        super(listType);
+    }
+}
+----
 
 NOTE: If you don't want to create a deserializer for each data object, you can use the generic `io.vertx.kafka.client.serialization.JsonObjectDeserializer`
 that will deserialize to a `io.vertx.core.json.JsonObject`. The corresponding serializer can also be used: `io.vertx.kafka.client.serialization.JsonObjectSerializer`.

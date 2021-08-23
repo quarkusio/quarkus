@@ -8,6 +8,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.resteasy.reactive.server.test.ExceptionUtil;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -22,7 +23,7 @@ public class CustomExceptionMappersTest {
                             .addClasses(FirstResource.class, SecondResource.class,
                                     MyException.class, MyOtherException.class, UniException.class, ExtendsUniException.class,
                                     MyOtherExceptionMapper.class, UniExceptionMapper.class,
-                                    SomeBean.class);
+                                    SomeBean.class, ExceptionUtil.class);
                 }
             });
 

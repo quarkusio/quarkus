@@ -16,6 +16,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.resteasy.reactive.server.test.ExceptionUtil;
 import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -36,7 +37,7 @@ public class AsyncRequestFilterTest {
                                     AsyncResponseFilter.class,
                                     AsyncResponseFilter1.class, AsyncResponseFilter2.class, AsyncResponseFilter3.class,
                                     AsyncFilterException.class, AsyncFilterExceptionMapper.class,
-                                    AsyncRequestFilterResource.class);
+                                    AsyncRequestFilterResource.class, ExceptionUtil.class);
                 }
             });
 

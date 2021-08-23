@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.server.test.customexceptions;
 
+import static io.quarkus.resteasy.reactive.server.test.ExceptionUtil.*;
+
 import java.util.function.Supplier;
 
 import javax.ws.rs.GET;
@@ -40,7 +42,7 @@ public class GlobalThrowableExceptionMapperTest {
         @Path("throwable")
         @Produces("text/plain")
         public String throwsThrowable() throws Throwable {
-            throw new Throwable();
+            throw removeStackTrace(new Throwable());
         }
     }
 

@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.server.test.customexceptions;
 
+import static io.quarkus.resteasy.reactive.server.test.ExceptionUtil.removeStackTrace;
+
 import java.util.function.Supplier;
 
 import javax.ws.rs.GET;
@@ -49,7 +51,7 @@ public class PerClassThrowableExceptionMapperTest {
         @Path("throwable")
         @Produces("text/plain")
         public String throwsThrowable() throws Throwable {
-            throw new Throwable();
+            throw removeStackTrace(new Throwable());
         }
     }
 
@@ -60,7 +62,7 @@ public class PerClassThrowableExceptionMapperTest {
         @Path("throwable")
         @Produces("text/plain")
         public String throwsThrowable() throws Throwable {
-            throw new Throwable();
+            throw removeStackTrace(new Throwable());
         }
     }
 }

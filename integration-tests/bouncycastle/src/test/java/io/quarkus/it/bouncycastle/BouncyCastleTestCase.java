@@ -30,4 +30,24 @@ public class BouncyCastleTestCase {
                 .body(equalTo("success"));
     }
 
+    @Test
+    public void testGenerateEcKeyPair() {
+        RestAssured.given()
+                .when()
+                .get("/jca/generateEcKeyPair")
+                .then()
+                .statusCode(200)
+                .body(equalTo("success"));
+    }
+
+    @Test
+    public void testGenerateRsaKeyPair() {
+        RestAssured.given()
+                .when()
+                .get("/jca/generateRsaKeyPair")
+                .then()
+                .statusCode(200)
+                .body(equalTo("success"));
+    }
+
 }

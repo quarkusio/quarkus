@@ -308,7 +308,9 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse end() {
-        response.end();
+        if (!response.ended()) {
+            response.end();
+        }
         return this;
     }
 

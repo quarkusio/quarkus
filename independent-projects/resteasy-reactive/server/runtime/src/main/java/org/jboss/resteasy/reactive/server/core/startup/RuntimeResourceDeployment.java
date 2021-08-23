@@ -127,8 +127,6 @@ public class RuntimeResourceDeployment {
         MultivaluedMap<ScoreSystem.Category, ScoreSystem.Diagnostic> score = new QuarkusMultivaluedHashMap<>();
 
         Map<String, Integer> pathParameterIndexes = buildParamIndexMap(classPathTemplate, methodPathTemplate);
-        List<ServerRestHandler> handlers = new ArrayList<>();
-        addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.AFTER_MATCH);
         MediaType sseElementType = null;
         if (method.getSseElementType() != null) {
             sseElementType = MediaType.valueOf(method.getSseElementType());
@@ -159,10 +157,13 @@ public class RuntimeResourceDeployment {
                 .forMethod(method, lazyMethod);
 
         //setup reader and writer interceptors first
-        handlers.addAll(interceptorDeployment.setupInterceptorHandler());
-        //at this point the handler chain only has interceptors
-        //which we also want in the abort handler chain
-        List<ServerRestHandler> abortHandlingChain = new ArrayList<>(handlers);
+        List<ServerRestHandler> interceptorHandlers = interceptorDeployment.setupInterceptorHandler();
+        //we want interceptors in the abort handler chain
+        List<ServerRestHandler> abortHandlingChain = new ArrayList<>(interceptorHandlers);
+
+        List<ServerRestHandler> handlers = new ArrayList<>();
+        addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.AFTER_MATCH);
+        handlers.addAll(interceptorHandlers);
 
         // when a method is blocking, we also want all the request filters to run on the worker thread
         // because they can potentially set thread local variables

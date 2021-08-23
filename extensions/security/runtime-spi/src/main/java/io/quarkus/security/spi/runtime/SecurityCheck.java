@@ -1,4 +1,4 @@
-package io.quarkus.security.runtime.interceptor.check;
+package io.quarkus.security.spi.runtime;
 
 import java.lang.reflect.Method;
 

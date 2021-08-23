@@ -12,6 +12,7 @@ import java.util.function.Function;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.SecurityCheck;
 
 public class RolesAllowedCheck implements SecurityCheck {
 

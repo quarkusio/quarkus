@@ -122,11 +122,6 @@ public class ResteasyReactiveScanner {
 
         Collection<AnnotationInstance> allPaths = new ArrayList<>(paths);
 
-        if (allPaths.isEmpty()) {
-            // no detected @Path, bail out
-            return null;
-        }
-
         Map<DotName, ClassInfo> scannedResources = new HashMap<>();
         Map<DotName, String> scannedResourcePaths = new HashMap<>();
         Map<DotName, ClassInfo> possibleSubResources = new HashMap<>();

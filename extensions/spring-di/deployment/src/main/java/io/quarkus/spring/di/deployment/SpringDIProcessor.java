@@ -522,7 +522,13 @@ public class SpringDIProcessor {
             return;
         }
         String defaultValue = null;
-        String propertyName = annotationValue.asString().replace("${", "").replace("}", "");
+        String stringValue = annotationValue.asString();
+        if (stringValue.contains("#{")) {
+            throw new IllegalArgumentException(
+                    "SpEL expressions are not supported when using " + SPRING_VALUE_ANNOTATION + ". Offending value is '"
+                            + annotation + "'");
+        }
+        String propertyName = stringValue.replace("${", "").replace("}", "");
         if (propertyName.contains(":")) {
             final int index = propertyName.indexOf(':');
             if (index < propertyName.length() - 1) {

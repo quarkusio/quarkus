@@ -46,14 +46,14 @@ NOTE: Quarkus extensions may declare additional discovery rules. For example, `@
 A dependency with a Jandex index is automatically scanned for beans.
 To generate the index just add the following to your `pom.xml`:
 
-[source,xml]
+[source,xml,subs="attributes+"]
 ----
 <build>
   <plugins>
     <plugin>
       <groupId>org.jboss.jandex</groupId>
       <artifactId>jandex-maven-plugin</artifactId>
-      <version>1.1.0</version>
+      <version>{jandex-maven-plugin-version}</version>
       <executions>
         <execution>
           <id>make-index</id>

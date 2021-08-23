@@ -388,3 +388,30 @@ That's why we use the `os-maven-plugin` to target the executable compatible with
 NOTE: This configuration instructs the `protobuf-maven-plugin` to generate the default gRPC classes and classes using Mutiny to fit with the Quarkus development experience.
 
 IMPORTANT: When using `protobuf-maven-plugin`, instead of the `quarkus-maven-plugin`, every time you update the `proto` files, you need to re-generate the classes (using `mvn compile`).
+
+
+== gRPC classes from dependencies
+
+When gRPC classes - the classes generated from `proto` files - are in a dependency of the application, then the dependency needs a Jandex index.
+The `jandex-maven-plugin` can be used to create a Jandex index. More information on this topic can be found in the link:cdi-reference#bean_discovery[Bean Discovery] section of the CDI guide.
+
+[source,xml,subs="attributes+"]
+----
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.jboss.jandex</groupId>
+            <artifactId>jandex-maven-plugin</artifactId>
+            <version>{jandex-maven-plugin-version}</version>
+            <executions>
+                <execution>
+                <id>make-index</id>
+                <goals>
+                    <goal>jandex</goal>
+                </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+----

@@ -20,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.ExpectLogMessage;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -50,6 +51,7 @@ public class ReadTimeoutTestCase {
     }
 
     @Test
+    @ExpectLogMessage("Exception handling request")
     public void shouldNotProcessRequestWrittenTooSlowly() throws IOException, InterruptedException {
         requestWithDelay(2000L);
 

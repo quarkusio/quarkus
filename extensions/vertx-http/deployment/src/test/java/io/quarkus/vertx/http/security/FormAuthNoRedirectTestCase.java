@@ -13,10 +13,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
+import io.quarkus.test.ExpectLogMessage;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder;
 import io.restassured.RestAssured;
 import io.restassured.filter.cookie.CookieFilter;
 
+@ExpectLogMessage(HttpSecurityRecorder.ENCRYPTION_KEY_WAS_NOT_SPECIFIED_FOR_PERSISTENT_FORM_AUTH)
 public class FormAuthNoRedirectTestCase {
 
     private static final String APP_PROPS = "" +

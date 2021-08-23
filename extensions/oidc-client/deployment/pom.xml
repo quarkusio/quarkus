@@ -14,6 +14,8 @@
     <name>Quarkus - OpenID Connect Client - Deployment</name>
 
     <properties>
+<quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+
         <keycloak.url>http://localhost:8180/auth</keycloak.url>
     </properties>
 
@@ -146,6 +148,8 @@
                 </property>
             </activation>
             <properties>
+<quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+
                 <keycloak.url>http://localhost:8180/auth</keycloak.url>
             </properties>
             <build>

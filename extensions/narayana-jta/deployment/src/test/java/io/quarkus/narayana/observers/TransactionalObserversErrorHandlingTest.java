@@ -13,12 +13,14 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.ExpectLogMessage;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * Tests that when an observer throws an exception, this doesn't crash the application or prevents other observers from
  * being notified.
  */
+@ExpectLogMessage("Failure while notifying an observer")
 public class TransactionalObserversErrorHandlingTest {
 
     @RegisterExtension

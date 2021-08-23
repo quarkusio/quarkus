@@ -6,10 +6,12 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.ExpectLogMessage;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 
+@ExpectLogMessage("Quarkus detected the need of REST JSON")
 public class JsonProviderTestCase {
 
     @RegisterExtension

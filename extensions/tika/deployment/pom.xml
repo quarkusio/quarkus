@@ -11,6 +11,9 @@
     <artifactId>quarkus-tika-deployment</artifactId>
     <name>Quarkus - Apache Tika - Deployment</name>
 
+    <properties>
+        <quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

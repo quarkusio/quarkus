@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URL;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -22,6 +21,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.ExpectLogMessage;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
@@ -36,13 +36,15 @@ public class AsyncRestClientFallbackTest {
     URL url;
 
     @Test
-    public void testFallbackWasUsed() throws ExecutionException, InterruptedException {
-        Client client = RestClientBuilder.newBuilder().baseUrl(url).build(Client.class);
-        assertEquals("pong", client.ping().toCompletableFuture().get());
+    @ExpectLogMessage("Not Found")
+    public void testFallbackWasUsed() throws Exception {
+        try (Client client = RestClientBuilder.newBuilder().baseUrl(url).build(Client.class)) {
+            assertEquals("pong", client.ping().toCompletableFuture().get());
+        }
     }
 
     @RegisterRestClient
-    public interface Client {
+    public interface Client extends AutoCloseable {
 
         @Asynchronous
         @Fallback(MyFallback.class)
@@ -56,7 +58,7 @@ public class AsyncRestClientFallbackTest {
     public static class TestEndpoint {
 
         @GET
-        String get() {
+        public String get() {
             throw new WebApplicationException(404);
         }
 

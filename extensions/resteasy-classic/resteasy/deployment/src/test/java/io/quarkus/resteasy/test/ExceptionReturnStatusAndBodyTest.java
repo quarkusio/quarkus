@@ -16,6 +16,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.ExpectLogMessage;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -31,36 +32,43 @@ public class ExceptionReturnStatusAndBodyTest {
                     .addClasses(ExceptionReturnStatusAndBodyResource.class));
 
     @Test
+    @ExpectLogMessage("Forced")
     public void testDelete() {
         RestAssured.when().delete(RESOURCE_PATH).then().statusCode(500).body(containsString(EXCEPTION_MESSAGE));
     }
 
     @Test
+    @ExpectLogMessage(EXCEPTION_MESSAGE)
     public void testGet() {
         RestAssured.when().get(RESOURCE_PATH).then().statusCode(500).body(containsString(EXCEPTION_MESSAGE));
     }
 
     @Test
+    @ExpectLogMessage(EXCEPTION_MESSAGE)
     public void testHead() {
         RestAssured.when().head(RESOURCE_PATH).then().statusCode(500);
     }
 
     @Test
+    @ExpectLogMessage(EXCEPTION_MESSAGE)
     public void testOptions() {
         RestAssured.when().options(RESOURCE_PATH).then().statusCode(500).body(containsString(EXCEPTION_MESSAGE));
     }
 
     @Test
+    @ExpectLogMessage(EXCEPTION_MESSAGE)
     public void testPatch() {
         RestAssured.when().patch(RESOURCE_PATH).then().statusCode(500).body(containsString(EXCEPTION_MESSAGE));
     }
 
     @Test
+    @ExpectLogMessage(EXCEPTION_MESSAGE)
     public void testPost() {
         RestAssured.when().post(RESOURCE_PATH).then().statusCode(500).body(containsString(EXCEPTION_MESSAGE));
     }
 
     @Test
+    @ExpectLogMessage(EXCEPTION_MESSAGE)
     public void testPut() {
         RestAssured.when().put(RESOURCE_PATH).then().statusCode(500).body(containsString(EXCEPTION_MESSAGE));
     }

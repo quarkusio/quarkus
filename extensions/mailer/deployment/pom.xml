@@ -14,6 +14,9 @@
 
     <name>Quarkus - Mailer - Deployment</name>
 
+    <properties>
+        <quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -39,6 +39,7 @@ class BuildProfileTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
+            .setAllowWarningLogMessages(true) //the way this test is setup can result in warnings about multuple registrations
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(
                             ResourceTest1.class, ResourceTest2.class, ResponseFilter1.class, ResponseFilter2.class,

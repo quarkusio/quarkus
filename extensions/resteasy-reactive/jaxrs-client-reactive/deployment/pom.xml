@@ -12,6 +12,9 @@
     <artifactId>quarkus-jaxrs-client-reactive-deployment</artifactId>
     <name>Quarkus - JAX-RS Client Reactive - Deployment</name>
 
+    <properties>
+        <quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>io.quarkus.resteasy.reactive</groupId>

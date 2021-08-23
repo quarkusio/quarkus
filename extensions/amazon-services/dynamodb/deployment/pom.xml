@@ -13,6 +13,9 @@
     <artifactId>quarkus-amazon-dynamodb-deployment</artifactId>
     <name>Quarkus - Amazon Services - DynamoDB - Deployment</name>
 
+    <properties>
+        <quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

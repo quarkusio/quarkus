@@ -5,10 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.net.InetSocketAddress;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.ws.rs.Priorities;
+import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
@@ -86,11 +88,17 @@ public class ProviderClientRegistrationTest {
     @ApplicationScoped
     public static class ClientBean {
         private WebTarget webTarget;
+        private Client client;
 
         @PostConstruct
         void init() {
-            webTarget = ClientBuilder.newClient().target("http://localhost:" + server.getAddress().getPort()).path("/hello");
-            ;
+            client = ClientBuilder.newClient();
+            webTarget = client.target("http://localhost:" + server.getAddress().getPort()).path("/hello");
+        }
+
+        @PreDestroy
+        void close() {
+            client.close();
         }
 
         String hello() {

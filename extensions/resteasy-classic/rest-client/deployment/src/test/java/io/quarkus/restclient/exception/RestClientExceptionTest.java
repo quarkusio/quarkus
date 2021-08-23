@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.net.URL;
 
+import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Response;
 
@@ -21,6 +22,7 @@ public class RestClientExceptionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setAllowWarningLogMessages(true)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(
                             new StringAsset(
@@ -34,16 +36,26 @@ public class RestClientExceptionTest {
 
     @Test
     public void testException() {
-        Response r = ClientBuilder.newClient().target(url.toString()).path("frontend/exception").request().get();
-        assertEquals(302, r.getStatus());
-        assertNull(r.getLocation());
+        Client client = ClientBuilder.newClient();
+        try {
+            Response r = client.target(url.toString()).path("frontend/exception").request().get();
+            assertEquals(302, r.getStatus());
+            assertNull(r.getLocation());
+        } finally {
+            client.close();
+        }
     }
 
     @Test
     public void testExceptionCaught() {
-        Response r = ClientBuilder.newClient().target(url.toString()).path("frontend/exception-caught").request().get();
-        assertEquals(302, r.getStatus());
-        assertNull(r.getLocation());
+        Client client = ClientBuilder.newClient();
+        try {
+            Response r = client.target(url.toString()).path("frontend/exception-caught").request().get();
+            assertEquals(302, r.getStatus());
+            assertNull(r.getLocation());
+        } finally {
+            client.close();
+        }
     }
 
 }

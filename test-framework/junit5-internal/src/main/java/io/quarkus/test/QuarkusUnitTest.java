@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -15,25 +17,33 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.logging.Filter;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.jboss.logmanager.Level;
 import org.jboss.logmanager.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -80,7 +90,33 @@ public class QuarkusUnitTest
     public static final String THE_BUILD_WAS_EXPECTED_TO_FAIL = "The build was expected to fail";
 
     private static final Logger rootLogger;
+    public final Consumer<List<LogRecord>> WARNING_ERROR_ASSERTER = new Consumer<>() {
+        @Override
+        public void accept(List<LogRecord> logRecords) {
+            Set<Pattern> required = new HashSet<>(classLevelExpectedLogMessages.entrySet().stream().filter(Map.Entry::getValue)
+                    .map(Map.Entry::getKey).collect(Collectors.toList()));
+            for (var i : logRecords) {
+                if (i.getLevel().intValue() >= Level.WARN.intValue()) {
+                    boolean ok = false;
+                    for (var p : classLevelExpectedLogMessages.entrySet()) {
+                        if (p.getKey().matcher(i.getMessage()).find()) {
+                            required.remove(p.getKey());
+                            ok = true;
+                            break;
+                        }
+                    }
+                    if (!ok) {
+                        Assertions.fail("Log message of warn or above was logged during test execution: " + i.getMessage());
+                    }
+                }
+            }
+            if (!required.isEmpty()) {
+                Assertions.fail("Expected log message not generated: " + required);
+            }
+        }
+    };
     private Handler[] originalHandlers;
+    private List<Runnable> restoreHandlersTasks = new ArrayList<>();
 
     static {
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
@@ -98,6 +134,13 @@ public class QuarkusUnitTest
     private String logFileName;
     private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler((r) -> false);
     private Consumer<List<LogRecord>> assertLogRecords;
+    private boolean allowWarningLogMessages = Boolean.getBoolean("quarkus-internal.allow-warning-log-messages");
+    private List<Pattern> expectedLogErrors = new CopyOnWriteArrayList<>();
+    private Set<Pattern> requiredPatterns = Collections.synchronizedSet(new HashSet<>());
+    /**
+     * Records of warn or higher that were expected. We can't just filter them as the test itself may want to check.
+     */
+    private Map<Pattern, Boolean> classLevelExpectedLogMessages = new ConcurrentHashMap<>();
 
     private Timer timeoutTimer;
     private volatile TimerTask timeoutTask;
@@ -121,6 +164,16 @@ public class QuarkusUnitTest
 
     public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
         return setExpectedException(expectedException, false);
+    }
+
+    /**
+     * If this is true then the presence of a warning or above will not fail the test.
+     * <p>
+     * Otherwise the test will automatically fail if a warning message or above is generated
+     */
+    public QuarkusUnitTest setAllowWarningLogMessages(boolean allowWarningLogMessages) {
+        this.allowWarningLogMessages = allowWarningLogMessages;
+        return this;
     }
 
     public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException, boolean logMessage) {
@@ -194,10 +247,9 @@ public class QuarkusUnitTest
 
     /**
      * If this test should use a single ClassLoader to load all the classes.
-     *
+     * <p>
      * This is sometimes nessesary when testing Quarkus itself, and we want the test classes
      * and Quarkus classes to be in the same CL.
-     *
      */
     public QuarkusUnitTest setFlatClassPath(boolean flatClassPath) {
         this.flatClassPath = flatClassPath;
@@ -375,10 +427,36 @@ public class QuarkusUnitTest
         if (beforeAllCustomizer != null) {
             beforeAllCustomizer.run();
         }
+        if (assertLogRecords == null && !allowWarningLogMessages) {
+            assertLogRecords = WARNING_ERROR_ASSERTER;
+            inMemoryLogHandler = new InMemoryLogHandler((r) -> {
+                //we only care about warnings and above
+                if (r.getLevel().intValue() < Level.WARN.intValue()) {
+                    return false;
+                }
+                for (var p : expectedLogErrors) {
+                    if (p.matcher(r.getMessage()).find()) {
+                        requiredPatterns.remove(p);
+                        return false;
+                    }
+                    if (r.getThrown() != null) {
+                        StringWriter sw = new StringWriter();
+                        r.getThrown().printStackTrace(new PrintWriter(sw));
+                        if (p.matcher(sw.getBuffer().toString()).find()) {
+                            requiredPatterns.remove(p);
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            });
+        }
         originalClassLoader = Thread.currentThread().getContextClassLoader();
         originalHandlers = rootLogger.getHandlers();
         rootLogger.addHandler(inMemoryLogHandler);
-
+        for (var annotation : extensionContext.getRequiredTestClass().getAnnotationsByType(ExpectLogMessage.class)) {
+            classLevelExpectedLogMessages.put(Pattern.compile(annotation.value()), annotation.required());
+        }
         timeoutTask = new TimerTask() {
             @Override
             public void run() {
@@ -526,6 +604,33 @@ public class QuarkusUnitTest
                 }
 
                 extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).put(testClass.getName(), actualTestInstance);
+
+                for (var handler : rootLogger.getHandlers()) {
+                    var filter = handler.getFilter();
+                    restoreHandlersTasks.add(() -> handler.setFilter(filter));
+                    //we add a filter so that we don't clog up the logs with expected errors
+                    handler.setFilter(new Filter() {
+                        @Override
+                        public boolean isLoggable(LogRecord record) {
+                            if (filter != null && !filter.isLoggable(record)) {
+                                return false;
+                            }
+                            for (var p : expectedLogErrors) {
+                                if (p.matcher(record.getMessage()).find()) {
+                                    return false;
+                                }
+                                if (record.getThrown() != null) {
+                                    StringWriter sw = new StringWriter();
+                                    record.getThrown().printStackTrace(new PrintWriter(sw));
+                                    if (p.matcher(sw.getBuffer().toString()).find()) {
+                                        return false;
+                                    }
+                                }
+                            }
+                            return true;
+                        }
+                    });
+                }
             } catch (Throwable e) {
                 started = false;
                 if (assertException != null) {
@@ -570,15 +675,9 @@ public class QuarkusUnitTest
 
     @Override
     public void afterAll(ExtensionContext extensionContext) throws Exception {
+
         actualTestClass = null;
         actualTestInstance = null;
-        if (assertLogRecords != null) {
-            assertLogRecords.accept(inMemoryLogHandler.records);
-        }
-        rootLogger.setHandlers(originalHandlers);
-        inMemoryLogHandler.clearRecords();
-        inMemoryLogHandler.setFilter(null);
-
         try {
             if (runningQuarkusApplication != null) {
                 runningQuarkusApplication.close();
@@ -606,6 +705,21 @@ public class QuarkusUnitTest
             if (afterAllCustomizer != null) {
                 afterAllCustomizer.run();
             }
+            try {
+                if (assertLogRecords != null) {
+                    assertLogRecords.accept(inMemoryLogHandler.records);
+                }
+            } finally {
+
+                rootLogger.setHandlers(originalHandlers);
+                for (var task : restoreHandlersTasks) {
+                    task.run();
+                }
+                restoreHandlersTasks.clear();
+                inMemoryLogHandler.clearRecords();
+                inMemoryLogHandler.setFilter(null);
+                classLevelExpectedLogMessages.clear();
+            }
         }
         ClearCache.clearAnnotationCache();
         GroovyCacheCleaner.clearGroovyCache();
@@ -619,6 +733,19 @@ public class QuarkusUnitTest
                     .getDeclaredMethod("clearURL")
                     .invoke(null);
         }
+        //log messages can happen after the test is complete
+        //we wait for them
+        long end = System.currentTimeMillis() + 2000;
+        while (!requiredPatterns.isEmpty() && System.currentTimeMillis() < end) {
+            Thread.sleep(50);
+        }
+        if (!requiredPatterns.isEmpty()) {
+            Set<Pattern> copy = new HashSet<>(requiredPatterns);
+            requiredPatterns.clear();
+            Assertions.fail("Expected log messages not found: " + requiredPatterns);
+        }
+        //expected errors are per test
+        expectedLogErrors.clear();
     }
 
     @Override
@@ -626,6 +753,9 @@ public class QuarkusUnitTest
         if (assertException != null) {
             // Build failed as expected - test methods are not invoked
             return;
+        }
+        for (var annotation : context.getRequiredTestMethod().getAnnotationsByType(ExpectLogMessage.class)) {
+            addExpectedLogMessage(annotation.value(), annotation.required());
         }
         if (runningQuarkusApplication != null) {
             runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
@@ -675,5 +805,20 @@ public class QuarkusUnitTest
         }
         customApplicationProperties.put(propertyKey, propertyValue);
         return this;
+    }
+
+    /**
+     * Used to indicate that a log message is expected for this test. If required is true then the test will fail if it is not
+     * generated.
+     *
+     * @param patternRegex A regular expressiong
+     * @param required
+     */
+    private void addExpectedLogMessage(String patternRegex, boolean required) {
+        Pattern pattern = Pattern.compile(patternRegex);
+        expectedLogErrors.add(pattern);
+        if (required) {
+            requiredPatterns.add(pattern);
+        }
     }
 }

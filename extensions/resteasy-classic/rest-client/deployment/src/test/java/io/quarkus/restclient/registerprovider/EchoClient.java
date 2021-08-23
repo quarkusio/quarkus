@@ -2,6 +2,7 @@ package io.quarkus.restclient.registerprovider;
 
 import java.util.concurrent.CompletionStage;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -15,6 +16,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 @Path("/echo")
 @RegisterRestClient
 @RegisterProvider(MyFilter.class)
+@ApplicationScoped
 public interface EchoClient {
 
     @GET

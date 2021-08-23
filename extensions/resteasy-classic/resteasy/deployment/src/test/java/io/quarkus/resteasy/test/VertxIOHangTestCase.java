@@ -21,6 +21,7 @@ public class VertxIOHangTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
+            .setAllowWarningLogMessages(true)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(InputStreamResource.class));
 

@@ -15,8 +15,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.config.ConfigProperties;
+import io.quarkus.test.ExpectLogMessage;
 import io.quarkus.test.QuarkusUnitTest;
 
+@ExpectLogMessage("does not have a setter for field")
 public class ClassWithAllowedMissingSetterConfigPropertiesTest {
 
     @RegisterExtension

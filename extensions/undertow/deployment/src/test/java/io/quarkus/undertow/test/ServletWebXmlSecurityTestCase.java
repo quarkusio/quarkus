@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
+import io.quarkus.test.ExpectLogMessage;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -17,6 +18,7 @@ import io.restassured.RestAssured;
  * the security subsystem installed here, so this is the fallback behaviour that
  * will always deny
  */
+@ExpectLogMessage("is secured for some HTTP methods")
 public class ServletWebXmlSecurityTestCase {
 
     static final String WEB_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +

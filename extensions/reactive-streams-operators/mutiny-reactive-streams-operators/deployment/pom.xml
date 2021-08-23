@@ -12,6 +12,9 @@
     <artifactId>quarkus-mutiny-reactive-streams-operators-deployment</artifactId>
     <name>Quarkus - SmallRye Mutiny Reactive Streams Operators - Deployment</name>
 
+    <properties>
+        <quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

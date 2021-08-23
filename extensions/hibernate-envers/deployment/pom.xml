@@ -13,6 +13,9 @@
     <artifactId>quarkus-hibernate-envers-deployment</artifactId>
     <name>Quarkus - Hibernate Envers - Deployment</name>
 
+    <properties>
+        <quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

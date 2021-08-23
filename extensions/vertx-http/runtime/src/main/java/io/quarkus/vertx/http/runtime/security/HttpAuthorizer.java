@@ -161,7 +161,9 @@ public class HttpAuthorizer {
 
                         @Override
                         public void onItem(Boolean item) {
-                            routingContext.response().end();
+                            if (!routingContext.response().ended()) {
+                                routingContext.response().end();
+                            }
                         }
 
                         @Override

@@ -10,6 +10,9 @@
     </parent>
     <artifactId>quarkus-rest-client-reactive-jackson-deployment</artifactId>
     <name>Quarkus - REST Client Reactive Jackson - Deployment</name>
+    <properties>
+        <quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

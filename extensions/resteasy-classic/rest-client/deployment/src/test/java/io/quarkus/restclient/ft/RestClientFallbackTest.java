@@ -18,6 +18,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.ExpectLogMessage;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
@@ -32,13 +33,15 @@ public class RestClientFallbackTest {
     URL url;
 
     @Test
-    public void testFallbackWasUsed() {
-        Client client = RestClientBuilder.newBuilder().baseUrl(url).build(Client.class);
-        assertEquals("pong", client.ping());
+    @ExpectLogMessage("Not Found")
+    public void testFallbackWasUsed() throws Exception {
+        try (Client client = RestClientBuilder.newBuilder().baseUrl(url).build(Client.class)) {
+            assertEquals("pong", client.ping());
+        }
     }
 
     @RegisterRestClient
-    public interface Client {
+    public interface Client extends AutoCloseable {
 
         @Fallback(MyFallback.class)
         @GET

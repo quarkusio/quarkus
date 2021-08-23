@@ -8,6 +8,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.ExpectLogMessage;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -19,6 +20,7 @@ public class ErrorServletTestCase {
                     .addClasses(ErrorServlet.class));
 
     @Test
+    @ExpectLogMessage("Exception handling request")
     public void testHtmlError() {
         RestAssured.when().get("/error").then()
                 .statusCode(500)
@@ -27,6 +29,7 @@ public class ErrorServletTestCase {
     }
 
     @Test
+    @ExpectLogMessage("Exception handling request")
     public void testJsonError() {
         RestAssured.given().accept(ContentType.JSON)
                 .when().get("/error").then()

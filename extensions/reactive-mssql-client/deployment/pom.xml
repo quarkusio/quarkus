@@ -15,6 +15,8 @@
     <name>Quarkus - Reactive Microsoft SQL Server Client - Deployment</name>
 
     <properties>
+<quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+
         <reactive-mssql.url>vertx-reactive:sqlserver://localhost:1433</reactive-mssql.url>
         <mssql.image>mcr.microsoft.com/mssql/server:2019-CU8-ubuntu-16.04</mssql.image>
     </properties>
@@ -118,6 +120,8 @@
                 </property>
             </activation>
             <properties>
+<quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+
                 <reactive-mssql.url>vertx-reactive:sqlserver://localhost:1435</reactive-mssql.url>
             </properties>
             <build>

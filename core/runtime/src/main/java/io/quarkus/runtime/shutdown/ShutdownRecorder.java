@@ -14,6 +14,7 @@ import io.quarkus.runtime.annotations.Recorder;
 public class ShutdownRecorder {
 
     private static final Logger log = Logger.getLogger(ShutdownRecorder.class);
+    public static final String WAITING_FOR_GRACEFUL_SHUTDOWN_SHUTTING_DOWN_ANYWAY = "Timed out waiting for graceful shutdown, shutting down anyway.";
 
     private static volatile List<ShutdownListener> shutdownListeners;
     private static volatile Optional<Duration> waitTime;
@@ -37,7 +38,7 @@ public class ShutdownRecorder {
             }
             if (waitTime.isPresent()) {
                 if (!shutdown.await(waitTime.get().toMillis(), TimeUnit.MILLISECONDS)) {
-                    log.error("Timed out waiting for graceful shutdown, shutting down anyway.");
+                    log.error(WAITING_FOR_GRACEFUL_SHUTDOWN_SHUTTING_DOWN_ANYWAY);
                 }
             }
 

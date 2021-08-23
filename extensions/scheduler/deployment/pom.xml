@@ -13,7 +13,10 @@
   <artifactId>quarkus-scheduler-deployment</artifactId>
   <name>Quarkus - Scheduler - Deployment</name>
 
-  <dependencies>
+  <properties>
+        <quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+    </properties>
+    <dependencies>
       <dependency>
           <groupId>io.quarkus</groupId>
           <artifactId>quarkus-core-deployment</artifactId>

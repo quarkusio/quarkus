@@ -7,6 +7,7 @@ import java.io.StringWriter;
 import java.net.URL;
 import java.util.Properties;
 
+import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Response;
 
@@ -16,6 +17,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.ExpectLogMessage;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
@@ -47,17 +49,29 @@ public class RestClientExceptionOriginalBehaviorTest {
     URL url;
 
     @Test
+    @ExpectLogMessage("Service Unavailable")
     public void testException() {
-        Response r = ClientBuilder.newClient().target(url.toString()).path("frontend/exception").request().get();
-        assertEquals(503, r.getStatus());
-        assertEquals("5", r.getHeaderString("Retry-After"));
+        Client client = ClientBuilder.newClient();
+        try {
+            Response r = client.target(url.toString()).path("frontend/exception").request().get();
+            assertEquals(503, r.getStatus());
+            assertEquals("5", r.getHeaderString("Retry-After"));
+        } finally {
+            client.close();
+        }
     }
 
     @Test
+    @ExpectLogMessage("Service Unavailable")
     public void testExceptionCaught() {
-        Response r = ClientBuilder.newClient().target(url.toString()).path("frontend/exception-caught").request().get();
-        assertEquals(503, r.getStatus());
-        assertEquals("5", r.getHeaderString("Retry-After"));
+        Client client = ClientBuilder.newClient();
+        try {
+            Response r = client.target(url.toString()).path("frontend/exception-caught").request().get();
+            assertEquals(503, r.getStatus());
+            assertEquals("5", r.getHeaderString("Retry-After"));
+        } finally {
+            client.close();
+        }
     }
 
 }

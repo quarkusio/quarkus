@@ -10,6 +10,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
+<quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+
         <postgres.image>postgres:13.1</postgres.image>
         <postgres.reactive.url>vertx-reactive:postgresql://localhost:5432/hibernate_orm_test</postgres.reactive.url>
     </properties>
@@ -145,6 +147,8 @@
                 </property>
             </activation>
             <properties>
+<quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+
                 <postgres.reactive.url>vertx-reactive:postgresql://localhost:5431/hibernate_orm_test</postgres.reactive.url>
             </properties>
             <build>

@@ -105,6 +105,8 @@
                 </property>
             </activation>
             <properties>
+<quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+
                 <elasticsearch.hosts>localhost:9200</elasticsearch.hosts>
                 <elasticsearch.protocol>http</elasticsearch.protocol>
             </properties>

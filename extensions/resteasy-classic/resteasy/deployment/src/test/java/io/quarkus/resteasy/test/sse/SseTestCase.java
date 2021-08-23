@@ -34,22 +34,26 @@ public class SseTestCase {
     public void testSse() throws Exception {
 
         Client client = ClientBuilder.newBuilder().build();
-        WebTarget target = client.target(uri.toString() + "sse");
-        try (SseEventSource eventSource = SseEventSource.target(target).build()) {
-            CompletableFuture<String> res = new CompletableFuture<>();
-            eventSource.register(new Consumer<InboundSseEvent>() {
-                @Override
-                public void accept(InboundSseEvent inboundSseEvent) {
-                    res.complete(inboundSseEvent.readData());
-                }
-            }, new Consumer<Throwable>() {
-                @Override
-                public void accept(Throwable throwable) {
-                    res.completeExceptionally(throwable);
-                }
-            });
-            eventSource.open();
-            Assertions.assertEquals("hello", res.get(5, TimeUnit.SECONDS));
+        try {
+            WebTarget target = client.target(uri.toString() + "sse");
+            try (SseEventSource eventSource = SseEventSource.target(target).build()) {
+                CompletableFuture<String> res = new CompletableFuture<>();
+                eventSource.register(new Consumer<InboundSseEvent>() {
+                    @Override
+                    public void accept(InboundSseEvent inboundSseEvent) {
+                        res.complete(inboundSseEvent.readData());
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) {
+                        res.completeExceptionally(throwable);
+                    }
+                });
+                eventSource.open();
+                Assertions.assertEquals("hello", res.get(5, TimeUnit.SECONDS));
+            }
+        } finally {
+            client.close();
         }
     }
 }

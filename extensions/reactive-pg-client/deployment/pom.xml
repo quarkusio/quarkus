@@ -15,6 +15,8 @@
     <name>Quarkus - Reactive PostgreSQL Client - Deployment</name>
 
     <properties>
+<quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+
         <postgres.image>postgres:13.1</postgres.image>
         <reactive-postgres.url>vertx-reactive:postgresql:///hibernate_orm_test</reactive-postgres.url>
     </properties>
@@ -119,6 +121,8 @@
                 </property>
             </activation>
             <properties>
+<quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+
                 <reactive-postgres.url>vertx-reactive:postgresql://:5431/hibernate_orm_test</reactive-postgres.url>
             </properties>
             <build>

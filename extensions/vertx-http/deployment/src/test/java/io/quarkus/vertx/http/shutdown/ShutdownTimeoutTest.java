@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.runtime.shutdown.ShutdownRecorder;
+import io.quarkus.test.ExpectLogMessage;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.vertx.core.Handler;
@@ -30,6 +32,7 @@ import io.vertx.ext.web.RoutingContext;
  * After undeploy we verify that less than 50s has elapsed, as the shutdown should have proceeded anyway once
  * the timeout of 100ms was reached.
  */
+@ExpectLogMessage(ShutdownRecorder.WAITING_FOR_GRACEFUL_SHUTDOWN_SHUTTING_DOWN_ANYWAY)
 public class ShutdownTimeoutTest {
 
     protected static final int HANDLER_WAIT_TIME = 50000;

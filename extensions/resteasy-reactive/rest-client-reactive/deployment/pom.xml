@@ -11,6 +11,9 @@
 
     <artifactId>quarkus-rest-client-reactive-deployment</artifactId>
     <name>Quarkus - REST Client Reactive - Deployment</name>
+    <properties>
+        <quarkus-internal.allow-warning-log-messages>true</quarkus-internal.allow-warning-log-messages>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

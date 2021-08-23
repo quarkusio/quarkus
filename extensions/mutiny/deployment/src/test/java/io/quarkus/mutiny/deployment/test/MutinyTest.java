@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.mutiny.runtime.MutinyInfrastructure;
+import io.quarkus.test.ExpectLogMessage;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -51,6 +52,7 @@ public class MutinyTest {
     }
 
     @Test
+    @ExpectLogMessage("Mutiny had to drop the following exception")
     public void testDroppedException() {
         TestingJulHandler julHandler = new TestingJulHandler();
         Logger logger = LogManager.getLogManager().getLogger("io.quarkus.mutiny.runtime.MutinyInfrastructure");

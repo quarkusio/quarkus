@@ -43,6 +43,7 @@ public class HttpSecurityRecorder {
 
         }
     };
+    public static final String ENCRYPTION_KEY_WAS_NOT_SPECIFIED_FOR_PERSISTENT_FORM_AUTH = "Encryption key was not specified for persistent FORM auth, using temporary key ";
 
     //the temp encryption key, persistent across dev mode restarts
     static volatile String encryptionKey;
@@ -245,7 +246,7 @@ public class HttpSecurityRecorder {
                         byte[] data = new byte[32];
                         new SecureRandom().nextBytes(data);
                         key = encryptionKey = Base64.getEncoder().encodeToString(data);
-                        log.warn("Encryption key was not specified for persistent FORM auth, using temporary key " + key);
+                        log.warn(ENCRYPTION_KEY_WAS_NOT_SPECIFIED_FOR_PERSISTENT_FORM_AUTH + key);
                     }
                 } else {
                     key = httpConfiguration.encryptionKey.get();

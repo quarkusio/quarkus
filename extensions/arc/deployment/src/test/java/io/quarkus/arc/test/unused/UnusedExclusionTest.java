@@ -27,8 +27,10 @@ import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.test.ExpectLogMessage;
 import io.quarkus.test.QuarkusUnitTest;
 
+@ExpectLogMessage("programmatic lookup problem detected")
 public class UnusedExclusionTest {
 
     @RegisterExtension

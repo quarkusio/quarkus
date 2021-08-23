@@ -15,10 +15,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
+import io.quarkus.test.ExpectLogMessage;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.filter.cookie.CookieFilter;
 
+@ExpectLogMessage("Encryption key was not specified for persistent FORM auth, using temporary key")
 public class CombinedFormBasicAuthTestCase {
 
     private static final String APP_PROPS = "" +

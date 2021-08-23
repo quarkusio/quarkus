@@ -144,6 +144,10 @@
         <enforce-test-deps-scope.skip>${enforcer.skip}</enforce-test-deps-scope.skip>
 
         <surefire.argLine.additional></surefire.argLine.additional>
+
+        <!-- Property that is overriden on a per module basis to allow warning messages in tests. This
+        should be removed once all warnings/errors are fixed -->
+        <quarkus-internal.allow-warning-log-messages>false</quarkus-internal.allow-warning-log-messages>
     </properties>
 
     <dependencyManagement>
@@ -351,6 +355,7 @@
                             <!-- some dev tools tests need the following properties -->
                             <project.version>${project.version}</project.version>
                             <project.groupId>${project.groupId}</project.groupId>
+                            <quarkus-internal.allow-warning-log-messages>${quarkus-internal.allow-warning-log-messages}</quarkus-internal.allow-warning-log-messages>
                         </systemPropertyVariables>
                         <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
                         <!-- set tmpdir as early as possible because surefire sets it too late for JDK16 -->

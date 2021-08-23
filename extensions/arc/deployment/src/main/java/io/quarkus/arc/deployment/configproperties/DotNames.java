@@ -1,7 +1,9 @@
 package io.quarkus.arc.deployment.configproperties;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -23,6 +25,8 @@ final class DotNames {
     static final DotName LIST = DotName.createSimple(List.class.getName());
     static final DotName SET = DotName.createSimple(Set.class.getName());
     static final DotName COLLECTION = DotName.createSimple(Collection.class.getName());
+    static final DotName MAP = DotName.createSimple(Map.class.getName());
+    static final DotName HASH_MAP = DotName.createSimple(HashMap.class.getName());
     static final DotName ENUM = DotName.createSimple(Enum.class.getName());
     static final DotName MP_CONFIG_PROPERTIES = DotName
             .createSimple(org.eclipse.microprofile.config.inject.ConfigProperties.class.getName());

@@ -1,4 +1,4 @@
-package io.quarkus.it.main;
+package io.quarkus.it.opentracing;
 
 import io.quarkus.test.junit.NativeImageTest;
 

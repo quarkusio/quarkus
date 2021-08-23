@@ -2,13 +2,13 @@ package io.quarkus.security.runtime;
 
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.security.runtime.interceptor.SecurityCheckStorage;
 import io.quarkus.security.runtime.interceptor.SecurityCheckStorageBuilder;
 import io.quarkus.security.runtime.interceptor.check.AuthenticatedCheck;
 import io.quarkus.security.runtime.interceptor.check.DenyAllCheck;
 import io.quarkus.security.runtime.interceptor.check.PermitAllCheck;
 import io.quarkus.security.runtime.interceptor.check.RolesAllowedCheck;
-import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
+import io.quarkus.security.spi.runtime.SecurityCheck;
+import io.quarkus.security.spi.runtime.SecurityCheckStorage;
 
 @Recorder
 public class SecurityCheckRecorder {

@@ -122,7 +122,10 @@ public class SecurityContextOverrideHandler implements ServerRestHandler {
         @Override
         public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
                 ServerResourceMethod serverResourceMethod) {
-            return Collections.singletonList(new SecurityContextOverrideHandler());
+            if (phase == Phase.AFTER_PRE_MATCH) {
+                return Collections.singletonList(new SecurityContextOverrideHandler());
+            }
+            return Collections.emptyList();
         }
     }
 }

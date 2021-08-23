@@ -3,6 +3,7 @@ package io.quarkus.security.runtime.interceptor.check;
 import java.lang.reflect.Method;
 
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.SecurityCheck;
 
 public class PermitAllCheck implements SecurityCheck {
 

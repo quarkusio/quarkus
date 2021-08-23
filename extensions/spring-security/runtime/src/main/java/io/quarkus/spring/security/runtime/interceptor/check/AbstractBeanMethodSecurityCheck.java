@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
+import io.quarkus.security.spi.runtime.SecurityCheck;
 
 /**
  * Implementations of this class are generated for expressions in @PreAuthorize that

@@ -2,6 +2,7 @@ package io.quarkus.oidc.runtime;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.function.Function;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
@@ -38,30 +39,42 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
-        OidcTenantConfig oidcConfig = resolve(context);
-        if (oidcConfig.tenantEnabled == false) {
-            return Uni.createFrom().nullItem();
-        }
-        return isWebApp(context, oidcConfig) ? codeAuth.authenticate(context, identityProviderManager)
-                : bearerAuth.authenticate(context, identityProviderManager);
+        return resolve(context).chain(new Function<OidcTenantConfig, Uni<? extends SecurityIdentity>>() {
+            @Override
+            public Uni<? extends SecurityIdentity> apply(OidcTenantConfig oidcConfig) {
+                if (!oidcConfig.tenantEnabled) {
+                    return Uni.createFrom().nullItem();
+                }
+                return isWebApp(context, oidcConfig) ? codeAuth.authenticate(context, identityProviderManager)
+                        : bearerAuth.authenticate(context, identityProviderManager);
+            }
+        });
     }
 
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
-        OidcTenantConfig oidcConfig = resolve(context);
-        if (oidcConfig.tenantEnabled == false) {
-            return Uni.createFrom().nullItem();
-        }
-        return isWebApp(context, oidcConfig) ? codeAuth.getChallenge(context)
-                : bearerAuth.getChallenge(context);
+        return resolve(context).chain(new Function<OidcTenantConfig, Uni<? extends ChallengeData>>() {
+            @Override
+            public Uni<? extends ChallengeData> apply(OidcTenantConfig oidcTenantConfig) {
+                if (!oidcTenantConfig.tenantEnabled) {
+                    return Uni.createFrom().nullItem();
+                }
+                return isWebApp(context, oidcTenantConfig) ? codeAuth.getChallenge(context)
+                        : bearerAuth.getChallenge(context);
+            }
+        });
     }
 
-    private OidcTenantConfig resolve(RoutingContext context) {
-        OidcTenantConfig oidcConfig = resolver.resolveConfig(context);
-        if (oidcConfig == null) {
-            throw new OIDCException("Tenant configuration has not been resolved");
-        }
-        return oidcConfig;
+    private Uni<OidcTenantConfig> resolve(RoutingContext context) {
+        return resolver.resolveConfig(context).map(new Function<OidcTenantConfig, OidcTenantConfig>() {
+            @Override
+            public OidcTenantConfig apply(OidcTenantConfig oidcTenantConfig) {
+                if (oidcTenantConfig == null) {
+                    throw new OIDCException("Tenant configuration has not been resolved");
+                }
+                return oidcTenantConfig;
+            };
+        });
     }
 
     private boolean isWebApp(RoutingContext context, OidcTenantConfig oidcConfig) {

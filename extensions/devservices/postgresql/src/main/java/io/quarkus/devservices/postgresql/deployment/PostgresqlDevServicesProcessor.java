@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import org.jboss.logging.Logger;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -18,6 +19,8 @@ import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.runtime.LaunchMode;
 
 public class PostgresqlDevServicesProcessor {
+
+    private static final Logger LOG = Logger.getLogger(PostgresqlDevServicesProcessor.class);
 
     public static final String TAG = "13.2";
 
@@ -38,12 +41,16 @@ public class PostgresqlDevServicesProcessor {
 
                 container.start();
 
+                LOG.info("Dev Services for PostgreSQL started.");
+
                 return new RunningDevServicesDatasource(container.getJdbcUrl(), container.getUsername(),
                         container.getPassword(),
                         new Closeable() {
                             @Override
                             public void close() throws IOException {
                                 container.stop();
+
+                                LOG.info("Dev Services for PostgreSQL shut down.");
                             }
                         });
             }

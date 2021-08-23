@@ -1,4 +1,4 @@
-package io.quarkus.devservices.postgresql.deployment;
+package io.quarkus.devservices.derby.deployment;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.apache.derby.drda.NetworkServerControl;
+import org.jboss.logging.Logger;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
@@ -17,6 +18,8 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.runtime.LaunchMode;
 
 public class DerbyDevServicesProcessor {
+
+    private static final Logger LOG = Logger.getLogger(DerbyDevServicesProcessor.class);
 
     static final int NUMBER_OF_PINGS = 10;
     static final int SLEEP_BETWEEN_PINGS = 500;
@@ -35,13 +38,12 @@ public class DerbyDevServicesProcessor {
                     server.start(new PrintWriter(System.out));
                     for (int i = 1; i <= NUMBER_OF_PINGS; i++) {
                         try {
-                            System.out.println("[INFO] Attempt " + i + " to see if Derby Network server started");
+                            LOG.info("Attempt " + i + " to see if Dev Services for Derby started");
                             server.ping();
                             break;
                         } catch (Exception ex) {
                             if (i == NUMBER_OF_PINGS) {
-                                System.out.println("Derby Network server failed to start");
-                                ex.printStackTrace();
+                                LOG.error("Dev Services for Derby failed to start", ex);
                                 throw ex;
                             }
                             try {
@@ -50,6 +52,9 @@ public class DerbyDevServicesProcessor {
                             }
                         }
                     }
+
+                    LOG.info("Dev Services for Derby started.");
+
                     StringBuilder additionalArgs = new StringBuilder();
                     for (Map.Entry<String, String> i : additionalProperties.entrySet()) {
                         additionalArgs.append(";");
@@ -69,7 +74,7 @@ public class DerbyDevServicesProcessor {
                                         NetworkServerControl server = new NetworkServerControl(
                                                 InetAddress.getByName("localhost"), port);
                                         server.shutdown();
-                                        System.out.println("[INFO] Derby database was shut down");
+                                        LOG.info("Dev Services for Derby shut down");
                                     } catch (Exception e) {
                                         throw new RuntimeException(e);
                                     }

@@ -2,6 +2,7 @@ package io.quarkus.smallrye.faulttolerance.deployment;
 
 import java.lang.annotation.Annotation;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -16,10 +17,10 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 
 import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
-import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassOutput;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
@@ -29,6 +30,7 @@ import io.smallrye.faulttolerance.api.ExponentialBackoff;
 import io.smallrye.faulttolerance.api.FibonacciBackoff;
 import io.smallrye.faulttolerance.autoconfig.FaultToleranceMethod;
 import io.smallrye.faulttolerance.autoconfig.MethodDescriptor;
+import io.smallrye.faulttolerance.autoconfig.TypeName;
 
 final class FaultToleranceScanner {
     private final IndexView index;
@@ -100,7 +102,7 @@ final class FaultToleranceScanner {
 
         FaultToleranceMethod result = new FaultToleranceMethod();
 
-        result.beanClass = load(beanClass.name());
+        result.beanClass = createTypeName(beanClass.name());
         result.method = createMethodDescriptor(method);
 
         result.asynchronous = getAnnotation(Asynchronous.class, method, beanClass, annotationsPresentDirectly);
@@ -125,13 +127,22 @@ final class FaultToleranceScanner {
 
     private MethodDescriptor createMethodDescriptor(MethodInfo method) {
         MethodDescriptor result = new MethodDescriptor();
-        result.declaringClass = load(method.declaringClass().name());
+        result.declaringClass = createTypeName(method.declaringClass().name());
         result.name = method.name();
-        result.parameterTypes = method.parameters()
-                .stream()
-                .map(JandexUtil::loadRawType)
-                .toArray(Class[]::new);
-        result.returnType = JandexUtil.loadRawType(method.returnType());
+        List<Type> parameterTypes = method.parameters();
+        TypeName[] parameterTypeNames = new TypeName[parameterTypes.size()];
+        for (int i = 0; i < parameterTypes.size(); i++) {
+            TypeName typeName = createTypeName(parameterTypes.get(i).name());
+            parameterTypeNames[i] = typeName;
+        }
+        result.parameterTypes = parameterTypeNames;
+        result.returnType = createTypeName(method.returnType().name());
+        return result;
+    }
+
+    private TypeName createTypeName(DotName name) {
+        TypeName result = new TypeName();
+        result.binaryName = name.toString();
         return result;
     }
 
@@ -169,13 +180,5 @@ final class FaultToleranceScanner {
 
     private <A extends Annotation> A createAnnotation(Class<A> annotationType, AnnotationInstance instance) {
         return proxy.builder(instance, annotationType).build(output);
-    }
-
-    private static Class<?> load(DotName name) {
-        try {
-            return Thread.currentThread().getContextClassLoader().loadClass(name.toString());
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

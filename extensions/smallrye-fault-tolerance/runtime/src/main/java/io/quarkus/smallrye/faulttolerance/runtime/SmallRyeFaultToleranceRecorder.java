@@ -28,9 +28,9 @@ public class SmallRyeFaultToleranceRecorder {
                 operation.validate();
 
                 QuarkusFaultToleranceOperationProvider.CacheKey cacheKey = new QuarkusFaultToleranceOperationProvider.CacheKey(
-                        ftMethod.beanClass, ftMethod.method.reflect());
+                        ftMethod.beanClass.loadFromTCCL(), ftMethod.method.reflect());
                 operationCache.put(cacheKey, operation);
-            } catch (FaultToleranceDefinitionException | NoSuchMethodException e) {
+            } catch (FaultToleranceDefinitionException | NoSuchMethodException | ClassNotFoundException e) {
                 allExceptions.add(e);
             }
         }

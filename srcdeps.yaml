@@ -1,0 +1,12 @@
+configModelVersion: 3.0
+logToConsole: true
+verbosity: info
+repositories:
+  io.smallrye.faulttolerance:
+    includes:
+    - io.smallrye:smallrye-fault-tolerance*
+    urls:
+    - git:https://github.com/Ladicek/smallrye-fault-tolerance.git
+    buildVersionPattern: .*-SNAPSHOT
+    buildRef: branch-typename-instead-of-class
+    skipTests: true

@@ -15,6 +15,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.resteasy.reactive.server.test.ExceptionUtil;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -26,7 +27,7 @@ public class PerClassThrowableExceptionMapperTest {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(HasCustomThrowableHandlerResource.class);
+                            .addClasses(HasCustomThrowableHandlerResource.class, ExceptionUtil.class);
                 }
             });
 

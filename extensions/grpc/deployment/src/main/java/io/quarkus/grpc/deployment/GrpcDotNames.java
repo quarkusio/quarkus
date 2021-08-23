@@ -34,6 +34,7 @@ public class GrpcDotNames {
 
     public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
     public static final DotName NON_BLOCKING = DotName.createSimple(NonBlocking.class.getName());
+    public static final DotName TRANSACTIONAL = DotName.createSimple("javax.transaction.Transactional");
 
     public static final DotName ABSTRACT_BLOCKING_STUB = DotName.createSimple(AbstractBlockingStub.class.getName());
     public static final DotName MUTINY_STUB = DotName.createSimple(MutinyStub.class.getName());

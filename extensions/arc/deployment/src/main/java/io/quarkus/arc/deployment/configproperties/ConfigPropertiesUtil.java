@@ -4,6 +4,8 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.function.IntFunction;
 
+import javax.enterprise.inject.spi.DeploymentException;
+
 import org.eclipse.microprofile.config.Config;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.ParameterizedType;
@@ -42,6 +44,10 @@ final class ConfigPropertiesUtil {
             DotName declaringClass,
             BytecodeCreator bytecodeCreator, ResultHandle config) {
 
+        if (isMap(resultType)) {
+            throw new DeploymentException(
+                    "Using a Map is not supported for classes annotated with '@ConfigProperties'. Consider using https://quarkus.io/guides/config-mappings instead.");
+        }
         if (isCollection(resultType)) {
             ResultHandle smallryeConfig = bytecodeCreator.checkCast(config, SmallRyeConfig.class);
 
@@ -79,6 +85,10 @@ final class ConfigPropertiesUtil {
             BytecodeCreator bytecodeCreator, ResultHandle config) {
 
         ResultHandle optionalValue;
+        if (isMap(resultType)) {
+            throw new DeploymentException(
+                    "Using a Map is not supported for classes annotated with '@ConfigProperties'. Consider using https://quarkus.io/guides/config-mappings instead.");
+        }
         if (isCollection(resultType)) {
             ResultHandle smallryeConfig = bytecodeCreator.checkCast(config, SmallRyeConfig.class);
 
@@ -128,6 +138,11 @@ final class ConfigPropertiesUtil {
         return DotNames.COLLECTION.equals(resultType.name()) ||
                 DotNames.LIST.equals(resultType.name()) ||
                 DotNames.SET.equals(resultType.name());
+    }
+
+    private static boolean isMap(final Type resultType) {
+        return DotNames.MAP.equals(resultType.name()) ||
+                DotNames.HASH_MAP.equals(resultType.name());
     }
 
     static Type determineSingleGenericType(Type type, DotName declaringClass) {

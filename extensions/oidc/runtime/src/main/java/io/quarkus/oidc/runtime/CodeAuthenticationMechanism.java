@@ -4,7 +4,6 @@ import static io.quarkus.oidc.runtime.OidcIdentityProvider.NEW_AUTHENTICATION;
 import static io.quarkus.oidc.runtime.OidcIdentityProvider.REFRESH_TOKEN_GRANT_RESPONSE;
 
 import java.net.URI;
-import java.security.Permission;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -19,12 +18,10 @@ import org.jose4j.jwt.consumer.ErrorCodes;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Authentication;
-import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -33,7 +30,6 @@ import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.Cookie;
@@ -56,27 +52,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private static final String STATE_COOKIE_NAME = "q_auth";
     private static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
-
-    private static QuarkusSecurityIdentity augmentIdentity(SecurityIdentity securityIdentity,
-            String accessToken,
-            String refreshToken,
-            RoutingContext context) {
-        IdTokenCredential idTokenCredential = securityIdentity.getCredential(IdTokenCredential.class);
-        RefreshToken refreshTokenCredential = new RefreshToken(refreshToken);
-        return QuarkusSecurityIdentity.builder()
-                .setPrincipal(securityIdentity.getPrincipal())
-                .addCredential(idTokenCredential)
-                .addCredential(new AccessTokenCredential(accessToken, refreshTokenCredential, context))
-                .addCredential(refreshTokenCredential)
-                .addRoles(securityIdentity.getRoles())
-                .addAttributes(securityIdentity.getAttributes())
-                .addPermissionChecker(new Function<Permission, Uni<Boolean>>() {
-                    @Override
-                    public Uni<Boolean> apply(Permission permission) {
-                        return securityIdentity.checkPermission(permission);
-                    }
-                }).build();
-    }
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
@@ -125,6 +100,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 sessionCookie.getValue());
 
         context.put(OidcConstants.ACCESS_TOKEN_VALUE, session.getAccessToken());
+        context.put(AuthorizationCodeTokens.class.getName(), session);
         return authenticate(identityProviderManager, context, new IdTokenCredential(session.getIdToken(), context))
                 .map(new Function<SecurityIdentity, SecurityIdentity>() {
                     @Override
@@ -133,8 +109,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             fireEvent(SecurityEvent.Type.OIDC_LOGOUT_RP_INITIATED, identity);
                             throw redirectToLogoutEndpoint(context, configContext, session.getIdToken());
                         }
-
-                        return augmentIdentity(identity, session.getAccessToken(), session.getRefreshToken(), context);
+                        return identity;
                     }
                 }).onFailure().recoverWithUni(new Function<Throwable, Uni<? extends SecurityIdentity>>() {
                     @Override
@@ -299,6 +274,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                         context.put(NEW_AUTHENTICATION, Boolean.TRUE);
                         context.put(OidcConstants.ACCESS_TOKEN_VALUE, tokens.getAccessToken());
+                        context.put(AuthorizationCodeTokens.class.getName(), tokens);
 
                         return authenticate(identityProviderManager, context,
                                 new IdTokenCredential(tokens.getIdToken(), context))
@@ -332,8 +308,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                     LOG.debugf("Final redirect URI: %s", finalRedirectUri);
                                                     throw new AuthenticationRedirectException(finalRedirectUri);
                                                 } else {
-                                                    return augmentIdentity(identity, tokens.getAccessToken(),
-                                                            tokens.getRefreshToken(), context);
+                                                    return identity;
                                                 }
                                             }
                                         }).onFailure().transform(new Function<Throwable, Throwable>() {
@@ -520,6 +495,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             }
                         } else {
                             context.put(OidcConstants.ACCESS_TOKEN_VALUE, tokens.getAccessToken());
+                            context.put(AuthorizationCodeTokens.class.getName(), tokens);
                             context.put(REFRESH_TOKEN_GRANT_RESPONSE, Boolean.TRUE);
 
                             return authenticate(identityProviderManager, context,
@@ -530,14 +506,11 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                     // after a successful refresh, rebuild the identity and update the cookie
                                                     processSuccessfulAuthentication(context, configContext,
                                                             tokens, identity);
-                                                    SecurityIdentity newSecurityIdentity = augmentIdentity(identity,
-                                                            tokens.getAccessToken(), tokens.getRefreshToken(), context);
-
                                                     fireEvent(autoRefresh ? SecurityEvent.Type.OIDC_SESSION_REFRESHED
                                                             : SecurityEvent.Type.OIDC_SESSION_EXPIRED_AND_REFRESHED,
-                                                            newSecurityIdentity);
+                                                            identity);
 
-                                                    return newSecurityIdentity;
+                                                    return identity;
                                                 }
                                             }).onFailure().transform(new Function<Throwable, Throwable>() {
                                                 @Override

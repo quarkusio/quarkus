@@ -5,18 +5,13 @@ import java.lang.reflect.Method;
 /**
  * Context object passed to {@link QuarkusTestBeforeEachCallback} and {@link QuarkusTestAfterEachCallback}
  */
-public final class QuarkusTestMethodContext {
+public final class QuarkusTestMethodContext extends QuarkusTestContext {
 
-    private final Object testInstance;
     private final Method testMethod;
 
-    public QuarkusTestMethodContext(Object testInstance, Method testMethod) {
-        this.testInstance = testInstance;
+    public QuarkusTestMethodContext(Object testInstance, Object outerInstance, Method testMethod) {
+        super(testInstance, outerInstance);
         this.testMethod = testMethod;
-    }
-
-    public Object getTestInstance() {
-        return testInstance;
     }
 
     public Method getTestMethod() {

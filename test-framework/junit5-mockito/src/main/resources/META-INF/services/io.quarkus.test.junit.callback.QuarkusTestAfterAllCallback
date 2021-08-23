@@ -1,0 +1,1 @@
+io.quarkus.test.junit.mockito.internal.ResetOuterMockitoMocksCallback

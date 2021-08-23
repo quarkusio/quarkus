@@ -108,10 +108,12 @@ import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.quarkus.test.junit.buildchain.TestBuildChainCustomizerProducer;
+import io.quarkus.test.junit.callback.QuarkusTestAfterAllCallback;
 import io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback;
 import io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback;
 import io.quarkus.test.junit.callback.QuarkusTestBeforeClassCallback;
 import io.quarkus.test.junit.callback.QuarkusTestBeforeEachCallback;
+import io.quarkus.test.junit.callback.QuarkusTestContext;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.internal.DeepClone;
 import io.quarkus.test.junit.internal.SerializationWithXStreamFallbackDeepClone;
@@ -131,6 +133,8 @@ public class QuarkusTestExtension
 
     private static Class<?> actualTestClass;
     private static Object actualTestInstance;
+    // needed for @Nested
+    private static Object outerInstance;
     private static ClassLoader originalCl;
     private static RunningQuarkusApplication runningQuarkusApplication;
     private static Pattern clonePattern;
@@ -140,6 +144,7 @@ public class QuarkusTestExtension
     private static List<Object> afterConstructCallbacks;
     private static List<Object> beforeEachCallbacks;
     private static List<Object> afterEachCallbacks;
+    private static List<Object> afterAllCallbacks;
     private static Class<?> quarkusTestMethodContextClass;
     private static Class<? extends QuarkusTestProfile> quarkusTestProfile;
     private static boolean hasPerTestResources;
@@ -474,6 +479,7 @@ public class QuarkusTestExtension
         afterConstructCallbacks = new ArrayList<>();
         beforeEachCallbacks = new ArrayList<>();
         afterEachCallbacks = new ArrayList<>();
+        afterAllCallbacks = new ArrayList<>();
 
         ServiceLoader<?> quarkusTestBeforeClassLoader = ServiceLoader
                 .load(Class.forName(QuarkusTestBeforeClassCallback.class.getName(), false, classLoader), classLoader);
@@ -494,6 +500,11 @@ public class QuarkusTestExtension
                 .load(Class.forName(QuarkusTestAfterEachCallback.class.getName(), false, classLoader), classLoader);
         for (Object quarkusTestAfterEach : quarkusTestAfterEachLoader) {
             afterEachCallbacks.add(quarkusTestAfterEach);
+        }
+        ServiceLoader<?> quarkusTestAfterAllLoader = ServiceLoader
+                .load(Class.forName(QuarkusTestAfterAllCallback.class.getName(), false, classLoader), classLoader);
+        for (Object quarkusTestAfterAll : quarkusTestAfterAllLoader) {
+            afterAllCallbacks.add(quarkusTestAfterAll);
         }
     }
 
@@ -640,9 +651,9 @@ public class QuarkusTestExtension
             throw new RuntimeException("Could not find method " + originalTestMethod + " on test class");
         }
 
-        Constructor<?> constructor = quarkusTestMethodContextClass.getConstructor(Object.class, Method.class);
+        Constructor<?> constructor = quarkusTestMethodContextClass.getConstructor(Object.class, Object.class, Method.class);
         return new AbstractMap.SimpleEntry<>(quarkusTestMethodContextClass,
-                constructor.newInstance(actualTestInstance, actualTestMethod));
+                constructor.newInstance(actualTestInstance, outerInstance, actualTestMethod));
     }
 
     private boolean isNativeOrIntegrationTest(Class<?> clazz) {
@@ -849,12 +860,13 @@ public class QuarkusTestExtension
             Class<?> previousActualTestClass = actualTestClass;
             actualTestClass = Class.forName(extensionContext.getRequiredTestClass().getName(), true,
                     Thread.currentThread().getContextClassLoader());
+            outerInstance = null;
             if (extensionContext.getRequiredTestClass().isAnnotationPresent(Nested.class)) {
-                Class<?> parent = actualTestClass.getEnclosingClass();
-                Object parentInstance = runningQuarkusApplication.instance(parent);
-                Constructor<?> declaredConstructor = actualTestClass.getDeclaredConstructor(parent);
+                Class<?> outerClass = actualTestClass.getEnclosingClass();
+                outerInstance = runningQuarkusApplication.instance(outerClass);
+                Constructor<?> declaredConstructor = actualTestClass.getDeclaredConstructor(outerClass);
                 declaredConstructor.setAccessible(true);
-                actualTestInstance = declaredConstructor.newInstance(parentInstance);
+                actualTestInstance = declaredConstructor.newInstance(outerInstance);
             } else {
                 actualTestInstance = runningQuarkusApplication.instance(actualTestClass);
             }
@@ -867,6 +879,12 @@ public class QuarkusTestExtension
             for (Object afterConstructCallback : afterConstructCallbacks) {
                 afterConstructCallback.getClass().getMethod("afterConstruct", Object.class).invoke(afterConstructCallback,
                         actualTestInstance);
+            }
+            if (outerInstance != null) {
+                for (Object afterConstructCallback : afterConstructCallbacks) {
+                    afterConstructCallback.getClass().getMethod("afterConstruct", Object.class).invoke(afterConstructCallback,
+                            outerInstance);
+                }
             }
         } catch (Exception e) {
             throw new TestInstantiationException("Failed to create test instance", e);
@@ -1102,6 +1120,7 @@ public class QuarkusTestExtension
     @Override
     public void afterAll(ExtensionContext context) throws Exception {
         resetHangTimeout();
+        runAfterAllCallbacks(context);
         try {
             if (!isNativeOrIntegrationTest(context.getRequiredTestClass()) && (runningQuarkusApplication != null)) {
                 popMockContext();
@@ -1111,6 +1130,31 @@ public class QuarkusTestExtension
             }
         } finally {
             currentTestClassStack.pop();
+            outerInstance = null;
+        }
+    }
+
+    private void runAfterAllCallbacks(ExtensionContext context) throws Exception {
+        if (isNativeOrIntegrationTest(context.getRequiredTestClass())) {
+            return;
+        }
+        if (afterAllCallbacks.isEmpty()) {
+            return;
+        }
+
+        Class<?> quarkusTestContextClass = Class.forName(QuarkusTestContext.class.getName(), true,
+                runningQuarkusApplication.getClassLoader());
+        Object quarkusTestContextInstance = quarkusTestContextClass.getConstructor(Object.class, Object.class)
+                .newInstance(actualTestInstance, outerInstance);
+
+        ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
+        try {
+            for (Object afterAllCallback : afterAllCallbacks) {
+                afterAllCallback.getClass().getMethod("afterAll", quarkusTestContextClass)
+                        .invoke(afterAllCallback, quarkusTestContextInstance);
+            }
+        } finally {
+            setCCL(original);
         }
     }
 

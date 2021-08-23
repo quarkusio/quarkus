@@ -138,7 +138,6 @@ public class QuarkusTestExtension
 
     private static List<Object> beforeClassCallbacks;
     private static List<Object> afterConstructCallbacks;
-    private static List<Object> legacyAfterConstructCallbacks;
     private static List<Object> beforeEachCallbacks;
     private static List<Object> afterEachCallbacks;
     private static Class<?> quarkusTestMethodContextClass;
@@ -473,7 +472,6 @@ public class QuarkusTestExtension
         quarkusTestMethodContextClass = null;
         beforeClassCallbacks = new ArrayList<>();
         afterConstructCallbacks = new ArrayList<>();
-        legacyAfterConstructCallbacks = new ArrayList<>();
         beforeEachCallbacks = new ArrayList<>();
         afterEachCallbacks = new ArrayList<>();
 
@@ -869,10 +867,6 @@ public class QuarkusTestExtension
             for (Object afterConstructCallback : afterConstructCallbacks) {
                 afterConstructCallback.getClass().getMethod("afterConstruct", Object.class).invoke(afterConstructCallback,
                         actualTestInstance);
-            }
-            for (Object legacyAfterConstructCallback : legacyAfterConstructCallbacks) {
-                legacyAfterConstructCallback.getClass().getMethod("beforeAll", Object.class)
-                        .invoke(legacyAfterConstructCallback, actualTestInstance);
             }
         } catch (Exception e) {
             throw new TestInstantiationException("Failed to create test instance", e);

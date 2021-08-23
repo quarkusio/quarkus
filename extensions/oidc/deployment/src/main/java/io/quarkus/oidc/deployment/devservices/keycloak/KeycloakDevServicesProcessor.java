@@ -167,6 +167,9 @@ public class KeycloakDevServicesProcessor {
             vertxInstance = Vertx.vertx();
         }
         capturedRealmFileLastModifiedDate = getRealmFileLastModifiedDate(capturedDevServicesConfiguration.realmPath);
+
+        LOG.info("Dev Services for Keycloak started.");
+
         return prepareConfiguration(!startResult.realmFileExists, devServices);
     }
 
@@ -202,15 +205,15 @@ public class KeycloakDevServicesProcessor {
     private StartResult startContainer(boolean useSharedContainer) {
         if (!capturedDevServicesConfiguration.enabled) {
             // explicitly disabled
-            LOG.debug("Not starting devservices for Keycloak as it has been disabled in the config");
+            LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the config");
             return null;
         }
         if (!isOidcTenantEnabled()) {
-            LOG.debug("Not starting devservices for Keycloak as 'quarkus.oidc.tenant.enabled' is false");
+            LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.tenant.enabled' is false");
             return null;
         }
         if (ConfigUtils.isPropertyPresent(AUTH_SERVER_URL_CONFIG_KEY)) {
-            LOG.debug("Not starting devservices for Keycloak as 'quarkus.oidc.auth-server-url' has been provided");
+            LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.auth-server-url' has been provided");
             return null;
         }
 
@@ -236,6 +239,8 @@ public class KeycloakDevServicesProcessor {
                     @Override
                     public void close() {
                         oidcContainer.close();
+
+                        LOG.info("Dev Services for Keycloak shut down.");
                     }
                 });
     }

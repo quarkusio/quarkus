@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.h2.tools.Server;
+import org.jboss.logging.Logger;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
@@ -19,6 +20,8 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.runtime.LaunchMode;
 
 public class H2DevServicesProcessor {
+
+    private static final Logger LOG = Logger.getLogger(H2DevServicesProcessor.class);
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupH2() {
@@ -39,8 +42,9 @@ public class H2DevServicesProcessor {
                         additionalArgs.append("=");
                         additionalArgs.append(i.getValue());
                     }
-                    System.out
-                            .println("[INFO] H2 database started in TCP server mode; server status: " + tcpServer.getStatus());
+
+                    LOG.info("Dev Services for H2 started.");
+
                     String connectionUrl = "jdbc:h2:tcp://localhost:" + tcpServer.getPort() + "/mem:"
                             + datasourceName.orElse("default")
                             + ";DB_CLOSE_DELAY=-1" + additionalArgs.toString();
@@ -66,11 +70,10 @@ public class H2DevServicesProcessor {
                                             t.printStackTrace();
                                         }
                                         tcpServer.stop();
-                                        System.out.println(
-                                                "[INFO] H2 database was shut down; server status: " + tcpServer.getStatus());
+                                        LOG.info("Dev Services for H2 shut down; server status: " + tcpServer.getStatus());
                                     } else {
-                                        System.out.println(
-                                                "[INFO] H2 database was NOT shut down as it appears it was down already; server status: "
+                                        LOG.info(
+                                                "Dev Services for H2 was NOT shut down as it appears it was down already; server status: "
                                                         + tcpServer.getStatus());
                                     }
                                 }

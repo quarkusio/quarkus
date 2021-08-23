@@ -1,4 +1,4 @@
-package io.quarkus.devservices.postgresql.deployment;
+package io.quarkus.devservices.mariadb.deployment;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import org.jboss.logging.Logger;
 import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -18,6 +19,8 @@ import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.runtime.LaunchMode;
 
 public class MariaDBDevServicesProcessor {
+
+    private static final Logger LOG = Logger.getLogger(MariaDBDevServicesProcessor.class);
 
     public static final String TAG = "10.5.9";
     public static final Integer PORT = 3306;
@@ -37,12 +40,17 @@ public class MariaDBDevServicesProcessor {
                                 .withDatabaseName(datasourceName.orElse("default"));
                 additionalProperties.forEach(container::withUrlParam);
                 container.start();
+
+                LOG.info("Dev Services for MariaDB started.");
+
                 return new RunningDevServicesDatasource(container.getJdbcUrl(), container.getUsername(),
                         container.getPassword(),
                         new Closeable() {
                             @Override
                             public void close() throws IOException {
                                 container.stop();
+
+                                LOG.info("Dev Services for MariaDB shut down.");
                             }
                         });
             }

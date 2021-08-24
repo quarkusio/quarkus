@@ -19,7 +19,6 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
 
     private static final String GRADLE_WRAPPER_WINDOWS = "gradlew.bat";
     private static final String GRADLE_WRAPPER_UNIX = "./gradlew";
-    private static final String GRADLE_NO_DAEMON = "--no-daemon";
     private static final String MAVEN_REPO_LOCAL = "maven.repo.local";
 
     private Map<String, String> systemProps;
@@ -32,7 +31,6 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         setupTestCommand();
         List<String> command = new LinkedList<>();
         command.add(getGradleWrapperCommand());
-        command.add(GRADLE_NO_DAEMON);
         command.addAll(getSytemProperties());
         command.add("--stacktrace");
         command.addAll(Arrays.asList(args));

@@ -4,7 +4,7 @@ import java.lang.reflect.Method;
 
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
+import io.quarkus.security.spi.runtime.SecurityCheck;
 
 public class AnonymousCheck implements SecurityCheck {
 

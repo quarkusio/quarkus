@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
 import io.quarkus.security.runtime.interceptor.check.SupplierRolesAllowedCheck;
+import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.spring.security.runtime.interceptor.check.AllDelegatingSecurityCheck;
 import io.quarkus.spring.security.runtime.interceptor.check.AnonymousCheck;
 import io.quarkus.spring.security.runtime.interceptor.check.AnyDelegatingSecurityCheck;

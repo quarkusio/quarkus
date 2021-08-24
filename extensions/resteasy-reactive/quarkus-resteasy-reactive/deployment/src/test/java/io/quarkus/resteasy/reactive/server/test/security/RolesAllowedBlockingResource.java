@@ -5,12 +5,15 @@ import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
+import io.smallrye.common.annotation.Blocking;
+
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
  */
-@Path("/roles")
+@Path("/roles-blocking")
 @PermitAll
-public class RolesAllowedResource {
+@Blocking
+public class RolesAllowedBlockingResource {
     @GET
     @RolesAllowed({ "user", "admin" })
     public String defaultSecurity() {

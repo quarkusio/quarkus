@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.SecurityCheck;
 
 public class SupplierRolesAllowedCheck implements SecurityCheck {
 

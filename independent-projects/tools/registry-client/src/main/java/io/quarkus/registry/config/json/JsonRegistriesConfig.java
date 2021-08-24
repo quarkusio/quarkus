@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistryConfig;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -15,7 +14,7 @@ import java.util.Objects;
 public class JsonRegistriesConfig implements RegistriesConfig {
 
     private boolean debug;
-    private List<RegistryConfig> registries = Collections.emptyList();
+    private List<RegistryConfig> registries = new ArrayList<>();
 
     @Override
     @JsonDeserialize(contentUsing = JsonRegistryConfigDeserializer.class)
@@ -25,13 +24,14 @@ public class JsonRegistriesConfig implements RegistriesConfig {
     }
 
     public void setRegistries(List<RegistryConfig> registries) {
-        this.registries = registries == null ? Collections.emptyList() : registries;
+        if (registries == null) {
+            this.registries.clear();
+        } else {
+            this.registries = registries;
+        }
     }
 
     public void addRegistry(RegistryConfig registry) {
-        if (registries.isEmpty()) {
-            registries = new ArrayList<>();
-        }
         registries.add(registry);
     }
 

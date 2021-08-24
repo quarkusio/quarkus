@@ -8,7 +8,9 @@ import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.Unmatched;
 
 @CommandLine.Command(name = "registry", sortOptions = false, mixinStandardHelpOptions = false, header = "Manage extension registries.", subcommands = {
-        RegistryListCommand.class }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
+        RegistryAddCommand.class,
+        RegistryListCommand.class,
+        RegistryRemoveCommand.class }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
 public class Registry extends BaseRegistryCommand {
 
     @Unmatched // avoids throwing errors for unmatched arguments

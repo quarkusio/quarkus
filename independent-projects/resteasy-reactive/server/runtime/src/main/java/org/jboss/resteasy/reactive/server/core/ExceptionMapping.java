@@ -17,6 +17,7 @@ import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.ResteasyReactiveClientProblem;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveAsyncExceptionMapper;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveExceptionMapper;
@@ -39,7 +40,10 @@ public class ExceptionMapping {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void mapException(Throwable throwable, ResteasyReactiveRequestContext context) {
         Class<?> klass = throwable.getClass();
-        boolean isWebApplicationException = throwable instanceof WebApplicationException;
+        //we don't thread WebApplicationException's thrown from the client as true 'WebApplicationException'
+        //we consider it a security risk to transparently pass on the result to the calling server
+        boolean isWebApplicationException = throwable instanceof WebApplicationException
+                && !(throwable instanceof ResteasyReactiveClientProblem);
         Response response = null;
         if (isWebApplicationException) {
             response = ((WebApplicationException) throwable).getResponse();

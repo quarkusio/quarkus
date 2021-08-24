@@ -323,7 +323,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         }
     }
 
-    private Throwable unwrapException(Throwable t) {
+    protected Throwable unwrapException(Throwable t) {
         if (t instanceof UnwrappableException) {
             return t.getCause();
         }

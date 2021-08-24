@@ -5,12 +5,15 @@ import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessaging
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.BROADCAST;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.COMPLETION_STAGE;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.INCOMING;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.INCOMINGS;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.KOTLIN_UNIT;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.MERGE;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.OUTGOING;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.SMALLRYE_BLOCKING;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.VOID_CLASS;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
@@ -84,8 +87,11 @@ public final class QuarkusMediatorConfigurationUtil {
         }
         configuration.setParameterTypes(parameterTypes);
 
-        List<String> incomingValues = getValues(methodInfo, INCOMING);
+        // We need to extract the value of @Incoming and @Incomings (which contains an array of @Incoming)
+        List<String> incomingValues = new ArrayList<>(getValues(methodInfo, INCOMING));
+        incomingValues.addAll(getIncomingValues(methodInfo));
         configuration.setIncomings(incomingValues);
+
         String outgoingValue = getValue(methodInfo, OUTGOING);
         configuration.setOutgoing(outgoingValue);
 
@@ -244,6 +250,13 @@ public final class QuarkusMediatorConfigurationUtil {
     private static List<String> getValues(MethodInfo methodInfo, DotName dotName) {
         return methodInfo.annotations().stream().filter(ai -> ai.name().equals(dotName))
                 .map(ai -> ai.value().asString())
+                .collect(Collectors.toList());
+    }
+
+    private static List<String> getIncomingValues(MethodInfo methodInfo) {
+        return methodInfo.annotations().stream().filter(ai -> ai.name().equals(INCOMINGS))
+                .flatMap(incomings -> Arrays.stream(incomings.value().asNestedArray()))
+                .map(incoming -> incoming.value().asString())
                 .collect(Collectors.toList());
     }
 

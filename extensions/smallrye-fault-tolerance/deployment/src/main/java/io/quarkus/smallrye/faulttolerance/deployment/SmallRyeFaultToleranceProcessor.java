@@ -54,6 +54,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
+import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusAsyncExecutorProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusExistingCircuitBreakerNames;
@@ -236,6 +237,7 @@ public class SmallRyeFaultToleranceProcessor {
     // needs to be RUNTIME_INIT because we need to read MP Config
     @Record(ExecutionTime.RUNTIME_INIT)
     void validateFaultToleranceAnnotations(SmallRyeFaultToleranceRecorder recorder,
+            RecorderContext recorderContext,
             ValidationPhaseBuildItem validationPhase,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             AnnotationProxyBuildItem annotationProxy,
@@ -248,7 +250,8 @@ public class SmallRyeFaultToleranceProcessor {
         // none of them are application classes
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, false);
 
-        FaultToleranceScanner scaner = new FaultToleranceScanner(index, annotationStore, annotationProxy, classOutput);
+        FaultToleranceScanner scaner = new FaultToleranceScanner(index, annotationStore, annotationProxy, classOutput,
+                recorderContext);
 
         List<FaultToleranceMethod> ftMethods = new ArrayList<>();
         List<Throwable> exceptions = new ArrayList<>();

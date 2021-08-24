@@ -12,7 +12,7 @@ The following IDEs have support for the community developed Quarkus Tools:
 * https://marketplace.visualstudio.com/items?itemName=redhat.vscode-quarkus[Quarkus Tools for Visual Studio Code]
 * https://marketplace.eclipse.org/content/quarkus-tools[Quarkus Tools for Eclipse]
 * https://plugins.jetbrains.com/plugin/13234-quarkus/versions[Quarkus Tools for IntelliJ]
-* https://github.com/eclipse/che-devfile-registry/blob/master/devfiles/quarkus/devfile.yaml[Quarkus Tools for Eclipse Che]
+* https://github.com/eclipse/che-devfile-registry/blob/main/devfiles/quarkus/devfile.yaml[Quarkus Tools for Eclipse Che]
 
 In addition IntelliJ has additional support for Quarkus in their Ultimate non-open source version.
 

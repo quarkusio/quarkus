@@ -247,13 +247,6 @@ public class UndertowBuildStep {
         }
     }
 
-    @BuildStep
-    List<IgnoredServletContainerInitializerBuildItem> translateDeprecated(
-            List<BlacklistedServletContainerInitializerBuildItem> old) {
-        return old.stream().map(BlacklistedServletContainerInitializerBuildItem::getSciClass)
-                .map(IgnoredServletContainerInitializerBuildItem::new).collect(Collectors.toList());
-    }
-
     /*
      * look for Servlet container initializers
      *

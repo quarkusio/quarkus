@@ -15,7 +15,7 @@
  */
 
 // This code was Heavily influenced from spring forward header parser
-// https://github.com/spring-projects/spring-framework/blob/master/spring-web/src/main/java/org/springframework/web/util/UriComponentsBuilder.java#L849
+// https://github.com/spring-projects/spring-framework/blob/main/spring-web/src/main/java/org/springframework/web/util/UriComponentsBuilder.java#L849
 
 package io.quarkus.vertx.http.runtime;
 

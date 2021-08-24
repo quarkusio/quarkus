@@ -103,6 +103,7 @@ import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveInitialiser;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRuntimeRecorder;
+import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveServerRuntimeConfig;
 import io.quarkus.resteasy.reactive.server.runtime.ServerVertxAsyncFileMessageBodyWriter;
 import io.quarkus.resteasy.reactive.server.runtime.ServerVertxBufferMessageBodyWriter;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationCompletionExceptionMapper;
@@ -604,11 +605,11 @@ public class ResteasyReactiveProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     public void applyRuntimeConfig(ResteasyReactiveRuntimeRecorder recorder,
             Optional<ResteasyReactiveDeploymentBuildItem> deployment,
-            HttpConfiguration httpConfiguration) {
+            HttpConfiguration httpConf, ResteasyReactiveServerRuntimeConfig resteasyReactiveServerRuntimeConf) {
         if (!deployment.isPresent()) {
             return;
         }
-        recorder.configure(deployment.get().getDeployment(), httpConfiguration);
+        recorder.configure(deployment.get().getDeployment(), httpConf, resteasyReactiveServerRuntimeConf);
     }
 
     @BuildStep

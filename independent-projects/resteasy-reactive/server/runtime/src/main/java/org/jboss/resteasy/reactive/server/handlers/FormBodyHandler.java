@@ -24,8 +24,6 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public class FormBodyHandler implements ServerRestHandler, RuntimeConfigurableServerRestHandler {
 
-    private static final byte[] NO_BYTES = new byte[0];
-
     private final boolean alsoSetInputStream;
     private final Supplier<Executor> executorSupplier;
     private volatile FormParserFactory formParserFactory;
@@ -43,9 +41,12 @@ public class FormBodyHandler implements ServerRestHandler, RuntimeConfigurableSe
                         .setMaxAttributeSize(configuration.limits().maxFormAttributeSize())
                         .setMaxEntitySize(configuration.limits().maxBodySize().orElse(-1L))
                         .setDeleteUploadsOnEnd(configuration.body().deleteUploadedFilesOnEnd())
+                        .setDefaultCharset(configuration.body().defaultCharset().name())
                         .setTempFileLocation(Path.of(configuration.body().uploadsDirectory())))
+
                 .addParser(new FormEncodedDataDefinition()
-                        .setMaxAttributeSize(configuration.limits().maxFormAttributeSize()))
+                        .setMaxAttributeSize(configuration.limits().maxFormAttributeSize())
+                        .setDefaultCharset(configuration.body().defaultCharset().name()))
                 .build();
 
         try {

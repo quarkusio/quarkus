@@ -469,7 +469,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 boolean validConsumes = false;
                 if (consumes != null) {
                     for (String c : consumes) {
-                        if (c.equals(MediaType.MULTIPART_FORM_DATA)) {
+                        if (c.startsWith(MediaType.MULTIPART_FORM_DATA)) {
                             validConsumes = true;
                             break;
                         }

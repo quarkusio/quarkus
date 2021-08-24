@@ -561,6 +561,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         Map.Entry<AnnotationTarget, AnnotationInstance> nonBlockingAnnotation = getInheritableAnnotation(info,
                 NON_BLOCKING);
         if ((blockingAnnotation != null) && (nonBlockingAnnotation != null)) {
+            if (blockingAnnotation.getKey().kind() == nonBlockingAnnotation.getKey().kind()) {
+                if (blockingAnnotation.getKey().kind() == AnnotationTarget.Kind.METHOD) {
+                    throw new DeploymentException("Method '" + info.name() + "' of class '" + info.declaringClass().name()
+                            + "' contains both @Blocking and @NonBlocking annotations.");
+                } else {
+                    throw new DeploymentException("Class '" + info.declaringClass().name()
+                            + "' contains both @Blocking and @NonBlocking annotations.");
+                }
+            }
             if (blockingAnnotation.getKey().kind() == AnnotationTarget.Kind.METHOD) {
                 // the most specific annotation was the @Blocking annotation on the method
                 return true;

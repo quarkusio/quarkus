@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.enterprise.inject.spi.DeploymentException;
 import javax.ws.rs.core.Application;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -95,6 +96,10 @@ public class ResteasyReactiveScanner {
                 throw new RuntimeException("Unable to handle class: " + applicationClass, e);
             }
             if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.BLOCKING) != null) {
+                if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
+                    throw new DeploymentException("JAX-RS Application class '" + applicationClassInfo.name()
+                            + "' contains both @Blocking and @NonBlocking annotations.");
+                }
                 blocking = BlockingDefault.BLOCKING;
             } else if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
                 blocking = BlockingDefault.NON_BLOCKING;

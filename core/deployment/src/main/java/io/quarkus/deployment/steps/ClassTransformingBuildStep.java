@@ -78,6 +78,7 @@ public class ClassTransformingBuildStep {
         Map<String, Set<String>> constScanning = new HashMap<>();
         Set<String> eager = new HashSet<>();
         Set<String> nonCacheable = new HashSet<>();
+        Map<String, Integer> classReaderOptions = new HashMap<>();
         for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
             bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>())
                     .add(i);
@@ -93,6 +94,7 @@ public class ClassTransformingBuildStep {
             if (!i.isCacheable()) {
                 nonCacheable.add(i.getClassToTransform());
             }
+            classReaderOptions.put(i.getClassToTransform(), i.getClassReaderOptions());
         }
         QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
         Map<String, Path> transformedToArchive = new ConcurrentHashMap<>();
@@ -132,7 +134,8 @@ public class ClassTransformingBuildStep {
                                 return originalBytes;
                             }
                         }
-                        byte[] data = transformClass(className, visitors, classData, preVisitFunctions);
+                        byte[] data = transformClass(className, visitors, classData, preVisitFunctions,
+                                classReaderOptions.getOrDefault(className, 0));
                         TransformedClassesBuildItem.TransformedClass transformedClass = new TransformedClassesBuildItem.TransformedClass(
                                 className, data,
                                 classFileName, eager.contains(className));
@@ -190,7 +193,8 @@ public class ClassTransformingBuildStep {
                                         return null;
                                     }
                                 }
-                                byte[] data = transformClass(className, visitors, classData, preVisitFunctions);
+                                byte[] data = transformClass(className, visitors, classData, preVisitFunctions,
+                                        classReaderOptions.getOrDefault(className, 0));
                                 TransformedClassesBuildItem.TransformedClass transformedClass = new TransformedClassesBuildItem.TransformedClass(
                                         className, data,
                                         classFileName, eager.contains(className));
@@ -256,7 +260,7 @@ public class ClassTransformingBuildStep {
     }
 
     private byte[] transformClass(String className, List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors,
-            byte[] classData, List<BiFunction<String, byte[], byte[]>> preVisitFunctions) {
+            byte[] classData, List<BiFunction<String, byte[], byte[]>> preVisitFunctions, int classReaderOptions) {
         for (BiFunction<String, byte[], byte[]> i : preVisitFunctions) {
             classData = i.apply(className, classData);
             if (classData == null) {
@@ -272,7 +276,7 @@ public class ClassTransformingBuildStep {
             for (BiFunction<String, ClassVisitor, ClassVisitor> i : visitors) {
                 visitor = i.apply(className, visitor);
             }
-            cr.accept(visitor, 0);
+            cr.accept(visitor, classReaderOptions);
             data = writer.toByteArray();
         } else {
             data = classData;

@@ -80,32 +80,38 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
-
-        final Cookie sessionCookie = context.request().getCookie(getSessionCookieName(resolver.resolveConfig(context)));
-
-        // if session already established, try to re-authenticate
-        if (sessionCookie != null) {
-            Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
-            return resolvedContext.onItem()
-                    .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
-                        @Override
-                        public Uni<SecurityIdentity> apply(TenantConfigContext tenantContext) {
-                            return reAuthenticate(sessionCookie, context, identityProviderManager, tenantContext);
-                        }
-                    });
-        }
-
-        final String code = context.request().getParam("code");
-        if (code == null) {
-            return Uni.createFrom().optional(Optional.empty());
-        }
-
-        // start a new session by starting the code flow dance
-        Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
-        return resolvedContext.onItem().transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
+        return resolver.resolveConfig(context).chain(new Function<OidcTenantConfig, Uni<? extends SecurityIdentity>>() {
             @Override
-            public Uni<SecurityIdentity> apply(TenantConfigContext tenantContext) {
-                return performCodeFlow(identityProviderManager, context, tenantContext, code);
+            public Uni<? extends SecurityIdentity> apply(OidcTenantConfig oidcTenantConfig) {
+
+                final Cookie sessionCookie = context.request().getCookie(getSessionCookieName(oidcTenantConfig));
+
+                // if session already established, try to re-authenticate
+                if (sessionCookie != null) {
+                    Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
+                    return resolvedContext.onItem()
+                            .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
+                                @Override
+                                public Uni<SecurityIdentity> apply(TenantConfigContext tenantContext) {
+                                    return reAuthenticate(sessionCookie, context, identityProviderManager, tenantContext);
+                                }
+                            });
+                }
+
+                final String code = context.request().getParam("code");
+                if (code == null) {
+                    return Uni.createFrom().optional(Optional.empty());
+                }
+
+                // start a new session by starting the code flow dance
+                Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
+                return resolvedContext.onItem()
+                        .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
+                            @Override
+                            public Uni<SecurityIdentity> apply(TenantConfigContext tenantContext) {
+                                return performCodeFlow(identityProviderManager, context, tenantContext, code);
+                            }
+                        });
             }
         });
     }

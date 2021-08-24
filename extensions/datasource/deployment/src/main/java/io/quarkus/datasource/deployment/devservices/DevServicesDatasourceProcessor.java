@@ -161,14 +161,6 @@ public class DevServicesDatasourceProcessor {
             };
             QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
             ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
-            Thread closeHookThread = new Thread(closeTask, "Database shutdown thread");
-            Runtime.getRuntime().addShutdownHook(closeHookThread);
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(new Runnable() {
-                @Override
-                public void run() {
-                    Runtime.getRuntime().removeShutdownHook(closeHookThread);
-                }
-            });
         }
         databases = closeableList;
         cachedProperties = propertiesMap;

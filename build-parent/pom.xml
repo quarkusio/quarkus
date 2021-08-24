@@ -501,6 +501,10 @@
                                             <exclude>org.jboss.resteasy:resteasy-context-propagation</exclude>
                                             <exclude>com.google.android:annotations</exclude>
                                             <exclude>org.codehaus.mojo:animal-sniffer-annotations</exclude>
+                                            <!-- JLine 2.x (EOLed) version shouldn't be pulled in,
+                                            to prevent version compatibility issues with the
+                                            Jansi library shipped in Maven -->
+                                            <exclude>jline:jline</exclude>
                                         </excludes>
                                         <includes>
                                             <!-- this is for REST Assured -->

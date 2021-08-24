@@ -33,6 +33,8 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     private List<CompletionCallback> completionCallbacks;
     private List<ConnectionCallback> connectionCallbacks;
 
+    private boolean closed = false;
+
     public AbstractResteasyReactiveContext(H[] handlerChain, H[] abortHandlerChain, ThreadSetupAction requestContext) {
         this.handlers = handlerChain;
         this.abortHandlerChain = abortHandlerChain;
@@ -97,6 +99,10 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     }
 
     public void close() {
+        if (closed) {
+            return;
+        }
+        closed = true;
         //TODO: do we even have any other resources to close?
         if (currentRequestScope != null) {
             currentRequestScope.close();
@@ -167,6 +173,9 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                     } else {
                         handleException(t);
                     }
+                    if (aborted) {
+                        return;
+                    }
                 }
             }
         } catch (Throwable t) {
@@ -175,6 +184,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
             // we need to make sure we don't close the underlying stream in the event loop if the task
             // has been offloaded to the executor
             if ((position == handlers.length && !processingSuspended) || aborted) {
+                exec = null;
                 close();
             } else {
                 if (disasociateRequestScope) {
@@ -183,12 +193,13 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                 }
                 beginAsyncProcessing();
             }
-            synchronized (this) {
-                running = false;
-            }
             if (exec != null) {
                 //outside sync block
                 exec.execute(this);
+            } else {
+                synchronized (this) {
+                    running = false;
+                }
             }
         }
     }

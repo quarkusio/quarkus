@@ -147,6 +147,12 @@ public class SecurityProcessor {
                 isFipsMode ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
                         : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME));
         reflection.produce(new ReflectiveClassBuildItem(true, true,
+                "org.bouncycastle.jcajce.provider.asymmetric.ec.KeyPairGeneratorSpi"));
+        reflection.produce(new ReflectiveClassBuildItem(true, true,
+                "org.bouncycastle.jcajce.provider.asymmetric.ec.KeyPairGeneratorSpi$EC"));
+        reflection.produce(new ReflectiveClassBuildItem(true, true,
+                "org.bouncycastle.jcajce.provider.asymmetric.rsa.KeyPairGeneratorSpi"));
+        reflection.produce(new ReflectiveClassBuildItem(true, true,
                 "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi"));
         reflection.produce(new ReflectiveClassBuildItem(true, true,
                 "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi$SHA256withRSA"));

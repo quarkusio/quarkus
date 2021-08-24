@@ -33,8 +33,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
@@ -263,49 +261,27 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
         T actualClient;
         ResteasyClient client;
 
-        ResteasyClientBuilder resteasyClientBuilder;
-        List<String> noProxyHosts = Arrays.asList(
-                getSystemProperty("http.nonProxyHosts", "localhost|127.*|[::1]").split("\\|"));
+        ResteasyClientBuilder resteasyClientBuilder = builderDelegate;
+
         if (this.proxyHost != null) {
-            resteasyClientBuilder = builderDelegate.defaultProxy(proxyHost, this.proxyPort);
+            resteasyClientBuilder.defaultProxy(proxyHost, this.proxyPort);
         } else {
-            String envProxyHost = getSystemProperty("http.proxyHost", null);
-            boolean isUriMatched = false;
-            if (envProxyHost != null && !noProxyHosts.isEmpty()) {
-                for (String s : noProxyHosts) {
-                    Pattern p = Pattern.compile(s);
-                    Matcher m = p.matcher(baseURI.getHost());
-                    isUriMatched = m.matches();
-                    if (isUriMatched) {
-                        break;
-                    }
-                }
-            }
+            String userProxyHost = Optional.ofNullable(getConfiguration().getProperty(PROPERTY_PROXY_HOST))
+                    .filter(String.class::isInstance).map(String.class::cast).orElse(null);
 
-            if (envProxyHost != null && !isUriMatched) {
-                // Use proxy, if defined in the env variables
-                resteasyClientBuilder = builderDelegate.defaultProxy(envProxyHost,
-                        Integer.parseInt(getSystemProperty("http.proxyPort", "80")));
-            } else {
-                // Search for proxy settings passed in the client builder, if passed and use them if found
-                String userProxyHost = Optional.ofNullable(getConfiguration().getProperty(PROPERTY_PROXY_HOST))
-                        .filter(String.class::isInstance).map(String.class::cast).orElse(null);
+            Integer userProxyPort = Optional.ofNullable(getConfiguration().getProperty(PROPERTY_PROXY_PORT))
+                    .filter(Integer.class::isInstance).map(Integer.class::cast).orElse(null);
 
-                Integer userProxyPort = Optional.ofNullable(getConfiguration().getProperty(PROPERTY_PROXY_PORT))
-                        .filter(Integer.class::isInstance).map(Integer.class::cast).orElse(null);
-
+            // configuration of the builder has precedence over environment variables
+            if (userProxyHost != null && userProxyPort != null) {
                 String userProxyScheme = Optional.ofNullable(getConfiguration().getProperty(PROPERTY_PROXY_SCHEME))
                         .filter(String.class::isInstance).map(String.class::cast).orElse(null);
 
-                if (userProxyHost != null && userProxyPort != null) {
-                    resteasyClientBuilder = builderDelegate.defaultProxy(userProxyHost, userProxyPort, userProxyScheme);
-                } else {
-                    // ProxySelector if applicable
-                    selectHttpProxy().ifPresent(
-                            proxyAddress -> builderDelegate.defaultProxy(proxyAddress.getHostString(), proxyAddress.getPort()));
-
-                    resteasyClientBuilder = builderDelegate;
-                }
+                resteasyClientBuilder.defaultProxy(userProxyHost, userProxyPort, userProxyScheme);
+            } else {
+                selectHttpProxy().ifPresent(
+                        proxyAddress -> resteasyClientBuilder.defaultProxy(proxyAddress.getHostString(),
+                                proxyAddress.getPort()));
             }
         }
 

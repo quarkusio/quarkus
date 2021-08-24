@@ -51,14 +51,14 @@ public class DefaultMediaTypeResource {
     @Produces(MediaType.TEXT_PLAIN)
     @POST
     public Response postIntProduce(String source) throws Exception {
-        return Response.ok().entity(new Integer(8)).build();
+        return Response.ok().entity(8).build();
     }
 
     @Path("postInt")
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
     @POST
     public Response postInt(String source) throws Exception {
-        return Response.ok().entity(new Integer(8)).build();
+        return Response.ok().entity(8).build();
     }
 
     @Path("postIntegerProduce")

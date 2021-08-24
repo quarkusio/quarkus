@@ -73,6 +73,7 @@ public class LocalDateCustomParamConverterProviderTest {
     @Provider
     public static class CustomLocalDateParamConverterProvider implements ParamConverterProvider {
 
+        @SuppressWarnings("unchecked")
         @Override
         public <T> ParamConverter<T> getConverter(Class<T> rawType, Type genericType, Annotation[] annotations) {
             if (rawType == LocalDate.class) {

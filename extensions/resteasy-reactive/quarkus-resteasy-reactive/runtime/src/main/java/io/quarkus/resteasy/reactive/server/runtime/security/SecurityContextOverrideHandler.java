@@ -75,6 +75,7 @@ public class SecurityContextOverrideHandler implements ServerRestHandler {
                             return modified.isUserInRole(role);
                         }
 
+                        @SuppressWarnings("unchecked")
                         @Override
                         public <T extends Credential> T getCredential(Class<T> credentialType) {
                             for (Credential cred : getCredentials()) {
@@ -90,6 +91,7 @@ public class SecurityContextOverrideHandler implements ServerRestHandler {
                             return oldCredentials;
                         }
 
+                        @SuppressWarnings("unchecked")
                         @Override
                         public <T> T getAttribute(String name) {
                             return (T) oldAttributes.get(name);

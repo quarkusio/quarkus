@@ -25,7 +25,34 @@ public class DevServicesConfig {
      * The container image name to use, for container based DevServices providers.
      */
     @ConfigItem(defaultValue = "quay.io/keycloak/keycloak:14.0.0")
-    public Optional<String> imageName;
+    public String imageName;
+
+    /**
+     * Indicates if the Keycloak container managed by Quarkus Dev Services is shared.
+     * When shared, Quarkus looks for running containers using label-based service discovery.
+     * If a matching container is found, it is used, and so a second one is not started.
+     * Otherwise, Dev Services for Keycloak starts a new container.
+     * <p>
+     * The discovery uses the {@code quarkus-dev-service-label} label.
+     * The value is configured using the {@code service-name} property.
+     * <p>
+     * Container sharing is only used in dev mode.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean shared;
+
+    /**
+     * The value of the {@code quarkus-dev-service-keycloak} label attached to the started container.
+     * This property is used when {@code shared} is set to {@code true}.
+     * In this case, before starting a container, Dev Services for Keycloak looks for a container with the
+     * {@code quarkus-dev-service-keycloak} label
+     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise it
+     * starts a new container with the {@code quarkus-dev-service-keycloak} label set to the specified value.
+     * <p>
+     * Container sharing is only used in dev mode.
+     */
+    @ConfigItem(defaultValue = "quarkus")
+    public String serviceName;
 
     /**
      * The class or file system path to a Keycloak realm file which will be used to initialize Keycloak.
@@ -41,8 +68,6 @@ public class DevServicesConfig {
     /**
      * The Keycloak realm.
      * This property will be used to create the realm if the realm file pointed to by the 'realm-path' property does not exist.
-     * Setting this property is recommended even if realm file exists
-     * for `quarkus.oidc.auth-server-url` property be correctly calculated.
      */
     @ConfigItem(defaultValue = "quarkus")
     public String realmName;

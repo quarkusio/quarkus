@@ -19,7 +19,12 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class MavenProjectImportingMultipleBomsFromSinglePlatformTest extends MultiplePlatformBomsTestBase {
+/**
+ * The catalogs used in this test do not clearly separate platform from non-platform extensions.
+ * Which should not be happening in the reality but still may happen because of an oversight or something.
+ * So this test makes sure the code doesn't fail in an unreasonable way at least.
+ */
+public class ExtensionsAppearingInPlatformAndNonPlatformCatalogsTest extends MultiplePlatformBomsTestBase {
 
     private static final String MAIN_PLATFORM_KEY = "org.acme.platform";
 
@@ -40,7 +45,8 @@ public class MavenProjectImportingMultipleBomsFromSinglePlatformTest extends Mul
                 // default bom including quarkus-core + essential metadata
                 .addCoreMember()
                 // foo platform member
-                .newMember("acme-foo-bom").addExtension("acme-foo").release()
+                .newMember("acme-foo-bom").addExtension("acme-foo").addExtension("org.other", "other-extension", "6.0")
+                .release()
                 .stream().platform()
                 // 1.0 STREAM
                 .newStream("1.0")
@@ -48,14 +54,16 @@ public class MavenProjectImportingMultipleBomsFromSinglePlatformTest extends Mul
                 .newRelease("1.0.1")
                 .quarkusVersion("1.1.2")
                 .addCoreMember()
-                .newMember("acme-foo-bom").addExtension("acme-foo").release()
+                .newMember("acme-foo-bom").addExtension("acme-foo").addExtension("org.other", "other-extension", "5.1")
+                .release()
                 .newMember("acme-baz-bom").addExtension("acme-baz").release()
                 .stream()
                 // 1.0.0 release
                 .newRelease("1.0.0")
                 .quarkusVersion("1.1.1")
                 .addCoreMember()
-                .newMember("acme-foo-bom").addExtension("acme-foo").release()
+                .newMember("acme-foo-bom").addExtension("acme-foo").addExtension("org.other", "other-extension", "5.0")
+                .release()
                 .newMember("acme-bar-bom").addExtension("acme-bar").release()
                 .newMember("acme-baz-bom").addExtension("acme-baz").release()
                 .registry()
@@ -122,7 +130,7 @@ public class MavenProjectImportingMultipleBomsFromSinglePlatformTest extends Mul
         createProject(projectDir, Arrays.asList("acme-foo", "other-extension", "other-five-zero"));
 
         final List<ArtifactCoords> expectedExtensions = toPlatformExtensionCoords("acme-foo");
-        expectedExtensions.add(ArtifactCoords.fromString("org.other:other-extension:5.0"));
+        expectedExtensions.add(new ArtifactCoords("org.other", "other-extension", null));
         expectedExtensions.add(ArtifactCoords.fromString("org.other:other-five-zero:5.0"));
         assertModel(projectDir, toPlatformBomCoords("acme-foo-bom"), expectedExtensions, "1.0.0");
     }
@@ -133,7 +141,7 @@ public class MavenProjectImportingMultipleBomsFromSinglePlatformTest extends Mul
         createProject(projectDir, Arrays.asList("acme-foo", "other-extension", "other-six-zero"));
 
         final List<ArtifactCoords> expectedExtensions = toPlatformExtensionCoords("acme-foo");
-        expectedExtensions.add(ArtifactCoords.fromString("org.other:other-extension:6.0"));
+        expectedExtensions.add(new ArtifactCoords("org.other", "other-extension", null));
         expectedExtensions.add(ArtifactCoords.fromString("org.other:other-six-zero:6.0"));
         assertModel(projectDir, toPlatformBomCoords("acme-foo-bom"), expectedExtensions, "2.0.4");
     }
@@ -144,7 +152,7 @@ public class MavenProjectImportingMultipleBomsFromSinglePlatformTest extends Mul
         createProject(projectDir, Arrays.asList("acme-foo", "other-extension", "other-five-one"));
 
         final List<ArtifactCoords> expectedExtensions = toPlatformExtensionCoords("acme-foo");
-        expectedExtensions.add(ArtifactCoords.fromString("org.other:other-extension:5.1"));
+        expectedExtensions.add(new ArtifactCoords("org.other", "other-extension", null));
         expectedExtensions.add(ArtifactCoords.fromString("org.other:other-five-one:5.1"));
         assertModel(projectDir, toPlatformBomCoords("acme-foo-bom"), expectedExtensions, "1.0.1");
     }
@@ -155,7 +163,7 @@ public class MavenProjectImportingMultipleBomsFromSinglePlatformTest extends Mul
         createProject(projectDir, Arrays.asList("acme-foo", "other-extension"));
 
         final List<ArtifactCoords> expectedExtensions = toPlatformExtensionCoords("acme-foo");
-        expectedExtensions.add(ArtifactCoords.fromString("org.other:other-extension:6.0"));
+        expectedExtensions.add(new ArtifactCoords("org.other", "other-extension", null));
         assertModel(projectDir, toPlatformBomCoords("acme-foo-bom"), expectedExtensions, "2.0.4");
     }
 
@@ -165,7 +173,7 @@ public class MavenProjectImportingMultipleBomsFromSinglePlatformTest extends Mul
         createProject(projectDir, Arrays.asList("acme-baz", "acme-foo", "other-extension"));
 
         final List<ArtifactCoords> expectedExtensions = toPlatformExtensionCoords("acme-foo", "acme-baz");
-        expectedExtensions.add(ArtifactCoords.fromString("org.other:other-extension:5.1"));
+        expectedExtensions.add(new ArtifactCoords("org.other", "other-extension", null));
         assertModel(projectDir, toPlatformBomCoords("acme-foo-bom", "acme-baz-bom"), expectedExtensions, "1.0.1");
     }
 
@@ -175,7 +183,7 @@ public class MavenProjectImportingMultipleBomsFromSinglePlatformTest extends Mul
         createProject(projectDir, Arrays.asList("acme-bar", "acme-foo", "other-extension"));
 
         final List<ArtifactCoords> expectedExtensions = toPlatformExtensionCoords("acme-foo", "acme-bar");
-        expectedExtensions.add(ArtifactCoords.fromString("org.other:other-extension:5.0"));
+        expectedExtensions.add(new ArtifactCoords("org.other", "other-extension", null));
         assertModel(projectDir, toPlatformBomCoords("acme-foo-bom", "acme-bar-bom"),
                 expectedExtensions, "1.0.0");
     }

@@ -45,15 +45,15 @@ The following table lists the attributes you can pass to the `create` command:
 | The version of the created project
 
 | `platformGroupId`
-| `io.quarkus`
-| The group id of the target platform. Given that all the existing platforms are coming from `io.quarkus` this one won't practically be used explicitly. But it's still an option.
+| `io.quarkus.platform`
+| The group id of the target platform.
 
 | `platformArtifactId`
-| `quarkus-universe-bom`
-| The artifact id of the target platform BOM. It should be `quarkus-bom` in order to use the locally built Quarkus.
+| `quarkus-bom`
+| The artifact id of the target platform BOM.
 
 | `platformVersion`
-| If it's not specified, the latest one will be resolved.
+| The version currently recommended by the https://quarkus.io/guides/extension-registry-user[Quarkus Extension Registry]
 | The version of the platform you want the project to use. It can also accept a version range, in which case the latest from the specified range will be used.
 
 | `className`
@@ -70,7 +70,7 @@ The following table lists the attributes you can pass to the `create` command:
 
 |===
 
-By default, the command will target the latest version of `quarkus-universe-bom` (unless specific coordinates have been specified). If you run offline however, it will look for the latest locally available and if `quarkus-universe-bom` (satisfying the default version range which is currently up to 2.0) is not available locally, it will fallback to the bundled platform based on `quarkus-bom` (the version will match the version of the plugin).
+By default, the command will target the `io.quarkus.platform:quarkus-bom:{quarkus-version}` platform release (unless the coordinates of the desired platform release have been specified).
 
 If you decide to generate a REST resource (using the `className` attribute), the endpoint is exposed at: `http://localhost:8080/$path`.
 If you use the default `path`, the URL is: http://localhost:8080/hello.
@@ -425,8 +425,8 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 <dependencyManagement>
     <dependencies>
         <dependency> <1>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-universe-bom</artifactId>
+            <groupId>io.quarkus.platform</groupId>
+            <artifactId>quarkus-bom</artifactId>
             <version>${quarkus.platform.version}</version>
             <type>pom</type>
             <scope>import</scope>
@@ -437,9 +437,9 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 <build>
     <plugins>
         <plugin> <2>
-            <groupId>io.quarkus</groupId>
+            <groupId>io.quarkus.platform</groupId>
             <artifactId>quarkus-maven-plugin</artifactId>
-            <version>${quarkus-plugin.version}</version>
+            <version>${quarkus.platform.version}</version>
             <extensions>true</extensions> <3>
             <executions>
                 <execution>

@@ -58,7 +58,7 @@ public abstract class AsyncResponseFilter implements ResteasyReactiveContainerRe
             ExecutorService executor = Executors.newSingleThreadExecutor();
             executor.submit(() -> {
                 try {
-                    Thread.sleep(2000);
+                    Thread.sleep(300);
                 } catch (InterruptedException e) {
                     LOG.debug("Error:", e);
                 }

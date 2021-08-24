@@ -29,9 +29,9 @@ import io.quarkus.runtime.configuration.ConfigUtils;
  * It uses https://quay.io/repository/artemiscloud/activemq-artemis-broker as image.
  * See https://artemiscloud.io/ for details.
  */
-public class DevServicesAmqpProcessor {
+public class AmqpDevServicesProcessor {
 
-    private static final Logger log = Logger.getLogger(DevServicesAmqpProcessor.class);
+    private static final Logger log = Logger.getLogger(AmqpDevServicesProcessor.class);
 
     /**
      * Label to add to shared Dev Service for AMQP running in containers.
@@ -86,10 +86,10 @@ public class DevServicesAmqpProcessor {
             artemis = new DevServicesAmqpBrokerBuildItem(broker.host, broker.port, broker.user, broker.password);
 
             if (broker.isOwner()) {
-                log.infof(
-                        "Dev Services for AMQP started. Other Quarkus applications in dev mode will find the "
-                                + "broker automatically. For Quarkus applications in production mode, you can connect to"
-                                + " this by starting your application with -Damqp.host=%s -Damqp.port=%d -Damqp.user=%s -Damqp.password=%s",
+                log.info("Dev Services for AMQP started.");
+                log.infof("Other Quarkus applications in dev mode will find the "
+                        + "broker automatically. For Quarkus applications in production mode, you can connect to"
+                        + " this by starting your application with -Damqp.host=%s -Damqp.port=%d -Damqp.user=%s -Damqp.password=%s",
                         broker.host, broker.port, broker.user, broker.password);
             }
         }
@@ -100,6 +100,8 @@ public class DevServicesAmqpProcessor {
             Runnable closeTask = () -> {
                 if (closeable != null) {
                     shutdownBroker();
+
+                    log.info("Dev Services for AMQP shut down.");
                 }
                 first = true;
                 closeable = null;
@@ -107,9 +109,6 @@ public class DevServicesAmqpProcessor {
             };
             QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
             ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
-            Thread closeHookThread = new Thread(closeTask, "AMQP container shutdown thread");
-            Runtime.getRuntime().addShutdownHook(closeHookThread);
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(() -> Runtime.getRuntime().removeShutdownHook(closeHookThread));
         }
         cfg = configuration;
         return artemis;
@@ -130,19 +129,19 @@ public class DevServicesAmqpProcessor {
     private AmqpBroker startAmqpBroker(AmqpDevServiceCfg config, LaunchModeBuildItem launchMode) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
-            log.debug("Not starting dev services for AMQP, as it has been disabled in the config.");
+            log.debug("Not starting Dev Services for AMQP, as it has been disabled in the config.");
             return null;
         }
 
         // Check if amqp.port or amqp.host are set
         if (ConfigUtils.isPropertyPresent(AMQP_HOST_PROP) || ConfigUtils.isPropertyPresent(AMQP_PORT_PROP)) {
-            log.debug("Not starting dev services for AMQP, the amqp.host and/or amqp.port are configured.");
+            log.debug("Not starting Dev Services for AMQP, the amqp.host and/or amqp.port are configured.");
             return null;
         }
 
         // Verify that we have AMQP channels without host and port
         if (!hasAmqpChannelWithoutHostAndPort()) {
-            log.debug("Not starting dev services for AMQP, all the channels are configured.");
+            log.debug("Not starting Dev Services for AMQP, all the channels are configured.");
             return null;
         }
 

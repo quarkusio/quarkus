@@ -3,11 +3,11 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Dev Services for OpenId Connect
+= Dev Services for OpenId Connect (OIDC)
 
 include::./attributes.adoc[]
 
-This guide covers the Dev Services for OpenId Connect Keycloak provider and explains how to support other OpenId Connect providers.
+This guide covers the Dev Services for OpenId Connect (OIDC) Keycloak provider and explains how to support other OpenId Connect providers.
 
 == Introduction
 

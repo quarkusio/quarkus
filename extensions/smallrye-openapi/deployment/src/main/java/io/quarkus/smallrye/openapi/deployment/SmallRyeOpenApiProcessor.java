@@ -496,17 +496,22 @@ public class SmallRyeOpenApiProcessor {
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
 
         List<AnnotationScannerExtension> extensions = new ArrayList<>();
+
         // Add the RESTEasy extension if the capability is present
+        String defaultPath = httpRootPathBuildItem.getRootPath();
         if (capabilities.isPresent(Capability.RESTEASY)) {
             extensions.add(new RESTEasyExtension(indexView));
+            if (resteasyJaxrsConfig.isPresent()) {
+                defaultPath = resteasyJaxrsConfig.get().getRootPath();
+            }
+        } else if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
+            extensions.add(new RESTEasyExtension(indexView));
+            Optional<String> maybePath = config.getOptionalValue("quarkus.resteasy-reactive.path", String.class);
+            if (maybePath.isPresent()) {
+                defaultPath = maybePath.get();
+            }
         }
 
-        String defaultPath;
-        if (resteasyJaxrsConfig.isPresent()) {
-            defaultPath = resteasyJaxrsConfig.get().getRootPath();
-        } else {
-            defaultPath = httpRootPathBuildItem.getRootPath();
-        }
         if (defaultPath != null && !"/".equals(defaultPath)) {
             extensions.add(new CustomPathExtension(defaultPath));
         }

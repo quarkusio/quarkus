@@ -177,7 +177,7 @@ A https://quarkus.io/guides/platform#quarkus-platform-bom[Quarkus Platform relea
 +
 For example:
 +
-- Given the `2.0.0.Final` version of the CLI, specifying `-P :quarkus-universe-bom:` is equivalent to `-P io.quarkus:quarkus-universe-bom:2.0.0.Final`.
+- Given the `2.0.0.Final` version of the CLI, specifying `-P :quarkus-bom:` is equivalent to `-P io.quarkus.platform:quarkus-bom:2.0.0.Final`.
 - Specifying `-P 999-SNAPSHOT` is equivalent to `-P io.quarkus:quarkus-bom:999-SNAPSHOT`
 +
 Note: default values are subject to change. Using the `--dry-run` option will show you the computed value.

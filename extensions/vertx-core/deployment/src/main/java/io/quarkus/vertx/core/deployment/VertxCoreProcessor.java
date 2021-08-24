@@ -147,8 +147,8 @@ class VertxCoreProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ThreadFactoryBuildItem createVertxThreadFactory(VertxCoreRecorder recorder) {
-        return new ThreadFactoryBuildItem(recorder.createThreadFactory());
+    ThreadFactoryBuildItem createVertxThreadFactory(VertxCoreRecorder recorder, LaunchModeBuildItem launchMode) {
+        return new ThreadFactoryBuildItem(recorder.createThreadFactory(launchMode.getLaunchMode()));
     }
 
     @BuildStep

@@ -3,7 +3,6 @@ package io.quarkus.rest.client.reactive.runtime;
 import java.io.IOException;
 import java.util.List;
 
-import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientResponseContext;
 import javax.ws.rs.client.ClientResponseFilter;
@@ -12,6 +11,7 @@ import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.jboss.resteasy.reactive.client.handlers.ClientResponseCompleteRestHandler;
 import org.jboss.resteasy.reactive.client.impl.ClientRequestContextImpl;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
+import org.jboss.resteasy.reactive.common.core.UnwrappableException;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 
 public class MicroProfileRestClientResponseFilter implements ClientResponseFilter {
@@ -35,7 +35,7 @@ public class MicroProfileRestClientResponseFilter implements ClientResponseFilte
                 ResponseImpl response = ClientResponseCompleteRestHandler.mapToResponse(restClientContext, false);
                 Throwable throwable = exceptionMapper.toThrowable(response);
                 if (throwable != null) {
-                    throw new ProcessingException(throwable);
+                    throw new UnwrappableException(throwable);
                 }
             }
         }

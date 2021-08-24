@@ -33,6 +33,8 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     private List<CompletionCallback> completionCallbacks;
     private List<ConnectionCallback> connectionCallbacks;
 
+    private boolean closed = false;
+
     public AbstractResteasyReactiveContext(H[] handlerChain, H[] abortHandlerChain, ThreadSetupAction requestContext) {
         this.handlers = handlerChain;
         this.abortHandlerChain = abortHandlerChain;
@@ -97,6 +99,10 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     }
 
     public void close() {
+        if (closed) {
+            return;
+        }
+        closed = true;
         //TODO: do we even have any other resources to close?
         if (currentRequestScope != null) {
             currentRequestScope.close();
@@ -125,6 +131,8 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         //if this is a blocking target we don't activate for the initial non-blocking part
         //unless there are pre-mapping filters as these may require CDI
         boolean disasociateRequestScope = false;
+        boolean aborted = false;
+        Executor exec = null;
         try {
             while (position < handlers.length) {
                 int pos = position;
@@ -132,7 +140,6 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                 try {
                     handlers[pos].handle((T) this);
                     if (suspended) {
-                        Executor exec = null;
                         synchronized (this) {
                             if (isRequestScopeManagementRequired()) {
                                 if (requestScopeActivated) {
@@ -151,40 +158,33 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                                 exec = this.executor;
                                 // prevent future suspensions from re-submitting the task
                                 this.executor = null;
+                                return;
                             } else if (suspended) {
                                 running = false;
                                 processingSuspended = true;
                                 return;
                             }
                         }
-                        if (exec != null) {
-                            //outside sync block
-                            exec.execute(this);
-                            processingSuspended = true;
-                            return;
-                        }
                     }
                 } catch (Throwable t) {
-                    boolean over = handlers == abortHandlerChain;
+                    aborted = handlers == abortHandlerChain;
                     if (t instanceof PreserveTargetException) {
                         handleException(t.getCause(), true);
                     } else {
                         handleException(t);
                     }
-                    if (over) {
-                        running = false;
+                    if (aborted) {
                         return;
                     }
                 }
             }
-            running = false;
         } catch (Throwable t) {
             handleUnrecoverableError(t);
-            running = false;
         } finally {
             // we need to make sure we don't close the underlying stream in the event loop if the task
             // has been offloaded to the executor
-            if (position == handlers.length && !processingSuspended) {
+            if ((position == handlers.length && !processingSuspended) || aborted) {
+                exec = null;
                 close();
             } else {
                 if (disasociateRequestScope) {
@@ -192,6 +192,14 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                     currentRequestScope.deactivate();
                 }
                 beginAsyncProcessing();
+            }
+            if (exec != null) {
+                //outside sync block
+                exec.execute(this);
+            } else {
+                synchronized (this) {
+                    running = false;
+                }
             }
         }
     }
@@ -293,20 +301,28 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
      */
     public void handleException(Throwable t) {
         if (handlers == abortHandlerChain) {
-            handleUnrecoverableError(t);
+            handleUnrecoverableError(unwrapException(t));
         } else {
-            this.throwable = t;
+            this.throwable = unwrapException(t);
             restart(abortHandlerChain);
         }
     }
 
     public void handleException(Throwable t, boolean keepSameTarget) {
         if (handlers == abortHandlerChain) {
-            handleUnrecoverableError(t);
+            handleUnrecoverableError(unwrapException(t));
         } else {
-            this.throwable = t;
+            this.throwable = unwrapException(t);
             restart(abortHandlerChain, keepSameTarget);
         }
+    }
+
+    private Throwable unwrapException(Throwable t) {
+        if (t instanceof UnwrappableException) {
+            return t.getCause();
+        }
+
+        return t;
     }
 
     protected abstract void handleUnrecoverableError(Throwable throwable);

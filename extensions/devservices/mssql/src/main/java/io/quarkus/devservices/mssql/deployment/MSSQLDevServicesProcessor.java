@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import org.jboss.logging.Logger;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.MSSQLServerContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -19,6 +20,8 @@ import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.runtime.LaunchMode;
 
 public class MSSQLDevServicesProcessor {
+
+    private static final Logger LOG = Logger.getLogger(MSSQLDevServicesProcessor.class);
 
     /**
      * If you update this remember to update the container-license-acceptance.txt in the tests
@@ -38,12 +41,17 @@ public class MSSQLDevServicesProcessor {
                                 .withPassword(password.orElse("Quarkuspassword1"));
                 additionalProperties.forEach(container::withUrlParam);
                 container.start();
+
+                LOG.info("Dev Services for Microsoft SQL Server started.");
+
                 return new RunningDevServicesDatasource(container.getJdbcUrl(), container.getUsername(),
                         container.getPassword(),
                         new Closeable() {
                             @Override
                             public void close() throws IOException {
                                 container.stop();
+
+                                LOG.info("Dev Services for Microsoft SQL Server shut down.");
                             }
                         });
             }

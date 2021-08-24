@@ -111,9 +111,6 @@ public class DevServicesKafkaProcessor {
             };
             QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
             ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
-            Thread closeHookThread = new Thread(closeTask, "Kafka container shutdown thread");
-            Runtime.getRuntime().addShutdownHook(closeHookThread);
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(() -> Runtime.getRuntime().removeShutdownHook(closeHookThread));
         }
         cfg = configuration;
 

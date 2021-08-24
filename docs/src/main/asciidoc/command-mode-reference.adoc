@@ -112,20 +112,21 @@ thread (A non-command mode application is essentially just running an applicatio
 If you want to shut down a running application and you are not in the main thread then you should call `Quarkus.asyncExit`
 in order to unblock the main thread and initiate the shutdown process.
 
-=== Dev mode
+=== Development Mode
 
-Also for command mode applications the dev mode is supported. When running `mvn compile quarkus:dev`, the command mode application is executed and on press of the `Space bar` key, is restarted.
+Also for command mode applications the dev mode is supported. When you run `mvn quarkus:dev`, the command mode application is executed.
 
-As command mode applications will often require arguments to be passed on the commandline, this is also possible in dev mode via:
+As command mode applications will often require arguments to be passed on the commandline, this is also possible in dev mode via the `quarkus.args` system property. For example `mvn quarkus:dev -Dquarkus.args='--help'` and the same can be achieved with Gradle: `./gradlew quarkusDev --quarkus-args='--help'`.
 
+You should see the following down the bottom of the screen after the application is stopped: 
+
+[source]
 ----
-mvn compile quarkus:dev -Dquarkus.args='--help'
+--
+Press [space] to restart, [e] to edit command line args (currently '-w --tags 1.0.1.Final'), [r] to resume testing, [o] Toggle test output, [h] for more options>
 ----
 
-The same can be achieved with Gradle:
-
-----
-./gradlew quarkusDev --quarkus-args='--help'
-----
+You can press the `Space bar` key and the application will be started again.
+You can also use the `e` hotkey to edit the command line arguments and restart your application.
 
 

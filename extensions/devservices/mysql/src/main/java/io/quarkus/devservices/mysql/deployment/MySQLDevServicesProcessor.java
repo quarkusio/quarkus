@@ -1,4 +1,4 @@
-package io.quarkus.devservices.postgresql.deployment;
+package io.quarkus.devservices.mysql.deployment;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import org.jboss.logging.Logger;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -18,6 +19,8 @@ import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.runtime.LaunchMode;
 
 public class MySQLDevServicesProcessor {
+
+    private static final Logger LOG = Logger.getLogger(MySQLDevServicesProcessor.class);
 
     public static final String TAG = "8.0.24";
 
@@ -36,12 +39,17 @@ public class MySQLDevServicesProcessor {
                                 .withDatabaseName(datasourceName.orElse("default"));
                 additionalProperties.forEach(container::withUrlParam);
                 container.start();
+
+                LOG.info("Dev Services for MySQL started.");
+
                 return new RunningDevServicesDatasource(container.getJdbcUrl(), container.getUsername(),
                         container.getPassword(),
                         new Closeable() {
                             @Override
                             public void close() throws IOException {
                                 container.stop();
+
+                                LOG.info("Dev Services for MySQL shut down.");
                             }
                         });
             }

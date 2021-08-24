@@ -381,14 +381,14 @@ or if you are using the Gradle Kotlin DSL:
 tasks.quarkusBuild {
     nativeArgs {
         "container-build" to true <1>
-        "buildImage" to "quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor}" <2>
-        "quarkus.native.java-home" to "/opt/java-11/"
+        "build-image" to "quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor}" <2>
+        "java-home" to "/opt/java-11/"
     }
 }
 ----
 
-<1> Set `quarkus.native.containerBuild` property to `true`
-<2> Set `quarkus.native.buildImage` property to `quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor}`
+<1> Set `quarkus.native.container-build` property to `true`
+<2> Set `quarkus.native.build-image` property to `quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor}`
 
 [WARNING]
 ====

@@ -93,14 +93,6 @@ public class DevServicesVaultProcessor {
             };
             QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
             ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
-            Thread closeHookThread = new Thread(closeTask, "Vault container shutdown thread");
-            Runtime.getRuntime().addShutdownHook(closeHookThread);
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(new Runnable() {
-                @Override
-                public void run() {
-                    Runtime.getRuntime().removeShutdownHook(closeHookThread);
-                }
-            });
         }
         for (Map.Entry<String, String> entry : connectionProperties.entrySet()) {
             devConfig.produce(new DevServicesConfigResultBuildItem(entry.getKey(), entry.getValue()));

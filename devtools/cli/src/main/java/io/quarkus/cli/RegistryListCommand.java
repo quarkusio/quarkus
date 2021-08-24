@@ -28,7 +28,7 @@ public class RegistryListCommand extends BaseRegistryCommand {
     public Integer call() throws Exception {
 
         registryClient.refreshRegistryCache(output);
-        final RegistriesConfig config = RegistriesConfigLocator.resolveConfig();
+        final RegistriesConfig config = registryClient.resolveConfig();
 
         final ExtensionCatalogResolver catalogResolver = streams ? registryClient.getExtensionCatalogResolver(output) : null;
 

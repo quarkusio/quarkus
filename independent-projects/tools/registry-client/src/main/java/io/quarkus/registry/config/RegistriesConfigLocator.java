@@ -105,6 +105,11 @@ public class RegistriesConfigLocator {
         }
     }
 
+    /**
+     * Returns the registry client configuration file or null, if the file could not be found.
+     *
+     * @return the registry client configuration file or null, if the file could not be found
+     */
     public static Path locateConfigYaml() {
         final String prop = PropertiesUtil.getProperty(CONFIG_FILE_PATH_PROPERTY);
         Path configYaml;
@@ -120,8 +125,17 @@ public class RegistriesConfigLocator {
         if (Files.exists(configYaml)) {
             return configYaml;
         }
-        configYaml = Paths.get(PropertiesUtil.getProperty("user.home")).resolve(CONFIG_RELATIVE_PATH);
+        configYaml = getDefaultConfigYamlLocation();
         return Files.exists(configYaml) ? configYaml : null;
+    }
+
+    /**
+     * Returns the default location of the registry client configuration file.
+     *
+     * @return the default location of the registry client configuration file
+     */
+    public static Path getDefaultConfigYamlLocation() {
+        return Paths.get(PropertiesUtil.getProperty("user.home")).resolve(CONFIG_RELATIVE_PATH);
     }
 
     static RegistriesConfig completeRequiredConfig(RegistriesConfig original) {

@@ -176,6 +176,10 @@ public class QuarkusProjectHelper {
         return toolsConfig == null ? toolsConfig = RegistriesConfigLocator.resolveConfig() : toolsConfig;
     }
 
+    public static void setToolsConfig(RegistriesConfig config) {
+        toolsConfig = config;
+    }
+
     public static void reset() {
         initRegistryClientEnabled();
         toolsConfig = null;

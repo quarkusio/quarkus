@@ -21,7 +21,7 @@ public class OriginSelector {
         select(0, new OriginCombination());
 
         // log all the complete combincations
-        //System.out.println("OriginSelector.calculateCompatibleCombinations of " + extOrigins.size() + " extensions");
+        //System.out.println("OriginSelector.calculateCompatibleCombinations of " + extOrigins.size() + " extensions, complete combinations: " + completeCombinations.size());
         //if (completeCombinations.isEmpty()) {
         //    System.out.println("  none");
         //} else {
@@ -33,7 +33,6 @@ public class OriginSelector {
         //                        " - " + o.getCatalog().getBom() + " " + o.getCatalog().isPlatform() + " " + o.getPreference()));
         //    }
         //}
-
     }
 
     public OriginCombination getRecommendedCombination() {
@@ -62,7 +61,7 @@ public class OriginSelector {
         for (OriginWithPreference o : s.getCollectedOrigins()) {
             combinationScore += Math.pow(extOrigins.size(),
                     highestRegistryPreference + 1 - o.getPreference().registryPreference)
-                    * ((double) (Integer.MAX_VALUE + 1 - o.getPreference().platformPreference) / Integer.MAX_VALUE);
+                    * ((((double) Integer.MAX_VALUE) + 1 - o.getPreference().platformPreference) / Integer.MAX_VALUE);
         }
         return combinationScore;
     }

@@ -247,6 +247,7 @@ public class ResteasyReactiveProcessor {
         unremoveableBeans.produce(UnremovableBeanBuildItem.beanClassNames(beanParams.toArray(new String[0])));
     }
 
+    @SuppressWarnings("unchecked")
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public void setupEndpoints(Capabilities capabilities, BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,

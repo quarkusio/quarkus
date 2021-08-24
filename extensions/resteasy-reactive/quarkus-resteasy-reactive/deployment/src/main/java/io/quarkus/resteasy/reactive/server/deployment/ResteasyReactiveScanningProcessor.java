@@ -96,6 +96,7 @@ public class ResteasyReactiveScanningProcessor {
         });
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @BuildStep
     public ExceptionMappersBuildItem scanForExceptionMappers(CombinedIndexBuildItem combinedIndexBuildItem,
             ApplicationResultBuildItem applicationResultBuildItem,
@@ -202,6 +203,7 @@ public class ResteasyReactiveScanningProcessor {
         }
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @BuildStep
     public ContextResolversBuildItem scanForContextResolvers(CombinedIndexBuildItem combinedIndexBuildItem,
             ApplicationResultBuildItem applicationResultBuildItem,

@@ -66,6 +66,7 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
         throw sneakyThrow(throwable);
     }
 
+    @SuppressWarnings("unchecked")
     private <E extends Throwable> RuntimeException sneakyThrow(Throwable e) throws E {
         throw (E) e;
     }

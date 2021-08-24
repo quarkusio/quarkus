@@ -54,6 +54,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -490,6 +491,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
             String[] produces = extractProducesConsumesValues(currentMethodInfo.annotation(PRODUCES), classProduces);
             produces = applyDefaultProduces(produces, nonAsyncReturnType);
+            produces = addDefaultCharsets(produces);
 
             String sseElementType = classSseElementType;
             AnnotationInstance sseElementTypeAnnotation = currentMethodInfo.annotation(REST_SSE_ELEMENT_TYPE);
@@ -635,6 +637,22 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return applyAdditionalDefaults(nonAsyncReturnType);
     }
 
+    // see https://github.com/quarkusio/quarkus/issues/19535
+    private String[] addDefaultCharsets(String[] produces) {
+        if ((produces == null) || (produces.length == 0)) {
+            return produces;
+        }
+        List<String> result = new ArrayList<>(produces.length);
+        for (String p : produces) {
+            if (p.equals(MediaType.TEXT_PLAIN)) {
+                result.add(MediaType.TEXT_PLAIN + ";charset=" + StandardCharsets.UTF_8.name());
+            } else {
+                result.add(p);
+            }
+        }
+        return result.toArray(EMPTY_STRING_ARRAY);
+    }
+
     protected String[] applyAdditionalDefaults(Type nonAsyncReturnType) {
         // FIXME: primitives
         if (STRING.equals(nonAsyncReturnType.name()))
@@ -733,7 +751,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     result.add(t.trim());
                 }
             }
-            return result.toArray(new String[0]);
+            return result.toArray(EMPTY_STRING_ARRAY);
         } else {
             return originalStrings;
         }

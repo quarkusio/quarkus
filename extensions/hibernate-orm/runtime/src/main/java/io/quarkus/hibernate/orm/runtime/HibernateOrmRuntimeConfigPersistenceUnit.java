@@ -153,7 +153,7 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
          * If set, Hibernate will log queries that took more than specified number of milliseconds to execute.
          */
         @ConfigItem
-        public Optional<Long> queriesSlowerThanMs;
+        public Optional<Long> queriesSlowerThanMs = Optional.empty();
 
         public boolean isAnyPropertySet() {
             return sql || !formatSql || jdbcWarnings.isPresent() || queriesSlowerThanMs.isPresent();

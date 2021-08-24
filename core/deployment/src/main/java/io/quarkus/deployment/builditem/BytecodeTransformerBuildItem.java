@@ -40,6 +40,8 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
 
     final boolean cacheable;
 
+    final int classReaderOptions;
+
     public BytecodeTransformerBuildItem(String classToTransform,
             BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction) {
         this(classToTransform, visitorFunction, null);
@@ -75,6 +77,7 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
         this.requireConstPoolEntry = requireConstPoolEntry;
         this.cacheable = cacheable;
         this.inputTransformer = null;
+        this.classReaderOptions = 0;
     }
 
     public BytecodeTransformerBuildItem(Builder builder) {
@@ -84,6 +87,7 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
         this.requireConstPoolEntry = builder.requireConstPoolEntry;
         this.cacheable = builder.cacheable;
         this.inputTransformer = builder.inputTransformer;
+        this.classReaderOptions = builder.classReaderOptions;
         if (visitorFunction == null && inputTransformer == null) {
             throw new IllegalArgumentException("One of either visitorFunction or inputTransformer must be set");
         }
@@ -109,6 +113,10 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
         return cacheable;
     }
 
+    public int getClassReaderOptions() {
+        return classReaderOptions;
+    }
+
     public BiFunction<String, byte[], byte[]> getInputTransformer() {
         return inputTransformer;
     }
@@ -120,6 +128,7 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
         private Set<String> requireConstPoolEntry = null;
         private boolean eager = false;
         private boolean cacheable = false;
+        private int classReaderOptions = 0;
 
         public Builder setInputTransformer(BiFunction<String, byte[], byte[]> inputTransformer) {
             this.inputTransformer = inputTransformer;
@@ -148,6 +157,11 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
 
         public Builder setCacheable(boolean cacheable) {
             this.cacheable = cacheable;
+            return this;
+        }
+
+        public Builder setClassReaderOptions(int classReaderOptions) {
+            this.classReaderOptions = classReaderOptions;
             return this;
         }
 

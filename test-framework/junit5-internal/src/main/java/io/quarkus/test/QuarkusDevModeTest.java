@@ -159,6 +159,10 @@ public class QuarkusDevModeTest
         return inMemoryLogHandler.records;
     }
 
+    public void clearLogRecords() {
+        inMemoryLogHandler.clearRecords();
+    }
+
     public QuarkusDevModeTest setBuildSystemProperty(String name, String value) {
         buildSystemProperties.put(name, value);
         return this;

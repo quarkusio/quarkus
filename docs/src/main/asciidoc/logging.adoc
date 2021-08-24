@@ -9,7 +9,7 @@ include::./attributes.adoc[]
 
 This guide explains logging and how to configure it.
 
-Internally, Quarkus uses JBoss Log Manager and the JBoss Logging facade. +
+Internally, Quarkus uses JBoss Log Manager and the JBoss Logging facade.
 You can use the JBoss Logging facade inside your code as it's already provided,
 or any of the supported Logging API listed in the next chapter as Quarkus will send them to JBoss Log Manager.
 
@@ -50,6 +50,34 @@ public class ExampleResource {
 ----
 
 NOTE: If you use JBoss Logging but one of your libraries uses a different logging API, you may need to configure a link:#logging-adapters[Logging Adapter].
+
+=== Logging with Panache
+
+Instead of declaring a `Logger` field, you can use the simplified logging API:
+
+[source,java]
+----
+package com.example;
+
+import io.quarkus.logging.Log; // <1>
+
+class MyService { // <2>
+    public void doSomething() {
+        Log.info("Simple!"); // <3>
+    }
+}
+----
+<1> The `io.quarkus.logging.Log` class mirrors the JBoss Logging API, except all methods are `static`.
+<2> Note that the class doesn't declare a logger field.
+This is because during application build, a `private static final org.jboss.logging.Logger` field is created automatically, in each class that uses the `Log` API.
+The fully qualified name of the class that calls the `Log` methods is used as a logger name.
+In this example, the logger name would be `com.example.MyService`.
+<3> Finally, during application build, all calls to `Log` methods are rewritten to regular JBoss Logging calls on the logger field.
+
+WARNING: Only use the `Log` API in application classes, not in external dependencies.
+`Log` method calls that are not processed by Quarkus at build time will throw an exception.
+
+=== Injecting a Logger
 
 You can also inject a configured `org.jboss.logging.Logger` instance in your beans and resource classes.
 

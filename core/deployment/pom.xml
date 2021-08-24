@@ -39,6 +39,10 @@
             <artifactId>asm</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-commons</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-development-mode-spi</artifactId>
         </dependency>

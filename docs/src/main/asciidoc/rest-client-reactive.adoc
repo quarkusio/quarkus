@@ -256,9 +256,72 @@ There are two interesting parts in this listing:
 <1> the client stub is injected with the `@RestClient` annotation instead of the usual CDI `@Inject`
 <2> the call we are making with the client is blocking, hence we need the `@Blocking` annotation on the REST endpoint
 
+== Programmatic client creation with RestClientBuilder
+Instead of annotating the client with `@RegisterRestClient`, and injecting
+a client with `@RestClient`, you can also create REST Client programmatically.
+You do that with `RestClientBuilder`.
+
+With this approach the client interface could look as follows:
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
+import java.util.Set;
+
+@Path("/v2")
+public interface CountriesService {
+
+    @GET
+    @Path("/name/{region}")
+    Set<Country> getByRegion(String region, @QueryParam("city") String city);
+}
+----
+
+And the service as follows:
+[source,java]
+----
+package org.acme.rest.client;
+
+import io.smallrye.common.annotation.Blocking;
+import org.jboss.resteasy.reactive.RestPath;
+
+import javax.annotation.PostConstruct;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import java.util.Set;
+
+import org.eclipse.microprofile.rest.client.RestClientBuilder;
+
+@Path("/country")
+public class CountriesResource {
+
+    private CountriesService countriesService;
+
+    @PostConstruct
+    public void setUp(){
+        countriesService = RestClientBuilder.newBuilder()
+            .baseUrl("https://restcountries.eu/rest")
+            .build(CountriesService.class);
+    }
+
+    @GET
+    @Path("/name/{name}")
+    @Blocking
+    public Set<Country> name(String name) {
+        return countriesService.getByName(name);
+    }
+}
+
+----
+
 == Update the test
 
-We also need to update the functional test to reflect the changes made to the endpoint.
+Next, we need to update the functional test to reflect the changes made to the endpoint.
 Edit the `src/test/java/org/acme/rest/client/CountriesResourceTest.java` file and change the content of the `testCountryNameEndpoint` method to:
 
 

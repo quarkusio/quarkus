@@ -198,7 +198,7 @@ public class OpenshiftProcessor {
                 .findFirst().orElse(DEFAULT_HTTP_PORT);
         result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyHttpGetActionPortDecorator(name, name, port)));
 
-        // Hanlde non-s2i
+        // Handle non-s2i
         if (!capabilities.isPresent(Capability.CONTAINER_IMAGE_S2I)
                 && !capabilities.isPresent("io.quarkus.openshift")
                 && !capabilities.isPresent(Capability.CONTAINER_IMAGE_OPENSHIFT)) {

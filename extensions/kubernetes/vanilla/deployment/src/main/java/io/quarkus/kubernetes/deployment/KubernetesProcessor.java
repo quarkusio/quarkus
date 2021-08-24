@@ -96,11 +96,6 @@ class KubernetesProcessor {
         List<ConfiguratorBuildItem> allConfigurationRegistry = new ArrayList<>(configurators);
         List<DecoratorBuildItem> allDecorators = new ArrayList<>(decorators);
 
-        if (kubernetesPorts.isEmpty()) {
-            log.debug("The service is not an HTTP service so no Kubernetes manifests will be generated");
-            return;
-        }
-
         final Path root;
         try {
             root = Files.createTempDirectory("quarkus-kubernetes");

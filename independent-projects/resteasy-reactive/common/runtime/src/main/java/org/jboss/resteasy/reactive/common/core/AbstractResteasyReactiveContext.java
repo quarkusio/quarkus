@@ -32,6 +32,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     private ThreadSetupAction.ThreadState currentRequestScope;
     private List<CompletionCallback> completionCallbacks;
     private List<ConnectionCallback> connectionCallbacks;
+    private boolean abortHandlerChainStarted;
 
     private boolean closed = false;
 
@@ -158,7 +159,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                         }
                     }
                 } catch (Throwable t) {
-                    aborted = handlers == abortHandlerChain;
+                    aborted = abortHandlerChainStarted;
                     if (t instanceof PreserveTargetException) {
                         handleException(t.getCause(), true);
                     } else {
@@ -303,19 +304,21 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
      * a response result and switch to the abort chain
      */
     public void handleException(Throwable t) {
-        if (handlers == abortHandlerChain) {
+        if (abortHandlerChainStarted) {
             handleUnrecoverableError(unwrapException(t));
         } else {
             this.throwable = unwrapException(t);
+            abortHandlerChainStarted = true;
             restart(abortHandlerChain);
         }
     }
 
     public void handleException(Throwable t, boolean keepSameTarget) {
-        if (handlers == abortHandlerChain) {
+        if (abortHandlerChainStarted) {
             handleUnrecoverableError(unwrapException(t));
         } else {
             this.throwable = unwrapException(t);
+            abortHandlerChainStarted = true;
             restart(abortHandlerChain, keepSameTarget);
         }
     }
@@ -382,5 +385,9 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         if (connectionCallbacks == null)
             connectionCallbacks = new ArrayList<>();
         connectionCallbacks.add(callback);
+    }
+
+    public void setAbortHandlerChainStarted(boolean value) {
+        abortHandlerChainStarted = value;
     }
 }

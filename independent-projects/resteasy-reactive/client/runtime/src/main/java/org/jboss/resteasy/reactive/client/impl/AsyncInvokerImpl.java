@@ -256,7 +256,8 @@ public class AsyncInvokerImpl implements AsyncInvoker, CompletionStageRxInvoker 
         RestClientRequestContext restClientRequestContext = new RestClientRequestContext(restClient, httpClient, httpMethodName,
                 uri, requestSpec.configuration, requestSpec.headers,
                 entity, responseType, registerBodyHandler, properties, handlerChain.createHandlerChain(configuration),
-                handlerChain.createAbortHandlerChain(configuration), requestContext);
+                handlerChain.createAbortHandlerChain(configuration),
+                handlerChain.createAbortHandlerChainWithoutResponseFilters(), requestContext);
         restClientRequestContext.run();
         return restClientRequestContext;
     }

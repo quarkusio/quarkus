@@ -10,6 +10,7 @@ import org.jboss.resteasy.reactive.client.handlers.ClientResponseCompleteRestHan
 import org.jboss.resteasy.reactive.client.handlers.ClientResponseFilterRestHandler;
 import org.jboss.resteasy.reactive.client.handlers.ClientSendRequestHandler;
 import org.jboss.resteasy.reactive.client.handlers.ClientSetResponseEntityRestHandler;
+import org.jboss.resteasy.reactive.client.handlers.PreResponseFilterHandler;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 
@@ -53,6 +54,7 @@ class HandlerChain {
         }
         result.add(clientSendHandler);
         result.add(clientSetResponseEntityRestHandler);
+        result.add(new PreResponseFilterHandler());
         for (int i = 0; i < responseFilters.size(); i++) {
             result.add(new ClientResponseFilterRestHandler(responseFilters.get(i)));
         }
@@ -63,7 +65,7 @@ class HandlerChain {
     ClientRestHandler[] createAbortHandlerChain(ConfigurationImpl configuration) {
         List<ClientResponseFilter> responseFilters = configuration.getResponseFilters();
         if (responseFilters.isEmpty()) {
-            return new ClientRestHandler[] { clientErrorHandler };
+            return createAbortHandlerChainWithoutResponseFilters();
         }
         List<ClientRestHandler> result = new ArrayList<>(1 + responseFilters.size());
         for (int i = 0; i < responseFilters.size(); i++) {
@@ -71,5 +73,9 @@ class HandlerChain {
         }
         result.add(clientErrorHandler);
         return result.toArray(EMPTY_REST_HANDLERS);
+    }
+
+    ClientRestHandler[] createAbortHandlerChainWithoutResponseFilters() {
+        return new ClientRestHandler[] { clientErrorHandler };
     }
 }

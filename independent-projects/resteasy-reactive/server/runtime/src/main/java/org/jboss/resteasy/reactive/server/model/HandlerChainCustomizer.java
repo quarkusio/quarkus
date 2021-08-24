@@ -12,8 +12,7 @@ public interface HandlerChainCustomizer {
     /**
      *
      * @param phase The phase
-     * @param serverResourceMethod The method, will be null if this has not been matched yet
-     * @return
+     * @param resourceMethod The method, will be null if this has not been matched yet
      */
     default List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass, ServerResourceMethod resourceMethod) {
         return handlers(phase);

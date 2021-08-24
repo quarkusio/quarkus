@@ -55,6 +55,7 @@ public class KotlinCoroutineIntegrationProcessor {
     @BuildStep
     MethodScannerBuildItem scanner() {
         return new MethodScannerBuildItem(new MethodScanner() {
+            @SuppressWarnings("unchecked")
             @Override
             public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
                     Map<String, Object> methodContext) {

@@ -18,7 +18,7 @@ public class HttpRootPathBuildItemTest {
     void testResolvePathWithSlashApp() {
         HttpRootPathBuildItem buildItem = new HttpRootPathBuildItem("/app");
 
-        Assertions.assertEquals("/app/", buildItem.resolvePath(""));
+        Assertions.assertEquals("/app", buildItem.resolvePath(""));
         Assertions.assertEquals("/app/foo", buildItem.resolvePath("foo"));
         Assertions.assertEquals("/foo", buildItem.resolvePath("/foo"));
     }

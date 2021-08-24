@@ -156,18 +156,9 @@ public class UndertowDeploymentRecorder {
     }
 
     public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,
-            LaunchMode launchMode, ShutdownContext context, String contextPath, String httpRootPath, String defaultCharset,
+            LaunchMode launchMode, ShutdownContext context, String mountPoint, String defaultCharset,
             String requestCharacterEncoding, String responseCharacterEncoding, boolean proactiveAuth,
             List<String> welcomeFiles) {
-        String realMountPoint;
-        if (contextPath.equals("/")) {
-            realMountPoint = httpRootPath;
-        } else if (httpRootPath.equals("/")) {
-            realMountPoint = contextPath;
-        } else {
-            realMountPoint = httpRootPath + contextPath;
-        }
-
         DeploymentInfo d = new DeploymentInfo();
         d.setDefaultRequestEncoding(requestCharacterEncoding);
         d.setDefaultResponseEncoding(responseCharacterEncoding);
@@ -175,7 +166,7 @@ public class UndertowDeploymentRecorder {
         d.setSessionIdGenerator(new QuarkusSessionIdGenerator());
         d.setClassLoader(getClass().getClassLoader());
         d.setDeploymentName(name);
-        d.setContextPath(realMountPoint);
+        d.setContextPath(mountPoint);
         d.setEagerFilterInit(true);
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {

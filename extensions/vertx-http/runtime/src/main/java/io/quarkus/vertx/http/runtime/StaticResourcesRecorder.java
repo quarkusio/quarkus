@@ -56,7 +56,9 @@ public class StaticResourcesRecorder {
             StaticHandler staticHandler = StaticHandler.create(META_INF_RESOURCES).setDefaultContentEncoding("UTF-8");
             handlers.add(ctx -> {
                 String rel = ctx.mountPoint() == null ? ctx.normalisedPath()
-                        : ctx.normalisedPath().substring(ctx.mountPoint().length());
+                        : ctx.normalisedPath().substring(
+                                // let's be extra careful here in case Vert.x normalizes the mount points at some point
+                                ctx.mountPoint().endsWith("/") ? ctx.mountPoint().length() - 1 : ctx.mountPoint().length());
                 if (knownPaths.contains(rel)) {
                     staticHandler.handle(ctx);
                 } else {

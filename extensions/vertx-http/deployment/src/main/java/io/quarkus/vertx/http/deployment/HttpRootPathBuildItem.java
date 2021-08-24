@@ -66,6 +66,33 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
         return UriNormalizationUtil.normalizeWithBase(rootPath, path, false).getPath();
     }
 
+    /**
+     * Resolve path that is always relative into an absolute path.
+     * Whether the path is relative or absolute, it will be resolved against `quarkus.http.root-path`,
+     * by removing the '/' in the latter case.
+     * <p>
+     * Given {@literal quarkus.http.root-path=/}
+     * <ul>
+     * <li>{@code relativePath("foo")} will return {@literal /foo}</li>
+     * <li>{@code relativePath("/foo")} will return {@literal /foo}</li>
+     * </ul>
+     * Given {@literal quarkus.http.root-path=/app}
+     * <ul>
+     * <li>{@code relativePath("foo")} will return {@literal /app/foo}</li>
+     * <li>{@code relativePath("/foo")} will return {@literal /app/foo}</li>
+     * </ul>
+     * <p>
+     * The returned path will not end with a slash.
+     *
+     * @param path Path to be resolved to an absolute path.
+     * @return An absolute path not ending with a slash
+     * @see UriNormalizationUtil#normalizeWithBase(URI, String, boolean)
+     */
+    public String relativePath(String path) {
+        String relativePath = path.startsWith("/") ? path.substring(1) : path;
+        return UriNormalizationUtil.normalizeWithBase(rootPath, relativePath, false).getPath();
+    }
+
     public HttpRootPathBuildItem.Builder routeBuilder() {
         return new HttpRootPathBuildItem.Builder(this);
     }

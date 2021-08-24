@@ -116,6 +116,7 @@ import io.quarkus.undertow.runtime.ServletSecurityInfoSubstitution;
 import io.quarkus.undertow.runtime.UndertowDeploymentRecorder;
 import io.quarkus.undertow.runtime.UndertowHandlersConfServletExtension;
 import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
+import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
@@ -319,11 +320,7 @@ public class UndertowBuildStep {
             WebMetadataBuildItem webMetadataBuildItem) {
         String contextPath;
         if (servletConfig.contextPath.isPresent()) {
-            if (!servletConfig.contextPath.get().startsWith("/")) {
-                contextPath = "/" + servletConfig.contextPath;
-            } else {
-                contextPath = servletConfig.contextPath.get();
-            }
+            contextPath = servletConfig.contextPath.get();
         } else if (webMetadataBuildItem.getWebMetaData().getDefaultContextPath() != null) {
             contextPath = webMetadataBuildItem.getWebMetaData().getDefaultContextPath();
         } else {
@@ -351,6 +348,7 @@ public class UndertowBuildStep {
             ShutdownContextBuildItem shutdownContext,
             KnownPathsBuildItem knownPaths,
             HttpBuildTimeConfig httpBuildTimeConfig,
+            HttpRootPathBuildItem httpRootPath,
             ServletConfig servletConfig) throws Exception {
 
         ObjectSubstitutionBuildItem.Holder holder = new ObjectSubstitutionBuildItem.Holder(ServletSecurityInfo.class,
@@ -365,7 +363,7 @@ public class UndertowBuildStep {
         String contextPath = servletContextPathBuildItem.getServletContextPath();
         RuntimeValue<DeploymentInfo> deployment = recorder.createDeployment("test", knownPaths.knownFiles,
                 knownPaths.knownDirectories,
-                launchMode.getLaunchMode(), shutdownContext, contextPath, httpBuildTimeConfig.rootPath,
+                launchMode.getLaunchMode(), shutdownContext, httpRootPath.relativePath(contextPath),
                 servletConfig.defaultCharset, webMetaData.getRequestCharacterEncoding(),
                 webMetaData.getResponseCharacterEncoding(), httpBuildTimeConfig.auth.proactive,
                 webMetaData.getWelcomeFileList() != null ? webMetaData.getWelcomeFileList().getWelcomeFiles() : null);

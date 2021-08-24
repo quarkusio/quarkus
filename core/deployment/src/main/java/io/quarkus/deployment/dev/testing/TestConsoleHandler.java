@@ -90,7 +90,10 @@ public class TestConsoleHandler implements TestListener {
             public void run() {
                 if (lastResults == null) {
                     testsStatusOutput.setMessage(BLUE + "Starting tests" + RESET);
+                } else {
+                    testsStatusOutput.setMessage(null);
                 }
+                setupTestsRunningConsole();
                 TestSupport.instance().get().start();
             }
         }));
@@ -103,8 +106,10 @@ public class TestConsoleHandler implements TestListener {
         } else {
             testsStatusOutput.setMessage(BLUE + "Running tests for the first time" + RESET);
         }
-        consoleContext.reset();
-        addTestOutput();
+        if (firstRun) {
+            consoleContext.reset();
+            addTestOutput();
+        }
     }
 
     void addTestOutput() {

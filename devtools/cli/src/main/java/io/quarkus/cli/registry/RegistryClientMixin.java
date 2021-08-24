@@ -1,6 +1,7 @@
 package io.quarkus.cli.registry;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import io.quarkus.cli.Version;
 import io.quarkus.cli.common.OutputOptionMixin;
@@ -14,6 +15,8 @@ import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.config.RegistriesConfig;
+import io.quarkus.registry.config.RegistriesConfigLocator;
 import picocli.CommandLine;
 
 public class RegistryClientMixin {
@@ -28,8 +31,19 @@ public class RegistryClientMixin {
             "--refresh" }, description = "Refresh the local Quarkus extension registry cache", defaultValue = "false")
     boolean refresh = false;
 
+    @CommandLine.Option(paramLabel = "CONFIG", names = { "--config" }, description = "Configuration file")
+    String config;
+
     public boolean enabled() {
         return true;
+    }
+
+    public String getConfigArg() {
+        return config;
+    }
+
+    public RegistriesConfig resolveConfig() {
+        return config == null ? RegistriesConfigLocator.resolveConfig() : RegistriesConfigLocator.load(Paths.get(config));
     }
 
     public QuarkusProject createQuarkusProject(Path projectRoot, TargetQuarkusVersionGroup targetVersion, BuildTool buildTool,
@@ -46,6 +60,9 @@ public class RegistryClientMixin {
             throws RegistryResolutionException {
         log.debug("Resolving Quarkus extension catalog for " + targetVersion);
         QuarkusProjectHelper.setMessageWriter(log);
+        if (enabled()) {
+            QuarkusProjectHelper.setToolsConfig(resolveConfig());
+        }
 
         if (VALIDATE && targetVersion.isStreamSpecified() && !enabled()) {
             throw new UnsupportedOperationException(

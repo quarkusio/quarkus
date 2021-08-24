@@ -1,4 +1,4 @@
 ---
 registries:
-- "registry.quarkus.io"
-- "registry.other.org"
+- registry.quarkus.io
+- registry.other.org

@@ -10,6 +10,7 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -257,17 +258,29 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
 
         @Override
         public Set<AnnotatedConstructor<X>> getConstructors() {
-            throw new UnsupportedOperationException();
+            Set<AnnotatedConstructor<X>> res = new HashSet<>();
+            for (Constructor c : clazz.getConstructors()) {
+                res.add(new AnnotatedConstructorImpl<>(c));
+            }
+            return res;
         }
 
         @Override
         public Set<AnnotatedMethod<? super X>> getMethods() {
-            throw new UnsupportedOperationException();
+            Set<AnnotatedMethod<? super X>> res = new HashSet<>();
+            for (Method m : clazz.getMethods()) {
+                res.add(new AnnotatedMethodImpl<>(m));
+            }
+            return res;
         }
 
         @Override
         public Set<AnnotatedField<? super X>> getFields() {
-            throw new UnsupportedOperationException();
+            Set<AnnotatedField<? super X>> res = new HashSet<>();
+            for (Field f : clazz.getFields()) {
+                res.add(new AnnotatedFieldImpl<>(clazz, super.getAnnotations() ,f));
+            }
+            return res;
         }
 
     }

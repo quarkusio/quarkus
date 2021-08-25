@@ -232,17 +232,17 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public <T> AnnotatedType<T> createAnnotatedType(Class<T> type) {
-        throw new UnsupportedOperationException();
+        return new CurrentInjectionPointProvider.AnnotatedTypeImpl<>(type);
     }
 
     @Override
     public <T> InjectionTarget<T> createInjectionTarget(AnnotatedType<T> type) {
-        throw new UnsupportedOperationException();
+        return getInjectionTargetFactory(type).createInjectionTarget(null);
     }
 
     @Override
     public <T> InjectionTargetFactory<T> getInjectionTargetFactory(AnnotatedType<T> annotatedType) {
-        throw new UnsupportedOperationException();
+        return new InjectionTargetFactoryImpl(annotatedType);
     }
 
     @Override

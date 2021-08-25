@@ -63,7 +63,10 @@ public class JBangDevModeLauncherImpl implements Closeable {
                 Enumeration<? extends ZipEntry> entries = fz.entries();
                 while (entries.hasMoreElements()) {
                     ZipEntry entry = entries.nextElement();
-                    Path path = targetClasses.resolve(entry.getName());
+                    Path path = targetClasses.resolve(entry.getName()).normalize();
+                    if (!path.startsWith(targetClasses)) {
+                        throw new IOException("Bad ZIP entry: " + path);
+                    }
                     if (entry.isDirectory()) {
                         Files.createDirectories(path);
                     } else {

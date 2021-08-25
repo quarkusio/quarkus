@@ -348,10 +348,11 @@ which houses the test project.
 For example, in order to only run the MySQL test project of the container-image tests, the Maven command would be:
 
 ```
-./mvnw verify -f integration-tests/container-image/maven-invoker-way verify -Dinvoker.test=container-build-jib-with-mysql
+./mvnw verify -f integration-tests/container-image/maven-invoker-way -Dinvoker.test=container-build-jib-with-mysql
 ```
 
 Note that we use the `verify` goal instead of the `test` goal because the Maven Invoker is usually bound to the integration-test phase. 
+Furthermore, depending on the actual test being invoked, more options maybe needed (for the specific integration test mentioned above, `-Dstart-containers` and `-Dtest-containers` are needed).
 
 ### Build with multiple threads
 

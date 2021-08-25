@@ -101,6 +101,7 @@ void consumeBlocking(String message) {
 ----
 
 When using `@Blocking`, it ignores the value of the `blocking` attribute of `@ConsumeEvent`.
+See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture documentation] for further details on this topic.
 ====
 
 Asynchronous processing is also possible by returning either an `io.smallrye.mutiny.Uni` or a `java.util.concurrent.CompletionStage`:

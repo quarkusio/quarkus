@@ -146,7 +146,7 @@ First, let's create a simple Quarkus application with Vault and Jackson extensio
 
 [source,bash, subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=vault-transit-quickstart \
     -DclassName="org.acme.quickstart.GreetingResource" \

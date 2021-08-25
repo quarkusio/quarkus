@@ -14,14 +14,14 @@ With Maven, you can scaffold a new project with:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=my-groupId \
     -DprojectArtifactId=my-artifactId \
     -DprojectVersion=my-version \
     -DclassName="org.my.group.MyResource"
 ----
 
-NOTE: If you just launch `mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create` the Maven plugin asks
+NOTE: If you just launch `mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create` the Maven plugin asks
 for user inputs. You can disable (and use default values) this interactive mode by passing `-B` to the Maven command.
 
 The following table lists the attributes you can pass to the `create` command:

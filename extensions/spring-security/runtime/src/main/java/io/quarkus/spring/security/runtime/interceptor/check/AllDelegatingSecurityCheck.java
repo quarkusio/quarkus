@@ -4,7 +4,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
+import io.quarkus.security.spi.runtime.SecurityCheck;
 
 /**
  * A {@link SecurityCheck} where all delegates must pass

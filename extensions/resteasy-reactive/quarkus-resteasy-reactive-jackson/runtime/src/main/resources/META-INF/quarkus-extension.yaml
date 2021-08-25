@@ -14,7 +14,7 @@ metadata:
   categories:
   - "web"
   - "reactive"
-  status: "preview"
+  status: "stable"
   codestart:
     name: "resteasy-reactive"
     languages:

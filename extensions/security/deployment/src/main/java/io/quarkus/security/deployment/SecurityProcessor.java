@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -59,13 +60,13 @@ import io.quarkus.security.runtime.interceptor.AuthenticatedInterceptor;
 import io.quarkus.security.runtime.interceptor.DenyAllInterceptor;
 import io.quarkus.security.runtime.interceptor.PermitAllInterceptor;
 import io.quarkus.security.runtime.interceptor.RolesAllowedInterceptor;
-import io.quarkus.security.runtime.interceptor.SecurityCheckStorage;
 import io.quarkus.security.runtime.interceptor.SecurityCheckStorageBuilder;
 import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.SecurityHandler;
-import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
 import io.quarkus.security.spi.AdditionalSecuredClassesBuildItem;
 import io.quarkus.security.spi.runtime.AuthorizationController;
+import io.quarkus.security.spi.runtime.SecurityCheck;
+import io.quarkus.security.spi.runtime.SecurityCheckStorage;
 
 public class SecurityProcessor {
 
@@ -321,7 +322,7 @@ public class SecurityProcessor {
             List<AdditionalSecuredClassesBuildItem> additionalSecuredClasses,
             SecurityCheckRecorder recorder,
             List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config) {
-        classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorage.AppPredicate()));
+        classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorageAppPredicate()));
 
         final Map<DotName, AdditionalSecured> additionalSecured = new HashMap<>();
         for (AdditionalSecuredClassesBuildItem securedClasses : additionalSecuredClasses) {
@@ -508,6 +509,14 @@ public class SecurityProcessor {
         AdditionalSecured(ClassInfo classInfo, Optional<List<String>> rolesAllowed) {
             this.classInfo = classInfo;
             this.rolesAllowed = rolesAllowed;
+        }
+    }
+
+    class SecurityCheckStorageAppPredicate implements Predicate<String> {
+
+        @Override
+        public boolean test(String s) {
+            return s.equals(SecurityCheckStorage.class.getName());
         }
     }
 }

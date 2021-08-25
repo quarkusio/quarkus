@@ -2,11 +2,20 @@ package io.quarkus.devtools.project.create;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.quarkus.devtools.commands.CreateProject;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
 import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.catalog.ExtensionOrigin;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -73,6 +82,38 @@ public class MavenProjectImportingMultipleBomsFromSinglePlatformTest extends Mul
 
     protected String getMainPlatformKey() {
         return MAIN_PLATFORM_KEY;
+    }
+
+    @Test
+    public void createWithPreferedCatalogs() throws Exception {
+        final Path projectDir = newProjectDir("preferred-catalogs");
+
+        final ExtensionCatalog catalog = QuarkusProjectHelper.getCatalogResolver().resolveExtensionCatalog(Arrays.asList(
+                ArtifactCoords.fromString("org.acme.platform:quarkus-bom::pom:1.0.1"),
+                ArtifactCoords.fromString("org.acme.platform:acme-foo-bom::pom:1.0.1"),
+                ArtifactCoords.fromString("org.acme.platform:acme-baz-bom::pom:1.0.1")));
+        final QuarkusProject project = QuarkusProjectHelper.getProject(projectDir, catalog, BuildTool.MAVEN);
+
+        final Set<String> extensionKeys = new HashSet<>();
+        final List<ArtifactCoords> expectedExtensions = new ArrayList<>();
+        catalog.getExtensions().forEach(e -> {
+            final ArtifactCoords coords = e.getArtifact();
+            extensionKeys.add(coords.getGroupId() + ":" + coords.getArtifactId());
+            boolean platform = false;
+            for (ExtensionOrigin o : e.getOrigins()) {
+                if (o.isPlatform()) {
+                    platform = true;
+                    break;
+                }
+            }
+            expectedExtensions.add(platform
+                    ? new ArtifactCoords(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType(),
+                            null)
+                    : coords);
+        });
+        new CreateProject(project).extensions(extensionKeys).noCode().execute();
+
+        assertModel(projectDir, toPlatformBomCoords("acme-foo-bom", "acme-baz-bom"), expectedExtensions, "1.0.1");
     }
 
     @Test

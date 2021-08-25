@@ -26,6 +26,7 @@ import io.quarkus.devtools.commands.RemoveExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
 import picocli.CommandLine;
 
@@ -75,6 +76,7 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     QuarkusProject quarkusProject() throws Exception {
+        QuarkusProjectHelper.setToolsConfig(registryClient.resolveConfig());
         return MavenProjectBuildFile.getProject(projectRoot, output, Version::clientVersion);
     }
 

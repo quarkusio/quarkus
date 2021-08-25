@@ -225,7 +225,9 @@ public class GradleRunner implements BuildSystemRunner {
         }
         args.add(registryClient.getRegistryClientProperty());
 
-        final String configFile = System.getProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY);
+        final String configFile = registryClient.getConfigArg() == null
+                ? System.getProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY)
+                : registryClient.getConfigArg();
         if (configFile != null) {
             args.add("-D" + RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY + "=" + configFile);
         }

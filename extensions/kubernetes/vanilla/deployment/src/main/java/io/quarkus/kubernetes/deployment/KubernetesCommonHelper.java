@@ -176,8 +176,10 @@ public class KubernetesCommonHelper {
         result.addAll(createArgsDecorator(project, target, name, config, command));
 
         //Handle Probes
-        result.addAll(createProbeDecorators(name, target, config.getLivenessProbe(), config.getReadinessProbe(),
-                livenessProbePath, readinessProbePath));
+        if (!ports.isEmpty()) {
+            result.addAll(createProbeDecorators(name, target, config.getLivenessProbe(), config.getReadinessProbe(),
+                    livenessProbePath, readinessProbePath));
+        }
 
         //Handle RBAC
         if (!roleBindings.isEmpty()) {

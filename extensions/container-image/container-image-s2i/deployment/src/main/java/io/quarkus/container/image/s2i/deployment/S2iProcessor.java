@@ -184,9 +184,9 @@ public class S2iProcessor {
                 .filter(r -> r.getName().endsWith("kubernetes" + File.separator + "openshift.yml"))
                 .findFirst();
 
-        if (!openshiftYml.isPresent()) {
+        if (openshiftYml.isEmpty()) {
             LOG.warn(
-                    "No Openshift manifests were generated (most likely due to the fact that the service is not an HTTP service) so no s2i process will be taking place");
+                    "No Openshift manifests were generated so no s2i process will be taking place");
             return;
         }
 
@@ -224,9 +224,9 @@ public class S2iProcessor {
                 .filter(r -> r.getName().endsWith("kubernetes" + File.separator + "openshift.yml"))
                 .findFirst();
 
-        if (!openshiftYml.isPresent()) {
+        if (openshiftYml.isEmpty()) {
             LOG.warn(
-                    "No Openshift manifests were generated (most likely due to the fact that the service is not an HTTP service) so no s2i process will be taking place");
+                    "No Openshift manifests were generated so no s2i process will be taking place");
             return;
         }
 

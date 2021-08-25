@@ -72,6 +72,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.ClientProxyUnwrapper;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -80,6 +81,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -101,6 +103,7 @@ import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveInitialiser;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRuntimeRecorder;
+import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveServerRuntimeConfig;
 import io.quarkus.resteasy.reactive.server.runtime.ServerVertxAsyncFileMessageBodyWriter;
 import io.quarkus.resteasy.reactive.server.runtime.ServerVertxBufferMessageBodyWriter;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationCompletionExceptionMapper;
@@ -108,6 +111,7 @@ import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.Authenticati
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationRedirectExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.ForbiddenExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.UnauthorizedExceptionMapper;
+import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler;
 import io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
@@ -243,6 +247,7 @@ public class ResteasyReactiveProcessor {
         unremoveableBeans.produce(UnremovableBeanBuildItem.beanClassNames(beanParams.toArray(new String[0])));
     }
 
+    @SuppressWarnings("unchecked")
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public void setupEndpoints(Capabilities capabilities, BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
@@ -544,6 +549,8 @@ public class ResteasyReactiveProcessor {
                     .setDynamicFeatures(dynamicFeats)
                     .setSerialisers(serialisers)
                     .setApplicationPath(applicationPath)
+                    .setGlobalHandlerCustomers(
+                            new ArrayList<>(Collections.singletonList(new SecurityContextOverrideHandler.Customizer()))) //TODO: should be pluggable
                     .setResourceClasses(resourceClasses)
                     .setLocatableResourceClasses(subResourceClasses)
                     .setParamConverterProviders(paramConverterProviders);
@@ -599,11 +606,11 @@ public class ResteasyReactiveProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     public void applyRuntimeConfig(ResteasyReactiveRuntimeRecorder recorder,
             Optional<ResteasyReactiveDeploymentBuildItem> deployment,
-            HttpConfiguration httpConfiguration) {
+            HttpConfiguration httpConf, ResteasyReactiveServerRuntimeConfig resteasyReactiveServerRuntimeConf) {
         if (!deployment.isPresent()) {
             return;
         }
-        recorder.configure(deployment.get().getDeployment(), httpConfiguration);
+        recorder.configure(deployment.get().getDeployment(), httpConf, resteasyReactiveServerRuntimeConf);
     }
 
     @BuildStep
@@ -632,12 +639,26 @@ public class ResteasyReactiveProcessor {
     }
 
     @BuildStep
-    MethodScannerBuildItem integrateSecurityOverrideSupport() {
+    MethodScannerBuildItem integrateEagerSecurity(Capabilities capabilities, CombinedIndexBuildItem indexBuildItem) {
+        if (!capabilities.isPresent(Capability.SECURITY)) {
+            return null;
+        }
+        var index = indexBuildItem.getComputingIndex();
         return new MethodScannerBuildItem(new MethodScanner() {
             @Override
             public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
                     Map<String, Object> methodContext) {
-                return Collections.singletonList(new SecurityContextOverrideHandler.Customizer());
+                if (SecurityTransformerUtils.hasStandardSecurityAnnotation(method)) {
+                    return Collections.singletonList(new EagerSecurityHandler.Customizer());
+                }
+                ClassInfo c = actualEndpointClass;
+                while (c.superName() != null) {
+                    if (SecurityTransformerUtils.hasStandardSecurityAnnotation(c)) {
+                        return Collections.singletonList(new EagerSecurityHandler.Customizer());
+                    }
+                    c = index.getClassByName(c.superName());
+                }
+                return Collections.emptyList();
             }
         });
     }

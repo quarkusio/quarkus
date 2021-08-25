@@ -19,6 +19,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
+import io.quarkus.registry.config.RegistriesConfig;
+import io.quarkus.registry.config.RegistriesConfigLocator;
+import io.quarkus.registry.config.json.JsonRegistriesConfig;
+import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
 import picocli.CommandLine;
 
 public class CliNonProjectTest {
@@ -198,6 +202,67 @@ public class CliNonProjectTest {
                 "Should contain '- registry.test.local (disabled)', found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("registry.quarkus.io"),
                 "Should contain '- registry.quarkus.io', found: " + result.stdout);
+    }
+
+    @Test
+    public void testRegistryAddRemove() throws Exception {
+
+        CliDriver.Result result;
+
+        final Path testConfigYaml = workspaceRoot.resolve("test-registry-add-remove.yaml").toAbsolutePath();
+        Files.deleteIfExists(testConfigYaml);
+
+        assertThat(testConfigYaml).doesNotExist();
+        result = CliDriver.execute(workspaceRoot, "registry", "add", "one,two", "--config", testConfigYaml.toString());
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+
+        assertThat(testConfigYaml).exists();
+        RegistriesConfig testConfig = RegistriesConfigLocator.load(testConfigYaml);
+        assertThat(testConfig.getRegistries()).hasSize(2);
+        assertThat(testConfig.getRegistries().get(0).getId()).isEqualTo("one");
+        assertThat(testConfig.getRegistries().get(1).getId()).isEqualTo("two");
+
+        result = CliDriver.execute(workspaceRoot, "registry", "add", "two,three", "--config", testConfigYaml.toString());
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+
+        testConfig = RegistriesConfigLocator.load(testConfigYaml);
+        assertThat(testConfig.getRegistries()).hasSize(3);
+        assertThat(testConfig.getRegistries().get(0).getId()).isEqualTo("one");
+        assertThat(testConfig.getRegistries().get(1).getId()).isEqualTo("two");
+        assertThat(testConfig.getRegistries().get(2).getId()).isEqualTo("three");
+
+        result = CliDriver.execute(workspaceRoot, "registry", "remove", "one,two", "--config", testConfigYaml.toString());
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+
+        testConfig = RegistriesConfigLocator.load(testConfigYaml);
+        assertThat(testConfig.getRegistries()).hasSize(1);
+        assertThat(testConfig.getRegistries().get(0).getId()).isEqualTo("three");
+
+        result = CliDriver.execute(workspaceRoot, "registry", "add", "four", "--config", testConfigYaml.toString());
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+
+        testConfig = RegistriesConfigLocator.load(testConfigYaml);
+        assertThat(testConfig.getRegistries()).hasSize(2);
+        assertThat(testConfig.getRegistries().get(0).getId()).isEqualTo("three");
+        assertThat(testConfig.getRegistries().get(1).getId()).isEqualTo("four");
+
+        result = CliDriver.execute(workspaceRoot, "registry", "remove", "three,four,five", "--config",
+                testConfigYaml.toString());
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+
+        testConfig = RegistriesConfigMapperHelper.deserialize(testConfigYaml, JsonRegistriesConfig.class);
+        assertThat(testConfig.getRegistries()).isEmpty();
+
+        testConfig = RegistriesConfigLocator.load(testConfigYaml);
+        assertThat(testConfig.getRegistries()).hasSize(1);
+        assertThat(testConfig.getRegistries().get(0).getId()).isEqualTo("registry.quarkus.io");
+
+        Files.delete(testConfigYaml);
     }
 
     private static String getRequiredProperty(String name) {

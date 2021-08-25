@@ -32,6 +32,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     private ThreadSetupAction.ThreadState currentRequestScope;
     private List<CompletionCallback> completionCallbacks;
     private List<ConnectionCallback> connectionCallbacks;
+    private boolean abortHandlerChainStarted;
 
     private boolean closed = false;
 
@@ -132,7 +133,6 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         //unless there are pre-mapping filters as these may require CDI
         boolean disasociateRequestScope = false;
         boolean aborted = false;
-        Executor exec = null;
         try {
             while (position < handlers.length) {
                 int pos = position;
@@ -152,22 +152,14 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                                 requestScopeActivated = false;
                                 requestScopeDeactivated();
                             }
-                            if (this.executor != null) {
-                                //resume happened in the meantime
-                                suspended = false;
-                                exec = this.executor;
-                                // prevent future suspensions from re-submitting the task
-                                this.executor = null;
-                                return;
-                            } else if (suspended) {
-                                running = false;
+                            if (suspended) {
                                 processingSuspended = true;
                                 return;
                             }
                         }
                     }
                 } catch (Throwable t) {
-                    aborted = handlers == abortHandlerChain;
+                    aborted = abortHandlerChainStarted;
                     if (t instanceof PreserveTargetException) {
                         handleException(t.getCause(), true);
                     } else {
@@ -184,7 +176,6 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
             // we need to make sure we don't close the underlying stream in the event loop if the task
             // has been offloaded to the executor
             if ((position == handlers.length && !processingSuspended) || aborted) {
-                exec = null;
                 close();
             } else {
                 if (disasociateRequestScope) {
@@ -192,14 +183,27 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                     currentRequestScope.deactivate();
                 }
                 beginAsyncProcessing();
-            }
-            if (exec != null) {
-                //outside sync block
-                exec.execute(this);
-            } else {
+                Executor exec = null;
+                boolean resumed = false;
                 synchronized (this) {
                     running = false;
+                    if (this.executor != null) {
+                        //resume happened in the meantime
+                        suspended = false;
+                        exec = this.executor;
+                        // prevent future suspensions from re-submitting the task
+                        this.executor = null;
+                    } else if (!suspended) {
+                        resumed = true;
+                    }
                 }
+                if (exec != null) {
+                    //outside sync block
+                    exec.execute(this);
+                } else if (resumed) {
+                    resume();
+                }
+
             }
         }
     }
@@ -300,19 +304,21 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
      * a response result and switch to the abort chain
      */
     public void handleException(Throwable t) {
-        if (handlers == abortHandlerChain) {
+        if (abortHandlerChainStarted) {
             handleUnrecoverableError(unwrapException(t));
         } else {
             this.throwable = unwrapException(t);
+            abortHandlerChainStarted = true;
             restart(abortHandlerChain);
         }
     }
 
     public void handleException(Throwable t, boolean keepSameTarget) {
-        if (handlers == abortHandlerChain) {
+        if (abortHandlerChainStarted) {
             handleUnrecoverableError(unwrapException(t));
         } else {
             this.throwable = unwrapException(t);
+            abortHandlerChainStarted = true;
             restart(abortHandlerChain, keepSameTarget);
         }
     }
@@ -379,5 +385,9 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         if (connectionCallbacks == null)
             connectionCallbacks = new ArrayList<>();
         connectionCallbacks.add(callback);
+    }
+
+    public void setAbortHandlerChainStarted(boolean value) {
+        abortHandlerChainStarted = value;
     }
 }

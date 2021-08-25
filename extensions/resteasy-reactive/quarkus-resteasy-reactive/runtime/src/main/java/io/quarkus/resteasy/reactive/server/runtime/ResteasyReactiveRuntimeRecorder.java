@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.server.runtime;
 
+import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -15,14 +16,15 @@ import io.quarkus.vertx.http.runtime.HttpConfiguration;
 @Recorder
 public class ResteasyReactiveRuntimeRecorder {
 
-    public void configure(RuntimeValue<Deployment> deployment, HttpConfiguration configuration) {
+    public void configure(RuntimeValue<Deployment> deployment, HttpConfiguration httpConf,
+            ResteasyReactiveServerRuntimeConfig runtimeConf) {
         List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers = deployment.getValue()
                 .getRuntimeConfigurableServerRestHandlers();
         for (RuntimeConfigurableServerRestHandler handler : runtimeConfigurableServerRestHandlers) {
             handler.configure(new RuntimeConfiguration() {
                 @Override
                 public Duration readTimeout() {
-                    return configuration.readTimeout;
+                    return httpConf.readTimeout;
                 }
 
                 @Override
@@ -30,12 +32,17 @@ public class ResteasyReactiveRuntimeRecorder {
                     return new Body() {
                         @Override
                         public boolean deleteUploadedFilesOnEnd() {
-                            return configuration.body.deleteUploadedFilesOnEnd;
+                            return httpConf.body.deleteUploadedFilesOnEnd;
                         }
 
                         @Override
                         public String uploadsDirectory() {
-                            return configuration.body.uploadsDirectory;
+                            return httpConf.body.uploadsDirectory;
+                        }
+
+                        @Override
+                        public Charset defaultCharset() {
+                            return runtimeConf.multipart.inputPart.defaultCharset;
                         }
                     };
                 }
@@ -45,8 +52,8 @@ public class ResteasyReactiveRuntimeRecorder {
                     return new Limits() {
                         @Override
                         public Optional<Long> maxBodySize() {
-                            if (configuration.limits.maxBodySize.isPresent()) {
-                                return Optional.of(configuration.limits.maxBodySize.get().asLongValue());
+                            if (httpConf.limits.maxBodySize.isPresent()) {
+                                return Optional.of(httpConf.limits.maxBodySize.get().asLongValue());
                             } else {
                                 return Optional.empty();
                             }
@@ -54,7 +61,7 @@ public class ResteasyReactiveRuntimeRecorder {
 
                         @Override
                         public long maxFormAttributeSize() {
-                            return configuration.limits.maxFormAttributeSize.asLongValue();
+                            return httpConf.limits.maxFormAttributeSize.asLongValue();
                         }
                     };
                 }

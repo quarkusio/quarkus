@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.server.spi;
 
+import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -16,6 +17,8 @@ public interface RuntimeConfiguration {
         boolean deleteUploadedFilesOnEnd();
 
         String uploadsDirectory();
+
+        Charset defaultCharset();
     }
 
     interface Limits {

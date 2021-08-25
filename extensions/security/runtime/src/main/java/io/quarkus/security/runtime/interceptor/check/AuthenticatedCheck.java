@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.SecurityCheck;
 
 public class AuthenticatedCheck implements SecurityCheck {
 

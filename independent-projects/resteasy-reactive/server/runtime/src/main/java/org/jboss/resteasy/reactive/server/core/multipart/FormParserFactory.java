@@ -43,7 +43,7 @@ public class FormParserFactory {
 
         FormDataParser create(final ResteasyReactiveRequestContext exchange);
 
-        T setDefaultEncoding(String charset);
+        T setDefaultCharset(String charset);
     }
 
     public static Builder builder(Supplier<Executor> executorSupplier) {
@@ -114,7 +114,7 @@ public class FormParserFactory {
         public FormParserFactory build() {
             if (defaultCharset != null) {
                 for (ParserDefinition parser : parsers) {
-                    parser.setDefaultEncoding(defaultCharset);
+                    parser.setDefaultCharset(defaultCharset);
                 }
             }
             return new FormParserFactory(parsers);

@@ -181,6 +181,7 @@ public class ContainerRequestContextImpl implements ResteasyReactiveContainerReq
     public void abortWith(Response response) {
         assertNotResponse();
         quarkusRestContext.setResult(response);
+        quarkusRestContext.setAbortHandlerChainStarted(true);
         quarkusRestContext.restart(quarkusRestContext.getAbortHandlerChain(), true);
         aborted = true;
         // this is a valid action after suspend, in which case we must resume

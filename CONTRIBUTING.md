@@ -340,6 +340,19 @@ One way to accomplish this is by executing the following command:
 ./mvnw test -f integration-tests/resteasy-jackson/ -Dtest=GreetingResourceTest
 ```
 
+##### Maven Invoker tests
+
+For testing some scenarios, Quarkus uses the [Maven Invoker](https://maven.apache.org/shared/maven-invoker/) to run tests. For these cases, to run a single test, one needs to use the `invoker.test` property along with the name of the directory
+which houses the test project.
+
+For example, in order to only run the MySQL test project of the container-image tests, the Maven command would be:
+
+```
+./mvnw verify -f integration-tests/container-image/maven-invoker-way verify -Dinvoker.test=container-build-jib-with-mysql
+```
+
+Note that we use the `verify` goal instead of the `test` goal because the Maven Invoker is usually bound to the integration-test phase. 
+
 ### Build with multiple threads
 
 The following standard Maven option can be used to build with multiple threads to speed things up (here 0.5 threads per CPU core):

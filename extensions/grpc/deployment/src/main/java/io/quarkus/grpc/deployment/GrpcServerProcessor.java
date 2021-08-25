@@ -1,9 +1,12 @@
 package io.quarkus.grpc.deployment;
 
 import static io.quarkus.deployment.Feature.GRPC_SERVER;
+import static io.quarkus.grpc.deployment.GrpcDotNames.BLOCKING;
 import static io.quarkus.grpc.deployment.GrpcDotNames.GLOBAL_INTERCEPTOR;
+import static io.quarkus.grpc.deployment.GrpcDotNames.NON_BLOCKING;
 import static io.quarkus.grpc.deployment.GrpcDotNames.REGISTER_INTERCEPTOR;
 import static io.quarkus.grpc.deployment.GrpcDotNames.REGISTER_INTERCEPTORS;
+import static io.quarkus.grpc.deployment.GrpcDotNames.TRANSACTIONAL;
 import static java.util.Arrays.asList;
 
 import java.lang.reflect.Modifier;
@@ -19,6 +22,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import javax.enterprise.inject.spi.DeploymentException;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.config.Config;
@@ -219,13 +223,28 @@ public class GrpcServerProcessor {
 
     private Set<MethodInfo> gatherBlockingMethods(ClassInfo service) {
         Set<MethodInfo> result = new HashSet<>();
-        boolean classHasBlocking = service.classAnnotation(GrpcDotNames.BLOCKING) != null;
+        boolean blockingClass = service.classAnnotation(GrpcDotNames.BLOCKING) != null;
+        if (blockingClass && service.classAnnotation(GrpcDotNames.NON_BLOCKING) != null) {
+            throw new DeploymentException("Class '" + service.name()
+                    + "' contains both @Blocking and @NonBlocking annotations.");
+        }
+        // if we have @Transactional, and no @NonBlocking,
+        blockingClass |= service.classAnnotation(TRANSACTIONAL) != null &&
+                service.classAnnotation(NON_BLOCKING) == null;
+
         for (MethodInfo method : service.methods()) {
             if (BLOCKING_SKIPPED_METHODS.contains(method.name())) {
                 continue;
             }
-            if (method.hasAnnotation(GrpcDotNames.BLOCKING)
-                    || (classHasBlocking && !method.hasAnnotation(GrpcDotNames.NON_BLOCKING))) {
+
+            if (method.hasAnnotation(BLOCKING)) {
+                if (method.hasAnnotation(NON_BLOCKING)) {
+                    throw new DeploymentException("Method '" + method.declaringClass().name() + "#" + method.name() +
+                            "' contains both @Blocking and @NonBlocking annotations.");
+                } else {
+                    result.add(method);
+                }
+            } else if ((method.hasAnnotation(TRANSACTIONAL) || blockingClass) && !method.hasAnnotation(NON_BLOCKING)) {
                 result.add(method);
             }
         }

@@ -4,7 +4,8 @@ import java.awt.color.ICC_Profile;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.jdk.JDK17OrLater;
+
+import io.quarkus.runtime.util.JavaVersionUtil.JDK17OrLater;
 
 @TargetClass(className = "sun.java2d.cmm.lcms.LCMS", onlyWith = JDK17OrLater.class)
 final class Target_sun_java2d_cmm_lcms_LCMS_JDK17 {

@@ -27,7 +27,7 @@ First, we need a new project that contains the OpenShift extension. This can be 
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=openshift-quickstart \
     -DclassName="org.acme.rest.GreetingResource" \

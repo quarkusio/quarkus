@@ -67,7 +67,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=microprofile-graphql-quickstart \
     -DclassName="org.acme.microprofile.graphql.FilmResource" \

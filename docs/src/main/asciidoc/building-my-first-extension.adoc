@@ -98,11 +98,11 @@ It will try to auto-detect its options:
 * in other cases it will use the 'Standalone' extension layout and defaults.
 * we may introduce other layout types in the future.
 
-TIP: You may call it without any parameter to use the interactive mode: `mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create-extension -N`
+TIP: You may call it without any parameter to use the interactive mode: `mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create-extension -N`
 
 [source,shell,subs=attributes+]
 ----
-$ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
+$ mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
     -DgroupId=org.acme \ #<1>
     -DextensionId=greeting-extension \  #<2>
     -DwithoutTests #<3>
@@ -716,7 +716,7 @@ mvn clean install
 Then from another directory, use our tooling to create a new `greeting-app` Quarkus application with your new extension:
 [source,bash, subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
      -DprojectGroupId=org.acme \
      -DprojectArtifactId=greeting-app \
      -Dextensions="org.acme:greeting-extension:1.0.0-SNAPSHOT" \

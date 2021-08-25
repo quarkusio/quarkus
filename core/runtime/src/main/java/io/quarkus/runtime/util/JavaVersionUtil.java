@@ -1,5 +1,6 @@
 package io.quarkus.runtime.util;
 
+import java.util.function.BooleanSupplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -10,6 +11,8 @@ public class JavaVersionUtil {
     private static boolean IS_JAVA_11_OR_NEWER;
     private static boolean IS_JAVA_13_OR_NEWER;
     private static boolean IS_GRAALVM_JDK;
+    private static boolean IS_JAVA_16_OR_OLDER;
+    private static boolean IS_JAVA_17_OR_NEWER;
 
     static {
         performChecks();
@@ -22,9 +25,13 @@ public class JavaVersionUtil {
             int first = Integer.parseInt(matcher.group(1));
             IS_JAVA_11_OR_NEWER = (first >= 11);
             IS_JAVA_13_OR_NEWER = (first >= 13);
+            IS_JAVA_16_OR_OLDER = (first <= 16);
+            IS_JAVA_17_OR_NEWER = (first >= 17);
         } else {
             IS_JAVA_11_OR_NEWER = false;
             IS_JAVA_13_OR_NEWER = false;
+            IS_JAVA_16_OR_OLDER = false;
+            IS_JAVA_17_OR_NEWER = false;
         }
 
         String vmVendor = System.getProperty("java.vm.vendor");
@@ -39,7 +46,31 @@ public class JavaVersionUtil {
         return IS_JAVA_13_OR_NEWER;
     }
 
+    public static boolean isJava16OrLower() {
+        return IS_JAVA_16_OR_OLDER;
+    }
+
+    public static boolean isJava17OrHigher() {
+        return IS_JAVA_17_OR_NEWER;
+    }
+
     public static boolean isGraalvmJdk() {
         return IS_GRAALVM_JDK;
+    }
+
+    /* Clone of com.oracle.svm.core.jdk.JDK17OrLater to work around #19645 issue with GraalVM 20.3 */
+    public static class JDK17OrLater implements BooleanSupplier {
+        @Override
+        public boolean getAsBoolean() {
+            return JavaVersionUtil.isJava17OrHigher();
+        }
+    }
+
+    /* Clone of com.oracle.svm.core.jdk.JDK16OrEarlier to work around #19645 issue with GraalVM 20.3 */
+    public static class JDK16OrEarlier implements BooleanSupplier {
+        @Override
+        public boolean getAsBoolean() {
+            return JavaVersionUtil.isJava16OrLower();
+        }
     }
 }

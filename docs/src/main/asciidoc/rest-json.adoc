@@ -43,7 +43,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=rest-json-quickstart \
     -DclassName="org.acme.rest.json.FruitResource" \
@@ -72,7 +72,7 @@ Quarkus also supports http://json-b.net/[JSON-B] so, if you prefer JSON-B over J
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=rest-json-quickstart \
     -DclassName="org.acme.rest.json.FruitResource" \

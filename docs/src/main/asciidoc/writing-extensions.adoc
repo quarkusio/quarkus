@@ -381,7 +381,7 @@ Your extension project should be setup as a multi-module project with two submod
 
 2. A runtime submodule that contains the runtime behavior that will provide the extension behavior in the native executable or runtime JVM.
 
-TIP: You may want to use the `create-extension` mojo of `io.quarkus:quarkus-maven-plugin` to create these Maven modules - see the next section.
+TIP: You may want to use the `create-extension` mojo of `io.quarkus.platform:quarkus-maven-plugin` to create these Maven modules - see the next section.
 
 Your runtime artifact should depend on `io.quarkus:quarkus-core`, and possibly the runtime artifacts of other Quarkus
 modules if you want to use functionality provided by them.
@@ -484,7 +484,7 @@ It will try to auto-detect its options:
 * in other cases it will use the 'Standalone' extension layout and defaults.
 * we may introduce other layout types in the future.
 
-TIP: You may not specify any parameter to use the interactive mode: `mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create-extension -N`
+TIP: You may not specify any parameter to use the interactive mode: `mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create-extension -N`
 
 As and example, let's add a new extension called `my-ext` to the Quarkus source tree:
 
@@ -492,7 +492,7 @@ As and example, let's add a new extension called `my-ext` to the Quarkus source 
 ----
 git clone https://github.com/quarkusio/quarkus.git
 cd quarkus
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
     -DextensionId=my-ext \
     -Dname="My Extension"
 ----
@@ -2215,7 +2215,7 @@ using the Quarkus maven plugin as shown in this example taken from the link:rest
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=rest-json \
     -DclassName="org.acme.rest.json.FruitResource" \

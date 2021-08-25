@@ -253,6 +253,44 @@ quarkus.grpc.clients.hello.deadline=2s <1>
 ----
 <1> Set the  deadline for all injected clients.
 
+== gRPC Headers
+Similarly to HTTP, alongside the message, gRPC calls can carry headers.
+Headers can be useful e.g. for authentication.
+
+To set headers for a gRPC call, create a client with headers attached and then perform the call on this client:
+[source,java]
+----
+import javax.enterprise.context.ApplicationScoped;
+
+import examples.Greeter;
+import examples.HelloReply;
+import examples.HelloRequest;
+import io.grpc.Metadata;
+import io.quarkus.grpc.GrpcClient;
+import io.quarkus.grpc.GrpcClientUtils;
+import io.smallrye.mutiny.Uni;
+
+@ApplicationScoped
+public class MyService {
+    @GrpcClient
+    Greeter client;
+
+    public Uni<HelloReply> doTheCall() {
+        Metadata extraHeaders = new Metadata();
+        if (headers) {
+            extraHeaders.put("my-header", "my-interface-value");
+        }
+
+        Greeter alteredClient = GrpcClientUtils.attachHeaders(client, extraHeaders); // <1>
+
+        return alteredClient.sayHello(HelloRequest.newBuilder().setName(name).build()); // <2>
+    }
+}
+----
+<1> Alter the client to make calls with the `extraHeaders` attached
+<2> Perform the call with the altered client. The original client remains unmodified
+
+`GrpcClientUtils` work with all flavors of clients.
 
 == Client Interceptors
 

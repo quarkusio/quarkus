@@ -13,4 +13,5 @@ public interface MutinyClient<T extends AbstractStub<T>> {
      */
     T getStub();
 
+    MutinyClient<T> newInstanceWithStub(T stub);
 }

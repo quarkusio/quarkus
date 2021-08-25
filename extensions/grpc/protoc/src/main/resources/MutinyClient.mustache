@@ -17,6 +17,14 @@ public class {{serviceName}}Client implements {{serviceName}}, MutinyClient<{{cl
        this.stub = stubConfigurator.apply(name,{{classPrefix}}{{serviceName}}Grpc.new{{classPrefix}}Stub(channel));
     }
 
+    private {{serviceName}}Client({{classPrefix}}{{serviceName}}Grpc.{{classPrefix}}{{serviceName}}Stub stub) {
+       this.stub = stub;
+    }
+
+    public {{serviceName}}Client newInstanceWithStub({{classPrefix}}{{serviceName}}Grpc.{{classPrefix}}{{serviceName}}Stub stub) {
+        return new {{serviceName}}Client(stub);
+    }
+
     @Override
     public {{classPrefix}}{{serviceName}}Grpc.{{classPrefix}}{{serviceName}}Stub getStub() {
        return stub;

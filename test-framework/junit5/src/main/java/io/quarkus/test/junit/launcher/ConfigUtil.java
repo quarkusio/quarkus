@@ -16,21 +16,22 @@ public final class ConfigUtil {
     }
 
     public static List<String> argLineValue(Config config) {
-        List<String> strings = config.getOptionalValues("quarkus.test.arg-line", String.class)
-                .orElse(config.getOptionalValues("quarkus.test.argLine", String.class) // legacy value
-                        .orElse(Collections.emptyList()));
-        if (strings.isEmpty()) {
-            return strings;
+        String strValue = config.getOptionalValue("quarkus.test.arg-line", String.class)
+                .orElse(config.getOptionalValue("quarkus.test.argLine", String.class) // legacy value
+                        .orElse(null));
+        if (strValue == null) {
+            return Collections.emptyList();
         }
-        List<String> sanitizedString = new ArrayList<>(strings.size());
-        for (String s : strings) {
+        String[] parts = strValue.split("\\s+");
+        List<String> result = new ArrayList<>(parts.length);
+        for (String s : parts) {
             String trimmed = s.trim();
             if (trimmed.isEmpty()) {
                 continue;
             }
-            sanitizedString.add(trimmed);
+            result.add(trimmed);
         }
-        return sanitizedString;
+        return result;
     }
 
     public static Duration waitTimeValue(Config config) {

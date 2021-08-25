@@ -208,6 +208,14 @@ Otherwise, search for the template as the specified location. In this particular
 <3> Set the data used in the template.
 <4> `MailTemplate.send()` triggers the rendering and, once finished, sends the e-mail via a `Mailer` instance.
 
+[[execution-model]]
+== Execution model
+
+The reactive mailer is non-blocking, and the results are provided on an I/O thread.
+See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture documentation] for further details on this topic.
+
+The non-reactive mailer blocks until the messages are sent to the SMTP server.
+Note that does not mean that the message is delivered, just that it's been sent successfully to the SMTP server, which will be responsible for the delivery.
 
 [[testing]]
 == Testing email sending

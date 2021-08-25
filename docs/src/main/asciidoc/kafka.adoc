@@ -213,9 +213,12 @@ Injecting `@Channel("prices")` or having `@Incoming("prices")` does not automati
 You need to configure an inbound connector with `mp.messaging.incoming.prices\...` or have an `@Outgoing("prices")` method somewhere in your application (in which case, `prices` will be an in-memory channel).
 ====
 
+[#blocking-processing]
 === Blocking processing
 
-You often need to combine Reactive Messaging with blocking processing such as database interactions.
+Reactive Messaging invokes your method on an I/O thread.
+See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture documentation] for further details on this topic.
+But, you often need to combine Reactive Messaging with blocking processing such as database interactions.
 For this, you need to use the `@Blocking` annotation indicating that the processing is _blocking_ and should not be run on the caller thread.
 
 For example, The following code illustrates how you can store incoming payloads to a database using Hibernate with Panache:
@@ -1504,6 +1507,14 @@ link:deploying-to-kubernetes[Service Binding Specification for Kubernetes].
 You can enable this by adding the `quarkus-kubernetes-service-binding` extension to your application.
 
 When running in appropriately configured Kubernetes clusters, Kafka extension will pull its Kafka broker connection configuration from the service binding available inside the cluster, without the need for user configuration.
+
+== Execution model
+
+Reactive Messaging invokes user's methods on an I/O thread.
+Thus, by default, the methods must not block.
+As described in <<blocking-processing>>, you need to add the `@Blocking` annotation on the method if this method will block the caller thread.
+
+See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture documentation] for further details on this topic.
 
 [[kafka-configuration]]
 == Configuration Reference

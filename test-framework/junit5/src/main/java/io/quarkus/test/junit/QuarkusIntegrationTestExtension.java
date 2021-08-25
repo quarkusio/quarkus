@@ -1,8 +1,15 @@
 package io.quarkus.test.junit;
 
-import static io.quarkus.test.junit.IntegrationTestUtil.*;
+import static io.quarkus.test.junit.IntegrationTestUtil.determineBuildOutputDirectory;
+import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndProperties;
+import static io.quarkus.test.junit.IntegrationTestUtil.doProcessTestInstance;
 import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
+import static io.quarkus.test.junit.IntegrationTestUtil.getSysPropsToRestore;
+import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
+import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
+import static io.quarkus.test.junit.IntegrationTestUtil.startLauncher;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -208,21 +215,40 @@ public class QuarkusIntegrationTestExtension
             for (Field f : c.getDeclaredFields()) {
                 if (f.getType().equals(QuarkusIntegrationTest.Context.class)) {
                     try {
-                        Map<String, String> devServicesPropsCopy = devServicesProps.isEmpty() ? Collections.emptyMap()
-                                : Collections.unmodifiableMap(devServicesProps);
-                        QuarkusIntegrationTest.Context testContext = new DefaultQuarkusIntegrationTestContext(
-                                devServicesPropsCopy);
                         f.setAccessible(true);
-                        f.set(testInstance, testContext);
+                        f.set(testInstance, createTestContext());
                         return;
                     } catch (Exception e) {
                         throw new RuntimeException("Unable to set field '" + f.getName()
                                 + "' with the proper test context", e);
                     }
+                } else {
+                    Constructor<?> testContextAware = null;
+                    try {
+                        testContextAware = f.getType().getConstructor(QuarkusIntegrationTest.Context.class);
+                    } catch (Exception t) {
+                        continue;
+                    }
+                    if (testContextAware != null) {
+                        try {
+                            Object testContextAwareInstance = testContextAware.newInstance(createTestContext());
+                            f.setAccessible(true);
+                            f.set(testInstance, testContextAwareInstance);
+                        } catch (Exception e) {
+                            throw new RuntimeException("Unable to set field '" + f.getName()
+                                    + "' with the proper test context", e);
+                        }
+                    }
                 }
             }
             c = c.getSuperclass();
         }
+    }
+
+    private QuarkusIntegrationTest.Context createTestContext() {
+        Map<String, String> devServicesPropsCopy = devServicesProps.isEmpty() ? Collections.emptyMap()
+                : Collections.unmodifiableMap(devServicesProps);
+        return new DefaultQuarkusIntegrationTestContext(devServicesPropsCopy);
     }
 
     private void throwBootFailureException() {

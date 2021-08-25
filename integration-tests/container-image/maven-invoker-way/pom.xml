@@ -138,6 +138,9 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <skip>${skipTests}</skip>
+                </configuration>
             </plugin>
         </plugins>
     </build>

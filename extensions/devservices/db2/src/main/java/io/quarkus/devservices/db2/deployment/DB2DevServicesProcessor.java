@@ -35,17 +35,17 @@ public class DB2DevServicesProcessor {
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
                     OptionalInt fixedExposedPort, LaunchMode launchMode) {
-                Db2Container container = new QuarkusDb2Container(imageName, fixedExposedPort,
-                        devServicesSharedNetworkBuildItem.isPresent())
-                                .withPassword(password.orElse("quarkus"))
-                                .withUsername(username.orElse("quarkus"))
-                                .withDatabaseName(datasourceName.orElse("default"));
+                QuarkusDb2Container container = new QuarkusDb2Container(imageName, fixedExposedPort,
+                        devServicesSharedNetworkBuildItem.isPresent());
+                container.withPassword(password.orElse("quarkus"))
+                        .withUsername(username.orElse("quarkus"))
+                        .withDatabaseName(datasourceName.orElse("default"));
                 additionalProperties.forEach(container::withUrlParam);
                 container.start();
 
                 LOG.info("Dev Services for IBM Db2 started.");
 
-                return new RunningDevServicesDatasource(container.getJdbcUrl(), container.getUsername(),
+                return new RunningDevServicesDatasource(container.getEffectiveJdbcUrl(), container.getUsername(),
                         container.getPassword(),
                         new Closeable() {
                             @Override
@@ -86,8 +86,11 @@ public class DB2DevServicesProcessor {
             }
         }
 
-        @Override
-        public String getJdbcUrl() {
+        // this is meant to be called by Quarkus code and is not strictly needed
+        // in the DB2 case as testcontainers does not try to establish
+        // a connection to determine if the container is ready, but we do it anyway to be consistent across
+        // DB containers
+        public String getEffectiveJdbcUrl() {
             if (useSharedNetwork) {
                 // in this case we expose the URL using the network alias we created in 'configure'
                 // and the container port since the application communicating with this container

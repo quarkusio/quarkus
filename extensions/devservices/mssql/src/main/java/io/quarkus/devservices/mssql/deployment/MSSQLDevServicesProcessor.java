@@ -7,7 +7,6 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.jboss.logging.Logger;
-import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.MSSQLServerContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -36,15 +35,15 @@ public class MSSQLDevServicesProcessor {
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
                     OptionalInt fixedExposedPort, LaunchMode launchMode) {
-                JdbcDatabaseContainer container = new QuarkusMSSQLServerContainer(imageName, fixedExposedPort,
-                        devServicesSharedNetworkBuildItem.isPresent())
-                                .withPassword(password.orElse("Quarkuspassword1"));
+                QuarkusMSSQLServerContainer container = new QuarkusMSSQLServerContainer(imageName, fixedExposedPort,
+                        devServicesSharedNetworkBuildItem.isPresent());
+                container.withPassword(password.orElse("Quarkuspassword1"));
                 additionalProperties.forEach(container::withUrlParam);
                 container.start();
 
                 LOG.info("Dev Services for Microsoft SQL Server started.");
 
-                return new RunningDevServicesDatasource(container.getJdbcUrl(), container.getUsername(),
+                return new RunningDevServicesDatasource(container.getEffectiveJdbcUrl(), container.getUsername(),
                         container.getPassword(),
                         new Closeable() {
                             @Override
@@ -86,8 +85,9 @@ public class MSSQLDevServicesProcessor {
             }
         }
 
-        @Override
-        public String getJdbcUrl() {
+        // this is meant to be called by Quarkus code and is needed in order to not disrupt testcontainers
+        // from being able to determine the status of the container (which it does by trying to acquire a connection)
+        public String getEffectiveJdbcUrl() {
             if (useSharedNetwork) {
                 // in this case we expose the URL using the network alias we created in 'configure'
                 // and the container port since the application communicating with this container

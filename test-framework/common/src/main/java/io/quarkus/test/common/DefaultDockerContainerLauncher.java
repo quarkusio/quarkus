@@ -47,6 +47,12 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         this.pullRequired = initContext.pullRequired();
     }
 
+    @Override
+    public LaunchResult runToCompletion(String[] args) {
+        throw new UnsupportedOperationException("not implemented for docker yet");
+    }
+
+    @Override
     public void start() throws IOException {
 
         if (pullRequired) {
@@ -86,11 +92,14 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         if (devServicesLaunchResult.networkId() != null) {
             args.add("--net=" + devServicesLaunchResult.networkId());
         }
-        args.addAll(toEnvVar("quarkus.http.port", "" + httpPort));
-        args.addAll(toEnvVar("quarkus.http.ssl-port", "" + httpsPort));
-        // this won't be correct when using the random port but it's really only used by us for the rest client tests
-        // in the main module, since those tests hit the application itself
-        args.addAll(toEnvVar("test.url", TestHTTPResourceManager.getUri()));
+
+        if (DefaultJarLauncher.HTTP_PRESENT) {
+            args.addAll(toEnvVar("quarkus.http.port", "" + httpPort));
+            args.addAll(toEnvVar("quarkus.http.ssl-port", "" + httpsPort));
+            // this won't be correct when using the random port but it's really only used by us for the rest client tests
+            // in the main module, since those tests hit the application itself
+            args.addAll(toEnvVar("test.url", TestHTTPResourceManager.getUri()));
+        }
         if (testProfile != null) {
             args.addAll(toEnvVar("quarkus.profile", testProfile));
         }

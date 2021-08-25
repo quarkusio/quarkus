@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.CodeSource;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -70,42 +71,30 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         return null;
     }
 
+    @Override
+    public LaunchResult runToCompletion(String[] args) {
+        try {
+            start(args);
+            ProcessReader error = new ProcessReader(quarkusProcess.getErrorStream());
+            ProcessReader stdout = new ProcessReader(quarkusProcess.getInputStream());
+            Thread t = new Thread(error, "Error stream reader");
+            t.start();
+            t = new Thread(stdout, "Stdout stream reader");
+            t.start();
+            byte[] s = stdout.get();
+            byte[] e = error.get();
+            return new LaunchResult(quarkusProcess.waitFor(), s, e);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void start() throws IOException {
-        System.setProperty("test.url", TestHTTPResourceManager.getUri());
+        start(new String[0]);
 
-        if (nativeImagePath == null) {
-            nativeImagePath = guessPath(testClass);
-        }
-        List<String> args = new ArrayList<>();
-        args.add(nativeImagePath);
-        if (!argLine.isEmpty()) {
-            args.addAll(argLine);
-        }
-        args.add("-Dquarkus.http.port=" + httpPort);
-        args.add("-Dquarkus.http.ssl-port=" + httpsPort);
-        // this won't be correct when using the random port but it's really only used by us for the rest client tests
-        // in the main module, since those tests hit the application itself
-        args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
         Path logFile = PropertyTestUtil.getLogFilePath();
-        args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath().toString());
-        args.add("-Dquarkus.log.file.enable=true");
-        if (testProfile != null) {
-            args.add("-Dquarkus.profile=" + testProfile);
-        }
-        for (Map.Entry<String, String> e : systemProps.entrySet()) {
-            args.add("-D" + e.getKey() + "=" + e.getValue());
-        }
-
-        System.out.println("Executing " + args);
-
-        Files.deleteIfExists(logFile);
-        Files.createDirectories(logFile.getParent());
-
         Supplier<Boolean> startedSupplier = createStartedSupplier(); // keep the legacy SPI handling
         Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
-
-        quarkusProcess = launchProcess(args);
-
         if (startedSupplier != null) {
             waitForStartedSupplier(startedSupplier, quarkusProcess, waitTimeSeconds);
         } else if (startedFunction != null) {
@@ -117,6 +106,43 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
             updateConfigForPort(result.getPort());
             isSsl = result.isSsl();
         }
+    }
+
+    public void start(String[] programArgs) throws IOException {
+        System.setProperty("test.url", TestHTTPResourceManager.getUri());
+
+        if (nativeImagePath == null) {
+            nativeImagePath = guessPath(testClass);
+        }
+        List<String> args = new ArrayList<>();
+        args.add(nativeImagePath);
+        if (!argLine.isEmpty()) {
+            args.addAll(argLine);
+        }
+        if (DefaultJarLauncher.HTTP_PRESENT) {
+            args.add("-Dquarkus.http.port=" + httpPort);
+            args.add("-Dquarkus.http.ssl-port=" + httpsPort);
+            // this won't be correct when using the random port but it's really only used by us for the rest client tests
+            // in the main module, since those tests hit the application itself
+            args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
+        }
+        Path logFile = PropertyTestUtil.getLogFilePath();
+        args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath().toString());
+        args.add("-Dquarkus.log.file.enable=true");
+        if (testProfile != null) {
+            args.add("-Dquarkus.profile=" + testProfile);
+        }
+        for (Map.Entry<String, String> e : systemProps.entrySet()) {
+            args.add("-D" + e.getKey() + "=" + e.getValue());
+        }
+        args.addAll(Arrays.asList(programArgs));
+        System.out.println("Executing " + args);
+
+        Files.deleteIfExists(logFile);
+        Files.createDirectories(logFile.getParent());
+
+        quarkusProcess = launchProcess(args);
+
     }
 
     private void waitForStartedSupplier(Supplier<Boolean> startedSupplier, Process quarkusProcess, long waitTime) {

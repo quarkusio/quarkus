@@ -14,6 +14,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
 
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
 import picocli.CommandLine;
 
 public class CliDriver {
@@ -59,7 +60,7 @@ public class CliDriver {
         return result;
     }
 
-    public static Result execute(Path startingDir, String... args) throws Exception {
+    public static Result execute(QuarkusMainLauncher launcher, Path startingDir, String... args) throws Exception {
 
         List<String> newArgs = new ArrayList<>();
         newArgs.addAll(Arrays.asList(args));
@@ -79,26 +80,11 @@ public class CliDriver {
 
         System.out.println("$ quarkus " + String.join(" ", newArgs));
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        PrintStream outPs = new PrintStream(out);
-        System.setOut(outPs);
-
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        PrintStream errPs = new PrintStream(err);
-        System.setErr(errPs);
-
+        var res = launcher.launch(newArgs.toArray(String[]::new));
         Result result = new Result();
-        QuarkusCli cli = new QuarkusCli();
-        try {
-            result.exitCode = cli.run(newArgs.toArray(String[]::new));
-            outPs.flush();
-            errPs.flush();
-        } finally {
-            System.setOut(stdout);
-            System.setErr(stderr);
-        }
-        result.stdout = out.toString();
-        result.stderr = err.toString();
+        result.stderr = res.getErrorOutput();
+        result.stdout = res.getOutput();
+        result.exitCode = res.exitCode();
         return result;
     }
 
@@ -162,8 +148,8 @@ public class CliDriver {
                 "Package directory should be a directory: " + packagePath.toAbsolutePath().toString());
     }
 
-    public static Result invokeValidateExtensionList(Path projectRoot) throws Exception {
-        Result result = execute(projectRoot, "extension", "list", "-e", "-B", "--verbose");
+    public static Result invokeValidateExtensionList(QuarkusMainLauncher launcher, Path projectRoot) throws Exception {
+        Result result = execute(launcher, projectRoot, "extension", "list", "-e", "-B", "--verbose");
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
@@ -174,14 +160,14 @@ public class CliDriver {
         return result;
     }
 
-    public static Result invokeExtensionAddQute(Path projectRoot, Path file) throws Exception {
+    public static Result invokeExtensionAddQute(QuarkusMainLauncher launcher, Path projectRoot, Path file) throws Exception {
         // add the qute extension
-        Result result = execute(projectRoot, "extension", "add", "qute", "-e", "-B", "--verbose");
+        Result result = execute(launcher, projectRoot, "extension", "add", "qute", "-e", "-B", "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
         // list all extensions, make sure qute is present
-        result = invokeValidateExtensionList(projectRoot);
+        result = invokeValidateExtensionList(launcher, projectRoot);
         Assertions.assertTrue(result.stdout.contains("quarkus-qute"),
                 "Expected quarkus-qute to be in the list of extensions. Result:\n" + result);
 
@@ -192,14 +178,14 @@ public class CliDriver {
         return result;
     }
 
-    public static Result invokeExtensionRemoveQute(Path projectRoot, Path file) throws Exception {
+    public static Result invokeExtensionRemoveQute(QuarkusMainLauncher launcher, Path projectRoot, Path file) throws Exception {
         // remove the qute extension
-        Result result = execute(projectRoot, "extension", "remove", "qute", "-e", "-B", "--verbose");
+        Result result = execute(launcher, projectRoot, "extension", "remove", "qute", "-e", "-B", "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
         // list all extensions, make sure qute is present
-        result = invokeValidateExtensionList(projectRoot);
+        result = invokeValidateExtensionList(launcher, projectRoot);
         Assertions.assertFalse(result.stdout.contains("quarkus-qute"),
                 "Expected quarkus-qute to be missing from the list of extensions. Result:\n" + result);
 
@@ -210,14 +196,16 @@ public class CliDriver {
         return result;
     }
 
-    public static Result invokeExtensionAddMultiple(Path projectRoot, Path file) throws Exception {
+    public static Result invokeExtensionAddMultiple(QuarkusMainLauncher launcher, Path projectRoot, Path file)
+            throws Exception {
         // add the qute extension
-        Result result = execute(projectRoot, "extension", "add", "amazon-lambda-http", "jackson", "-e", "-B", "--verbose");
+        Result result = execute(launcher, projectRoot, "extension", "add", "amazon-lambda-http", "jackson", "-e", "-B",
+                "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
         // list all extensions, make sure all are present
-        result = invokeValidateExtensionList(projectRoot);
+        result = invokeValidateExtensionList(launcher, projectRoot);
         Assertions.assertTrue(result.stdout.contains("quarkus-qute"),
                 "Expected quarkus-qute to be in the list of extensions. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("quarkus-amazon-lambda-http"),
@@ -236,14 +224,16 @@ public class CliDriver {
         return result;
     }
 
-    public static Result invokeExtensionRemoveMultiple(Path projectRoot, Path file) throws Exception {
+    public static Result invokeExtensionRemoveMultiple(QuarkusMainLauncher launcher, Path projectRoot, Path file)
+            throws Exception {
         // add the qute extension
-        Result result = execute(projectRoot, "extension", "remove", "amazon-lambda-http", "jackson", "-e", "-B", "--verbose");
+        Result result = execute(launcher, projectRoot, "extension", "remove", "amazon-lambda-http", "jackson", "-e", "-B",
+                "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
         // list all extensions, make sure all are present
-        result = invokeValidateExtensionList(projectRoot);
+        result = invokeValidateExtensionList(launcher, projectRoot);
         Assertions.assertFalse(result.stdout.contains("quarkus-qute"),
                 "quarkus-qute should not be in the list of extensions. Result:\n" + result);
         Assertions.assertFalse(result.stdout.contains("quarkus-amazon-lambda-http"),
@@ -262,8 +252,8 @@ public class CliDriver {
         return result;
     }
 
-    public static Result invokeExtensionListInstallable(Path projectRoot) throws Exception {
-        Result result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i");
+    public static Result invokeExtensionListInstallable(QuarkusMainLauncher launcher, Path projectRoot) throws Exception {
+        Result result = CliDriver.execute(launcher, projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("quarkus-hibernate-orm"),
@@ -273,8 +263,9 @@ public class CliDriver {
         return result;
     }
 
-    public static Result invokeExtensionListInstallableSearch(Path projectRoot) throws Exception {
-        Result result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--search=vertx-*");
+    public static Result invokeExtensionListInstallableSearch(QuarkusMainLauncher launcher, Path projectRoot) throws Exception {
+        Result result = CliDriver.execute(launcher, projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i",
+                "--search=vertx-*");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
@@ -286,8 +277,9 @@ public class CliDriver {
         return result;
     }
 
-    public static void invokeExtensionListFormatting(Path projectRoot) throws Exception {
-        Result result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--concise");
+    public static void invokeExtensionListFormatting(QuarkusMainLauncher launcher, Path projectRoot) throws Exception {
+        Result result = CliDriver.execute(launcher, projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i",
+                "--concise");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("quarkus-vertx-web"),
@@ -295,38 +287,39 @@ public class CliDriver {
         Assertions.assertTrue(result.stdout.contains("Reactive Routes"),
                 "'Reactive Routes' descriptive name should be returned in results. Found:\n" + result);
 
-        result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--full");
+        result = CliDriver.execute(launcher, projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--full");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         // TODO
 
-        result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--origins");
+        result = CliDriver.execute(launcher, projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--origins");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         // TODO
 
         // Two different output options can not be specified together
-        result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--origins", "--name");
+        result = CliDriver.execute(launcher, projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--origins",
+                "--name");
         Assertions.assertEquals(CommandLine.ExitCode.USAGE, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         // TODO
     }
 
-    public static Result invokeExtensionAddRedundantQute(Path projectRoot) throws Exception {
-        Result result = execute(projectRoot, "extension", "add", "-e", "-B", "--verbose", "qute");
+    public static Result invokeExtensionAddRedundantQute(QuarkusMainLauncher launcher, Path projectRoot) throws Exception {
+        Result result = execute(launcher, projectRoot, "extension", "add", "-e", "-B", "--verbose", "qute");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         return result;
     }
 
-    public static Result invokeExtensionRemoveNonexistent(Path projectRoot) throws Exception {
-        Result result = execute(projectRoot, "extension", "remove", "-e", "-B", "--verbose", "nonexistent");
+    public static Result invokeExtensionRemoveNonexistent(QuarkusMainLauncher launcher, Path projectRoot) throws Exception {
+        Result result = execute(launcher, projectRoot, "extension", "remove", "-e", "-B", "--verbose", "nonexistent");
         System.out.println(result);
         return result;
     }
 
-    public static Result invokeValidateDryRunBuild(Path projectRoot) throws Exception {
-        Result result = execute(projectRoot, "build", "-e", "-B", "--dryrun",
+    public static Result invokeValidateDryRunBuild(QuarkusMainLauncher launcher, Path projectRoot) throws Exception {
+        Result result = execute(launcher, projectRoot, "build", "-e", "-B", "--dryrun",
                 "-Dproperty=value1", "-Dproperty2=value2");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
@@ -335,8 +328,8 @@ public class CliDriver {
         return result;
     }
 
-    public static Result invokeValidateBuild(Path projectRoot) throws Exception {
-        Result result = execute(projectRoot, "build", "-e", "-B", "--clean",
+    public static Result invokeValidateBuild(QuarkusMainLauncher launcher, Path projectRoot) throws Exception {
+        Result result = execute(launcher, projectRoot, "build", "-e", "-B", "--clean",
                 "-Dproperty=value1", "-Dproperty2=value2");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);

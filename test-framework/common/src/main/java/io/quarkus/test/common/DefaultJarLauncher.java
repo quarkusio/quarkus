@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,19 @@ import java.util.function.Function;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 public class DefaultJarLauncher implements JarArtifactLauncher {
+
+    private static final String VERTX_HTTP_RECORDER = "io.quarkus.vertx.http.runtime.VertxHttpRecorder";
+    static boolean HTTP_PRESENT;
+
+    static {
+        boolean http = true;
+        try {
+            Class.forName(VERTX_HTTP_RECORDER);
+        } catch (ClassNotFoundException e) {
+            http = false;
+        }
+        HTTP_PRESENT = http;
+    }
 
     private int httpPort;
     private int httpsPort;
@@ -41,6 +55,39 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     }
 
     public void start() throws IOException {
+        start(new String[0], true);
+        Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
+        var logFile = PropertyTestUtil.getLogFilePath();
+        if (startedFunction != null) {
+            IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction, quarkusProcess,
+                    waitTimeSeconds, logFile);
+            isSsl = result.isSsl();
+        } else {
+            ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, waitTimeSeconds);
+            updateConfigForPort(result.getPort());
+            isSsl = result.isSsl();
+        }
+    }
+
+    @Override
+    public LaunchResult runToCompletion(String[] args) {
+        try {
+            start(args, false);
+            ProcessReader error = new ProcessReader(quarkusProcess.getErrorStream());
+            ProcessReader stdout = new ProcessReader(quarkusProcess.getInputStream());
+            Thread t = new Thread(error, "Error stream reader");
+            t.start();
+            t = new Thread(stdout, "Stdout stream reader");
+            t.start();
+            byte[] s = stdout.get();
+            byte[] e = error.get();
+            return new LaunchResult(quarkusProcess.waitFor(), s, e);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void start(String[] programArgs, boolean handleIo) throws IOException {
 
         System.setProperty("test.url", TestHTTPResourceManager.getUri());
 
@@ -49,11 +96,13 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         if (!argLine.isEmpty()) {
             args.addAll(argLine);
         }
-        args.add("-Dquarkus.http.port=" + httpPort);
-        args.add("-Dquarkus.http.ssl-port=" + httpsPort);
-        // this won't be correct when using the random port but it's really only used by us for the rest client tests
-        // in the main module, since those tests hit the application itself
-        args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
+        if (HTTP_PRESENT) {
+            args.add("-Dquarkus.http.port=" + httpPort);
+            args.add("-Dquarkus.http.ssl-port=" + httpsPort);
+            // this won't be correct when using the random port but it's really only used by us for the rest client tests
+            // in the main module, since those tests hit the application itself
+            args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
+        }
         Path logFile = PropertyTestUtil.getLogFilePath();
         args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath().toString());
         args.add("-Dquarkus.log.file.enable=true");
@@ -65,23 +114,17 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         }
         args.add("-jar");
         args.add(jarPath.toAbsolutePath().toString());
+        args.addAll(Arrays.asList(programArgs));
 
         System.out.println("Executing " + args);
 
         Files.deleteIfExists(logFile);
         Files.createDirectories(logFile.getParent());
 
-        Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
-
-        quarkusProcess = LauncherUtil.launchProcess(args);
-        if (startedFunction != null) {
-            IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction, quarkusProcess,
-                    waitTimeSeconds, logFile);
-            isSsl = result.isSsl();
+        if (handleIo) {
+            quarkusProcess = LauncherUtil.launchProcess(args);
         } else {
-            ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, waitTimeSeconds);
-            updateConfigForPort(result.getPort());
-            isSsl = result.isSsl();
+            quarkusProcess = Runtime.getRuntime().exec(args.toArray(new String[0]));
         }
 
     }

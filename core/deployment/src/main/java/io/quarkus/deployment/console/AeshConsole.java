@@ -289,7 +289,7 @@ public class AeshConsole extends QuarkusConsole {
         return lines;
     }
 
-    public void write(String s) {
+    public void write(boolean errorStream, String s) {
         if (IN_WRITE.get()) {
             return;
         }
@@ -319,10 +319,8 @@ public class AeshConsole extends QuarkusConsole {
 
         StringBuilder buffer = new StringBuilder();
         synchronized (this) {
-            if (outputFilter != null) {
-                if (!outputFilter.test(s)) {
-                    return;
-                }
+            if (!shouldWrite(errorStream, s)) {
+                return;
             }
             if (totalStatusLines == 0) {
                 bottomBlankSpace = 0; //just to be safe, will only happen if status is added then removed, which is not really likely
@@ -384,8 +382,8 @@ public class AeshConsole extends QuarkusConsole {
         deadlockSafeWrite();
     }
 
-    public void write(byte[] buf, int off, int len) {
-        write(new String(buf, off, len, connection.outputEncoding()));
+    public void write(boolean errorStream, byte[] buf, int off, int len) {
+        write(errorStream, new String(buf, off, len, connection.outputEncoding()));
     }
 
     @Override

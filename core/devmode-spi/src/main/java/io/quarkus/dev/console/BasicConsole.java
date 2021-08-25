@@ -153,13 +153,11 @@ public class BasicConsole extends QuarkusConsole {
     }
 
     @Override
-    public void write(String s) {
-        if (outputFilter != null) {
-            if (!outputFilter.test(s)) {
-                //we still test, the output filter may be recording output
-                if (!DISABLE_FILTER.get()) {
-                    return;
-                }
+    public void write(boolean errorStream, String s) {
+        if (!shouldWrite(errorStream, s)) {
+            //we still test, the output filter may be recording output
+            if (!DISABLE_FILTER.get()) {
+                return;
             }
         }
         if (!color) {
@@ -171,8 +169,8 @@ public class BasicConsole extends QuarkusConsole {
     }
 
     @Override
-    public void write(byte[] buf, int off, int len) {
-        write(new String(buf, off, len, StandardCharsets.UTF_8));
+    public void write(boolean errorStream, byte[] buf, int off, int len) {
+        write(errorStream, new String(buf, off, len, StandardCharsets.UTF_8));
     }
 
     @Override

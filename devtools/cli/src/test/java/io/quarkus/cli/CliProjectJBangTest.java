@@ -13,8 +13,11 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.project.codegen.CreateProjectHelper;
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 import picocli.CommandLine;
 
+@QuarkusMainTest
 public class CliProjectJBangTest {
     static Path workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
             .resolve("target/test-project/CliProjectJBangTest");
@@ -38,8 +41,9 @@ public class CliProjectJBangTest {
     }
 
     @Test
-    public void testCreateAppDefaults() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang", "--verbose", "-e", "-B");
+    public void testCreateAppDefaults(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.Result result = CliDriver.execute(launcher, workspaceRoot, "create", "app", "--jbang", "--verbose", "-e",
+                "-B");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
@@ -57,22 +61,23 @@ public class CliProjectJBangTest {
         Assertions.assertTrue(source.contains("quarkus-resteasy"),
                 "Generated source should reference resteasy. Found:\n" + source);
 
-        result = CliDriver.invokeValidateDryRunBuild(project);
+        result = CliDriver.invokeValidateDryRunBuild(launcher, project);
         Assertions.assertTrue(result.stdout.contains("-Dproperty=value1 -Dproperty2=value2"),
                 "result should contain '-Dproperty=value1 -Dproperty2=value2':\n" + result.stdout);
 
-        CliDriver.invokeValidateBuild(project);
+        CliDriver.invokeValidateBuild(launcher, project);
     }
 
     @Test
-    public void testCreateAppOverrides() throws Exception {
+    public void testCreateAppOverrides(QuarkusMainLauncher launcher) throws Exception {
         Path nested = workspaceRoot.resolve("cli-nested");
         project = nested.resolve("my-project");
 
         List<String> configs = Arrays.asList("custom.app.config1=val1",
                 "custom.app.config2=val2", "lib.config=val3");
 
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang", "--verbose", "-e", "-B",
+        CliDriver.Result result = CliDriver.execute(launcher, workspaceRoot, "create", "app", "--jbang", "--verbose", "-e",
+                "-B",
                 "--package-name=custom.pkg",
                 "--output-directory=" + nested,
                 "--app-config=" + String.join(",", configs),
@@ -93,14 +98,15 @@ public class CliProjectJBangTest {
         Assertions.assertTrue(source.contains("quarkus-vertx-web"),
                 "Generated source should reference vertx-web. Found:\n" + source);
 
-        result = CliDriver.invokeValidateDryRunBuild(project);
+        result = CliDriver.invokeValidateDryRunBuild(launcher, project);
 
-        CliDriver.invokeValidateBuild(project);
+        CliDriver.invokeValidateBuild(launcher, project);
     }
 
     @Test
-    public void testCreateCliDefaults() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "cli", "--jbang", "--verbose", "-e", "-B");
+    public void testCreateCliDefaults(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.Result result = CliDriver.execute(launcher, workspaceRoot, "create", "cli", "--jbang", "--verbose", "-e",
+                "-B");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
@@ -120,21 +126,22 @@ public class CliProjectJBangTest {
         Assertions.assertTrue(source.contains("quarkus-picocli"),
                 "Generated source should not reference picocli. Found:\n" + source);
 
-        result = CliDriver.invokeValidateDryRunBuild(project);
+        result = CliDriver.invokeValidateDryRunBuild(launcher, project);
 
-        result = CliDriver.execute(project, "build", "-e", "-B", "--clean", "--verbose",
+        result = CliDriver.execute(launcher, project, "build", "-e", "-B", "--clean", "--verbose",
                 "-Dproperty=value1", "-Dproperty2=value2");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
     }
 
     @Test
-    public void testBuildOptions() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang", "-e", "-B", "--verbose");
+    public void testBuildOptions(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.Result result = CliDriver.execute(launcher, workspaceRoot, "create", "app", "--jbang", "-e", "-B",
+                "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         // 1 --clean --tests --native --offline
-        result = CliDriver.execute(project, "build", "-e", "-B", "--dry-run",
+        result = CliDriver.execute(launcher, project, "build", "-e", "-B", "--dry-run",
                 "--clean", "--tests", "--native", "--offline");
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
@@ -152,7 +159,7 @@ public class CliProjectJBangTest {
                 "jbang command should specify --offline\n" + result);
 
         // 2 --no-clean --no-tests
-        result = CliDriver.execute(project, "build", "-e", "-B", "--dry-run",
+        result = CliDriver.execute(launcher, project, "build", "-e", "-B", "--dry-run",
                 "--no-clean", "--no-tests");
 
         Assertions.assertFalse(result.stdout.contains("--fresh"),

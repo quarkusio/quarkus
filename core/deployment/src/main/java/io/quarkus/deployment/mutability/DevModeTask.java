@@ -161,7 +161,10 @@ public class DevModeTask {
                     try (ZipInputStream fs = new ZipInputStream(Files.newInputStream(p))) {
                         ZipEntry entry = fs.getNextEntry();
                         while (entry != null) {
-                            Path target = moduleClasses.resolve(entry.getName());
+                            Path target = moduleClasses.resolve(entry.getName()).normalize();
+                            if (!target.startsWith(moduleClasses)) {
+                                throw new IOException("Bad ZIP entry: " + target);
+                            }
                             if (entry.getName().endsWith("/")) {
                                 Files.createDirectories(target);
                             } else {

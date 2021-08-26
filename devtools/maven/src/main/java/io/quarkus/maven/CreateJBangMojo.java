@@ -27,6 +27,7 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.maven.MojoMessageWriter;
 import io.quarkus.registry.RegistryResolutionException;
@@ -89,7 +90,7 @@ public class CreateJBangMojo extends AbstractMojo {
         try {
             mvn = MavenArtifactResolver.builder()
                     .setRepositorySystem(repoSystem)
-                    .setRepositorySystemSession(repoSession)
+                    .setRepositorySystemSession(MojoUtils.muteTransferListener(repoSession))
                     .setRemoteRepositories(repos)
                     .setRemoteRepositoryManager(remoteRepoManager)
                     .build();

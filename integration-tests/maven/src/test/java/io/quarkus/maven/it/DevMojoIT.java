@@ -276,6 +276,37 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
+    public void testThatNonExistentSrcDirCanBeAdded() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic", "projects/project-classic-run-java-change");
+
+        File sourceDir = new File(testDir, "src/main/java");
+        File sourceDirMoved = new File(testDir, "src/main/java-moved");
+        if (!sourceDir.renameTo(sourceDirMoved)) {
+            Assertions.fail("move failed");
+        }
+        //we need this to make run and check work
+        File hello = new File(testDir, "src/main/resources/META-INF/resources/app/hello");
+        hello.getParentFile().mkdir();
+        try (var o = new FileOutputStream(hello)) {
+            o.write("hello".getBytes(StandardCharsets.UTF_8));
+        }
+
+        runAndCheck();
+        hello.delete();
+        if (!DevModeTestUtils.getHttpResponse("/app/hello", 404)) {
+            Assertions.fail("expected resource to be deleted");
+        }
+        if (!sourceDirMoved.renameTo(sourceDir)) {
+            Assertions.fail("move failed");
+        }
+
+        // Wait until we get "hello"
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("hello"));
+    }
+
+    @Test
     public void testThatInstrumentationBasedReloadWorks() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic-inst", "projects/project-intrumentation-reload");
         runAndCheck();

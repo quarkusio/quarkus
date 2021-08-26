@@ -3,12 +3,14 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Using HTTP with Reactive Messaging
+= Using WebSockets with Reactive Messaging
 
 include::./attributes.adoc[]
 
 This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to
-consume and produce HTTP messages.
+consume and produce messages via WebSockets.
+WebSockets support is a part of the Reactive Messaging HTTP extension (`quarkus-reactive-messaging-http`).
+
 
 == Prerequisites
 
@@ -22,11 +24,13 @@ To complete this guide, you need:
 
 == Architecture
 
-In this guide we will implement a service, namely `CostConverter` that consumes HTTP messages
+In this guide we will implement a service, namely `CostConverter` that consumes messages
 with costs in multiple currencies and converts each cost to its value in Euro.
 
 To let a user easily try out the service, we will implement an HTTP resource summing up the costs
 (`CostCollector`), and a simple web page to add new costs and watch the sum.
+
+image::reactive-messaging-websocket.png[alt=Architecture, align=center,width=80%]
 
 
 == Solution
@@ -36,7 +40,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `reactive-messaging-http-quickstart` {quickstarts-tree-url}/reactive-messaging-http-quickstart[directory].
+The solution is located in the `reactive-messaging-websockets-quickstart` {quickstarts-tree-url}/reactive-messaging-websockets-quickstart[directory].
 
 == Creating the Maven Project
 
@@ -46,25 +50,25 @@ First, we need a new project. Create a new project with the following command:
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
-    -DprojectArtifactId=reactive-messaging-http-quickstart \
-    -Dextensions="reactive-messaging-http" \
+    -DprojectArtifactId=reactive-messaging-websockets-quickstart \
+    -Dextensions="reactive-messaging-http,resteasy-reactive-jackson" \
     -DnoExamples
-cd reactive-messaging-http-quickstart
+cd reactive-messaging-websockets-quickstart
 ----
 
-This command generates a Maven project, importing the Reactive Messaging and HTTP connector extensions.
+This command generates a Maven project with Reactive Messaging HTTP connector and RESTEasy Reactive with Jackson support extensions.
+
 
 == The Converter
 
-Create the `src/main/java/org/acme/reactivehttp/CostConverter.java` file, with the following content:
+Create the `src/main/java/org/acme/reactivews/CostConverter.java` file, with the following content:
 
 [source, java]
 ----
-package org.acme.reactivehttp;
+package org.acme.reactivews;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
-import org.jboss.logging.Logger;
 
 import javax.enterprise.context.ApplicationScoped;
 import java.util.HashMap;
@@ -76,25 +80,23 @@ import java.util.Map;
 @ApplicationScoped
 public class CostConverter {
 
-    private static final Logger log = Logger.getLogger(CostConverter.class);
-
     private static final Map<String, Double> conversionRatios = new HashMap<>();
 
     static {
         conversionRatios.put("CHF", 0.93);
         conversionRatios.put("USD", 0.84);
         conversionRatios.put("PLN", 0.22);
-        conversionRatios.put("EUR", 1.);
+        conversionRatios.put("EUR", 1.0);
     }
 
     @Incoming("incoming-costs") // <1>
     @Outgoing("outgoing-costs") // <2>
-    double convert(Cost cost) { // <3>
+    Cost convert(Cost cost) { // <3>
         Double conversionRatio = conversionRatios.get(cost.getCurrency().toUpperCase());
         if (conversionRatio == null) {
-            return 0.;
+            return cost;
         }
-        return conversionRatio * cost.getValue();
+        return new Cost(conversionRatio * cost.getValue(), "EUR");
     }
 }
 
@@ -102,109 +104,129 @@ public class CostConverter {
 ----
 <1> Consume messages from the `incoming-costs` stream.
 <2> Dispatch returned values to the `outgoing-costs` stream.
-<3> Consume an event with payload of type `Cost` and produce a `double`.
+<3> Consume an event with payload of type `Cost` and produce another `Cost`, with value converted
+to Euro if we know the conversion ratio.
 In the case of consuming an arbitrary object, the reactive-messaging-http extension will attempt
 to deserialize the request body as a JSON object.
+
+NOTE: Unlike the outbound HTTP connector, the outbound WebSocket connector does not check if the message is
+consumed by the remote endpoint. It may happen that a failure to receive a message is not reported,
+e.g. if the remote side closes the WebSocket connection in a crucial moment.
 
 Let's define the `Cost` class:
 [source, java]
 ----
-package org.acme.reactivehttp;
+package org.acme.reactivews;
 
 public class Cost {
     private double value;
     private String currency;
 
-    public double getValue() {
-        return value;
+    public Cost(double value, String currency) {
+        this.value = value;
+        this.currency = currency;
+    }
+
+    public Cost() {
     }
 
     public void setValue(double value) {
         this.value = value;
     }
 
-    public String getCurrency() {
-        return currency;
-    }
-
     public void setCurrency(String currency) {
         this.currency = currency;
+    }
+
+    public double getValue() {
+        return value;
+    }
+
+    public String getCurrency() {
+        return currency;
     }
 }
 
 ----
 
 
-
 In the next step, we will create configurations for both streams in the `application.properties` file.
 
-== Configuring the HTTP connector
+== Configuring the Web Socket connector
 
-We need to configure the HTTP connector. This is done in the `application.properties` file.
+We need to configure the Web Socket connector. This is done in the `application.properties` file.
 The keys are structured as follows:
 
 `mp.messaging.[outgoing|incoming].{channel-name}.{property}=value`
 
 The `channel-name` segment must match the value set in the `@Incoming` and `@Outgoing` annotation:
 
-- `incoming-costs` -> a source that receives costs
-- `outgoing-costs` -> a sink that receives converted costs
+- `incoming-costs` -> an inbound WebSocket that receives costs
+- `outgoing-costs` -> an outbound WebSocket that pushes converted costs
 
 [source,properties]
 ----
-mp.messaging.outgoing.outgoing-costs.connector=quarkus-http
+mp.messaging.outgoing.outgoing-costs.connector=quarkus-websocket
 
-# here we are using a URL pointing to a test endpoint
-# you can use e.g. an environment variable to change it
-mp.messaging.outgoing.outgoing-costs.url=http://localhost:${quarkus.http.port}/cost-collector
+# the WebSockets are exposed on the same port as HTTP
+# for non-test profiles, it is quarkus.http.port...
+mp.messaging.outgoing.outgoing-costs.url=ws://localhost:${quarkus.http.port}/cost-collector
 
-# POST is the default method. Another possibility is PUT
-mp.messaging.outgoing.outgoing-costs.method=POST
+# for the test profile it is quarkus.http.test-port
+%test.mp.messaging.outgoing.outgoing-costs.url=ws://localhost:${quarkus.http.test-port}/cost-collector
 
 
-mp.messaging.incoming.incoming-costs.connector=quarkus-http
-
-# the incoming-costs channel will be fed via an endpoint on the `/costs` path
+mp.messaging.incoming.incoming-costs.connector=quarkus-websocket
+# the incoming-costs channel will be fed via a Web Socket endpoint on the `/costs` path
 mp.messaging.incoming.incoming-costs.path=/costs
 
-# POST is the default method. Another possibility is PUT
-mp.messaging.incoming.incoming-costs.method=POST
+mp.messaging.incoming.collector.path=/cost-collector
+mp.messaging.incoming.collector.connector=quarkus-websocket
 ----
 
 
 == The CostCollector
-To illustrate that converting messages and passing them through works, let's add an endpoint that will
-receive the outgoing costs and sum them up.
-This is a usual JAX-RS endpoint.
+To illustrate that converting messages and passing them through works, let's add a `CostCollector` class that consumes the Web Socket messages and exposes information about the sum of collected costs via REST:
 
 [source, java]
 ----
-package org.acme.reactivehttp;
+package org.acme.reactivews;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 
-@Path("/cost-collector")
+@Path("/collected-costs")
 @ApplicationScoped
 public class CostCollector {
-
-    private double sum = 0;
-
-    @POST
-    public void consumeCost(String valueAsString) {
-        sum += Double.parseDouble(valueAsString);
-    }
+    private double sum;
 
     @GET
-    public double getSum() {
+    // expose the sum of the collected costs
+    public synchronized double getCosts() {
         return sum;
     }
 
+    @Incoming("collector")
+    // consume costs from collector channel
+    synchronized void collect(Cost cost) {
+        if ("EUR".equals(cost.getCurrency())) {
+            sum += cost.getValue();
+        }
+    }
 }
 
 ----
+
+One more thing we have to do is to configure the `collector` channel in `application.properties`:
+[source,properties]
+----
+mp.messaging.incoming.collector.path=/cost-collector
+mp.messaging.incoming.collector.connector=quarkus-websocket
+----
+
 
 == The HTML page
 
@@ -213,7 +235,7 @@ To conveniently interact with the application, let's create a simple web page.
 The page will provide a form to add costs, and an info of the current sum of costs.
 The page periodically updates the sum by requesting the current sum from `/cost-collector`.
 
-Create the `src/main/resources/META-INF/resources/index.html` file, with the following content:
+Change the `src/main/resources/META-INF/resources/index.html` file, with the following content:
 
 [source, html]
 ----
@@ -242,34 +264,33 @@ Create the `src/main/resources/META-INF/resources/index.html` file, with the fol
             <select id="currency">
                 <option value="CHF">Swiss franc</option>
                 <option value="USD">United States dollar</option>
-                <option value="CHF">Polish złoty</option>
+                <option value="PLN">Polish złoty</option>
+                <option value="EUR">Euro</option>
             </select>
         </div>
         <input type="button" onclick="add()" value="Add">
     </div>
 
 
-    <h2>Last cost</h2>
+    <h2>Summary</h2>
     <div class="row">
         <p class="col-md-12">The total cost is <strong><span id="content">N/A</span>&nbsp;&euro;</strong>.</p>
     </div>
 </div>
 </body>
 <script>
+    var webSocket = new WebSocket(`ws://${document.location.host}/costs`);
     add = function() {
-        var value = document.getElementById('value').value;
-        var currency = document.getElementById('currency').value;
-
-        var cost = {
+        const cost = {
             value: document.getElementById('value').value,
             currency: document.getElementById('currency').value
         };
 
-        fetch('costs', { method: 'POST', body: JSON.stringify(cost) });
+        webSocket.send(JSON.stringify(cost));
     }
 
     updateCost = function() {
-        fetch('cost-collector').then(response => response.text()).then(sum =>
+        fetch('collected-costs').then(response => response.text()).then(sum =>
             document.getElementById('content').textContent=sum
         );
     }
@@ -302,46 +323,41 @@ You can build the native executable with:
 
 == Going further
 
-=== HTTP connector options
-All `quarkus-http` connector options:
+=== WebSockets
+All `quarkus-websocket` connector options:
 
-[source, properties]
+[source,properties]
 ----
 # OUTGOING
 
 # The target URL
-mp.messaging.outgoing.<channelName>.url=http://localhost:8213
+mp.messaging.outgoing.<channelName>.url=ws://localhost:8234/
 
-# Message payload serializer, optional, implementation of `io.quarkus.reactivemessaging.http.runtime.serializers.Serializer`
+# Message serializer, optional, implementation of `io.quarkus.reactivemessaging.http.runtime.serializers.Serializer`
 mp.messaging.outgoing.<channelName>.serializer=com.example.MySerializer
 
-# The number of attempts to make for sending a request to a remote endpoint. Must not be less than zero
-# Zero by default
-mp.messaging.outgoing.<channelName>.maxRetries=3
+# The number of retries to make for sending a message to a remote websocket endpoint.
+# A value greater than 0 is advised. Otherwise, a web socket timeout can result in a dropped message
+# The default value is 1
+mp.messaging.outgoing.<channelName>.maxRetries=1
 
-# Configures the random factor when using back-off with maxRetries > 0. 0.5 by default
-mp.messaging.outgoing.<channelName>.jitter=0.3
+# Configures the random factor when using back-off with maxAttempts > 1, 0.5 by default
+mp.messaging.outgoing.<channelName>.jitter=0.7
 
 # Configures a back-off delay between attempts to send a request.
 # A random factor (jitter) is applied to increase the delay when several failures happen.
-mp.messaging.outgoing.<channelName>.delay=1s
+mp.messaging.outgoing.<channelName>.delay=2s
 
-#The HTTP method (either `POST` or `PUT`), `POST` by default
-mp.messaging.outgoing.<channelName>.method=PUT
 
-#INCOMING
-# The HTTP method (either `POST` or `PUT`, `POST` by default
-mp.messaging.incoming.<channelName>.method=POST
+# INCOMING
 
 # The path of the endpoint
-mp.messaging.incoming.<channelName>.path=/my-reactive-ws-endpoint
+mp.messaging.incoming.<channelName>.path=/my-ws-endpoint
 
-# HTTP endpoint buffers messages if a consumer is not able to keep up. This setting specifies the size of the buffer.
-# 8 by default.
-mp.messaging.incoming.<channelName>.buffer-size=13
-
+# Web socket endpoint buffers messages if a consumer is not able to keep up.
+# This setting specifies the size of the buffer. 8 by default
+mp.messaging.incoming.<channelName>.buffer-size=3
 ----
-
 
 === Reactive Messaging
 This extension utilizes SmallRye Reactive Messaging to build data streaming applications.

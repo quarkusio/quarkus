@@ -19,9 +19,6 @@ public final class ConfigureUtil {
         String hostName = hostNamePrefix + "-" + Base58.randomString(5);
         container.setNetworkAliases(Collections.singletonList(hostName));
 
-        // we need to clear the exposed ports as they don't make sense when the application is going to
-        // to be communicating with the DB over the same network
-        container.setExposedPorts(Collections.emptyList());
         return hostName;
     }
 }

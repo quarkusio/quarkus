@@ -33,17 +33,17 @@ public class MariaDBDevServicesProcessor {
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
                     OptionalInt fixedExposedPort, LaunchMode launchMode) {
-                MariaDBContainer container = new QuarkusMariaDBContainer(imageName, fixedExposedPort,
-                        devServicesSharedNetworkBuildItem.isPresent())
-                                .withPassword(password.orElse("quarkus"))
-                                .withUsername(username.orElse("quarkus"))
-                                .withDatabaseName(datasourceName.orElse("default"));
+                QuarkusMariaDBContainer container = new QuarkusMariaDBContainer(imageName, fixedExposedPort,
+                        devServicesSharedNetworkBuildItem.isPresent());
+                container.withPassword(password.orElse("quarkus"))
+                        .withUsername(username.orElse("quarkus"))
+                        .withDatabaseName(datasourceName.orElse("default"));
                 additionalProperties.forEach(container::withUrlParam);
                 container.start();
 
                 LOG.info("Dev Services for MariaDB started.");
 
-                return new RunningDevServicesDatasource(container.getJdbcUrl(), container.getUsername(),
+                return new RunningDevServicesDatasource(container.getEffectiveJdbcUrl(), container.getUsername(),
                         container.getPassword(),
                         new Closeable() {
                             @Override
@@ -84,8 +84,9 @@ public class MariaDBDevServicesProcessor {
             }
         }
 
-        @Override
-        public String getJdbcUrl() {
+        // this is meant to be called by Quarkus code and is needed in order to not disrupt testcontainers
+        // from being able to determine the status of the container (which it does by trying to acquire a connection)
+        public String getEffectiveJdbcUrl() {
             if (useSharedNetwork) {
                 String additionalUrlParams = constructUrlParameters("?", "&");
                 return "jdbc:mariadb://" + hostName + ":" + PORT + "/" + getDatabaseName() + additionalUrlParams;

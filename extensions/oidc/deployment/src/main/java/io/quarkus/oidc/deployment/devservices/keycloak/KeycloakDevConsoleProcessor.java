@@ -3,6 +3,8 @@ package io.quarkus.oidc.deployment.devservices.keycloak;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -18,7 +20,7 @@ public class KeycloakDevConsoleProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     public void setConfigProperties(BuildProducer<DevConsoleTemplateInfoBuildItem> console,
-            Optional<KeycloakDevServicesConfigBuildItem> configProps) {
+            Optional<KeycloakDevServicesConfigBuildItem> configProps, Capabilities capabilities) {
         if (configProps.isPresent()) {
             console.produce(
                     new DevConsoleTemplateInfoBuildItem("devServicesEnabled", config.devservices.enabled));
@@ -35,6 +37,10 @@ public class KeycloakDevConsoleProcessor {
                     new DevConsoleTemplateInfoBuildItem("keycloakUsers", configProps.get().getProperties().get("oidc.users")));
             console.produce(new DevConsoleTemplateInfoBuildItem("keycloakRealm", config.devservices.realmName));
             console.produce(new DevConsoleTemplateInfoBuildItem("oidcGrantType", config.devservices.grant.type.getGrantType()));
+
+            console.produce(new DevConsoleTemplateInfoBuildItem("openApiIncluded",
+                    capabilities.isPresent(Capability.SMALLRYE_OPENAPI)));
+
         }
     }
 

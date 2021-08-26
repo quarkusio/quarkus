@@ -366,7 +366,16 @@ function signInToService(servicePath) {
         <br>
         <div class="card implicitLoggedIn">
             <div class="card-header">
-                Test your service
+                <div class="float-left">
+                    Test your service
+                </div>
+                {#if info:openApiIncluded??}
+                <div class="float-right">
+                    <a href="{config:http-path('quarkus.swagger-ui.path')}/" class="btn btn-link" title="Test in Swagger UI">
+                       <i class="fab fa-openid"></i> Swagger UI
+                    </a>
+                </div>
+                {/if}
             </div>
             <div class="card-body border-0">
                 <div class="row">

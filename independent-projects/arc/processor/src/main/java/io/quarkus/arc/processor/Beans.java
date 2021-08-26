@@ -635,7 +635,7 @@ final class Beans {
 
     static List<MethodInfo> getCallbacks(ClassInfo beanClass, DotName annotation, IndexView index) {
         List<MethodInfo> callbacks = new ArrayList<>();
-        collectCallbacks(beanClass, callbacks, annotation, index);
+        collectCallbacks(beanClass, callbacks, annotation, index, new HashSet<>());
         Collections.reverse(callbacks);
         return callbacks;
     }
@@ -833,16 +833,21 @@ final class Beans {
         }
     }
 
-    private static void collectCallbacks(ClassInfo clazz, List<MethodInfo> callbacks, DotName annotation, IndexView index) {
+    private static void collectCallbacks(ClassInfo clazz, List<MethodInfo> callbacks, DotName annotation, IndexView index,
+            Set<String> knownMethods) {
         for (MethodInfo method : clazz.methods()) {
-            if (method.hasAnnotation(annotation) && method.returnType().kind() == Kind.VOID && method.parameters().isEmpty()) {
-                callbacks.add(method);
+            if (method.returnType().kind() == Kind.VOID && method.parameters().isEmpty()) {
+                if (method.hasAnnotation(annotation) && !knownMethods.contains(method.name())) {
+                    callbacks.add(method);
+                }
+                knownMethods.add(method.name());
             }
+
         }
         if (clazz.superName() != null) {
             ClassInfo superClass = getClassByName(index, clazz.superName());
             if (superClass != null) {
-                collectCallbacks(superClass, callbacks, annotation, index);
+                collectCallbacks(superClass, callbacks, annotation, index, knownMethods);
             }
         }
     }

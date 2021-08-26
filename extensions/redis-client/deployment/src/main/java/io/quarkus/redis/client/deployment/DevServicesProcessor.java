@@ -52,9 +52,10 @@ public class DevServicesProcessor {
     private static volatile List<Closeable> closeables;
     private static volatile Map<String, DevServiceConfiguration> capturedDevServicesConfiguration;
     private static volatile boolean first = true;
+    private static volatile Boolean dockerRunning = null;
 
     @Produce(ServiceStartBuildItem.class)
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = IsDockerRunningSilent.class)
+    @BuildStep(onlyIfNot = IsNormal.class)
     public void startRedisContainers(LaunchModeBuildItem launchMode,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
 
@@ -103,6 +104,7 @@ public class DevServicesProcessor {
         if (first) {
             first = false;
             Runnable closeTask = () -> {
+                dockerRunning = null;
                 if (closeables != null) {
                     for (Closeable closeable : closeables) {
                         try {
@@ -135,6 +137,17 @@ public class DevServicesProcessor {
         if (!needToStart) {
             log.debug("Not starting devservices for " + (isDefault(connectionName) ? "default redis client" : connectionName)
                     + " as hosts have been provided");
+            return null;
+        }
+
+        if (dockerRunning == null) {
+            dockerRunning = new IsDockerRunningSilent().getAsBoolean();
+        }
+
+        if (!dockerRunning) {
+            log.warn("Please configure quarkus.redis.hosts for "
+                    + (isDefault(connectionName) ? "default redis client" : connectionName)
+                    + " or get a working docker instance");
             return null;
         }
 

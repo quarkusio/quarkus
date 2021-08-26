@@ -14,6 +14,8 @@ public interface StartupAction {
 
     ClassLoader getClassLoader();
 
+    Map<String, String> getDevServicesProperties();
+
     /**
      * Runs the application by running the main method of the main class. As this is a blocking method a new
      * thread is created to run this task.

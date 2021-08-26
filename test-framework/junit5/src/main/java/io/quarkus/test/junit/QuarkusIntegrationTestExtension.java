@@ -9,7 +9,6 @@ import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.startLauncher;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -30,6 +29,7 @@ import org.opentest4j.TestAbortedException;
 
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ArtifactLauncher;
+import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
@@ -133,7 +133,8 @@ public class QuarkusIntegrationTestExtension
 
             testResourceManager = new TestResourceManager(requiredTestClass, quarkusTestProfile,
                     Collections.emptyList(), testProfileAndProperties.testProfile != null
-                            && testProfileAndProperties.testProfile.disableGlobalTestResources());
+                            && testProfileAndProperties.testProfile.disableGlobalTestResources(),
+                    devServicesProps);
             testResourceManager.init();
             hasPerTestResources = testResourceManager.hasPerTestResources();
 
@@ -222,22 +223,13 @@ public class QuarkusIntegrationTestExtension
                         throw new RuntimeException("Unable to set field '" + f.getName()
                                 + "' with the proper test context", e);
                     }
-                } else {
-                    Constructor<?> testContextAware = null;
+                } else if (DevServicesContext.ContextAware.class.isAssignableFrom(f.getType())) {
+                    f.setAccessible(true);
                     try {
-                        testContextAware = f.getType().getConstructor(QuarkusIntegrationTest.Context.class);
-                    } catch (Exception t) {
-                        continue;
-                    }
-                    if (testContextAware != null) {
-                        try {
-                            Object testContextAwareInstance = testContextAware.newInstance(createTestContext());
-                            f.setAccessible(true);
-                            f.set(testInstance, testContextAwareInstance);
-                        } catch (Exception e) {
-                            throw new RuntimeException("Unable to set field '" + f.getName()
-                                    + "' with the proper test context", e);
-                        }
+                        DevServicesContext.ContextAware val = (DevServicesContext.ContextAware) f.get(testInstance);
+                        val.setIntegrationTestContext(createTestContext());
+                    } catch (Exception e) {
+                        throw new RuntimeException("Unable to inject context into field " + f.getName(), e);
                     }
                 }
             }

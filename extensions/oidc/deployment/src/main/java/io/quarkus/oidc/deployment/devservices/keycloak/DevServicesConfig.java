@@ -34,6 +34,11 @@ public class DevServicesConfig {
     public Optional<String> realmPath;
 
     /**
+     * The JAVA_OPTS passed to the keycloak JVM
+     */
+    @ConfigItem
+    public Optional<String> javaOpts;
+    /**
      * The Keycloak realm.
      * This property will be used to create the realm if the realm file pointed to by the 'realm-path' property does not exist.
      * Setting this property is recommended even if realm file exists
@@ -134,6 +139,7 @@ public class DevServicesConfig {
                 && Objects.equals(realmPath, that.realmPath)
                 && Objects.equals(realmName, that.realmName)
                 && Objects.equals(users, that.users)
+                && Objects.equals(javaOpts, that.javaOpts)
                 && Objects.equals(roles, that.roles);
     }
 

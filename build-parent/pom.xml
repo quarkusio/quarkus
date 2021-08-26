@@ -114,6 +114,7 @@
         <webjar.bootstrap.version>4.6.0</webjar.bootstrap.version>
         <webjar.font-awesome.version>5.15.2</webjar.font-awesome.version>
         <webjar.jquery.version>3.5.1</webjar.jquery.version>
+        <webjar.codemirror.version>5.62.0</webjar.codemirror.version>
 
         <!-- revapi API check -->
         <revapi-maven-plugin.version>0.12.1</revapi-maven-plugin.version>
@@ -318,6 +319,11 @@
                 <groupId>org.webjars</groupId>
                 <artifactId>jquery</artifactId>
                 <version>${webjar.jquery.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars</groupId>
+                <artifactId>codemirror</artifactId>
+                <version>${webjar.codemirror.version}</version>
             </dependency>
 
             <dependency>

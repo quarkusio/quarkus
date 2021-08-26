@@ -9,3 +9,5 @@ metadata:
   categories:
   - "data"
   status: "preview"
+  config:
+  - "quarkus.cache."

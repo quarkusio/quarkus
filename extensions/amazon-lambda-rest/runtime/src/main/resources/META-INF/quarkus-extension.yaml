@@ -12,3 +12,5 @@ metadata:
   - "cloud"
   guide: "https://quarkus.io/guides/amazon-lambda-http"
   status: "preview"
+  config:
+  - "quarkus.lambda-http."

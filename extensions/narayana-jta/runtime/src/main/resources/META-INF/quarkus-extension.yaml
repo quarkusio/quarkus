@@ -14,3 +14,5 @@ metadata:
   categories:
   - "data"
   status: "stable"
+  config:
+  - "quarkus.transaction-manager."

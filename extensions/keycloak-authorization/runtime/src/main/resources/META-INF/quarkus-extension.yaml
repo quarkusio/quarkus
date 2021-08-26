@@ -14,3 +14,6 @@ metadata:
   categories:
     - "security"
   status: "stable"
+  config:
+  - "quarkus.oidc."
+  - "quarkus.keycloak."

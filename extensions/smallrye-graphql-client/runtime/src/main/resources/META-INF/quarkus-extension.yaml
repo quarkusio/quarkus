@@ -11,3 +11,5 @@ metadata:
   - "web"
   guide: "https://quarkus.io/guides/smallrye-graphql-client"
   status: "preview"
+  config:
+  - "quarkus.smallrye-graphql-client."

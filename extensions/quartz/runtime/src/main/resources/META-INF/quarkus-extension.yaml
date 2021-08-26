@@ -11,3 +11,5 @@ metadata:
   categories:
   - "miscellaneous"
   status: "preview"
+  config:
+  - "quarkus.quartz."

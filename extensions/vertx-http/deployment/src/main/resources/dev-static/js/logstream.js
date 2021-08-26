@@ -24,7 +24,7 @@ var space = "&nbsp;";
 var isRunning = true;
 var logScrolling = true;
 
-var filter = "";
+var logfilter = "";
 
 var localstoragekey = "quarkus_logging_manager_state";
 
@@ -42,7 +42,7 @@ $('document').ready(function () {
     logstreamZoomOutButton.addEventListener("click", zoomOutEvent);
     logstreamZoomInButton.addEventListener("click", zoomInEvent);
     logstreamFollowLogButton.addEventListener("click", followLogEvent);
-    logstreamFilterModalInputButton.addEventListener("click", applyFilter);
+    logstreamFilterModalInputButton.addEventListener("click", applyLogFilter);
     
     addControlCListener();
     addEnterListener();
@@ -89,7 +89,7 @@ function loadSettings(){
         applyFollowLog();
 
         $("#logstreamFilterModalInput").val(state.filter);
-        applyFilter();
+        applyLogFilter();
         
         $('#logstreamColumnsModalLevelIconSwitch').prop('checked', state.levelIconSwitch);
         $('#logstreamColumnsModalSequenceNumberSwitch').prop('checked', state.sequenceNumberSwitch);
@@ -121,7 +121,7 @@ function saveSettings(){
         "linespace": linespace,
         "tabspace": tabspace,
         "logScrolling": logScrolling,
-        "filter": filter,
+        "filter": logfilter,
         "levelIconSwitch": $('#logstreamColumnsModalLevelIconSwitch').is(":checked"),
         "sequenceNumberSwitch": $('#logstreamColumnsModalSequenceNumberSwitch').is(":checked"),
         "dateSwitch": $('#logstreamColumnsModalDateSwitch').is(":checked"),
@@ -334,12 +334,12 @@ function scrollToBottom() {
     logScrolling = true;
 }
 
-function applyFilter(){
-    filter = $("#logstreamFilterModalInput").val();
-    if(filter===""){
-        clearFilter();
+function applyLogFilter(){
+    logfilter = $("#logstreamFilterModalInput").val();
+    if(logfilter===""){
+        clearLogFilter();
     }else{
-        logstreamCurrentFilter.innerHTML = "<span style='border-bottom: 1px dotted;'>" + filter + " <i class='fas fa-times-circle' onclick='clearFilter();'></i></span>";
+        logstreamCurrentFilter.innerHTML = "<span style='border-bottom: 1px dotted;'>" + logfilter + " <i class='fas fa-times-circle' onclick='clearLogFilter();'></i></span>";
         
         var currentlines = $("#logstreamLogTerminalText").html().split('<!-- logline -->');
         
@@ -357,12 +357,12 @@ function applyFilter(){
 }
 
 function getLogLine(htmlline){
-    if(filter===""){
+    if(logfilter===""){
         return htmlline;
     }else{
         
         var textline = $(htmlline).text();
-        if(textline.includes(filter)){
+        if(textline.includes(logfilter)){
             return htmlline;
         }else{
             return htmlline.replace('<span>', '<span class="logstreamFilteredOut">');
@@ -370,8 +370,8 @@ function getLogLine(htmlline){
     }
 }
 
-function clearFilter(){
-    filter = "";
+function clearLogFilter(){
+    logfilter = "";
     $("#logstreamFilterModalInput").val("");
     logstreamCurrentFilter.innerHTML = "";
     
@@ -715,7 +715,7 @@ function openSocket() {
         
         htmlLine = htmlLine + "</span><!-- logline -->";
         
-        if(filter!=""){
+        if(logfilter!=""){
             writeResponse(getLogLine(htmlLine));
         }else{
             writeResponse(htmlLine);

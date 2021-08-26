@@ -12,3 +12,6 @@ metadata:
   categories:
   - "data"
   status: "experimental"
+  config:
+  - "quarkus.datasource."
+  - "quarkus.hibernate-orm."

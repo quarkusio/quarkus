@@ -12,3 +12,5 @@ metadata:
   - "web"
   - "data"
   status: "stable"
+  config:
+  - "quarkus.hibernate-validator."

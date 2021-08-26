@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import org.apache.maven.cli.transfer.QuietMavenTransferListener;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
@@ -19,6 +20,8 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.RepositorySystemSession;
 
 /**
  * @author kameshs
@@ -58,6 +61,15 @@ public class MojoUtils {
 
     private MojoUtils() {
         // Avoid direct instantiation
+    }
+
+    public static RepositorySystemSession muteTransferListener(RepositorySystemSession session) {
+        if (session.getTransferListener() == null) {
+            return session;
+        }
+        final DefaultRepositorySystemSession newSession = new DefaultRepositorySystemSession(session);
+        newSession.setTransferListener(new QuietMavenTransferListener());
+        return newSession;
     }
 
     /**

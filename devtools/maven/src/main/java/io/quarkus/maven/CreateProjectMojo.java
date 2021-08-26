@@ -368,7 +368,7 @@ public class CreateProjectMojo extends AbstractMojo {
                             new ArtifactCoords(getPlatformGroupId(mojo, groupId), getPlatformArtifactId(artifactId), "pom",
                                     getPlatformVersion(mojo, version))));
         } catch (RegistryResolutionException e) {
-            throw new MojoExecutionException("Failed to resolve the extensions catalog", e);
+            throw new MojoExecutionException("Failed to resolve the extension catalog", e);
         }
 
         if (catalog == null) {

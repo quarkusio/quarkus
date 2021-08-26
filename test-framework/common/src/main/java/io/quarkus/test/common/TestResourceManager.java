@@ -47,6 +47,11 @@ public class TestResourceManager implements Closeable {
 
     public TestResourceManager(Class<?> testClass, Class<?> profileClass, List<TestResourceClassEntry> additionalTestResources,
             boolean disableGlobalTestResources) {
+        this(testClass, profileClass, additionalTestResources, disableGlobalTestResources, Collections.emptyMap());
+    }
+
+    public TestResourceManager(Class<?> testClass, Class<?> profileClass, List<TestResourceClassEntry> additionalTestResources,
+            boolean disableGlobalTestResources, Map<String, String> devServicesProperties) {
         this.parallelTestResourceEntries = new ArrayList<>();
         this.sequentialTestResourceEntries = new ArrayList<>();
 
@@ -63,6 +68,17 @@ public class TestResourceManager implements Closeable {
 
         this.allTestResourceEntries = new ArrayList<>(sequentialTestResourceEntries);
         this.allTestResourceEntries.addAll(parallelTestResourceEntries);
+        DevServicesContext context = new DevServicesContext() {
+            @Override
+            public Map<String, String> devServicesProperties() {
+                return devServicesProperties;
+            }
+        };
+        for (var i : allTestResourceEntries) {
+            if (i.getTestResource() instanceof DevServicesContext.ContextAware) {
+                ((DevServicesContext.ContextAware) i.getTestResource()).setIntegrationTestContext(context);
+            }
+        }
     }
 
     public void init() {

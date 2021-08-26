@@ -369,11 +369,12 @@ public class QuarkusTestExtension
 
             //must be done after the TCCL has been set
             testResourceManager = (Closeable) startupAction.getClassLoader().loadClass(TestResourceManager.class.getName())
-                    .getConstructor(Class.class, Class.class, List.class, boolean.class)
+                    .getConstructor(Class.class, Class.class, List.class, boolean.class, Map.class)
                     .newInstance(requiredTestClass,
                             profile != null ? profile : null,
                             getAdditionalTestResources(profileInstance, startupAction.getClassLoader()),
-                            profileInstance != null && profileInstance.disableGlobalTestResources());
+                            profileInstance != null && profileInstance.disableGlobalTestResources(),
+                            startupAction.getDevServicesProperties());
             testResourceManager.getClass().getMethod("init").invoke(testResourceManager);
             Map<String, String> properties = (Map<String, String>) testResourceManager.getClass().getMethod("start")
                     .invoke(testResourceManager);
@@ -1135,7 +1136,7 @@ public class QuarkusTestExtension
     }
 
     private void runAfterAllCallbacks(ExtensionContext context) throws Exception {
-        if (isNativeOrIntegrationTest(context.getRequiredTestClass())) {
+        if (isNativeOrIntegrationTest(context.getRequiredTestClass()) || failedBoot) {
             return;
         }
         if (afterAllCallbacks.isEmpty()) {

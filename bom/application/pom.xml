@@ -175,7 +175,7 @@
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.2.Final</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
-        <mockito.version>3.12.3</mockito.version>
+        <mockito.version>3.12.4</mockito.version>
         <jna.version>5.3.1</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.9.2</antlr.version>
         <quarkus-security.version>1.1.4.Final</quarkus-security.version>
@@ -189,7 +189,7 @@
         <google-http-client.version>1.38.0</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
-        <grpc.version>1.38.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
+        <grpc.version>1.40.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
         <grpc-jprotoc.version>1.2.0</grpc-jprotoc.version>
         <protobuf-java.version>3.17.3</protobuf-java.version>
         <protoc.version>${protobuf-java.version}</protoc.version>

@@ -51,7 +51,7 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
             try {
                 return catalogResolver.resolveExtensionCatalog(platforms);
             } catch (Exception e) {
-                throw new RuntimeException("Failed to resolve extensions catalog", e);
+                throw new RuntimeException("Failed to resolve extension catalog", e);
             }
         }
         return ToolsUtils.mergePlatforms(platforms, extension().getAppModelResolver());

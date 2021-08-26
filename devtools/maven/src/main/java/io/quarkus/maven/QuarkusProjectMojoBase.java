@@ -126,7 +126,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
             try {
                 return catalogResolver.resolveExtensionCatalog(getImportedPlatforms());
             } catch (Exception e) {
-                throw new MojoExecutionException("Failed to resolve the Quarkus extensions catalog", e);
+                throw new MojoExecutionException("Failed to resolve the Quarkus extension catalog", e);
             }
         }
         return ToolsUtils.mergePlatforms(collectImportedPlatforms(), artifactResolver());

@@ -27,7 +27,7 @@ public class PlatformAwareTestBase {
             try {
                 catalog = QuarkusProjectHelper.getCatalogResolver().resolveExtensionCatalog();
             } catch (Exception e) {
-                throw new RuntimeException("Failed to resolve extensions catalog", e);
+                throw new RuntimeException("Failed to resolve extension catalog", e);
             }
         }
         return catalog;

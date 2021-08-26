@@ -10,3 +10,7 @@ metadata:
   categories:
   - "messaging"
   status: "stable"
+  config:
+  - "mp.messaging."
+  - "quarkus.reactive-messaging."
+  - "quarkus.kafka."

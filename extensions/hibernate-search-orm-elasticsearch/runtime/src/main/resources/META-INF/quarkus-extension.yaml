@@ -16,3 +16,5 @@ metadata:
   categories:
   - "data"
   status: "stable"
+  config:
+  - "quarkus.hibernate-search-orm."

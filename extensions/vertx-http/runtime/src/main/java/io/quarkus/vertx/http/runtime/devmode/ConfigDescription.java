@@ -7,14 +7,17 @@ public class ConfigDescription implements Comparable<ConfigDescription> {
     private String description;
     private String defaultValue;
     private ConfigValue configValue;
+    private boolean autoFromDevServices = false;
 
     public ConfigDescription() {
     }
 
-    public ConfigDescription(final String name, final String description, final String defaultValue) {
+    public ConfigDescription(final String name, final String description, final String defaultValue,
+            final boolean autoFromDevServices) {
         this.name = name;
         this.description = description;
         this.defaultValue = defaultValue;
+        this.autoFromDevServices = autoFromDevServices;
     }
 
     public ConfigDescription(
@@ -58,6 +61,14 @@ public class ConfigDescription implements Comparable<ConfigDescription> {
 
     public void setConfigValue(final ConfigValue configValue) {
         this.configValue = configValue;
+    }
+
+    public boolean isAutoFromDevServices() {
+        return autoFromDevServices;
+    }
+
+    public void setAutoFromDevServices(boolean autoFromDevServices) {
+        this.autoFromDevServices = autoFromDevServices;
     }
 
     @Override

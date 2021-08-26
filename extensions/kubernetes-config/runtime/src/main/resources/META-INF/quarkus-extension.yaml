@@ -8,3 +8,5 @@ metadata:
   categories:
   - "cloud"
   status: "preview"
+  config:
+  - "quarkus.kubernetes-config."

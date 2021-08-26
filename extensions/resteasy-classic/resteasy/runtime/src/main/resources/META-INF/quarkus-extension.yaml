@@ -18,3 +18,5 @@ metadata:
       - "kotlin"
       - "scala"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
+  config:
+  - "quarkus.resteasy."

@@ -27,7 +27,9 @@ public class DevConsoleConfigEditorBodyHandlerTest {
                 .get("q/arc/beans")
                 .then()
                 .statusCode(200);
-        RestAssured.with().formParam("name", "quarkus.http.root-path").formParam("value", "/foo")
+        RestAssured.with().formParam("name", "quarkus.http.root-path")
+                .formParam("value", "/foo")
+                .formParam("action", "updateProperty")
                 .redirects().follow(false)
                 .post("q/dev/io.quarkus.quarkus-vertx-http/config")
                 .then()

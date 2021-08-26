@@ -12,3 +12,5 @@ metadata:
   - "web"
   - "serialization"
   status: "stable"
+  config:
+  - "quarkus.resteasy."

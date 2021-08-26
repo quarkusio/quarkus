@@ -11,3 +11,5 @@ metadata:
   categories:
   - "observability"
   status: "stable"
+  config:
+  - "quarkus.micrometer."

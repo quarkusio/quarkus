@@ -11,3 +11,5 @@ metadata:
     - "reactive"
   status: "stable"
   unlisted: true
+  config:
+  - "quarkus.vertx."

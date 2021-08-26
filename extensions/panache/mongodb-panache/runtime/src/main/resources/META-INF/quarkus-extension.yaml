@@ -12,3 +12,5 @@ metadata:
   categories:
   - "data"
   status: "stable"
+  config:
+  - "quarkus.mongodb."

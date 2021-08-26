@@ -167,9 +167,6 @@ public class CreateProjectMojo extends AbstractMojo {
     private RepositorySystemSession repoSession;
 
     @Component
-    private Prompter prompter;
-
-    @Component
     private MavenVersionEnforcer mavenVersionEnforcer;
 
     @Component
@@ -405,33 +402,30 @@ public class CreateProjectMojo extends AbstractMojo {
         }
 
         try {
+            final Prompter prompter = new Prompter();
             if (isBlank(projectGroupId)) {
-                projectGroupId = prompter.promptWithDefaultValue("Set the project groupId",
-                        DEFAULT_GROUP_ID);
+                prompter.addPrompt("Set the project groupId: ", DEFAULT_GROUP_ID, input -> projectGroupId = input);
             }
 
             if (isBlank(projectArtifactId)) {
-                projectArtifactId = prompter.promptWithDefaultValue("Set the project artifactId",
-                        DEFAULT_ARTIFACT_ID);
+                prompter.addPrompt("Set the project artifactId: ", DEFAULT_ARTIFACT_ID, input -> projectArtifactId = input);
             }
 
             if (isBlank(projectVersion)) {
-                projectVersion = prompter.promptWithDefaultValue("Set the project version",
-                        DEFAULT_VERSION);
+                prompter.addPrompt("Set the project version: ", DEFAULT_VERSION, input -> projectVersion = input);
             }
 
             if (!noCode && isBlank(example)) {
                 if (extensions.isEmpty()) {
-                    extensions = Arrays
-                            .stream(prompter
-                                    .promptWithDefaultValue("What extensions do you wish to add (comma separated list)",
-                                            DEFAULT_EXTENSIONS)
-                                    .split(","))
-                            .map(String::trim).filter(Predicate.not(String::isEmpty)).collect(Collectors.toSet());
+                    prompter.addPrompt("What extensions do you wish to add (comma separated list): ", DEFAULT_EXTENSIONS,
+                            input -> extensions = Arrays
+                                    .stream(input.split(","))
+                                    .map(String::trim).filter(Predicate.not(String::isEmpty)).collect(Collectors.toSet()));
                 }
-                String answer = prompter.promptWithDefaultValue(
-                        "Would you like some code to start (yes), or just an empty Quarkus project (no)", "yes");
-                noCode = answer.startsWith("n");
+                prompter.addPrompt("Would you like some code to start (yes), or just an empty Quarkus project (no): ", "yes",
+                        input -> noCode = input.startsWith("n"));
+
+                prompter.collectInput();
             }
         } catch (IOException e) {
             throw new MojoExecutionException("Unable to get user input", e);

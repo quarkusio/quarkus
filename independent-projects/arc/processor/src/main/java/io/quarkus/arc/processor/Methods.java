@@ -495,6 +495,10 @@ final class Methods {
                 // The algorithm we use to detect these methods is best effort, i.e. there might be use cases where the detection fails
                 return hasImplementation(method);
             }
+            if (method.hasAnnotation(DotNames.POST_CONSTRUCT) || method.hasAnnotation(DotNames.PRE_DESTROY)) {
+                // @PreDestroy and @PostConstruct methods declared on the bean are NOT candidates for around invoke interception
+                return true;
+            }
             if (isOverridenByBridgeMethod(method)) {
                 return true;
             }

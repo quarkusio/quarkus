@@ -142,7 +142,7 @@
         <tika.version>1.27</tika.version>
         <ooxml-schemas.version>1.4</ooxml-schemas.version>
         <aws-lambda-java.version>1.2.1</aws-lambda-java.version>
-        <aws-lambda-java-events.version>3.9.0</aws-lambda-java-events.version>
+        <aws-lambda-java-events.version>3.10.0</aws-lambda-java-events.version>
         <aws-lambda-serverless-java-container.version>1.6</aws-lambda-serverless-java-container.version>
         <aws-xray.version>2.9.1</aws-xray.version>
         <awssdk.version>2.17.27</awssdk.version>

@@ -18,7 +18,7 @@ public interface HandlerChainCustomizer {
         return handlers(phase);
     }
 
-    @Deprecated
+    @Deprecated(forRemoval = true)
     default List<ServerRestHandler> handlers(Phase phase) {
         return Collections.emptyList();
     }

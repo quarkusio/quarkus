@@ -203,7 +203,7 @@ public class CreateProjectMojo extends AbstractMojo {
         try {
             mvn = MavenArtifactResolver.builder()
                     .setRepositorySystem(repoSystem)
-                    .setRepositorySystemSession(repoSession)
+                    .setRepositorySystemSession(MojoUtils.muteTransferListener(repoSession))
                     .setRemoteRepositories(repos)
                     .setRemoteRepositoryManager(remoteRepoManager)
                     .build();

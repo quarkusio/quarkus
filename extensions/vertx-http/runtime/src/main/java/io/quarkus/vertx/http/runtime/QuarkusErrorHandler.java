@@ -74,7 +74,9 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
             //generally this should be handled elsewhere
             //but if we get to this point bad things have happened
             //so it is better to send a response than to hang
-            event.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code()).end();
+            if (!event.response().ended()) {
+                event.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code()).end();
+            }
             return;
         }
 

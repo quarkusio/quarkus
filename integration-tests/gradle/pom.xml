@@ -45,6 +45,14 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-testing</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <!-- Make sure to have Hibernate's byte-buddy on the classpath, not the one from Mockito.
+                     See also ConditionalDependenciesTest -->
+                <exclusion>
+                    <groupId>net.bytebuddy</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- The following dependencies are generated in a way that is consistent with other normal IT modules,
              that is "runtime" deps are defined with scope compile and "minimal extension deployment dependencies"

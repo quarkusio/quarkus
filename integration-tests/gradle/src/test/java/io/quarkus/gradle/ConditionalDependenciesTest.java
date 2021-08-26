@@ -6,11 +6,16 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+
+import net.bytebuddy.ByteBuddy;
 
 /**
  * This class uses test order because all tests depend on extension publication which can be done once.
@@ -79,10 +84,17 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
         assertThat(mainLib.resolve("org.acme.ext-c-1.0-SNAPSHOT.jar")).exists();
         assertThat(mainLib.resolve("org.acme.ext-e-1.0-SNAPSHOT.jar")).exists();
         assertThat(mainLib.resolve("org.acme.ext-d-1.0-SNAPSHOT.jar")).doesNotExist();
-        assertThat(mainLib.resolve("net.bytebuddy.byte-buddy-1.11.12.jar")).doesNotExist();
+
+        String byteBuddyJar = Optional.ofNullable(ByteBuddy.class.getProtectionDomain().getCodeSource().getLocation())
+                .map(url -> Pattern.compile("byte-buddy-(\\d.+)\\.jar").matcher(url.getPath()))
+                .filter(Matcher::find)
+                .map(matcher -> "net.bytebuddy.byte-buddy-" + matcher.group(1) + ".jar")
+                .orElseThrow(() -> new IllegalStateException("Could not determine byte-buddy version"));
+
+        assertThat(mainLib.resolve(byteBuddyJar)).doesNotExist();
 
         final Path deploymentLib = buildDir.toPath().resolve("quarkus-app").resolve("lib").resolve("deployment");
-        assertThat(deploymentLib.resolve("net.bytebuddy.byte-buddy-1.11.12.jar")).exists();
+        assertThat(deploymentLib.resolve(byteBuddyJar)).exists();
     }
 
     @Test

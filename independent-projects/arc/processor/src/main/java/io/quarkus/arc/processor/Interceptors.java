@@ -24,7 +24,7 @@ final class Interceptors {
     static InterceptorInfo createInterceptor(ClassInfo interceptorClass, BeanDeployment beanDeployment,
             InjectionPointModifier transformer, AnnotationStore store) {
         Set<AnnotationInstance> bindings = new HashSet<>();
-        Integer priority = 0;
+        int priority = 0;
         boolean priorityDeclared = false;
         for (AnnotationInstance annotation : store.getAnnotations(interceptorClass)) {
             bindings.addAll(beanDeployment.extractInterceptorBindings(annotation));

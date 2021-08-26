@@ -13,17 +13,13 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
-import org.jboss.jandex.DotName;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -94,14 +90,11 @@ public class AdditionalInterceptorBindingsTest {
     static class MyBindingRegistrar implements InterceptorBindingRegistrar {
 
         @Override
-        public Map<DotName, Set<String>> registerAdditionalBindings() {
-            Map<DotName, Set<String>> newBindings = new HashMap<>();
-            newBindings.put(DotName.createSimple(ToBeBinding.class.getName()), Collections.emptySet());
-            HashSet<String> value = new HashSet<>();
-            value.add("value");
-            newBindings.put(DotName.createSimple(ToBeBindingWithNonBindingField.class.getName()), value);
-            newBindings.put(DotName.createSimple(ToBeBindingWithBindingField.class.getName()), Collections.emptySet());
-            return newBindings;
+        public List<InterceptorBinding> getAdditionalBindings() {
+            return List.of(
+                    InterceptorBinding.of(ToBeBinding.class),
+                    InterceptorBinding.of(ToBeBindingWithNonBindingField.class, Collections.singleton("value")),
+                    InterceptorBinding.of(ToBeBindingWithBindingField.class));
         }
     }
 

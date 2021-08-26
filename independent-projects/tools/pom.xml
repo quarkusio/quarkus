@@ -38,7 +38,6 @@
         <scala-plugin.version>4.4.0</scala-plugin.version>
 
         <!-- Versions -->
-        <jline.version>3.20.0</jline.version>
         <assertj.version>3.20.2</assertj.version>
         <jackson.version>2.12.4</jackson.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
@@ -128,11 +127,6 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devtools-common</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jline</groupId>
-                <artifactId>jline</artifactId>
-                <version>${jline.version}</version>
             </dependency>
             <dependency>
                 <groupId>commons-io</groupId>
@@ -309,10 +303,6 @@
                                         <exclude>org.slf4j:slf4j-jdk14</exclude>
                                         <exclude>org.slf4j:slf4j-log4j12</exclude>
                                         <exclude>org.slf4j:slf4j-log4j13</exclude>
-                                        <!-- JLine 2.x (EOLed) version shouldn't be pulled in,
-                                        to prevent version compatibility issues with the
-                                        Jansi library shipped in Maven -->
-                                        <exclude>jline:jline</exclude>
                                     </excludes>
                                 </bannedDependencies>
                             </rules>

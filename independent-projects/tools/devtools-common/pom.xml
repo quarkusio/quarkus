@@ -42,11 +42,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-codestarts</artifactId>
         </dependency>
-        <!-- user prompt -->
-        <dependency>
-            <groupId>org.jline</groupId>
-            <artifactId>jline</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>

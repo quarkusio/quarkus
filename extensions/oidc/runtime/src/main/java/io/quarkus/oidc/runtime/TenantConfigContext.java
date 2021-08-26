@@ -2,7 +2,7 @@ package io.quarkus.oidc.runtime;
 
 import io.quarkus.oidc.OidcTenantConfig;
 
-class TenantConfigContext {
+public class TenantConfigContext {
 
     /**
      * OIDC Provider
@@ -24,5 +24,9 @@ class TenantConfigContext {
         this.provider = client;
         this.oidcConfig = config;
         this.ready = ready;
+    }
+
+    public OidcTenantConfig getOidcTenantConfig() {
+        return oidcConfig;
     }
 }

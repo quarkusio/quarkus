@@ -1235,3 +1235,22 @@ The `settings.json` placed in the root of your project directory or in the works
 === IntelliJ JUnit template
 
 Nothing needed in IntelliJ because the IDE will pick the `systemPropertyVariables` from the surefire plugin configuration in `pom.xml`.
+
+== Testing Dev Services
+
+By default tests should just work with link:dev-services[Dev Services], however from some use cases you may need access to
+the automatically configured properties in your tests.
+
+You can do this with `io.quarkus.test.common.DevServicesContext`, which can be injected directly into any `@QuarkusTest`
+or `@QuarkusIntegrationTest`. All you need to do is define a field of type `DevServicesContext` and it will be automatically
+injected. Using this you can retrieve any properties that have been set. Generally this is used to directly connect to a
+resource from the test itself, e.g. to connect to kafka to send messages to the application under test.
+
+Injection is also supported into objects that implement `io.quarkus.test.common.DevServicesContext.ContextAware`. If you
+have a field that implements `io.quarkus.test.common.DevServicesContext.ContextAware` Quarkus will call the
+`setIntegrationTestContext` method to pass the context into this object. This allows client logic to be encapsulated in
+a utility class.
+
+`QuarkusTestResourceLifecycleManager` implementations can also implement `ContextAware` to get access to these properties,
+which allows you to setup the resource before Quarkus starts (e.g. configure a KeyCloak instance, add data to a database etc).
+

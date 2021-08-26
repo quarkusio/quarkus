@@ -65,6 +65,7 @@ public class KeycloakDevServicesProcessor {
     private static final String KEYCLOAK_URL_KEY = "keycloak.url";
 
     private static final int KEYCLOAK_EXPOSED_PORT = 8080;
+    private static final String JAVA_OPTS = "JAVA_OPTS";
     private static final String KEYCLOAK_DOCKER_REALM_PATH = "/tmp/realm.json";
     private static final String KEYCLOAK_USER_PROP = "KEYCLOAK_USER";
     private static final String KEYCLOAK_PASSWORD_PROP = "KEYCLOAK_PASSWORD";
@@ -228,7 +229,7 @@ public class KeycloakDevServicesProcessor {
         QuarkusOidcContainer oidcContainer = new QuarkusOidcContainer(dockerImageName,
                 capturedDevServicesConfiguration.port,
                 useSharedContainer,
-                capturedDevServicesConfiguration.realmPath);
+                capturedDevServicesConfiguration.realmPath, capturedDevServicesConfiguration.javaOpts);
 
         oidcContainer.start();
 
@@ -263,13 +264,15 @@ public class KeycloakDevServicesProcessor {
         private final Optional<String> realm;
         private boolean realmFileExists;
         private String hostName = null;
+        private final Optional<String> javaOpts;
 
         public QuarkusOidcContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
-                Optional<String> realm) {
+                Optional<String> realm, Optional<String> javaOpts) {
             super(dockerImageName);
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
             this.realm = realm;
+            this.javaOpts = javaOpts;
         }
 
         @Override
@@ -293,6 +296,9 @@ public class KeycloakDevServicesProcessor {
             addEnv(KEYCLOAK_USER_PROP, KEYCLOAK_ADMIN_USER);
             addEnv(KEYCLOAK_PASSWORD_PROP, KEYCLOAK_ADMIN_PASSWORD);
             addEnv(KEYCLOAK_VENDOR_PROP, KEYCLOAK_DB_VENDOR);
+            if (javaOpts.isPresent()) {
+                addEnv(JAVA_OPTS, javaOpts.get());
+            }
 
             if (realm.isPresent()) {
                 if (Thread.currentThread().getContextClassLoader().getResource(realm.get()) != null) {

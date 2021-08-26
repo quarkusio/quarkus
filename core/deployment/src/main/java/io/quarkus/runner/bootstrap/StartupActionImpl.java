@@ -9,6 +9,7 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -25,6 +26,7 @@ import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
+import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
@@ -219,6 +221,16 @@ public class StartupActionImpl implements StartupAction {
     @Override
     public ClassLoader getClassLoader() {
         return runtimeClassLoader;
+    }
+
+    @Override
+    public Map<String, String> getDevServicesProperties() {
+        DevServicesLauncherConfigResultBuildItem result = buildResult
+                .consumeOptional(DevServicesLauncherConfigResultBuildItem.class);
+        if (result == null) {
+            return Collections.emptyMap();
+        }
+        return new HashMap<>(result.getConfig());
     }
 
     private Map<String, byte[]> extractTransformers(Set<String> eagerClasses) {

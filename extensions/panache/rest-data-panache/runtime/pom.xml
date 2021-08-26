@@ -6,7 +6,7 @@
     <parent>
         <artifactId>quarkus-rest-data-panache-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>2.1.4.Final</version>
     </parent>
 
     <artifactId>quarkus-rest-data-panache</artifactId>

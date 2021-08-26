@@ -34,10 +34,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc-common-deployment</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jackson-deployment</artifactId>
-        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

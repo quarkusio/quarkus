@@ -26,7 +26,6 @@ import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
@@ -82,8 +81,7 @@ public class NativeImageBuildStep {
             NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             PackageConfig packageConfig,
-            List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
-            List<ExcludeConfigBuildItem> excludeConfigs) {
+            List<NativeImageSystemPropertyBuildItem> nativeImageProperties) {
 
         Path outputDir;
         try {
@@ -102,7 +100,6 @@ public class NativeImageBuildStep {
                 .setNativeConfig(nativeConfig)
                 .setOutputTargetBuildItem(outputTargetBuildItem)
                 .setNativeImageProperties(nativeImageProperties)
-                .setExcludeConfigs(excludeConfigs)
                 .setOutputDir(outputDir)
                 .setRunnerJarName(runnerJar.getFileName().toString())
                 // the path to native-image is not known now, it is only known at the time the native-sources will be consumed
@@ -133,7 +130,6 @@ public class NativeImageBuildStep {
             PackageConfig packageConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
-            List<ExcludeConfigBuildItem> excludeConfigs,
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
             Optional<ProcessInheritIODisabled> processInheritIODisabled) {
         if (nativeConfig.debug.enabled) {
@@ -191,7 +187,6 @@ public class NativeImageBuildStep {
                     .setNativeConfig(nativeConfig)
                     .setOutputTargetBuildItem(outputTargetBuildItem)
                     .setNativeImageProperties(nativeImageProperties)
-                    .setExcludeConfigs(excludeConfigs)
                     .setNativeImageSecurityProviders(nativeImageSecurityProviders)
                     .setOutputDir(outputDir)
                     .setRunnerJarName(runnerJarName)
@@ -482,7 +477,6 @@ public class NativeImageBuildStep {
             private NativeConfig nativeConfig;
             private OutputTargetBuildItem outputTargetBuildItem;
             private List<NativeImageSystemPropertyBuildItem> nativeImageProperties;
-            private List<ExcludeConfigBuildItem> excludeConfigs;
             private List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders;
             private Path outputDir;
             private String runnerJarName;
@@ -503,11 +497,6 @@ public class NativeImageBuildStep {
 
             public Builder setNativeImageProperties(List<NativeImageSystemPropertyBuildItem> nativeImageProperties) {
                 this.nativeImageProperties = nativeImageProperties;
-                return this;
-            }
-
-            public Builder setExcludeConfigs(List<ExcludeConfigBuildItem> excludeConfigs) {
-                this.excludeConfigs = excludeConfigs;
                 return this;
             }
 
@@ -710,13 +699,6 @@ public class NativeImageBuildStep {
                                 .map(p -> p.getSecurityProvider())
                                 .collect(Collectors.joining(","));
                         nativeImageArgs.add("-H:AdditionalSecurityProviders=" + additionalSecurityProviders);
-                    }
-
-                    // --exclude-config options
-                    for (ExcludeConfigBuildItem excludeConfig : excludeConfigs) {
-                        nativeImageArgs.add("--exclude-config");
-                        nativeImageArgs.add(excludeConfig.getJarFile());
-                        nativeImageArgs.add(excludeConfig.getResourceName());
                     }
                 }
 

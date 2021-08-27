@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -41,8 +42,11 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.devservices.common.ContainerAddress;
+import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.oidc.deployment.OidcBuildStep.IsEnabled;
 import io.quarkus.oidc.deployment.devservices.OidcDevServicesBuildItem;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
@@ -64,7 +68,7 @@ public class KeycloakDevServicesProcessor {
     private static final String CLIENT_SECRET_CONFIG_KEY = CONFIG_PREFIX + "credentials.secret";
     private static final String KEYCLOAK_URL_KEY = "keycloak.url";
 
-    private static final int KEYCLOAK_EXPOSED_PORT = 8080;
+    private static final int KEYCLOAK_PORT = 8080;
     private static final String JAVA_OPTS = "JAVA_OPTS";
     private static final String KEYCLOAK_DOCKER_REALM_PATH = "/tmp/realm.json";
     private static final String KEYCLOAK_USER_PROP = "KEYCLOAK_USER";
@@ -75,6 +79,14 @@ public class KeycloakDevServicesProcessor {
     private static final String KEYCLOAK_ADMIN_PASSWORD = "admin";
     private static final String KEYCLOAK_DB_VENDOR = "H2";
     private static final String OIDC_USERS = "oidc.users";
+
+    /**
+     * Label to add to shared Dev Service for Keycloak running in containers.
+     * This allows other applications to discover the running service and use it instead of starting a new instance.
+     */
+    private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-keycloak";
+    private static final ContainerLocator keycloakDevModeContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL,
+            KEYCLOAK_PORT);
 
     private static volatile List<Closeable> closeables;
     private static volatile boolean first = true;
@@ -129,7 +141,7 @@ public class KeycloakDevServicesProcessor {
             return null;
         }
 
-        closeables = Collections.singletonList(startResult.closeable);
+        closeables = startResult.closeable != null ? Collections.singletonList(startResult.closeable) : null;
 
         if (first) {
             first = false;
@@ -171,11 +183,11 @@ public class KeycloakDevServicesProcessor {
 
         LOG.info("Dev Services for Keycloak started.");
 
-        return prepareConfiguration(!startResult.realmFileExists, devServices);
+        return prepareConfiguration(startResult.createDefaultRealm, devServices, startResult.shared);
     }
 
     private KeycloakDevServicesConfigBuildItem prepareConfiguration(boolean createRealm,
-            BuildProducer<DevServicesConfigResultBuildItem> devServices) {
+            BuildProducer<DevServicesConfigResultBuildItem> devServices, boolean shared) {
         final String authServerUrl = capturedKeycloakUrl + "/realms/" + capturedDevServicesConfiguration.realmName;
 
         String oidcClientId = getOidcClientId();
@@ -223,55 +235,81 @@ public class KeycloakDevServicesProcessor {
             return null;
         }
 
-        String imageName = capturedDevServicesConfiguration.imageName.get();
-        DockerImageName dockerImageName = DockerImageName.parse(imageName)
-                .asCompatibleSubstituteFor(imageName);
-        QuarkusOidcContainer oidcContainer = new QuarkusOidcContainer(dockerImageName,
-                capturedDevServicesConfiguration.port,
-                useSharedContainer,
-                capturedDevServicesConfiguration.realmPath, capturedDevServicesConfiguration.javaOpts);
+        final Optional<ContainerAddress> maybeContainerAddress = keycloakDevModeContainerLocator.locateContainer(
+                capturedDevServicesConfiguration.realmName,
+                capturedDevServicesConfiguration.shared,
+                LaunchMode.current());
 
-        oidcContainer.start();
+        final Supplier<StartResult> defaultKeycloakContainerSupplier = () -> {
+            String imageName = capturedDevServicesConfiguration.imageName;
+            DockerImageName dockerImageName = DockerImageName.parse(imageName)
+                    .asCompatibleSubstituteFor(imageName);
+            QuarkusOidcContainer oidcContainer = new QuarkusOidcContainer(dockerImageName,
+                    capturedDevServicesConfiguration.port,
+                    useSharedContainer,
+                    capturedDevServicesConfiguration.realmPath,
+                    capturedDevServicesConfiguration.serviceName,
+                    capturedDevServicesConfiguration.shared,
+                    capturedDevServicesConfiguration.javaOpts);
 
-        String url = "http://" + oidcContainer.getHost() + ":" + oidcContainer.getPort();
-        return new StartResult(url,
-                oidcContainer.realmFileExists,
-                new Closeable() {
-                    @Override
-                    public void close() {
-                        oidcContainer.close();
+            oidcContainer.start();
 
-                        LOG.info("Dev Services for Keycloak shut down.");
-                    }
-                });
+            String url = "http://" + oidcContainer.getHost() + ":" + oidcContainer.getPort();
+            return new StartResult(url,
+                    !oidcContainer.realmFileExists,
+                    new Closeable() {
+                        @Override
+                        public void close() {
+                            oidcContainer.close();
+
+                            LOG.info("Dev Services for Keycloak shut down.");
+                        }
+                    },
+                    false);
+        };
+
+        return maybeContainerAddress
+                .map(containerAddress -> new StartResult(getSharedContainerUrl(containerAddress), false, null, true))
+                .orElseGet(defaultKeycloakContainerSupplier);
+    }
+
+    private String getSharedContainerUrl(ContainerAddress containerAddress) {
+        return "http://" + ("0.0.0.0".equals(containerAddress.getHost()) ? "localhost" : containerAddress.getHost())
+                + ":" + containerAddress.getPort();
     }
 
     private static class StartResult {
         private final String url;
-        private final boolean realmFileExists;
+        private final boolean createDefaultRealm;
         private final Closeable closeable;
+        private final boolean shared;
 
-        public StartResult(String url, boolean realmFileExists, Closeable closeable) {
+        public StartResult(String url, boolean createDefaultRealm, Closeable closeable, boolean shared) {
             this.url = url;
-            this.realmFileExists = realmFileExists;
+            this.createDefaultRealm = createDefaultRealm;
             this.closeable = closeable;
+            this.shared = shared;
         }
     }
 
     private static class QuarkusOidcContainer extends GenericContainer {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
-        private final Optional<String> realm;
+        private final Optional<String> realmPath;
+        private final String containerLabelValue;
+        private final Optional<String> javaOpts;
+        private final boolean sharedContainer;
         private boolean realmFileExists;
         private String hostName = null;
-        private final Optional<String> javaOpts;
 
         public QuarkusOidcContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
-                Optional<String> realm, Optional<String> javaOpts) {
+                Optional<String> realmPath, String containerLabelValue, boolean sharedContainer, Optional<String> javaOpts) {
             super(dockerImageName);
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
-            this.realm = realm;
+            this.realmPath = realmPath;
+            this.containerLabelValue = containerLabelValue;
+            this.sharedContainer = sharedContainer;
             this.javaOpts = javaOpts;
         }
 
@@ -287,10 +325,14 @@ public class KeycloakDevServicesProcessor {
                 setNetworkAliases(Collections.singletonList(hostName));
             } else {
                 if (fixedExposedPort.isPresent()) {
-                    addFixedExposedPort(fixedExposedPort.getAsInt(), KEYCLOAK_EXPOSED_PORT);
+                    addFixedExposedPort(fixedExposedPort.getAsInt(), KEYCLOAK_PORT);
                 } else {
-                    addExposedPort(KEYCLOAK_EXPOSED_PORT);
+                    addExposedPort(KEYCLOAK_PORT);
                 }
+            }
+
+            if (sharedContainer && LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+                withLabel(DEV_SERVICE_LABEL, containerLabelValue);
             }
 
             addEnv(KEYCLOAK_USER_PROP, KEYCLOAK_ADMIN_USER);
@@ -300,24 +342,24 @@ public class KeycloakDevServicesProcessor {
                 addEnv(JAVA_OPTS, javaOpts.get());
             }
 
-            if (realm.isPresent()) {
-                if (Thread.currentThread().getContextClassLoader().getResource(realm.get()) != null) {
+            if (realmPath.isPresent()) {
+                if (Thread.currentThread().getContextClassLoader().getResource(realmPath.get()) != null) {
                     realmFileExists = true;
-                    withClasspathResourceMapping(realm.get(), KEYCLOAK_DOCKER_REALM_PATH, BindMode.READ_ONLY);
+                    withClasspathResourceMapping(realmPath.get(), KEYCLOAK_DOCKER_REALM_PATH, BindMode.READ_ONLY);
                     addEnv(KEYCLOAK_IMPORT_PROP, KEYCLOAK_DOCKER_REALM_PATH);
                 } else {
-                    Path filePath = Paths.get(realm.get());
+                    Path filePath = Paths.get(realmPath.get());
                     if (Files.exists(filePath)) {
                         realmFileExists = true;
-                        withFileSystemBind(realm.get(), KEYCLOAK_DOCKER_REALM_PATH, BindMode.READ_ONLY);
+                        withFileSystemBind(realmPath.get(), KEYCLOAK_DOCKER_REALM_PATH, BindMode.READ_ONLY);
                         addEnv(KEYCLOAK_IMPORT_PROP, KEYCLOAK_DOCKER_REALM_PATH);
                     } else {
-                        LOG.debugf("Realm %s resource is not available", realm.get());
+                        LOG.debugf("Realm %s resource is not available", realmPath.get());
                     }
                 }
             }
 
-            super.setWaitStrategy(Wait.forHttp("/auth").forPort(KEYCLOAK_EXPOSED_PORT));
+            super.setWaitStrategy(Wait.forHttp("/auth").forPort(KEYCLOAK_PORT));
         }
 
         @Override
@@ -330,7 +372,7 @@ public class KeycloakDevServicesProcessor {
 
         public int getPort() {
             if (useSharedNetwork) {
-                return KEYCLOAK_EXPOSED_PORT;
+                return KEYCLOAK_PORT;
             }
             if (fixedExposedPort.isPresent()) {
                 return fixedExposedPort.getAsInt();

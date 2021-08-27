@@ -16,14 +16,13 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import examples.Greeter;
-import examples.GreeterClient;
 import examples.GreeterGrpc;
 import examples.HelloReply;
 import examples.HelloRequest;
 import examples.MutinyGreeterGrpc;
 import io.grpc.Metadata;
-import io.grpc.stub.MetadataUtils;
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.grpc.GrpcClientUtils;
 import io.smallrye.mutiny.Uni;
 
 @Path("/hello")
@@ -48,7 +47,7 @@ public class HelloWorldEndpoint {
         if (headers) {
             extraHeaders.put(EXTRA_BLOCKING_HEADER, "my-blocking-value");
         }
-        HelloReply reply = MetadataUtils.attachHeaders(blockingHelloClient, extraHeaders)
+        HelloReply reply = GrpcClientUtils.attachHeaders(blockingHelloClient, extraHeaders)
                 .sayHello(HelloRequest.newBuilder().setName(name).build());
         return generateResponse(reply);
 
@@ -61,7 +60,7 @@ public class HelloWorldEndpoint {
         if (headers) {
             extraHeaders.put(EXTRA_HEADER, "my-extra-value");
         }
-        MutinyGreeterGrpc.MutinyGreeterStub alteredClient = MetadataUtils.attachHeaders(mutinyHelloClient, extraHeaders);
+        MutinyGreeterGrpc.MutinyGreeterStub alteredClient = GrpcClientUtils.attachHeaders(mutinyHelloClient, extraHeaders);
         return alteredClient.sayHello(HelloRequest.newBuilder().setName(name).build())
                 .onItem().transform(this::generateResponse);
     }
@@ -74,8 +73,7 @@ public class HelloWorldEndpoint {
             extraHeaders.put(INTERFACE_HEADER, "my-interface-value");
         }
 
-        MutinyGreeterGrpc.MutinyGreeterStub stub = ((GreeterClient) interfaceHelloClient).getStub();
-        MutinyGreeterGrpc.MutinyGreeterStub alteredClient = MetadataUtils.attachHeaders(stub, extraHeaders);
+        Greeter alteredClient = GrpcClientUtils.attachHeaders(interfaceHelloClient, extraHeaders);
 
         return alteredClient.sayHello(HelloRequest.newBuilder().setName(name).build())
                 .onItem().transform(this::generateResponse);

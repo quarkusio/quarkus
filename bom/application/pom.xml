@@ -142,7 +142,7 @@
         <tika.version>1.27</tika.version>
         <ooxml-schemas.version>1.4</ooxml-schemas.version>
         <aws-lambda-java.version>1.2.1</aws-lambda-java.version>
-        <aws-lambda-java-events.version>3.9.0</aws-lambda-java-events.version>
+        <aws-lambda-java-events.version>3.10.0</aws-lambda-java-events.version>
         <aws-lambda-serverless-java-container.version>1.6</aws-lambda-serverless-java-container.version>
         <aws-xray.version>2.9.1</aws-xray.version>
         <awssdk.version>2.17.28</awssdk.version>
@@ -167,7 +167,7 @@
         <artemis.version>2.17.0</artemis.version>
         <proton-j.version>0.33.8</proton-j.version>
         <okhttp.version>3.14.9</okhttp.version>
-        <sentry.version>5.1.1</sentry.version>
+        <sentry.version>5.1.2</sentry.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kubernetes-client.version>5.7.0</kubernetes-client.version>
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>

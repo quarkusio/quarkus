@@ -16,6 +16,6 @@ public class HibernateEnversBuildTimeConfig {
      * Defines a suffix for historical data table.
      */
     @ConfigItem(defaultValue = "_AUD")
-    public boolean auditTableSuffix;
+    public String auditTableSuffix;
 
 }

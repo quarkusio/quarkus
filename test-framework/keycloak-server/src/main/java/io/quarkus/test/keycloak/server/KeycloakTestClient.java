@@ -4,10 +4,11 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.keycloak.representations.AccessTokenResponse;
 
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 
-public class KeycloakTestAdmin {
+public class KeycloakTestClient implements DevServicesContext.ContextAware {
 
     private final static String AUTH_SERVER_URL_PROP = "quarkus.oidc.auth-server-url";
     private final static String CLIENT_ID_PROP = "quarkus.oidc.client-id";
@@ -17,13 +18,13 @@ public class KeycloakTestAdmin {
         RestAssured.useRelaxedHTTPSValidation();
     }
 
-    private QuarkusIntegrationTest.Context testContext;
+    private DevServicesContext testContext;
 
-    public KeycloakTestAdmin() {
+    public KeycloakTestClient() {
 
     }
 
-    public KeycloakTestAdmin(QuarkusIntegrationTest.Context testContext) {
+    public KeycloakTestClient(QuarkusIntegrationTest.Context testContext) {
         this.testContext = testContext;
     }
 
@@ -58,7 +59,7 @@ public class KeycloakTestAdmin {
         return getPropertyValue(CLIENT_SECRET_PROP, "secret");
     }
 
-    private String getAuthServerUrl() {
+    public String getAuthServerUrl() {
         String authServerUrl = getPropertyValue(AUTH_SERVER_URL_PROP, null);
         if (authServerUrl == null) {
             throw new ConfigurationException(AUTH_SERVER_URL_PROP + " is not configured");
@@ -76,4 +77,8 @@ public class KeycloakTestAdmin {
         return value == null ? defaultValue : value;
     }
 
+    @Override
+    public void setIntegrationTestContext(DevServicesContext context) {
+        this.testContext = context;
+    }
 }

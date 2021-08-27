@@ -50,7 +50,7 @@ public class ResteasyReactiveConfig {
      *
      * Use quarkus.security.jaxrs.deny-unannotated-endpoints instead
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     @ConfigItem(name = "deny-unannotated-endpoints")
     public Optional<Boolean> denyJaxRs;
 

@@ -35,7 +35,7 @@ $ mvn quarkus:dev
 
 The `quay.io/keycloak/keycloak:14.0.0` Keycloak image is used by default to start a container. `quarkus.keycloak.devservices.image-name` can be used to change the Keycloak image used.
 
-Now open the main Dev UI page and you will see the `OpenId Connect Card` linking to a `Keycloak` page:
+Now open the main link:http://localhost:8080/q/dev[Dev UI page] and you will see the `OpenId Connect Card` linking to a `Keycloak` page:
 
 image::dev-ui-oidc-keycloak-card.png[alt=Dev UI OpenId Connect Card,role="center"]
 

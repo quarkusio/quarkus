@@ -5,8 +5,8 @@ plugins {
 
 dependencies {
     implementation platform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
-    api("org.hibernate:hibernate-core:5.4.9") {
-        exclude module: "byte-buddy"
+    api("org.acme:simple-dependency:1.0-SNAPSHOT") {
+        exclude module: "transitive-dependency"
     }
 }
 

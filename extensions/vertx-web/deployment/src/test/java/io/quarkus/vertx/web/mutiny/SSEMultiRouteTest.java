@@ -44,7 +44,7 @@ public class SSEMultiRouteTest {
         // We get the item followed by the exception
         when().get("/hello-and-fail").then().statusCode(200)
                 .body(containsString("id: 0"))
-                .body(containsString("boom"));
+                .body(not(containsString("boom")));
 
         when().get("/buffer").then().statusCode(200)
                 .body(is("data: Buffer\nid: 0\n\n"))

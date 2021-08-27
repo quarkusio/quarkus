@@ -41,40 +41,49 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext event) {
-        if (event.failure() == null) {
-            event.response().setStatusCode(event.statusCode());
-            event.response().end();
-            return;
-        }
-        //this can happen if there is no auth mechanisms
-        if (event.failure() instanceof UnauthorizedException) {
-            HttpAuthenticator authenticator = event.get(HttpAuthenticator.class.getName());
-            if (authenticator != null) {
-                authenticator.sendChallenge(event).subscribe().with(new Consumer<Boolean>() {
-                    @Override
-                    public void accept(Boolean aBoolean) {
-                        event.response().end();
-                    }
-                }, new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) {
-                        event.fail(throwable);
-                    }
-                });
-            } else {
-                event.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code()).end();
+        try {
+            if (event.failure() == null) {
+                event.response().setStatusCode(event.statusCode());
+                event.response().end();
+                return;
             }
-            return;
-        }
-        if (event.failure() instanceof ForbiddenException) {
-            event.response().setStatusCode(HttpResponseStatus.FORBIDDEN.code()).end();
-            return;
-        }
-        if (event.failure() instanceof AuthenticationFailedException) {
-            //generally this should be handled elsewhere
-            //but if we get to this point bad things have happened
-            //so it is better to send a response than to hang
-            event.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code()).end();
+            //this can happen if there is no auth mechanisms
+            if (event.failure() instanceof UnauthorizedException) {
+                HttpAuthenticator authenticator = event.get(HttpAuthenticator.class.getName());
+                if (authenticator != null) {
+                    authenticator.sendChallenge(event).subscribe().with(new Consumer<Boolean>() {
+                        @Override
+                        public void accept(Boolean aBoolean) {
+                            event.response().end();
+                        }
+                    }, new Consumer<Throwable>() {
+                        @Override
+                        public void accept(Throwable throwable) {
+                            event.fail(throwable);
+                        }
+                    });
+                } else {
+                    event.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code()).end();
+                }
+                return;
+            }
+            if (event.failure() instanceof ForbiddenException) {
+                event.response().setStatusCode(HttpResponseStatus.FORBIDDEN.code()).end();
+                return;
+            }
+            if (event.failure() instanceof AuthenticationFailedException) {
+                //generally this should be handled elsewhere
+                //but if we get to this point bad things have happened
+                //so it is better to send a response than to hang
+                event.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code()).end();
+                return;
+            }
+        } catch (IllegalStateException e) {
+            //ignore this if the response is already started
+            if (!event.response().ended()) {
+                //could be that just the head is committed
+                event.response().end();
+            }
             return;
         }
 
@@ -99,6 +108,15 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
                     event.request().uri(), uuid);
         } else {
             log.errorf(exception, "HTTP Request to %s failed, error id: %s", event.request().uri(), uuid);
+        }
+        //we have logged the error
+        //now lets see if we can actually send a response
+        //if not we just return
+        if (event.response().ended()) {
+            return;
+        } else if (event.response().headWritten()) {
+            event.response().end();
+            return;
         }
         String accept = event.request().getHeader("Accept");
         if (accept != null && accept.contains("application/json")) {

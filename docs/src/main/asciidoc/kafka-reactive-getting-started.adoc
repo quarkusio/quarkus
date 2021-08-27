@@ -257,7 +257,7 @@ public class QuotesProcessor {
 <2> Indicates that the objects returned by the method are sent to the `quotes` channel.
 <3> Indicates that the processing is _blocking_ and cannot be run on the caller thread.
 
-For every Kafka _record_ from the `quote-requests` topic, Reactive Messagins calls the `process` method, and sends the returned `Quote` object to the `quotes` channel.
+For every Kafka _record_ from the `quote-requests` topic, Reactive Messaging calls the `process` method, and sends the returned `Quote` object to the `quotes` channel.
 As with the previous example, we need to configure the connectors in the `application.properties` file, to map the `requests` and `quotes` channels to Kafka topics:
 
 [source, properties]

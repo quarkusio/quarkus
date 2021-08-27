@@ -78,7 +78,7 @@ This will add the following to your `pom.xml`:
 
 == Writing the application
 
-Let's write a simple JAX-RS resource which has all the tokens returned in the authorization code grant response injected:
+Let's write a simple JAX-RS resource which has all the tokens returned in the authorization code grant response injected. Create `./src/main/java/org/acme/security/openid/connect/web/authentication/TokenResource.java` containing the following:
 
 [source,java]
 ----

@@ -1738,14 +1738,13 @@ public class QuteProcessor {
                 clazz = index.getClassByName(clazz.superName());
             }
         }
-        // Try the default methods
+        // Try interface methods
         for (DotName interfaceName : interfaceNames) {
             ClassInfo interfaceClassInfo = index.getClassByName(interfaceName);
             if (interfaceClassInfo != null) {
                 for (MethodInfo method : interfaceClassInfo.methods()) {
-                    // A default method is a public non-abstract instance method
                     if (Modifier.isPublic(method.flags()) && !Modifier.isStatic(method.flags())
-                            && !ValueResolverGenerator.isSynthetic(method.flags()) && !Modifier.isAbstract(method.flags())
+                            && !ValueResolverGenerator.isSynthetic(method.flags())
                             && (method.name().equals(name)
                                     || ValueResolverGenerator.getPropertyName(method.name()).equals(name))) {
                         return method;
@@ -1787,14 +1786,14 @@ public class QuteProcessor {
                 clazz = index.getClassByName(clazz.superName());
             }
         }
-        // Try the default methods
+        // Try interface methods
         for (DotName interfaceName : interfaceNames) {
             ClassInfo interfaceClassInfo = index.getClassByName(interfaceName);
             if (interfaceClassInfo != null) {
                 for (MethodInfo method : interfaceClassInfo.methods()) {
                     // A default method is a public non-abstract instance method
                     if (Modifier.isPublic(method.flags()) && !Modifier.isStatic(method.flags())
-                            && !ValueResolverGenerator.isSynthetic(method.flags()) && !Modifier.isAbstract(method.flags())
+                            && !ValueResolverGenerator.isSynthetic(method.flags())
                             && methodMatches(method, virtualMethod, expression, index, templateIdToPathFun, results)) {
                         return method;
                     }

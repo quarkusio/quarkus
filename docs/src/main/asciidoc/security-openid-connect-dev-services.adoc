@@ -11,7 +11,8 @@ This guide covers the Dev Services for OpenId Connect (OIDC) Keycloak provider a
 
 == Introduction
 
-Quarkus introduces an experimental `Dev Services For Keycloak` feature which is enabled by default when the `quarkus-oidc` extension is started in dev mode. It starts a Keycloak container and initializes it by registering the existing Keycloak realm or creating a new realm with the client and users for you to start developing your Quarkus application secured by Keycloak immediately. It will restart a container when the `application.properties` or the realm file changes have been detected.
+Quarkus introduces an experimental `Dev Services For Keycloak` feature which is enabled by default when the `quarkus-oidc` extension is started in dev mode with `mvn quarkus:dev` and when the integration tests are running in test mode, but only when no `quarkus.oidc.auth-server-url` property is configured.
+It starts a Keycloak container for both the dev and/or test modes and initializes them by registering the existing Keycloak realm or creating a new realm with the client and users for you to start developing your Quarkus application secured by Keycloak immediately. It will restart the container when the `application.properties` or the realm file changes have been detected.
 
 Additionally, link:dev-ui[Dev UI] available at http://localhost:8080/q/dev[/q/dev] supports this feature with a Keycloak specific page which helps to acquire the tokens from Keycloak and test your Quarkus application.
 
@@ -28,12 +29,24 @@ $ mvn quarkus:dev
 2021-06-04 16:22:47,629 INFO  [🐳 .io/keycloak/keycloak:14.0.0]] (build-38) Container quay.io/keycloak/keycloak:14.0.0 is starting: 6469f6db9cec2c855fcc6c8db4273944cc9d69e8f6803a0b47eb2d5b8f5b94fd
 2021-06-04 16:22:47,643 INFO  [org.tes.con.wai.str.HttpWaitStrategy] (build-38) /elastic_lovelace: Waiting for 60 seconds for URL: http://localhost:32812/auth (where port 32812 maps to container port 8080)
 2021-06-04 16:23:07,665 INFO  [🐳 .io/keycloak/keycloak:14.0.0]] (build-38) Container quay.io/keycloak/keycloak:14.0.0 started in PT5.500489S
+2021-06-04 16:23:07,666 INFO  [io.qua.oid.dep.dev.key.KeycloakDevServicesProcessor] (build-38) Dev Services for Keycloak started.
 ...
-2021-06-04 16:23:11,155 INFO  [io.quarkus] (Quarkus Main Thread) security-openid-connect-quickstart 1.0.0-SNAPSHOT on JVM (powered by Quarkus 999-SNAPSHOT) started in 25.968s. Listening on: http://localhost:8080
-2021-06-04 16:23:11,157 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
 ----
 
 The `quay.io/keycloak/keycloak:14.0.0` Keycloak image is used by default to start a container. `quarkus.keycloak.devservices.image-name` can be used to change the Keycloak image used.
+
+Note that by default, `Dev Services for Keycloak` will not start a new container if it finds a container with a `quarkus-dev-service-keycloak` label and connect to it if this label's value matches the value of the `quarkus.keycloak.devservces.service-name` property (default value is `quarkus`). In such cases you will see a slighty different output:
+
+[source,shell]
+----
+$ mvn quarkus:dev
+
+2021-08-27 18:42:43,530 INFO  [io.qua.dev.com.ContainerLocator] (build-15) Dev Services container found: 48fee151a31ddfe32c39965be8f61108587b25ed2f66cdc18bb926d9e2e570c5 (quay.io/keycloak/keycloak:14.0.0). Connecting to: 0.0.0.0:32797.
+2021-08-27 18:42:43,600 INFO  [io.qua.oid.dep.dev.key.KeycloakDevServicesProcessor] (build-15) Dev Services for Keycloak started.
+...
+----
+
+Note that you can disable sharing the containers with `quarkus.keycloak.devservices.shared=false`.
 
 Now open the main link:http://localhost:8080/q/dev[Dev UI page] and you will see the `OpenId Connect Card` linking to a `Keycloak` page:
 
@@ -41,7 +54,7 @@ image::dev-ui-oidc-keycloak-card.png[alt=Dev UI OpenId Connect Card,role="center
 
 Click on the `Provider: Keycloak` link and you will see a Keycloak page which will be presented slightly differently depending on how `Dev Services for Keycloak` feature has been configured.
 
-=== Testing Service Applications
+=== Developing Service Applications
 
 By default the Keycloak page can be used to support the development of a link:security-openid-connect[Quarkus OIDC service application].
 
@@ -63,8 +76,17 @@ Finally you can click a `Logged in` option if you'd like to log out and authenti
 
 [NOTE]
 ====
-You may need to register a redirect URI for the authorization code flow initiated by Dev UI for Keycloak to work.
-Select a `Keycloak Admin` option in the right top corner, login as `admin:admin`, select the test realm and the client which Dev UI for Keycloak is configured with and add `http://localhost:8080/q/dev/io.quarkus.quarkus-oidc/provider` to `Valid Redirect URIs`.
+You may need to register a redirect URI for the authorization code flow initiated by Dev UI for Keycloak to work because Keycloak may enforce that the authenticated users are redirected only to the configured redirect URI. It is recommended to do in production to avoid the users being redirected to the wrong endpoints in case which might happen if the correct `redirect_uri` parameter in the authentication request URI has been manipulated.
+
+If Keycloak does enforce it then you will see an authentication error informing you that the `redirect_uri` value is wrong.
+
+In this case select the `Keycloak Admin` option in the right top corner, login as `admin:admin`, select the test realm and the client which Dev UI for Keycloak is configured with and add `http://localhost:8080/q/dev/io.quarkus.quarkus-oidc/provider` to `Valid Redirect URIs`. If you used `-Dquarkus.http.port` when starting Quarkus then change `8080` to the value of `quarkus.http.port`.
+
+If the container is shared between multiple applications running on different ports then you will need to register `redirect_uri` values for each of these applications.
+
+You can set the `redirect_uri` value to `*` only for the test purposes, especially when the containers are shared between multiple applications.
+
+`*` `redirect_uri` value is set by `Dev Services for Keycloak` when it creates a default realm, if no custom realm is imported.
 ====
 
 ==== Implicit Grant
@@ -108,6 +130,13 @@ You will see a screen like this one:
 image::dev-ui-keycloak-sign-in-to-service.png[alt=Dev UI OpenId Connect Keycloak Sign In,role="center"]
 
 Set a relative service endpoint path, click on `Sign In To Service` and you will be redirected to Keycloak to enter a username and password in a new browser tab and get a response from the Quarkus application.
+
+=== Running the tests
+
+You can run the tests against a Keycloak container started in a test mode in a link:continuous-testing[Continuous Testing] mode.
+
+It is also recommended to run the integration tests against Keycloak using `Dev Services for Keycloak`.
+Please see link:security-openid-connect#integration-testing-keycloak-devservices[Testing OpenId Connect Service Applications with Dev Services] and link:security-openid-connect-web-authentication#integration-testing-keycloak-devservices[Testing OpenId Connect WebApp Applications with Dev Services] for more information.
 
 === Keycloak Initialization
 

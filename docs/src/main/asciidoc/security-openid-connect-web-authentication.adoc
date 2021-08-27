@@ -582,7 +582,7 @@ It applies to ID tokens but also to access tokens in a JWT format if the `web-ap
 Please see link:security-openid-connect-client#token-propagation[Token Propagation] section about the Authorization Code Flow access token propagation to the downstream services.
 
 [[oidc-provider-client-authentication]]
-=== Oidc Provider Client Authentication
+== Oidc Provider Client Authentication
 
 `quarkus.oidc.runtime.OidcProviderClient` is used when a remote request to an OpenId Connect Provider has to be done. It has to authenticate to the OpenId Connect Provider when the authorization code has to be exchanged for the ID, access and refresh tokens, when the ID and access tokens have to be refreshed or introspected.
 
@@ -784,10 +784,46 @@ Additionally, `OidcWiremockTestResource` set token issuer and audience to `https
 
 `OidcWiremockTestResource` can be used to emulate all OpenId Connect providers.
 
-[[integration-testing-keycloak]]
-=== Keycloak
+[[integration-testing-keycloak-devservices]]
+=== Dev Services for Keycloak
 
-If you work with Keycloak then you can test against a live Keycloak instance by adding the following dependency:
+Using link:security-openid-connect-dev-services[Dev Services for Keycloak] is recommended for the integration testing against Keycloak.
+`Dev Services for Keycloak` will launch and initialize a test container: it will create a `quarkus` realm, a `quarkus-app` client (`secret` secret) and add `alice` (`admin` and `user` roles) and `bob` (`user` role) users, where all of these properties can be customized.
+
+First prepare `application.properties`. You can start with a completely empty `application.properties` as `Dev Services for Keycloak` will register `quarkus.oidc.auth-server-url` pointing to the running test container as well as `quarkus.oidc.client-id=quarkus-app` and `quarkus.oidc.credentials.secret=secret`.
+
+But if you already have all the required `quarkus-oidc` properties configured then you only need to associate `quarkus.oidc.auth-server-url` with the `prod` profile for `Dev Services for Keycloak`to start a container, for example:
+
+[source,properties]
+----
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+----
+
+If a custom realm file has to be imported into Keycloak before running the tests then you can configure `Dev Services for Keycloak` as follows:
+
+[source,properties]
+----
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.keycloak.devservices.realm-path=quarkus-realm.json
+----
+
+Finally write a test code the same way as it is described in the <<integration-testing-wiremock, Wiremock>> section above.
+The only difference is that `@QuarkusTestResource` is no longer needed:
+
+[source, java]
+----
+@QuarkusTest
+public class CodeFlowAuthorizationTest {
+}
+----
+
+[[integration-testing-keycloak]]
+=== KeycloakTestResourceLifecycleManager
+
+If you need to do the integration testing against Keycloak then you are encouraged to do it with <<integration-testing-keycloak-devservices,Dev Services For Keycloak>>.
+Use `KeycloakTestResourceLifecycleManager` for your tests only if there is a good reason not to use `Dev Services for Keycloak`.
+
+Start with adding the following dependency:
 
 [source,xml]
 ----
@@ -798,7 +834,9 @@ If you work with Keycloak then you can test against a live Keycloak instance by 
 </dependency>
 ----
 
-and configure `maven.surefire.plugin` as follows:
+which provides `io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager` - an implementaion of `io.quarkus.test.common.QuarkusTestResourceLifecycleManager` which starts a Keycloak container.
+
+And configure `maven.surefire.plugin` as follows:
 
 [source,xml]
 ----
@@ -909,5 +947,5 @@ include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
 * link:security-openid-connect-client[Quarkus - Using OpenID Connect and OAuth2 Client and Filters to manage access tokens]
-* link:security-openid-connect-dev-services[Dev Services for OpenId Connect]
+* link:security-openid-connect-dev-services[Dev Services for Keycloak]
 * link:security[Quarkus Security]

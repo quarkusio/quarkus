@@ -6,7 +6,7 @@ plugins {
 dependencies {
     implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
     implementation 'io.quarkus:quarkus-core-deployment'
-    implementation("org.hibernate:hibernate-core:5.4.9")
+    implementation("org.acme:simple-dependency:1.0-SNAPSHOT")
 
     implementation project(':ext-a:runtime')
 }

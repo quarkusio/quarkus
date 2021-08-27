@@ -47,7 +47,7 @@ public class NdjsonMultiRouteTest {
         // We get the item followed by the exception
         when().get("/hello-and-fail").then().statusCode(200)
                 .body(containsString("\"Hello\""))
-                .body(containsString("boom"));
+                .body(not(containsString("boom")));
 
         when().get("/void").then().statusCode(204).body(hasLength(0));
 

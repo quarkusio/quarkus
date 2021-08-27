@@ -26,6 +26,7 @@ public class HibernateEnversRecorder {
         @Override
         public void contributeBootProperties(BiConsumer<String, Object> propertyCollector) {
             addConfig(propertyCollector, EnversSettings.STORE_DATA_AT_DELETE, buildTimeConfig.storeDataAtDelete);
+            addConfig(propertyCollector, EnversSettings.AUDIT_TABLE_SUFFIX, buildTimeConfig.auditTableSuffix);
         }
 
         public static <T> void addConfig(BiConsumer<String, Object> propertyCollector, String configPath, T value) {

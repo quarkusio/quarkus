@@ -81,8 +81,8 @@ public class RegistryClientMixin {
             catalogResolver = getExtensionCatalogResolver(log);
         } catch (RegistryResolutionException e) {
             log.warn(
-                    "None of the configured Quarkus extension registries appear to be available at the moment. "
-                            + "It should still be possible to create a new project by providing the exact Quarkus platform BOM coordinates, "
+                    "Configured Quarkus extension registries appear to be unavailable at the moment. "
+                            + "It should still be possible to create a project by providing the groupId:artifactId:version of the desired Quarkus platform BOM, "
                             + "e.g. 'quarkus create -P "
                             + ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID + ":"
                             + ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID + ":" + Version.clientVersion() + "'");

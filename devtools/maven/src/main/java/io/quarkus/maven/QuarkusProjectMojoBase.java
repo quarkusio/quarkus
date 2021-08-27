@@ -171,7 +171,8 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
             try {
                 artifactResolver = MavenArtifactResolver.builder()
                         .setRepositorySystem(repoSystem)
-                        .setRepositorySystemSession(MojoUtils.muteTransferListener(repoSession))
+                        .setRepositorySystemSession(
+                                getLog().isDebugEnabled() ? repoSession : MojoUtils.muteTransferListener(repoSession))
                         .setRemoteRepositories(repos)
                         .setRemoteRepositoryManager(remoteRepositoryManager)
                         .build();

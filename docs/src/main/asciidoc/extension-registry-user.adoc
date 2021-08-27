@@ -151,3 +151,17 @@ registries:
 - registry.quarkus.io
 ----
 
+=== How to register as a Nexus Repository proxy
+
+To register a Quarkus extension registry as a Nexus repository proxy, make sure the following options are set:
+
+- Set the `Repository Policy` to `Snapshot`;
+- Disable `Download Remote Indexes`;
+- Disable `Allow File Browsing`;
+- Disable `Include in Search`.
+
+Here is an example on how it should look like:
+
+[#img-nexus]
+.Nexus Repository Manager: Add Proxy Repository
+image:registry-nexus-repository.png[Nexus Repository Proxy]

@@ -40,7 +40,7 @@
         <!-- Versions -->
         <jline.version>3.20.0</jline.version>
         <assertj.version>3.20.2</assertj.version>
-        <jackson.version>2.12.4</jackson.version>
+        <jackson.version>2.12.5</jackson.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <jakarta.servlet-api.version>4.0.3</jakarta.servlet-api.version>
         <jakarta.websocket-api.version>1.1.2</jakarta.websocket-api.version>

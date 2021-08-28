@@ -1574,6 +1574,7 @@ public class BeanGenerator extends AbstractGenerator {
                 .setModifiers(ACC_PUBLIC);
 
         if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
+            // @Dependent pseudo-scope
             // Foo instance = create(ctx)
             ResultHandle instance = get.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(beanCreator.getClassName(), "create", providerType.descriptorName(),
@@ -1607,8 +1608,15 @@ public class BeanGenerator extends AbstractGenerator {
                     get.getMethodParam(0));
             // return instance
             get.returnValue(instance);
-        } else if (BuiltinScope.SINGLETON.is(bean.getScope())) {
-            // return Arc.container().getContext(getScope()).get(this, new CreationalContextImpl<>())
+        } else if (bean.getScope().isNormal()) {
+            // All normal scopes
+            // return proxy()
+            get.returnValue(get.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(beanCreator.getClassName(), FIELD_NAME_PROXY, getProxyTypeName(bean, baseName)),
+                    get.getThis()));
+        } else {
+            // All pseudo scopes other than @Dependent (incl. @Singleton)
+            // return Arc.container().getActiveContext(getScope()).get(this, new CreationalContextImpl<>())
             ResultHandle container = get.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
             ResultHandle creationalContext = get.newInstance(
                     MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
@@ -1618,18 +1626,6 @@ public class BeanGenerator extends AbstractGenerator {
                     scope);
             get.returnValue(
                     get.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET, context, get.getThis(), creationalContext));
-        } else if (bean.getScope().isNormal()) {
-            // return proxy()
-            get.returnValue(get.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(beanCreator.getClassName(), FIELD_NAME_PROXY, getProxyTypeName(bean, baseName)),
-                    get.getThis()));
-        } else {
-            ResultHandle instance = get.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(beanCreator.getClassName(), "create", providerType.descriptorName(),
-                            CreationalContext.class),
-                    get.getThis(),
-                    get.getMethodParam(0));
-            get.returnValue(instance);
         }
 
         // Bridge method needed

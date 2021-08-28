@@ -12,7 +12,7 @@ As described in the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Arc
 
 image::quarkus-reactive-core.png[Quarkus Reactive Core,width=50%, align=center]
 
-Quarkus applications can access and uses the Vert.x APIs.
+Quarkus applications can access and use the Vert.x APIs.
 
 This guide presents how you can build a Quarkus application using:
 

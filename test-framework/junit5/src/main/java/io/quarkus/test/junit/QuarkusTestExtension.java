@@ -22,6 +22,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -195,6 +196,8 @@ public class QuarkusTestExtension
             //we only every dump once
         }
     };
+
+    private final IdentityHashMap<Method, Method> tcclMethodCache = new IdentityHashMap<>();
 
     static {
         ClassLoader classLoader = QuarkusTestExtension.class.getClassLoader();
@@ -430,6 +433,7 @@ public class QuarkusTestExtension
                                 }
                                 tm.close();
                             } finally {
+                                tcclMethodCache.clear();
                                 GroovyCacheCleaner.clearGroovyCache();
                                 if (hangTaskKey != null) {
                                     hangTaskKey.cancel(true);
@@ -988,13 +992,13 @@ public class QuarkusTestExtension
         try {
             Class<?> testClassFromTCCL = Class.forName(extensionContext.getRequiredTestClass().getName(), true,
                     Thread.currentThread().getContextClassLoader());
-            Method newMethod = determineTCCLExtensionMethod(invocationContext, testClassFromTCCL);
+            Method newMethod = determineTCCLExtensionMethod(invocationContext.getExecutable(), testClassFromTCCL);
             boolean methodFromEnclosing = false;
             // this is needed to support before*** and after*** methods that are part of class that encloses the test class
             // (the test class is in this case a @Nested test)
             if ((newMethod == null) && (testClassFromTCCL.getEnclosingClass() != null)) {
                 testClassFromTCCL = testClassFromTCCL.getEnclosingClass();
-                newMethod = determineTCCLExtensionMethod(invocationContext, testClassFromTCCL);
+                newMethod = determineTCCLExtensionMethod(invocationContext.getExecutable(), testClassFromTCCL);
                 methodFromEnclosing = true;
             }
             if (newMethod == null) {
@@ -1035,8 +1039,9 @@ public class QuarkusTestExtension
                         cloneRequired = false;
                     } else if (TestInfo.class.isAssignableFrom(theclass)) {
                         TestInfo info = (TestInfo) arg;
+                        Method newTestMethod = determineTCCLExtensionMethod(info.getTestMethod().get(), testClassFromTCCL);
                         replacement = new TestInfoImpl(info.getDisplayName(), info.getTags(), Optional.of(testClassFromTCCL),
-                                Optional.of(newMethod));
+                                Optional.of(newTestMethod));
                     } else if (clonePattern.matcher(className).matches()) {
                         cloneRequired = true;
                     } else {
@@ -1089,13 +1094,16 @@ public class QuarkusTestExtension
         }
     }
 
-    private Method determineTCCLExtensionMethod(ReflectiveInvocationContext<Method> invocationContext, Class<?> c)
+    private Method determineTCCLExtensionMethod(Method originalMethod, Class<?> c)
             throws ClassNotFoundException {
-        Method newMethod = null;
+        Method newMethod = tcclMethodCache.get(originalMethod);
+        if (newMethod != null) {
+            return newMethod;
+        }
         while (c != Object.class) {
-            if (c.getName().equals(invocationContext.getExecutable().getDeclaringClass().getName())) {
+            if (c.getName().equals(originalMethod.getDeclaringClass().getName())) {
                 try {
-                    Class<?>[] originalParameterTypes = invocationContext.getExecutable().getParameterTypes();
+                    Class<?>[] originalParameterTypes = originalMethod.getParameterTypes();
                     List<Class<?>> parameterTypesFromTccl = new ArrayList<>(originalParameterTypes.length);
                     for (Class<?> type : originalParameterTypes) {
                         if (type.isPrimitive()) {
@@ -1106,7 +1114,7 @@ public class QuarkusTestExtension
                                             Thread.currentThread().getContextClassLoader()));
                         }
                     }
-                    newMethod = c.getDeclaredMethod(invocationContext.getExecutable().getName(),
+                    newMethod = c.getDeclaredMethod(originalMethod.getName(),
                             parameterTypesFromTccl.toArray(new Class[0]));
                     break;
                 } catch (NoSuchMethodException ignored) {
@@ -1115,6 +1123,7 @@ public class QuarkusTestExtension
             }
             c = c.getSuperclass();
         }
+        tcclMethodCache.put(originalMethod, newMethod);
         return newMethod;
     }
 

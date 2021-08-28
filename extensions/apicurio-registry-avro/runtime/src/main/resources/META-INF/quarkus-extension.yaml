@@ -9,3 +9,5 @@ metadata:
   categories:
   - "serialization"
   status: "experimental"
+  config:
+  - "avro.codegen."

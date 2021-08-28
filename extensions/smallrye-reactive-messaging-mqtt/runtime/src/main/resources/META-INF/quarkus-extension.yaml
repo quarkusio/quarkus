@@ -8,3 +8,6 @@ metadata:
   categories:
   - "messaging"
   status: "preview"
+  config:
+  - "mp.messaging."
+  - "quarkus.reactive-messaging."

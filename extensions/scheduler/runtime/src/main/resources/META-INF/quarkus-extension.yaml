@@ -10,3 +10,5 @@ metadata:
   categories:
   - "miscellaneous"
   status: "stable"
+  config:
+  - "quarkus.scheduler."

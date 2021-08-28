@@ -12,3 +12,6 @@ metadata:
   categories:
   - "observability"
   status: "stable"
+  config:
+  - "quarkus.jaeger."
+  - "mp.opentracing."

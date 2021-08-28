@@ -12,3 +12,7 @@ metadata:
   - "web"
   guide: "https://quarkus.io/guides/microprofile-graphql"
   status: "preview"
+  config:
+  - "mp.graphql."
+  - "smallrye.graphql."
+  - "quarkus.smallrye-graphql."

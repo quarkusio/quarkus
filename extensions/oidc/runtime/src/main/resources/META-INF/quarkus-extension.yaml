@@ -10,3 +10,6 @@ metadata:
   categories:
   - "security"
   status: "stable"
+  config:
+  - "quarkus.keycloak.devservices."
+  - "quarkus.oidc."

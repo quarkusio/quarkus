@@ -9,3 +9,5 @@ metadata:
   - "security"
   guide: "https://quarkus.io/guides/security-oauth2"
   status: "preview"
+  config:
+  - "quarkus.oauth2."

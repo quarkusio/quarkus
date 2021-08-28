@@ -6,3 +6,5 @@ metadata:
   - "web"
   status: "stable"
   unlisted: true
+  config:
+  - "quarkus.netty."

@@ -10,3 +10,5 @@ metadata:
   - "core"
   status: "preview"
   guide: "https://quarkus.io/guides/logging-sentry"
+  config:
+  - "quarkus.log.sentry."

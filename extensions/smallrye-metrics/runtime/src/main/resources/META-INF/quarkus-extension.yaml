@@ -13,3 +13,6 @@ metadata:
   categories:
   - "observability"
   status: "stable"
+  config:
+  - "quarkus.smallrye-metrics."
+  - "mp.metrics."

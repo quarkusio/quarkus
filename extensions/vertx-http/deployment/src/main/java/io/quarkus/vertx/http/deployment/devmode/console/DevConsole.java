@@ -4,11 +4,13 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.TreeMap;
 import java.util.function.BiFunction;
 
 import org.eclipse.microprofile.config.Config;
@@ -80,6 +82,7 @@ public class DevConsole implements Handler<RoutingContext> {
         } catch (IOException x) {
             throw new RuntimeException(x);
         }
+        this.globalData.put("configKeyMap", getConfigKeyMap());
     }
 
     @Override
@@ -116,6 +119,22 @@ public class DevConsole implements Handler<RoutingContext> {
                 ctx.next();
             }
         }
+    }
+
+    private Map<String, List<String>> getConfigKeyMap() {
+        Map<String, List<String>> ckm = new TreeMap<>();
+        Collection<Map<String, Object>> values = this.extensions.values();
+        for (Map<String, Object> extension : values) {
+            if (extension.containsKey("metadata")) {
+                Map<String, Object> metadata = (Map<String, Object>) extension.get("metadata");
+                if (metadata.containsKey("config")) {
+                    List<String> configKeys = (List<String>) metadata.get("config");
+                    String name = (String) extension.get("name");
+                    ckm.put(name, configKeys);
+                }
+            }
+        }
+        return ckm;
     }
 
     private String getExtensionName(String namespace) {

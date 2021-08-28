@@ -12,3 +12,6 @@ metadata:
   categories:
     - "compatibility"
   status: "preview"
+  config:
+  - "quarkus.datasource."
+  - "quarkus.hibernate-orm."

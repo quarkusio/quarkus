@@ -7,6 +7,8 @@ import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 
 public class SimpleAnnotationCheckerBeforeEachCallback implements QuarkusTestBeforeEachCallback {
 
+    static boolean testAnnotationChecked;
+
     @Override
     public void beforeEach(QuarkusTestMethodContext context) {
         // make sure that this comes into play only for the test we care about
@@ -26,5 +28,6 @@ public class SimpleAnnotationCheckerBeforeEachCallback implements QuarkusTestBef
             throw new IllegalStateException(
                     "Expected to find annotation @TestAnnotation on method test method testTestMethodHasAnnotation");
         }
+        testAnnotationChecked = true;
     }
 }

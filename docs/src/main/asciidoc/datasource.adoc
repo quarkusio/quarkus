@@ -415,17 +415,17 @@ each with its own configuration.
 ----
 quarkus.datasource.db-kind=h2
 quarkus.datasource.username=username-default
-quarkus.datasource.jdbc.url=jdbc:h2:tcp://localhost/mem:default
+quarkus.datasource.jdbc.url=jdbc:h2:mem:default
 quarkus.datasource.jdbc.max-size=13
 
 quarkus.datasource.users.db-kind=h2
 quarkus.datasource.users.username=username1
-quarkus.datasource.users.jdbc.url=jdbc:h2:tcp://localhost/mem:users
+quarkus.datasource.users.jdbc.url=jdbc:h2:mem:users
 quarkus.datasource.users.jdbc.max-size=11
 
 quarkus.datasource.inventory.db-kind=h2
 quarkus.datasource.inventory.username=username2
-quarkus.datasource.inventory.jdbc.url=jdbc:h2:tcp://localhost/mem:inventory
+quarkus.datasource.inventory.jdbc.url=jdbc:h2:mem:inventory
 quarkus.datasource.inventory.jdbc.max-size=12
 ----
 
@@ -551,7 +551,7 @@ Connect to it using:
 [source,properties]
 ----
 quarkus.datasource.db-kind=h2
-quarkus.datasource.jdbc.url=jdbc:h2:tcp://localhost/mem:test
+quarkus.datasource.jdbc.url=jdbc:h2:mem:test
 ----
 
 [[configuration-reference]]

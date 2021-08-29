@@ -42,17 +42,37 @@ final class Beans {
     private Beans() {
     }
 
-    static BeanInfo createClassBean(ClassInfo beanClass, BeanDeployment beanDeployment, InjectionPointModifier transformer) {
-        Set<AnnotationInstance> qualifiers = new HashSet<>();
-        List<ScopeInfo> scopes = new ArrayList<>();
-        Set<Type> types = Types.getClassBeanTypeClosure(beanClass, beanDeployment);
-        Integer alternativePriority = null;
-        boolean isAlternative = false;
-        boolean isDefaultBean = false;
-        List<StereotypeInfo> stereotypes = new ArrayList<>();
-        String name = null;
+    private static class BeanInfoBuilder {
+        private static String name;
+        private static Integer alternativePriority;
+        private static boolean isAlternative;
+        private static boolean isDefaultBean;
 
-        for (AnnotationInstance annotation : beanDeployment.getAnnotations(beanClass)) {
+        static void processInheritedAnnotation(
+                AnnotationInstance annotation,
+                BeanDeployment beanDeployment,
+                Set<AnnotationInstance> qualifiers,
+                List<StereotypeInfo> stereotypes) {
+            Collection<AnnotationInstance> qualifierCollection = beanDeployment.extractQualifiers(annotation);
+            for (AnnotationInstance qualifierAnnotation : qualifierCollection) {
+                if (beanDeployment.isInheritedQualifier(qualifierAnnotation.name())) {
+                    qualifiers.add(qualifierAnnotation);
+                }
+            }
+            StereotypeInfo stereotype = beanDeployment.getStereotype(annotation.name());
+            if (stereotype != null) {
+                if (stereotype.isInherited()) {
+                    stereotypes.add(stereotype);
+                }
+            }
+        }
+
+        static void processAnnotation(AnnotationInstance annotation,
+                ClassInfo beanClass,
+                BeanDeployment beanDeployment,
+                Set<AnnotationInstance> qualifiers,
+                List<StereotypeInfo> stereotypes,
+                List<ScopeInfo> scopes) {
             if (DotNames.NAMED.equals(annotation.name())) {
                 AnnotationValue nameValue = annotation.value();
                 if (nameValue != null) {
@@ -71,76 +91,119 @@ final class Beans {
             StereotypeInfo stereotype = beanDeployment.getStereotype(annotation.name());
             if (stereotype != null) {
                 stereotypes.add(stereotype);
-                continue;
+                return;
             }
             if (!qualifierCollection.isEmpty()) {
                 // we needn't process it further, the annotation was a qualifier (or multiple repeating ones)
-                continue;
+                return;
             }
             if (annotation.name()
                     .equals(DotNames.ALTERNATIVE)) {
                 isAlternative = true;
-                continue;
+                return;
             }
             if (annotation.name()
                     .equals(DotNames.ALTERNATIVE_PRIORITY)) {
                 isAlternative = true;
                 alternativePriority = annotation.value().asInt();
-                continue;
+                return;
             }
             if (DotNames.DEFAULT_BEAN.equals(annotation.name())) {
                 isDefaultBean = true;
-                continue;
+                return;
             }
             if (annotation.name()
                     .equals(DotNames.PRIORITY) && alternativePriority == null) {
                 alternativePriority = annotation.value()
                         .asInt();
-                continue;
+                return;
             }
             ScopeInfo scopeAnnotation = beanDeployment.getScope(annotation.name());
             if (scopeAnnotation != null) {
-                scopes.add(scopeAnnotation);
-                continue;
+                if (!scopes.contains(scopeAnnotation)) {
+                    scopes.add(scopeAnnotation);
+                }
             }
         }
 
-        if (scopes.size() > 1) {
-            throw multipleScopesFound("Bean class " + beanClass, scopes);
-        }
-        ScopeInfo scope;
-        if (scopes.isEmpty()) {
-            // try to search stereotypes for scope
-            scope = initStereotypeScope(stereotypes, beanClass);
-            // if that fails, try inheriting them
-            if (scope == null) {
-                scope = inheritScope(beanClass, beanDeployment);
+        static BeanInfo build(ClassInfo beanClass,
+                BeanDeployment beanDeployment,
+                InjectionPointModifier transformer) {
+            Set<AnnotationInstance> qualifiers = new HashSet<>();
+            List<ScopeInfo> scopes = new ArrayList<>();
+            Set<Type> types = Types.getClassBeanTypeClosure(beanClass, beanDeployment);
+            alternativePriority = null;
+            isAlternative = false;
+            isDefaultBean = false;
+            List<StereotypeInfo> stereotypes = new ArrayList<>();
+            name = null;
+            Collection<AnnotationInstance> annotations = beanDeployment.getAnnotations(beanClass);
+
+            processSuperClass(beanClass, beanDeployment, qualifiers, stereotypes);
+            for (AnnotationInstance annotation : annotations) {
+                processAnnotation(annotation, beanClass, beanDeployment, qualifiers, stereotypes, scopes);
             }
-        } else {
-            scope = scopes.get(0);
-        }
-        if (!isAlternative) {
-            isAlternative = initStereotypeAlternative(stereotypes);
-        }
-        if (name == null) {
-            name = initStereotypeName(stereotypes, beanClass);
+
+            if (scopes.size() > 1) {
+                throw multipleScopesFound("Bean class " + beanClass, scopes);
+            }
+            ScopeInfo scope;
+            if (scopes.isEmpty()) {
+                // try to search stereotypes for scope
+                scope = initStereotypeScope(stereotypes, beanClass, beanDeployment);
+                // if that fails, try inheriting them
+                if (scope == null) {
+                    scope = inheritScope(beanClass, beanDeployment);
+                }
+            } else {
+                scope = scopes.get(0);
+            }
+            if (!isAlternative) {
+                isAlternative = initStereotypeAlternative(stereotypes);
+            }
+            if (name == null) {
+                name = initStereotypeName(stereotypes, beanClass);
+            }
+
+            if (isAlternative) {
+                alternativePriority = initAlternativePriority(beanClass, alternativePriority, stereotypes, beanDeployment);
+                if (alternativePriority == null) {
+                    // after all attempts, priority is still null, bean will be ignored
+                    LOGGER.debugf(
+                            "Ignoring bean defined via %s - declared as an @Alternative but not selected by @Priority, @AlternativePriority or quarkus.arc.selected-alternatives",
+                            beanClass.name());
+                    return null;
+                }
+            }
+
+            return new BeanInfo(beanClass, beanDeployment, scope, types, qualifiers,
+                    Injection.forBean(beanClass, null, beanDeployment, transformer), null, null,
+                    isAlternative ? alternativePriority : null, stereotypes, name, isDefaultBean);
         }
 
-        if (isAlternative) {
-            alternativePriority = initAlternativePriority(beanClass, alternativePriority, stereotypes, beanDeployment);
-            if (alternativePriority == null) {
-                // after all attempts, priority is still null, bean will be ignored
-                LOGGER.debugf(
-                        "Ignoring bean defined via %s - declared as an @Alternative but not selected by @Priority, @AlternativePriority or quarkus.arc.selected-alternatives",
-                        beanClass.name());
-                return null;
+        private static void processSuperClass(ClassInfo beanClass, BeanDeployment beanDeployment,
+                Set<AnnotationInstance> qualifiers, List<StereotypeInfo> stereotypes) {
+            DotName superClassName = beanClass.superName();
+            while (!superClassName.equals(DotNames.OBJECT)) {
+                ClassInfo classFromIndex = getClassByName(beanDeployment.getBeanArchiveIndex(), superClassName);
+                if (classFromIndex == null) {
+                    // class not in index
+                    LOGGER.warnf("Unable to get inherited qualifier of stereotype for bean %s because its " +
+                            "super class %s is not part of Jandex index. This inheritance will not apply.",
+                            beanClass,
+                            superClassName);
+                    break;
+                }
+                for (AnnotationInstance annotation : beanDeployment.getAnnotationStore().getAnnotations(classFromIndex)) {
+                    processInheritedAnnotation(annotation, beanDeployment, qualifiers, stereotypes);
+                }
+                superClassName = classFromIndex.superName();
             }
         }
+    }
 
-        BeanInfo bean = new BeanInfo(beanClass, beanDeployment, scope, types, qualifiers,
-                Injection.forBean(beanClass, null, beanDeployment, transformer), null, null,
-                isAlternative ? alternativePriority : null, stereotypes, name, isDefaultBean);
-        return bean;
+    static BeanInfo createClassBean(ClassInfo beanClass, BeanDeployment beanDeployment, InjectionPointModifier transformer) {
+        return BeanInfoBuilder.build(beanClass, beanDeployment, transformer);
     }
 
     private static ScopeInfo inheritScope(ClassInfo beanClass, BeanDeployment beanDeployment) {
@@ -231,7 +294,7 @@ final class Beans {
         }
         ScopeInfo scope;
         if (scopes.isEmpty()) {
-            scope = initStereotypeScope(stereotypes, producerMethod);
+            scope = initStereotypeScope(stereotypes, producerMethod, beanDeployment);
         } else {
             scope = scopes.get(0);
         }
@@ -322,7 +385,7 @@ final class Beans {
         }
         ScopeInfo scope;
         if (scopes.isEmpty()) {
-            scope = initStereotypeScope(stereotypes, producerField);
+            scope = initStereotypeScope(stereotypes, producerField, beanDeployment);
         } else {
             scope = scopes.get(0);
         }
@@ -364,7 +427,8 @@ final class Beans {
                 + scopes.stream().map(s -> s.getDotName().toString()).collect(Collectors.joining(", ")));
     }
 
-    private static ScopeInfo initStereotypeScope(List<StereotypeInfo> stereotypes, AnnotationTarget target) {
+    private static ScopeInfo initStereotypeScope(List<StereotypeInfo> stereotypes, AnnotationTarget target,
+            BeanDeployment beanDeployment) {
         if (stereotypes.isEmpty()) {
             return null;
         }
@@ -372,7 +436,18 @@ final class Beans {
         final Set<ScopeInfo> additionalBDAScopes = new HashSet<>();
         for (StereotypeInfo stereotype : stereotypes) {
             if (!stereotype.isAdditionalBeanDefiningAnnotation()) {
-                stereotypeScopes.add(stereotype.getDefaultScope());
+                ScopeInfo defaultScope = stereotype.getDefaultScope();
+                if (defaultScope == null) {
+                    List<StereotypeInfo> parentStereotypes = new ArrayList<>(stereotype.getParentStereotypes().size());
+                    for (AnnotationInstance annotation : stereotype.getParentStereotypes()) {
+                        StereotypeInfo parentStereotype = beanDeployment.getStereotype(annotation.name());
+                        parentStereotypes.add(parentStereotype);
+                    }
+                    defaultScope = initStereotypeScope(parentStereotypes, target, beanDeployment);
+                }
+                if (defaultScope != null) {
+                    stereotypeScopes.add(defaultScope);
+                }
             } else {
                 additionalBDAScopes.add(stereotype.getDefaultScope());
             }

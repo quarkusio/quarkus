@@ -7,6 +7,7 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -37,8 +38,9 @@ public class TypeLevelInheritanceTest {
 
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder().removeUnusedBeans(false)
-            .beanClasses(BasicBean.class, SubBean.class, FirstInterceptor.class,
-                    SecondInterceptor.class, MyBinding.class, MyStereotype.class, SecondaryBinding.class, MyQualifier.class)
+            .beanClasses(BasicBean.class, SubBean.class, FirstInterceptor.class, SecondInterceptor.class,
+                    ThirdInterceptor.class, MyBinding.class, MyStereotype.class, MyStereotype2.class,
+                    SecondaryBinding.class, MyQualifier.class, ThirdBinding.class, MyQualifier2.class)
             .build();
 
     @Test
@@ -47,23 +49,30 @@ public class TypeLevelInheritanceTest {
 
         assertEquals(0, FirstInterceptor.timesInvoked);
         assertEquals(0, SecondInterceptor.timesInvoked);
+        assertEquals(0, ThirdInterceptor.timesInvoked);
 
-        BasicBean basicBean = container.instance(BasicBean.class, new MyQualifier.Literal()).get();
+        BasicBean basicBean = container.instance(BasicBean.class, new MyQualifier.Literal(), new MyQualifier2.Literal()).get();
         assertNotNull(basicBean);
         basicBean.ping();
         assertEquals(1, FirstInterceptor.timesInvoked);
         assertEquals(1, SecondInterceptor.timesInvoked);
+        assertEquals(1, ThirdInterceptor.timesInvoked);
 
-        SubBean subBean = container.instance(SubBean.class, new MyQualifier.Literal()).get();
+        SubBean subBean = container.instance(SubBean.class, new MyQualifier.Literal(), new MyQualifier2.Literal()).get();
+        assertNull(subBean);
+        subBean = container.instance(SubBean.class, new MyQualifier.Literal()).get();
         assertNotNull(subBean);
         subBean.ping();
         assertEquals(2, FirstInterceptor.timesInvoked);
         assertEquals(2, SecondInterceptor.timesInvoked);
+        assertEquals(1, ThirdInterceptor.timesInvoked);
     }
 
     @ApplicationScoped
     @MyBinding
     @MyQualifier
+    @MyQualifier2
+    @MyStereotype2
     @MyStereotype
     static class BasicBean {
         public void ping() {
@@ -81,6 +90,19 @@ public class TypeLevelInheritanceTest {
     @Interceptor
     @Priority(1)
     static class FirstInterceptor {
+        public static int timesInvoked = 0;
+
+        @AroundInvoke
+        Object aroundInvoke(InvocationContext ctx) throws Exception {
+            timesInvoked++;
+            return ctx.proceed();
+        }
+    }
+
+    @ThirdBinding
+    @Interceptor
+    @Priority(2)
+    static class ThirdInterceptor {
         public static int timesInvoked = 0;
 
         @AroundInvoke
@@ -118,11 +140,23 @@ public class TypeLevelInheritanceTest {
     @interface MyStereotype {
     }
 
+    @Stereotype
+    @ThirdBinding
     @Target({ TYPE, METHOD, FIELD, PARAMETER })
     @Retention(RUNTIME)
-    @Inherited
+    @interface MyStereotype2 {
+    }
+
+    @Target({ TYPE, METHOD, FIELD, PARAMETER })
+    @Retention(RUNTIME)
     @InterceptorBinding
     @interface SecondaryBinding {
+    }
+
+    @Target({ TYPE, METHOD, FIELD, PARAMETER })
+    @Retention(RUNTIME)
+    @InterceptorBinding
+    @interface ThirdBinding {
     }
 
     @Inherited
@@ -132,6 +166,16 @@ public class TypeLevelInheritanceTest {
     @interface MyQualifier {
 
         static class Literal extends AnnotationLiteral<MyQualifier> implements MyQualifier {
+
+        }
+    }
+
+    @Qualifier
+    @Target({ TYPE, METHOD, FIELD, PARAMETER })
+    @Retention(RUNTIME)
+    @interface MyQualifier2 {
+
+        static class Literal extends AnnotationLiteral<MyQualifier2> implements MyQualifier2 {
 
         }
     }

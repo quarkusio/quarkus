@@ -76,7 +76,6 @@ public class MemberLevelInheritanceTest {
 
         @Inject
         public void initializerMethod(DummyBean bean) {
-            System.err.println("Initializer invoked!");
             this.beanFromInitMethod = bean;
         }
 

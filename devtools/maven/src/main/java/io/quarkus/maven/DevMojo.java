@@ -221,6 +221,9 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${debugPort}")
     private String debugPort;
 
+    @Parameter(defaultValue = "${tracingAgent}")
+    private String tracingAgent;
+
     @Parameter(defaultValue = "${project.build.directory}")
     private File buildDir;
 
@@ -810,6 +813,7 @@ public class DevMojo extends AbstractMojo {
                 .debug(debug)
                 .debugHost(debugHost)
                 .debugPort(debugPort)
+                .tracingAgent(tracingAgent)
                 .deleteDevJar(deleteDevJar);
 
         setJvmArgs(builder);

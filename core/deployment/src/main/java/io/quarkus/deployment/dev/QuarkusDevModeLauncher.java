@@ -87,6 +87,12 @@ public abstract class QuarkusDevModeLauncher {
         }
 
         @SuppressWarnings("unchecked")
+        public B tracingAgent(Boolean tracingAgent) {
+            QuarkusDevModeLauncher.this.tracingAgent = tracingAgent;
+            return (B) this;
+        }
+
+        @SuppressWarnings("unchecked")
         public B suspend(String suspend) {
             QuarkusDevModeLauncher.this.suspend = suspend;
             return (B) this;
@@ -276,6 +282,7 @@ public abstract class QuarkusDevModeLauncher {
     private List<String> args = new ArrayList<>(0);
     private String debug;
     private Boolean debugPortOk;
+    private Boolean tracingAgent;
     private String suspend;
     private String debugHost = "localhost";
     private String debugPort = "5005";
@@ -353,6 +360,11 @@ public abstract class QuarkusDevModeLauncher {
         }
         if (port <= 0) {
             throw new Exception("The specified debug port must be greater than 0");
+        }
+
+        if (tracingAgent != null && Boolean.TRUE.equals(tracingAgent)) {
+            //config-merge-dir can be used if file aready exists to merge config
+            args.add("-agentlib:native-image-agent=config-output-dir=META-INF/native-image");
         }
 
         if (debug != null && debug.toLowerCase().equals("client")) {

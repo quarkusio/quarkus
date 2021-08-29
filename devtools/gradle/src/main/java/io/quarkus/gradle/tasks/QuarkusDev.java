@@ -229,6 +229,7 @@ public class QuarkusDev extends QuarkusTask {
                 .projectDir(project.getProjectDir())
                 .buildDir(getBuildDir())
                 .outputDir(getBuildDir())
+                .tracingAgent(System.getProperty("tracingAgent"))
                 .debug(System.getProperty("debug"))
                 .debugHost(System.getProperty("debugHost"))
                 .debugPort(System.getProperty("debugPort"))

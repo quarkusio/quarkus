@@ -27,6 +27,7 @@ import io.quarkus.resteasy.runtime.CompositeExceptionMapper;
 import io.quarkus.resteasy.runtime.ExceptionMapperRecorder;
 import io.quarkus.resteasy.runtime.ForbiddenExceptionMapper;
 import io.quarkus.resteasy.runtime.JaxRsSecurityConfig;
+import io.quarkus.resteasy.runtime.NoMessageBodyWriterFoundFailureExceptionMapper;
 import io.quarkus.resteasy.runtime.NotFoundExceptionMapper;
 import io.quarkus.resteasy.runtime.SecurityContextFilter;
 import io.quarkus.resteasy.runtime.UnauthorizedExceptionMapper;
@@ -110,6 +111,7 @@ public class ResteasyBuiltinsProcessor {
     void setupExceptionMapper(BuildProducer<ResteasyJaxrsProviderBuildItem> providers, HttpRootPathBuildItem httpRoot,
             ExceptionMapperRecorder recorder) {
         providers.produce(new ResteasyJaxrsProviderBuildItem(NotFoundExceptionMapper.class.getName()));
+        providers.produce(new ResteasyJaxrsProviderBuildItem(NoMessageBodyWriterFoundFailureExceptionMapper.class.getName()));
         recorder.setHttpRoot(httpRoot.getRootPath());
     }
 

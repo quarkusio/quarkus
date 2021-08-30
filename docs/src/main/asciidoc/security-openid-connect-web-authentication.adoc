@@ -469,6 +469,59 @@ In such cases, you can use `quarkus.oidc.token-state-manager.split-tokens=true` 
 
 Register your own `io.quarkus.oidc.TokenStateManager' implementation as an `@ApplicationScoped` CDI bean if you need to customize the way the tokens are associated with the session cookie. For example, you may want to keep the tokens in a database and have only a database pointer stored in a session cookie. Note though that it may present some challenges in making the tokens available across multiple microservices nodes.
 
+Here is a simple example:
+
+[source, java]
+----
+package io.quarkus.oidc.test;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
+import io.quarkus.arc.AlternativePriority;
+import io.quarkus.oidc.AuthorizationCodeTokens;
+import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.TokenStateManager;
+import io.quarkus.oidc.runtime.DefaultTokenStateManager;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
+
+@ApplicationScoped
+@AlternativePriority(1)
+public class CustomTokenStateManager implements TokenStateManager {
+
+    @Inject
+    DefaultTokenStateManager tokenStateManager;
+
+    @Override
+    public Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
+            AuthorizationCodeTokens sessionContent, TokenStateManager.CreateTokenStateRequestContext requestContext) {
+        return tokenStateManager.createTokenState(routingContext, oidcConfig, sessionContent, requestContext)
+                .map(t -> (t + "|custom"));
+    }
+
+    @Override
+    public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig,
+            String tokenState, TokenStateManager.GetTokensRequestContext requestContext) {
+        if (!tokenState.endsWith("|custom")) {
+            throw new IllegalStateException();
+        }
+        String defaultState = tokenState.substring(0, tokenState.length() - 7);
+        return tokenStateManager.getTokens(routingContext, oidcConfig, defaultState, requestContext);
+    }
+
+    @Override
+    public Uni<Void> deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
+            TokenStateManager.DeleteTokensRequestContext requestContext) {
+        if (!tokenState.endsWith("|custom")) {
+            throw new IllegalStateException();
+        }
+        String defaultState = tokenState.substring(0, tokenState.length() - 7);
+        return tokenStateManager.deleteTokens(routingContext, oidcConfig, defaultState, requestContext);
+    }
+}
+----
+
 == Listening to important authentication events
 
 One can register `@ApplicationScoped` bean which will observe important OIDC authentication events. The listener will be updated when a user has logged in for the first time or re-authenticated, as well as when the session has been refreshed. More events may be reported in the future. For example:

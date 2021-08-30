@@ -177,17 +177,15 @@ public class DevConsole implements Handler<RoutingContext> {
             boolean hasGuide = metadata.containsKey("guide");
             loaded.put("hasConsoleEntry", hasConsoleEntry);
             loaded.put("hasGuide", hasGuide);
-            if (hasConsoleEntry || hasGuide) {
-                if (hasConsoleEntry) {
-                    Map<String, Object> data = new HashMap<>();
-                    data.putAll(globalData);
-                    data.put("urlbase", namespace);
-                    String result = simpleTemplate.render(data);
-                    loaded.put("_dev", result);
-                    actionableExtensions.add(loaded);
-                } else {
-                    nonActionableExtensions.add(loaded);
-                }
+            if (hasConsoleEntry) {
+                Map<String, Object> data = new HashMap<>();
+                data.putAll(globalData);
+                data.put("urlbase", namespace);
+                String result = simpleTemplate.render(data);
+                loaded.put("_dev", result);
+                actionableExtensions.add(loaded);
+            } else {
+                nonActionableExtensions.add(loaded);
             }
         }
         actionableExtensions.sort(EXTENSION_COMPARATOR);

@@ -736,7 +736,7 @@ function populateLoggerLevelModal(loggerNamesArray, levelNamesArray){
         tbodyLevels.append(row);
     }
     
-    $('select').on('change', function() {
+    $('.logleveldropdown').on('change', function() {
         changeLogLevel(this.value, $(this).find('option:selected').text());
     });
     
@@ -764,7 +764,7 @@ function getTextClass(level){
 
 function createDropdown(name, level, levelNamesArray){
     
-    var dd = "<select class='custom-select custom-select-sm'>";
+    var dd = "<select class='logleveldropdown custom-select custom-select-sm'>";
     // Populate the dropdown
     for (var i = 0; i < levelNamesArray.length; i++) {
         var selected = "";

@@ -50,14 +50,18 @@ public class TenantConfigBean {
         @Override
         public void destroy(TenantConfigBean instance, CreationalContext<TenantConfigBean> creationalContext,
                 Map<String, Object> params) {
-            if (instance.defaultTenant != null) {
+            if (instance.defaultTenant != null && instance.defaultTenant.provider != null) {
                 instance.defaultTenant.provider.close();
             }
             for (var i : instance.staticTenantsConfig.values()) {
-                i.provider.close();
+                if (i.provider != null) {
+                    i.provider.close();
+                }
             }
             for (var i : instance.dynamicTenantsConfig.values()) {
-                i.provider.close();
+                if (i.provider != null) {
+                    i.provider.close();
+                }
             }
         }
     }

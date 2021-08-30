@@ -32,6 +32,7 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
+import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
@@ -125,7 +126,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
             try {
                 return catalogResolver.resolveExtensionCatalog(getImportedPlatforms());
             } catch (Exception e) {
-                throw new MojoExecutionException("Failed to resolve the Quarkus extensions catalog", e);
+                throw new MojoExecutionException("Failed to resolve the Quarkus extension catalog", e);
             }
         }
         return ToolsUtils.mergePlatforms(collectImportedPlatforms(), artifactResolver());
@@ -170,7 +171,8 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
             try {
                 artifactResolver = MavenArtifactResolver.builder()
                         .setRepositorySystem(repoSystem)
-                        .setRepositorySystemSession(repoSession)
+                        .setRepositorySystemSession(
+                                getLog().isDebugEnabled() ? repoSession : MojoUtils.muteTransferListener(repoSession))
                         .setRemoteRepositories(repos)
                         .setRemoteRepositoryManager(remoteRepositoryManager)
                         .build();

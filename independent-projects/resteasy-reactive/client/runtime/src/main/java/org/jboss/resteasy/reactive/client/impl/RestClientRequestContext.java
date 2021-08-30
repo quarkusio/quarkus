@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import javax.ws.rs.RuntimeType;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.GenericType;
@@ -27,6 +28,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
+import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
@@ -113,6 +115,17 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     public void abort() {
         setAbortHandlerChainStarted(true);
         restart(abortHandlerChain);
+    }
+
+    @Override
+    protected Throwable unwrapException(Throwable t) {
+        var res = super.unwrapException(t);
+        if (res instanceof WebApplicationException) {
+            WebApplicationException webApplicationException = (WebApplicationException) res;
+            return new ClientWebApplicationException(webApplicationException.getMessage(), webApplicationException,
+                    webApplicationException.getResponse());
+        }
+        return res;
     }
 
     public <T> T readEntity(InputStream in,

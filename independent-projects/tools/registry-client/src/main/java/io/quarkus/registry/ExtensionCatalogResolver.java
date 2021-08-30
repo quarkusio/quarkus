@@ -59,7 +59,6 @@ public class ExtensionCatalogResolver {
     public class Builder {
 
         private MavenArtifactResolver artifactResolver;
-        private RegistriesConfig config;
         private boolean built;
 
         private RegistryClientFactory defaultClientFactory;
@@ -230,7 +229,12 @@ public class ExtensionCatalogResolver {
     }
 
     private MessageWriter log;
+    private RegistriesConfig config;
     private List<RegistryExtensionResolver> registries;
+
+    public RegistriesConfig getConfig() {
+        return config;
+    }
 
     public boolean hasRegistries() {
         return !registries.isEmpty();

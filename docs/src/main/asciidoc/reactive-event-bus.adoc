@@ -27,7 +27,7 @@ If you are creating a new project, set the `extensions` parameter are follows:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=vertx-quickstart \
     -Dextensions="vertx,resteasy-mutiny" \
@@ -101,6 +101,7 @@ void consumeBlocking(String message) {
 ----
 
 When using `@Blocking`, it ignores the value of the `blocking` attribute of `@ConsumeEvent`.
+See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture documentation] for further details on this topic.
 ====
 
 Asynchronous processing is also possible by returning either an `io.smallrye.mutiny.Uni` or a `java.util.concurrent.CompletionStage`:
@@ -292,7 +293,7 @@ First create a new project using:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=vertx-http-quickstart \
     -Dextensions="vertx" \

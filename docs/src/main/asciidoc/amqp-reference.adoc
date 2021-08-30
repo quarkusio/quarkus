@@ -347,6 +347,52 @@ mp.messaging.incoming.people-out.link-name=people
 
 More details about the AMQP Address model can be found in the https://activemq.apache.org/components/artemis/documentation/2.0.0/address-model.html[Artemis documentation].
 
+[#blocking-processing]
+=== Execution model and Blocking processing
+
+Reactive Messaging invokes your method on an I/O thread.
+See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture documentation] for further details on this topic.
+But, you often need to combine Reactive Messaging with blocking processing such as database interactions.
+For this, you need to use the `@Blocking` annotation indicating that the processing is _blocking_ and should not be run on the caller thread.
+
+For example, The following code illustrates how you can store incoming payloads to a database using Hibernate with Panache:
+
+[source,java]
+----
+import io.smallrye.reactive.messaging.annotations.Blocking;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.transaction.Transactional;
+
+@ApplicationScoped
+public class PriceStorage {
+
+    @Incoming("prices")
+    @Blocking
+    @Transactional
+    public void store(int priceInUsd) {
+        Price price = new Price();
+        price.value = priceInUsd;
+        price.persist();
+    }
+
+}
+----
+
+[NOTE]
+====
+There are 2 `@Blocking` annotations:
+
+1. `io.smallrye.reactive.messaging.annotations.Blocking`
+2. `io.smallrye.common.annotation.Blocking`
+
+They have the same effect.
+Thus, you can use both.
+The first one provides more fine-grained tuning such as the worker pool to use and whether it preserves the order.
+The second one, used also with other reactive features of Quarkus, uses the default worker pool and preserves the order.
+====
+
 == Customizing the underlying AMQP client
 
 The connector uses the Vert.x AMQP client underneath.

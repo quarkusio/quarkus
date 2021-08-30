@@ -62,7 +62,7 @@ To create the _producer_ project, in a terminal run:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=amqp-quickstart-producer \
     -DnoCode=true \
@@ -78,7 +78,7 @@ To create the _processor_ project, from the same directory, run:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=amqp-quickstart-processor \
     -DnoCode=true \

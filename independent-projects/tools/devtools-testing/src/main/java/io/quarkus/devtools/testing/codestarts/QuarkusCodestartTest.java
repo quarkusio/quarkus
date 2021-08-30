@@ -99,7 +99,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
             try {
                 extensionCatalog = QuarkusProjectHelper.getCatalogResolver().resolveExtensionCatalog();
             } catch (Exception e) {
-                throw new RuntimeException("Failed to resolve extensions catalog", e);
+                throw new RuntimeException("Failed to resolve extension catalog", e);
             }
         }
         return extensionCatalog;

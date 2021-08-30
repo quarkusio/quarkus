@@ -63,47 +63,54 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
             throw new IllegalArgumentException("The registry descriptor configuration is missing for " + config.getId());
         }
 
-        MavenArtifactResolver resolver = originalResolver;
-
-        final List<RemoteRepository> registryRepos = determineExtraRepos(config, resolver.getRepositories());
-        List<RemoteRepository> aggregatedRepos = resolver.getRepositories();
-        if (!registryRepos.isEmpty()) {
-            aggregatedRepos = resolver.getRemoteRepositoryManager().aggregateRepositories(resolver.getSession(),
-                    Collections.emptyList(), registryRepos, true);
-            aggregatedRepos = resolver.getRemoteRepositoryManager().aggregateRepositories(resolver.getSession(),
-                    aggregatedRepos, resolver.getRepositories(), false);
-        }
-        resolver = newResolver(resolver, aggregatedRepos, config, log);
-
-        final boolean cleanupTimestampedArtifacts = isCleanupTimestampedArtifacts(config);
-
         final ArtifactCoords originalDescrCoords = descriptorConfig.getArtifact();
         final Artifact registryDescriptorCoords = new DefaultArtifact(originalDescrCoords.getGroupId(),
                 originalDescrCoords.getArtifactId(), originalDescrCoords.getClassifier(), originalDescrCoords.getType(),
                 originalDescrCoords.getVersion());
+
+        final boolean cleanupTimestampedArtifacts = isCleanupTimestampedArtifacts(config);
+
+        // Determine the original registry Maven repository configuration
+        // If the user settings already contain a Maven repository configuration with either an ID matching the registry ID
+        // or a URL matching the registry URL, the original Maven resolver will be assumed to be already properly initialized.
+        // Otherwise, a new registry Maven repository will be configured and a new resolver will be initialized for the registry.
+        final List<RemoteRepository> registryRepos = determineRegistryRepos(config, originalResolver.getRepositories());
+        MavenArtifactResolver resolver;
         ArtifactResult result;
-        try {
-            result = MavenRegistryArtifactResolverWithCleanup.resolveAndCleanupOldTimestampedVersions(resolver,
-                    registryDescriptorCoords, cleanupTimestampedArtifacts);
-        } catch (BootstrapMavenException e) {
-            final StringWriter buf = new StringWriter();
-            try (BufferedWriter writer = new BufferedWriter(buf)) {
-                writer.write("Failed to resolve Quarkus extension registry descriptor ");
-                writer.write(registryDescriptorCoords.toString());
-                writer.write(" from");
-                for (RemoteRepository repo : aggregatedRepos) {
-                    if (repo.getPolicy(registryDescriptorCoords.isSnapshot()).isEnabled()) {
-                        writer.append(" ");
-                        writer.write(repo.getId());
-                        writer.write(" (");
-                        writer.write(repo.getUrl());
-                        writer.write(")");
-                    }
+        if (!registryRepos.isEmpty()) {
+            // first, we try applying the mirrors and proxies found in the user settings
+            final List<RemoteRepository> aggregatedRepos = originalResolver.getRemoteRepositoryManager().aggregateRepositories(
+                    originalResolver.getSession(),
+                    Collections.emptyList(), registryRepos, true);
+            resolver = newResolver(originalResolver, aggregatedRepos, config, log);
+            try {
+                result = MavenRegistryArtifactResolverWithCleanup.resolveAndCleanupOldTimestampedVersions(resolver,
+                        registryDescriptorCoords, cleanupTimestampedArtifacts);
+            } catch (BootstrapMavenException e) {
+                if (areMatching(registryRepos, aggregatedRepos)) {
+                    // the original and aggregated repos are matching, meaning no mirrors/proxies have been applied
+                    // there is nothing to fallback to
+                    throw new RegistryResolutionException(getDescriptorResolutionFailureMessage(config, resolver, e));
                 }
-            } catch (IOException e1) {
-                buf.append(e.getLocalizedMessage());
+                // if the mirror and proxies in the user settings were configured w/o taking the extension registry into account
+                // we will warn the user and try the original registry repos as a fallback
+                log.warn(getDescriptorResolutionFailureFromMirrorMessage(config, resolver, e, registryRepos));
+                resolver = newResolver(originalResolver, registryRepos, config, log);
+                try {
+                    result = MavenRegistryArtifactResolverWithCleanup.resolveAndCleanupOldTimestampedVersions(resolver,
+                            registryDescriptorCoords, cleanupTimestampedArtifacts);
+                } catch (BootstrapMavenException e1) {
+                    throw new RegistryResolutionException(getDescriptorResolutionFailureMessage(config, resolver, e));
+                }
             }
-            throw new RegistryResolutionException(buf.toString());
+        } else {
+            resolver = newResolver(originalResolver, originalResolver.getRepositories(), config, log);
+            try {
+                result = MavenRegistryArtifactResolverWithCleanup.resolveAndCleanupOldTimestampedVersions(resolver,
+                        registryDescriptorCoords, cleanupTimestampedArtifacts);
+            } catch (BootstrapMavenException e) {
+                throw new RegistryResolutionException(getDescriptorResolutionFailureMessage(config, resolver, e));
+            }
         }
 
         final String srcRepoId = result.getRepository() == null ? "n/a" : result.getRepository().getId();
@@ -336,7 +343,7 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
                             .setCurrentProject(resolver.getMavenContext().getCurrentProject()));
             return new MavenArtifactResolver(mvnCtx);
         } catch (BootstrapMavenException e) {
-            throw new IllegalStateException("Failed to initialize maven context", e);
+            throw new IllegalStateException("Failed to initialize Maven context", e);
         }
     }
 
@@ -346,13 +353,14 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
         final TransferListener tl = newSession.getTransferListener();
         newSession.setTransferListener(new TransferListener() {
 
-            boolean refreshingLocalCache;
+            boolean loggedCatalogRefreshMsg;
 
             @Override
             public void transferInitiated(TransferEvent event) throws TransferCancelledException {
-                if (!refreshingLocalCache) {
-                    refreshingLocalCache = true;
-                    log.info("Refreshing the local extension catalog cache of " + config.getId());
+                if (!loggedCatalogRefreshMsg && !event.getResource().getResourceName()
+                        .contains(config.getDescriptor().getArtifact().getArtifactId())) {
+                    loggedCatalogRefreshMsg = true;
+                    log.info("Looking for the newly published extensions in " + config.getId());
                 }
                 if (tl != null) {
                     tl.transferInitiated(event);
@@ -397,7 +405,7 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
         return newSession;
     }
 
-    private List<RemoteRepository> determineExtraRepos(RegistryConfig config, List<RemoteRepository> configuredRepos) {
+    private List<RemoteRepository> determineRegistryRepos(RegistryConfig config, List<RemoteRepository> configuredRepos) {
         final RegistryMavenConfig mavenConfig = config.getMaven() == null ? null : config.getMaven();
         final RegistryMavenRepoConfig repoConfig = mavenConfig == null ? null : mavenConfig.getRepository();
         final String repoId = repoConfig == null || repoConfig.getId() == null ? config.getId() : repoConfig.getId();
@@ -441,5 +449,64 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
         }
 
         return Collections.singletonList(repoBuilder.build());
+    }
+
+    private static String getDescriptorResolutionFailureFromMirrorMessage(RegistryConfig config,
+            MavenArtifactResolver resolver, BootstrapMavenException e, List<RemoteRepository> originalRegistryRepos) {
+        final StringBuilder buf = new StringBuilder();
+        buf.append(getDescriptorResolutionFailureMessage(config, resolver, e));
+        buf.append(" having applied the mirrors and/or proxies from the Maven settings to ");
+        appendRepoInfo(buf, originalRegistryRepos.get(0));
+        for (int i = 1; i < originalRegistryRepos.size(); ++i) {
+            buf.append(", ");
+            appendRepoInfo(buf, originalRegistryRepos.get(i));
+        }
+        buf.append(". Re-trying with the original " + config.getId() + " repository configuration.");
+        return buf.toString();
+    }
+
+    private static String getDescriptorResolutionFailureMessage(RegistryConfig config,
+            MavenArtifactResolver resolver, BootstrapMavenException e) {
+        final StringWriter buf = new StringWriter();
+        try (BufferedWriter writer = new BufferedWriter(buf)) {
+            writer.write("Failed to resolve the Quarkus extension registry descriptor of ");
+            writer.write(config.getId());
+            writer.write(" from ");
+            final List<RemoteRepository> repos = resolver.getRepositories();
+            appendRepoInfo(writer, repos.get(0));
+            for (int i = 1; i < repos.size(); ++i) {
+                writer.append(", ");
+                appendRepoInfo(writer, repos.get(i));
+            }
+        } catch (IOException e1) {
+            buf.append(e.getLocalizedMessage());
+        }
+        return buf.toString();
+    }
+
+    private static void appendRepoInfo(Appendable writer, RemoteRepository repo) {
+        try {
+            writer.append(repo.getId());
+            writer.append(" (");
+            writer.append(repo.getUrl());
+            writer.append(")");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to compose an error message", e);
+        }
+    }
+
+    private static boolean areMatching(final List<RemoteRepository> registryRepos,
+            final List<RemoteRepository> aggregatedRepos) {
+        if (registryRepos.size() != aggregatedRepos.size()) {
+            return false;
+        }
+        for (int i = 0; i < registryRepos.size(); ++i) {
+            final RemoteRepository original = registryRepos.get(i);
+            final RemoteRepository aggregated = aggregatedRepos.get(i);
+            if (!original.getId().equals(aggregated.getId()) || !original.getUrl().equals(aggregated.getUrl())) {
+                return false;
+            }
+        }
+        return true;
     }
 }

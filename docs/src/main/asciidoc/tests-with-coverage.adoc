@@ -56,7 +56,7 @@ Let's start from an empty application created with the Quarkus Maven plugin:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=tests-with-coverage-quickstart
 cd tests-with-coverage-quickstart

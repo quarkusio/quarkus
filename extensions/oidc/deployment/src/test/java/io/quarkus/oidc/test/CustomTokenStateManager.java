@@ -8,6 +8,7 @@ import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
+import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
@@ -18,25 +19,29 @@ public class CustomTokenStateManager implements TokenStateManager {
     DefaultTokenStateManager tokenStateManager;
 
     @Override
-    public String createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
-            AuthorizationCodeTokens sessionContent) {
-        return tokenStateManager.createTokenState(routingContext, oidcConfig, sessionContent) + "|custom";
+    public Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
+            AuthorizationCodeTokens sessionContent, TokenStateManager.CreateTokenStateRequestContext requestContext) {
+        return tokenStateManager.createTokenState(routingContext, oidcConfig, sessionContent, requestContext)
+                .map(t -> (t + "|custom"));
     }
 
     @Override
-    public AuthorizationCodeTokens getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig,
-            String tokenState) {
+    public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig,
+            String tokenState, TokenStateManager.GetTokensRequestContext requestContext) {
         if (!tokenState.endsWith("|custom")) {
             throw new IllegalStateException();
         }
         String defaultState = tokenState.substring(0, tokenState.length() - 7);
-        return tokenStateManager.getTokens(routingContext, oidcConfig, defaultState);
+        return tokenStateManager.getTokens(routingContext, oidcConfig, defaultState, requestContext);
     }
 
     @Override
-    public void deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState) {
+    public Uni<Void> deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
+            TokenStateManager.DeleteTokensRequestContext requestContext) {
         if (!tokenState.endsWith("|custom")) {
             throw new IllegalStateException();
         }
+        String defaultState = tokenState.substring(0, tokenState.length() - 7);
+        return tokenStateManager.deleteTokens(routingContext, oidcConfig, defaultState, requestContext);
     }
 }

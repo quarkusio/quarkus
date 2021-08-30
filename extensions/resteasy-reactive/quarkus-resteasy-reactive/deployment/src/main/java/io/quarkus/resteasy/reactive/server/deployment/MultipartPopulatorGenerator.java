@@ -394,11 +394,11 @@ final class MultipartPopulatorGenerator {
                                             String.class,
                                             Class.class,
                                             java.lang.reflect.Type.class, MediaType.class,
-                                            ResteasyReactiveRequestContext.class),
+                                            ResteasyReactiveRequestContext.class, String.class),
                                     formStrValueHandle, populate.readStaticField(typeField),
                                     populate.readStaticField(genericTypeField),
                                     populate.readStaticField(mediaTypeField),
-                                    rrCtxHandle));
+                                    rrCtxHandle, formAttrNameHandle));
                         }
                     }
 

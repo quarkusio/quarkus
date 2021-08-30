@@ -11,7 +11,9 @@ import io.quarkus.deployment.dev.testing.TestRunListener;
 import io.quarkus.deployment.dev.testing.TestRunResults;
 import io.quarkus.dev.testing.ContinuousTestingWebsocketListener;
 
-public class ContinuousTestingWebSocketListener implements TestListener {
+public class ContinuousTestingWebSocketTestListener implements TestListener {
+
+    private volatile ContinuousTestingWebsocketListener.State lastState;
 
     @Override
     public void listenerRegistered(TestController testController) {
@@ -20,9 +22,18 @@ public class ContinuousTestingWebSocketListener implements TestListener {
 
     @Override
     public void testsEnabled() {
-        ContinuousTestingWebsocketListener
-                .setLastState(
-                        new ContinuousTestingWebsocketListener.State(true, true, 0L, 0L, 0L, 0L, false, false, false, true));
+        if (lastState == null) {
+            ContinuousTestingWebsocketListener
+                    .setLastState(new ContinuousTestingWebsocketListener.State(true, false,
+                            0, 0, 0, 0,
+                            ContinuousTestingWebsocketListener.getLastState().isBrokenOnly,
+                            ContinuousTestingWebsocketListener.getLastState().isTestOutput,
+                            ContinuousTestingWebsocketListener.getLastState().isInstrumentationBasedReload,
+                            ContinuousTestingWebsocketListener.getLastState().isLiveReload));
+        } else {
+            ContinuousTestingWebsocketListener
+                    .setLastState(lastState);
+        }
     }
 
     @Override
@@ -46,17 +57,18 @@ public class ContinuousTestingWebSocketListener implements TestListener {
 
             @Override
             public void runComplete(TestRunResults testRunResults) {
+                lastState = new ContinuousTestingWebsocketListener.State(true, false,
+                        testRunResults.getPassedCount() +
+                                testRunResults.getFailedCount() +
+                                testRunResults.getSkippedCount(),
+                        testRunResults.getPassedCount(),
+                        testRunResults.getFailedCount(), testRunResults.getSkippedCount(),
+                        ContinuousTestingWebsocketListener.getLastState().isBrokenOnly,
+                        ContinuousTestingWebsocketListener.getLastState().isTestOutput,
+                        ContinuousTestingWebsocketListener.getLastState().isInstrumentationBasedReload,
+                        ContinuousTestingWebsocketListener.getLastState().isLiveReload);
                 ContinuousTestingWebsocketListener.setLastState(
-                        new ContinuousTestingWebsocketListener.State(true, false,
-                                testRunResults.getPassedCount() +
-                                        testRunResults.getFailedCount() +
-                                        testRunResults.getSkippedCount(),
-                                testRunResults.getPassedCount(),
-                                testRunResults.getFailedCount(), testRunResults.getSkippedCount(),
-                                ContinuousTestingWebsocketListener.getLastState().isBrokenOnly,
-                                ContinuousTestingWebsocketListener.getLastState().isTestOutput,
-                                ContinuousTestingWebsocketListener.getLastState().isInstrumentationBasedReload,
-                                ContinuousTestingWebsocketListener.getLastState().isLiveReload));
+                        lastState);
             }
 
             @Override

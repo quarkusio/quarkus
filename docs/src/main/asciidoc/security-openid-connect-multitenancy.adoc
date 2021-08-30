@@ -318,7 +318,9 @@ This interface allows you to dynamically create tenant configurations at runtime
 package io.quarkus.it.keycloak;
 
 import javax.enterprise.context.ApplicationScoped;
+import java.util.function.Supplier;
 
+import io.smallrye.mutiny.Uni;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.vertx.ext.web.RoutingContext;
@@ -327,7 +329,7 @@ import io.vertx.ext.web.RoutingContext;
 public class CustomTenantConfigResolver implements TenantConfigResolver {
 
     @Override
-    public OidcTenantConfig resolve(RoutingContext context) {
+    public Uni<OidcTenantConfig> resolve(RoutingContext context, TenantConfigResolver.TenantConfigRequestContext requestContext) {
         String path = context.request().path();
         String[] parts = path.split("/");
 
@@ -337,24 +339,30 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         }
 
         if ("tenant-c".equals(parts[1])) {
-            OidcTenantConfig config = new OidcTenantConfig();
-
-            config.setTenantId("tenant-c");
-            config.setAuthServerUrl("http://localhost:8180/auth/realms/tenant-c");
-            config.setClientId("multi-tenant-client");
-            OidcTenantConfig.Credentials credentials = new OidcTenantConfig.Credentials();
-
-            credentials.setSecret("my-secret");
-
-            config.setCredentials(credentials);
-
-            // any other setting support by the quarkus-oidc extension
-
-            return config;
+            // Do 'return requestContext.runBlocking(createTenantConfig());'
+            // if a blocking call is required to create a tenant config
+            return Uni.createFromItem(createTenantConfig());
         }
 
         // resolve to default tenant configuration
         return null;
+    }
+
+    private Supplier<OidcTenantConfig> createTenantConfig() {
+        final OidcTenantConfig config = new OidcTenantConfig();
+
+        config.setTenantId("tenant-c");
+        config.setAuthServerUrl("http://localhost:8180/auth/realms/tenant-c");
+        config.setClientId("multi-tenant-client");
+        OidcTenantConfig.Credentials credentials = new OidcTenantConfig.Credentials();
+
+        credentials.setSecret("my-secret");
+
+        config.setCredentials(credentials);
+
+        // any other setting support by the quarkus-oidc extension
+
+        return () -> config;
     }
 }
 ----

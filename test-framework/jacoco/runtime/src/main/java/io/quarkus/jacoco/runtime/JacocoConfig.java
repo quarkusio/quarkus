@@ -17,6 +17,13 @@ public class JacocoConfig {
     public String dataFile;
 
     /**
+     * Whether to reuse ({@code true}) or delete ({@code false}) the jacoco
+     * data file on each run.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean reuseDataFile;
+
+    /**
      * If Quarkus should generate the Jacoco report
      */
     @ConfigItem(defaultValue = "true")

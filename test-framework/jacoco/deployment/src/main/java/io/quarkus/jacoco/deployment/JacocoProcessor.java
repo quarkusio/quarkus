@@ -61,7 +61,9 @@ public class JacocoProcessor {
                 + config.dataFile;
         System.setProperty("jacoco-agent.destfile",
                 dataFile);
-        Files.deleteIfExists(Paths.get(dataFile));
+        if (!config.reuseDataFile) {
+            Files.deleteIfExists(Paths.get(dataFile));
+        }
 
         Instrumenter instrumenter = new Instrumenter(new OfflineInstrumentationAccessGenerator());
         Set<String> seen = new HashSet<>();

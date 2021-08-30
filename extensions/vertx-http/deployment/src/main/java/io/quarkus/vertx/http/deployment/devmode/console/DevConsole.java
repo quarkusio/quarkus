@@ -175,9 +175,11 @@ public class DevConsole implements Handler<RoutingContext> {
             Template simpleTemplate = engine.getTemplate(namespace + "/embedded.html");
             boolean hasConsoleEntry = simpleTemplate != null;
             boolean hasGuide = metadata.containsKey("guide");
+            boolean isUnlisted = metadata.containsKey("unlisted")
+                    && (metadata.get("unlisted").equals(true) || metadata.get("unlisted").equals("true"));
             loaded.put("hasConsoleEntry", hasConsoleEntry);
             loaded.put("hasGuide", hasGuide);
-            if (hasConsoleEntry || hasGuide) {
+            if (!isUnlisted) {
                 if (hasConsoleEntry) {
                     Map<String, Object> data = new HashMap<>();
                     data.putAll(globalData);

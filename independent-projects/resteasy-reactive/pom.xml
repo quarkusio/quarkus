@@ -52,7 +52,7 @@
         <jakarta.json.version>1.1.6</jakarta.json.version>
         <mutiny.version>1.0.0</mutiny.version>
         <smallrye-common.version>1.6.0</smallrye-common.version>
-        <vertx.version>4.1.2</vertx.version>
+        <vertx.version>4.1.3</vertx.version>
         <rest-assured.version>4.4.0</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>

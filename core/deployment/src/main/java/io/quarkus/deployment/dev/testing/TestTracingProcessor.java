@@ -42,6 +42,11 @@ public class TestTracingProcessor {
 
     static volatile boolean testingSetup;
 
+    @BuildStep
+    TestListenerBuildItem sharedStateListener() {
+        return new TestListenerBuildItem(new ContinuousTestingSharedStateListener());
+    }
+
     @BuildStep(onlyIf = IsDevelopment.class)
     @Produce(LogHandlerBuildItem.class)
     @Produce(TestSetupBuildItem.class)

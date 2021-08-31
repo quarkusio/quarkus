@@ -10,10 +10,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.ContinuousTestingTestUtils;
+import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.quarkus.vertx.http.deployment.devmode.tests.ClassResult;
 import io.quarkus.vertx.http.deployment.devmode.tests.SuiteResult;
-import io.quarkus.vertx.http.deployment.devmode.tests.TestStatus;
 import io.restassured.RestAssured;
 
 public class TestRunnerSmokeTestCase {

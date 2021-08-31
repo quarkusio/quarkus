@@ -237,8 +237,8 @@ class HibernateOrmRestDataPanacheTest {
                 .and().body(book.toString())
                 .when().post("/books")
                 .then().statusCode(400)
-                .and().body("parameterViolations[0].path", equalTo("add.arg0.title"))
-                .and().body("parameterViolations[0].message", equalTo("must not be blank"));
+                .and().body("violations[0].field", equalTo("add.arg0.title"))
+                .and().body("violations[0].message", equalTo("must not be blank"));
     }
 
     @Test
@@ -307,7 +307,7 @@ class HibernateOrmRestDataPanacheTest {
                 .and().body(book.toString())
                 .when().put("/books/" + CRIME_AND_PUNISHMENT_ID)
                 .then().statusCode(400)
-                .and().body("parameterViolations[0].path", equalTo("update.arg1.title"))
-                .and().body("parameterViolations[0].message", equalTo("must not be blank"));
+                .and().body("violations[0].field", equalTo("update.arg1.title"))
+                .and().body("violations[0].message", equalTo("must not be blank"));
     }
 }

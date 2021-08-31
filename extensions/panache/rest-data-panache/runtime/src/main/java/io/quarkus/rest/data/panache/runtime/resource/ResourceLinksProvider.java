@@ -1,41 +1,51 @@
 package io.quarkus.rest.data.panache.runtime.resource;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.jboss.resteasy.links.LinksProvider;
-import org.jboss.resteasy.links.RESTServiceDiscovery;
+import javax.ws.rs.core.Link;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.resteasy.reactive.links.RestLinksProvider;
 
 public final class ResourceLinksProvider {
 
     private static final String SELF_REF = "self";
 
     public Map<String, String> getClassLinks(Class<?> className) {
-        RESTServiceDiscovery links = LinksProvider
-                .getClassLinksProvider()
-                .getLinks(className, Thread.currentThread().getContextClassLoader());
-        return linksToMap(links);
+        return linksToMap(restLinksProvider().getTypeLinks(className));
     }
 
     public Map<String, String> getInstanceLinks(Object instance) {
-        RESTServiceDiscovery links = LinksProvider
-                .getObjectLinksProvider()
-                .getLinks(instance, Thread.currentThread().getContextClassLoader());
-        return linksToMap(links);
+        return linksToMap(restLinksProvider().getInstanceLinks(instance));
     }
 
     public String getSelfLink(Object instance) {
-        RESTServiceDiscovery.AtomLink link = LinksProvider.getObjectLinksProvider()
-                .getLinks(instance, Thread.currentThread().getContextClassLoader())
-                .getLinkForRel(SELF_REF);
-        return link == null ? null : link.getHref();
+        Collection<Link> links = restLinksProvider().getInstanceLinks(instance);
+        for (Link link : links) {
+            if (SELF_REF.equals(link.getRel())) {
+                return link.getUri().toString();
+            }
+        }
+        return null;
     }
 
-    private Map<String, String> linksToMap(RESTServiceDiscovery serviceDiscovery) {
-        Map<String, String> links = new HashMap<>(serviceDiscovery.size());
-        for (RESTServiceDiscovery.AtomLink atomLink : serviceDiscovery) {
-            links.put(atomLink.getRel(), atomLink.getHref());
+    private RestLinksProvider restLinksProvider() {
+        InstanceHandle<RestLinksProvider> instance = Arc.container().instance(RestLinksProvider.class);
+        if (instance.isAvailable()) {
+            return instance.get();
         }
-        return links;
+        throw new IllegalStateException("Invalid use of '" + this.getClass().getName()
+                + "'. No request scope bean found for type '" + ResourceLinksProvider.class.getName() + "'");
+    }
+
+    private Map<String, String> linksToMap(Collection<Link> links) {
+        Map<String, String> result = new HashMap<>();
+        for (Link link : links) {
+            result.put(link.getRel(), link.getUri().toString());
+        }
+        return result;
     }
 }

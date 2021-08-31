@@ -28,7 +28,7 @@ public final class ExcludeConfigBuildItem extends MultiBuildItem {
     }
 
     public ExcludeConfigBuildItem(String jarFile) {
-        this(jarFile, "META-INF/native-image/native-image.properties");
+        this(jarFile, "/META-INF/native-image/native-image\\.properties");
     }
 
     public String getJarFile() {

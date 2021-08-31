@@ -39,7 +39,7 @@ public class LargerThanDefaultFormAttributeMultipartFormInputTest {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(Resource.class, Data.class)
                             .addAsResource(new StringAsset(
-                                    "quarkus.http.limits.max-form-attribute-size=4K"),
+                                    "quarkus.http.limits.max-form-attribute-size=120K"),
                                     "application.properties");
                 }
             });
@@ -49,6 +49,12 @@ public class LargerThanDefaultFormAttributeMultipartFormInputTest {
     @Test
     public void test() throws IOException {
         String fileContents = new String(Files.readAllBytes(FILE.toPath()), StandardCharsets.UTF_8);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 10; ++i) {
+            sb.append(fileContents);
+        }
+        fileContents = sb.toString();
+
         Assertions.assertTrue(fileContents.length() > HttpServerOptions.DEFAULT_MAX_FORM_ATTRIBUTE_SIZE);
         given()
                 .multiPart("text", fileContents)

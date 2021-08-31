@@ -121,7 +121,7 @@ public class QuarkusPlugin implements Plugin<Project> {
 
         Task quarkusBuild = tasks.create(QUARKUS_BUILD_TASK_NAME, QuarkusBuild.class);
         quarkusBuild.dependsOn(quarkusGenerateCode);
-        Task quarkusDev = tasks.create(QUARKUS_DEV_TASK_NAME, QuarkusDev.class);
+        QuarkusDev quarkusDev = tasks.create(QUARKUS_DEV_TASK_NAME, QuarkusDev.class);
         Task quarkusRemoteDev = tasks.create(QUARKUS_REMOTE_DEV_TASK_NAME, QuarkusRemoteDev.class);
         Task quarkusTest = tasks.create(QUARKUS_TEST_TASK_NAME, QuarkusTest.class);
         tasks.create(QUARKUS_TEST_CONFIG_TASK_NAME, QuarkusTestConfig.class);
@@ -233,6 +233,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                 });
 
         project.getPlugins().withId("org.jetbrains.kotlin.jvm", plugin -> {
+            quarkusDev.shouldPropagateJavaCompilerArgs(false);
             tasks.getByName("compileKotlin").dependsOn(quarkusGenerateCode);
             tasks.getByName("compileTestKotlin").dependsOn(quarkusGenerateCodeTests);
         });

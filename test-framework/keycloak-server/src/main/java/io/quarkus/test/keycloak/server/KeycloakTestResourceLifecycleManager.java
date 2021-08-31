@@ -95,6 +95,7 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
 
         Map<String, String> conf = new HashMap<>();
         conf.put("keycloak.url", KEYCLOAK_SERVER_URL);
+        conf.put("quarkus.oidc.auth-server-url", KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM);
 
         return conf;
     }

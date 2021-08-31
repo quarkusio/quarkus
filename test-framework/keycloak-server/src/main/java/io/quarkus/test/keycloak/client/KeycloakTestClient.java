@@ -1,11 +1,10 @@
-package io.quarkus.test.keycloak.server;
+package io.quarkus.test.keycloak.client;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.keycloak.representations.AccessTokenResponse;
 
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.common.DevServicesContext;
-import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 
 public class KeycloakTestClient implements DevServicesContext.ContextAware {
@@ -22,10 +21,6 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
 
     public KeycloakTestClient() {
 
-    }
-
-    public KeycloakTestClient(QuarkusIntegrationTest.Context testContext) {
-        this.testContext = testContext;
     }
 
     public String getAccessToken(String userName) {

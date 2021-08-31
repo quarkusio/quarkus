@@ -10,6 +10,7 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -246,7 +247,7 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
         private final Class<X> clazz;
 
         AnnotatedTypeImpl(Class<X> clazz) {
-            super(clazz, null);
+            super(clazz, new HashSet<Annotation>(Arrays.asList(clazz.getAnnotations())));
             this.clazz = clazz;
         }
 

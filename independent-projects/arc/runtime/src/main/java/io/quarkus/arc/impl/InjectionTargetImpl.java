@@ -1,24 +1,35 @@
 package io.quarkus.arc.impl;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.inject.AmbiguousResolutionException;
+import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.enterprise.inject.spi.AnnotatedType;
 import javax.enterprise.inject.spi.Bean;
+import javax.enterprise.inject.spi.BeanAttributes;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.inject.spi.InjectionTarget;
+import javax.inject.Qualifier;
+
+import io.quarkus.arc.InjectableBean;
 
 public class InjectionTargetImpl<T> implements InjectionTarget<T> {
     private Bean<T> bean;
     private BeanManager beanManager;
     private AnnotatedType<T> annotatedType;
+    private InjectionTargetFactoryImpl injectionTargetFactoryImpl;
 
-    public InjectionTargetImpl(Bean<T> bean, BeanManager beanManager, AnnotatedType<T> annotatedType) {
+    public InjectionTargetImpl(Bean<T> bean, BeanManager beanManager, AnnotatedType<T> annotatedType, InjectionTargetFactoryImpl injectionTargetFactoryImpl) {
         this.bean = bean;
         this.beanManager = beanManager;
         this.annotatedType = annotatedType;
+        this.injectionTargetFactoryImpl = injectionTargetFactoryImpl;
     }
 
     @Override
@@ -52,7 +63,22 @@ instance – The instance on which to invoke the javax.annotation.PreDestroy met
         // bean is empty because UnManaged call with null param.
         // so we have to create it on demand
         if (bean == null) {
-            bean = beanManager.createBean(,annotatedType.getJavaClass());
+            Set<Annotation> qualifiers = new HashSet<>();
+            for (Annotation a : annotatedType.getAnnotations()) {
+                if (a.annotationType().isAnnotationPresent(Qualifier.class)) {
+                    qualifiers.add(a);
+                }
+            }
+            Type requiredType = annotatedType.getBaseType();
+            Set<InjectableBean<?>> beans = ArcContainerImpl.instance()
+                    .getResolvedBeans(requiredType, qualifiers.toArray(new Annotation[] {}));
+            if (beans.isEmpty()) {
+                throw new UnsatisfiedResolutionException(
+                        "No bean found for required type [" + requiredType + "] and qualifiers [" + qualifiers + "]");
+            } else if (beans.size() > 1) {
+                throw new AmbiguousResolutionException("Beans: " + beans.toString());
+            }
+            bean = (Bean<T>)beans.iterator().next();
         }
         return bean.create(ctx);
     }

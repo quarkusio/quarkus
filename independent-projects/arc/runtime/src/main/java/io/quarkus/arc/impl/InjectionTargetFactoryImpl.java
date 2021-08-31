@@ -18,7 +18,7 @@ public class InjectionTargetFactoryImpl<T> implements InjectionTargetFactory<T> 
 
     @Override
     public InjectionTarget<T> createInjectionTarget(Bean<T> bean) {
-        return new InjectionTargetImpl(bean, beanManager, annotatedType);
+        return new InjectionTargetImpl(bean, beanManager, annotatedType, this);
     }
 
     @Override

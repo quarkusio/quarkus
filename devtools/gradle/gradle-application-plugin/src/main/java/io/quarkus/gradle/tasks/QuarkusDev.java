@@ -318,22 +318,21 @@ public class QuarkusDev extends QuarkusTask {
         serializedModel.toFile().deleteOnExit();
         builder.jvmArgs("-D" + BootstrapConstants.SERIALIZED_APP_MODEL + "=" + serializedModel.toAbsolutePath());
 
-        if (builder.isTestsPresent()) {
-            final AppModel testAppModel;
-            final AppModelResolver testModelResolver = extension().getAppModelResolver(LaunchMode.TEST);
-            try {
-                final AppArtifact appArtifact = extension().getAppArtifact();
-                appArtifact.setPaths(QuarkusGradleUtils.getOutputPaths(project));
-                testAppModel = testModelResolver.resolveModel(appArtifact);
-            } catch (AppModelResolverException e) {
-                throw new GradleException(
-                        "Failed to resolve application model " + extension().getAppArtifact() + " dependencies",
-                        e);
-            }
-            final Path serializedTestModel = QuarkusGradleUtils.serializeAppModel(testAppModel, this, true);
-            serializedTestModel.toFile().deleteOnExit();
-            builder.jvmArgs("-D" + BootstrapConstants.SERIALIZED_TEST_APP_MODEL + "=" + serializedTestModel.toAbsolutePath());
+        final AppModel testAppModel;
+        final AppModelResolver testModelResolver = extension().getAppModelResolver(LaunchMode.TEST);
+        try {
+            final AppArtifact appArtifact = extension().getAppArtifact();
+            appArtifact.setPaths(QuarkusGradleUtils.getOutputPaths(project));
+            testAppModel = testModelResolver.resolveModel(appArtifact);
+        } catch (AppModelResolverException e) {
+            throw new GradleException(
+                    "Failed to resolve application model " + extension().getAppArtifact() + " dependencies",
+                    e);
         }
+        final Path serializedTestModel = QuarkusGradleUtils.serializeAppModel(testAppModel, this, true);
+        serializedTestModel.toFile().deleteOnExit();
+        builder.jvmArgs("-D" + BootstrapConstants.SERIALIZED_TEST_APP_MODEL + "=" + serializedTestModel.toAbsolutePath());
+
         extension().outputDirectory().mkdirs();
 
         if (!args.isEmpty()) {

@@ -187,6 +187,32 @@ public class TestConfig {
     @ConfigItem(defaultValue = "java\\..*")
     String classClonePattern;
 
+    /**
+     * If this is true then only the tests from the main application module will be run (i.e. the module that is currently
+     * running mvn quarkus:dev).
+     *
+     * If this is false then tests from all dependency modules will be run as well.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean onlyTestApplicationModule;
+
+    /**
+     * Modules that should be included for continuous testing. This is a regular expression and
+     * is matched against the module groupId:artifactId.
+     */
+    @ConfigItem
+    public Optional<String> includeModulePattern;
+
+    /**
+     * Modules that should be excluded for continuous testing. This is a regular expression and
+     * is matched against the module groupId:artifactId.
+     *
+     * This is ignored if include-module-pattern has been set.
+     *
+     */
+    @ConfigItem
+    public Optional<String> excludeModulePattern;
+
     @ConfigGroup
     public static class Profile {
 

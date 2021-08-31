@@ -63,17 +63,14 @@ import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
 import org.junit.platform.launcher.core.LauncherFactory;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
-import org.opentest4j.TestAbortedException;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.dev.ClassScanResult;
 import io.quarkus.deployment.dev.DevModeContext;
-import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.dev.console.QuarkusConsole;
-import io.quarkus.dev.testing.TestWatchedFiles;
 import io.quarkus.dev.testing.TracingHandler;
 
 /**
@@ -94,6 +91,7 @@ public class JunitTestRunner {
     public static final DotName TEST_TEMPLATE = DotName.createSimple(TestTemplate.class.getName());
     public static final DotName TESTABLE = DotName.createSimple(Testable.class.getName());
     private final long runId;
+    private final DevModeContext.ModuleInfo moduleInfo;
     private final DevModeContext devModeContext;
     private final CuratedApplication testApplication;
     private final ClassScanResult classScanResult;
@@ -110,10 +108,10 @@ public class JunitTestRunner {
 
     private volatile boolean testsRunning = false;
     private volatile boolean aborted;
-    private volatile boolean paused;
 
     public JunitTestRunner(Builder builder) {
         this.runId = builder.runId;
+        this.moduleInfo = builder.moduleInfo;
         this.devModeContext = builder.devModeContext;
         this.testApplication = builder.testApplication;
         this.classScanResult = builder.classScanResult;
@@ -129,18 +127,13 @@ public class JunitTestRunner {
         this.testType = builder.testType;
     }
 
-    public void runTests() {
-        long start = System.currentTimeMillis();
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
-        LogCapturingOutputFilter logHandler = new LogCapturingOutputFilter(testApplication, true, true,
-                TestSupport.instance().get()::isDisplayTestOutput);
-        try (QuarkusClassLoader tcl = testApplication.createDeploymentClassLoader()) {
-            synchronized (this) {
-                if (aborted) {
-                    return;
-                }
-                testsRunning = true;
-            }
+    public Runnable prepare() {
+        try {
+            long start = System.currentTimeMillis();
+            ClassLoader old = Thread.currentThread().getContextClassLoader();
+            QuarkusClassLoader tcl = testApplication.createDeploymentClassLoader();
+            LogCapturingOutputFilter logHandler = new LogCapturingOutputFilter(testApplication, true, true,
+                    TestSupport.instance().get()::isDisplayTestOutput);
             Thread.currentThread().setContextClassLoader(tcl);
             Consumer currentTestAppConsumer = (Consumer) tcl.loadClass(CurrentTestApplication.class.getName())
                     .getDeclaredConstructor().newInstance();
@@ -148,265 +141,279 @@ public class JunitTestRunner {
 
             Set<UniqueId> allDiscoveredIds = new HashSet<>();
             Set<UniqueId> dynamicIds = new HashSet<>();
-            try (DiscoveryResult quarkusTestClasses = discoverTestClasses(devModeContext)) {
+            DiscoveryResult quarkusTestClasses = discoverTestClasses();
 
-                Launcher launcher = LauncherFactory.create(LauncherConfig.builder().build());
-                LauncherDiscoveryRequestBuilder launchBuilder = new LauncherDiscoveryRequestBuilder()
-                        .selectors(quarkusTestClasses.testClasses.stream().map(DiscoverySelectors::selectClass)
-                                .collect(Collectors.toList()));
-                launchBuilder.filters(new PostDiscoveryFilter() {
+            Launcher launcher = LauncherFactory.create(LauncherConfig.builder().build());
+            LauncherDiscoveryRequestBuilder launchBuilder = new LauncherDiscoveryRequestBuilder()
+                    .selectors(quarkusTestClasses.testClasses.stream().map(DiscoverySelectors::selectClass)
+                            .collect(Collectors.toList()));
+            launchBuilder.filters(new PostDiscoveryFilter() {
+                @Override
+                public FilterResult apply(TestDescriptor testDescriptor) {
+                    allDiscoveredIds.add(testDescriptor.getUniqueId());
+                    return FilterResult.included(null);
+                }
+            });
+            if (classScanResult != null) {
+                launchBuilder.filters(testClassUsages.getTestsToRun(classScanResult.getChangedClassNames(), testState));
+            }
+            if (!includeTags.isEmpty()) {
+                launchBuilder.filters(new TagFilter(false, includeTags));
+            } else if (!excludeTags.isEmpty()) {
+                launchBuilder.filters(new TagFilter(true, excludeTags));
+            }
+            if (include != null) {
+                launchBuilder.filters(new RegexFilter(false, include));
+            } else if (exclude != null) {
+                launchBuilder.filters(new RegexFilter(true, exclude));
+            }
+            if (!additionalFilters.isEmpty()) {
+                launchBuilder.filters(additionalFilters.toArray(new PostDiscoveryFilter[0]));
+            }
+            if (failingTestsOnly) {
+                launchBuilder.filters(new CurrentlyFailingFilter());
+            }
+
+            LauncherDiscoveryRequest request = launchBuilder
+                    .build();
+            TestPlan testPlan = launcher.discover(request);
+            if (!testPlan.containsTests()) {
+                testState.pruneDeletedTests(allDiscoveredIds, dynamicIds);
+                //nothing to see here
+                for (TestRunListener i : listeners) {
+                    i.noTests(new TestRunResults(runId, classScanResult, classScanResult == null, start,
+                            System.currentTimeMillis(), toResultsMap(testState.getCurrentResults())));
+                }
+                quarkusTestClasses.close();
+                return new Runnable() {
                     @Override
-                    public FilterResult apply(TestDescriptor testDescriptor) {
-                        allDiscoveredIds.add(testDescriptor.getUniqueId());
-                        return FilterResult.included(null);
-                    }
-                });
-                if (classScanResult != null) {
-                    launchBuilder.filters(testClassUsages.getTestsToRun(classScanResult.getChangedClassNames(), testState));
-                }
-                if (!includeTags.isEmpty()) {
-                    launchBuilder.filters(new TagFilter(false, includeTags));
-                } else if (!excludeTags.isEmpty()) {
-                    launchBuilder.filters(new TagFilter(true, excludeTags));
-                }
-                if (include != null) {
-                    launchBuilder.filters(new RegexFilter(false, include));
-                } else if (exclude != null) {
-                    launchBuilder.filters(new RegexFilter(true, exclude));
-                }
-                if (!additionalFilters.isEmpty()) {
-                    launchBuilder.filters(additionalFilters.toArray(new PostDiscoveryFilter[0]));
-                }
-                if (failingTestsOnly) {
-                    launchBuilder.filters(new CurrentlyFailingFilter());
-                }
+                    public void run() {
 
-                LauncherDiscoveryRequest request = launchBuilder
-                        .build();
-                TestPlan testPlan = launcher.discover(request);
-                if (!testPlan.containsTests()) {
-                    testState.pruneDeletedTests(allDiscoveredIds, dynamicIds);
-                    //nothing to see here
-                    for (TestRunListener i : listeners) {
-                        i.noTests(new TestRunResults(runId, classScanResult, classScanResult == null, start,
-                                System.currentTimeMillis(), toResultsMap(testState.getCurrentResults())));
                     }
-                    return;
-                }
-                long toRun = testPlan.countTestIdentifiers(TestIdentifier::isTest);
-                for (TestRunListener listener : listeners) {
-                    listener.runStarted(toRun);
-                }
-                log.debug("Starting test run with " + testPlan.countTestIdentifiers((s) -> true) + " tests");
-                QuarkusConsole.addOutputFilter(logHandler);
-
-                final Deque<Set<String>> touchedClasses = new LinkedBlockingDeque<>();
-                Map<TestIdentifier, Long> startTimes = new HashMap<>();
-                final AtomicReference<Set<String>> startupClasses = new AtomicReference<>();
-                TracingHandler.setTracingHandler(new TracingHandler.TraceListener() {
-                    @Override
-                    public void touched(String className) {
-                        Set<String> set = touchedClasses.peek();
-                        if (set != null) {
-                            set.add(className);
+                };
+            }
+            long toRun = testPlan.countTestIdentifiers(TestIdentifier::isTest);
+            for (TestRunListener listener : listeners) {
+                listener.runStarted(toRun);
+            }
+            return new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        synchronized (JunitTestRunner.this) {
+                            testsRunning = true;
                         }
-                    }
+                        log.debug("Starting test run with " + testPlan.countTestIdentifiers((s) -> true) + " tests");
+                        QuarkusConsole.addOutputFilter(logHandler);
 
-                    @Override
-                    public void quarkusStarting() {
-                        startupClasses.set(touchedClasses.peek());
-                    }
-                });
-
-                Map<String, Map<UniqueId, TestResult>> resultsByClass = new HashMap<>();
-                launcher.execute(testPlan, new TestExecutionListener() {
-
-                    @Override
-                    public void executionStarted(TestIdentifier testIdentifier) {
-                        if (aborted) {
-                            return;
-                        }
-                        startTimes.put(testIdentifier, System.currentTimeMillis());
-                        String className = "";
-                        Class<?> clazz = null;
-                        if (testIdentifier.getSource().isPresent()) {
-                            if (testIdentifier.getSource().get() instanceof MethodSource) {
-                                clazz = ((MethodSource) testIdentifier.getSource().get()).getJavaClass();
-                            } else if (testIdentifier.getSource().get() instanceof ClassSource) {
-                                clazz = ((ClassSource) testIdentifier.getSource().get()).getJavaClass();
+                        final Deque<Set<String>> touchedClasses = new LinkedBlockingDeque<>();
+                        Map<TestIdentifier, Long> startTimes = new HashMap<>();
+                        final AtomicReference<Set<String>> startupClasses = new AtomicReference<>();
+                        TracingHandler.setTracingHandler(new TracingHandler.TraceListener() {
+                            @Override
+                            public void touched(String className) {
+                                Set<String> set = touchedClasses.peek();
+                                if (set != null) {
+                                    set.add(className);
+                                }
                             }
-                        }
-                        if (clazz != null) {
-                            className = clazz.getName();
-                            Thread.currentThread().setContextClassLoader(clazz.getClassLoader());
-                        }
-                        for (TestRunListener listener : listeners) {
-                            listener.testStarted(testIdentifier, className);
-                        }
-                        waitTillResumed();
-                        touchedClasses.push(Collections.synchronizedSet(new HashSet<>()));
-                    }
 
-                    @Override
-                    public void executionSkipped(TestIdentifier testIdentifier, String reason) {
-                        waitTillResumed();
-                        if (aborted) {
-                            return;
-                        }
-                        Class<?> testClass = null;
-                        String displayName = testIdentifier.getDisplayName();
-                        TestSource testSource = testIdentifier.getSource().orElse(null);
-                        touchedClasses.pop();
-                        UniqueId id = UniqueId.parse(testIdentifier.getUniqueId());
-                        if (testSource instanceof ClassSource) {
-                            testClass = ((ClassSource) testSource).getJavaClass();
-                        } else if (testSource instanceof MethodSource) {
-                            testClass = ((MethodSource) testSource).getJavaClass();
-                            displayName = testClass.getSimpleName() + "#" + displayName;
-                        }
-                        if (testClass != null) {
-                            Map<UniqueId, TestResult> results = resultsByClass.computeIfAbsent(testClass.getName(),
-                                    s -> new HashMap<>());
-                            TestResult result = new TestResult(displayName, testClass.getName(), id,
-                                    TestExecutionResult.aborted(null),
-                                    logHandler.captureOutput(), testIdentifier.isTest(), runId, 0);
-                            results.put(id, result);
-                            if (result.isTest()) {
+                            @Override
+                            public void quarkusStarting() {
+                                startupClasses.set(touchedClasses.peek());
+                            }
+                        });
+
+                        Map<String, Map<UniqueId, TestResult>> resultsByClass = new HashMap<>();
+                        launcher.execute(testPlan, new TestExecutionListener() {
+
+                            @Override
+                            public void executionStarted(TestIdentifier testIdentifier) {
+                                if (aborted) {
+                                    return;
+                                }
+                                startTimes.put(testIdentifier, System.currentTimeMillis());
+                                String className = "";
+                                Class<?> clazz = null;
+                                if (testIdentifier.getSource().isPresent()) {
+                                    if (testIdentifier.getSource().get() instanceof MethodSource) {
+                                        clazz = ((MethodSource) testIdentifier.getSource().get()).getJavaClass();
+                                    } else if (testIdentifier.getSource().get() instanceof ClassSource) {
+                                        clazz = ((ClassSource) testIdentifier.getSource().get()).getJavaClass();
+                                    }
+                                }
+                                if (clazz != null) {
+                                    className = clazz.getName();
+                                    Thread.currentThread().setContextClassLoader(clazz.getClassLoader());
+                                }
                                 for (TestRunListener listener : listeners) {
-                                    listener.testComplete(result);
+                                    listener.testStarted(testIdentifier, className);
                                 }
+                                touchedClasses.push(Collections.synchronizedSet(new HashSet<>()));
                             }
-                        }
-                        touchedClasses.push(Collections.synchronizedSet(new HashSet<>()));
-                    }
 
-                    @Override
-                    public void dynamicTestRegistered(TestIdentifier testIdentifier) {
-                        dynamicIds.add(UniqueId.parse(testIdentifier.getUniqueId()));
-                    }
-
-                    @Override
-                    public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult testExecutionResult) {
-
-                        if (aborted) {
-                            return;
-                        }
-                        Class<?> testClass = null;
-                        String displayName = testIdentifier.getDisplayName();
-                        TestSource testSource = testIdentifier.getSource().orElse(null);
-                        Set<String> touched = touchedClasses.pop();
-                        UniqueId id = UniqueId.parse(testIdentifier.getUniqueId());
-                        if (testSource instanceof ClassSource) {
-                            testClass = ((ClassSource) testSource).getJavaClass();
-                            if (testExecutionResult.getStatus() != TestExecutionResult.Status.ABORTED) {
-                                for (Set<String> i : touchedClasses) {
-                                    //also add the parent touched classes
-                                    touched.addAll(i);
+                            @Override
+                            public void executionSkipped(TestIdentifier testIdentifier, String reason) {
+                                if (aborted) {
+                                    return;
                                 }
-                                if (startupClasses.get() != null) {
-                                    touched.addAll(startupClasses.get());
+                                Class<?> testClass = null;
+                                String displayName = testIdentifier.getDisplayName();
+                                TestSource testSource = testIdentifier.getSource().orElse(null);
+                                touchedClasses.pop();
+                                UniqueId id = UniqueId.parse(testIdentifier.getUniqueId());
+                                if (testSource instanceof ClassSource) {
+                                    testClass = ((ClassSource) testSource).getJavaClass();
+                                } else if (testSource instanceof MethodSource) {
+                                    testClass = ((MethodSource) testSource).getJavaClass();
+                                    displayName = testClass.getSimpleName() + "#" + displayName;
                                 }
-                                testClassUsages.updateTestData(testClass.getName(), touched);
-                            }
-                        } else if (testSource instanceof MethodSource) {
-                            testClass = ((MethodSource) testSource).getJavaClass();
-                            displayName = testClass.getSimpleName() + "#" + displayName;
-
-                            if (testExecutionResult.getStatus() != TestExecutionResult.Status.ABORTED) {
-                                for (Set<String> i : touchedClasses) {
-                                    //also add the parent touched classes
-                                    touched.addAll(i);
-                                }
-                                if (startupClasses.get() != null) {
-                                    touched.addAll(startupClasses.get());
-                                }
-                                testClassUsages.updateTestData(testClass.getName(), id,
-                                        touched);
-                            }
-                        }
-                        if (testClass != null) {
-                            Map<UniqueId, TestResult> results = resultsByClass.computeIfAbsent(testClass.getName(),
-                                    s -> new HashMap<>());
-                            TestResult result = new TestResult(displayName, testClass.getName(), id, testExecutionResult,
-                                    logHandler.captureOutput(), testIdentifier.isTest(), runId,
-                                    System.currentTimeMillis() - startTimes.get(testIdentifier));
-                            results.put(id, result);
-                            if (result.isTest()) {
-                                for (TestRunListener listener : listeners) {
-                                    listener.testComplete(result);
-                                }
-                            } else if (testExecutionResult.getStatus() == TestExecutionResult.Status.FAILED) {
-                                //if a parent fails we fail the children
-                                Set<TestIdentifier> children = testPlan.getChildren(testIdentifier);
-                                for (TestIdentifier child : children) {
-                                    UniqueId childId = UniqueId.parse(child.getUniqueId());
-                                    result = new TestResult(child.getDisplayName(), testClass.getName(),
-                                            childId,
-                                            testExecutionResult,
-                                            logHandler.captureOutput(), child.isTest(), runId,
-                                            System.currentTimeMillis() - startTimes.get(testIdentifier));
-                                    results.put(childId, result);
-                                    if (child.isTest()) {
+                                if (testClass != null) {
+                                    Map<UniqueId, TestResult> results = resultsByClass.computeIfAbsent(testClass.getName(),
+                                            s -> new HashMap<>());
+                                    TestResult result = new TestResult(displayName, testClass.getName(), id,
+                                            TestExecutionResult.aborted(null),
+                                            logHandler.captureOutput(), testIdentifier.isTest(), runId, 0);
+                                    results.put(id, result);
+                                    if (result.isTest()) {
                                         for (TestRunListener listener : listeners) {
-                                            listener.testStarted(child, testClass.getName());
                                             listener.testComplete(result);
                                         }
                                     }
                                 }
+                                touchedClasses.push(Collections.synchronizedSet(new HashSet<>()));
+                            }
+
+                            @Override
+                            public void dynamicTestRegistered(TestIdentifier testIdentifier) {
+                                dynamicIds.add(UniqueId.parse(testIdentifier.getUniqueId()));
+                            }
+
+                            @Override
+                            public void executionFinished(TestIdentifier testIdentifier,
+                                    TestExecutionResult testExecutionResult) {
+                                if (aborted) {
+                                    return;
+                                }
+                                Class<?> testClass = null;
+                                String displayName = testIdentifier.getDisplayName();
+                                TestSource testSource = testIdentifier.getSource().orElse(null);
+                                Set<String> touched = touchedClasses.pop();
+                                UniqueId id = UniqueId.parse(testIdentifier.getUniqueId());
+                                if (testSource instanceof ClassSource) {
+                                    testClass = ((ClassSource) testSource).getJavaClass();
+                                    if (testExecutionResult.getStatus() != TestExecutionResult.Status.ABORTED) {
+                                        for (Set<String> i : touchedClasses) {
+                                            //also add the parent touched classes
+                                            touched.addAll(i);
+                                        }
+                                        if (startupClasses.get() != null) {
+                                            touched.addAll(startupClasses.get());
+                                        }
+                                        testClassUsages.updateTestData(testClass.getName(), touched);
+                                    }
+                                } else if (testSource instanceof MethodSource) {
+                                    testClass = ((MethodSource) testSource).getJavaClass();
+                                    displayName = testClass.getSimpleName() + "#" + displayName;
+
+                                    if (testExecutionResult.getStatus() != TestExecutionResult.Status.ABORTED) {
+                                        for (Set<String> i : touchedClasses) {
+                                            //also add the parent touched classes
+                                            touched.addAll(i);
+                                        }
+                                        if (startupClasses.get() != null) {
+                                            touched.addAll(startupClasses.get());
+                                        }
+                                        testClassUsages.updateTestData(testClass.getName(), id,
+                                                touched);
+                                    }
+                                }
+                                if (testClass != null) {
+                                    Map<UniqueId, TestResult> results = resultsByClass.computeIfAbsent(testClass.getName(),
+                                            s -> new HashMap<>());
+                                    TestResult result = new TestResult(displayName, testClass.getName(), id,
+                                            testExecutionResult,
+                                            logHandler.captureOutput(), testIdentifier.isTest(), runId,
+                                            System.currentTimeMillis() - startTimes.get(testIdentifier));
+                                    results.put(id, result);
+                                    if (result.isTest()) {
+                                        for (TestRunListener listener : listeners) {
+                                            listener.testComplete(result);
+                                        }
+                                    } else if (testExecutionResult.getStatus() == TestExecutionResult.Status.FAILED) {
+                                        //if a parent fails we fail the children
+                                        Set<TestIdentifier> children = testPlan.getChildren(testIdentifier);
+                                        for (TestIdentifier child : children) {
+                                            UniqueId childId = UniqueId.parse(child.getUniqueId());
+                                            result = new TestResult(child.getDisplayName(), testClass.getName(),
+                                                    childId,
+                                                    testExecutionResult,
+                                                    logHandler.captureOutput(), child.isTest(), runId,
+                                                    System.currentTimeMillis() - startTimes.get(testIdentifier));
+                                            results.put(childId, result);
+                                            if (child.isTest()) {
+                                                for (TestRunListener listener : listeners) {
+                                                    listener.testStarted(child, testClass.getName());
+                                                    listener.testComplete(result);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                if (testExecutionResult.getStatus() == TestExecutionResult.Status.FAILED) {
+                                    Throwable throwable = testExecutionResult.getThrowable().get();
+                                    trimStackTrace(testClass, throwable);
+                                    for (var i : throwable.getSuppressed()) {
+                                        trimStackTrace(testClass, i);
+                                    }
+                                }
+                            }
+
+                            @Override
+                            public void reportingEntryPublished(TestIdentifier testIdentifier, ReportEntry entry) {
+
+                            }
+                        });
+                        if (aborted) {
+                            return;
+                        }
+                        testState.updateResults(resultsByClass);
+                        testState.pruneDeletedTests(allDiscoveredIds, dynamicIds);
+                        if (classScanResult != null) {
+                            testState.classesRemoved(classScanResult.getDeletedClassNames());
+                        }
+
+                        QuarkusConsole.removeOutputFilter(logHandler);
+                        for (TestRunListener listener : listeners) {
+                            listener.runComplete(new TestRunResults(runId, classScanResult, classScanResult == null, start,
+                                    System.currentTimeMillis(), toResultsMap(testState.getCurrentResults())));
+                        }
+                    } finally {
+                        try {
+                            currentTestAppConsumer.accept(null);
+                            TracingHandler.setTracingHandler(null);
+                            QuarkusConsole.removeOutputFilter(logHandler);
+                            Thread.currentThread().setContextClassLoader(old);
+                            tcl.close();
+                            try {
+                                quarkusTestClasses.close();
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        } finally {
+                            synchronized (JunitTestRunner.this) {
+                                testsRunning = false;
+                                if (aborted) {
+                                    JunitTestRunner.this.notifyAll();
+                                }
                             }
                         }
-                        if (testExecutionResult.getStatus() == TestExecutionResult.Status.FAILED) {
-                            Throwable throwable = testExecutionResult.getThrowable().get();
-                            trimStackTrace(testClass, throwable);
-                            for (var i : throwable.getSuppressed()) {
-                                trimStackTrace(testClass, i);
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void reportingEntryPublished(TestIdentifier testIdentifier, ReportEntry entry) {
 
                     }
-                });
-                if (aborted) {
-                    return;
                 }
-                testState.updateResults(resultsByClass);
-                testState.pruneDeletedTests(allDiscoveredIds, dynamicIds);
-                if (classScanResult != null) {
-                    testState.classesRemoved(classScanResult.getDeletedClassNames());
-                }
-
-                QuarkusConsole.INSTANCE.removeOutputFilter(logHandler);
-
-                //this has to happen before notifying the listeners
-                Map<String, Boolean> watched = TestWatchedFiles.retrieveWatchedFilePaths();
-                if (watched != null) {
-                    RuntimeUpdatesProcessor.INSTANCE.setWatchedFilePaths(watched, true);
-                }
-                for (TestRunListener listener : listeners) {
-                    listener.runComplete(new TestRunResults(runId, classScanResult, classScanResult == null, start,
-                            System.currentTimeMillis(), toResultsMap(testState.getCurrentResults())));
-                }
-            } finally {
-                currentTestAppConsumer.accept(null);
-            }
+            };
         } catch (Exception e) {
             throw new RuntimeException(e);
-        } finally {
-            try {
-                TracingHandler.setTracingHandler(null);
-                QuarkusConsole.INSTANCE.removeOutputFilter(logHandler);
-                Thread.currentThread().setContextClassLoader(old);
-            } finally {
-                synchronized (this) {
-                    testsRunning = false;
-                    if (aborted) {
-                        notifyAll();
-                    }
-                }
-            }
         }
     }
 
@@ -452,24 +459,13 @@ public class JunitTestRunner {
             }
         }
         aborted = true;
-        notifyAll();
         while (testsRunning) {
             try {
                 wait();
             } catch (InterruptedException e) {
-                //ignore
+                throw new RuntimeException(e);
             }
         }
-    }
-
-    public synchronized void pause() {
-        //todo
-        paused = true;
-    }
-
-    public synchronized void resume() {
-        paused = false;
-        notifyAll();
     }
 
     private Map<String, TestClassResult> toResultsMap(
@@ -498,29 +494,14 @@ public class JunitTestRunner {
         return resultMap;
     }
 
-    public void waitTillResumed() {
-        synchronized (JunitTestRunner.this) {
-            while (paused && !aborted) {
-                try {
-                    JunitTestRunner.this.wait();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            if (aborted) {
-                throw new TestAbortedException("Tests are disabled");
-            }
-        }
-    }
-
-    private DiscoveryResult discoverTestClasses(DevModeContext devModeContext) {
+    private DiscoveryResult discoverTestClasses() {
         //maven has a lot of rules around this and is configurable
         //for now this is out of scope, we are just going to do annotation based discovery
         //we will need to fix this sooner rather than later though
 
         //we also only run tests from the current module, which we can also revisit later
         Indexer indexer = new Indexer();
-        try (Stream<Path> files = Files.walk(Paths.get(devModeContext.getApplicationRoot().getTest().get().getClassesPath()))) {
+        try (Stream<Path> files = Files.walk(Paths.get(moduleInfo.getTest().get().getClassesPath()))) {
             files.filter(s -> s.getFileName().toString().endsWith(".class")).forEach(s -> {
                 try (InputStream in = Files.newInputStream(s)) {
                     indexer.index(in);
@@ -682,6 +663,7 @@ public class JunitTestRunner {
     }
 
     static class Builder {
+        private DevModeContext.ModuleInfo moduleInfo;
         private TestType testType = TestType.ALL;
         private TestState testState;
         private long runId = -1;
@@ -699,6 +681,11 @@ public class JunitTestRunner {
 
         public Builder setRunId(long runId) {
             this.runId = runId;
+            return this;
+        }
+
+        public Builder setModuleInfo(DevModeContext.ModuleInfo moduleInfo) {
+            this.moduleInfo = moduleInfo;
             return this;
         }
 

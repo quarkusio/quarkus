@@ -12,6 +12,7 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
@@ -30,6 +31,11 @@ import io.quarkus.rest.data.panache.runtime.hal.HalLinkJacksonSerializer;
 import io.quarkus.rest.data.panache.runtime.hal.HalLinkJsonbSerializer;
 
 public class RestDataProcessor {
+
+    @BuildStep
+    ReflectiveClassBuildItem registerReflection() {
+        return new ReflectiveClassBuildItem(true, true, HalLink.class);
+    }
 
     @BuildStep
     void implementResources(CombinedIndexBuildItem index, List<RestDataResourceBuildItem> resourceBuildItems,

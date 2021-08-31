@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-hibernate-envers-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>2.2.1.Final</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 

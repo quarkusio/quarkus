@@ -1,0 +1,18 @@
+pluginManagement {
+    repositories {
+        if (System.properties.containsKey('maven.repo.local')) {
+            maven {
+                url System.properties.get('maven.repo.local')
+            }
+        } else {
+            mavenLocal()
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    plugins {
+        id 'io.quarkus' version "${quarkusPluginVersion}"
+        id 'org.jetbrains.kotlin.jvm' version  "${kotlinVersion}"
+    }
+}
+rootProject.name='code-with-quarkus'

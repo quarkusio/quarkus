@@ -1052,6 +1052,13 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             elementType = paramType.name().toString();
             handleLocalDateParam(builder);
             typeHandled = true;
+        } else if (paramType.name().equals(LIST) && (type == ParameterType.QUERY)) { // RESTEasy Classic handles the non-generic List type
+            elementType = String.class.getName();
+            typeHandled = true;
+            builder.setSingle(false);
+            if (convertible) {
+                handleListParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+            }
         }
 
         if (!typeHandled) {

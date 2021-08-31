@@ -31,6 +31,7 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
+import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Response;
 
 import org.jboss.jandex.DotName;
@@ -410,7 +411,7 @@ final class CustomFilterGenerator {
 
     private static AssignableResultHandle getResourceInfoHandle(MethodCreator filterMethod, ResultHandle rrReqCtxHandle) {
         ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, rrReqCtxHandle);
-        AssignableResultHandle resourceInfo = filterMethod.createVariable(ResteasyReactiveResourceInfo.class);
+        AssignableResultHandle resourceInfo = filterMethod.createVariable(ResourceInfo.class);
         BranchResult ifNullBranch = filterMethod.ifNull(runtimeResourceHandle);
         ifNullBranch.trueBranch().assign(resourceInfo, ifNullBranch.trueBranch().readStaticField(
                 FieldDescriptor.of(SimpleResourceInfo.NullValues.class, "INSTANCE", SimpleResourceInfo.NullValues.class)));

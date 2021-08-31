@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Enumeration;
 
+import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.spi.OASFactoryResolver;
 
 import io.quarkus.runtime.ShutdownContext;
@@ -16,9 +17,10 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class OpenApiRecorder {
 
-    public Handler<RoutingContext> handler(OpenApiRuntimeConfig runtimeConfig, HttpConfiguration configuration) {
+    public Handler<RoutingContext> handler(OpenApiRuntimeConfig runtimeConfig, HttpConfiguration configuration,
+            OASFilter autoSecurityFilter) {
         if (runtimeConfig.enable) {
-            return new OpenApiHandler(configuration.corsEnabled);
+            return new OpenApiHandler(configuration.corsEnabled, autoSecurityFilter);
         } else {
             return new OpenApiNotFoundHandler();
         }

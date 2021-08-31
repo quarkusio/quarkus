@@ -595,8 +595,6 @@ public class NativeImageBuildStep {
                         "-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
                 nativeImageArgs.add("-H:+JNI");
                 nativeImageArgs.add("-H:+AllowFoldMethods");
-                nativeImageArgs.add("-jar");
-                nativeImageArgs.add(runnerJarName);
 
                 if (nativeConfig.enableFallbackImages) {
                     nativeImageArgs.add("-H:FallbackThreshold=5");
@@ -721,6 +719,10 @@ public class NativeImageBuildStep {
                 }
 
                 nativeImageArgs.add(nativeImageName);
+
+                //Make sure to have the -jar as last one, as it otherwise breaks "--exclude-config"
+                nativeImageArgs.add("-jar");
+                nativeImageArgs.add(runnerJarName);
 
                 return new NativeImageInvokerInfo(nativeImageArgs);
             }

@@ -173,12 +173,12 @@ Both `quarkus create` and `quarkus extension list` allow you to explicitly speci
 
 1. Specify a specific Platform Release BOM
 +
-A https://quarkus.io/guides/platform#quarkus-platform-bom[Quarkus Platform release BOM] is identified by `groupId:artifactId:version` (GAV) coordinates. When specifying a platform release BOM, you may use empty segments to fallback to default values (groupId: `io.quarkus`, artifactId: `quarkus-bom`, version: cli version). If you specify only one segment (no `:`), it is assumed to be a version.
+A https://quarkus.io/guides/platform#quarkus-platform-bom[Quarkus Platform release BOM] is identified by `groupId:artifactId:version` (GAV) coordinates. When specifying a platform release BOM, you may use empty segments to fallback to default values (shown with `quarkus create app --help`). If you specify only one segment (no `:`), it is assumed to be a version.
 +
 For example:
 +
-- Given the `2.0.0.Final` version of the CLI, specifying `-P :quarkus-bom:` is equivalent to `-P io.quarkus.platform:quarkus-bom:2.0.0.Final`.
-- Specifying `-P 999-SNAPSHOT` is equivalent to `-P io.quarkus:quarkus-bom:999-SNAPSHOT`
+- With the `2.0.0.Final` version of the CLI, specifying `-P :quarkus-bom:` is equivalent to `-P io.quarkus:quarkus-bom:2.0.0.Final`. Specifying `-P 999-SNAPSHOT` is equivalent to `-P io.quarkus:quarkus-bom:999-SNAPSHOT`.
+- With the `2.1.0.Final` version of the CLI, `io.quarkus.platform` is the default group id. Specifying `-P :quarkus-bom:` is equivalent to `-P io.quarkus.platform:quarkus-bom:2.1.0.Final`. Note that you need to specify the group id to work with a snapshot, e.g `-P io.quarkus::999-SNAPSHOT` is equivalent to `-P io.quarkus:quarkus-bom:999-SNAPSHOT`.
 +
 Note: default values are subject to change. Using the `--dry-run` option will show you the computed value.
 

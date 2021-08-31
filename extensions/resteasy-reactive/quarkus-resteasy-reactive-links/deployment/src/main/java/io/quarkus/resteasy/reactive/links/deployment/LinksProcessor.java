@@ -18,10 +18,10 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.resteasy.reactive.common.deployment.JaxRsResourceIndexBuildItem;
 import io.quarkus.resteasy.reactive.links.RestLinksResponseFilter;
 import io.quarkus.resteasy.reactive.links.runtime.GetterAccessorsContainer;
 import io.quarkus.resteasy.reactive.links.runtime.GetterAccessorsContainerRecorder;
@@ -44,13 +44,13 @@ final class LinksProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    void initializeLinksProvider(CombinedIndexBuildItem indexBuildItem,
+    void initializeLinksProvider(JaxRsResourceIndexBuildItem indexBuildItem,
             ResteasyReactiveDeploymentInfoBuildItem deploymentInfoBuildItem,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformersProducer,
             BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
             GetterAccessorsContainerRecorder getterAccessorsContainerRecorder,
             LinksProviderRecorder linksProviderRecorder) {
-        IndexView index = indexBuildItem.getIndex();
+        IndexView index = indexBuildItem.getIndexView();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClassesProducer, true);
 
         // Initialize links container

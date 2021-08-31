@@ -32,20 +32,17 @@ public class HalEntityWrapperJacksonSerializer extends JsonSerializer<HalEntityW
         for (BeanPropertyDefinition property : getPropertyDefinitions(serializers, wrapper.getEntity().getClass())) {
             AnnotatedMember accessor = property.getAccessor();
             if (accessor != null) {
-                writeValue(property.getName(), accessor.getValue(wrapper.getEntity()), generator);
+                Object value = accessor.getValue(wrapper.getEntity());
+                generator.writeFieldName(property.getName());
+                if (value == null) {
+                    generator.writeNull();
+                } else {
+                    serializers.findValueSerializer(value.getClass()).serialize(value, generator, serializers);
+                }
             }
         }
         writeLinks(wrapper.getEntity(), generator);
         generator.writeEndObject();
-    }
-
-    private void writeValue(String name, Object value, JsonGenerator generator) throws IOException {
-        generator.writeFieldName(name);
-        if (value == null) {
-            generator.writeNull();
-        } else {
-            generator.writeObject(value);
-        }
     }
 
     private void writeLinks(Object entity, JsonGenerator generator) throws IOException {

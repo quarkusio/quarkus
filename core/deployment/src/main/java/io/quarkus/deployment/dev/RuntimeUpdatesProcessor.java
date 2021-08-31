@@ -62,7 +62,6 @@ import io.quarkus.deployment.dev.filewatch.FileChangeCallback;
 import io.quarkus.deployment.dev.filewatch.FileChangeEvent;
 import io.quarkus.deployment.dev.filewatch.WatchServiceFileSystemWatcher;
 import io.quarkus.deployment.dev.testing.TestListener;
-import io.quarkus.deployment.dev.testing.TestRunner;
 import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.dev.spi.DevModeType;
@@ -225,18 +224,22 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                             testClassChangeWatcher.watchPath(path.toFile(), callback);
                         }
                     }
-                    for (Path path : context.getApplicationRoot().getTest().get().getSourcePaths()) {
-                        if (!Files.isDirectory(path)) {
-                            nonExistent.add(path);
-                        } else {
-                            testClassChangeWatcher.watchPath(path.toFile(), callback);
-                        }
-                    }
-                    for (Path path : context.getApplicationRoot().getTest().get().getResourcePaths()) {
-                        if (!Files.isDirectory(path)) {
-                            nonExistent.add(path);
-                        } else {
-                            testClassChangeWatcher.watchPath(path.toFile(), callback);
+                    for (DevModeContext.ModuleInfo module : context.getAllModules()) {
+                        if (module.getTest().isPresent()) {
+                            for (Path path : module.getTest().get().getSourcePaths()) {
+                                if (!Files.isDirectory(path)) {
+                                    nonExistent.add(path);
+                                } else {
+                                    testClassChangeWatcher.watchPath(path.toFile(), callback);
+                                }
+                            }
+                            for (Path path : module.getTest().get().getResourcePaths()) {
+                                if (!Files.isDirectory(path)) {
+                                    nonExistent.add(path);
+                                } else {
+                                    testClassChangeWatcher.watchPath(path.toFile(), callback);
+                                }
+                            }
                         }
                     }
                     testClassChangeTimer = new Timer("Test Compile Timer", true);
@@ -293,9 +296,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             ClassScanResult changedApp = checkForChangedClasses(compiler, DevModeContext.ModuleInfo::getMain, false, test);
             if (changedApp.compilationHappened) {
                 if (compileProblem != null) {
-                    testSupport.getTestRunner().testCompileFailed(compileProblem);
+                    testSupport.testCompileFailed(compileProblem);
                 } else {
-                    testSupport.getTestRunner().testCompileSucceeded();
+                    testSupport.testCompileSucceeded();
                 }
             }
             Set<String> filesChanges = new HashSet<>(checkForFileChange(s -> s.getTest().orElse(null), test));
@@ -306,11 +309,11 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             ClassScanResult merged = ClassScanResult.merge(changedTestClassResult, changedApp);
             if (configFileRestartNeeded) {
                 if (compileProblem == null) {
-                    testSupport.getTestRunner().runTests(null);
+                    testSupport.runTests(null);
                 }
             } else if (merged.isChanged()) {
                 if (compileProblem == null) {
-                    testSupport.getTestRunner().runTests(merged);
+                    testSupport.runTests(merged);
                 }
             }
         } finally {
@@ -321,21 +324,20 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     private ClassScanResult compileTestClasses() {
         QuarkusCompiler testCompiler = testSupport.getCompiler();
-        TestRunner testRunner = testSupport.getTestRunner();
         ClassScanResult changedTestClassResult = new ClassScanResult();
         try {
             changedTestClassResult = checkForChangedClasses(testCompiler,
                     m -> m.getTest().orElse(DevModeContext.EMPTY_COMPILATION_UNIT), false, test);
             if (compileProblem != null) {
-                testRunner.testCompileFailed(compileProblem);
+                testSupport.testCompileFailed(compileProblem);
                 compileProblem = null; //we don't want to block the app over a test problem
             } else {
                 if (changedTestClassResult.isChanged()) {
-                    testRunner.testCompileSucceeded();
+                    testSupport.testCompileSucceeded();
                 }
             }
         } catch (Throwable e) {
-            testRunner.testCompileFailed(e);
+            testSupport.testCompileFailed(e);
         }
         return changedTestClassResult;
     }
@@ -405,9 +407,6 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         }
         scanLock.lock();
         try {
-            if (testSupport != null) {
-                testSupport.pause();
-            }
             final long startNanoseconds = System.nanoTime();
             for (Runnable step : preScanSteps) {
                 try {
@@ -525,9 +524,6 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
         } finally {
             scanLock.unlock();
-            if (testSupport != null) {
-                testSupport.resume();
-            }
         }
     }
 

@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.model.CapabilityErrors;
+import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
@@ -516,6 +517,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
 
     @Test
     public void testThatTheApplicationIsReloadedMultiModule() throws MavenInvocationException, IOException {
+        //we also check continuous testing
         testDir = initProject("projects/multimodule", "projects/multimodule-with-deps");
         runAndCheck();
 
@@ -524,6 +526,12 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(5, TimeUnit.SECONDS)
                 .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/resourcesCount").equals("1"));
+
+        ContinuousTestingMavenTestUtils testingTestUtils = new ContinuousTestingMavenTestUtils();
+        ContinuousTestingMavenTestUtils.TestStatus results = testingTestUtils.waitForNextCompletion();
+
+        //check that the tests in both modules run
+        Assertions.assertEquals(2, results.getTestsPassed());
 
         // Edit the "Hello" message.
         File source = new File(testDir, "rest/src/main/java/org/acme/HelloResource.java");
@@ -539,6 +547,21 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .until(source::isFile);
+
+        results = testingTestUtils.waitForNextCompletion();
+
+        //make sure the test is failing now
+        Assertions.assertEquals(1, results.getTestsFailed());
+        //now modify the passing test
+        var testSource = new File(testDir, "rest/src/test/java/org/acme/test/SimpleTest.java");
+        filter(testSource, Collections.singletonMap("Assertions.assertTrue(true);", "Assertions.assertTrue(false);"));
+        results = testingTestUtils.waitForNextCompletion();
+        Assertions.assertEquals(2, results.getTotalTestsFailed());
+        //fix it again
+        filter(testSource, Collections.singletonMap("Assertions.assertTrue(false);", "Assertions.assertTrue(true);"));
+        results = testingTestUtils.waitForNextCompletion();
+        Assertions.assertEquals(1, results.getTotalTestsFailed(), "Failed, actual results " + results);
+        Assertions.assertEquals(1, results.getTotalTestsPassed(), "Failed, actual results " + results);
 
         filter(source, Collections.singletonMap(uuid, "carambar"));
 

@@ -1,6 +1,7 @@
 package io.quarkus.deployment.dev.testing;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,6 +19,16 @@ public class TestState {
     final Map<String, Map<UniqueId, TestResult>> resultsByClass = new HashMap<>();
     final Set<UniqueId> failing = new HashSet<>();
     final Set<UniqueId> dynamicIds = new HashSet<>();
+
+    public static TestState merge(Collection<TestState> states) {
+        TestState ret = new TestState();
+        for (var i : states) {
+            ret.resultsByClass.putAll(i.resultsByClass);
+            ret.failing.addAll(i.failing);
+            ret.dynamicIds.addAll(i.dynamicIds);
+        }
+        return ret;
+    }
 
     public List<String> getClassNames() {
         return new ArrayList<>(resultsByClass.keySet()).stream().sorted().collect(Collectors.toList());

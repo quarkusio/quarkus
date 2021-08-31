@@ -20,6 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GetAbsolutePathResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.UriInfoEncodedQueryResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.UriInfoEncodedTemplateResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.UriInfoEscapedMatrParamResource;
@@ -54,7 +55,7 @@ public class UriInfoTest {
                     war.addClasses(UriInfoSimpleResource.class, UriInfoEncodedQueryResource.class,
                             UriInfoQueryParamsResource.class, UriInfoSimpleSingletonResource.class,
                             UriInfoEncodedTemplateResource.class, UriInfoEscapedMatrParamResource.class,
-                            UriInfoEncodedTemplateResource.class);
+                            UriInfoEncodedTemplateResource.class, GetAbsolutePathResource.class);
                     return war;
                 }
             });
@@ -166,5 +167,21 @@ public class UriInfoTest {
     @DisplayName("Test Query Params Mutability")
     public void testQueryParamsMutability() throws Exception {
         basicTest("/queryParams?a=a,b", "UriInfoQueryParamsResource");
+    }
+
+    @Test
+    @DisplayName("Test Get Absolute Path")
+    public void testGetAbsolutePath() throws Exception {
+        doTestGetAbsolutePath("/absolutePath", "unset");
+        doTestGetAbsolutePath("/absolutePath?dummy=1234", "1234");
+        doTestGetAbsolutePath("/absolutePath?foo=bar&dummy=1234", "1234");
+    }
+
+    private void doTestGetAbsolutePath(String path, String expectedDummyHeader) {
+        String absolutePathHeader = RestAssured.get(path)
+                .then()
+                .statusCode(200)
+                .header("dummy", expectedDummyHeader).extract().header("absolutePath");
+        org.assertj.core.api.Assertions.assertThat(absolutePathHeader).endsWith("/absolutePath");
     }
 }

@@ -1038,9 +1038,11 @@ public class QuarkusTestExtension
                         cloneRequired = false;
                     } else if (TestInfo.class.isAssignableFrom(theclass)) {
                         TestInfo info = (TestInfo) arg;
-                        Method newTestMethod = determineTCCLExtensionMethod(info.getTestMethod().get(), testClassFromTCCL);
+                        Method newTestMethod = info.getTestMethod().isPresent()
+                                ? determineTCCLExtensionMethod(info.getTestMethod().get(), testClassFromTCCL)
+                                : null;
                         replacement = new TestInfoImpl(info.getDisplayName(), info.getTags(), Optional.of(testClassFromTCCL),
-                                Optional.of(newTestMethod));
+                                Optional.ofNullable(newTestMethod));
                     } else if (clonePattern.matcher(className).matches()) {
                         cloneRequired = true;
                     } else {

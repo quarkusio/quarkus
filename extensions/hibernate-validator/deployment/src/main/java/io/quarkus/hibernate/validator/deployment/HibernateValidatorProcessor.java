@@ -67,6 +67,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
@@ -349,9 +350,13 @@ class HibernateValidatorProcessor {
     }
 
     @BuildStep
-    ExceptionMapperBuildItem mapper() {
-        return new ExceptionMapperBuildItem(ResteasyReactiveViolationExceptionMapper.class.getName(),
-                ValidationException.class.getName(), Priorities.USER + 1, true);
+    void exceptionMapper(BuildProducer<ExceptionMapperBuildItem> exceptionMapperProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
+        exceptionMapperProducer.produce(new ExceptionMapperBuildItem(ResteasyReactiveViolationExceptionMapper.class.getName(),
+                ValidationException.class.getName(), Priorities.USER + 1, true));
+        reflectiveClassProducer.produce(
+                new ReflectiveClassBuildItem(true, true, ResteasyReactiveViolationExceptionMapper.ViolationReport.class,
+                        ResteasyReactiveViolationExceptionMapper.ViolationReport.Violation.class));
     }
 
     private static void contributeBuiltinConstraints(Set<String> builtinConstraints,

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 class JacksonSerializersTest extends AbstractSerializersTest {
 
@@ -18,6 +19,7 @@ class JacksonSerializersTest extends AbstractSerializersTest {
         module.addSerializer(HalCollectionWrapper.class,
                 new HalCollectionWrapperJacksonSerializer(new BookHalLinksProvider()));
         objectMapper.registerModule(module);
+        objectMapper.registerModule(new JavaTimeModule());
     }
 
     @Override
@@ -27,5 +29,10 @@ class JacksonSerializersTest extends AbstractSerializersTest {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    protected boolean usePublishedBook() {
+        return true;
     }
 }

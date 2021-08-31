@@ -17,7 +17,9 @@ abstract class AbstractSerializersTest {
 
     @Test
     void shouldSerializeOneBook() {
-        Book book = new Book(1, "Black Swan");
+        int id = 1;
+        String title = "Black Swan";
+        Book book = usePublishedBook() ? new PublishedBook(id, title) : new Book(id, title);
         JsonReader jsonReader = Json.createReader(new StringReader(toJson(new HalEntityWrapper(book))));
 
         assertBook(book, jsonReader.readObject());
@@ -25,7 +27,9 @@ abstract class AbstractSerializersTest {
 
     @Test
     void shouldSerializeOneBookWithNullName() {
-        Book book = new Book(1, null);
+        int id = 1;
+        String title = null;
+        Book book = usePublishedBook() ? new PublishedBook(id, title) : new Book(id, title);
         JsonReader jsonReader = Json.createReader(new StringReader(toJson(new HalEntityWrapper(book))));
 
         assertBook(book, jsonReader.readObject());
@@ -33,7 +37,9 @@ abstract class AbstractSerializersTest {
 
     @Test
     void shouldSerializeCollectionOfBooks() {
-        Book book = new Book(1, "Black Swan");
+        int id = 1;
+        String title = "Black Swan";
+        Book book = usePublishedBook() ? new PublishedBook(id, title) : new Book(id, title);
         HalCollectionWrapper wrapper = new HalCollectionWrapper(Collections.singleton(book), Book.class, "books");
         JsonReader jsonReader = Json.createReader(new StringReader(toJson(wrapper)));
         JsonObject collectionJson = jsonReader.readObject();
@@ -60,4 +66,6 @@ abstract class AbstractSerializersTest {
         assertThat(bookLinksJson.getJsonObject("list").getString("href")).isEqualTo("/books");
         assertThat(bookLinksJson.getJsonObject("add").getString("href")).isEqualTo("/books");
     }
+
+    protected abstract boolean usePublishedBook();
 }

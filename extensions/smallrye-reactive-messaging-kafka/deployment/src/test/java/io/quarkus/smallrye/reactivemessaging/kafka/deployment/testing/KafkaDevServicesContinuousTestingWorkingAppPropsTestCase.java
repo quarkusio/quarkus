@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.vertx.http.testrunner.ContinuousTestingTestUtils;
 
 public class KafkaDevServicesContinuousTestingWorkingAppPropsTestCase {
 

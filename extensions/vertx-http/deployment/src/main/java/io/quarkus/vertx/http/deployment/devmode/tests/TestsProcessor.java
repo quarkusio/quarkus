@@ -23,7 +23,6 @@ import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.deployment.devmode.console.ContinuousTestingWebSocketTestListener;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
 import io.quarkus.vertx.http.runtime.devmode.Json;
 import io.vertx.core.Handler;
@@ -61,7 +60,6 @@ public class TestsProcessor {
                     .route("dev/test")
                     .handler(recorder.continousTestHandler(shutdownContextBuildItem))
                     .build());
-            testListenerBuildItemBuildProducer.produce(new TestListenerBuildItem(new ContinuousTestingWebSocketTestListener()));
         }
 
     }

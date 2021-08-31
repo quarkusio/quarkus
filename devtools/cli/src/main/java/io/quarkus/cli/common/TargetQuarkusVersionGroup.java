@@ -8,6 +8,8 @@ import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 
 public class TargetQuarkusVersionGroup {
+    final static String FULL_EXAMPLE = ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID + ":"
+            + ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID + ":2.2.0.Final";
     StreamCoords streamCoords = null;
     String validStream = null;
 
@@ -18,7 +20,7 @@ public class TargetQuarkusVersionGroup {
     CommandSpec spec;
 
     @CommandLine.Option(paramLabel = "platformKey:streamId", names = { "-S",
-            "--stream" }, description = "A target stream, for example:%n  io.quarkus.platform:999-SNAPSHOT%n  io.quarkus.platform:2.0")
+            "--stream" }, description = "A target stream, for example:%n  io.quarkus.platform:2.0")
     void setStream(String stream) {
         stream = stream.trim();
         if (!stream.isEmpty()) {
@@ -34,7 +36,12 @@ public class TargetQuarkusVersionGroup {
     }
 
     @CommandLine.Option(paramLabel = "groupId:artifactId:version", names = { "-P",
-            "--platform-bom" }, description = "A specific Quarkus platform BOM, for example:%n  io.quarkus:quarkus-bom:2.0.0.Final")
+            "--platform-bom" }, description = "A specific Quarkus platform BOM, for example:%n"
+                    + "  " + FULL_EXAMPLE + "%n"
+                    + "  io.quarkus::999-SNAPSHOT"
+                    + "  2.2.0.Final%n"
+                    + "Default groupId: " + ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID + "%n"
+                    + "Default artifactId: " + ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID + "%n")
     void setPlatformBom(String bom) {
         bom = bom.replaceFirst("^::", "").trim();
         if (!bom.isEmpty()) {

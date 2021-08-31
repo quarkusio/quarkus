@@ -76,9 +76,14 @@ import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRecorder;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRuntimeConfig;
+import io.quarkus.smallrye.openapi.runtime.filter.AutoBasicSecurityFilter;
+import io.quarkus.smallrye.openapi.runtime.filter.AutoJWTSecurityFilter;
+import io.quarkus.smallrye.openapi.runtime.filter.AutoUrl;
+import io.quarkus.smallrye.openapi.runtime.filter.OpenIDConnectSecurityFilter;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.smallrye.openapi.api.OpenApiConfig;
@@ -168,9 +173,11 @@ public class SmallRyeOpenApiProcessor {
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             OpenApiRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            List<SecurityInformationBuildItem> securityInformationBuildItems,
             OpenApiRuntimeConfig openApiRuntimeConfig,
             ShutdownContextBuildItem shutdownContext,
             SmallRyeOpenApiConfig openApiConfig,
+            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
             HttpConfiguration httpConfiguration) {
         /*
          * <em>Ugly Hack</em>
@@ -187,7 +194,17 @@ public class SmallRyeOpenApiProcessor {
             recorder.setupClDevMode(shutdownContext);
         }
 
-        Handler<RoutingContext> handler = recorder.handler(openApiRuntimeConfig, httpConfiguration);
+        OASFilter autoSecurityFilter = null;
+        if (openApiConfig.autoAddSecurity) {
+            // Only add the security if there are secured endpoints
+            OASFilter autoRolesAllowedFilter = getAutoRolesAllowedFilter(openApiConfig.securitySchemeName,
+                    apiFilteredIndexViewBuildItem, openApiConfig);
+            if (autoRolesAllowedFilter != null) {
+                autoSecurityFilter = getAutoSecurityFilter(securityInformationBuildItems, openApiConfig);
+            }
+        }
+
+        Handler<RoutingContext> handler = recorder.handler(openApiRuntimeConfig, httpConfiguration, autoSecurityFilter);
         return nonApplicationRootPathBuildItem.routeBuilder()
                 .route(openApiConfig.path)
                 .routeConfigKey("quarkus.smallrye-openapi.path")
@@ -275,6 +292,64 @@ public class SmallRyeOpenApiProcessor {
             addToOpenAPIDefinitionProducer.produce(new AddToOpenAPIDefinitionBuildItem(autoTagFilter));
         }
 
+    }
+
+    private OASFilter getAutoSecurityFilter(List<SecurityInformationBuildItem> securityInformationBuildItems,
+            SmallRyeOpenApiConfig config) {
+
+        // Auto add a security from security extension(s)
+        if (!config.securityScheme.isPresent() && securityInformationBuildItems != null
+                && !securityInformationBuildItems.isEmpty()) {
+            // This needs to be a filter in runtime as the config we use to auto configure is in runtime
+            for (SecurityInformationBuildItem securityInformationBuildItem : securityInformationBuildItems) {
+                SecurityInformationBuildItem.SecurityModel securityModel = securityInformationBuildItem.getSecurityModel();
+                switch (securityModel) {
+                    case jwt:
+                        return new AutoJWTSecurityFilter(
+                                config.securitySchemeName,
+                                config.securitySchemeDescription,
+                                config.jwtSecuritySchemeValue,
+                                config.jwtBearerFormat);
+                    case basic:
+                        return new AutoBasicSecurityFilter(
+                                config.securitySchemeName,
+                                config.securitySchemeDescription,
+                                config.basicSecuritySchemeValue);
+                    case oidc:
+                        Optional<SecurityInformationBuildItem.OpenIDConnectInformation> maybeInfo = securityInformationBuildItem
+                                .getOpenIDConnectInformation();
+
+                        if (maybeInfo.isPresent()) {
+                            SecurityInformationBuildItem.OpenIDConnectInformation info = maybeInfo.get();
+
+                            AutoUrl authorizationUrl = new AutoUrl(
+                                    config.oidcOpenIdConnectUrl.orElse(null),
+                                    info.getUrlConfigKey(),
+                                    "/protocol/openid-connect/auth");
+
+                            AutoUrl refreshUrl = new AutoUrl(
+                                    config.oidcOpenIdConnectUrl.orElse(null),
+                                    info.getUrlConfigKey(),
+                                    "/protocol/openid-connect/token");
+
+                            AutoUrl tokenUrl = new AutoUrl(
+                                    config.oidcOpenIdConnectUrl.orElse(null),
+                                    info.getUrlConfigKey(),
+                                    "/protocol/openid-connect/token/introspect");
+
+                            return new OpenIDConnectSecurityFilter(
+                                    config.securitySchemeName,
+                                    config.securitySchemeDescription,
+                                    authorizationUrl, refreshUrl, tokenUrl);
+
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        return null;
     }
 
     private OASFilter getAutoRolesAllowedFilter(String securitySchemeName,

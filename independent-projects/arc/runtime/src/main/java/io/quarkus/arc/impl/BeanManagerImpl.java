@@ -242,7 +242,7 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public <T> InjectionTargetFactory<T> getInjectionTargetFactory(AnnotatedType<T> annotatedType) {
-        return new InjectionTargetFactoryImpl(annotatedType);
+        return new InjectionTargetFactoryImpl(annotatedType, this);
     }
 
     @Override
@@ -268,7 +268,13 @@ public class BeanManagerImpl implements BeanManager {
     @Override
     public <T> Bean<T> createBean(BeanAttributes<T> attributes, Class<T> beanClass,
             InjectionTargetFactory<T> injectionTargetFactory) {
-        throw new UnsupportedOperationException();
+        Set<Bean<?>> beans = getBeans(beanClass, attributes.getQualifiers().toArray(new Annotation[]{}));
+        if (beans.isEmpty()) {
+            throw new UnsatisfiedResolutionException();
+        }
+        Bean<T> bean = (Bean<T>) resolve(beans);
+        //injectionTargetFactory.createInjectionTarget(bean);
+        return bean;
     }
 
     @Override

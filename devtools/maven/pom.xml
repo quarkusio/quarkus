@@ -180,7 +180,13 @@
                 <filtering>true</filtering>
                 <excludes>
                     <exclude>create-extension-templates/**/*</exclude>
+                    <exclude>META-INF/plexus</exclude>
                 </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources/META-INF/plexus</directory>
+                <filtering>true</filtering>
+                <targetPath>${basedir}/target/filtered-resources/META-INF/plexus</targetPath>
             </resource>
             <resource>
                 <directory>src/main/resources</directory>

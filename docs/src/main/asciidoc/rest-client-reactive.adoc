@@ -541,9 +541,13 @@ This difference comes from the laziness aspect of Mutiny and its subscription pr
 More details about this can be found in https://smallrye.io/smallrye-mutiny/#_uni_and_multi[the Mutiny documentation].
 
 == Custom headers support
-The MicroProfile REST client allows amending request headers by registering a `ClientHeadersFactory` with the `@RegisterClientHeaders` annotation.
+There are a few ways in which you can specify custom headers for your REST calls:
 
-Let's see it in action by adding a `@RegisterClientHeaders` annotation pointing to a `RequestUUIDHeaderFactory` class in our `CountriesService` REST interface:
+- by registering a `ClientHeadersFactory` with the `@RegisterClientHeaders` annotation
+- by specifying the value of the header with `@ClientHeaderParam`
+- by specifying the value of the header by `@HeaderParam`
+
+The code below demonstrates how to use each of this techniques:
 
 [source, java]
 ----
@@ -560,12 +564,15 @@ import java.util.Set;
 
 @Path("/v2")
 @RegisterRestClient
-@RegisterClientHeaders(RequestUUIDHeaderFactory.class)
+@RegisterClientHeaders(RequestUUIDHeaderFactory.class) // <1>
+@ClientHeaderParam(name = "my-header", value = "constant-header-value") // <2>
+@ClientHeaderParam(name = "computed-header", value = "{org.acme.rest.client.Util.computeHeader}") // <3>
 public interface CountriesService {
 
     @GET
     @Path("/name/{name}")
-    Set<Country> getByName(@PathParam("name") String name);
+    @ClientHeaderParam(name = "header-from-properties", value = "${header.value}") // <4>
+    Set<Country> getByName(@PathParam("name") String name, @HeaderParam("jaxrs-style-header") String headerValue); // <5>
 
     @GET
     @Path("/name/{name}")
@@ -573,7 +580,12 @@ public interface CountriesService {
 }
 ----
 
-And the `RequestUUIDHeaderFactory` would look like:
+<1> There can be only one `ClientHeadersFactory` per class. With it, you can not only add custom headers, but you can also transform existing ones. See the `RequestUUIDHeaderFactory` class below for an example of the factory.
+<2> `@ClientHeaderParam` can be used on the client interface and on methods. It can specify a constant header value...
+<3> ... and a name of a method that should compute the value of the header. It can either be a static method or a default method in this interface
+<4> ... as well as a value from your application's configuration
+
+A `ClientHeadersFactory` can look as follows:
 
 [source, java]
 ----
@@ -601,8 +613,16 @@ public class RequestUUIDHeaderFactory implements ClientHeadersFactory {
 As you see in the example above, you can make your `ClientHeadersFactory` implementation a CDI bean by
 annotating it with a scope-defining annotation, such as `@Singleton`, `@ApplicationScoped`, etc.
 
+To specify a value for `${header.value}`, simply put the following in your `application.properties`:
+
+[source,properties]
+----
+header.value=value of the header
+----
+
 === Default header factory
-You can also use `@RegisterClientHeaders` annotation without any custom factory specified. In that case the `DefaultClientHeadersFactoryImpl` factory will be used and all headers listed in `org.eclipse.microprofile.rest.client.propagateHeaders` configuration property will be amended. Individual header names are comma-separated.
+The `@RegisterClientHeaders` annotation can also be used without any custom factory specified. In that case the `DefaultClientHeadersFactoryImpl` factory will be used.
+If you make a REST client call from a REST resource, this fatory will propagate all the headers listed in `org.eclipse.microprofile.rest.client.propagateHeaders` configuration property from the resource request to the client request. Individual header names are comma-separated.
 [source, java]
 ----
 

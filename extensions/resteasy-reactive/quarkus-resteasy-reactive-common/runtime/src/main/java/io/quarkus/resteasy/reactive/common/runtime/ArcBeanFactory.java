@@ -22,17 +22,28 @@ public class ArcBeanFactory<T> implements BeanFactory<T> {
 
     @Override
     public BeanInstance<T> createInstance() {
-        BeanContainer.Instance<T> instance = factory.create();
-        return new BeanInstance<T>() {
-            @Override
-            public T getInstance() {
-                return instance.get();
-            }
+        BeanContainer.Instance<T> instance;
+        try {
+            instance = factory.create();
+            return new BeanInstance<T>() {
+                @Override
+                public T getInstance() {
+                    return instance.get();
+                }
 
-            @Override
-            public void close() {
-                instance.close();
+                @Override
+                public void close() {
+                    instance.close();
+                }
+            };
+        } catch (Exception e) {
+            if (factory.getClass().getName().contains("DefaultInstanceFactory")) {
+                throw new IllegalArgumentException(
+                        "Unable to create class '" + targetClassName
+                                + "'. To fix the problem, make sure this class is a CDI bean.",
+                        e);
             }
-        };
+            throw e;
+        }
     }
 }

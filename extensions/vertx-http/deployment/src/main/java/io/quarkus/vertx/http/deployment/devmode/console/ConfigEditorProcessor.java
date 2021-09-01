@@ -45,14 +45,18 @@ public class ConfigEditorProcessor {
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig) {
         List<ConfigDescription> configDescriptions = new ArrayList<>();
         for (ConfigDescriptionBuildItem item : configDescriptionBuildItems) {
-
             configDescriptions.add(
-                    new ConfigDescription(item.getPropertyName(), item.getDocs(), item.getDefaultValue(),
-                            isSetByDevServices(devServicesLauncherConfig, item.getPropertyName())));
+                    new ConfigDescription(item.getPropertyName(),
+                            item.getDocs(),
+                            item.getDefaultValue(),
+                            isSetByDevServices(devServicesLauncherConfig, item.getPropertyName()),
+                            item.getValueTypeName(),
+                            item.getAllowedValues()));
         }
 
-        devConsoleRuntimeTemplateProducer.produce(
-                new DevConsoleRuntimeTemplateInfoBuildItem("config", new ConfigDescriptionsSupplier(configDescriptions)));
+        devConsoleRuntimeTemplateProducer.produce(new DevConsoleRuntimeTemplateInfoBuildItem("config",
+                new ConfigDescriptionsSupplier(configDescriptions)));
+
         devConsoleRuntimeTemplateProducer.produce(new DevConsoleRuntimeTemplateInfoBuildItem("hasDevServices",
                 new HasDevServicesSupplier(devServicesLauncherConfig.isPresent()
                         && devServicesLauncherConfig.get().getConfig() != null

@@ -9,6 +9,6 @@ metadata:
   guide: "https://quarkus.io/guides/amazon-iam"
   categories:
     - "data"
-  status: "preview"
+  status: "stable"
   config:
   - "quarkus.iam."

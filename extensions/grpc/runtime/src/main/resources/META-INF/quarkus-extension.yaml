@@ -8,7 +8,7 @@ metadata:
     - "web"
     - "serialization"
     - "reactive"
-  status: "experimental"
+  status: "stable"
   codestart:
     name: "grpc"
     languages:

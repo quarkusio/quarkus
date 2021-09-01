@@ -8,8 +8,8 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.vertx.http.testrunner.ContinuousTestingTestUtils;
 import io.restassured.RestAssured;
 
 public class OpenTelemetryDevModeTest {

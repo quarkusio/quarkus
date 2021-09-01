@@ -69,11 +69,32 @@ function clearFilterInput(){
     hideEmptyTables();
 }
 
+function changeSelectValue(element, name){
+    var $el = $("select[id='" + name + "']");
+    var $tr = $("tr[id='tr-" + name + "']");
+    var value = element.options[element.selectedIndex].text;
+    
+    postChangeConfigValue(name, value, $el);
+}
+
+function changeCheckboxValue(element, name){
+    var $el = $("input[id='" + name + "']");
+    var $tr = $("tr[id='tr-" + name + "']");
+    var value = element.checked;
+    
+    postChangeConfigValue(name, value, $el);
+}
+
 function changeInputValue(name){
     var $el = $("input[id='" + name + "']");
     var $tr = $("tr[id='tr-" + name + "']");
-    
     var value = $el.val();
+    
+    postChangeConfigValue(name, value, $el);
+}
+
+function postChangeConfigValue(name, value, $el){
+    $el.prop('disabled', true);
     $.post("",
         {
           action: "updateProperty",
@@ -90,6 +111,7 @@ function changeInputValue(name){
                 hideEmptyTables();
                 changeBackgroundColor("#ff6366", $el);
             }
+            $el.prop('disabled', false);
         });
 
 }
@@ -168,10 +190,11 @@ function copyProdDevServices(){
 }
 
 function copyDevServices(environment){
-    var action = "copy" + environment + "DevServices";
     $.post("",
         {
-          action: action
+          action: "copyDevServices",
+          environment: environment,
+          filter: configfilter
         },
         function(data, status){
             if(status === "success"){
@@ -280,7 +303,20 @@ function filterByConfigExtension(configfilterText, configfilterKeys){
     });
     
     $('#configFilterModal').modal('hide');
+    
+    showHideDevServicesButton();
+    
     hideEmptyTables();
+}
+
+function showHideDevServicesButton(){
+    // Check if there is any dev services visible on the page
+    var numberOfMagicConfig = $('.fa-magic:visible').length;
+    if(numberOfMagicConfig === 0){
+        $('.devservices').hide();
+    }else {
+        $('.devservices').show();
+    }
 }
 
 function hideEmptyTables(){
@@ -306,6 +342,7 @@ function clearConfigFilter(){
         $(this).parent().show();
     });
     clearFilterInput();
+    showHideDevServicesButton();
 }
 
 {/script}
@@ -336,7 +373,7 @@ function clearConfigFilter(){
     </div>
     <div class="btn-group ml-2" role="group" aria-label="Actions">
         {#if info:hasDevServices}
-        <div class="btn-group">
+        <div class="btn-group devservices">
             <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 Dev Services
             </button>
@@ -379,19 +416,60 @@ function clearConfigFilter(){
                     <tr id="tr-{item.configValue.name}">
 
                         <td class="filterableConfigKey">
+                            {#if item.configPhase?? && (item.configPhase == "BUILD_AND_RUN_TIME_FIXED" || item.configPhase == "BUILD_TIME")}
+                            <i class="fas fa-lock data-toggle="tooltip" data-placement="top" title="Fixed at build time (not overridable at runtime)"></i>
+                            {#else}
+                            <i class="fas fa-lock-open text-white" data-placement="top" title="Overridable at runtime"></i>
+                            {/if}
+                            
                             {item.configValue.name}
+                            
                             {#if item.autoFromDevServices}
                             <i class="fas fa-magic text-primary" data-toggle="tooltip" data-placement="top" title="Automatically set by Dev Services"></i>
                             {/if}
+                            
                         </td>
                         <td>
                             {#if configsource.key.editable}
-                            <div class="input-group" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>
-                                <input id="{item.configValue.name}" type="text" name="value" class="form-control configInput" value="{item.configValue.value}"/>
-                                <div class="input-group-append">
-                                    <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}');"><i class="fas fa-check text-success"></i></span>
+                            
+                                {#if item.typeName && item.typeName == "java.lang.Boolean"}
+                                <div class="input-group flex-row-reverse" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>
+                                    <div class="custom-control custom-switch">
+                                        <input id="{item.configValue.name}" type="checkbox" name="value" onclick="changeCheckboxValue(this, '{item.configValue.name}');" class="custom-control-input" {#if item.configValue.value == "true" || item.configValue.value == true}checked{/if}/>
+                                        <label class="custom-control-label" for="{item.configValue.name}"></label>
+                                    </div>
                                 </div>
-                            </div>
+                                {#else if item.typeName && (item.typeName == "java.lang.Integer" || item.typeName == "java.lang.Long")}
+                                <div class="input-group" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>    
+                                    <input id="{item.configValue.name}" type="number" name="value" class="form-control configInput" value="{item.configValue.value}" onkeydown="javascript: return event.keyCode === 8 || event.keyCode === 46 || event.keyCode === 13 ? true : !isNaN(Number(event.key))"/>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}');"><i class="fas fa-check text-success"></i></span>
+                                    </div>
+                                </div>
+                                {#else if item.typeName && (item.typeName == "java.lang.Float" || item.typeName == "java.lang.Double")}
+                                <div class="input-group" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>    
+                                    <input id="{item.configValue.name}" type="text" name="value" step="any" class="form-control configInput" value="{item.configValue.value}" onkeydown="javascript: return event.keyCode === 8 || event.keyCode === 46  || event.keyCode === 190 || event.keyCode === 70 || event.keyCode === 13 ? true : !isNaN(Number(event.key))"/>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}');"><i class="fas fa-check text-success"></i></span>
+                                    </div>
+                                </div>    
+                                {#else if item.typeName && (item.typeName == "java.lang.Enum" || item.typeName == "java.util.logging.Level")}
+                                <div class="input-group" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>
+                                    <select id="{item.configValue.name}" class="form-control" onchange="changeSelectValue(this, '{item.configValue.name}');">
+                                        <option></option>
+                                        {#for e in item.allowedValues}
+                                        <option value="{e}" {#if e == item.configValue.value}selected="selected"{/if}>{e}</option>
+                                        {/for}
+                                    </select>
+                                </div>
+                                {#else}
+                                <div class="input-group" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>    
+                                    <input id="{item.configValue.name}" type="text" name="value" class="form-control configInput" value="{item.configValue.value}"/>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}');"><i class="fas fa-check text-success"></i></span>
+                                    </div>
+                                </div>    
+                                {/if}
                             {#else}
                                 {item.configValue.value}
                             {/if}
@@ -428,7 +506,7 @@ function clearConfigFilter(){
                     </a>
                 </li>
                 {#if info:hasDevServices}
-                <li class="nav-item dropdown">
+                <li class="nav-item dropdown devservices">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDevServicesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         Dev Services
                     </a>

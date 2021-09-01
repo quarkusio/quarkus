@@ -33,6 +33,7 @@
         <module>class-transformer</module>
         <module>shared-library</module>
         <module>hibernate-validator</module>
+        <module>hibernate-validator-resteasy-reactive</module>
         <module>common-jpa-entities</module>
         <module>infinispan-client</module>
         <module>devtools</module>

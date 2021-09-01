@@ -189,7 +189,8 @@ final class MultipartPopulatorGenerator {
      */
     static String generate(ClassInfo multipartClassInfo, ClassOutput classOutput, IndexView index) {
         if (!multipartClassInfo.hasNoArgsConstructor()) {
-            throw new IllegalArgumentException("Classes annotated with '@MultipartForm' must contain a no-args constructor");
+            throw new IllegalArgumentException("Classes annotated with '@MultipartForm' must contain a no-args constructor. " +
+                    "The constructor is missing on " + multipartClassInfo.name());
         }
 
         String multipartClassName = multipartClassInfo.name().toString();

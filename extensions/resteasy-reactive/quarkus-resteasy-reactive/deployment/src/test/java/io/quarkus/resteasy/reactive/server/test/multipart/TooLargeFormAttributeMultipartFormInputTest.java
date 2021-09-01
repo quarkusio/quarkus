@@ -66,9 +66,13 @@ public class TooLargeFormAttributeMultipartFormInputTest extends AbstractMultipa
 
     @Test
     public void test() throws IOException {
-        String formAttrSourceFileContents = new String(Files.readAllBytes(FORM_ATTR_SOURCE_FILE.toPath()),
-                StandardCharsets.UTF_8);
-        Assertions.assertTrue(formAttrSourceFileContents.length() > HttpServerOptions.DEFAULT_MAX_FORM_ATTRIBUTE_SIZE);
+        String fileContents = new String(Files.readAllBytes(FORM_ATTR_SOURCE_FILE.toPath()), StandardCharsets.UTF_8);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 10; ++i) {
+            sb.append(fileContents);
+        }
+        fileContents = sb.toString();
+        Assertions.assertTrue(fileContents.length() > HttpServerOptions.DEFAULT_MAX_FORM_ATTRIBUTE_SIZE);
         given()
                 .multiPart("active", "true")
                 .multiPart("num", "25")
@@ -76,7 +80,7 @@ public class TooLargeFormAttributeMultipartFormInputTest extends AbstractMultipa
                 .multiPart("htmlFile", HTML_FILE, "text/html")
                 .multiPart("xmlFile", XML_FILE, "text/xml")
                 .multiPart("txtFile", TXT_FILE, "text/plain")
-                .multiPart("name", formAttrSourceFileContents)
+                .multiPart("name", fileContents)
                 .accept("text/plain")
                 .when()
                 .post("/test")

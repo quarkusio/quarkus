@@ -10,4 +10,4 @@ metadata:
   - "Reactor"
   categories:
   - "reactive"
-  status: "preview"
+  status: "stable"

@@ -3,12 +3,12 @@ package io.quarkus.funqy.gcp.functions;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import com.google.cloud.functions.Context;
-import com.google.cloud.functions.RawBackgroundFunction;
+import com.google.cloud.functions.CloudEventsFunction;
 
+import io.cloudevents.CloudEvent;
 import io.quarkus.runtime.Application;
 
-public class FunqyBackgroundFunction implements RawBackgroundFunction {
+public class FunqyCloudEventsFunction implements CloudEventsFunction {
     protected static final String deploymentStatus;
     protected static boolean started = false;
 
@@ -21,7 +21,7 @@ public class FunqyBackgroundFunction implements RawBackgroundFunction {
             // during static init.
             ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
             try {
-                Thread.currentThread().setContextClassLoader(FunqyBackgroundFunction.class.getClassLoader());
+                Thread.currentThread().setContextClassLoader(FunqyCloudEventsFunction.class.getClassLoader());
                 Class<?> appClass = Class.forName("io.quarkus.runner.ApplicationImpl");
                 String[] args = {};
                 Application app = (Application) appClass.getConstructor().newInstance();
@@ -48,10 +48,10 @@ public class FunqyBackgroundFunction implements RawBackgroundFunction {
     }
 
     @Override
-    public void accept(String event, Context context) {
+    public void accept(CloudEvent cloudEvent) throws Exception {
         if (!started) {
             throw new RuntimeException(deploymentStatus);
         }
-        FunqyCloudFunctionsBindingRecorder.handle(event, context);
+        FunqyCloudFunctionsBindingRecorder.handle(cloudEvent);
     }
 }

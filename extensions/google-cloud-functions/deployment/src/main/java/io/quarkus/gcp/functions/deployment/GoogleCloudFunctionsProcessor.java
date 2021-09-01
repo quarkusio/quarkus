@@ -14,6 +14,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
 import com.google.cloud.functions.BackgroundFunction;
+import com.google.cloud.functions.CloudEventsFunction;
 import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.RawBackgroundFunction;
 
@@ -36,6 +37,7 @@ public class GoogleCloudFunctionsProcessor {
     public static final DotName DOTNAME_HTTP_FUNCTION = DotName.createSimple(HttpFunction.class.getName());
     public static final DotName DOTNAME_BACKGROUND_FUNCTION = DotName.createSimple(BackgroundFunction.class.getName());
     public static final DotName DOTNAME_RAW_BACKGROUND_FUNCTION = DotName.createSimple(RawBackgroundFunction.class.getName());
+    public static final DotName DOTNAME_CLOUD_EVENT_FUNCTION = DotName.createSimple(CloudEventsFunction.class.getName());
 
     @BuildStep
     public FeatureBuildItem feature() {
@@ -56,6 +58,7 @@ public class GoogleCloudFunctionsProcessor {
         Collection<ClassInfo> httpFunctions = index.getAllKnownImplementors(DOTNAME_HTTP_FUNCTION);
         Collection<ClassInfo> backgroundFunctions = index.getAllKnownImplementors(DOTNAME_BACKGROUND_FUNCTION);
         Collection<ClassInfo> rawBackgroundFunctions = index.getAllKnownImplementors(DOTNAME_RAW_BACKGROUND_FUNCTION);
+        Collection<ClassInfo> cloudEventFunctions = index.getAllKnownImplementors(DOTNAME_CLOUD_EVENT_FUNCTION);
 
         List<CloudFunctionBuildItem> cloudFunctions = new ArrayList<>();
         cloudFunctions.addAll(
@@ -65,6 +68,8 @@ public class GoogleCloudFunctionsProcessor {
         cloudFunctions.addAll(
                 registerFunctions(unremovableBeans, rawBackgroundFunctions,
                         GoogleCloudFunctionInfo.FunctionType.RAW_BACKGROUND));
+        cloudFunctions.addAll(
+                registerFunctions(unremovableBeans, cloudEventFunctions, GoogleCloudFunctionInfo.FunctionType.CLOUD_EVENT));
 
         if (cloudFunctions.isEmpty()) {
             throw new BuildException("No Google Cloud Function found on the classpath", Collections.emptyList());

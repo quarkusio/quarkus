@@ -8,5 +8,5 @@ metadata:
     - "amazon"
   categories:
     - "data"
-  status: "preview"
+  status: "stable"
   unlisted: true

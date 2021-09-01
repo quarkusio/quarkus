@@ -9,4 +9,4 @@ metadata:
   guide: "https://quarkus.io/guides/amazon-sqs"
   categories:
     - "data"
-  status: "preview"
+  status: "stable"

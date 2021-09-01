@@ -1,9 +1,11 @@
 package io.quarkus.liquibase.runtime;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -16,53 +18,67 @@ public class LiquibaseMongodbConfig {
     /**
      * The migrate at start flag
      */
-    public boolean migrateAtStart = false;
+    @ConfigItem
+    public boolean migrateAtStart;
 
     /**
      * The validate on update flag
      */
-    public boolean validateOnMigrate = true;
+    @ConfigItem(defaultValue = "true")
+    public boolean validateOnMigrate;
 
     /**
      * The clean at start flag
      */
-    public boolean cleanAtStart = false;
+    @ConfigItem
+    public boolean cleanAtStart;
 
-    public Map<String, String> changeLogParameters = null;
+    /**
+     * The parameters to be passed to the changelog.
+     * Defined as key value pairs.
+     */
+    @ConfigItem
+    public Map<String, String> changeLogParameters = new HashMap<>();;
 
     /**
      * The list of contexts
      */
-    public Optional<List<String>> contexts = null;
+    @ConfigItem
+    public Optional<List<String>> contexts = Optional.empty();
 
     /**
      * The list of labels
      */
-    public Optional<List<String>> labels = null;
+    @ConfigItem
+    public Optional<List<String>> labels = Optional.empty();
 
     /**
      * The default catalog name
      */
+    @ConfigItem
     public Optional<String> defaultCatalogName = Optional.empty();
 
     /**
      * The default schema name
      */
+    @ConfigItem
     public Optional<String> defaultSchemaName = Optional.empty();
 
     /**
      * The liquibase tables catalog name
      */
+    @ConfigItem
     public Optional<String> liquibaseCatalogName = Optional.empty();
 
     /**
      * The liquibase tables schema name
      */
+    @ConfigItem
     public Optional<String> liquibaseSchemaName = Optional.empty();
 
     /**
      * The liquibase tables tablespace name
      */
+    @ConfigItem
     public Optional<String> liquibaseTablespaceName = Optional.empty();
-
 }

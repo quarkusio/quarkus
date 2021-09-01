@@ -23,6 +23,7 @@ import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.configuration.matching.ConfigPatternMap;
 import io.quarkus.deployment.configuration.matching.Container;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.util.ClassPathUtils;
 
 public class ConfigDescriptionBuildStep {
@@ -39,15 +40,16 @@ public class ConfigDescriptionBuildStep {
             }
         });
         List<ConfigDescriptionBuildItem> ret = new ArrayList<>();
-        processConfig(config.getReadResult().getBuildTimePatternMap(), ret, javadoc);
-        processConfig(config.getReadResult().getBuildTimeRunTimePatternMap(), ret, javadoc);
-        processConfig(config.getReadResult().getBootstrapPatternMap(), ret, javadoc);
-        processConfig(config.getReadResult().getRunTimePatternMap(), ret, javadoc);
+        processConfig(config.getReadResult().getBuildTimePatternMap(), ret, javadoc, ConfigPhase.BUILD_TIME);
+        processConfig(config.getReadResult().getBuildTimeRunTimePatternMap(), ret, javadoc,
+                ConfigPhase.BUILD_AND_RUN_TIME_FIXED);
+        processConfig(config.getReadResult().getBootstrapPatternMap(), ret, javadoc, ConfigPhase.BOOTSTRAP);
+        processConfig(config.getReadResult().getRunTimePatternMap(), ret, javadoc, ConfigPhase.RUN_TIME);
         return ret;
     }
 
     private void processConfig(ConfigPatternMap<Container> patterns, List<ConfigDescriptionBuildItem> ret,
-            Properties javadoc) {
+            Properties javadoc, ConfigPhase configPhase) {
 
         patterns.forEach(new Consumer<Container>() {
             @Override
@@ -85,7 +87,8 @@ public class ConfigDescriptionBuildStep {
                         defVal,
                         javadoc.getProperty(javadocKey),
                         effectiveConfigTypeAndValues.getTypeName(),
-                        effectiveConfigTypeAndValues.getAllowedValues()));
+                        effectiveConfigTypeAndValues.getAllowedValues(),
+                        configPhase));
             }
         });
     }

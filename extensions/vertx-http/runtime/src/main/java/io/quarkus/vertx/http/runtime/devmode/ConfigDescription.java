@@ -12,18 +12,20 @@ public class ConfigDescription implements Comparable<ConfigDescription> {
     private boolean autoFromDevServices = false;
     private String typeName;
     private List<String> allowedValues;
+    private String configPhase;
 
     public ConfigDescription() {
     }
 
     public ConfigDescription(final String name, final String description, final String defaultValue,
-            final boolean autoFromDevServices, String typeName, List<String> allowedValues) {
+            final boolean autoFromDevServices, String typeName, List<String> allowedValues, String configPhase) {
         this.name = name;
         this.description = description;
         this.defaultValue = defaultValue;
         this.autoFromDevServices = autoFromDevServices;
         this.typeName = typeName;
         this.allowedValues = allowedValues;
+        this.configPhase = configPhase;
     }
 
     public ConfigDescription(
@@ -91,6 +93,14 @@ public class ConfigDescription implements Comparable<ConfigDescription> {
 
     public void setAllowedValues(List<String> allowedValues) {
         this.allowedValues = allowedValues;
+    }
+
+    public String getConfigPhase() {
+        return configPhase;
+    }
+
+    public void setConfigPhase(String configPhase) {
+        this.configPhase = configPhase;
     }
 
     @Override

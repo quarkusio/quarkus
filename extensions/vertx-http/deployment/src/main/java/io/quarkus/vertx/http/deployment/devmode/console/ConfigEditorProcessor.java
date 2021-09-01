@@ -51,7 +51,8 @@ public class ConfigEditorProcessor {
                             item.getDefaultValue(),
                             isSetByDevServices(devServicesLauncherConfig, item.getPropertyName()),
                             item.getValueTypeName(),
-                            item.getAllowedValues()));
+                            item.getAllowedValues(),
+                            item.getConfigPhase().name()));
         }
 
         devConsoleRuntimeTemplateProducer.produce(new DevConsoleRuntimeTemplateInfoBuildItem("config",

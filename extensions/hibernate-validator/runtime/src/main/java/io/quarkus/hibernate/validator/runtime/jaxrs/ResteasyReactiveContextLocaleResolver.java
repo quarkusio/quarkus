@@ -18,6 +18,11 @@ public class ResteasyReactiveContextLocaleResolver extends AbstractLocaleResolve
 
     @Override
     protected HttpHeaders getHeaders() {
-        return headers;
+        try {
+            headers.getLength(); // this forces the creation of the actual object which will fail if there is no request in flight
+            return headers;
+        } catch (IllegalStateException e) {
+            return null;
+        }
     }
 }

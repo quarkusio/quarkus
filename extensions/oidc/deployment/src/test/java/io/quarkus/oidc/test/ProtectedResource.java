@@ -28,4 +28,10 @@ public class ProtectedResource {
     public String getTenantName(@PathParam("id") String tenantId) {
         return tenantId + ":" + idToken.getName();
     }
+
+    @GET
+    @Path("logout")
+    public void logout() {
+        throw new RuntimeException("Logout must be handled by CodeAuthenticationMechanism");
+    }
 }

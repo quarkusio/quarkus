@@ -9,4 +9,4 @@ metadata:
   guide: "https://quarkus.io/guides/amazon-ses"
   categories:
     - "data"
-  status: "preview"
+  status: "stable"

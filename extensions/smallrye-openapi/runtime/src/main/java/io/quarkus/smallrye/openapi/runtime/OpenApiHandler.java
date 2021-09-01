@@ -2,6 +2,8 @@ package io.quarkus.smallrye.openapi.runtime;
 
 import java.util.List;
 
+import org.eclipse.microprofile.openapi.OASFilter;
+
 import io.quarkus.arc.Arc;
 import io.smallrye.openapi.runtime.io.Format;
 import io.vertx.core.Handler;
@@ -32,9 +34,11 @@ public class OpenApiHandler implements Handler<RoutingContext> {
     }
 
     final boolean corsEnabled;
+    final OASFilter autoSecurityFilter;
 
-    public OpenApiHandler(boolean corsEnabled) {
+    public OpenApiHandler(boolean corsEnabled, OASFilter autoSecurityFilter) {
         this.corsEnabled = corsEnabled;
+        this.autoSecurityFilter = autoSecurityFilter;
     }
 
     @Override
@@ -77,6 +81,7 @@ public class OpenApiHandler implements Handler<RoutingContext> {
     private OpenApiDocumentService getOpenApiDocumentService() {
         if (this.openApiDocumentService == null) {
             this.openApiDocumentService = Arc.container().instance(OpenApiDocumentService.class).get();
+            this.openApiDocumentService.init(this.autoSecurityFilter);
         }
         return this.openApiDocumentService;
     }

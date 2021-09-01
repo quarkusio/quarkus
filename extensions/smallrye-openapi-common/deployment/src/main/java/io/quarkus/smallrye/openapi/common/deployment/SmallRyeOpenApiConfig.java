@@ -71,6 +71,12 @@ public final class SmallRyeOpenApiConfig {
     public boolean autoAddTags;
 
     /**
+     * This will automatically add security based on the security extension included (if any).
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean autoAddSecurity;
+
+    /**
      * Add a scheme value to the Basic HTTP Security Scheme
      */
     @ConfigItem(defaultValue = "basic")

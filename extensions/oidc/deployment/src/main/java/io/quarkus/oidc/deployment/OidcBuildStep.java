@@ -38,6 +38,7 @@ import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
+import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
 import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
 import io.smallrye.jwt.auth.cdi.JsonValueProducer;
@@ -49,6 +50,14 @@ public class OidcBuildStep {
     @BuildStep(onlyIf = IsEnabled.class)
     FeatureBuildItem featureBuildItem() {
         return new FeatureBuildItem(Feature.OIDC);
+    }
+
+    @BuildStep(onlyIf = IsEnabled.class)
+    public void provideSecurityInformation(BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
+        // TODO: By default quarkus.oidc.application-type = service
+        // Also look at other options (web-app, hybrid)
+        securityInformationProducer
+                .produce(SecurityInformationBuildItem.OPENIDCONNECT("quarkus.oidc.auth-server-url"));
     }
 
     @BuildStep(onlyIf = IsEnabled.class)

@@ -502,7 +502,11 @@ public class JaxrsClientReactiveProcessor {
                     ClassInfo subResourceInterface = index.getClassByName(returnType.name());
                     if (!Modifier.isInterface(subResourceInterface.flags())) {
                         throw new IllegalArgumentException(
-                                "Sub resource type is not an interface: " + returnType.name().toString());
+                                "Client interface method: " + jandexMethod.declaringClass().name() + "#" + jandexMethod
+                                        + " has no HTTP method annotation  (@GET, @POST, etc) and it's return type: "
+                                        + returnType.name().toString() + " is not an interface. "
+                                        + "If it's a sub resource method, it has to return an interface. "
+                                        + "If it's not, it has to have one of the HTTP method annotations.");
                     }
                     // generate implementation for a method from the jaxrs interface:
                     MethodCreator methodCreator = c.getMethodCreator(method.getName(), method.getSimpleReturnType(),

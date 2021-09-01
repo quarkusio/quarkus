@@ -1,0 +1,26 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'io.quarkus'
+}
+
+repositories {
+    if (System.properties.containsKey('maven.repo.local')) {
+        maven {
+            url System.properties.get('maven.repo.local')
+        }
+    } else {
+        mavenLocal()
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-resteasy'
+    implementation 'io.quarkus:quarkus-kotlin'
+}
+
+compileJava {
+    options.compilerArgs << '-parameters'
+}

@@ -22,7 +22,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.resteasy.reactive.common.deployment.JaxRsResourceIndexBuildItem;
-import io.quarkus.resteasy.reactive.links.RestLinksResponseFilter;
 import io.quarkus.resteasy.reactive.links.runtime.GetterAccessorsContainer;
 import io.quarkus.resteasy.reactive.links.runtime.GetterAccessorsContainerRecorder;
 import io.quarkus.resteasy.reactive.links.runtime.LinkInfo;
@@ -30,7 +29,7 @@ import io.quarkus.resteasy.reactive.links.runtime.LinksContainer;
 import io.quarkus.resteasy.reactive.links.runtime.LinksProviderRecorder;
 import io.quarkus.resteasy.reactive.links.runtime.RestLinksProviderProducer;
 import io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveDeploymentInfoBuildItem;
-import io.quarkus.resteasy.reactive.spi.CustomContainerResponseFilterBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 
 final class LinksProcessor {
@@ -40,6 +39,11 @@ final class LinksProcessor {
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(Feature.RESTEASY_REACTIVE_LINKS));
+    }
+
+    @BuildStep
+    MethodScannerBuildItem linksSupport() {
+        return new MethodScannerBuildItem(new LinksMethodScanner());
     }
 
     @BuildStep
@@ -66,11 +70,6 @@ final class LinksProcessor {
     @BuildStep
     AdditionalBeanBuildItem registerRestLinksProviderProducer() {
         return AdditionalBeanBuildItem.unremovableOf(RestLinksProviderProducer.class);
-    }
-
-    @BuildStep
-    CustomContainerResponseFilterBuildItem registerRestLinksResponseFilter() {
-        return new CustomContainerResponseFilterBuildItem(RestLinksResponseFilter.class.getName());
     }
 
     private LinksContainer getLinksContainer(IndexView index,

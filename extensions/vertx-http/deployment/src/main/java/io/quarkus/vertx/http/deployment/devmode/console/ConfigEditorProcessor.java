@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -80,22 +81,13 @@ public class ConfigEditorProcessor {
                     Map<String, String> values = Collections.singletonMap(name, value);
 
                     updateConfig(values);
-                } else if (action.equals("copyTestDevServices") && devServicesLauncherConfig.isPresent()) {
+                } else if (action.equals("copyDevServices") && devServicesLauncherConfig.isPresent()) {
+                    String environment = event.request().getFormAttribute("environment");
+                    String filter = event.request().getParam("filterConfigKeys");
+                    List<String> configFilter = getConfigFilter(filter);
                     Map<String, String> autoconfig = devServicesLauncherConfig.get().getConfig();
 
-                    autoconfig = autoconfig.entrySet().stream()
-                            .collect(Collectors.toMap(
-                                    e -> appendProfile("test", e.getKey()),
-                                    Map.Entry::getValue));
-
-                    updateConfig(autoconfig);
-                } else if (action.equals("copyProdDevServices") && devServicesLauncherConfig.isPresent()) {
-                    Map<String, String> autoconfig = devServicesLauncherConfig.get().getConfig();
-
-                    autoconfig = autoconfig.entrySet().stream()
-                            .collect(Collectors.toMap(
-                                    e -> appendProfile("prod", e.getKey()),
-                                    Map.Entry::getValue));
+                    autoconfig = filterAndApplyProfile(autoconfig, configFilter, environment.toLowerCase());
 
                     updateConfig(autoconfig);
                 } else if (action.equals("updateProperties")) {
@@ -109,6 +101,37 @@ public class ConfigEditorProcessor {
         devConsoleRouteProducer.produce(new DevConsoleRouteBuildItem("config/all", "GET", (e) -> {
             e.end(Buffer.buffer(getConfig()));
         }));
+    }
+
+    private Map<String, String> filterAndApplyProfile(Map<String, String> autoconfig, List<String> configFilter,
+            String profile) {
+        return autoconfig.entrySet().stream()
+                .filter((t) -> {
+                    if (configFilter != null && !configFilter.isEmpty()) {
+                        for (String sw : configFilter) {
+                            if (t.getKey().startsWith(sw)) {
+                                return true;
+                            }
+                        }
+                    } else {
+                        return true;
+                    }
+                    return false;
+                })
+                .collect(Collectors.toMap(
+                        e -> appendProfile(profile, e.getKey()),
+                        Map.Entry::getValue));
+    }
+
+    private List<String> getConfigFilter(String filter) {
+        if (filter != null && !filter.isEmpty()) {
+            if (filter.contains(",")) {
+                return Arrays.asList(filter.split(","));
+            } else {
+                return List.of(filter);
+            }
+        }
+        return Collections.EMPTY_LIST;
     }
 
     private String appendProfile(String profile, String originalKey) {
@@ -137,45 +160,47 @@ public class ConfigEditorProcessor {
     }
 
     static void updateConfig(Map<String, String> values) {
-        try {
-            Path configPath = getConfigPath();
-            String profile = ProfileManager.getActiveProfile();
-            List<String> lines = Files.readAllLines(configPath);
-            for (Map.Entry<String, String> entry : values.entrySet()) {
-                String name = entry.getKey();
-                String value = entry.getValue();
-                name = !profile.equals(DEVELOPMENT.getDefaultProfile()) ? "%" + profile + "." + name : name;
-                int nameLine = -1;
-                for (int i = 0, linesSize = lines.size(); i < linesSize; i++) {
-                    final String line = lines.get(i);
-                    if (line.startsWith(name + "=")) {
-                        nameLine = i;
-                        break;
+        if (values != null && !values.isEmpty()) {
+            try {
+                Path configPath = getConfigPath();
+                String profile = ProfileManager.getActiveProfile();
+                List<String> lines = Files.readAllLines(configPath);
+                for (Map.Entry<String, String> entry : values.entrySet()) {
+                    String name = entry.getKey();
+                    String value = entry.getValue();
+                    name = !profile.equals(DEVELOPMENT.getDefaultProfile()) ? "%" + profile + "." + name : name;
+                    int nameLine = -1;
+                    for (int i = 0, linesSize = lines.size(); i < linesSize; i++) {
+                        final String line = lines.get(i);
+                        if (line.startsWith(name + "=")) {
+                            nameLine = i;
+                            break;
+                        }
                     }
-                }
 
-                if (nameLine != -1) {
-                    if (value.isEmpty()) {
-                        lines.remove(nameLine);
+                    if (nameLine != -1) {
+                        if (value.isEmpty()) {
+                            lines.remove(nameLine);
+                        } else {
+                            lines.set(nameLine, name + "=" + value);
+                        }
                     } else {
-                        lines.set(nameLine, name + "=" + value);
-                    }
-                } else {
-                    if (!value.isEmpty()) {
-                        lines.add(name + "=" + value);
+                        if (!value.isEmpty()) {
+                            lines.add(name + "=" + value);
+                        }
                     }
                 }
-            }
 
-            try (BufferedWriter writer = Files.newBufferedWriter(configPath)) {
-                for (String i : lines) {
-                    writer.write(i);
-                    writer.newLine();
+                try (BufferedWriter writer = Files.newBufferedWriter(configPath)) {
+                    for (String i : lines) {
+                        writer.write(i);
+                        writer.newLine();
+                    }
                 }
+                preventKill();
+            } catch (Throwable t) {
+                throw new RuntimeException(t);
             }
-            preventKill();
-        } catch (Throwable t) {
-            throw new RuntimeException(t);
         }
     }
 

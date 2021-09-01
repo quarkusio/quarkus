@@ -190,10 +190,11 @@ function copyProdDevServices(){
 }
 
 function copyDevServices(environment){
-    var action = "copy" + environment + "DevServices";
     $.post("",
         {
-          action: action
+          action: "copyDevServices",
+          environment: environment,
+          filter: configfilter
         },
         function(data, status){
             if(status === "success"){
@@ -302,7 +303,20 @@ function filterByConfigExtension(configfilterText, configfilterKeys){
     });
     
     $('#configFilterModal').modal('hide');
+    
+    showHideDevServicesButton();
+    
     hideEmptyTables();
+}
+
+function showHideDevServicesButton(){
+    // Check if there is any dev services visible on the page
+    var numberOfMagicConfig = $('.fa-magic:visible').length;
+    if(numberOfMagicConfig === 0){
+        $('.devservices').hide();
+    }else {
+        $('.devservices').show();
+    }
 }
 
 function hideEmptyTables(){
@@ -328,6 +342,7 @@ function clearConfigFilter(){
         $(this).parent().show();
     });
     clearFilterInput();
+    showHideDevServicesButton();
 }
 
 {/script}
@@ -358,7 +373,7 @@ function clearConfigFilter(){
     </div>
     <div class="btn-group ml-2" role="group" aria-label="Actions">
         {#if info:hasDevServices}
-        <div class="btn-group">
+        <div class="btn-group devservices">
             <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 Dev Services
             </button>
@@ -491,7 +506,7 @@ function clearConfigFilter(){
                     </a>
                 </li>
                 {#if info:hasDevServices}
-                <li class="nav-item dropdown">
+                <li class="nav-item dropdown devservices">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDevServicesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         Dev Services
                     </a>

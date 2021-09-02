@@ -222,6 +222,15 @@ public class HttpConfiguration {
     @ConfigItem
     public boolean enableCompression;
 
+    /**
+     * When enabled, vert.x will decompress the request's body if it's compressed.
+     *
+     * Note that the compression format (e.g., gzip) must be specified in the Content-Encoding header
+     * in the request.
+     */
+    @ConfigItem
+    public boolean enableDecompression;
+
     public ProxyConfig proxy;
 
     public int determinePort(LaunchMode launchMode) {

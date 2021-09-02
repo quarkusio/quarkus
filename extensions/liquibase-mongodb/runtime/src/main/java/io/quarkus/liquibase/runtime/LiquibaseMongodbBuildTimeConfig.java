@@ -1,5 +1,6 @@
 package io.quarkus.liquibase.runtime;
 
+import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -12,5 +13,6 @@ public class LiquibaseMongodbBuildTimeConfig {
     /**
      * The change log file
      */
-    public String changeLog = "db/changeLog.xml";
+    @ConfigItem(defaultValue = "db/changeLog.xml")
+    public String changeLog;
 }

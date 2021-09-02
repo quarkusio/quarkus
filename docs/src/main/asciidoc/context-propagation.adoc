@@ -156,6 +156,121 @@ in order to get context propagated.
 The injected `ManagedExecutor` uses the Quarkus thread pool.
 ====
 
+== Overriding which contexts are propagated
+
+By default, all available contexts are propagated. However, you can override this behaviour in several ways.
+
+=== Using configuration
+
+The following configuration properties allow you to specify the default sets of propagated contexts:
+
+[cols="1,1,1"]
+|===
+|Configuration Key|Description|Default Value
+
+|`mp.context.ThreadContext.propagated`
+|The comma-separated set of propagated contexts
+|`Remaining` (all non-explicitly list contexts)
+
+|`mp.context.ThreadContext.cleared`
+|The comma-separated set of cleared contexts
+|`None` (no context), unless neither the propagated nor cleared sets contain `Remaining`, in which case the default is `Remaining` (all non-explicitly listed contexts)
+
+|`mp.context.ThreadContext.unchanged`
+|The comma-separated set of unchanged contexts
+|`None` (no context)
+|=== 
+
+The following contexts are available in Quarkus either out of the box, or depending on whether you include
+their extensions:
+
+[cols="1,1,1"]
+|===
+|Context Name|Name Constant|Description
+
+|`None`
+|https://javadoc.io/static/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.2/org/eclipse/microprofile/context/ThreadContext.html#NONE[`ThreadContext.NONE`]
+|Can be used to specify an empty set of contexts, but setting the value to empty works too
+
+|`Remaining`
+|https://javadoc.io/static/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.2/org/eclipse/microprofile/context/ThreadContext.html#ALL_REMAINING[`ThreadContext.ALL_REMAINING`]
+|All the contexts that are not explicitly listed in other sets
+
+|`Transaction`
+|https://javadoc.io/static/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.2/org/eclipse/microprofile/context/ThreadContext.html#TRANSACTION[`ThreadContext.TRANSACTION`]
+|The JTA transaction context
+
+|`CDI`
+|https://javadoc.io/static/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.2/org/eclipse/microprofile/context/ThreadContext.html#CDI[`ThreadContext.CDI`]
+|The CDI (ArC) context
+
+|`Servlet`
+|N/A
+|The servlet context
+
+|`JAX-RS`
+|N/A
+|The RESTEasy Classic context
+
+|`Application`
+|https://javadoc.io/static/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.2/org/eclipse/microprofile/context/ThreadContext.html#APPLICATION[`ThreadContext.APPLICATION`]
+|The current `ThreadContextClassLoader`
+|=== 
+
+=== Overriding the propagated contexts using annotations
+
+In order for automatic context propagation, such as Mutiny uses, to be overridden in specific methods,
+you can use the https://javadoc.io/doc/io.smallrye/smallrye-context-propagation-api/latest/io/smallrye/context/api/CurrentThreadContext.html[`@CurrentThreadContext`]
+annotation:
+
+[source,java]
+----
+    // Get the prices stream
+    @Inject
+    @Channel("prices") Publisher<Double> prices;
+
+    @GET
+    @Path("/prices")
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    @SseElementType(MediaType.TEXT_PLAIN)
+    // Get rid of all context propagation, since we don't need it here
+    @CurrentThreadContext(unchanged = ThreadContext.ALL_REMAINING)
+    public Publisher<Double> prices() {
+        // get the next three prices from the price stream
+        return Multi.createFrom().publisher(prices)
+                .select().first(3);
+    }
+----
+
+=== Overriding the propagated contexts using CDI injection
+
+You can also inject a custom-built `ThreadContext` using the https://javadoc.io/doc/io.smallrye/smallrye-context-propagation-api/latest/io/smallrye/context/api/ThreadContextConfig.html[`@ThreadContextConfig`] annotation on your injection point:
+
+[source,java]
+----
+    // Get the prices stream
+    @Inject
+    @Channel("prices") Publisher<Double> prices;
+    // Get a ThreadContext that doesn't propagate context
+    @Inject
+    @ThreadContextConfig(unchanged = ThreadContext.ALL_REMAINING)
+    SmallRyeThreadContext threadContext;
+
+    @GET
+    @Path("/prices")
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    @SseElementType(MediaType.TEXT_PLAIN)
+    public Publisher<Double> prices() {
+        // Get rid of all context propagation, since we don't need it here
+        try(CleanAutoCloseable ac = SmallRyeThreadContext.withThreadContext(threadContext)){
+            // get the next three prices from the price stream
+            return Multi.createFrom().publisher(prices)
+                    .select().first(3);
+        }
+    }
+----
+
+
 == Adding support for RxJava2
 
 You need to include the following modules to get RxJava2 support:

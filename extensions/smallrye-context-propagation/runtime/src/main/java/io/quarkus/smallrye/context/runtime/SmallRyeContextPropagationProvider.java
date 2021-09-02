@@ -16,7 +16,8 @@ public class SmallRyeContextPropagationProvider {
     @Singleton
     @DefaultBean
     public SmallRyeThreadContext getAllThreadContext() {
-        return (SmallRyeThreadContext) ThreadContext.builder().propagated(ThreadContext.ALL_REMAINING).cleared().unchanged()
+        // Make sure we use the default values, which use the MP Config keys to allow users to override them
+        return (SmallRyeThreadContext) ThreadContext.builder()
                 .build();
     }
 

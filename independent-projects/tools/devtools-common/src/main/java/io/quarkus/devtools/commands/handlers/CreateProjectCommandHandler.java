@@ -189,7 +189,8 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         return extensionsToAdd;
     }
 
-    private List<ExtensionCatalog> getExtensionOrigins(ExtensionCatalog extensionCatalog, List<Extension> extensionsToAdd)
+    private static List<ExtensionCatalog> getExtensionOrigins(ExtensionCatalog extensionCatalog,
+            List<Extension> extensionsToAdd)
             throws QuarkusCommandException {
 
         final List<ExtensionOrigins> extOrigins = new ArrayList<>(extensionsToAdd.size());
@@ -227,7 +228,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         return recommendedCombination.getUniqueSortedOrigins().stream().map(o -> o.getCatalog()).collect(Collectors.toList());
     }
 
-    public void addOrigins(final List<ExtensionOrigins> extOrigins, Extension e) {
+    private static void addOrigins(final List<ExtensionOrigins> extOrigins, Extension e) {
         ExtensionOrigins.Builder eoBuilder = null;
         for (ExtensionOrigin o : e.getOrigins()) {
             if (!(o instanceof ExtensionCatalog)) {

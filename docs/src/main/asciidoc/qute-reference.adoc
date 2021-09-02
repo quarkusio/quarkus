@@ -40,7 +40,7 @@ A template definition is an instance of `io.quarkus.qute.Template`.
 
 If using Qute "standalone" you'll need to create an instance of `io.quarkus.qute.Engine` first.
 The `Engine` represents a central point for template management with dedicated configuration. 
-Let's use the convenient builder:
+Let's use the convenient builder (We just need add `io.quarkus.qute.ReflectionValueResolver` to defaults):
 
 [source,java]
 ----

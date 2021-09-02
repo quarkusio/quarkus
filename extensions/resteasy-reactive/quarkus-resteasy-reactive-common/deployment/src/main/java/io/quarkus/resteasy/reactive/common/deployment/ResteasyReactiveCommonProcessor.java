@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.common.deployment;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -17,8 +19,10 @@ import javax.ws.rs.ext.RuntimeDelegate;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.jaxrs.RuntimeDelegateImpl;
 import org.jboss.resteasy.reactive.common.model.InterceptorContainer;
@@ -36,6 +40,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.PreAdditionalBeanBuildTimeConditionBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -48,6 +53,7 @@ import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.spi.AbstractInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;
+import io.quarkus.resteasy.reactive.spi.GeneratedJaxRsResourceBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderOverrideBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
@@ -213,13 +219,29 @@ public class ResteasyReactiveCommonProcessor {
     }
 
     @BuildStep
+    JaxRsResourceIndexBuildItem resourceIndex(CombinedIndexBuildItem combinedIndex,
+            List<GeneratedJaxRsResourceBuildItem> generatedJaxRsResources,
+            BuildProducer<GeneratedBeanBuildItem> generatedBeansProducer) throws IOException {
+        if (generatedJaxRsResources.isEmpty()) {
+            return new JaxRsResourceIndexBuildItem(combinedIndex.getComputingIndex());
+        }
+
+        Indexer indexer = new Indexer();
+        for (GeneratedJaxRsResourceBuildItem generatedJaxRsResource : generatedJaxRsResources) {
+            indexer.index(new ByteArrayInputStream(generatedJaxRsResource.getData()));
+            generatedBeansProducer
+                    .produce(new GeneratedBeanBuildItem(generatedJaxRsResource.getName(), generatedJaxRsResource.getData()));
+        }
+        return new JaxRsResourceIndexBuildItem(CompositeIndex.create(combinedIndex.getComputingIndex(), indexer.complete()));
+    }
+
+    @BuildStep
     void scanResources(
-            // TODO: We need to use this index instead of BeanArchiveIndexBuildItem to avoid build cycles. It it OK?
-            CombinedIndexBuildItem combinedIndexBuildItem,
+            JaxRsResourceIndexBuildItem jaxRsResourceIndexBuildItem,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformerBuildItemBuildProducer,
             BuildProducer<ResourceScanningResultBuildItem> resourceScanningResultBuildItemBuildProducer) {
 
-        ResourceScanningResult res = ResteasyReactiveScanner.scanResources(combinedIndexBuildItem.getComputingIndex());
+        ResourceScanningResult res = ResteasyReactiveScanner.scanResources(jaxRsResourceIndexBuildItem.getIndexView());
         if (res == null) {
             return;
         }

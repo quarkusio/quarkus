@@ -90,7 +90,13 @@ public class UriInfoImpl implements UriInfo {
     public URI getAbsolutePath() {
         try {
             // TCK says normalized
-            return new URI(currentRequest.getAbsoluteURI()).normalize();
+            String effectiveURI = currentRequest.getAbsoluteURI();
+            int queryParamsIndex = effectiveURI.indexOf('?');
+            if (queryParamsIndex > 0) {
+                // the spec says that getAbsolutePath() does not contain query parameters
+                effectiveURI = effectiveURI.substring(0, queryParamsIndex);
+            }
+            return new URI(effectiveURI).normalize();
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }

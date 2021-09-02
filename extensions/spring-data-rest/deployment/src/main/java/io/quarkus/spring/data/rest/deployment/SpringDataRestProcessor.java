@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.ws.rs.Priorities;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -24,10 +26,11 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.rest.data.panache.RestDataPanacheException;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.RestDataResourceBuildItem;
 import io.quarkus.rest.data.panache.deployment.properties.ResourcePropertiesBuildItem;
-import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.spring.data.rest.deployment.crud.CrudMethodsImplementor;
 import io.quarkus.spring.data.rest.deployment.crud.CrudPropertiesProvider;
 import io.quarkus.spring.data.rest.deployment.paging.PagingAndSortingMethodsImplementor;
@@ -55,8 +58,9 @@ class SpringDataRestProcessor {
     }
 
     @BuildStep
-    ResteasyJaxrsProviderBuildItem registerRestDataPanacheExceptionMapper() {
-        return new ResteasyJaxrsProviderBuildItem(RestDataPanacheExceptionMapper.class.getName());
+    ExceptionMapperBuildItem registerRestDataPanacheExceptionMapper() {
+        return new ExceptionMapperBuildItem(RestDataPanacheExceptionMapper.class.getName(),
+                RestDataPanacheException.class.getName(), Priorities.USER + 100, false);
     }
 
     @BuildStep

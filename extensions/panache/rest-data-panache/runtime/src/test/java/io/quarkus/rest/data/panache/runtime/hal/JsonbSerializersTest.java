@@ -22,4 +22,9 @@ class JsonbSerializersTest extends AbstractSerializersTest {
     String toJson(Object object) {
         return jsonb.toJson(object);
     }
+
+    @Override
+    protected boolean usePublishedBook() {
+        return false;
+    }
 }

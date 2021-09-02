@@ -120,7 +120,7 @@ final class LinksContainerFactory {
         List<Type> parameterTypes = resourceMethodInfo.parameters();
         MethodParameter[] parameters = resourceMethod.getParameters();
         for (int i = 0; i < parameters.length; i++) {
-            if (!parameterTypes.get(i).name().equals(DotName.createSimple(parameters[i].type))) {
+            if (!parameterTypes.get(i).name().equals(DotName.createSimple(parameters[i].declaredType))) {
                 return false;
             }
         }

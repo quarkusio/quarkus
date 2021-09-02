@@ -169,7 +169,6 @@ class KubernetesProcessor {
                     Path targetPath = outputTarget.getOutputDirectory().resolve(KUBERNETES).resolve(fileName);
                     String relativePath = targetPath.toAbsolutePath().toString().replace(root.toAbsolutePath().toString(), "");
 
-                    resourceEntry.getKey().replace(root.toAbsolutePath().toString(), KUBERNETES);
                     if (fileName.endsWith(".yml") || fileName.endsWith(".json")) {
                         String target = fileName.substring(0, fileName.lastIndexOf("."));
                         if (!deploymentTargets.contains(target)) {

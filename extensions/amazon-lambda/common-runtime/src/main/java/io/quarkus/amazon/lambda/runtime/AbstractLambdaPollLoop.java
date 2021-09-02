@@ -33,23 +33,42 @@ public abstract class AbstractLambdaPollLoop {
 
     protected abstract boolean isStream();
 
-    public void startPollLoop(ShutdownContext context) {
+    protected HttpURLConnection requestConnection = null;
 
+    public void startPollLoop(ShutdownContext context) {
         final AtomicBoolean running = new AtomicBoolean(true);
+        // flag to check whether to interrupt.
+        final AtomicBoolean shouldInterrupt = new AtomicBoolean(true);
+        String baseUrl = AmazonLambdaApi.baseUrl();
         final Thread pollingThread = new Thread(new Runnable() {
             @SuppressWarnings("unchecked")
             @Override
             public void run() {
-
                 try {
-                    checkQuarkusBootstrapped();
-                    URL requestUrl = AmazonLambdaApi.invocationNext();
+                    if (!LambdaHotReplacementRecorder.enabled) {
+                        // when running with continuous testing, this method fails
+                        // because currentApplication is not set when running as an
+                        // auxiliary application.  So, just skip it if hot replacement enabled.
+                        // this is only needed in lambda JVM mode anyways to make sure
+                        // quarkus has started.
+                        checkQuarkusBootstrapped();
+                    }
+                    URL requestUrl = AmazonLambdaApi.invocationNext(baseUrl);
+                    if (AmazonLambdaApi.isTestMode()) {
+                        // FYI: This log is required as native test runner
+                        // looks for "Listening on" in log to ensure native executable booted
+                        log.info("Listening on: " + requestUrl.toString());
+                    }
                     while (running.get()) {
 
-                        HttpURLConnection requestConnection = null;
                         try {
                             requestConnection = (HttpURLConnection) requestUrl.openConnection();
                         } catch (IOException e) {
+                            if (!running.get()) {
+                                // just return gracefully as we were probably shut down by
+                                // shutdown task
+                                return;
+                            }
                             if (abortGracefully(e)) {
                                 return;
                             }
@@ -57,10 +76,31 @@ public abstract class AbstractLambdaPollLoop {
                         }
                         try {
                             String requestId = requestConnection.getHeaderField(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID);
+                            if (requestConnection.getResponseCode() != 200) {
+                                // connection should be closed by finally clause
+                                continue;
+                            }
                             try {
+                                if (LambdaHotReplacementRecorder.enabled) {
+                                    try {
+                                        // do not interrupt during a hot replacement
+                                        // as shutdown will abort and do nasty things.
+                                        shouldInterrupt.set(false);
+                                        if (LambdaHotReplacementRecorder.checkHotReplacement()) {
+                                            // hot replacement happened in dev mode
+                                            // so we requeue the request as quarkus will restart
+                                            // and the message will not be processed
+                                            // FYI: this requeue endpoint is something only the mock event server implements
+                                            requeue(baseUrl, requestId);
+                                            return;
+                                        }
+                                    } finally {
+                                        shouldInterrupt.set(true);
+                                    }
+                                }
                                 String traceId = requestConnection.getHeaderField(AmazonLambdaApi.LAMBDA_TRACE_HEADER_KEY);
                                 TraceId.setTraceId(traceId);
-                                URL url = AmazonLambdaApi.invocationResponse(requestId);
+                                URL url = AmazonLambdaApi.invocationResponse(baseUrl, requestId);
                                 if (isStream()) {
                                     HttpURLConnection responseConnection = responseStream(url);
                                     if (running.get()) {
@@ -87,7 +127,7 @@ public abstract class AbstractLambdaPollLoop {
                                 }
                                 log.error("Failed to run lambda", e);
 
-                                postError(AmazonLambdaApi.invocationError(requestId),
+                                postError(AmazonLambdaApi.invocationError(baseUrl, requestId),
                                         new FunctionError(e.getClass().getName(), e.getMessage()));
                                 continue;
                             }
@@ -111,25 +151,34 @@ public abstract class AbstractLambdaPollLoop {
                 } catch (Exception e) {
                     try {
                         log.error("Lambda init error", e);
-                        postError(AmazonLambdaApi.initError(), new FunctionError(e.getClass().getName(), e.getMessage()));
+                        postError(AmazonLambdaApi.initError(baseUrl),
+                                new FunctionError(e.getClass().getName(), e.getMessage()));
                     } catch (Exception ex) {
                         log.error("Failed to report init error", ex);
                     } finally {
                         // our main loop is done, time to shutdown
                         Application app = Application.currentApplication();
                         if (app != null) {
+                            log.error("Shutting down Quarkus application because of error");
                             app.stop();
                         }
                     }
+                } finally {
+                    log.info("Lambda polling thread complete");
                 }
             }
         }, "Lambda Thread");
         pollingThread.setDaemon(true);
         context.addShutdownTask(() -> {
             running.set(false);
-            //note that this does not seem to be 100% reliable in unblocking the thread
-            //which is why it is a daemon.
-            pollingThread.interrupt();
+            try {
+                //note that interrupting does not seem to be 100% reliable in unblocking the thread
+                requestConnection.disconnect();
+            } catch (Exception ignore) {
+            }
+            if (shouldInterrupt.get()) {
+                pollingThread.interrupt();
+            }
         });
         pollingThread.start();
 
@@ -167,10 +216,24 @@ public abstract class AbstractLambdaPollLoop {
 
     protected void postResponse(URL url, Object response) throws IOException {
         HttpURLConnection responseConnection = (HttpURLConnection) url.openConnection();
+        if (response != null) {
+            getOutputWriter().writeHeaders(responseConnection);
+        }
         responseConnection.setDoOutput(true);
         responseConnection.setRequestMethod("POST");
-        if (response != null)
+        if (response != null) {
             getOutputWriter().writeValue(responseConnection.getOutputStream(), response);
+        }
+        while (responseConnection.getInputStream().read() != -1) {
+            // Read data
+        }
+    }
+
+    protected void requeue(String baseUrl, String requestId) throws IOException {
+        URL url = AmazonLambdaApi.requeue(baseUrl, requestId);
+        HttpURLConnection responseConnection = (HttpURLConnection) url.openConnection();
+        responseConnection.setDoOutput(true);
+        responseConnection.setRequestMethod("POST");
         while (responseConnection.getInputStream().read() != -1) {
             // Read data
         }
@@ -178,6 +241,7 @@ public abstract class AbstractLambdaPollLoop {
 
     protected void postError(URL url, Object response) throws IOException {
         HttpURLConnection responseConnection = (HttpURLConnection) url.openConnection();
+        responseConnection.setRequestProperty("Content-Type", "application/json");
         responseConnection.setDoOutput(true);
         responseConnection.setRequestMethod("POST");
         objectMapper.writeValue(responseConnection.getOutputStream(), response);
@@ -202,7 +266,7 @@ public abstract class AbstractLambdaPollLoop {
                 || (ex instanceof UnknownHostException && !lambdaEnv);
 
         if (graceful)
-            log.warn("Aborting lambda poll loop: " + (!lambdaEnv ? "no lambda container found" : "test mode"));
+            log.warn("Aborting lambda poll loop: " + (lambdaEnv ? "no lambda container found" : "ending dev/test mode"));
         return graceful;
     }
 

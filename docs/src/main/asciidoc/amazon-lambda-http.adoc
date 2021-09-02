@@ -19,6 +19,7 @@ Quarkus has a different extension for each Gateway API.  The HTTP Gateway API is
 The REST Gateway API is implemented within the `quarkus-amazon-lambda-rest` extension.  If you are confused on which Gateway product to use,
 Amazon has a https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-vs-rest.html[great guide] to help you navigate this decision.
 
+Like most Quarkus extensions, the Quarkus AWS Lambda HTTP/REST extensions support Live Coding.
 
 include::./status-include.adoc[]
 
@@ -105,7 +106,82 @@ are in the the build directory:  `target/` for Maven, `build/` for Gradle.
 * `sam.jvm.yaml` - sam cli deployment script
 * `sam.native.yaml` - sam cli deployment script for native
 
-== Simulate Amazon Lambda Deployment
+== Live Coding and Simulating AWS Lambda Environment Locally
+
+In dev and test mode, Quarkus will start a mock AWS Lambda event server
+that will convert HTTP requests to the corresponding API Gateway event types and post them to the underlying
+Quarkus HTTP lambda environment for processing.  This simulates the AWS Lambda environment
+as much as possible locally without requiring tools like Docker and SAM CLI.
+
+When using Quarkus Dev Mode just invoke HTTP requests on `http://localhost:8080`
+as you normally would when testing your REST endpoints.  This request will hit the Mock Event Server and will
+be converted to the API Gateway json message that is consumed by the Quarkus Lambda Poll loop.
+
+For testing, Quarkus starts up a separate Mock Event server under port 8081.  The default port for Rest Assured is
+automatically set to 8081 by Quarkus, so you don't have to worry about setting this up.
+
+If you want to simulate more complex
+API Gateway events in your tests, then manually do an HTTP POST to `http://localhost:8080/\_lambda_` (port 8081 in test mode) with
+the raw API Gateway json events.  These events will be placed directly on the Quarkus Lambda poll loop
+for processing.  Here's an example of that:
+
+[source,java]
+----
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.equalTo;
+
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
+
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest
+public class AmazonLambdaSimpleTestCase {
+    @Test
+    public void testJaxrsCognitoJWTSecurityContext() throws Exception {
+        APIGatewayV2HTTPEvent request = request("/security/username");
+        request.getRequestContext().setAuthorizer(new APIGatewayV2HTTPEvent.RequestContext.Authorizer());
+        request.getRequestContext().getAuthorizer().setJwt(new APIGatewayV2HTTPEvent.RequestContext.Authorizer.JWT());
+        request.getRequestContext().getAuthorizer().getJwt().setClaims(new HashMap<>());
+        request.getRequestContext().getAuthorizer().getJwt().getClaims().put("cognito:username", "Bill");
+
+        given()
+                .contentType("application/json")
+                .accept("application/json")
+                .body(request)
+                .when()
+                .post("/_lambda_")
+                .then()
+                .statusCode(200)
+                .body("body", equalTo("Bill"));
+    }
+----
+
+The above example simulates sending a Cognito principal with an HTTP request to your HTTP Lambda.
+
+If you want to hand code raw events for the AWS HTTP API, the AWS Lambda library has the request event type which is
+`com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent` and the response event type
+of `com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse`.  This corresponds
+to the `quarkus-amazon-lambda-http` extension and the AWS HTTP API.
+
+If you want to hand code raw events for the AWS REST API, Quarkus has its own implementation:  `io.quarkus.amazon.lambda.http.model.AwsProxyRequest`
+and `io.quarkus.amazon.lambda.http.model.AwsProxyResponse`.  This corresponds
+to `quarkus-amazon-lambda-rest` extension and the AWS REST API.
+
+The mock event server is also started for `@NativeImageTest` unit tests so will work
+with native binaries too.  All this provides similar functionality to the SAM CLI local testing, without the overhead of Docker.
+
+Finally, if port 8080 or port 8081 is not available on your computer, you can modify the dev
+and test mode ports with application.properties
+
+[source, subs=attributes+]
+----
+quarkus.lambda.mock-event-server.dev-port=8082
+quarkus.lambda.mock-event-server.test-port=8083
+----
+
+
+
+== Simulate Amazon Lambda Deployment with SAM CLI
 
 The AWS SAM CLI allows you to run your lambda's locally on your laptop in a simulated Lambda environment.  This requires Docker to be installed.
 After you have built your Maven project, execute this command:

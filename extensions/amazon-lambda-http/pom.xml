@@ -17,7 +17,9 @@
 
     <modules>
         <module>runtime</module>
+        <module>http-event-server</module>
         <module>deployment</module>
+
         <module>maven-archetype</module>
     </modules>
 

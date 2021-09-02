@@ -2,6 +2,10 @@ package io.quarkus.oidc.deployment.devservices.keycloak;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -50,6 +54,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -67,6 +72,7 @@ public class KeycloakDevServicesProcessor {
     private static final String CLIENT_ID_CONFIG_KEY = CONFIG_PREFIX + "client-id";
     private static final String CLIENT_SECRET_CONFIG_KEY = CONFIG_PREFIX + "credentials.secret";
     private static final String KEYCLOAK_URL_KEY = "keycloak.url";
+    private static final String KEYCLOAK_REALM_KEY = "keycloak.realm";
 
     private static final int KEYCLOAK_PORT = 8080;
     private static final String JAVA_OPTS = "JAVA_OPTS";
@@ -185,12 +191,14 @@ public class KeycloakDevServicesProcessor {
 
         LOG.info("Dev Services for Keycloak started.");
 
-        return prepareConfiguration(startResult.createDefaultRealm, devServices, startResult.shared);
+        return prepareConfiguration(capturedDevServicesConfiguration.createRealm && startResult.createDefaultRealm,
+                startResult.realmNameToUse, devServices, startResult.shared);
     }
 
-    private KeycloakDevServicesConfigBuildItem prepareConfiguration(boolean createRealm,
+    private KeycloakDevServicesConfigBuildItem prepareConfiguration(boolean createRealm, String realmNameToUse,
             BuildProducer<DevServicesConfigResultBuildItem> devServices, boolean shared) {
-        final String authServerUrl = capturedKeycloakUrl + "/realms/" + capturedDevServicesConfiguration.realmName;
+        final String realmName = realmNameToUse != null ? realmNameToUse : getDefaultRealmName();
+        final String authServerUrl = capturedKeycloakUrl + "/realms/" + realmName;
 
         String oidcClientId = getOidcClientId();
         String oidcClientSecret = getOidcClientSecret();
@@ -208,6 +216,7 @@ public class KeycloakDevServicesProcessor {
 
         Map<String, Object> configProperties = new HashMap<>();
         configProperties.put(KEYCLOAK_URL_KEY, capturedKeycloakUrl);
+        configProperties.put(KEYCLOAK_REALM_KEY, realmName);
         configProperties.put(AUTH_SERVER_URL_CONFIG_KEY, authServerUrl);
         configProperties.put(APPLICATION_TYPE_CONFIG_KEY, oidcApplicationType);
         configProperties.put(CLIENT_ID_CONFIG_KEY, oidcClientId);
@@ -216,6 +225,10 @@ public class KeycloakDevServicesProcessor {
 
         existingDevServiceConfig = new KeycloakDevServicesConfigBuildItem(configProperties);
         return existingDevServiceConfig;
+    }
+
+    private String getDefaultRealmName() {
+        return capturedDevServicesConfiguration.realmName.orElse("quarkus");
     }
 
     private StartResult startContainer(boolean useSharedContainer) {
@@ -239,7 +252,7 @@ public class KeycloakDevServicesProcessor {
         }
 
         final Optional<ContainerAddress> maybeContainerAddress = keycloakDevModeContainerLocator.locateContainer(
-                capturedDevServicesConfiguration.realmName,
+                capturedDevServicesConfiguration.serviceName,
                 capturedDevServicesConfiguration.shared,
                 LaunchMode.current());
 
@@ -250,6 +263,7 @@ public class KeycloakDevServicesProcessor {
             QuarkusOidcContainer oidcContainer = new QuarkusOidcContainer(dockerImageName,
                     capturedDevServicesConfiguration.port,
                     useSharedContainer,
+                    capturedDevServicesConfiguration.realmName,
                     capturedDevServicesConfiguration.realmPath,
                     capturedDevServicesConfiguration.serviceName,
                     capturedDevServicesConfiguration.shared,
@@ -260,6 +274,7 @@ public class KeycloakDevServicesProcessor {
             String url = "http://" + oidcContainer.getHost() + ":" + oidcContainer.getPort();
             return new StartResult(url,
                     !oidcContainer.realmFileExists,
+                    oidcContainer.realmNameToUse,
                     new Closeable() {
                         @Override
                         public void close() {
@@ -272,7 +287,8 @@ public class KeycloakDevServicesProcessor {
         };
 
         return maybeContainerAddress
-                .map(containerAddress -> new StartResult(getSharedContainerUrl(containerAddress), false, null, true))
+                .map(containerAddress -> new StartResult(getSharedContainerUrl(containerAddress), false,
+                        null, null, true))
                 .orElseGet(defaultKeycloakContainerSupplier);
     }
 
@@ -284,12 +300,14 @@ public class KeycloakDevServicesProcessor {
     private static class StartResult {
         private final String url;
         private final boolean createDefaultRealm;
+        private String realmNameToUse;
         private final Closeable closeable;
         private final boolean shared;
 
-        public StartResult(String url, boolean createDefaultRealm, Closeable closeable, boolean shared) {
+        public StartResult(String url, boolean createDefaultRealm, String realmNameToUse, Closeable closeable, boolean shared) {
             this.url = url;
             this.createDefaultRealm = createDefaultRealm;
+            this.realmNameToUse = realmNameToUse;
             this.closeable = closeable;
             this.shared = shared;
         }
@@ -298,18 +316,22 @@ public class KeycloakDevServicesProcessor {
     private static class QuarkusOidcContainer extends GenericContainer {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
+        private final Optional<String> configuredRealmName;
         private final Optional<String> realmPath;
         private final String containerLabelValue;
         private final Optional<String> javaOpts;
         private final boolean sharedContainer;
         private boolean realmFileExists;
         private String hostName = null;
+        private String realmNameToUse;
 
         public QuarkusOidcContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
-                Optional<String> realmPath, String containerLabelValue, boolean sharedContainer, Optional<String> javaOpts) {
+                Optional<String> configuredRealmName, Optional<String> realmPath, String containerLabelValue,
+                boolean sharedContainer, Optional<String> javaOpts) {
             super(dockerImageName);
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            this.configuredRealmName = configuredRealmName;
             this.realmPath = realmPath;
             this.containerLabelValue = containerLabelValue;
             this.sharedContainer = sharedContainer;
@@ -346,14 +368,19 @@ public class KeycloakDevServicesProcessor {
             }
 
             if (realmPath.isPresent()) {
-                if (Thread.currentThread().getContextClassLoader().getResource(realmPath.get()) != null) {
+                URL realmPathUrl = null;
+                if ((realmPathUrl = Thread.currentThread().getContextClassLoader().getResource(realmPath.get())) != null) {
                     realmFileExists = true;
+                    realmNameToUse = configuredRealmName.isPresent() ? null
+                            : getRealmNameFromRealmFile(realmPathUrl, realmPath.get());
                     withClasspathResourceMapping(realmPath.get(), KEYCLOAK_DOCKER_REALM_PATH, BindMode.READ_ONLY);
                     addEnv(KEYCLOAK_IMPORT_PROP, KEYCLOAK_DOCKER_REALM_PATH);
                 } else {
                     Path filePath = Paths.get(realmPath.get());
                     if (Files.exists(filePath)) {
                         realmFileExists = true;
+                        realmNameToUse = configuredRealmName.isPresent() ? null
+                                : getRealmNameFromRealmFile(filePath.toUri(), realmPath.get());
                         withFileSystemBind(realmPath.get(), KEYCLOAK_DOCKER_REALM_PATH, BindMode.READ_ONLY);
                         addEnv(KEYCLOAK_IMPORT_PROP, KEYCLOAK_DOCKER_REALM_PATH);
                     } else {
@@ -363,6 +390,28 @@ public class KeycloakDevServicesProcessor {
             }
 
             super.setWaitStrategy(Wait.forHttp("/auth").forPort(KEYCLOAK_PORT));
+        }
+
+        private String getRealmNameFromRealmFile(URI uri, String realmPath) {
+            try {
+                return getRealmNameFromRealmFile(uri.toURL(), realmPath);
+            } catch (MalformedURLException ex) {
+                // Will not happen as this method is called only when it is confirmed the file exists
+                throw new RuntimeException(ex);
+            }
+        }
+
+        private String getRealmNameFromRealmFile(URL url, String realmPath) {
+            try {
+                try (InputStream is = url.openStream()) {
+                    JsonObject realmJson = new JsonObject(io.vertx.core.buffer.Buffer.buffer(is.readAllBytes()));
+                    String realmName = realmJson.getString("realm");
+                    return realmName;
+                }
+            } catch (IOException ex) {
+                LOG.errorf("Realm %s resource can not be opened: %s", realmPath, ex.getMessage());
+            }
+            return null;
         }
 
         @Override
@@ -447,7 +496,7 @@ public class KeycloakDevServicesProcessor {
     private RealmRepresentation createRealmRep() {
         RealmRepresentation realm = new RealmRepresentation();
 
-        realm.setRealm(capturedDevServicesConfiguration.realmName);
+        realm.setRealm(getDefaultRealmName());
         realm.setEnabled(true);
         realm.setUsers(new ArrayList<>());
         realm.setClients(new ArrayList<>());

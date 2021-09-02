@@ -44,7 +44,7 @@ Let's use the convenient builder:
 
 [source,java]
 ----
-Engine engine = Engine.builder().addDefaults().build();
+Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build();
 ----
 
 TIP: In Quarkus, there is a preconfigured `Engine` available for injection - see <<quarkus_integration>>.

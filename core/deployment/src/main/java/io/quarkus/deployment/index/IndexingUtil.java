@@ -21,6 +21,7 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexReader;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
+import org.jboss.jandex.UnsupportedVersion;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.util.IoUtil;
@@ -61,7 +62,11 @@ public class IndexingUtil {
                                 file);
                         return indexJar(jarFile, removed);
                     } else {
-                        return reader.read();
+                        try {
+                            return reader.read();
+                        } catch (UnsupportedVersion e) {
+                            throw new UnsupportedVersion("Can't read Jandex index from " + file + ": " + e.getMessage());
+                        }
                     }
                 }
             }

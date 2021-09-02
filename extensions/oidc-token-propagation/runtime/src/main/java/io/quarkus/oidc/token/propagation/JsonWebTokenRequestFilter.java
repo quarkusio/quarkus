@@ -12,6 +12,10 @@ import io.quarkus.oidc.token.propagation.runtime.AbstractTokenRequestFilter;
 import io.smallrye.jwt.build.Jwt;
 
 public class JsonWebTokenRequestFilter extends AbstractTokenRequestFilter {
+
+    // note: We can't use constructor injection for these fields because they are registered by RESTEasy
+    // which doesn't know about CDI at the point of registration
+
     @Inject
     Instance<org.eclipse.microprofile.jwt.JsonWebToken> jwtAccessToken;
 

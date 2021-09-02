@@ -20,6 +20,9 @@ import io.quarkus.security.credential.TokenCredential;
 public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
     private static final String EXCHANGE_SUBJECT_TOKEN = "subject_token";
 
+    // note: We can't use constructor injection for these fields because they are registered by RESTEasy
+    // which doesn't know about CDI at the point of registration
+
     @Inject
     Instance<TokenCredential> accessToken;
 

@@ -20,12 +20,15 @@ import javax.transaction.TransactionScoped;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Unremovable;
+
 /**
  * A delegating transaction manager which receives an instance of Narayana transaction manager
  * and delegates all calls to it.
  * On top of it the implementation adds the CDI events processing for {@link TransactionScoped}.
  */
 @Singleton
+@Unremovable // used by Arc for transactional observers
 public class CDIDelegatingTransactionManager implements TransactionManager, Serializable {
 
     private static final Logger log = Logger.getLogger(CDIDelegatingTransactionManager.class);

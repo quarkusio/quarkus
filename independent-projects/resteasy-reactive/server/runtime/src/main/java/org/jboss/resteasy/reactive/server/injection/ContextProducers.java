@@ -133,6 +133,10 @@ public class ContextProducers {
     }
 
     private ResteasyReactiveRequestContext getContext() {
-        return CurrentRequestManager.get();
+        ResteasyReactiveRequestContext context = CurrentRequestManager.get();
+        if (context == null) {
+            throw new IllegalStateException("No RESTEasy Reactive request in progress");
+        }
+        return context;
     }
 }

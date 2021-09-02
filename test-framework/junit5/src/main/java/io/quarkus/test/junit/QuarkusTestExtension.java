@@ -430,15 +430,7 @@ public class QuarkusTestExtension
                                 tm.close();
                             } finally {
                                 GroovyCacheCleaner.clearGroovyCache();
-                                if (hangTaskKey != null) {
-                                    hangTaskKey.cancel(true);
-                                    hangTaskKey = null;
-                                }
-                                var h = hangDetectionExecutor;
-                                if (h != null) {
-                                    h.shutdownNow();
-                                    hangDetectionExecutor = null;
-                                }
+                                shutdownHangDetection();
                             }
                         }
                         try {
@@ -464,6 +456,18 @@ public class QuarkusTestExtension
             if (originalCl != null) {
                 Thread.currentThread().setContextClassLoader(originalCl);
             }
+        }
+    }
+
+    private void shutdownHangDetection() {
+        if (hangTaskKey != null) {
+            hangTaskKey.cancel(true);
+            hangTaskKey = null;
+        }
+        var h = hangDetectionExecutor;
+        if (h != null) {
+            h.shutdownNow();
+            hangDetectionExecutor = null;
         }
     }
 
@@ -1325,6 +1329,7 @@ public class QuarkusTestExtension
 
         @Override
         public void close() {
+            resetHangTimeout();
             firstException = null;
             failedBoot = false;
             ConfigProviderResolver.setInstance(null);

@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.deployment;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -18,6 +19,7 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
+import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.runtime.QuarkusRestPathTemplate;
 import io.quarkus.resteasy.runtime.QuarkusRestPathTemplateInterceptor;
 import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
@@ -81,14 +83,22 @@ public class RestPathAnnotationProcessor {
 
                 AnnotationInstance annotation = methodInfo.annotation(REST_PATH);
                 if (annotation == null) {
-                    return;
+                    // Check for @Path on class and not method
+                    if (!isRestEndpointMethod(methodInfo.annotations())) {
+                        return;
+                    }
                 }
                 // Don't create annotations for rest clients
                 if (classInfo.classAnnotation(REGISTER_REST_CLIENT) != null) {
                     return;
                 }
 
-                StringBuilder stringBuilder = new StringBuilder(slashify(annotation.value().asString()));
+                StringBuilder stringBuilder;
+                if (annotation != null) {
+                    stringBuilder = new StringBuilder(slashify(annotation.value().asString()));
+                } else {
+                    stringBuilder = new StringBuilder();
+                }
 
                 // Look for @Path annotation on the class
                 annotation = classInfo.classAnnotation(REST_PATH);
@@ -126,6 +136,19 @@ public class RestPathAnnotationProcessor {
             return path;
         }
         return '/' + path;
+    }
+
+    boolean isRestEndpointMethod(List<AnnotationInstance> annotations) {
+        boolean isRestEndpointMethod = false;
+
+        for (AnnotationInstance annotation : annotations) {
+            if (ResteasyDotNames.JAXRS_METHOD_ANNOTATIONS.contains(annotation.name())) {
+                isRestEndpointMethod = true;
+                break;
+            }
+        }
+
+        return isRestEndpointMethod;
     }
 
     private boolean notRequired(Capabilities capabilities,

@@ -192,7 +192,7 @@ The name of the property needs to follow a certain convention which is best disp
 [source,properties]
 ----
 # Your configuration properties
-org.acme.rest.client.CountriesService/mp-rest/url=https://restcountries.eu/rest # // <1>
+quarkus.rest-client."org.acme.rest.client.CountriesService".url=https://restcountries.eu/rest # // <1>
 ----
 
 <1> Having this configuration means that all requests performed using `org.acme.rest.client.CountriesService` will use `https://restcountries.eu/rest` as the base URL.
@@ -214,8 +214,8 @@ public interface CountriesService {
 [source,properties]
 ----
 # Your configuration properties
-country-api/mp-rest/url=https://restcountries.eu/rest
-country-api/mp-rest/scope=javax.inject.Singleton
+quarkus.rest-client.country-api.url=https://restcountries.eu/rest
+quarkus.rest-client.country-api.scope=javax.inject.Singleton
 ----
 
 == Update the JAX-RS resource
@@ -688,7 +688,7 @@ Rest Client Reactive uses RFC1738.
 You can override it by specifying the mode either on the client level,
 by setting `io.quarkus.rest.client.multipart-post-encoder-mode` RestBuilder property
 to the selected value of `HttpPostRequestEncoder.EncoderMode` or
-by specfying `quarkus.rest.client.multipart-post-encoder-mode` in your
+by specfying `quarkus.rest-client.multipart-post-encoder-mode` in your
 `application.properties`. Please note that the latter works only for
 clients created with the `@RegisterRestClient` annotation.
 All the available modes are described in the link:https://netty.io/4.1/api/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.EncoderMode.html[Netty documentation]
@@ -715,7 +715,7 @@ While the REST Client Reactive extension aims to be a drop-in replacement for th
 and limitations:
 
 - the default scope of the client for the new extension is `@ApplicationScoped` while the `quarkus-rest-client` defaults to `@Dependent`
-To change this behavior, set the `quarkus.rest.client.scope` property to the fully qualified scope name.
+To change this behavior, set the `quarkus.rest-client-reactive.scope` property to the fully qualified scope name.
 - it is not possible to set `HostnameVerifier` or `SSLContext`
 - a few things that don't make sense for a non-blocking implementations, such as setting the `ExecutorService`, don't work
 

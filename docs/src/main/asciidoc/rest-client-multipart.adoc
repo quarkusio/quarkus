@@ -150,7 +150,7 @@ The name of the property needs to follow a certain convention which is best disp
 [source,properties]
 ----
 # Your configuration properties
-org.acme.rest.client.multipart.MultipartService/mp-rest/url=http://localhost:8080/
+quarkus.rest-client."org.acme.rest.client.multipart.MultipartService".url=http://localhost:8080/
 ----
 
 Having this configuration means that all requests performed using `org.acme.rest.client.multipart.MultipartService` will use `http://localhost:8080/ ` as the base URL.
@@ -231,7 +231,7 @@ This will just return the request body and it's useful for testing purposes.
 == Update the test
 
 We also need to update the functional test to reflect the changes made to the endpoint.
-Edit the `src/test/java/org/acme/rest/client/multipart/MultipartResourceTest.java` file to:
+Edit the `src/test/java/org/acme/rest/client/multipart/MultipartClientResourceTest.java` file to:
 
 [source, java]
 ----
@@ -244,7 +244,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 
 @QuarkusTest
-public class MultipartResourceTest {
+public class MultipartClientResourceTest {
 
     @Test
     public void testMultipartDataIsSent() {
@@ -268,7 +268,7 @@ Because the test runs in a different port, we also need to include an `applicati
 [source,properties]
 ----
 # Your configuration properties
-org.acme.rest.client.multipart.MultipartService/mp-rest/url=http://localhost:8081/
+quarkus.rest-client."org.acme.rest.client.multipart.MultipartService".url=http://localhost:8081/
 ----
 
 == Package and run the application

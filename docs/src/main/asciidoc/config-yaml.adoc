@@ -55,10 +55,10 @@ quarkus:
       url: jdbc:postgresql://localhost:5432/some-database
 
 # REST Client configuration property
-org:
-  acme:
-    restclient:
-      CountriesService/mp-rest/url: https://restcountries.eu/rest
+quarkus:
+  rest-client:
+    "org.acme.restclient.CountriesService":
+      url: https://restcountries.eu/rest
 ----
 
 [source,yaml]

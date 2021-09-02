@@ -35,7 +35,7 @@ If you open the application's configuration file (`src/main/resources/applicatio
 
 [source,properties]
 ----
-org.acme.restclient.CountriesService/mp-rest/url=https://restcountries.eu/rest
+quarkus.rest-client."org.acme.restclient.CountriesService".url=https://restcountries.eu/rest
 ----
 which configures our REST client to connect to an SSL REST service.
 
@@ -157,7 +157,7 @@ Now, let's change the REST service URL to **not** use SSL in `src/main/resources
 
 [source,properties]
 ----
-org.acme.restclient.CountriesService/mp-rest/url=http://restcountries.eu/rest
+quarkus.rest-client."org.acme.restclient.CountriesService".url=http://restcountries.eu/rest
 ----
 
 And build again:

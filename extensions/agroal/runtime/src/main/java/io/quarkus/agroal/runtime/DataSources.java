@@ -276,6 +276,9 @@ public class DataSources {
         if (dataSourceJdbcRuntimeConfig.backgroundValidationInterval.isPresent()) {
             poolConfiguration.validationTimeout(dataSourceJdbcRuntimeConfig.backgroundValidationInterval.get());
         }
+        if (dataSourceJdbcRuntimeConfig.foregroundValidationInterval.isPresent()) {
+            poolConfiguration.idleValidationTimeout(dataSourceJdbcRuntimeConfig.foregroundValidationInterval.get());
+        }
         if (dataSourceJdbcRuntimeConfig.validationQuerySql.isPresent()) {
             String validationQuery = dataSourceJdbcRuntimeConfig.validationQuerySql.get();
             poolConfiguration.connectionValidator(new ConnectionValidator() {

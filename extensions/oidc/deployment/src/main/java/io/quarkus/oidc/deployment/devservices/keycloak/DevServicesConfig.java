@@ -65,12 +65,27 @@ public class DevServicesConfig {
      */
     @ConfigItem
     public Optional<String> javaOpts;
+
     /**
-     * The Keycloak realm.
-     * This property will be used to create the realm if the realm file pointed to by the 'realm-path' property does not exist.
+     * The Keycloak realm name.
+     * This property will be used to create the realm if the realm file pointed to by the 'realm-path' property does not exist,
+     * default value is 'quarkus' in this case.
+     * If the realm file pointed to by the 'realm-path' property exists then it is still recommended to set this property
+     * for Dev Services for Keycloak to avoid parsing the realm file in order to determine the realm name.
+     *
      */
-    @ConfigItem(defaultValue = "quarkus")
-    public String realmName;
+    @ConfigItem
+    public Optional<String> realmName;
+
+    /**
+     * Indicates if the Keycloak realm has to be created when the realm file pointed to by the 'realm-path' property does not
+     * exist.
+     *
+     * Disable it if you'd like to create a realm using Keycloak Administration Console
+     * or Keycloak Admin API from {@linkplain io.quarkus.test.common.QuarkusTestResourceLifecycleManager}.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean createRealm;
 
     /**
      * The Keycloak users map containing the user name and password pairs.

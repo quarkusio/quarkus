@@ -1,31 +1,26 @@
 package io.quarkus.it.keycloak;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.keycloak.util.JsonSerialization;
 
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import io.restassured.RestAssured;
+import io.quarkus.test.keycloak.client.KeycloakTestClient;
 
 public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
 
     private static final String KEYCLOAK_REALM = "quarkus";
-    String authServerUrl;
+    final KeycloakTestClient client = new KeycloakTestClient();
 
     @Override
     public Map<String, String> start() {
@@ -40,39 +35,8 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         realm.getUsers().add(createUser("alice", "user"));
         realm.getUsers().add(createUser("bob", "user"));
 
-        try {
-            //dev services sets up a realm for us, we delete it because we want different settings
-            RestAssured
-                    .given()
-                    .auth().oauth2(getAdminAccessToken())
-                    .contentType("application/json")
-                    .when()
-                    .delete(authServerUrl + "/admin/realms/quarkus").then()
-                    .statusCode(204);
-            RestAssured
-                    .given()
-                    .auth().oauth2(getAdminAccessToken())
-                    .contentType("application/json")
-                    .body(JsonSerialization.writeValueAsBytes(realm))
-                    .when()
-                    .post(authServerUrl + "/admin/realms").then()
-                    .statusCode(201);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        client.createRealm(realm);
         return Collections.emptyMap();
-    }
-
-    private String getAdminAccessToken() {
-        return RestAssured
-                .given()
-                .param("grant_type", "password")
-                .param("username", "admin")
-                .param("password", "admin")
-                .param("client_id", "admin-cli")
-                .when()
-                .post(authServerUrl + "/realms/master/protocol/openid-connect/token")
-                .as(AccessTokenResponse.class).getToken();
     }
 
     private RealmRepresentation createRealm(String name) {
@@ -131,22 +95,11 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
 
     @Override
     public void stop() {
-
-        RestAssured
-                .given()
-                .auth().oauth2(getAdminAccessToken())
-                .when()
-                .delete(authServerUrl + "/admin/realms/" + KEYCLOAK_REALM).then().statusCode(204);
+        client.deleteRealm(KEYCLOAK_REALM);
     }
 
     @Override
     public void setIntegrationTestContext(DevServicesContext context) {
-        try {
-            var uri = new URI(context.devServicesProperties().get("quarkus.oidc.auth-server-url"));
-            authServerUrl = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), "/auth", null, null)
-                    .toString();
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+        client.setIntegrationTestContext(context);
     }
 }

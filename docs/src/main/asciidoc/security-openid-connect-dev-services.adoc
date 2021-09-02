@@ -70,13 +70,19 @@ Next, after you select this option, you will be redirected to Keycloak to authen
 
 image::dev-ui-keycloak-test-service-from-spa.png[alt=Dev UI OpenId Connect Keycloak Single Page Application,role="center"]
 
-Here you can test the service with either the access token or ID token (note that the ID token will be sent as a regular bearer token).
+You can view the acquired access and ID tokens, for example:
 
-Finally you can click a `Logged in` option if you'd like to log out and authenticate to Keycloak as a different user.
+image::dev-ui-keycloak-decoded-tokens.png[alt=Dev UI OpenId Connect Keycloak Decoded Tokens View,role="center"]
+
+This view shows the encoded JWT token on the left hand side and highlights the headers (red colour), payload/claims (green colour) and signature (blue colour). It also shows the decoded JWT token on the right hand side where you can see the header and claim names and their values.
+
+Next test the service with either the current access or ID token. SPA usually sends the access tokens to the application endpoints but there could be cases where the ID tokens are forwarded to the application frontends for them to be aware about the user who is currently logged into SPA.
+
+Finally you can select a `Log Out` image::dev-ui-keycloak-logout.png option if you'd like to log out and authenticate to Keycloak as a different user.
 
 [NOTE]
 ====
-You may need to register a redirect URI for the authorization code flow initiated by Dev UI for Keycloak to work because Keycloak may enforce that the authenticated users are redirected only to the configured redirect URI. It is recommended to do in production to avoid the users being redirected to the wrong endpoints in case which might happen if the correct `redirect_uri` parameter in the authentication request URI has been manipulated.
+You may need to register a redirect URI for the authorization code flow initiated by Dev UI for Keycloak to work because Keycloak may enforce that the authenticated users are redirected only to the configured redirect URI. It is recommended to do in production to avoid the users being redirected to the wrong endpoints which might happen if the correct `redirect_uri` parameter in the authentication request URI has been manipulated.
 
 If Keycloak does enforce it then you will see an authentication error informing you that the `redirect_uri` value is wrong.
 

@@ -48,6 +48,12 @@ public class DataSourceJdbcRuntimeConfig {
     public Optional<Duration> backgroundValidationInterval = Optional.of(Duration.ofMinutes(2));
 
     /**
+     * Perform foreground validation on connections that have been idle for longer than the specified interval.
+     */
+    @ConfigItem
+    public Optional<Duration> foregroundValidationInterval = Optional.empty();
+
+    /**
      * The timeout before cancelling the acquisition of a new connection
      */
     @ConfigItem(defaultValue = "5")

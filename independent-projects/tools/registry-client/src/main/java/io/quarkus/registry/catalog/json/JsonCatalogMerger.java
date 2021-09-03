@@ -5,6 +5,10 @@ import io.quarkus.registry.catalog.Category;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.ExtensionOrigin;
+import io.quarkus.registry.catalog.Platform;
+import io.quarkus.registry.catalog.PlatformCatalog;
+import io.quarkus.registry.catalog.PlatformRelease;
+import io.quarkus.registry.catalog.PlatformStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,6 +74,48 @@ public class JsonCatalogMerger {
         combined.setExtensions(new ArrayList<>(extensions.values()));
         combined.setMetadata(metadata);
         return combined;
+    }
+
+    public static PlatformCatalog mergePlatformCatalogs(List<PlatformCatalog> catalogs) {
+        if (catalogs.isEmpty()) {
+            throw new IllegalArgumentException("No catalogs provided");
+        }
+        if (catalogs.size() == 1) {
+            return catalogs.get(0);
+        }
+        final JsonPlatformCatalog merged = new JsonPlatformCatalog();
+        final Map<String, JsonPlatform> platformMap = new HashMap<>();
+        for (PlatformCatalog c : catalogs) {
+            for (Platform p : c.getPlatforms()) {
+                final JsonPlatform mergedPlatform = platformMap.computeIfAbsent(p.getPlatformKey(), k -> {
+                    final JsonPlatform pl = new JsonPlatform();
+                    pl.setPlatformKey(p.getPlatformKey());
+                    merged.addPlatform(pl);
+                    return pl;
+                });
+                for (PlatformStream s : p.getStreams()) {
+                    JsonPlatformStream mergedStream = (JsonPlatformStream) mergedPlatform.getStream(s.getId());
+                    if (mergedStream == null) {
+                        mergedStream = new JsonPlatformStream();
+                        mergedStream.setId(s.getId());
+                        mergedPlatform.addStream(mergedStream);
+                    }
+                    for (PlatformRelease r : s.getReleases()) {
+                        final PlatformRelease release = mergedStream.getRelease(r.getVersion());
+                        if (release == null) {
+                            mergedStream.addRelease(r);
+                        }
+                    }
+                    final Map<String, Object> mergedStreamMetadata = mergedStream.getMetadata();
+                    s.getMetadata().entrySet()
+                            .forEach(entry -> mergedStreamMetadata.putIfAbsent(entry.getKey(), entry.getValue()));
+                }
+                p.getMetadata().entrySet()
+                        .forEach(entry -> mergedPlatform.getMetadata().putIfAbsent(entry.getKey(), entry.getValue()));
+            }
+            c.getMetadata().entrySet().forEach(entry -> merged.getMetadata().putIfAbsent(entry.getKey(), entry.getValue()));
+        }
+        return merged;
     }
 
     private static List<ExtensionCatalog> detectRoots(List<ExtensionCatalog> catalogs) {

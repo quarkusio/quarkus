@@ -106,6 +106,7 @@ public class TestRegistryClientBuilder {
         private JsonRegistryQuarkusVersionsConfig quarkusVersions;
         private boolean external;
         private PlatformCatalog platformCatalog;
+        private JsonPlatformCatalog archivedPlatformCatalog;
 
         private List<TestPlatformCatalogMemberBuilder> memberCatalogs;
         private List<TestNonPlatformCatalogBuilder> nonPlatformCatalogs;
@@ -221,37 +222,72 @@ public class TestRegistryClientBuilder {
             platformConfig
                     .setArtifact(new ArtifactCoords(registryGroupId, Constants.DEFAULT_REGISTRY_PLATFORMS_CATALOG_ARTIFACT_ID,
                             null, "json", Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION));
-            if (platformCatalog == null) {
+            if (platformCatalog == null && archivedPlatformCatalog == null) {
                 platformConfig.setDisabled(true);
             } else {
                 final Path platformsDir = getRegistryPlatformsDir(registryDir);
-                persistPlatformCatalog(platformCatalog, platformsDir);
                 final Map<String, JsonPlatformCatalog> platformsByQuarkusVersion = new HashMap<>();
-                for (Platform p : platformCatalog.getPlatforms()) {
-                    for (PlatformStream s : p.getStreams()) {
-                        for (PlatformRelease r : s.getReleases()) {
-                            if (r.getQuarkusCoreVersion() == null) {
-                                throw new IllegalStateException("Quarkus version has not be configured for platform release "
-                                        + p.getPlatformKey() + ":" + s.getId() + ":" + r.getVersion());
+                if (platformCatalog != null) {
+                    persistPlatformCatalog(platformCatalog, platformsDir);
+                    for (Platform p : platformCatalog.getPlatforms()) {
+                        for (PlatformStream s : p.getStreams()) {
+                            for (PlatformRelease r : s.getReleases()) {
+                                if (r.getQuarkusCoreVersion() == null) {
+                                    throw new IllegalStateException(
+                                            "Quarkus version has not be configured for platform release "
+                                                    + p.getPlatformKey() + ":" + s.getId() + ":" + r.getVersion());
+                                }
+                                final JsonPlatformCatalog c = platformsByQuarkusVersion.computeIfAbsent(
+                                        r.getQuarkusCoreVersion(),
+                                        v -> new JsonPlatformCatalog());
+                                JsonPlatform platform = (JsonPlatform) c.getPlatform(p.getPlatformKey());
+                                if (platform == null) {
+                                    platform = new JsonPlatform();
+                                    platform.setPlatformKey(p.getPlatformKey());
+                                    c.addPlatform(platform);
+                                }
+                                JsonPlatformStream stream = (JsonPlatformStream) platform.getStream(s.getId());
+                                if (stream == null) {
+                                    stream = new JsonPlatformStream();
+                                    stream.setId(s.getId());
+                                    platform.addStream(stream);
+                                }
+                                stream.addRelease(r);
                             }
-                            final JsonPlatformCatalog c = platformsByQuarkusVersion.computeIfAbsent(r.getQuarkusCoreVersion(),
-                                    v -> new JsonPlatformCatalog());
-                            JsonPlatform platform = (JsonPlatform) c.getPlatform(p.getPlatformKey());
-                            if (platform == null) {
-                                platform = new JsonPlatform();
-                                platform.setPlatformKey(p.getPlatformKey());
-                                c.addPlatform(platform);
-                            }
-                            JsonPlatformStream stream = (JsonPlatformStream) platform.getStream(s.getId());
-                            if (stream == null) {
-                                stream = new JsonPlatformStream();
-                                stream.setId(s.getId());
-                                platform.addStream(stream);
-                            }
-                            stream.addRelease(r);
                         }
                     }
                 }
+
+                if (archivedPlatformCatalog != null) {
+                    for (Platform p : archivedPlatformCatalog.getPlatforms()) {
+                        for (PlatformStream s : p.getStreams()) {
+                            for (PlatformRelease r : s.getReleases()) {
+                                if (r.getQuarkusCoreVersion() == null) {
+                                    throw new IllegalStateException(
+                                            "Quarkus version has not be configured for platform release "
+                                                    + p.getPlatformKey() + ":" + s.getId() + ":" + r.getVersion());
+                                }
+                                final JsonPlatformCatalog c = platformsByQuarkusVersion.computeIfAbsent(
+                                        r.getQuarkusCoreVersion(),
+                                        v -> new JsonPlatformCatalog());
+                                JsonPlatform platform = (JsonPlatform) c.getPlatform(p.getPlatformKey());
+                                if (platform == null) {
+                                    platform = new JsonPlatform();
+                                    platform.setPlatformKey(p.getPlatformKey());
+                                    c.addPlatform(platform);
+                                }
+                                JsonPlatformStream stream = (JsonPlatformStream) platform.getStream(s.getId());
+                                if (stream == null) {
+                                    stream = new JsonPlatformStream();
+                                    stream.setId(s.getId());
+                                    platform.addStream(stream);
+                                }
+                                stream.addRelease(r);
+                            }
+                        }
+                    }
+                }
+
                 for (Map.Entry<String, JsonPlatformCatalog> entry : platformsByQuarkusVersion.entrySet()) {
                     persistPlatformCatalog(entry.getValue(), platformsDir.resolve(entry.getKey()));
                 }
@@ -336,6 +372,33 @@ public class TestRegistryClientBuilder {
             final JsonPlatformRelease release = new JsonPlatformRelease();
             release.setVersion(JsonPlatformReleaseVersion.fromString(version));
             stream.addRelease(release);
+            return new TestPlatformCatalogReleaseBuilder(this, release);
+        }
+
+        public TestPlatformCatalogReleaseBuilder newArchivedRelease(String version) {
+            final JsonPlatformRelease release = new JsonPlatformRelease();
+            release.setVersion(JsonPlatformReleaseVersion.fromString(version));
+
+            if (platform.registry.archivedPlatformCatalog == null) {
+                platform.registry.archivedPlatformCatalog = new JsonPlatformCatalog();
+            }
+
+            JsonPlatform archivedPlatform = (JsonPlatform) platform.registry.archivedPlatformCatalog
+                    .getPlatform(platform.platform.getPlatformKey());
+            if (archivedPlatform == null) {
+                archivedPlatform = new JsonPlatform();
+                archivedPlatform.setPlatformKey(platform.platform.getPlatformKey());
+                platform.registry.archivedPlatformCatalog.addPlatform(archivedPlatform);
+            }
+
+            JsonPlatformStream archivedStream = (JsonPlatformStream) archivedPlatform.getStream(stream.getId());
+            if (archivedStream == null) {
+                archivedStream = new JsonPlatformStream();
+                archivedStream.setId(stream.getId());
+                archivedPlatform.addStream(archivedStream);
+            }
+
+            archivedStream.addRelease(release);
             return new TestPlatformCatalogReleaseBuilder(this, release);
         }
 

@@ -268,7 +268,7 @@ public class BeanManagerImpl implements BeanManager {
     @Override
     public <T> Bean<T> createBean(BeanAttributes<T> attributes, Class<T> beanClass,
             InjectionTargetFactory<T> injectionTargetFactory) {
-        Set<Bean<?>> beans = getBeans(beanClass, attributes.getQualifiers().toArray(new Annotation[]{}));
+        Set<Bean<?>> beans = getBeans(beanClass, attributes.getQualifiers().toArray(new Annotation[] {}));
         if (beans.isEmpty()) {
             throw new UnsatisfiedResolutionException();
         }

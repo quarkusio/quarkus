@@ -1,23 +1,20 @@
 package io.quarkus.arc.impl;
 
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.UnmanageableBean;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.HashSet;
 import java.util.Set;
-
-import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.enterprise.inject.spi.AnnotatedType;
 import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanAttributes;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.inject.spi.InjectionTarget;
 import javax.inject.Qualifier;
-
-import io.quarkus.arc.InjectableBean;
 
 public class InjectionTargetImpl<T> implements InjectionTarget<T> {
     private Bean<T> bean;
@@ -25,43 +22,13 @@ public class InjectionTargetImpl<T> implements InjectionTarget<T> {
     private AnnotatedType<T> annotatedType;
     private InjectionTargetFactoryImpl injectionTargetFactoryImpl;
 
-    public InjectionTargetImpl(Bean<T> bean, BeanManager beanManager, AnnotatedType<T> annotatedType, InjectionTargetFactoryImpl injectionTargetFactoryImpl) {
+    @SuppressWarnings("unchecked")
+    public InjectionTargetImpl(Bean<T> bean, BeanManager beanManager, AnnotatedType<T> annotatedType,
+            InjectionTargetFactoryImpl injectionTargetFactoryImpl) {
         this.bean = bean;
         this.beanManager = beanManager;
         this.annotatedType = annotatedType;
         this.injectionTargetFactoryImpl = injectionTargetFactoryImpl;
-    }
-
-    @Override
-    public void inject(T instance, CreationalContext<T> ctx) {
-/*Performs dependency injection upon the given object. Performs Jakarta EE component environment injection, sets the value of all injected fields, and calls all initializer methods.
-Params:
-instance – The instance upon which to perform injection
-ctx – The CreationalContext to use for creating new instances*/
-    }
-
-    @Override
-    public void postConstruct(T instance) {
-        /*Calls the javax.annotation.PostConstruct callback, if it exists, according to the semantics required by the Java EE platform specification.
-Params:
-instance – The instance on which to invoke the javax.annotation.PostConstruct method*/
-        //instance.getClass().getMethods();
-    }
-
-    @Override
-    public void preDestroy(T instance) {
-        /*Calls the javax.annotation.PreDestroy callback, if it exists, according to the semantics required by the Jakarta EE platform specification.
-Params:
-instance – The instance on which to invoke the javax.annotation.PreDestroy method*/
-        //instance.getClass().getMethods();
-        // bean contain
-    }
-
-    @Override
-    public T produce(CreationalContext<T> ctx) {
-        //here is the issue
-        // bean is empty because UnManaged call with null param.
-        // so we have to create it on demand
         if (bean == null) {
             Set<Annotation> qualifiers = new HashSet<>();
             for (Annotation a : annotatedType.getAnnotations()) {
@@ -78,18 +45,57 @@ instance – The instance on which to invoke the javax.annotation.PreDestroy met
             } else if (beans.size() > 1) {
                 throw new AmbiguousResolutionException("Beans: " + beans.toString());
             }
-            bean = (Bean<T>)beans.iterator().next();
+            this.bean = (InjectableBean<T>) beans.iterator().next();
         }
-        return bean.create(ctx);
+    }
+
+    @Override
+    public void inject(T instance, CreationalContext<T> ctx) {
+        if (bean instanceof UnmanageableBean) {
+            ((UnmanageableBean<T>) bean).inject(instance, ctx);
+        } else {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    @Override
+    public void postConstruct(T instance) {
+        if (bean instanceof UnmanageableBean) {
+            ((UnmanageableBean<T>) bean).postConstruct(instance);
+        } else {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    @Override
+    public void preDestroy(T instance) {
+        if (bean instanceof UnmanageableBean) {
+            ((UnmanageableBean<T>) bean).preDestroy(instance);
+        } else {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    @Override
+    public T produce(CreationalContext<T> ctx) {
+        if (bean instanceof UnmanageableBean) {
+            return ((UnmanageableBean<T>) bean).produce(ctx);
+        } else {
+            throw new UnsupportedOperationException();
+        }
     }
 
     @Override
     public void dispose(T instance) {
-
+        if (bean instanceof UnmanageableBean) {
+            ((UnmanageableBean<T>) bean).dispose(instance);
+        } else {
+            throw new UnsupportedOperationException();
+        }
     }
 
     @Override
     public Set<InjectionPoint> getInjectionPoints() {
-        return null;
+        return bean.getInjectionPoints();
     }
 }

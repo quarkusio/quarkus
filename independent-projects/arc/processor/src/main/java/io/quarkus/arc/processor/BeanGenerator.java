@@ -11,6 +11,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableDecorator;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableReferenceProvider;
+import io.quarkus.arc.UnmanageableBean;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.CurrentInjectionPointProvider;
 import io.quarkus.arc.impl.DecoratorDelegateProvider;
@@ -157,7 +158,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(InjectableBean.class, Supplier.class).build();
+                .interfaces(InjectableBean.class, Supplier.class, UnmanageableBean.class).build();
 
         // Fields
         FieldCreator beanTypes = beanCreator.getFieldCreator(FIELD_NAME_BEAN_TYPES, Set.class)
@@ -252,6 +253,493 @@ public class BeanGenerator extends AbstractGenerator {
         return classOutput.getResources();
     }
 
+    private void implementInject(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean, ProviderType providerType,
+            String baseName,
+            Map<InjectionPointInfo, String> injectionPointToProviderSupplierField,
+            Map<InterceptorInfo, String> interceptorToProviderSupplierField,
+            Map<DecoratorInfo, String> decoratorToProviderSupplierField,
+            ReflectionRegistration reflectionRegistration, String targetPackage, boolean isApplicationClass) {
+
+        MethodCreator inject = beanCreator
+                .getMethodCreator("inject", void.class, providerType.descriptorName(), CreationalContext.class)
+                .setModifiers(ACC_PUBLIC);
+
+        ResultHandle instanceHandle = inject.getMethodParam(0);
+
+        List<Injection> methodInjections = new ArrayList<>();
+        List<Injection> fieldInjections = new ArrayList<>();
+        for (Injection injection : bean.getInjections()) {
+            if (injection.isField()) {
+                fieldInjections.add(injection);
+            } else if (injection.isMethod() && !injection.isConstructor()) {
+                methodInjections.add(injection);
+            }
+        }
+
+        // Perform field and initializer injections
+        for (Injection fieldInjection : fieldInjections) {
+            TryBlock tryBlock = inject.tryBlock();
+            InjectionPointInfo injectionPoint = fieldInjection.injectionPoints.get(0);
+            ResultHandle providerSupplierHandle = tryBlock.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
+                    injectionPointToProviderSupplierField.get(injectionPoint), Supplier.class.getName()),
+                    tryBlock.getThis());
+            ResultHandle providerHandle = tryBlock.invokeInterfaceMethod(
+                    MethodDescriptors.SUPPLIER_GET, providerSupplierHandle);
+            ResultHandle childCtxHandle = tryBlock.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
+                    providerHandle, tryBlock.getMethodParam(0));
+            ResultHandle referenceHandle = tryBlock.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
+                    providerHandle, childCtxHandle);
+
+            FieldInfo injectedField = fieldInjection.target.asField();
+            if (isReflectionFallbackNeeded(injectedField, targetPackage)) {
+                if (Modifier.isPrivate(injectedField.flags())) {
+                    privateMembers.add(isApplicationClass,
+                            String.format("@Inject field %s#%s", fieldInjection.target.asField().declaringClass().name(),
+                                    fieldInjection.target.asField().name()));
+                }
+                reflectionRegistration.registerField(injectedField);
+                tryBlock.invokeStaticMethod(MethodDescriptors.REFLECTIONS_WRITE_FIELD,
+                        tryBlock.loadClass(injectedField.declaringClass().name().toString()),
+                        tryBlock.load(injectedField.name()), instanceHandle, referenceHandle);
+
+            } else {
+                // We cannot use injectionPoint.getRequiredType() because it might be a resolved parameterize type and we could get NoSuchFieldError
+                tryBlock.writeInstanceField(
+                        FieldDescriptor.of(injectedField.declaringClass().name().toString(), injectedField.name(),
+                                DescriptorUtils.typeToString(injectionPoint.getTarget().asField().type())),
+                        instanceHandle, referenceHandle);
+            }
+            CatchBlockCreator catchBlock = tryBlock.addCatch(RuntimeException.class);
+            catchBlock.throwException(RuntimeException.class, "Error injecting " + fieldInjection.target,
+                    catchBlock.getCaughtException());
+        }
+        for (Injection methodInjection : methodInjections) {
+            List<TransientReference> transientReferences = new ArrayList<>();
+            ResultHandle[] referenceHandles = new ResultHandle[methodInjection.injectionPoints.size()];
+            int paramIdx = 0;
+            for (InjectionPointInfo injectionPoint : methodInjection.injectionPoints) {
+                ResultHandle providerSupplierHandle = inject.readInstanceField(
+                        FieldDescriptor.of(beanCreator.getClassName(),
+                                injectionPointToProviderSupplierField.get(injectionPoint), Supplier.class.getName()),
+                        inject.getThis());
+                ResultHandle providerHandle = inject.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
+                        providerSupplierHandle);
+                ResultHandle childCtxHandle = inject.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
+                        providerHandle, inject.getMethodParam(0));
+                ResultHandle referenceHandle = inject.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
+                        providerHandle, childCtxHandle);
+                referenceHandles[paramIdx++] = referenceHandle;
+                // We need to destroy dependent beans for @TransientReference injection points
+                if (injectionPoint.isDependentTransientReference()) {
+                    transientReferences.add(new TransientReference(providerHandle, referenceHandle, childCtxHandle));
+                }
+            }
+
+            MethodInfo initializerMethod = methodInjection.target.asMethod();
+            if (isReflectionFallbackNeeded(initializerMethod, targetPackage)) {
+                if (Modifier.isPrivate(initializerMethod.flags())) {
+                    privateMembers.add(isApplicationClass,
+                            String.format("@Inject initializer %s#%s()", initializerMethod.declaringClass().name(),
+                                    initializerMethod.name()));
+                }
+                ResultHandle paramTypesArray = inject.newArray(Class.class, inject.load(referenceHandles.length));
+                ResultHandle argsArray = inject.newArray(Object.class, inject.load(referenceHandles.length));
+                for (int i = 0; i < referenceHandles.length; i++) {
+                    inject.writeArrayValue(paramTypesArray, i,
+                            inject.loadClass(initializerMethod.parameters().get(i).name().toString()));
+                    inject.writeArrayValue(argsArray, i, referenceHandles[i]);
+                }
+                reflectionRegistration.registerMethod(initializerMethod);
+                inject.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
+                        inject.loadClass(initializerMethod.declaringClass().name().toString()),
+                        inject.load(methodInjection.target.asMethod().name()),
+                        paramTypesArray, instanceHandle, argsArray);
+
+            } else {
+                inject.invokeVirtualMethod(MethodDescriptor.of(methodInjection.target.asMethod()), instanceHandle,
+                        referenceHandles);
+            }
+
+            // Destroy injected transient references
+            destroyTransientReferences(inject, transientReferences);
+        }
+        inject.returnValue(null);
+    }
+
+    protected void implementProduce(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean, ProviderType providerType,
+            String baseName,
+            Map<InjectionPointInfo, String> injectionPointToProviderSupplierField,
+            Map<InterceptorInfo, String> interceptorToProviderSupplierField,
+            Map<DecoratorInfo, String> decoratorToProviderSupplierField,
+            ReflectionRegistration reflectionRegistration, String targetPackage, boolean isApplicationClass) {
+        MethodCreator produce = beanCreator
+                .getMethodCreator("produce", providerType.descriptorName(), CreationalContext.class)
+                .setModifiers(ACC_PUBLIC);
+
+        ResultHandle aroundConstructsHandle = null;
+        Map<InterceptorInfo, ResultHandle> interceptorToWrap = new HashMap<>();
+        Map<InterceptorInfo, ResultHandle> interceptorToResultHandle = new HashMap<>();
+        if (bean.hasLifecycleInterceptors()) {
+            // Note that we must share the interceptors instances with the intercepted subclass, if present
+            InterceptionInfo aroundConstructs = bean.getLifecycleInterceptors(InterceptionType.AROUND_CONSTRUCT);
+
+            // instances of around/post construct interceptors also need to be shared
+            // build a map that links InterceptorInfo to ResultHandle and reuse that when creating wrappers
+
+            for (InterceptorInfo interceptor : aroundConstructs.interceptors) {
+                ResultHandle interceptorProviderSupplier = produce.readInstanceField(
+                        FieldDescriptor.of(beanCreator.getClassName(), interceptorToProviderSupplierField.get(interceptor),
+                                Supplier.class.getName()),
+                        produce.getThis());
+                ResultHandle interceptorProvider = produce.invokeInterfaceMethod(
+                        MethodDescriptors.SUPPLIER_GET, interceptorProviderSupplier);
+                ResultHandle childCtxHandle = produce.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD,
+                        produce.getMethodParam(0));
+                ResultHandle interceptorInstanceHandle = produce.invokeInterfaceMethod(
+                        MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, interceptorProvider,
+                        childCtxHandle);
+                interceptorToResultHandle.put(interceptor, interceptorInstanceHandle);
+                ResultHandle wrapHandle = produce.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(InitializedInterceptor.class, "of",
+                                InitializedInterceptor.class, Object.class, InjectableInterceptor.class),
+                        interceptorInstanceHandle, interceptorProvider);
+                interceptorToWrap.put(interceptor, wrapHandle);
+            }
+
+            if (!aroundConstructs.isEmpty()) {
+                // aroundConstructs = new ArrayList<InterceptorInvocation>()
+                aroundConstructsHandle = produce.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+                for (InterceptorInfo interceptor : aroundConstructs.interceptors) {
+                    ResultHandle interceptorSupplierHandle = produce.readInstanceField(
+                            FieldDescriptor.of(beanCreator.getClassName(),
+                                    interceptorToProviderSupplierField.get(interceptor), Supplier.class.getName()),
+                            produce.getThis());
+                    ResultHandle interceptorHandle = produce.invokeInterfaceMethod(
+                            MethodDescriptors.SUPPLIER_GET, interceptorSupplierHandle);
+
+                    ResultHandle interceptorInvocationHandle = produce.invokeStaticMethod(
+                            MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_CONSTRUCT,
+                            interceptorHandle, interceptorToResultHandle.get(interceptor));
+
+                    // aroundConstructs.add(InterceptorInvocation.aroundConstruct(interceptor,interceptor.get(CreationalContextImpl.child(ctx))))
+                    produce.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, aroundConstructsHandle,
+                            interceptorInvocationHandle);
+                }
+            }
+        }
+        // AroundConstruct lifecycle callback interceptors
+        InterceptionInfo aroundConstructs = bean.getLifecycleInterceptors(InterceptionType.AROUND_CONSTRUCT);
+        AssignableResultHandle instanceHandle = produce.createVariable(DescriptorUtils.extToInt(providerType.className()));
+        if (!aroundConstructs.isEmpty()) {
+            Optional<Injection> constructorInjection = bean.getConstructorInjection();
+            ResultHandle constructorHandle;
+            if (constructorInjection.isPresent()) {
+                List<String> paramTypes = new ArrayList<>();
+                for (InjectionPointInfo injectionPoint : constructorInjection.get().injectionPoints) {
+                    paramTypes.add(injectionPoint.getType().name().toString());
+                }
+                ResultHandle[] paramsHandles = new ResultHandle[2];
+                paramsHandles[0] = produce.loadClass(providerType.className());
+                ResultHandle paramsArray = produce.newArray(Class.class, produce.load(paramTypes.size()));
+                for (ListIterator<String> iterator = paramTypes.listIterator(); iterator.hasNext();) {
+                    produce.writeArrayValue(paramsArray, iterator.nextIndex(), produce.loadClass(iterator.next()));
+                }
+                paramsHandles[1] = paramsArray;
+                constructorHandle = produce.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR,
+                        paramsHandles);
+                reflectionRegistration.registerMethod(constructorInjection.get().target.asMethod());
+            } else {
+                // constructor = Reflections.findConstructor(Foo.class)
+                ResultHandle[] paramsHandles = new ResultHandle[2];
+                paramsHandles[0] = produce.loadClass(providerType.className());
+                paramsHandles[1] = produce.newArray(Class.class, produce.load(0));
+                constructorHandle = produce.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR,
+                        paramsHandles);
+                MethodInfo noArgsConstructor = bean.getTarget().get().asClass().method(Methods.INIT);
+                reflectionRegistration.registerMethod(noArgsConstructor);
+            }
+
+            List<TransientReference> transientReferences = new ArrayList<>();
+            List<ResultHandle> providerHandles = newProviderHandles(bean, beanCreator, produce,
+                    injectionPointToProviderSupplierField, interceptorToProviderSupplierField, decoratorToProviderSupplierField,
+                    interceptorToWrap, transientReferences);
+
+            // Forwarding function
+            // Supplier<Object> forward = () -> new SimpleBean_Subclass(ctx,lifecycleInterceptorProvider1)
+            FunctionCreator func = produce.createFunction(Supplier.class);
+            BytecodeCreator funcBytecode = func.getBytecode();
+            ResultHandle retHandle = newInstanceHandle(bean, beanCreator, funcBytecode, produce, providerType.className(),
+                    baseName,
+                    providerHandles,
+                    reflectionRegistration, isApplicationClass);
+            // Destroy injected transient references
+            destroyTransientReferences(funcBytecode, transientReferences);
+            funcBytecode.returnValue(retHandle);
+
+            // Interceptor bindings
+            ResultHandle bindingsHandle = produce.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+            for (AnnotationInstance binding : aroundConstructs.bindings) {
+                // Create annotation literals first
+                ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
+                produce.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
+                        annotationLiterals.process(produce, classOutput, bindingClass, binding,
+                                Types.getPackageName(beanCreator.getClassName())));
+            }
+
+            ResultHandle invocationContextHandle = produce.invokeStaticMethod(
+                    MethodDescriptors.INVOCATION_CONTEXTS_AROUND_CONSTRUCT, constructorHandle,
+                    aroundConstructsHandle, func.getInstance(), bindingsHandle);
+            TryBlock tryCatch = produce.tryBlock();
+            CatchBlockCreator exceptionCatch = tryCatch.addCatch(Exception.class);
+            // throw new RuntimeException(e)
+            exceptionCatch.throwException(RuntimeException.class, "Error invoking aroundConstructs",
+                    exceptionCatch.getCaughtException());
+            // InvocationContextImpl.aroundConstruct(constructor,aroundConstructs,forward).proceed()
+            tryCatch.invokeInterfaceMethod(MethodDescriptors.INVOCATION_CONTEXT_PROCEED,
+                    invocationContextHandle);
+            // instance = InvocationContext.getTarget()
+            tryCatch.assign(instanceHandle, tryCatch.invokeInterfaceMethod(MethodDescriptors.INVOCATION_CONTEXT_GET_TARGET,
+                    invocationContextHandle));
+
+        } else {
+            List<TransientReference> transientReferences = new ArrayList<>();
+            produce.assign(instanceHandle,
+                    newInstanceHandle(bean, beanCreator, produce, produce, providerType.className(), baseName,
+                            newProviderHandles(bean, beanCreator, produce, injectionPointToProviderSupplierField,
+                                    interceptorToProviderSupplierField, decoratorToProviderSupplierField,
+                                    interceptorToWrap, transientReferences),
+                            reflectionRegistration, isApplicationClass));
+            // Destroy injected transient references
+            destroyTransientReferences(produce, transientReferences);
+        }
+        produce.returnValue(instanceHandle);
+    }
+
+    protected void implementPostConstruct(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean,
+            ProviderType providerType,
+            String baseName,
+            Map<InjectionPointInfo, String> injectionPointToProviderSupplierField,
+            Map<InterceptorInfo, String> interceptorToProviderSupplierField,
+            Map<DecoratorInfo, String> decoratorToProviderSupplierField,
+            ReflectionRegistration reflectionRegistration, String targetPackage, boolean isApplicationClass) {
+
+        MethodCreator postConstruct = beanCreator
+                .getMethodCreator("postConstruct", void.class, providerType.descriptorName())
+                .setModifiers(ACC_PUBLIC);
+
+        ResultHandle instanceHandle = postConstruct.getMethodParam(0);
+        ResultHandle postConstructsHandle = null;
+        Map<InterceptorInfo, ResultHandle> interceptorToResultHandle = new HashMap<>();
+
+        // PostConstruct lifecycle callback interceptors
+        InterceptionInfo postConstructs = bean.getLifecycleInterceptors(InterceptionType.POST_CONSTRUCT);
+        if (!postConstructs.isEmpty()) {
+            for (InterceptorInfo interceptor : postConstructs.interceptors) {
+                ResultHandle interceptorProviderSupplier = postConstruct.readInstanceField(
+                        FieldDescriptor.of(beanCreator.getClassName(), interceptorToProviderSupplierField.get(interceptor),
+                                Supplier.class.getName()),
+                        postConstruct.getThis());
+                ResultHandle interceptorProvider = postConstruct.invokeInterfaceMethod(
+                        MethodDescriptors.SUPPLIER_GET, interceptorProviderSupplier);
+                ResultHandle childCtxHandle = postConstruct.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD,
+                        postConstruct.getMethodParam(0));
+                ResultHandle interceptorInstanceHandle = postConstruct.invokeInterfaceMethod(
+                        MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, interceptorProvider,
+                        childCtxHandle);
+                interceptorToResultHandle.put(interceptor, interceptorInstanceHandle);
+            }
+            // postConstructs = new ArrayList<InterceptorInvocation>()
+            postConstructsHandle = postConstruct.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+            for (InterceptorInfo interceptor : postConstructs.interceptors) {
+                ResultHandle interceptorSupplierHandle = postConstruct.readInstanceField(
+                        FieldDescriptor.of(beanCreator.getClassName(),
+                                interceptorToProviderSupplierField.get(interceptor), Supplier.class.getName()),
+                        postConstruct.getThis());
+                ResultHandle interceptorHandle = postConstruct.invokeInterfaceMethod(
+                        MethodDescriptors.SUPPLIER_GET, interceptorSupplierHandle);
+
+                ResultHandle interceptorInvocationHandle = postConstruct.invokeStaticMethod(
+                        MethodDescriptors.INTERCEPTOR_INVOCATION_POST_CONSTRUCT,
+                        interceptorHandle, interceptorToResultHandle.get(interceptor));
+
+                // postConstructs.add(InterceptorInvocation.postConstruct(interceptor,interceptor.get(CreationalContextImpl.child(ctx))))
+                postConstruct.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, postConstructsHandle,
+                        interceptorInvocationHandle);
+            }
+            // Interceptor bindings
+            ResultHandle bindingsHandle = postConstruct.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+            for (AnnotationInstance binding : postConstructs.bindings) {
+                // Create annotation literals first
+                ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
+                postConstruct.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
+                        annotationLiterals.process(postConstruct, classOutput, bindingClass, binding,
+                                Types.getPackageName(beanCreator.getClassName())));
+            }
+
+            // InvocationContextImpl.postConstruct(instance,postConstructs).proceed()
+            ResultHandle invocationContextHandle = postConstruct.invokeStaticMethod(
+                    MethodDescriptors.INVOCATION_CONTEXTS_POST_CONSTRUCT, instanceHandle,
+                    postConstructsHandle, bindingsHandle);
+
+            TryBlock tryCatch = postConstruct.tryBlock();
+            CatchBlockCreator exceptionCatch = tryCatch.addCatch(Exception.class);
+            // throw new RuntimeException(e)
+            exceptionCatch.throwException(RuntimeException.class, "Error invoking postConstructs",
+                    exceptionCatch.getCaughtException());
+            tryCatch.invokeInterfaceMethod(MethodDescriptor.ofMethod(InvocationContext.class, "proceed", Object.class),
+                    invocationContextHandle);
+        }
+
+        // PostConstruct callbacks
+        if (!bean.isInterceptor()) {
+            List<MethodInfo> postConstructCallbacks = Beans.getCallbacks(bean.getTarget().get().asClass(),
+                    DotNames.POST_CONSTRUCT,
+                    bean.getDeployment().getBeanArchiveIndex());
+            for (MethodInfo callback : postConstructCallbacks) {
+                if (isReflectionFallbackNeeded(callback, targetPackage)) {
+                    if (Modifier.isPrivate(callback.flags())) {
+                        privateMembers.add(isApplicationClass,
+                                String.format("@PostConstruct callback %s#%s()", callback.declaringClass().name(),
+                                        callback.name()));
+                    }
+                    reflectionRegistration.registerMethod(callback);
+                    postConstruct.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
+                            postConstruct.loadClass(callback.declaringClass().name().toString()),
+                            postConstruct.load(callback.name()), postConstruct.newArray(Class.class, postConstruct.load(0)),
+                            instanceHandle,
+                            postConstruct.newArray(Object.class, postConstruct.load(0)));
+                } else {
+                    postConstruct.invokeVirtualMethod(MethodDescriptor.of(callback), instanceHandle);
+                }
+            }
+        }
+        postConstruct.returnValue(null);
+    }
+
+    protected void implementPreDestroy(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean,
+            ProviderType providerType,
+            String baseName,
+            Map<InjectionPointInfo, String> injectionPointToProviderSupplierField,
+            Map<InterceptorInfo, String> interceptorToProviderSupplierField,
+            Map<DecoratorInfo, String> decoratorToProviderSupplierField,
+            ReflectionRegistration reflectionRegistration, String targetPackage, boolean isApplicationClass) {
+        MethodCreator preDestroy = beanCreator
+                .getMethodCreator("preDestroy", void.class, providerType.descriptorName())
+                .setModifiers(ACC_PUBLIC);
+
+        // PreDestroy callbacks
+        if (!bean.isInterceptor()) {
+            List<MethodInfo> preDestroyCallbacks = Beans.getCallbacks(bean.getTarget().get().asClass(),
+                    DotNames.PRE_DESTROY,
+                    bean.getDeployment().getBeanArchiveIndex());
+            for (MethodInfo callback : preDestroyCallbacks) {
+                if (Modifier.isPrivate(callback.flags())) {
+                    privateMembers.add(isApplicationClass, String.format("@PreDestroy callback %s#%s()",
+                            callback.declaringClass().name(), callback.name()));
+                    reflectionRegistration.registerMethod(callback);
+                    preDestroy.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
+                            preDestroy.loadClass(callback.declaringClass().name().toString()),
+                            preDestroy.load(callback.name()), preDestroy.newArray(Class.class, preDestroy.load(0)),
+                            preDestroy.getMethodParam(0),
+                            preDestroy.newArray(Object.class, preDestroy.load(0)));
+                } else {
+                    // instance.superCoolDestroyCallback()
+                    preDestroy.invokeVirtualMethod(MethodDescriptor.of(callback), preDestroy.getMethodParam(0));
+                }
+            }
+        }
+        preDestroy.returnValue(null);
+    }
+
+    protected void implementDispose(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean, ProviderType providerType,
+            String baseName,
+            Map<InjectionPointInfo, String> injectionPointToProviderSupplierField,
+            Map<InterceptorInfo, String> interceptorToProviderSupplierField,
+            Map<DecoratorInfo, String> decoratorToProviderSupplierField,
+            ReflectionRegistration reflectionRegistration, String targetPackage, boolean isApplicationClass) {
+        //TODO calls the disposer method, if any, on a contextual instance of the bean that declares the disposer
+        // method, as defined in Invocation of producer or disposer methods, or performs any additional required
+        // cleanup, if any, to destroy state associated with a resource.
+        MethodCreator dispose = beanCreator
+                .getMethodCreator("dispose", void.class, providerType.descriptorName())
+                .setModifiers(ACC_PUBLIC);
+
+        if (bean.getDisposer() != null) {
+            // Invoke the disposer method
+            // declaringProvider.get(new CreationalContextImpl<>()).dispose()
+            MethodInfo disposerMethod = bean.getDisposer().getDisposerMethod();
+
+            ResultHandle declaringProviderSupplierHandle = dispose.readInstanceField(
+                    FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER_SUPPLIER,
+                            Supplier.class.getName()),
+                    dispose.getThis());
+            ResultHandle declaringProviderHandle = dispose.invokeInterfaceMethod(
+                    MethodDescriptors.SUPPLIER_GET, declaringProviderSupplierHandle);
+            ResultHandle ctxHandle = dispose.newInstance(
+                    MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), dispose.loadNull());
+            ResultHandle declaringProviderInstanceHandle = dispose.invokeInterfaceMethod(
+                    MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, declaringProviderHandle,
+                    ctxHandle);
+
+            if (bean.getDeclaringBean().getScope().isNormal()) {
+                // We need to unwrap the client proxy
+                declaringProviderInstanceHandle = dispose.invokeInterfaceMethod(
+                        MethodDescriptors.CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE,
+                        declaringProviderInstanceHandle);
+            }
+
+            ResultHandle[] referenceHandles = new ResultHandle[disposerMethod.parameters().size()];
+            int disposedParamPosition = bean.getDisposer().getDisposedParameter().position();
+            Iterator<InjectionPointInfo> injectionPointsIterator = bean.getDisposer().getInjection().injectionPoints.iterator();
+            for (int i = 0; i < disposerMethod.parameters().size(); i++) {
+                if (i == disposedParamPosition) {
+                    referenceHandles[i] = dispose.getMethodParam(0);
+                } else {
+                    ResultHandle childCtxHandle = dispose.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
+                            declaringProviderHandle, ctxHandle);
+                    ResultHandle providerSupplierHandle = dispose
+                            .readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
+                                    injectionPointToProviderSupplierField.get(injectionPointsIterator.next()),
+                                    Supplier.class.getName()), dispose.getThis());
+                    ResultHandle providerHandle = dispose.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
+                            providerSupplierHandle);
+                    ResultHandle referenceHandle = dispose.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
+                            providerHandle, childCtxHandle);
+                    referenceHandles[i] = referenceHandle;
+                }
+            }
+
+            if (Modifier.isPrivate(disposerMethod.flags())) {
+                privateMembers.add(isApplicationClass, String.format("Disposer %s#%s", disposerMethod.declaringClass().name(),
+                        disposerMethod.name()));
+                ResultHandle paramTypesArray = dispose.newArray(Class.class, dispose.load(referenceHandles.length));
+                ResultHandle argsArray = dispose.newArray(Object.class, dispose.load(referenceHandles.length));
+                for (int i = 0; i < referenceHandles.length; i++) {
+                    dispose.writeArrayValue(paramTypesArray, i,
+                            dispose.loadClass(disposerMethod.parameters().get(i).name().toString()));
+                    dispose.writeArrayValue(argsArray, i, referenceHandles[i]);
+                }
+                reflectionRegistration.registerMethod(disposerMethod);
+                dispose.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
+                        dispose.loadClass(disposerMethod.declaringClass().name().toString()),
+                        dispose.load(disposerMethod.name()), paramTypesArray, declaringProviderInstanceHandle, argsArray);
+            } else {
+                dispose.invokeVirtualMethod(MethodDescriptor.of(disposerMethod), declaringProviderInstanceHandle,
+                        referenceHandles);
+            }
+
+            // Destroy @Dependent instances injected into method parameters of a disposer method
+            dispose.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, ctxHandle);
+
+            // If the declaring bean is @Dependent we must destroy the instance afterwards
+            if (BuiltinScope.DEPENDENT.is(bean.getDisposer().getDeclaringBean().getScope())) {
+                dispose.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_BEAN_DESTROY, declaringProviderHandle,
+                        declaringProviderInstanceHandle, ctxHandle);
+            }
+        }
+        dispose.returnValue(null);
+    }
+
     Collection<Resource> generateClassBean(BeanInfo bean, ClassInfo beanClass) {
 
         String baseName;
@@ -312,6 +800,32 @@ public class BeanGenerator extends AbstractGenerator {
                     isApplicationClass, baseName);
         }
         implementCreate(classOutput, beanCreator, bean, providerType, baseName,
+                injectionPointToProviderSupplierField,
+                interceptorToProviderSupplierField,
+                decoratorToProviderSupplierField,
+                reflectionRegistration, targetPackage, isApplicationClass);
+
+        implementProduce(classOutput, beanCreator, bean, providerType, baseName,
+                injectionPointToProviderSupplierField,
+                interceptorToProviderSupplierField,
+                decoratorToProviderSupplierField,
+                reflectionRegistration, targetPackage, isApplicationClass);
+        implementInject(classOutput, beanCreator, bean, providerType, baseName,
+                injectionPointToProviderSupplierField,
+                interceptorToProviderSupplierField,
+                decoratorToProviderSupplierField,
+                reflectionRegistration, targetPackage, isApplicationClass);
+        implementPostConstruct(classOutput, beanCreator, bean, providerType, baseName,
+                injectionPointToProviderSupplierField,
+                interceptorToProviderSupplierField,
+                decoratorToProviderSupplierField,
+                reflectionRegistration, targetPackage, isApplicationClass);
+        implementPreDestroy(classOutput, beanCreator, bean, providerType, baseName,
+                injectionPointToProviderSupplierField,
+                interceptorToProviderSupplierField,
+                decoratorToProviderSupplierField,
+                reflectionRegistration, targetPackage, isApplicationClass);
+        implementDispose(classOutput, beanCreator, bean, providerType, baseName,
                 injectionPointToProviderSupplierField,
                 interceptorToProviderSupplierField,
                 decoratorToProviderSupplierField,

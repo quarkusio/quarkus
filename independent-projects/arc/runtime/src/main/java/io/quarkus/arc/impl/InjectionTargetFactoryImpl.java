@@ -23,6 +23,6 @@ public class InjectionTargetFactoryImpl<T> implements InjectionTargetFactory<T> 
 
     @Override
     public AnnotatedTypeConfigurator<T> configure() {
-        return InjectionTargetFactory.super.configure();
+        throw new UnsupportedOperationException();
     }
 }

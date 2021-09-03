@@ -1,6 +1,11 @@
 package io.quarkus.arc.deployment;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -35,12 +40,13 @@ public class BeanArchiveProcessor {
             List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations,
             List<AdditionalBeanBuildItem> additionalBeans, List<GeneratedBeanBuildItem> generatedBeans,
             LiveReloadBuildItem liveReloadBuildItem, BuildProducer<GeneratedClassBuildItem> generatedClass,
-            CustomScopeAnnotationsBuildItem customScopes, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems)
+            CustomScopeAnnotationsBuildItem customScopes, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems,
+            List<BeanArchivePredicateBuildItem> beanArchivePredicates)
             throws Exception {
 
         // First build an index from application archives
         IndexView applicationIndex = buildApplicationIndex(config, applicationArchivesBuildItem,
-                additionalBeanDefiningAnnotations, customScopes, excludeDependencyBuildItems);
+                additionalBeanDefiningAnnotations, customScopes, excludeDependencyBuildItems, beanArchivePredicates);
 
         // Then build additional index for beans added by extensions
         Indexer additionalBeanIndexer = new Indexer();
@@ -81,7 +87,8 @@ public class BeanArchiveProcessor {
 
     private IndexView buildApplicationIndex(ArcConfig config, ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations,
-            CustomScopeAnnotationsBuildItem customScopes, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems) {
+            CustomScopeAnnotationsBuildItem customScopes, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems,
+            List<BeanArchivePredicateBuildItem> beanArchivePredicates) {
 
         Set<ApplicationArchive> archives = applicationArchivesBuildItem.getAllApplicationArchives();
 
@@ -116,15 +123,33 @@ public class BeanArchiveProcessor {
                 continue;
             }
             IndexView index = archive.getIndex();
-            // NOTE: Implicit bean archive without beans.xml contains one or more bean classes with a bean defining annotation and no extension
-            if (archive.getChildPath("META-INF/beans.xml") != null || archive.getChildPath("WEB-INF/beans.xml") != null
-                    || (index.getAllKnownImplementors(DotNames.EXTENSION).isEmpty()
-                            && containsBeanDefiningAnnotation(index, beanDefiningAnnotations))) {
+            if (isExplicitBeanArchive(archive) || isImplicitBeanArchive(index, beanDefiningAnnotations)
+                    || isAdditionalBeanArchive(archive, beanArchivePredicates)) {
                 indexes.add(index);
             }
         }
         indexes.add(applicationArchivesBuildItem.getRootArchive().getIndex());
         return CompositeIndex.create(indexes);
+    }
+
+    private boolean isExplicitBeanArchive(ApplicationArchive archive) {
+        return archive.getChildPath("META-INF/beans.xml") != null || archive.getChildPath("WEB-INF/beans.xml") != null;
+    }
+
+    private boolean isImplicitBeanArchive(IndexView index, Set<DotName> beanDefiningAnnotations) {
+        // NOTE: Implicit bean archive without beans.xml contains one or more bean classes with a bean defining annotation and no extension
+        return index.getAllKnownImplementors(DotNames.EXTENSION).isEmpty()
+                && containsBeanDefiningAnnotation(index, beanDefiningAnnotations);
+    }
+
+    private boolean isAdditionalBeanArchive(ApplicationArchive archive,
+            List<BeanArchivePredicateBuildItem> beanArchivePredicates) {
+        for (BeanArchivePredicateBuildItem p : beanArchivePredicates) {
+            if (p.getPredicate().test(archive)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isApplicationArchiveExcluded(ArcConfig config, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems,

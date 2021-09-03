@@ -20,7 +20,10 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
+import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -57,7 +60,9 @@ public class DevServicesApicurioRegistryProcessor {
     public void startApicurioRegistryDevService(LaunchModeBuildItem launchMode,
             ApicurioRegistryDevServicesBuildTimeConfig apicurioRegistryDevServices,
             Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            BuildProducer<DevServicesConfigResultBuildItem> devServicesConfiguration) {
+            BuildProducer<DevServicesConfigResultBuildItem> devServicesConfiguration,
+            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+            LoggingSetupBuildItem loggingSetupBuildItem) {
 
         ApicurioRegistryDevServiceCfg configuration = getConfiguration(apicurioRegistryDevServices);
 
@@ -69,11 +74,20 @@ public class DevServicesApicurioRegistryProcessor {
             shutdownApicurioRegistry();
             cfg = null;
         }
-
-        ApicurioRegistry apicurioRegistry = startApicurioRegistry(configuration, launchMode,
-                devServicesSharedNetworkBuildItem.isPresent());
-        if (apicurioRegistry == null) {
-            return;
+        ApicurioRegistry apicurioRegistry;
+        StartupLogCompressor compressor = new StartupLogCompressor(
+                (launchMode.isTest() ? "(test) " : "") + "Apicurio Registry Dev Services Starting:",
+                consoleInstalledBuildItem, loggingSetupBuildItem);
+        try {
+            apicurioRegistry = startApicurioRegistry(configuration, launchMode,
+                    devServicesSharedNetworkBuildItem.isPresent());
+            if (apicurioRegistry == null) {
+                return;
+            }
+            compressor.close();
+        } catch (Throwable t) {
+            compressor.closeAndDumpCaptured();
+            throw new RuntimeException(t);
         }
 
         cfg = configuration;

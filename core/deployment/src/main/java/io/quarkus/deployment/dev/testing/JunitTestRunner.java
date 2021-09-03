@@ -198,7 +198,7 @@ public class JunitTestRunner {
                     listener.runStarted(toRun);
                 }
                 log.debug("Starting test run with " + testPlan.countTestIdentifiers((s) -> true) + " tests");
-                QuarkusConsole.INSTANCE.addOutputFilter(logHandler);
+                QuarkusConsole.addOutputFilter(logHandler);
 
                 final Deque<Set<String>> touchedClasses = new LinkedBlockingDeque<>();
                 Map<TestIdentifier, Long> startTimes = new HashMap<>();

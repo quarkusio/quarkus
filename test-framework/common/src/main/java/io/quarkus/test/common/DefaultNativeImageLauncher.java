@@ -96,7 +96,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
             args.add("-D" + e.getKey() + "=" + e.getValue());
         }
 
-        System.out.println("Executing " + args);
+        System.out.println("Executing \"" + String.join(" ", args) + "\"");
 
         Files.deleteIfExists(logFile);
         Files.createDirectories(logFile.getParent());

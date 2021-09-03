@@ -26,4 +26,9 @@ public interface StartupAction {
      */
     RunningQuarkusApplication runMainClass(String... args) throws Exception;
 
+    /**
+     * Runs the application by running the main method of the main class, and runs it to completion
+     */
+    int runMainClassBlocking(String... args) throws Exception;
+
 }

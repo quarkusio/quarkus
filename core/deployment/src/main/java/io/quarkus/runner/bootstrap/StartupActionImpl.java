@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
@@ -33,6 +34,7 @@ import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
+import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
 
@@ -141,7 +143,37 @@ public class StartupActionImpl implements StartupAction {
         } finally {
             Thread.currentThread().setContextClassLoader(old);
         }
+    }
 
+    @Override
+    public int runMainClassBlocking(String... args) throws Exception {
+        //we have our class loaders
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(runtimeClassLoader);
+        final String className = buildResult.consume(MainClassBuildItem.class).getClassName();
+        try {
+            CompletableFuture<Integer> result = new CompletableFuture<>();
+            Class<?> lifecycleManager = Class.forName(ApplicationLifecycleManager.class.getName(), true, runtimeClassLoader);
+            lifecycleManager.getDeclaredMethod("setDefaultExitCodeHandler", Consumer.class).invoke(null,
+                    new Consumer<Integer>() {
+                        @Override
+                        public void accept(Integer integer) {
+                            result.complete(integer);
+                        }
+                    });
+            // force init here
+            Class<?> appClass = Class.forName(className, true, runtimeClassLoader);
+            Method start = appClass.getMethod("main", String[].class);
+            start.invoke(null, (Object) (args == null ? new String[0] : args));
+            Integer returnVal = result.get();
+            Class<?> q = Class.forName(Quarkus.class.getName(), true, runtimeClassLoader);
+            q.getMethod("blockingExit").invoke(null);
+
+            return returnVal;
+        } finally {
+            runtimeClassLoader.close();
+            Thread.currentThread().setContextClassLoader(old);
+        }
     }
 
     @Override

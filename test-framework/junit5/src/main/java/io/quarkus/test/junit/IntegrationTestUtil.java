@@ -293,16 +293,19 @@ public final class IntegrationTestUtil {
             }
         }
 
-        return new DefaultDevServicesLaunchResult(propertyMap, networkId);
+        return new DefaultDevServicesLaunchResult(propertyMap, networkId, curatedApplication);
     }
 
     static class DefaultDevServicesLaunchResult implements ArtifactLauncher.InitContext.DevServicesLaunchResult {
         private final Map<String, String> properties;
         private final String networkId;
+        private final CuratedApplication curatedApplication;
 
-        DefaultDevServicesLaunchResult(Map<String, String> properties, String networkId) {
+        DefaultDevServicesLaunchResult(Map<String, String> properties, String networkId,
+                CuratedApplication curatedApplication) {
             this.properties = properties;
             this.networkId = networkId;
+            this.curatedApplication = curatedApplication;
         }
 
         public Map<String, String> properties() {
@@ -311,6 +314,11 @@ public final class IntegrationTestUtil {
 
         public String networkId() {
             return networkId;
+        }
+
+        @Override
+        public void close() {
+            curatedApplication.close();
         }
     }
 

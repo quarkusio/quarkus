@@ -1,8 +1,10 @@
 package io.quarkus.dev.console;
 
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 public abstract class QuarkusConsole {
 
@@ -39,7 +41,7 @@ public abstract class QuarkusConsole {
 
     public static volatile boolean installed;
 
-    protected volatile Predicate<String> outputFilter;
+    protected static final List<BiPredicate<String, Boolean>> outputFilters = new CopyOnWriteArrayList<>();
 
     private volatile boolean started = false;
 
@@ -84,9 +86,9 @@ public abstract class QuarkusConsole {
 
     public abstract void setPromptMessage(String message);
 
-    public abstract void write(String s);
+    public abstract void write(boolean errorStream, String s);
 
-    public abstract void write(byte[] buf, int off, int len);
+    public abstract void write(boolean errorStream, byte[] buf, int off, int len);
 
     protected String stripAnsiCodes(String s) {
         if (s == null) {
@@ -96,8 +98,23 @@ public abstract class QuarkusConsole {
         return s;
     }
 
-    public void setOutputFilter(Predicate<String> logHandler) {
-        this.outputFilter = logHandler;
+    public static void addOutputFilter(BiPredicate<String, Boolean> logHandler) {
+        outputFilters.add(logHandler);
+    }
+
+    public static void removeOutputFilter(BiPredicate<String, Boolean> logHandler) {
+        outputFilters.remove(logHandler);
+    }
+
+    protected boolean shouldWrite(boolean errorStream, String s) {
+        boolean ok = true;
+        for (var i : outputFilters) {
+            if (!i.test(s, errorStream)) {
+                //no early exit as filters can also record output
+                ok = false;
+            }
+        }
+        return ok;
     }
 
     public boolean isInputSupported() {

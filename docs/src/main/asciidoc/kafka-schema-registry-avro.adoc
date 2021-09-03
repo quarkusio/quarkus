@@ -45,7 +45,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `kafka-avro-schema-quickstart` {quickstarts-tree-url}/kafka-quickstart-avro-schema[directory].
+The solution is located in the `kafka-avro-schema-quickstart` {quickstarts-tree-url}/kafka-avro-schema-quickstart[directory].
 
 == Creating the Maven Project
 

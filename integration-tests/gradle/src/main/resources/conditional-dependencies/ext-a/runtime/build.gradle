@@ -8,6 +8,7 @@ dependencies {
     api("org.acme:simple-dependency:1.0-SNAPSHOT") {
         exclude module: "transitive-dependency"
     }
+    api("io.quarkus:quarkus-hibernate-reactive-panache")
 }
 
 publishing {

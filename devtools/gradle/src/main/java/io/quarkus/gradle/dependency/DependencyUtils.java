@@ -1,10 +1,20 @@
 package io.quarkus.gradle.dependency;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
+import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.UnknownDomainObjectException;
 import org.gradle.api.artifacts.Configuration;
@@ -18,8 +28,11 @@ import org.gradle.api.capabilities.Capability;
 import org.gradle.api.initialization.IncludedBuild;
 import org.gradle.api.plugins.JavaPlugin;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.util.BootstrapUtils;
+import io.quarkus.bootstrap.util.ZipUtils;
 
 public class DependencyUtils {
 
@@ -72,6 +85,21 @@ public class DependencyUtils {
             }
         }
         return false;
+    }
+
+    public static Set<ExtensionDependency> loadQuarkusExtension(Project project, Configuration configuration) {
+        Set<ExtensionDependency> extensions = new HashSet<>();
+        Configuration configurationCopy = duplicateConfiguration(project, configuration);
+
+        Set<ResolvedArtifact> resolvedArtifacts = configurationCopy.getResolvedConfiguration().getResolvedArtifacts();
+        for (ResolvedArtifact artifact : resolvedArtifacts) {
+            ExtensionDependency extension = getExtensionInfoOrNull(project, artifact);
+            if (extension != null) {
+                extensions.add(extension);
+            }
+        }
+
+        return extensions;
     }
 
     public static boolean isTestFixtureDependency(Dependency dependency) {
@@ -137,5 +165,57 @@ public class DependencyUtils {
 
     public static String asFeatureName(Dependency version) {
         return version.getGroup() + ":" + version.getName();
+    }
+
+    public static ExtensionDependency getExtensionInfoOrNull(Project project, ResolvedArtifact artifact) {
+        ModuleVersionIdentifier artifactId = artifact.getModuleVersion().getId();
+        File artifactFile = artifact.getFile();
+        if (!artifactFile.exists() || !"jar".equals(artifact.getExtension())) {
+            return null;
+        }
+        if (artifactFile.isDirectory()) {
+            Path descriptorPath = artifactFile.toPath().resolve(BootstrapConstants.DESCRIPTOR_PATH);
+            if (Files.exists(descriptorPath)) {
+                return loadExtensionInfo(project, descriptorPath, artifactId);
+            }
+        } else {
+            try (FileSystem artifactFs = ZipUtils.newFileSystem(artifactFile.toPath())) {
+                Path descriptorPath = artifactFs.getPath(BootstrapConstants.DESCRIPTOR_PATH);
+                if (Files.exists(descriptorPath)) {
+                    return loadExtensionInfo(project, descriptorPath, artifactId);
+                }
+            } catch (IOException e) {
+                throw new GradleException("Failed to read " + artifactFile, e);
+            }
+        }
+        return null;
+    }
+
+    private static ExtensionDependency loadExtensionInfo(Project project, Path descriptorPath,
+            ModuleVersionIdentifier exentionId) {
+        final Properties extensionProperties = new Properties();
+        try (BufferedReader reader = Files.newBufferedReader(descriptorPath)) {
+            extensionProperties.load(reader);
+        } catch (IOException e) {
+            throw new GradleException("Failed to load " + descriptorPath, e);
+        }
+        AppArtifactCoords deploymentModule = AppArtifactCoords
+                .fromString(extensionProperties.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT));
+        final List<Dependency> conditionalDependencies;
+        if (extensionProperties.containsKey(BootstrapConstants.CONDITIONAL_DEPENDENCIES)) {
+            final String[] deps = BootstrapUtils
+                    .splitByWhitespace(extensionProperties.getProperty(BootstrapConstants.CONDITIONAL_DEPENDENCIES));
+            conditionalDependencies = new ArrayList<>(deps.length);
+            for (String conditionalDep : deps) {
+                conditionalDependencies.add(DependencyUtils.create(project.getDependencies(), conditionalDep));
+            }
+        } else {
+            conditionalDependencies = Collections.emptyList();
+        }
+
+        final AppArtifactKey[] constraints = BootstrapUtils
+                .parseDependencyCondition(extensionProperties.getProperty(BootstrapConstants.DEPENDENCY_CONDITION));
+        return new ExtensionDependency(exentionId, deploymentModule, conditionalDependencies,
+                constraints == null ? Collections.emptyList() : Arrays.asList(constraints));
     }
 }

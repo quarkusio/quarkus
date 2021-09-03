@@ -5,7 +5,7 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
 @TargetClass(LambdaContainerHandler.class)
-public class LambdaContainerHandlerSubstitution {
+public final class LambdaContainerHandlerSubstitution {
 
     // afterburner does not work in native mode, so let's ensure it's never registered
     @Substitute

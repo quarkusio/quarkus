@@ -22,25 +22,25 @@ public class ApplicationDeploymentClasspathBuilder {
         return baseConfigurationName + DEPLOYMENT_CONFIGURATION_SUFFIX;
     }
 
-    public void createBuildClasspath(Set<ExtensionDependency> extensions, String baseConfigurationName) {
+    public void createBuildClasspath(String baseConfigurationName, boolean common) {
         String deploymentConfigurationName = toDeploymentConfigurationName(baseConfigurationName);
         project.getConfigurations().create(deploymentConfigurationName);
 
         DependencyHandler dependencies = project.getDependencies();
-        for (ExtensionDependency extension : extensions) {
-            if (commonExtensions.contains(extension)) {
+        Set<ExtensionDependency> firstLevelExtensions = DependencyUtils.loadQuarkusExtension(project,
+                project.getConfigurations().findByName(baseConfigurationName));
+        for (ExtensionDependency extension : firstLevelExtensions) {
+            if (common) {
+                commonExtensions.add(extension);
+            } else if (commonExtensions.contains(extension)) {
                 continue;
             }
             extension.createDeploymentVariant(dependencies);
-            createDeploymentClasspath(deploymentConfigurationName, extension, dependencies);
+            requireDeploymentDependency(deploymentConfigurationName, extension, dependencies);
         }
     }
 
-    public void addCommonExtension(Set<ExtensionDependency> commonExtensions) {
-        this.commonExtensions.addAll(commonExtensions);
-    }
-
-    private void createDeploymentClasspath(String deploymentConfigurationName, ExtensionDependency extension,
+    private void requireDeploymentDependency(String deploymentConfigurationName, ExtensionDependency extension,
             DependencyHandler dependencies) {
         ExternalDependency dependency = (ExternalDependency) dependencies.add(deploymentConfigurationName,
                 extension.asDependencyNotation());

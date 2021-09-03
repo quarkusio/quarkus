@@ -96,6 +96,7 @@ public class SchedulerProcessor {
     static final DotName SCHEDULED_NAME = DotName.createSimple(Scheduled.class.getName());
     static final DotName SCHEDULES_NAME = DotName.createSimple(Scheduled.Schedules.class.getName());
     static final DotName SKIP_NEVER_NAME = DotName.createSimple(Scheduled.Never.class.getName());
+    static final DotName SKIP_PREDICATE = DotName.createSimple(Scheduled.SkipPredicate.class.getName());
 
     static final Type SCHEDULED_EXECUTION_TYPE = Type.create(DotName.createSimple(ScheduledExecution.class.getName()),
             Kind.CLASS);
@@ -464,6 +465,11 @@ public class SchedulerProcessor {
         }
 
         return null;
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem unremoveableSkipPredicates() {
+        return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypeExclusion(SKIP_PREDICATE));
     }
 
 }

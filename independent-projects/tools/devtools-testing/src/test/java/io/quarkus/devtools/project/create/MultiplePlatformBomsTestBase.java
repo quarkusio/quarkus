@@ -13,6 +13,8 @@ import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
 import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.registry.RegistryResolutionException;
+import io.quarkus.registry.catalog.PlatformStreamCoords;
 import io.quarkus.registry.config.RegistriesConfigLocator;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -89,13 +91,24 @@ public abstract class MultiplePlatformBomsTestBase {
 
     protected QuarkusCommandOutcome createProject(Path projectDir, List<String> extensions)
             throws Exception {
-        return createProject(projectDir, null, extensions);
+        return createProject(projectDir, (String) null, extensions);
     }
 
     protected QuarkusCommandOutcome createProject(Path projectDir, String quarkusVersion, List<String> extensions)
             throws Exception {
         return new CreateProject(
                 quarkusVersion == null ? getQuarkusProject(projectDir) : getQuarkusProject(projectDir, quarkusVersion))
+                        .groupId("org.acme")
+                        .artifactId("acme-app")
+                        .version("0.0.1-SNAPSHOT")
+                        .extensions(new HashSet<>(extensions))
+                        .execute();
+    }
+
+    protected QuarkusCommandOutcome createProject(Path projectDir, PlatformStreamCoords stream, List<String> extensions)
+            throws Exception {
+        return new CreateProject(
+                getQuarkusProject(projectDir, stream))
                         .groupId("org.acme")
                         .artifactId("acme-app")
                         .version("0.0.1-SNAPSHOT")
@@ -169,6 +182,12 @@ public abstract class MultiplePlatformBomsTestBase {
 
     protected QuarkusProject getQuarkusProject(Path projectDir, String quarkusVersion) {
         return QuarkusProjectHelper.getProject(projectDir, BuildTool.MAVEN, quarkusVersion);
+    }
+
+    protected QuarkusProject getQuarkusProject(Path projectDir, PlatformStreamCoords stream)
+            throws RegistryResolutionException {
+        return QuarkusProjectHelper.getProject(projectDir,
+                QuarkusProjectHelper.getCatalogResolver().resolveExtensionCatalog(stream), BuildTool.MAVEN);
     }
 
     static Path newProjectDir(String name) {

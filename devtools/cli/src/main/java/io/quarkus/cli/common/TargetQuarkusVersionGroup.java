@@ -2,15 +2,15 @@ package io.quarkus.cli.common;
 
 import io.quarkus.cli.Version;
 import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.StreamCoords;
 import io.quarkus.platform.tools.ToolsConstants;
+import io.quarkus.registry.catalog.PlatformStreamCoords;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 
 public class TargetQuarkusVersionGroup {
     final static String FULL_EXAMPLE = ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID + ":"
             + ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID + ":2.2.0.Final";
-    StreamCoords streamCoords = null;
+    PlatformStreamCoords streamCoords = null;
     String validStream = null;
 
     ArtifactCoords platformBom = null;
@@ -25,7 +25,7 @@ public class TargetQuarkusVersionGroup {
         stream = stream.trim();
         if (!stream.isEmpty()) {
             try {
-                streamCoords = StreamCoords.fromString(stream);
+                streamCoords = PlatformStreamCoords.fromString(stream);
                 validStream = stream;
             } catch (IllegalArgumentException iex) {
                 throw new CommandLine.ParameterException(spec.commandLine(),
@@ -94,7 +94,7 @@ public class TargetQuarkusVersionGroup {
         return streamCoords != null;
     }
 
-    public StreamCoords getStream() {
+    public PlatformStreamCoords getStream() {
         return streamCoords;
     }
 

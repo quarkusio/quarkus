@@ -56,6 +56,14 @@ class RegistryExtensionResolver {
                 : VERSION_RECOGNIZED;
     }
 
+    boolean isExclusiveProviderOf(String quarkusVersion) {
+        return checkQuarkusVersion(quarkusVersion) == VERSION_EXCLUSIVE_PROVIDER;
+    }
+
+    boolean isAcceptsQuarkusVersionQueries(String quarkusVersion) {
+        return checkQuarkusVersion(quarkusVersion) >= 0;
+    }
+
     int checkPlatform(ArtifactCoords platform) {
         // TODO this should be allowed to check the full coordinates
         return checkQuarkusVersion(platform.getVersion());

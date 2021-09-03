@@ -120,6 +120,9 @@ public class TestRegistryClient implements RegistryClient {
     public PlatformCatalog resolvePlatforms(String quarkusVersion) throws RegistryResolutionException {
         final Path json = TestRegistryClientBuilder.getRegistryPlatformsCatalogPath(registryDir, quarkusVersion);
         log.debug("%s resolvePlatforms %s", config.getId(), json);
+        if (!Files.exists(json)) {
+            return null;
+        }
         try {
             return JsonCatalogMapperHelper.deserialize(json, JsonPlatformCatalog.class);
         } catch (IOException e) {

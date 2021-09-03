@@ -5,8 +5,8 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.cli.Version;
 import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.StreamCoords;
 import io.quarkus.platform.tools.ToolsConstants;
+import io.quarkus.registry.catalog.PlatformStreamCoords;
 
 public class TargetQuarkusVersionGroupTest {
     final static String clientVersion = Version.clientVersion();
@@ -64,7 +64,7 @@ public class TargetQuarkusVersionGroupTest {
     void testStreamUseDFullyQualified() {
         qvg.setStream("stream-platform:stream-version");
 
-        StreamCoords coords = qvg.getStream();
+        PlatformStreamCoords coords = qvg.getStream();
         Assertions.assertEquals("stream-platform", coords.getPlatformKey());
         Assertions.assertEquals("stream-version", coords.getStreamId());
     }
@@ -73,7 +73,7 @@ public class TargetQuarkusVersionGroupTest {
     void testStreamUseDefaultPlatformKey() {
         qvg.setStream(":stream-version");
 
-        StreamCoords coords = qvg.getStream();
+        PlatformStreamCoords coords = qvg.getStream();
         Assertions.assertNull(coords.getPlatformKey());
         Assertions.assertEquals("stream-version", coords.getStreamId());
     }
@@ -82,7 +82,7 @@ public class TargetQuarkusVersionGroupTest {
     void testStreamUseDefaultStreamId() {
         qvg.setStream("stream-platform:");
 
-        StreamCoords coords = qvg.getStream();
+        PlatformStreamCoords coords = qvg.getStream();
         Assertions.assertEquals("stream-platform", coords.getPlatformKey());
         Assertions.assertEquals("", coords.getStreamId());
     }

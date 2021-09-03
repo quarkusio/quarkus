@@ -1,17 +1,17 @@
-package io.quarkus.maven;
+package io.quarkus.registry.catalog;
 
-public class StreamCoords {
+public class PlatformStreamCoords {
     final String platformKey;
     final String streamId;
 
-    public static StreamCoords fromString(String stream) {
+    public static PlatformStreamCoords fromString(String stream) {
         final int colon = stream.indexOf(':');
         String platformKey = colon <= 0 ? null : stream.substring(0, colon);
         String streamId = colon < 0 ? stream : stream.substring(colon + 1);
-        return new StreamCoords(platformKey, streamId);
+        return new PlatformStreamCoords(platformKey, streamId);
     }
 
-    public StreamCoords(String platformKey, String streamId) {
+    public PlatformStreamCoords(String platformKey, String streamId) {
         this.platformKey = platformKey;
         this.streamId = streamId;
     }

@@ -177,7 +177,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final BlockingDefault defaultBlocking;
     private final Map<DotName, Map<String, String>> classLevelExceptionMappers;
     private final Function<String, BeanFactory<Object>> factoryCreator;
-    private final Consumer<Map.Entry<MethodInfo, ResourceMethod>> resourceMethodCallback;
+    private final Consumer<ResourceMethodCallbackData> resourceMethodCallback;
 
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
         this.index = builder.index;
@@ -545,7 +545,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
             handleAdditionalMethodProcessing((METHOD) method, currentClassInfo, currentMethodInfo);
             if (resourceMethodCallback != null) {
-                resourceMethodCallback.accept(new AbstractMap.SimpleEntry<>(currentMethodInfo, method));
+                resourceMethodCallback.accept(new ResourceMethodCallbackData(currentMethodInfo, actualEndpointInfo, method));
             }
             return method;
         } catch (Exception e) {
@@ -1133,7 +1133,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private AdditionalWriters additionalWriters;
         private boolean hasRuntimeConverters;
         private Map<DotName, Map<String, String>> classLevelExceptionMappers;
-        private Consumer<Map.Entry<MethodInfo, ResourceMethod>> resourceMethodCallback;
+        private Consumer<ResourceMethodCallbackData> resourceMethodCallback;
 
         public B setDefaultBlocking(BlockingDefault defaultBlocking) {
             this.defaultBlocking = defaultBlocking;
@@ -1195,12 +1195,36 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return (B) this;
         }
 
-        public B setResourceMethodCallback(Consumer<Map.Entry<MethodInfo, ResourceMethod>> resourceMethodCallback) {
+        public B setResourceMethodCallback(Consumer<ResourceMethodCallbackData> resourceMethodCallback) {
             this.resourceMethodCallback = resourceMethodCallback;
             return (B) this;
         }
 
         public abstract T build();
+    }
+
+    public static class ResourceMethodCallbackData {
+        private final MethodInfo methodInfo;
+        private final ClassInfo actualEndpointInfo;
+        private final ResourceMethod resourceMethod;
+
+        public ResourceMethodCallbackData(MethodInfo methodInfo, ClassInfo actualEndpointInfo, ResourceMethod resourceMethod) {
+            this.methodInfo = methodInfo;
+            this.actualEndpointInfo = actualEndpointInfo;
+            this.resourceMethod = resourceMethod;
+        }
+
+        public MethodInfo getMethodInfo() {
+            return methodInfo;
+        }
+
+        public ClassInfo getActualEndpointInfo() {
+            return actualEndpointInfo;
+        }
+
+        public ResourceMethod getResourceMethod() {
+            return resourceMethod;
+        }
     }
 
 }

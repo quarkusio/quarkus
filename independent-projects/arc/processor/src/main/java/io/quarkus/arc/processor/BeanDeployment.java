@@ -483,6 +483,10 @@ public class BeanDeployment {
         return qualifiers.get(name);
     }
 
+    boolean isInheritedQualifier(DotName name) {
+        return (getQualifier(name).classAnnotation(DotNames.INHERITED) != null);
+    }
+
     /**
      * Extracts qualifiers from given annotation instance.
      * This returns a collection because in case of repeating qualifiers there can be multiple.
@@ -673,6 +677,10 @@ public class BeanDeployment {
         for (final Collection<AnnotationInstance> annotations : additionalStereotypes.values()) {
             stereotypeAnnotations.addAll(annotations);
         }
+        Set<DotName> stereotypeNames = new HashSet<>();
+        for (AnnotationInstance stereotype : stereotypeAnnotations) {
+            stereotypeNames.add(stereotype.target().asClass().name());
+        }
         for (AnnotationInstance stereotype : stereotypeAnnotations) {
             final DotName stereotypeName = stereotype.target().asClass().name();
             ClassInfo stereotypeClass = getClassByName(index, stereotypeName);
@@ -682,6 +690,7 @@ public class BeanDeployment {
                 Integer alternativePriority = null;
                 List<ScopeInfo> scopes = new ArrayList<>();
                 List<AnnotationInstance> bindings = new ArrayList<>();
+                List<AnnotationInstance> parentStereotypes = new ArrayList<>();
                 boolean isNamed = false;
 
                 for (AnnotationInstance annotation : annotationStore.getAnnotations(stereotypeClass)) {
@@ -689,6 +698,8 @@ public class BeanDeployment {
                         isAlternative = true;
                     } else if (interceptorBindings.containsKey(annotation.name())) {
                         bindings.add(annotation);
+                    } else if (stereotypeNames.contains(annotation.name())) {
+                        parentStereotypes.add(annotation);
                     } else if (DotNames.NAMED.equals(annotation.name())) {
                         if (annotation.value() != null && !annotation.value()
                                 .asString()
@@ -708,8 +719,9 @@ public class BeanDeployment {
                 }
                 boolean isAdditionalStereotypeBuildItem = additionalStereotypes.containsKey(stereotypeName);
                 final ScopeInfo scope = getValidScope(scopes, stereotypeClass);
+                boolean isInherited = stereotypeClass.classAnnotation(DotNames.INHERITED) != null;
                 stereotypes.put(stereotypeName, new StereotypeInfo(scope, bindings, isAlternative, alternativePriority,
-                        isNamed, false, isAdditionalStereotypeBuildItem, stereotypeClass));
+                        isNamed, false, isAdditionalStereotypeBuildItem, stereotypeClass, isInherited, parentStereotypes));
             }
         }
         //if an additional bean defining annotation has a default scope we register it as a stereotype
@@ -718,10 +730,11 @@ public class BeanDeployment {
                 if (i.getDefaultScope() != null) {
                     ScopeInfo scope = getScope(i.getDefaultScope(), customContexts);
                     ClassInfo stereotypeClassInfo = getClassByName(index, i.getAnnotation());
+                    boolean isInherited = stereotypeClassInfo.classAnnotation(DotNames.INHERITED) != null;
                     if (stereotypeClassInfo != null) {
                         stereotypes.put(i.getAnnotation(), new StereotypeInfo(scope, Collections.emptyList(),
                                 false, null, false, true,
-                                false, stereotypeClassInfo));
+                                false, stereotypeClassInfo, isInherited, Collections.emptyList()));
                     }
                 }
             }

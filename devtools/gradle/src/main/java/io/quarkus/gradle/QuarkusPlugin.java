@@ -33,7 +33,6 @@ import org.gradle.util.GradleVersion;
 import io.quarkus.gradle.builder.QuarkusModelBuilder;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.dependency.ConditionalDependenciesEnabler;
-import io.quarkus.gradle.dependency.ExtensionDependency;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.quarkus.gradle.extension.SourceSetExtension;
 import io.quarkus.gradle.tasks.QuarkusAddExtension;
@@ -273,15 +272,14 @@ public class QuarkusPlugin implements Plugin<Project> {
         ConditionalDependenciesEnabler conditionalDependenciesEnabler = new ConditionalDependenciesEnabler(project);
         ApplicationDeploymentClasspathBuilder deploymentClasspathBuilder = new ApplicationDeploymentClasspathBuilder(project);
 
-        Set<ExtensionDependency> commonExtensions = conditionalDependenciesEnabler
+        conditionalDependenciesEnabler
                 .declareConditionalDependencies(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
-        deploymentClasspathBuilder.createBuildClasspath(commonExtensions, JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
-        deploymentClasspathBuilder.addCommonExtension(commonExtensions);
+        deploymentClasspathBuilder.createBuildClasspath(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true);
 
         for (String baseConfiguration : CONDITIONAL_DEPENDENCY_LOOKUP) {
-            Set<ExtensionDependency> extensionDependencies = conditionalDependenciesEnabler
+            conditionalDependenciesEnabler
                     .declareConditionalDependencies(baseConfiguration);
-            deploymentClasspathBuilder.createBuildClasspath(extensionDependencies, baseConfiguration);
+            deploymentClasspathBuilder.createBuildClasspath(baseConfiguration, false);
         }
 
         final HashSet<String> visited = new HashSet<>();

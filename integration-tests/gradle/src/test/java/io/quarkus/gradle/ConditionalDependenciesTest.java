@@ -86,6 +86,7 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
 
         final Path deploymentLib = buildDir.toPath().resolve("quarkus-app").resolve("lib").resolve("deployment");
         assertThat(deploymentLib.resolve("org.acme.transitive-dependency-1.0-SNAPSHOT.jar")).exists();
+        assertThat(deploymentLib.resolve("io.quarkus.quarkus-agroal-" + getQuarkusVersion() + ".jar")).doesNotExist();
     }
 
     @Test

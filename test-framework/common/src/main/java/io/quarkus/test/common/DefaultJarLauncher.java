@@ -66,7 +66,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         args.add("-jar");
         args.add(jarPath.toAbsolutePath().toString());
 
-        System.out.println("Executing " + args);
+        System.out.println("Executing \"" + String.join(" ", args) + "\"");
 
         Files.deleteIfExists(logFile);
         Files.createDirectories(logFile.getParent());

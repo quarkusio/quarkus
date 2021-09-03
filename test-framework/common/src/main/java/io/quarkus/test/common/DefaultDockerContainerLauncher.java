@@ -104,7 +104,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         Files.deleteIfExists(logFile);
         Files.createDirectories(logFile.getParent());
 
-        System.out.println("Executing " + args);
+        System.out.println("Executing \"" + String.join(" ", args) + "\"");
 
         Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
 

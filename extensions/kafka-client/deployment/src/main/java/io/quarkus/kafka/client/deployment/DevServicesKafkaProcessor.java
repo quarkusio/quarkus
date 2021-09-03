@@ -42,7 +42,10 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
+import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
@@ -76,7 +79,9 @@ public class DevServicesKafkaProcessor {
             LaunchModeBuildItem launchMode,
             KafkaBuildTimeConfig kafkaClientBuildTimeConfig,
             Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            BuildProducer<DevServicesConfigResultBuildItem> devServicePropertiesProducer) {
+            BuildProducer<DevServicesConfigResultBuildItem> devServicePropertiesProducer,
+            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+            LoggingSetupBuildItem loggingSetupBuildItem) {
 
         KafkaDevServiceCfg configuration = getConfiguration(kafkaClientBuildTimeConfig);
 
@@ -88,14 +93,25 @@ public class DevServicesKafkaProcessor {
             shutdownBroker();
             cfg = null;
         }
+        KafkaBroker kafkaBroker;
+        DevServicesKafkaBrokerBuildItem bootstrapServers;
+        StartupLogCompressor compressor = new StartupLogCompressor(
+                (launchMode.isTest() ? "(test) " : "") + "Kafka Dev Services Starting:",
+                consoleInstalledBuildItem, loggingSetupBuildItem);
+        try {
 
-        KafkaBroker kafkaBroker = startKafka(configuration, launchMode, devServicesSharedNetworkBuildItem.isPresent());
-        DevServicesKafkaBrokerBuildItem bootstrapServers = null;
-        if (kafkaBroker != null) {
-            closeable = kafkaBroker.getCloseable();
-            devServicePropertiesProducer.produce(new DevServicesConfigResultBuildItem(
-                    KAFKA_BOOTSTRAP_SERVERS, kafkaBroker.getBootstrapServers()));
-            bootstrapServers = new DevServicesKafkaBrokerBuildItem(kafkaBroker.getBootstrapServers());
+            kafkaBroker = startKafka(configuration, launchMode, devServicesSharedNetworkBuildItem.isPresent());
+            bootstrapServers = null;
+            if (kafkaBroker != null) {
+                closeable = kafkaBroker.getCloseable();
+                devServicePropertiesProducer.produce(new DevServicesConfigResultBuildItem(
+                        KAFKA_BOOTSTRAP_SERVERS, kafkaBroker.getBootstrapServers()));
+                bootstrapServers = new DevServicesKafkaBrokerBuildItem(kafkaBroker.getBootstrapServers());
+            }
+            compressor.close();
+        } catch (Throwable t) {
+            compressor.closeAndDumpCaptured();
+            throw new RuntimeException(t);
         }
 
         // Configure the watch dog

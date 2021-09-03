@@ -45,7 +45,11 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
+import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.oidc.deployment.OidcBuildStep.IsEnabled;
@@ -106,7 +110,10 @@ public class KeycloakDevServicesProcessor {
             Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             BuildProducer<DevServicesConfigResultBuildItem> devServices,
             Optional<OidcDevServicesBuildItem> oidcProviderBuildItem,
-            KeycloakBuildTimeConfig config) {
+            KeycloakBuildTimeConfig config,
+            LaunchModeBuildItem launchMode,
+            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+            LoggingSetupBuildItem loggingSetupBuildItem) {
 
         if (oidcProviderBuildItem.isPresent()) {
             // Dev Services for the alternative OIDC provider are enabled
@@ -143,52 +150,60 @@ public class KeycloakDevServicesProcessor {
             existingDevServiceConfig = null;
         }
         capturedDevServicesConfiguration = currentDevServicesConfiguration;
+        StartResult startResult;
+        StartupLogCompressor compressor = new StartupLogCompressor(
+                (launchMode.isTest() ? "(test) " : "") + "KeyCloak Dev Services Starting:",
+                consoleInstalledBuildItem, loggingSetupBuildItem);
+        try {
+            startResult = startContainer(devServicesSharedNetworkBuildItem.isPresent());
+            if (startResult == null) {
+                return null;
+            }
 
-        StartResult startResult = startContainer(devServicesSharedNetworkBuildItem.isPresent());
-        if (startResult == null) {
-            return null;
-        }
+            closeables = startResult.closeable != null ? Collections.singletonList(startResult.closeable) : null;
 
-        closeables = startResult.closeable != null ? Collections.singletonList(startResult.closeable) : null;
-
-        if (first) {
-            first = false;
-            Runnable closeTask = new Runnable() {
-                @Override
-                public void run() {
-                    if (closeables != null) {
-                        for (Closeable closeable : closeables) {
-                            try {
-                                closeable.close();
-                            } catch (Throwable t) {
-                                LOG.error("Failed to stop Keycloak container", t);
+            if (first) {
+                first = false;
+                Runnable closeTask = new Runnable() {
+                    @Override
+                    public void run() {
+                        if (closeables != null) {
+                            for (Closeable closeable : closeables) {
+                                try {
+                                    closeable.close();
+                                } catch (Throwable t) {
+                                    LOG.error("Failed to stop Keycloak container", t);
+                                }
                             }
                         }
-                    }
-                    if (vertxInstance != null) {
-                        try {
-                            vertxInstance.close();
-                        } catch (Throwable t) {
-                            LOG.error("Failed to close Vertx instance", t);
+                        if (vertxInstance != null) {
+                            try {
+                                vertxInstance.close();
+                            } catch (Throwable t) {
+                                LOG.error("Failed to close Vertx instance", t);
+                            }
                         }
+                        first = true;
+                        closeables = null;
+                        capturedDevServicesConfiguration = null;
+                        vertxInstance = null;
+                        capturedRealmFileLastModifiedDate = null;
                     }
-                    first = true;
-                    closeables = null;
-                    capturedDevServicesConfiguration = null;
-                    vertxInstance = null;
-                    capturedRealmFileLastModifiedDate = null;
-                }
-            };
-            QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
-        }
+                };
+                QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
+                ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
+            }
 
-        capturedKeycloakUrl = startResult.url + "/auth";
-        if (vertxInstance == null) {
-            vertxInstance = Vertx.vertx();
+            capturedKeycloakUrl = startResult.url + "/auth";
+            if (vertxInstance == null) {
+                vertxInstance = Vertx.vertx();
+            }
+            capturedRealmFileLastModifiedDate = getRealmFileLastModifiedDate(capturedDevServicesConfiguration.realmPath);
+            compressor.close();
+        } catch (Throwable t) {
+            compressor.closeAndDumpCaptured();
+            throw new RuntimeException(t);
         }
-        capturedRealmFileLastModifiedDate = getRealmFileLastModifiedDate(capturedDevServicesConfiguration.realmPath);
-
         LOG.info("Dev Services for Keycloak started.");
 
         return prepareConfiguration(capturedDevServicesConfiguration.createRealm && startResult.createDefaultRealm,

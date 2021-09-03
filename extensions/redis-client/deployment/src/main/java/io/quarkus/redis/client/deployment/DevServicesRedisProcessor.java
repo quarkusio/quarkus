@@ -28,7 +28,10 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
+import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.redis.client.deployment.RedisBuildTimeConfig.DevServiceConfiguration;
 import io.quarkus.redis.client.runtime.RedisClientUtil;
@@ -60,7 +63,9 @@ public class DevServicesRedisProcessor {
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = { GlobalDevServicesConfig.Enabled.class })
     public void startRedisContainers(LaunchModeBuildItem launchMode,
             Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            BuildProducer<DevServicesConfigResultBuildItem> devConfigProducer, RedisBuildTimeConfig config) {
+            BuildProducer<DevServicesConfigResultBuildItem> devConfigProducer, RedisBuildTimeConfig config,
+            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+            LoggingSetupBuildItem loggingSetupBuildItem) {
 
         Map<String, DevServiceConfiguration> currentDevServicesConfiguration = new HashMap<>(config.additionalDevServices);
         currentDevServicesConfiguration.put(RedisClientUtil.DEFAULT_CLIENT, config.defaultDevService);
@@ -85,17 +90,28 @@ public class DevServicesRedisProcessor {
 
         capturedDevServicesConfiguration = currentDevServicesConfiguration;
         List<Closeable> currentCloseables = new ArrayList<>();
-        for (Entry<String, DevServiceConfiguration> entry : currentDevServicesConfiguration.entrySet()) {
-            String connectionName = entry.getKey();
-            StartResult startResult = startContainer(connectionName, entry.getValue().devservices, launchMode.getLaunchMode(),
-                    devServicesSharedNetworkBuildItem.isPresent());
-            if (startResult == null) {
-                continue;
+
+        StartupLogCompressor compressor = new StartupLogCompressor(
+                (launchMode.isTest() ? "(test) " : "") + "Redis Dev Services Starting:", consoleInstalledBuildItem,
+                loggingSetupBuildItem);
+        try {
+            for (Entry<String, DevServiceConfiguration> entry : currentDevServicesConfiguration.entrySet()) {
+                String connectionName = entry.getKey();
+                StartResult startResult = startContainer(connectionName, entry.getValue().devservices,
+                        launchMode.getLaunchMode(),
+                        devServicesSharedNetworkBuildItem.isPresent());
+                if (startResult == null) {
+                    continue;
+                }
+                currentCloseables.add(startResult.closeable);
+                String configKey = getConfigPrefix(connectionName) + RedisConfig.HOSTS_CONFIG_NAME;
+                devConfigProducer.produce(new DevServicesConfigResultBuildItem(configKey, startResult.url));
+                log.infof("The %s redis server is ready to accept connections on %s", connectionName, startResult.url);
             }
-            currentCloseables.add(startResult.closeable);
-            String configKey = getConfigPrefix(connectionName) + RedisConfig.HOSTS_CONFIG_NAME;
-            devConfigProducer.produce(new DevServicesConfigResultBuildItem(configKey, startResult.url));
-            log.infof("The %s redis server is ready to accept connections on %s", connectionName, startResult.url);
+            compressor.close();
+        } catch (Throwable t) {
+            compressor.closeAndDumpCaptured();
+            throw new RuntimeException(t);
         }
 
         closeables = currentCloseables;

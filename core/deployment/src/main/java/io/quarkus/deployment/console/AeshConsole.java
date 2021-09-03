@@ -55,6 +55,7 @@ public class AeshConsole extends QuarkusConsole {
     static final TreeMap<Integer, StatusLineImpl> statusMap = new TreeMap<>();
     private final ReadWriteLock positionLock = new ReentrantReadWriteLock();
     private volatile boolean closed;
+    private final StatusLine prompt;
 
     public AeshConsole(Connection connection) {
         INSTANCE = this;
@@ -67,6 +68,7 @@ public class AeshConsole extends QuarkusConsole {
                 connection.close();
             }
         }, "Console Shutdown Hook"));
+        prompt = registerStatusLine(0);
     }
 
     private void updatePromptOnChange(StringBuilder buffer, int newLines) {
@@ -109,7 +111,7 @@ public class AeshConsole extends QuarkusConsole {
 
     @Override
     public void setPromptMessage(String promptMessage) {
-        setMessage(0, promptMessage);
+        prompt.setMessage(promptMessage);
     }
 
     private AeshConsole setMessage(int position, String message) {
@@ -387,6 +389,11 @@ public class AeshConsole extends QuarkusConsole {
     }
 
     @Override
+    public boolean isAnsiSupported() {
+        return true;
+    }
+
+    @Override
     public void doReadLine() {
         setPromptMessage("");
         connection.setAttributes(attributes);
@@ -395,10 +402,13 @@ public class AeshConsole extends QuarkusConsole {
     }
 
     void rebalance() {
-        int count = 1;
-        for (var val : statusMap.values()) {
-            val.position = count;
-            setMessage(count++, val.message);
+        synchronized (this) {
+            int count = 1;
+            messages = new String[statusMap.size()];
+            for (var val : statusMap.values()) {
+                val.position = count;
+                setMessage(count++, val.message);
+            }
         }
     }
 
@@ -407,6 +417,7 @@ public class AeshConsole extends QuarkusConsole {
         final int priority;
         int position;
         String message;
+        boolean closed;
 
         StatusLineImpl(int priority) {
             this.priority = priority;
@@ -414,10 +425,12 @@ public class AeshConsole extends QuarkusConsole {
 
         @Override
         public void setMessage(String message) {
-            this.message = message;
             try {
                 positionLock.readLock().lock();
-                AeshConsole.this.setMessage(position, message);
+                this.message = message;
+                if (!closed) {
+                    AeshConsole.this.setMessage(position, message);
+                }
             } finally {
                 positionLock.readLock().unlock();
             }
@@ -426,6 +439,7 @@ public class AeshConsole extends QuarkusConsole {
         @Override
         public void close() {
             positionLock.writeLock().lock();
+            closed = true;
             try {
                 AeshConsole.this.setMessage(position, null);
                 statusMap.remove(priority);

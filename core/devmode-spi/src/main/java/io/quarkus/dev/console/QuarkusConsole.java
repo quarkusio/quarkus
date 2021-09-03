@@ -1,5 +1,6 @@
 package io.quarkus.dev.console;
 
+import java.io.PrintStream;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -44,6 +45,24 @@ public abstract class QuarkusConsole {
     protected static final List<BiPredicate<String, Boolean>> outputFilters = new CopyOnWriteArrayList<>();
 
     private volatile boolean started = false;
+
+    static boolean redirectsInstalled = false;
+
+    public final static PrintStream ORIGINAL_OUT = System.out;
+    public final static PrintStream ORIGINAL_ERR = System.err;
+
+    public synchronized static void installRedirects() {
+        if (redirectsInstalled) {
+            return;
+        }
+        redirectsInstalled = true;
+
+        //force console init
+        //otherwise you can get a stack overflow as it sees the redirected output
+        QuarkusConsole.INSTANCE.isInputSupported();
+        System.setOut(new RedirectPrintStream(false));
+        System.setErr(new RedirectPrintStream(true));
+    }
 
     public static boolean hasColorSupport() {
         if (Boolean.getBoolean(FORCE_COLOR_SUPPORT)) {
@@ -119,5 +138,9 @@ public abstract class QuarkusConsole {
 
     public boolean isInputSupported() {
         return true;
+    }
+
+    public boolean isAnsiSupported() {
+        return false;
     }
 }

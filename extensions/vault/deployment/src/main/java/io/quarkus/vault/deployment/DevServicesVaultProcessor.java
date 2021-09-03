@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.apache.commons.lang3.RandomStringUtils;
@@ -18,7 +19,11 @@ import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
+import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.vault.runtime.VaultVersions;
 import io.quarkus.vault.runtime.config.DevServicesConfig;
@@ -38,7 +43,10 @@ public class DevServicesVaultProcessor {
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
-    public void startVaultContainers(BuildProducer<DevServicesConfigResultBuildItem> devConfig, VaultBuildTimeConfig config) {
+    public void startVaultContainers(BuildProducer<DevServicesConfigResultBuildItem> devConfig, VaultBuildTimeConfig config,
+            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+            LaunchModeBuildItem launchMode,
+            LoggingSetupBuildItem loggingSetupBuildItem) {
 
         DevServicesConfig currentDevServicesConfiguration = config.devservices;
 
@@ -62,7 +70,18 @@ public class DevServicesVaultProcessor {
 
         capturedDevServicesConfiguration = currentDevServicesConfiguration;
 
-        StartResult startResult = startContainer(currentDevServicesConfiguration);
+        StartResult startResult;
+
+        StartupLogCompressor compressor = new StartupLogCompressor(
+                (launchMode.isTest() ? "(test) " : "") + "Vault Dev Services Starting:", consoleInstalledBuildItem,
+                loggingSetupBuildItem);
+        try {
+            startResult = startContainer(currentDevServicesConfiguration);
+            compressor.close();
+        } catch (Throwable t) {
+            compressor.closeAndDumpCaptured();
+            throw new RuntimeException(t);
+        }
         if (startResult == null) {
             return;
         }

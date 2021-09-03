@@ -27,7 +27,11 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
+import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -46,7 +50,10 @@ public class DevServicesMongoProcessor {
     public void startMongo(List<MongoConnectionNameBuildItem> mongoConnections,
             MongoClientBuildTimeConfig mongoClientBuildTimeConfig,
             Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            BuildProducer<DevServicesConfigResultBuildItem> devServices) {
+            BuildProducer<DevServicesConfigResultBuildItem> devServices,
+            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+            LaunchModeBuildItem launchMode,
+            LoggingSetupBuildItem loggingSetupBuildItem) {
 
         List<String> connectionNames = new ArrayList<>(mongoConnections.size());
         for (MongoConnectionNameBuildItem mongoConnection : mongoConnections) {
@@ -86,8 +93,18 @@ public class DevServicesMongoProcessor {
 
         // TODO: we need to go through each connection
         String connectionName = connectionNames.get(0);
-        StartResult startResult = startMongo(connectionName, currentCapturedProperties.get(connectionName),
-                devServicesSharedNetworkBuildItem.isPresent());
+        StartResult startResult;
+        StartupLogCompressor compressor = new StartupLogCompressor(
+                (launchMode.isTest() ? "(test) " : "") + "Mongo Dev Services Starting:", consoleInstalledBuildItem,
+                loggingSetupBuildItem);
+        try {
+            startResult = startMongo(connectionName, currentCapturedProperties.get(connectionName),
+                    devServicesSharedNetworkBuildItem.isPresent());
+            compressor.close();
+        } catch (Throwable t) {
+            compressor.closeAndDumpCaptured();
+            throw new RuntimeException(t);
+        }
         if (startResult != null) {
             currentCloseables.add(startResult.getCloseable());
             String connectionStringPropertyName = getConfigPrefix(connectionName) + "connection-string";

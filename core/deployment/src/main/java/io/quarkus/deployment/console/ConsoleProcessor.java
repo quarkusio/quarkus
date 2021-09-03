@@ -27,11 +27,12 @@ public class ConsoleProcessor {
      */
     @BuildStep(onlyIf = IsDevelopment.class)
     @Produce(TestSetupBuildItem.class)
-    void setupConsole(TestConfig config, BuildProducer<TestListenerBuildItem> testListenerBuildItemBuildProducer,
+    ConsoleInstalledBuildItem setupConsole(TestConfig config,
+            BuildProducer<TestListenerBuildItem> testListenerBuildItemBuildProducer,
             LaunchModeBuildItem launchModeBuildItem, ConsoleConfig consoleConfig) {
 
         if (consoleInstalled) {
-            return;
+            return ConsoleInstalledBuildItem.INSTANCE;
         }
         consoleInstalled = true;
         if (config.console.orElse(consoleConfig.enabled)) {
@@ -49,11 +50,12 @@ public class ConsoleProcessor {
             //note that this bit needs to be refactored so it is no longer tied to continuous testing
             if (!TestSupport.instance().isPresent() || config.continuousTesting == TestConfig.Mode.DISABLED
                     || config.flatClassPath) {
-                return;
+                return ConsoleInstalledBuildItem.INSTANCE;
             }
             TestConsoleHandler consoleHandler = new TestConsoleHandler(launchModeBuildItem.getDevModeType().get());
             consoleHandler.install();
             testListenerBuildItemBuildProducer.produce(new TestListenerBuildItem(consoleHandler));
         }
+        return ConsoleInstalledBuildItem.INSTANCE;
     }
 }

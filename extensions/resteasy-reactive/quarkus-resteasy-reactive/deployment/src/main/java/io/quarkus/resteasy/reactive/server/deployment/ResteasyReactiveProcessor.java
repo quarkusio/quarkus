@@ -10,11 +10,11 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.ws.rs.Priorities;
@@ -41,13 +41,13 @@ import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceDynamicFeature;
 import org.jboss.resteasy.reactive.common.model.ResourceFeature;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
-import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.processor.AdditionalReaderWriter;
 import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
 import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.DefaultProducesHandler;
+import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
@@ -335,7 +335,7 @@ public class ResteasyReactiveProcessor {
 
             QuarkusServerEndpointIndexer.Builder serverEndpointIndexerBuilder = new QuarkusServerEndpointIndexer.Builder()
                     .addMethodScanners(
-                            methodScanners.stream().map(MethodScannerBuildItem::getMethodScanner).collect(Collectors.toList()))
+                            methodScanners.stream().map(MethodScannerBuildItem::getMethodScanner).collect(toList()))
                     .setIndex(index)
                     .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                     .setEndpointInvokerFactory(new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))
@@ -353,12 +353,19 @@ public class ResteasyReactiveProcessor {
                     .setClassLevelExceptionMappers(
                             classLevelExceptionMappers.isPresent() ? classLevelExceptionMappers.get().getMappers()
                                     : Collections.emptyMap())
-                    .setResourceMethodCallback(new Consumer<Map.Entry<MethodInfo, ResourceMethod>>() {
+                    .setResourceMethodCallback(new Consumer<>() {
                         @Override
-                        public void accept(Map.Entry<MethodInfo, ResourceMethod> entry) {
-                            MethodInfo method = entry.getKey();
+                        public void accept(EndpointIndexer.ResourceMethodCallbackData entry) {
+                            MethodInfo method = entry.getMethodInfo();
                             String source = ResteasyReactiveProcessor.class.getSimpleName() + " > " + method.declaringClass()
                                     + "[" + method + "]";
+
+                            ClassInfo classInfoWithSecurity = consumeStandardSecurityAnnotations(method,
+                                    entry.getActualEndpointInfo(), index, c -> c);
+                            if (classInfoWithSecurity != null) {
+                                reflectiveClass.produce(new ReflectiveClassBuildItem(false, true, false,
+                                        entry.getActualEndpointInfo().name().toString()));
+                            }
 
                             reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
                                     .type(method.returnType())
@@ -648,19 +655,27 @@ public class ResteasyReactiveProcessor {
             @Override
             public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
                     Map<String, Object> methodContext) {
-                if (SecurityTransformerUtils.hasStandardSecurityAnnotation(method)) {
-                    return Collections.singletonList(new EagerSecurityHandler.Customizer());
-                }
-                ClassInfo c = actualEndpointClass;
-                while (c.superName() != null) {
-                    if (SecurityTransformerUtils.hasStandardSecurityAnnotation(c)) {
-                        return Collections.singletonList(new EagerSecurityHandler.Customizer());
-                    }
-                    c = index.getClassByName(c.superName());
-                }
-                return Collections.emptyList();
+                return Objects.requireNonNullElse(
+                        consumeStandardSecurityAnnotations(method, actualEndpointClass, index,
+                                (c) -> Collections.singletonList(new EagerSecurityHandler.Customizer())),
+                        Collections.emptyList());
             }
         });
+    }
+
+    private <T> T consumeStandardSecurityAnnotations(MethodInfo methodInfo, ClassInfo classInfo, IndexView index,
+            Function<ClassInfo, T> function) {
+        if (SecurityTransformerUtils.hasStandardSecurityAnnotation(methodInfo)) {
+            return function.apply(methodInfo.declaringClass());
+        }
+        ClassInfo c = classInfo;
+        while (c.superName() != null) {
+            if (SecurityTransformerUtils.hasStandardSecurityAnnotation(c)) {
+                return function.apply(c);
+            }
+            c = index.getClassByName(c.superName());
+        }
+        return null;
     }
 
     private Optional<String> getAppPath(Optional<String> newPropertyValue) {

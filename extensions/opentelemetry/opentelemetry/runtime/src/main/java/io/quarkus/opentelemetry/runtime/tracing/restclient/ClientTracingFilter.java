@@ -26,7 +26,7 @@ import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 
 @Priority(Priorities.HEADER_DECORATOR)
 public class ClientTracingFilter implements ClientRequestFilter, ClientResponseFilter {
-    private static final TextMapPropagator TEXT_MAP_PROPAGATOR = GlobalOpenTelemetry.getPropagators().getTextMapPropagator();
+    private final TextMapPropagator TEXT_MAP_PROPAGATOR = GlobalOpenTelemetry.getPropagators().getTextMapPropagator();
 
     private static final String SCOPE_KEY = ClientTracingFilter.class.getName() + ".scope";
     private static final String SPAN_KEY = ClientTracingFilter.class.getName() + ".span";

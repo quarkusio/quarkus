@@ -12,6 +12,8 @@ import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.util.StringUtils;
 
+import io.quarkus.test.junit.main.QuarkusMainIntegrationTest;
+
 public class DisabledOnIntegrationTestCondition implements ExecutionCondition {
 
     private static final ConditionEvaluationResult ENABLED = ConditionEvaluationResult
@@ -43,7 +45,8 @@ public class DisabledOnIntegrationTestCondition implements ExecutionCondition {
         Optional<T> disabled = findAnnotation(element, annotationClass);
         if (disabled.isPresent()) {
             // Cannot use ExtensionState here because this condition needs to be evaluated before QuarkusTestExtension
-            boolean it = findAnnotation(context.getTestClass(), QuarkusIntegrationTest.class).isPresent();
+            boolean it = findAnnotation(context.getTestClass(), QuarkusIntegrationTest.class).isPresent()
+                    || findAnnotation(context.getTestClass(), QuarkusMainIntegrationTest.class).isPresent();
             if (it) {
                 String reason = disabled.map(valueExtractor)
                         .filter(StringUtils::isNotBlank)

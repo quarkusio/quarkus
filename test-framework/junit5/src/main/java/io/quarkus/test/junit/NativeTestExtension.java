@@ -198,6 +198,11 @@ public class NativeTestExtension
                     public String networkId() {
                         return null;
                     }
+
+                    @Override
+                    public void close() {
+
+                    }
                 },
                 System.getProperty("native.image.path"),
                 requiredTestClass));

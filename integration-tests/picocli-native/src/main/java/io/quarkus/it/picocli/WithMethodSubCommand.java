@@ -1,19 +1,17 @@
 package io.quarkus.it.picocli;
 
-import org.assertj.core.api.Assertions;
-
 import picocli.CommandLine;
 
-@CommandLine.Command
+@CommandLine.Command(name = "with-method-sub-command")
 public class WithMethodSubCommand {
 
     @CommandLine.Command
     void hello(@CommandLine.Option(names = { "-n", "--names" }, description = "Parameter option") String name) {
-        Assertions.assertThat(name).isEqualTo("World!");
+        System.out.println("Hello " + name);
     }
 
     @CommandLine.Command
     void goodBye(@CommandLine.Mixin NameMixin mixin) {
-        Assertions.assertThat(mixin.name).isEqualTo("Test?");
+        System.out.println("Goodbye " + mixin.name);
     }
 }

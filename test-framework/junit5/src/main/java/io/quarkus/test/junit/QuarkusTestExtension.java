@@ -22,7 +22,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -196,8 +195,6 @@ public class QuarkusTestExtension
             //we only every dump once
         }
     };
-
-    private final IdentityHashMap<Method, Method> tcclMethodCache = new IdentityHashMap<>();
 
     static {
         ClassLoader classLoader = QuarkusTestExtension.class.getClassLoader();
@@ -432,7 +429,6 @@ public class QuarkusTestExtension
                                 }
                                 tm.close();
                             } finally {
-                                tcclMethodCache.clear();
                                 GroovyCacheCleaner.clearGroovyCache();
                                 if (hangTaskKey != null) {
                                     hangTaskKey.cancel(true);
@@ -1097,10 +1093,8 @@ public class QuarkusTestExtension
 
     private Method determineTCCLExtensionMethod(Method originalMethod, Class<?> c)
             throws ClassNotFoundException {
-        Method newMethod = tcclMethodCache.get(originalMethod);
-        if (newMethod != null) {
-            return newMethod;
-        }
+
+        Method newMethod = null;
         while (c != Object.class) {
             if (c.getName().equals(originalMethod.getDeclaringClass().getName())) {
                 try {
@@ -1124,7 +1118,6 @@ public class QuarkusTestExtension
             }
             c = c.getSuperclass();
         }
-        tcclMethodCache.put(originalMethod, newMethod);
         return newMethod;
     }
 

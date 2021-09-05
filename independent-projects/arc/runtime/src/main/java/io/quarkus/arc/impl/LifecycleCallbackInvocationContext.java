@@ -17,7 +17,7 @@ class LifecycleCallbackInvocationContext extends AbstractInvocationContext {
 
     LifecycleCallbackInvocationContext(Object target, Constructor<?> constructor, Set<Annotation> interceptorBindings,
             List<InterceptorInvocation> chain) {
-        super(target, null, constructor, null, null, interceptorBindings, chain);
+        super(target, null, constructor, null, null, interceptorBindings, chain, 0);
     }
 
     @Override
@@ -50,7 +50,9 @@ class LifecycleCallbackInvocationContext extends AbstractInvocationContext {
 
     protected Object invokeNext() throws Exception {
         try {
-            return chain.get(position++).invoke(this);
+            InterceptorInvocation interceptorInvocation = chain.get(position++);
+            callbackIndex = interceptorInvocation.getCallbackIndex();
+            return interceptorInvocation.invoke(this);
         } finally {
             position--;
         }

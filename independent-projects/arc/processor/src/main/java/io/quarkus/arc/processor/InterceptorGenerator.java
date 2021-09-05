@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -198,21 +199,24 @@ public class InterceptorGenerator extends BeanGenerator {
                 .getMethodCreator("intercept", Object.class, InterceptionType.class, Object.class, InvocationContext.class)
                 .setModifiers(ACC_PUBLIC).addException(Exception.class);
 
-        addIntercept(intercept, interceptor.getAroundInvoke(), InterceptionType.AROUND_INVOKE, providerType,
+        addIntercept(intercept, interceptor.getAroundInvokes(), InterceptionType.AROUND_INVOKE, providerType,
                 reflectionRegistration, isApplicationClass);
-        addIntercept(intercept, interceptor.getPostConstruct(), InterceptionType.POST_CONSTRUCT, providerType,
+
+        addIntercept(intercept, interceptor.getPostConstructs(), InterceptionType.POST_CONSTRUCT, providerType,
                 reflectionRegistration, isApplicationClass);
-        addIntercept(intercept, interceptor.getPreDestroy(), InterceptionType.PRE_DESTROY, providerType,
+
+        addIntercept(intercept, interceptor.getPreDestroys(), InterceptionType.PRE_DESTROY, providerType,
                 reflectionRegistration, isApplicationClass);
-        addIntercept(intercept, interceptor.getAroundConstruct(), InterceptionType.AROUND_CONSTRUCT, providerType,
+
+        addIntercept(intercept, interceptor.getAroundConstructs(), InterceptionType.AROUND_CONSTRUCT, providerType,
                 reflectionRegistration, isApplicationClass);
         intercept.returnValue(intercept.loadNull());
     }
 
-    private void addIntercept(MethodCreator intercept, MethodInfo interceptorMethod, InterceptionType interceptionType,
+    private void addIntercept(MethodCreator intercept, List<MethodInfo> interceptorMethods, InterceptionType interceptionType,
             ProviderType providerType,
             ReflectionRegistration reflectionRegistration, boolean isApplicationClass) {
-        if (interceptorMethod != null) {
+        if (!interceptorMethods.isEmpty()) {
             ResultHandle enumValue = intercept
                     .readStaticField(FieldDescriptor.of(InterceptionType.class.getName(), interceptionType.name(),
                             InterceptionType.class.getName()));
@@ -224,38 +228,72 @@ public class InterceptorGenerator extends BeanGenerator {
                 retType = Object.class;
             } else {
                 // @PostConstruct, @PreDestroy, @AroundConstruct
-                retType = interceptorMethod.returnType().kind().equals(Type.Kind.VOID) ? void.class : Object.class;
+                retType = interceptorMethods.get(0).returnType().kind().equals(Type.Kind.VOID) ? void.class : Object.class;
             }
-            ResultHandle ret;
-            // Check if interceptor method uses InvocationContext or ArcInvocationContext
-            Class<?> invocationContextClass;
-            if (interceptorMethod.parameters().get(0).name().equals(DotNames.INVOCATION_CONTEXT)) {
-                invocationContextClass = InvocationContext.class;
-            } else {
-                invocationContextClass = ArcInvocationContext.class;
+
+            int i = 0;
+            for (MethodInfo interceptorMethod : interceptorMethods) {
+                // Check if interceptor method uses InvocationContext or ArcInvocationContext
+                Class<?> invocationContextClass;
+                if (interceptorMethod.parameters().get(0).name().equals(DotNames.INVOCATION_CONTEXT)) {
+                    invocationContextClass = InvocationContext.class;
+                } else {
+                    invocationContextClass = ArcInvocationContext.class;
+                }
+
+                ResultHandle invocationContextRH = intercept.getMethodParam(2);
+                BytecodeCreator callbackIndexTrueBranch = trueBranch;
+                if (interceptorMethods.size() > 1) {
+                    ResultHandle isRightMethodRH = trueBranch.invokeStaticMethod(
+                            MethodDescriptors.INVOCATION_CONTEXTS_IS_RIGHT_METHOD, trueBranch.load(i), invocationContextRH);
+                    callbackIndexTrueBranch = trueBranch.ifTrue(isRightMethodRH).trueBranch();
+                }
+                ResultHandle ret;
+                ResultHandle interceptorRH = intercept.getMethodParam(1);
+                if (Modifier.isPrivate(interceptorMethod.flags())) {
+                    privateMembers.add(isApplicationClass,
+                            String.format("Interceptor method %s#%s()", interceptorMethod.declaringClass().name(),
+                                    interceptorMethod.name()));
+                    // Use reflection fallback
+                    ResultHandle paramTypesArray = callbackIndexTrueBranch.newArray(Class.class,
+                            callbackIndexTrueBranch.load(1));
+                    callbackIndexTrueBranch.writeArrayValue(paramTypesArray, 0,
+                            callbackIndexTrueBranch.loadClassFromTCCL(invocationContextClass));
+                    ResultHandle argsArray = callbackIndexTrueBranch.newArray(Object.class, callbackIndexTrueBranch.load(1));
+                    callbackIndexTrueBranch.writeArrayValue(argsArray, 0, invocationContextRH);
+                    reflectionRegistration.registerMethod(interceptorMethod);
+                    ret = callbackIndexTrueBranch.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
+                            callbackIndexTrueBranch.loadClassFromTCCL(interceptorMethod.declaringClass()
+                                    .name()
+                                    .toString()),
+                            callbackIndexTrueBranch.load(interceptorMethod.name()), paramTypesArray,
+                            interceptorRH, argsArray);
+                } else {
+                    if (interceptorMethod.declaringClass().toString().equals(providerType.className())) {
+                        ret = callbackIndexTrueBranch.invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(interceptorMethod.declaringClass().toString(),
+                                        interceptorMethod.name(),
+                                        retType,
+                                        invocationContextClass),
+                                interceptorRH, invocationContextRH);
+                    } else {
+                        ResultHandle superInterceptorRH = callbackIndexTrueBranch.checkCast(interceptorRH,
+                                interceptorMethod.declaringClass().toString());
+                        ret = callbackIndexTrueBranch.invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(interceptorMethod.declaringClass().toString(),
+                                        interceptorMethod.name(),
+                                        retType,
+                                        invocationContextClass),
+                                superInterceptorRH, invocationContextRH);
+                    }
+                }
+                i++;
+                callbackIndexTrueBranch
+                        .returnValue(InterceptionType.AROUND_INVOKE.equals(interceptionType) ? ret : trueBranch.loadNull());
             }
-            if (Modifier.isPrivate(interceptorMethod.flags())) {
-                privateMembers.add(isApplicationClass,
-                        String.format("Interceptor method %s#%s()", interceptorMethod.declaringClass().name(),
-                                interceptorMethod.name()));
-                // Use reflection fallback
-                ResultHandle paramTypesArray = trueBranch.newArray(Class.class, trueBranch.load(1));
-                trueBranch.writeArrayValue(paramTypesArray, 0, trueBranch.loadClassFromTCCL(invocationContextClass));
-                ResultHandle argsArray = trueBranch.newArray(Object.class, trueBranch.load(1));
-                trueBranch.writeArrayValue(argsArray, 0, intercept.getMethodParam(2));
-                reflectionRegistration.registerMethod(interceptorMethod);
-                ret = trueBranch.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                        trueBranch.loadClassFromTCCL(interceptorMethod.declaringClass()
-                                .name()
-                                .toString()),
-                        trueBranch.load(interceptorMethod.name()), paramTypesArray, intercept.getMethodParam(1), argsArray);
-            } else {
-                ret = trueBranch.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(providerType.className(), interceptorMethod.name(), retType,
-                                invocationContextClass),
-                        intercept.getMethodParam(1), intercept.getMethodParam(2));
+            if (interceptorMethods.size() > 1) {
+                trueBranch.returnValue(trueBranch.loadNull());
             }
-            trueBranch.returnValue(InterceptionType.AROUND_INVOKE.equals(interceptionType) ? ret : trueBranch.loadNull());
         }
     }
 }

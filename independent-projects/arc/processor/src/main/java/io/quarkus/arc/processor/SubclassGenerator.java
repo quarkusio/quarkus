@@ -220,13 +220,15 @@ public class SubclassGenerator extends AbstractGenerator {
             for (InterceptorInfo interceptor : preDestroys.interceptors) {
                 // preDestroys.add(InvocationContextImpl.InterceptorInvocation.preDestroy(provider1,interceptorInstanceMap.get(InjectableInterceptor.getIdentifier())))
                 ResultHandle interceptorInstance = interceptorInstanceToResultHandle.get(interceptor.getIdentifier());
-                ResultHandle interceptionInvocation = constructor.invokeStaticMethod(
-                        MethodDescriptors.INTERCEPTOR_INVOCATION_PRE_DESTROY,
-                        interceptorToResultHandle.get(interceptor.getIdentifier()),
-                        interceptorInstance);
-                constructor.invokeInterfaceMethod(MethodDescriptors.LIST_ADD,
-                        constructor.readInstanceField(preDestroysField.getFieldDescriptor(), constructor.getThis()),
-                        interceptionInvocation);
+                for (int i = 0; i < interceptor.getPreDestroys().size(); i++) {
+                    ResultHandle interceptionInvocation = constructor.invokeStaticMethod(
+                            MethodDescriptors.INTERCEPTOR_INVOCATION_PRE_DESTROY,
+                            interceptorToResultHandle.get(interceptor.getIdentifier()),
+                            interceptorInstance, constructor.load(i));
+                    constructor.invokeInterfaceMethod(MethodDescriptors.LIST_ADD,
+                            constructor.readInstanceField(preDestroysField.getFieldDescriptor(), constructor.getThis()),
+                            interceptionInvocation);
+                }
             }
         }
 
@@ -270,25 +272,31 @@ public class SubclassGenerator extends AbstractGenerator {
         Function<List<InterceptorInfo>, ResultHandle> interceptorChainsFun = new Function<List<InterceptorInfo>, ResultHandle>() {
             @Override
             public ResultHandle apply(List<InterceptorInfo> interceptors) {
-                if (interceptors.size() == 1) {
+                if (interceptors.size() == 1 && interceptors.get(0).getAroundInvokes().size() == 1) {
                     // List<InvocationContextImpl.InterceptorInvocation> m1Chain = Collections.singletonList(...);
                     InterceptorInfo interceptor = interceptors.get(0);
                     ResultHandle interceptorInstance = interceptorInstanceToResultHandle.get(interceptor.getIdentifier());
                     ResultHandle interceptionInvocation = constructor.invokeStaticMethod(
                             MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
-                            interceptorToResultHandle.get(interceptor.getIdentifier()), interceptorInstance);
+                            interceptorToResultHandle.get(interceptor.getIdentifier()), interceptorInstance,
+                            constructor.load(0));
                     return constructor.invokeStaticMethod(MethodDescriptors.COLLECTIONS_SINGLETON_LIST,
                             interceptionInvocation);
                 } else {
                     // List<InvocationContextImpl.InterceptorInvocation> m1Chain = new ArrayList<>();
                     ResultHandle chainHandle = constructor.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
                     for (InterceptorInfo interceptor : interceptors) {
-                        // m1Chain.add(InvocationContextImpl.InterceptorInvocation.aroundInvoke(p3,interceptorInstanceMap.get(InjectableInterceptor.getIdentifier())))
-                        ResultHandle interceptorInstance = interceptorInstanceToResultHandle.get(interceptor.getIdentifier());
-                        ResultHandle interceptionInvocation = constructor.invokeStaticMethod(
-                                MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
-                                interceptorToResultHandle.get(interceptor.getIdentifier()), interceptorInstance);
-                        constructor.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, chainHandle, interceptionInvocation);
+                        // chain of inheritance mean interceptionInvocation for each method
+                        for (int i = 0; i < interceptor.getAroundInvokes().size(); i++) {
+                            // m1Chain.add(InvocationContextImpl.InterceptorInvocation.aroundInvoke(p3,interceptorInstanceMap.get(InjectableInterceptor.getIdentifier())))
+                            ResultHandle interceptorInstance = interceptorInstanceToResultHandle
+                                    .get(interceptor.getIdentifier());
+                            ResultHandle interceptionInvocation = constructor.invokeStaticMethod(
+                                    MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
+                                    interceptorToResultHandle.get(interceptor.getIdentifier()), interceptorInstance,
+                                    constructor.load(i));
+                            constructor.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, chainHandle, interceptionInvocation);
+                        }
                     }
                     return chainHandle;
                 }

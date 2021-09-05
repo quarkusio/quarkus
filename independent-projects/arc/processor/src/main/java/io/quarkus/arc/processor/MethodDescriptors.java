@@ -88,21 +88,21 @@ public final class MethodDescriptors {
     public static final MethodDescriptor INTERCEPTOR_INVOCATION_POST_CONSTRUCT = MethodDescriptor.ofMethod(
             InterceptorInvocation.class,
             "postConstruct",
-            InterceptorInvocation.class, InjectableInterceptor.class, Object.class);
+            InterceptorInvocation.class, InjectableInterceptor.class, Object.class, int.class);
 
     public static final MethodDescriptor INTERCEPTOR_INVOCATION_PRE_DESTROY = MethodDescriptor.ofMethod(
             InterceptorInvocation.class,
             "preDestroy",
-            InterceptorInvocation.class, InjectableInterceptor.class, Object.class);
+            InterceptorInvocation.class, InjectableInterceptor.class, Object.class, int.class);
 
     public static final MethodDescriptor INTERCEPTOR_INVOCATION_AROUND_CONSTRUCT = MethodDescriptor.ofMethod(
             InterceptorInvocation.class, "aroundConstruct",
-            InterceptorInvocation.class, InjectableInterceptor.class, Object.class);
+            InterceptorInvocation.class, InjectableInterceptor.class, Object.class, int.class);
 
     public static final MethodDescriptor INTERCEPTOR_INVOCATION_AROUND_INVOKE = MethodDescriptor.ofMethod(
             InterceptorInvocation.class,
             "aroundInvoke",
-            InterceptorInvocation.class, InjectableInterceptor.class, Object.class);
+            InterceptorInvocation.class, InjectableInterceptor.class, Object.class, int.class);
 
     public static final MethodDescriptor REFLECTIONS_FIND_CONSTRUCTOR = MethodDescriptor.ofMethod(Reflections.class,
             "findConstructor",
@@ -173,6 +173,11 @@ public final class MethodDescriptors {
     public static final MethodDescriptor INVOCATION_CONTEXTS_PRE_DESTROY = MethodDescriptor.ofMethod(InvocationContexts.class,
             "preDestroy",
             InvocationContext.class, Object.class, List.class, Set.class);
+
+    public static final MethodDescriptor INVOCATION_CONTEXTS_IS_RIGHT_METHOD = MethodDescriptor.ofMethod(
+            InvocationContexts.class,
+            "isRightMethod",
+            boolean.class, int.class, InvocationContext.class);
 
     public static final MethodDescriptor INVOCATION_CONTEXT_PROCEED = MethodDescriptor.ofMethod(InvocationContext.class,
             "proceed",

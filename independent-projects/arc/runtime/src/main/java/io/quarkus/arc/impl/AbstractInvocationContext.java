@@ -25,11 +25,12 @@ abstract class AbstractInvocationContext implements ArcInvocationContext, Suppli
     protected Object[] parameters;
     // The map is initialized lazily but we need to use a holder so that all interceptors in the chain can access the same data
     protected LazyValue<Map<String, Object>> contextData;
+    protected int callbackIndex;
 
     protected AbstractInvocationContext(Object target, Method method,
             Constructor<?> constructor,
             Object[] parameters, LazyValue<Map<String, Object>> contextData,
-            Set<Annotation> interceptorBindings, List<InterceptorInvocation> chain) {
+            Set<Annotation> interceptorBindings, List<InterceptorInvocation> chain, int callbackIndex) {
         this.target = target;
         this.method = method;
         this.constructor = constructor;
@@ -37,6 +38,7 @@ abstract class AbstractInvocationContext implements ArcInvocationContext, Suppli
         this.contextData = contextData != null ? contextData : new LazyValue<>(this);
         this.interceptorBindings = interceptorBindings;
         this.chain = chain;
+        this.callbackIndex = callbackIndex;
     }
 
     @Override
@@ -132,4 +134,7 @@ abstract class AbstractInvocationContext implements ArcInvocationContext, Suppli
         return result;
     }
 
+    public int getCallbackIndex() {
+        return callbackIndex;
+    }
 }

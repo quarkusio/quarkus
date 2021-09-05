@@ -356,7 +356,7 @@ public class InterceptedStaticMethodsProcessor {
         ResultHandle interceptorInstane = createInterceptor(interceptorBean, init, creationalContext);
         return init.invokeStaticMethod(
                 MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
-                interceptorBean, interceptorInstane);
+                interceptorBean, interceptorInstane, init.load(0));
     }
 
     private ResultHandle getInterceptorBean(InterceptorInfo interceptor, BytecodeCreator creator) {

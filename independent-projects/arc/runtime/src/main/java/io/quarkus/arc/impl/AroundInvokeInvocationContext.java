@@ -27,8 +27,9 @@ class AroundInvokeInvocationContext extends AbstractInvocationContext {
 
     AroundInvokeInvocationContext(Object target, Method method, Object[] parameters,
             LazyValue<Map<String, Object>> contextData, Set<Annotation> interceptorBindings, int position,
-            List<InterceptorInvocation> chain, Function<InvocationContext, Object> aroundInvokeForward) {
-        super(target, method, null, parameters, contextData, interceptorBindings, chain);
+            List<InterceptorInvocation> chain, Function<InvocationContext, Object> aroundInvokeForward,
+            int callbackIndex) {
+        super(target, method, null, parameters, contextData, interceptorBindings, chain, callbackIndex);
         this.position = position;
         this.aroundInvokeForward = aroundInvokeForward;
     }
@@ -39,16 +40,18 @@ class AroundInvokeInvocationContext extends AbstractInvocationContext {
             Set<Annotation> interceptorBindings) throws Exception {
 
         return chain.get(0).invoke(new AroundInvokeInvocationContext(target, method,
-                parameters, null, interceptorBindings, 1, chain, aroundInvokeForward));
+                parameters, null, interceptorBindings, 1, chain, aroundInvokeForward, 0));
     }
 
     @Override
     public Object proceed() throws Exception {
         try {
             if (position < chain.size()) {
+                InterceptorInvocation interceptorInvocation = chain.get(position);
                 // Invoke the next interceptor in the chain
-                return chain.get(position).invoke(new AroundInvokeInvocationContext(target, method,
-                        parameters, contextData, interceptorBindings, position + 1, chain, aroundInvokeForward));
+                return interceptorInvocation.invoke(new AroundInvokeInvocationContext(target, method,
+                        parameters, contextData, interceptorBindings, position + 1, chain, aroundInvokeForward,
+                        interceptorInvocation.getCallbackIndex()));
             } else {
                 // Invoke the target method
                 return aroundInvokeForward.apply(this);
@@ -64,5 +67,4 @@ class AroundInvokeInvocationContext extends AbstractInvocationContext {
             throw new RuntimeException(cause);
         }
     }
-
 }

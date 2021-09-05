@@ -1313,14 +1313,14 @@ public class BeanGenerator extends AbstractGenerator {
                             create.getThis());
                     ResultHandle interceptorHandle = create.invokeInterfaceMethod(
                             MethodDescriptors.SUPPLIER_GET, interceptorSupplierHandle);
-
-                    ResultHandle interceptorInvocationHandle = create.invokeStaticMethod(
-                            MethodDescriptors.INTERCEPTOR_INVOCATION_POST_CONSTRUCT,
-                            interceptorHandle, interceptorToResultHandle.get(interceptor));
-
-                    // postConstructs.add(InterceptorInvocation.postConstruct(interceptor,interceptor.get(CreationalContextImpl.child(ctx))))
-                    create.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, postConstructsHandle,
-                            interceptorInvocationHandle);
+                    for (int i = 0; i < interceptor.getPostConstructs().size(); i++) {
+                        ResultHandle interceptorInvocationHandle = create.invokeStaticMethod(
+                                MethodDescriptors.INTERCEPTOR_INVOCATION_POST_CONSTRUCT,
+                                interceptorHandle, interceptorToResultHandle.get(interceptor), create.load(i));
+                        // postConstructs.add(InterceptorInvocation.postConstruct(interceptor,interceptor.get(CreationalContextImpl.child(ctx))))
+                        create.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, postConstructsHandle,
+                                interceptorInvocationHandle);
+                    }
                 }
             }
             if (!aroundConstructs.isEmpty()) {
@@ -1333,14 +1333,15 @@ public class BeanGenerator extends AbstractGenerator {
                             create.getThis());
                     ResultHandle interceptorHandle = create.invokeInterfaceMethod(
                             MethodDescriptors.SUPPLIER_GET, interceptorSupplierHandle);
+                    for (int i = 0; i < interceptor.getAroundConstructs().size(); i++) {
+                        ResultHandle interceptorInvocationHandle = create.invokeStaticMethod(
+                                MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_CONSTRUCT,
+                                interceptorHandle, interceptorToResultHandle.get(interceptor), create.load(i));
 
-                    ResultHandle interceptorInvocationHandle = create.invokeStaticMethod(
-                            MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_CONSTRUCT,
-                            interceptorHandle, interceptorToResultHandle.get(interceptor));
-
-                    // aroundConstructs.add(InterceptorInvocation.aroundConstruct(interceptor,interceptor.get(CreationalContextImpl.child(ctx))))
-                    create.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, aroundConstructsHandle,
-                            interceptorInvocationHandle);
+                        // aroundConstructs.add(InterceptorInvocation.aroundConstruct(interceptor,interceptor.get(CreationalContextImpl.child(ctx))))
+                        create.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, aroundConstructsHandle,
+                                interceptorInvocationHandle);
+                    }
                 }
             }
         }

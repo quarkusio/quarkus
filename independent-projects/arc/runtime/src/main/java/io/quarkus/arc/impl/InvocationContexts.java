@@ -58,8 +58,9 @@ public final class InvocationContexts {
 
     /**
      *
-     * @param target
+     * @param constructor
      * @param chain
+     * @param aroundConstructForward
      * @param interceptorBindings
      * @return a new {@link javax.interceptor.AroundConstruct} invocation context
      */
@@ -70,4 +71,17 @@ public final class InvocationContexts {
         return new AroundConstructInvocationContext(constructor, interceptorBindings, chain, aroundConstructForward);
     }
 
+    /**
+     *
+     * @param methodIndex
+     * @param invocationContext
+     * @return true is it is the right method (inheritance of interceptor) to call
+     */
+    public static boolean isRightMethod(int methodIndex, InvocationContext invocationContext) {
+        // for inheritance only
+        if (invocationContext instanceof AbstractInvocationContext) {
+            return (((AbstractInvocationContext) invocationContext).getCallbackIndex() == methodIndex);
+        }
+        return true;
+    }
 }

@@ -7,7 +7,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
+import javax.enterprise.inject.spi.DefinitionException;
 import javax.enterprise.inject.spi.InterceptionType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -28,13 +30,14 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
 
     private final Set<AnnotationInstance> bindings;
 
-    private final MethodInfo aroundInvoke;
+    private final List<MethodInfo> aroundInvokes;
 
-    private final MethodInfo aroundConstruct;
+    private final List<MethodInfo> aroundConstructs;
 
-    private final MethodInfo postConstruct;
+    private final List<MethodInfo> postConstructs;
 
-    private final MethodInfo preDestroy;
+    private final List<MethodInfo> preDestroys;
+
 
     InterceptorInfo(AnnotationTarget target, BeanDeployment beanDeployment, Set<AnnotationInstance> bindings,
             List<Injection> injections, int priority) {
@@ -42,42 +45,69 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
                 Collections.singleton(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
                 null, null, false, Collections.emptyList(), null, false, null, priority);
         this.bindings = bindings;
-        List<MethodInfo> aroundInvokes = new ArrayList<>();
-        List<MethodInfo> aroundConstructs = new ArrayList<>();
-        List<MethodInfo> postConstructs = new ArrayList<>();
-        List<MethodInfo> preDestroys = new ArrayList<>();
+        aroundInvokes = new ArrayList<>();
+        aroundConstructs = new ArrayList<>();
+        postConstructs = new ArrayList<>();
+        preDestroys = new ArrayList<>();
 
         ClassInfo aClass = target.asClass();
-        while (aClass != null) {
-            for (MethodInfo method : aClass.methods()) {
-                if (Modifier.isStatic(method.flags())) {
-                    continue;
-                }
-                if (method.hasAnnotation(DotNames.AROUND_INVOKE)) {
-                    aroundInvokes.add(validateSignature(method));
-                }
-                if (method.hasAnnotation(DotNames.AROUND_CONSTRUCT)) {
-                    aroundConstructs.add(validateSignature(method));
-                }
-                if (method.hasAnnotation(DotNames.POST_CONSTRUCT)) {
-                    postConstructs.add(validateSignature(method));
-                }
-                if (method.hasAnnotation(DotNames.PRE_DESTROY)) {
-                    preDestroys.add(validateSignature(method));
-                }
-            }
+        processInheritedMethods(aClass, beanDeployment);
 
-            DotName superTypeName = aClass.superName();
-            aClass = superTypeName == null || DotNames.OBJECT.equals(superTypeName) ? null
-                    : getClassByName(beanDeployment.getBeanArchiveIndex(), superTypeName);
+        if (aroundConstructs.isEmpty() && aroundInvokes.isEmpty() && preDestroys.isEmpty() && postConstructs.isEmpty()) {
+            LOGGER.warnf("%s declares no around-invoke method nor a lifecycle callback!", this);
+        }
+    }
+
+    private void processInheritedMethods(ClassInfo aClass, BeanDeployment beanDeployment) {
+        DotName superTypeName = aClass.superName();
+        if (superTypeName != null && !DotNames.OBJECT.equals(superTypeName)) {
+            ClassInfo superClassInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), superTypeName);
+            if (superClassInfo == null) {
+                throw new DefinitionException(
+                        "The interception super type " + superTypeName + " was not found in the index");
+            }
+            processInheritedMethods(superClassInfo, beanDeployment);
         }
 
-        this.aroundInvoke = aroundInvokes.isEmpty() ? null : aroundInvokes.get(0);
-        this.aroundConstruct = aroundConstructs.isEmpty() ? null : aroundConstructs.get(0);
-        this.postConstruct = postConstructs.isEmpty() ? null : postConstructs.get(0);
-        this.preDestroy = preDestroys.isEmpty() ? null : preDestroys.get(0);
-        if (aroundConstruct == null && aroundInvoke == null && preDestroy == null && postConstruct == null) {
-            LOGGER.warnf("%s declares no around-invoke method nor a lifecycle callback!", this);
+        for (MethodInfo method : aClass.methods()) {
+            if (Modifier.isStatic(method.flags())) {
+                continue;
+            }
+            if (method.hasAnnotation(DotNames.AROUND_INVOKE)) {
+                overrideSuperClassMethod(method);
+                aroundInvokes.add(validateSignature(method));
+            }
+            if (method.hasAnnotation(DotNames.AROUND_CONSTRUCT)) {
+                overrideSuperClassMethod(method);
+                aroundConstructs.add(validateSignature(method));
+            }
+            if (method.hasAnnotation(DotNames.POST_CONSTRUCT)) {
+                overrideSuperClassMethod(method);
+                postConstructs.add(validateSignature(method));
+            }
+            if (method.hasAnnotation(DotNames.PRE_DESTROY)) {
+                overrideSuperClassMethod(method);
+                preDestroys.add(validateSignature(method));
+            }
+        }
+    }
+
+    private void overrideSuperClassMethod(MethodInfo method) {
+        overrideSuperClassMethod(method, aroundInvokes);
+        overrideSuperClassMethod(method, aroundConstructs);
+        overrideSuperClassMethod(method, postConstructs);
+        overrideSuperClassMethod(method, preDestroys);
+    }
+
+    private void overrideSuperClassMethod(MethodInfo method, List<MethodInfo> methods) {
+        for (ListIterator<MethodInfo> iterator = methods.listIterator(); iterator.hasNext();) {
+            MethodInfo interceptorMethod = iterator.next();
+            if (method.name().equals(interceptorMethod.name())
+                    && method.parameters().size() == 1
+                    && method.parameters().get(0).name() == interceptorMethod.parameters().get(0).name()
+                    && !method.declaringClass().name().equals(interceptorMethod.declaringClass().name())) {
+                iterator.remove();
+            }
         }
     }
 
@@ -102,32 +132,32 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
         return bindings;
     }
 
-    public MethodInfo getAroundInvoke() {
-        return aroundInvoke;
+    public List<MethodInfo> getAroundInvokes() {
+        return aroundInvokes;
     }
 
-    public MethodInfo getAroundConstruct() {
-        return aroundConstruct;
+    public List<MethodInfo> getAroundConstructs() {
+        return aroundConstructs;
     }
 
-    public MethodInfo getPostConstruct() {
-        return postConstruct;
+    public List<MethodInfo> getPostConstructs() {
+        return postConstructs;
     }
 
-    public MethodInfo getPreDestroy() {
-        return preDestroy;
+    public List<MethodInfo> getPreDestroys() {
+        return preDestroys;
     }
 
     public boolean intercepts(InterceptionType interceptionType) {
         switch (interceptionType) {
             case AROUND_INVOKE:
-                return aroundInvoke != null;
+                return !aroundInvokes.isEmpty();
             case AROUND_CONSTRUCT:
-                return aroundConstruct != null;
+                return !aroundConstructs.isEmpty();
             case POST_CONSTRUCT:
-                return postConstruct != null;
+                return !postConstructs.isEmpty();
             case PRE_DESTROY:
-                return preDestroy != null;
+                return !preDestroys.isEmpty();
             default:
                 return false;
         }

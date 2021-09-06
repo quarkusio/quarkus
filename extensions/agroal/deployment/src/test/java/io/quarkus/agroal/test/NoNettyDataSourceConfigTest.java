@@ -24,7 +24,7 @@ public class NoNettyDataSourceConfigTest {
             //we need to exclude them all
             //this removes the need to have a whole new module just for this test
             .overrideConfigKey("quarkus.class-loading.removed-artifacts",
-                    "io.netty:netty-common,io.quarkus:quarkus-vertx-core,io.quarkus:quarkus-vertx-core-deployment," +
+                    "io.netty:netty-common,io.quarkus:quarkus-vertx,io.quarkus:quarkus-vertx-deployment," +
                             "io.quarkus:quarkus-resteasy-deployment,io.quarkus:quarkus-resteasy," +
                             "io.quarkus:quarkus-resteasy-server-common-deployment, io.quarkus:quarkus-resteasy-server-common," +
                             "io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-vertx-http-deployment," +

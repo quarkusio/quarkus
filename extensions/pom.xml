@@ -30,7 +30,6 @@
         <module>jsonb</module>
 
         <!-- HTTP -->
-        <module>vertx-core</module>
         <module>vertx-http</module>
         <module>undertow</module>
         <module>websockets</module>

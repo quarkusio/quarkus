@@ -181,6 +181,7 @@ jobs:
           name: "build-reports-Initial JDK 11 Build"
           path: |
             target/build-report.json
+            LICENSE.txt
           retention-days: 2
 
   calculate-test-jobs:
@@ -322,6 +323,7 @@ jobs:
           path: |
             **/target/*-reports/TEST-*.xml
             target/build-report.json
+            LICENSE.txt
           retention-days: 2
       - name: Upload gc.log
         uses: actions/upload-artifact@v2
@@ -388,6 +390,7 @@ jobs:
           path: |
             **/target/*-reports/TEST-*.xml
             target/build-report.json
+            LICENSE.txt
           retention-days: 2
 
   gradle-tests:
@@ -447,6 +450,7 @@ jobs:
             **/build/test-results/test/TEST-*.xml
             **/target/*-reports/TEST-*.xml
             target/build-report.json
+            LICENSE.txt
           retention-days: 2
 
   devtools-tests:
@@ -506,6 +510,7 @@ jobs:
           path: |
             **/target/*-reports/TEST-*.xml
             target/build-report.json
+            LICENSE.txt
           retention-days: 2
 
   tcks-test:
@@ -564,6 +569,7 @@ jobs:
           path: |
             **/target/*-reports/TEST-*.xml
             target/build-report.json
+            LICENSE.txt
           retention-days: 2
 
   native-tests:
@@ -643,4 +649,5 @@ jobs:
             **/target/*-reports/TEST-*.xml
             **/build/test-results/test/TEST-*.xml
             target/build-report.json
+            LICENSE.txt
           retention-days: 2

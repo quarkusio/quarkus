@@ -14,6 +14,8 @@ import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchroniza
 import com.arjuna.ats.jbossatx.jta.RecoveryManagerService;
 import com.arjuna.ats.jta.UserTransaction;
 
+import io.quarkus.arc.Unremovable;
+
 @Dependent
 public class NarayanaJtaProducers {
 
@@ -37,6 +39,7 @@ public class NarayanaJtaProducers {
 
     @Produces
     @ApplicationScoped
+    @Unremovable
     public TransactionSynchronizationRegistry transactionSynchronizationRegistry() {
         return new TransactionSynchronizationRegistryImple();
     }

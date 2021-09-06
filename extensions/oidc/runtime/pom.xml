@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-oidc</artifactId>
     <name>Quarkus - OpenID Connect Adapter - Runtime</name>
-    <description>Secure your applications with OpenID Connect Adapter</description>
+    <description>Verify Bearer access tokens and authenticate users with Authorization Code Flow</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

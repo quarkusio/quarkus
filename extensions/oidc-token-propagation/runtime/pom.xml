@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-oidc-token-propagation</artifactId>
     <name>Quarkus - OpenID Connect Token Propagation - Runtime</name>
-    <description>Use JAX-RS client filter to propagate the current access token as HTTP Authorization Bearer value</description>
+    <description>Use JAX-RS Client filter to propagate the incoming Bearer access token or token acquired from Authorization Code Flow as HTTP Authorization Bearer token</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

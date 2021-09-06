@@ -18,7 +18,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-graphql</artifactId>
-            <version>${project.version}</version>
         </dependency>
         
         <dependency>

@@ -1,9 +1,11 @@
 package io.quarkus.smallrye.graphql.deployment;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +15,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -38,6 +40,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -158,6 +161,22 @@ public class SmallRyeGraphQLProcessor {
                 .produce(ServiceProviderBuildItem.allProvidersFromClassPath(SmallRyeGraphQLConfigMapping.class.getName()));
     }
 
+    @BuildStep
+    SmallRyeGraphQLIndexBuildItem createIndex(TransformedClassesBuildItem transformedClassesBuildItem) {
+        Map<String, byte[]> modifiedClasses = new HashMap<>();
+        Map<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJar = transformedClassesBuildItem
+                .getTransformedClassesByJar();
+        for (Map.Entry<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJarEntrySet : transformedClassesByJar
+                .entrySet()) {
+
+            Set<TransformedClassesBuildItem.TransformedClass> transformedClasses = transformedClassesByJarEntrySet.getValue();
+            for (TransformedClassesBuildItem.TransformedClass transformedClass : transformedClasses) {
+                modifiedClasses.put(transformedClass.getClassName(), transformedClass.getData());
+            }
+        }
+        return new SmallRyeGraphQLIndexBuildItem(modifiedClasses);
+    }
+
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void buildExecutionService(
@@ -165,13 +184,25 @@ public class SmallRyeGraphQLProcessor {
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyProducer,
             BuildProducer<SmallRyeGraphQLInitializedBuildItem> graphQLInitializedProducer,
             SmallRyeGraphQLRecorder recorder,
+            SmallRyeGraphQLIndexBuildItem graphQLIndexBuildItem,
             BeanContainerBuildItem beanContainer,
             CombinedIndexBuildItem combinedIndex,
             SmallRyeGraphQLConfig graphQLConfig) {
 
-        IndexView index = combinedIndex.getIndex();
+        Indexer indexer = new Indexer();
+        Map<String, byte[]> modifiedClases = graphQLIndexBuildItem.getModifiedClases();
 
-        Schema schema = SchemaBuilder.build(index, graphQLConfig.autoNameStrategy);
+        for (Map.Entry<String, byte[]> kv : modifiedClases.entrySet()) {
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(kv.getValue())) {
+                indexer.index(bais);
+            } catch (IOException ex) {
+                LOG.warn("Could not index [" + kv.getKey() + "] - " + ex.getMessage());
+            }
+        }
+
+        OverridableIndex overridableIndex = OverridableIndex.create(combinedIndex.getIndex(), indexer.complete());
+
+        Schema schema = SchemaBuilder.build(overridableIndex, graphQLConfig.autoNameStrategy);
 
         RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema);
         graphQLInitializedProducer.produce(new SmallRyeGraphQLInitializedBuildItem(initialized));

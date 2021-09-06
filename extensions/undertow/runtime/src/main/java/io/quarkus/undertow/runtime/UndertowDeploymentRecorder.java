@@ -523,7 +523,11 @@ public class UndertowDeploymentRecorder {
     }
 
     public void addServletContextAttribute(RuntimeValue<DeploymentInfo> deployment, String key, Object value1) {
-        deployment.getValue().addServletContextAttribute(key, value1);
+        if (value1 instanceof RuntimeValue) {
+            deployment.getValue().addServletContextAttribute(key, ((RuntimeValue<?>) value1).getValue());
+        } else {
+            deployment.getValue().addServletContextAttribute(key, value1);
+        }
     }
 
     public void addServletExtension(RuntimeValue<DeploymentInfo> deployment, ServletExtension extension) {

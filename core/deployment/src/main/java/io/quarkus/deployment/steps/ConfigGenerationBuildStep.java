@@ -2,9 +2,7 @@ package io.quarkus.deployment.steps;
 
 import static io.quarkus.deployment.steps.ConfigBuildSteps.SERVICES_PREFIX;
 import static io.quarkus.deployment.util.ServiceUtil.classNamesNamedIn;
-import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
@@ -31,7 +29,6 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalBootstrapConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.AdditionalStaticInitConfigSourceProviderBuildItem;
-import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -54,7 +51,6 @@ import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.quarkus.runtime.configuration.ConfigChangeRecorder;
 import io.quarkus.runtime.configuration.ConfigurationRuntimeConfig;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
-import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.PropertiesLocationConfigSourceFactory;
 
@@ -92,8 +88,7 @@ public class ConfigGenerationBuildStep {
             LiveReloadBuildItem liveReloadBuildItem,
             List<AdditionalBootstrapConfigSourceProviderBuildItem> additionalBootstrapConfigSourceProviders,
             List<StaticInitConfigSourceProviderBuildItem> staticInitConfigSourceProviders,
-            List<StaticInitConfigSourceFactoryBuildItem> staticInitConfigSourceFactories,
-            List<ConfigClassBuildItem> configClasses)
+            List<StaticInitConfigSourceFactoryBuildItem> staticInitConfigSourceFactories)
             throws IOException {
 
         if (liveReloadBuildItem.isLiveReload()) {
@@ -135,7 +130,6 @@ public class ConfigGenerationBuildStep {
                 .setRuntimeConfigSources(discoveredConfigSources)
                 .setRuntimeConfigSourceProviders(discoveredConfigSourceProviders)
                 .setRuntimeConfigSourceFactories(discoveredConfigSourceFactories)
-                .setConfigMappings(getConfigClassesWithPrefix(configClasses))
                 .build()
                 .run();
     }
@@ -248,12 +242,5 @@ public class ConfigGenerationBuildStep {
             }
         }
         return staticSafe;
-    }
-
-    private static Set<ConfigClassWithPrefix> getConfigClassesWithPrefix(List<ConfigClassBuildItem> configClasses) {
-        return configClasses.stream()
-                .filter(ConfigClassBuildItem::isMapping)
-                .map(configMapping -> configClassWithPrefix(configMapping.getConfigClass(), configMapping.getPrefix()))
-                .collect(toSet());
     }
 }

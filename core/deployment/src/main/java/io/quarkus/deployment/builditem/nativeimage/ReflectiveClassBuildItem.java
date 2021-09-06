@@ -77,8 +77,8 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         return new ReflectiveClassBuildItem(true, true, true, false, true, className);
     }
 
-    public static ReflectiveClassBuildItem serializationClass(String... className) {
-        return new ReflectiveClassBuildItem(false, false, false, false, false, true, className);
+    public static ReflectiveClassBuildItem serializationClass(boolean methods, boolean fields, String... className) {
+        return new ReflectiveClassBuildItem(true, methods, fields, false, false, true, className);
     }
 
     private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,

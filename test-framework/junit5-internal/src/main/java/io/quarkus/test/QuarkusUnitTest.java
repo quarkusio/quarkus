@@ -572,8 +572,9 @@ public class QuarkusUnitTest
     public void afterAll(ExtensionContext extensionContext) throws Exception {
         actualTestClass = null;
         actualTestInstance = null;
+        List<LogRecord> records = null;
         if (assertLogRecords != null) {
-            assertLogRecords.accept(inMemoryLogHandler.records);
+            records = new ArrayList<>(inMemoryLogHandler.records);
         }
         rootLogger.setHandlers(originalHandlers);
         inMemoryLogHandler.clearRecords();
@@ -606,9 +607,12 @@ public class QuarkusUnitTest
             if (afterAllCustomizer != null) {
                 afterAllCustomizer.run();
             }
+            ClearCache.clearAnnotationCache();
+            GroovyCacheCleaner.clearGroovyCache();
         }
-        ClearCache.clearAnnotationCache();
-        GroovyCacheCleaner.clearGroovyCache();
+        if (records != null) {
+            assertLogRecords.accept(records);
+        }
     }
 
     @Override

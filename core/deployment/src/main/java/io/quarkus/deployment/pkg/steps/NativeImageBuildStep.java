@@ -27,6 +27,7 @@ import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathAggregateBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
@@ -83,7 +84,8 @@ public class NativeImageBuildStep {
             OutputTargetBuildItem outputTargetBuildItem,
             PackageConfig packageConfig,
             List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
-            List<ExcludeConfigBuildItem> excludeConfigs) {
+            List<ExcludeConfigBuildItem> excludeConfigs,
+            NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed) {
 
         Path outputDir;
         try {
@@ -102,6 +104,7 @@ public class NativeImageBuildStep {
                 .setNativeConfig(nativeConfig)
                 .setOutputTargetBuildItem(outputTargetBuildItem)
                 .setNativeImageProperties(nativeImageProperties)
+                .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
                 .setExcludeConfigs(excludeConfigs)
                 .setOutputDir(outputDir)
                 .setRunnerJarName(runnerJar.getFileName().toString())
@@ -134,6 +137,7 @@ public class NativeImageBuildStep {
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
             List<ExcludeConfigBuildItem> excludeConfigs,
+            NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed,
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
             Optional<ProcessInheritIODisabled> processInheritIODisabled) {
         if (nativeConfig.debug.enabled) {
@@ -192,6 +196,7 @@ public class NativeImageBuildStep {
                     .setOutputTargetBuildItem(outputTargetBuildItem)
                     .setNativeImageProperties(nativeImageProperties)
                     .setExcludeConfigs(excludeConfigs)
+                    .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
                     .setNativeImageSecurityProviders(nativeImageSecurityProviders)
                     .setOutputDir(outputDir)
                     .setRunnerJarName(runnerJarName)
@@ -490,6 +495,7 @@ public class NativeImageBuildStep {
             private boolean isContainerBuild = false;
             private GraalVM.Version graalVMVersion = GraalVM.Version.UNVERSIONED;
             private String nativeImageName;
+            private boolean classpathIsBroken;
 
             public Builder setNativeConfig(NativeConfig nativeConfig) {
                 this.nativeConfig = nativeConfig;
@@ -503,6 +509,11 @@ public class NativeImageBuildStep {
 
             public Builder setNativeImageProperties(List<NativeImageSystemPropertyBuildItem> nativeImageProperties) {
                 this.nativeImageProperties = nativeImageProperties;
+                return this;
+            }
+
+            public Builder setBrokenClasspath(boolean classpathIsBroken) {
+                this.classpathIsBroken = classpathIsBroken;
                 return this;
             }
 
@@ -602,6 +613,10 @@ public class NativeImageBuildStep {
                     //Default: be strict as those fallback images aren't very useful
                     //and tend to cover up real problems.
                     nativeImageArgs.add("-H:FallbackThreshold=0");
+                }
+
+                if (classpathIsBroken) {
+                    nativeImageArgs.add("--allow-incomplete-classpath");
                 }
 
                 if (nativeConfig.reportErrorsAtRuntime) {

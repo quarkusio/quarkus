@@ -3,6 +3,7 @@ package io.quarkus.jdbc.oracle.deployment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 
@@ -94,6 +95,11 @@ public final class OracleMetadataOverrides {
     ExcludeConfigBuildItem excludeOracleDirectives() {
         // Excludes both native-image.properties and reflect-config.json, which are reimplemented above
         return new ExcludeConfigBuildItem(DRIVER_JAR_MATCH_REGEX, NATIVE_IMAGE_RESOURCE_MATCH_REGEX);
+    }
+
+    @BuildStep
+    NativeImageAllowIncompleteClasspathBuildItem naughtyDriver() {
+        return new NativeImageAllowIncompleteClasspathBuildItem("quarkus-jdbc-oracle");
     }
 
 }

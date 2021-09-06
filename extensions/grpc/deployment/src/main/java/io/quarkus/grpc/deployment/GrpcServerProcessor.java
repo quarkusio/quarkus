@@ -40,6 +40,7 @@ import org.jboss.logging.Logger;
 import io.grpc.internal.ServerImpl;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanArchivePredicateBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
@@ -49,6 +50,7 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -544,6 +546,18 @@ public class GrpcServerProcessor {
                 log.warn("Only Micrometer-based metrics system is supported by quarkus-grpc");
             }
         }
+    }
+
+    @BuildStep
+    BeanArchivePredicateBuildItem additionalBeanArchives() {
+        return new BeanArchivePredicateBuildItem(new Predicate<ApplicationArchive>() {
+
+            @Override
+            public boolean test(ApplicationArchive archive) {
+                // Every archive that contains a generated implementor of MutinyBean is considered a bean archive
+                return !archive.getIndex().getKnownDirectImplementors(GrpcDotNames.MUTINY_BEAN).isEmpty();
+            }
+        });
     }
 
     private static class GrpcInterceptors {

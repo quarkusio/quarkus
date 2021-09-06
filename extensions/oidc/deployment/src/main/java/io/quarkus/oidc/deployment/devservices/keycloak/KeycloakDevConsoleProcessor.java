@@ -33,7 +33,8 @@ public class KeycloakDevConsoleProcessor {
 
             console.produce(
                     new DevConsoleTemplateInfoBuildItem("keycloakUsers", configProps.get().getProperties().get("oidc.users")));
-            console.produce(new DevConsoleTemplateInfoBuildItem("keycloakRealm", config.devservices.realmName));
+            console.produce(new DevConsoleTemplateInfoBuildItem("keycloakRealm",
+                    configProps.get().getProperties().get("keycloak.realm")));
             console.produce(new DevConsoleTemplateInfoBuildItem("oidcGrantType", config.devservices.grant.type.getGrantType()));
         }
     }

@@ -85,8 +85,11 @@ public class JibConfig {
 
     /**
      * Custom labels to add to the generated image
+     * 
+     * @deprecated Use 'quarkus.container-image.labels' instead
      */
     @ConfigItem
+    @Deprecated
     public Map<String, String> labels;
 
     /**

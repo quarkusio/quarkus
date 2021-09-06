@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-oidc-client</artifactId>
     <name>Quarkus - OpenID Connect Client - Runtime</name>
-    <description>Use OpenID Connect Client to get and refresh access tokens</description>
+    <description>Get and refresh access tokens from OpenID Connect providers</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

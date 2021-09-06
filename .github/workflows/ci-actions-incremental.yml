@@ -178,7 +178,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}
         with:
-          name: "build-reports-JVM Tests - JDK ${{matrix.java.name}}"
+          name: "build-reports-Initial JDK 11 Build"
           path: |
             target/build-report.json
           retention-days: 2

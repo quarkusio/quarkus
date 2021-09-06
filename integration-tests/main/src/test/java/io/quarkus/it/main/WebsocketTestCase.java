@@ -32,6 +32,8 @@ public class WebsocketTestCase {
 
     @TestHTTPResource("wsopen")
     URI openURI;
+    @TestHTTPResource("added-dynamic")
+    URI added;
 
     @Test
     public void websocketTest() throws Exception {
@@ -52,6 +54,29 @@ public class WebsocketTestCase {
 
         try {
             Assertions.assertEquals("hello", message.poll(20, TimeUnit.SECONDS));
+        } finally {
+            session.close();
+        }
+    }
+
+    @Test
+    public void addedWebSocketTest() throws Exception {
+
+        LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();
+        Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
+            @Override
+            public void onOpen(Session session, EndpointConfig endpointConfig) {
+                session.addMessageHandler(new MessageHandler.Whole<String>() {
+                    @Override
+                    public void onMessage(String s) {
+                        message.add(s);
+                    }
+                });
+            }
+        }, ClientEndpointConfig.Builder.create().build(), added);
+
+        try {
+            Assertions.assertEquals("DYNAMIC", message.poll(20, TimeUnit.SECONDS));
         } finally {
             session.close();
         }

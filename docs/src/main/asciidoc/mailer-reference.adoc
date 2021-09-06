@@ -288,6 +288,11 @@ You can also create your own instance, and pass your own configuration.
 
 If you want to use the Gmail SMTP server, first create a dedicated password in `Google Account > Security > App passwords` or go to https://myaccount.google.com/apppasswords.
 
+[NOTE]
+====
+You need to switch on 2-Step Verification at https://myaccount.google.com/security in order to access the App passwords page.
+====
+
 When done, you can configure your Quarkus application by adding the following properties to your `application.properties`:
 
 With TLS:

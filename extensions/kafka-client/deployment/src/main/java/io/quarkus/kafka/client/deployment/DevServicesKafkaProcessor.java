@@ -361,6 +361,7 @@ public class DevServicesKafkaProcessor {
             // Start and configure the advertised address
             String command = "#!/bin/bash\n";
             command += "/usr/bin/rpk redpanda start --check=false --node-id 0 --smp 1 ";
+            command += "--memory 1G --overprovisioned --reserve-memory 0M ";
             command += "--kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092 ";
             command += String.format("--advertise-kafka-addr PLAINTEXT://%s:29092,OUTSIDE://%s:%d", getHostToUse(),
                     getHostToUse(), getPortToUse());

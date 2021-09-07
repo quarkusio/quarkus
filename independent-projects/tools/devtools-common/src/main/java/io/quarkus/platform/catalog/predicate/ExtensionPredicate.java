@@ -4,6 +4,7 @@ import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getShortN
 
 import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 import io.quarkus.registry.catalog.Extension;
+import java.util.Set;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -102,7 +103,7 @@ public class ExtensionPredicate implements Predicate<Extension> {
                 artifactId.equalsIgnoreCase("quarkus-" + q);
     }
 
-    private static boolean matchLabels(Pattern pattern, List<String> labels) {
+    private static boolean matchLabels(Pattern pattern, Set<String> labels) {
         boolean matches = false;
         // if any label match it's ok
         for (String label : labels) {

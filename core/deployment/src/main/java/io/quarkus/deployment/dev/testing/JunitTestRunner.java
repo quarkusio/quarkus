@@ -73,8 +73,10 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.dev.ClassScanResult;
 import io.quarkus.deployment.dev.DevModeContext;
+import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.dev.console.QuarkusConsole;
+import io.quarkus.dev.testing.TestWatchedFiles;
 import io.quarkus.dev.testing.TracingHandler;
 
 /**
@@ -379,6 +381,11 @@ public class JunitTestRunner {
 
                 QuarkusConsole.INSTANCE.setOutputFilter(null);
 
+                //this has to happen before notifying the listeners
+                Map<String, Boolean> watched = TestWatchedFiles.retrieveWatchedFilePaths();
+                if (watched != null) {
+                    RuntimeUpdatesProcessor.INSTANCE.setWatchedFilePaths(watched, true);
+                }
                 for (TestRunListener listener : listeners) {
                     listener.runComplete(new TestRunResults(runId, classScanResult, classScanResult == null, start,
                             System.currentTimeMillis(), toResultsMap(testState.getCurrentResults())));

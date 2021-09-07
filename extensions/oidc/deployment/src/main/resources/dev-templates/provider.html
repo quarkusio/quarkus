@@ -178,7 +178,7 @@ var port = {config:property('quarkus.http.port')};
                     userName = jsonPayload.preferred_username;
                 }
                 if (userName) {
-                    $('#loggedInUser').append("<i class='fas fa-lock fa-xs'></i> Logged in as " + userName);
+                    $('#loggedInUser').append("Logged in as " + userName + " ");
                 }
             }
             return "<pre class='text-danger' title='Header'>" + 
@@ -289,8 +289,9 @@ function signInToService(servicePath) {
                     Your tokens
                 </div>
                 <div class="float-right">
-                    <a id="loggedInUser" onclick="logout();" class="btn btn-link" title="Click to logout and start again">
-                        
+                    <span id="loggedInUser"></span>
+                    <a onclick="logout();" class="btn btn-link" title="Click to logout and start again">
+                        <i class="fas fa-sign-out-alt"></i>
                     </a>
                 </div>
             </div>

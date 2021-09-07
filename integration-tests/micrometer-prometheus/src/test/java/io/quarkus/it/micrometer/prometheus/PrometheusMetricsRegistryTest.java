@@ -78,6 +78,13 @@ class PrometheusMetricsRegistryTest {
     }
 
     @Test
+    @Order(9)
+    void testTemplatedPathOnClass() {
+        when().get("/template/path/anything").then().statusCode(200)
+                .body(containsString("Received: anything"));
+    }
+
+    @Test
     @Order(10)
     void testPrometheusScrapeEndpoint() {
         when().get("/q/metrics").then().statusCode(200)
@@ -102,6 +109,9 @@ class PrometheusMetricsRegistryTest {
                 .body(containsString("outcome=\"SUCCESS\""))
                 .body(containsString("uri=\"/message/match/{id}/{sub}\""))
                 .body(containsString("uri=\"/message/match/{other}\""))
+
+                .body(containsString(
+                        "http_server_requests_seconds_count{env=\"test\",method=\"GET\",outcome=\"SUCCESS\",registry=\"prometheus\",status=\"200\",uri=\"/template/path/{value}\""))
 
                 // Verify Hibernate Metrics
                 .body(containsString(

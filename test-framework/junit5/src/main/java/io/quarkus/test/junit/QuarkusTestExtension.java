@@ -22,7 +22,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -196,8 +195,6 @@ public class QuarkusTestExtension
             //we only every dump once
         }
     };
-
-    private final IdentityHashMap<Method, Method> tcclMethodCache = new IdentityHashMap<>();
 
     static {
         ClassLoader classLoader = QuarkusTestExtension.class.getClassLoader();
@@ -432,17 +429,8 @@ public class QuarkusTestExtension
                                 }
                                 tm.close();
                             } finally {
-                                tcclMethodCache.clear();
                                 GroovyCacheCleaner.clearGroovyCache();
-                                if (hangTaskKey != null) {
-                                    hangTaskKey.cancel(true);
-                                    hangTaskKey = null;
-                                }
-                                var h = hangDetectionExecutor;
-                                if (h != null) {
-                                    h.shutdownNow();
-                                    hangDetectionExecutor = null;
-                                }
+                                shutdownHangDetection();
                             }
                         }
                         try {
@@ -468,6 +456,18 @@ public class QuarkusTestExtension
             if (originalCl != null) {
                 Thread.currentThread().setContextClassLoader(originalCl);
             }
+        }
+    }
+
+    private void shutdownHangDetection() {
+        if (hangTaskKey != null) {
+            hangTaskKey.cancel(true);
+            hangTaskKey = null;
+        }
+        var h = hangDetectionExecutor;
+        if (h != null) {
+            h.shutdownNow();
+            hangDetectionExecutor = null;
         }
     }
 
@@ -1038,9 +1038,11 @@ public class QuarkusTestExtension
                         cloneRequired = false;
                     } else if (TestInfo.class.isAssignableFrom(theclass)) {
                         TestInfo info = (TestInfo) arg;
-                        Method newTestMethod = determineTCCLExtensionMethod(info.getTestMethod().get(), testClassFromTCCL);
+                        Method newTestMethod = info.getTestMethod().isPresent()
+                                ? determineTCCLExtensionMethod(info.getTestMethod().get(), testClassFromTCCL)
+                                : null;
                         replacement = new TestInfoImpl(info.getDisplayName(), info.getTags(), Optional.of(testClassFromTCCL),
-                                Optional.of(newTestMethod));
+                                Optional.ofNullable(newTestMethod));
                     } else if (clonePattern.matcher(className).matches()) {
                         cloneRequired = true;
                     } else {
@@ -1095,10 +1097,8 @@ public class QuarkusTestExtension
 
     private Method determineTCCLExtensionMethod(Method originalMethod, Class<?> c)
             throws ClassNotFoundException {
-        Method newMethod = tcclMethodCache.get(originalMethod);
-        if (newMethod != null) {
-            return newMethod;
-        }
+
+        Method newMethod = null;
         while (c != Object.class) {
             if (c.getName().equals(originalMethod.getDeclaringClass().getName())) {
                 try {
@@ -1122,7 +1122,6 @@ public class QuarkusTestExtension
             }
             c = c.getSuperclass();
         }
-        tcclMethodCache.put(originalMethod, newMethod);
         return newMethod;
     }
 
@@ -1330,6 +1329,7 @@ public class QuarkusTestExtension
 
         @Override
         public void close() {
+            resetHangTimeout();
             firstException = null;
             failedBoot = false;
             ConfigProviderResolver.setInstance(null);

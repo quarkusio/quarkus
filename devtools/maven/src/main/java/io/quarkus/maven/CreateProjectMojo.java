@@ -251,7 +251,7 @@ public class CreateProjectMojo extends AbstractMojo {
                 }
             } else if (containsAtLeastOneGradleFile) {
                 throw new MojoExecutionException(
-                        "You are trying to create maven project in a directory that contains only gradle build files.");
+                        "You are trying to create a Maven project in a directory that contains only Gradle build files.");
             }
         } else if (BuildTool.GRADLE.equals(buildToolEnum) || BuildTool.GRADLE_KOTLIN_DSL.equals(buildToolEnum)) {
             if (containsAtLeastOneGradleFile) {

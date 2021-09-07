@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-oidc-client-reactive-filter</artifactId>
     <name>Quarkus - OpenID Connect Client Reactive Filter - Runtime</name>
-    <description>Use Reactive RestClient filter to get and refresh the access tokens and set them as HTTP Authorization Bearer values</description>
+    <description>Use Reactive RestClient filter to get and refresh access tokens with OpenId Connect Client and send them as HTTP Authorization Bearer tokens</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

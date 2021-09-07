@@ -1,4 +1,4 @@
-package io.quarkus.deployment.builditem;
+package io.quarkus.arc.deployment;
 
 import java.util.Set;
 
@@ -48,6 +48,6 @@ public final class ConfigClassBuildItem extends MultiBuildItem {
 
     public enum Type {
         MAPPING,
-        PROPERTIES
+        PROPERTIES;
     }
 }

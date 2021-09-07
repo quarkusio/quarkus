@@ -184,7 +184,7 @@ The Quarkus mailer is using SMTP, so make sure you have access to a SMTP server.
 
 In the `src/main/resources/application.properties` file, you need to configure the host, port, username, password as well as the other configuration aspect.
 Note that the password can also be configured using system properties and environment variables.
-See the xref:configuration-reference.adoc[configuration reference guide] for details.
+See the xref:config-reference.adoc[configuration reference guide] for details.
 
 Here is an example using _sendgrid_:
 

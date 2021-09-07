@@ -4,10 +4,11 @@ plugins {
 }
 
 dependencies {
-    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
-    api("org.hibernate:hibernate-core:5.4.9") {
-        exclude module: "byte-buddy"
+    implementation platform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    api("org.acme:simple-dependency:1.0-SNAPSHOT") {
+        exclude module: "transitive-dependency"
     }
+    api("io.quarkus:quarkus-hibernate-reactive-panache")
 }
 
 publishing {

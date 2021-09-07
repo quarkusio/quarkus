@@ -11,4 +11,4 @@ metadata:
   categories:
   - "cloud"
   guide: "https://quarkus.io/guides/amazon-lambda-http"
-  status: "preview"
+  status: "stable"

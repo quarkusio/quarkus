@@ -61,18 +61,18 @@ public class CacheControlScanner implements MethodScanner {
         if (noCacheInstance == null) {
             return null;
         }
+        ExtendedCacheControl cacheControl = new ExtendedCacheControl();
+        cacheControl.setNoCache(true);
+        cacheControl.setNoTransform(false);
         AnnotationValue fieldsValue = noCacheInstance.value("fields");
         if (fieldsValue != null) {
             String[] fields = fieldsValue.asStringArray();
             if ((fields != null) && (fields.length > 0)) {
-                ExtendedCacheControl cacheControl = new ExtendedCacheControl();
-                cacheControl.setNoCache(true);
-                cacheControl.setNoTransform(false);
                 cacheControl.getNoCacheFields().addAll(Arrays.asList(fields));
-                return cacheControl;
+
             }
         }
-        return null;
+        return cacheControl;
     }
 
     private ExtendedCacheControl cacheToCacheControl(AnnotationInstance cacheInstance) {

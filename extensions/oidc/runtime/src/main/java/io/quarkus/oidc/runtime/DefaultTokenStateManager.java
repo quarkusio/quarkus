@@ -5,6 +5,7 @@ import javax.enterprise.context.ApplicationScoped;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenStateManager;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.ext.web.RoutingContext;
@@ -16,8 +17,8 @@ public class DefaultTokenStateManager implements TokenStateManager {
     private static final String SESSION_RT_COOKIE_NAME = CodeAuthenticationMechanism.SESSION_COOKIE_NAME + "_rt";
 
     @Override
-    public String createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
-            AuthorizationCodeTokens tokens) {
+    public Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
+            AuthorizationCodeTokens tokens, TokenStateManager.CreateTokenStateRequestContext requestContext) {
         StringBuilder sb = new StringBuilder();
         sb.append(tokens.getIdToken());
         if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.KEEP_ALL_TOKENS) {
@@ -56,11 +57,12 @@ public class DefaultTokenStateManager implements TokenStateManager {
                 }
             }
         }
-        return sb.toString();
+        return Uni.createFrom().item(sb.toString());
     }
 
     @Override
-    public AuthorizationCodeTokens getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState) {
+    public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
+            TokenStateManager.GetTokensRequestContext requestContext) {
         String[] tokens = CodeAuthenticationMechanism.COOKIE_PATTERN.split(tokenState);
         String idToken = tokens[0];
 
@@ -91,17 +93,19 @@ public class DefaultTokenStateManager implements TokenStateManager {
             }
         }
 
-        return new AuthorizationCodeTokens(idToken, accessToken, refreshToken);
+        return Uni.createFrom().item(new AuthorizationCodeTokens(idToken, accessToken, refreshToken));
     }
 
     @Override
-    public void deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState) {
+    public Uni<Void> deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
+            TokenStateManager.DeleteTokensRequestContext requestContext) {
         if (oidcConfig.tokenStateManager.splitTokens) {
             CodeAuthenticationMechanism.removeCookie(routingContext, getAccessTokenCookie(routingContext, oidcConfig),
                     oidcConfig);
             CodeAuthenticationMechanism.removeCookie(routingContext, getRefreshTokenCookie(routingContext, oidcConfig),
                     oidcConfig);
         }
+        return CodeAuthenticationMechanism.VOID_UNI;
     }
 
     private static ServerCookie getAccessTokenCookie(RoutingContext routingContext, OidcTenantConfig oidcConfig) {

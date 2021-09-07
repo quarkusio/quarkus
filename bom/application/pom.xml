@@ -47,14 +47,14 @@
         <smallrye-health.version>3.1.1</smallrye-health.version>
         <smallrye-metrics.version>3.0.1</smallrye-metrics.version>
         <smallrye-open-api.version>2.1.10</smallrye-open-api.version>
-        <smallrye-graphql.version>1.3.1</smallrye-graphql.version>
+        <smallrye-graphql.version>1.3.2</smallrye-graphql.version>
         <smallrye-opentracing.version>2.0.1</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>5.2.1</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>3.2.1</smallrye-jwt.version>
         <smallrye-context-propagation.version>1.2.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>2.6.0</smallrye-reactive-types-converter.version>
-        <smallrye-mutiny-vertx-binding.version>2.12.0</smallrye-mutiny-vertx-binding.version>
+        <smallrye-mutiny-vertx-binding.version>2.13.0</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>3.9.1</smallrye-reactive-messaging.version>
         <jakarta.activation.version>1.2.1</jakarta.activation.version>
         <jakarta.annotation-api.version>1.3.5</jakarta.annotation-api.version>
@@ -110,7 +110,7 @@
         <wildfly-elytron.version>1.16.1.Final</wildfly-elytron.version>
         <jboss-modules.version>1.8.7.Final</jboss-modules.version>
         <jboss-threads.version>3.4.2.Final</jboss-threads.version>
-        <vertx.version>4.1.2</vertx.version>
+        <vertx.version>4.1.3</vertx.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.14</httpcore.version>
         <httpasync.version>4.1.4</httpasync.version>
@@ -121,7 +121,7 @@
         <mariadb-jdbc.version>2.7.4</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.26</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
-        <oracle-jdbc.version>21.1.0.0</oracle-jdbc.version>
+        <oracle-jdbc.version>21.3.0.0</oracle-jdbc.version>
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
         <db2-jdbc.version>11.5.6.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
@@ -132,7 +132,7 @@
         <infinispan.version>12.1.7.Final</infinispan.version>
         <infinispan.protostream.version>4.4.1.Final</infinispan.protostream.version>
         <caffeine.version>2.9.2</caffeine.version>
-        <netty.version>4.1.65.Final</netty.version>
+        <netty.version>4.1.67.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.4.2.Final</jboss-logging.version>
         <mutiny.version>1.0.0</mutiny.version>
@@ -170,14 +170,14 @@
         <okhttp.version>3.14.9</okhttp.version>
         <sentry.version>5.0.1</sentry.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
-        <kubernetes-client.version>5.7.0</kubernetes-client.version>
+        <kubernetes-client.version>5.7.2</kubernetes-client.version>
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP4</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.2.Final</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
         <mockito.version>3.11.2</mockito.version>
-        <jna.version>5.3.1</jna.version><!-- should satisfy both testcontainers and mongodb -->
+        <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.8</antlr.version>
         <quarkus-security.version>1.1.4.Final</quarkus-security.version>
         <keycloak.version>14.0.0</keycloak.version>
@@ -349,6 +349,15 @@
                 <groupId>io.opentelemetry</groupId>
                 <artifactId>opentelemetry-bom-alpha</artifactId>
                 <version>${opentelemetry-alpha.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Oracle JDBC driver -->
+            <dependency>
+                <groupId>com.oracle.database.jdbc</groupId>
+                <artifactId>ojdbc-bom</artifactId>
+                <version>${oracle-jdbc.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -1606,6 +1615,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-mailer</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-mailer-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -4488,11 +4502,6 @@
                 <groupId>com.microsoft.sqlserver</groupId>
                 <artifactId>mssql-jdbc</artifactId>
                 <version>${mssql-jdbc.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.oracle.database.jdbc</groupId>
-                <artifactId>ojdbc8</artifactId>
-                <version>${oracle-jdbc.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.elasticsearch.client</groupId>

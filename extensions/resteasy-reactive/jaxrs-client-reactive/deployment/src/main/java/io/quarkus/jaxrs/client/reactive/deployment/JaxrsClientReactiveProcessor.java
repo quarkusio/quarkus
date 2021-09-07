@@ -146,6 +146,9 @@ public class JaxrsClientReactiveProcessor {
             String.class, Object.class);
     private static final MethodDescriptor MULTIVALUED_MAP_ADD = MethodDescriptor.ofMethod(MultivaluedMap.class, "add",
             void.class, Object.class, Object.class);
+    private static final MethodDescriptor PATH_GET_FILENAME = MethodDescriptor.ofMethod(Path.class, "getFileName",
+            Path.class);
+    private static final MethodDescriptor OBJECT_TO_STRING = MethodDescriptor.ofMethod(Object.class, "toString", String.class);
 
     static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
     private static final DotName UNI_KT = DotName.createSimple("io.smallrye.mutiny.coroutines.UniKt");
@@ -502,7 +505,11 @@ public class JaxrsClientReactiveProcessor {
                     ClassInfo subResourceInterface = index.getClassByName(returnType.name());
                     if (!Modifier.isInterface(subResourceInterface.flags())) {
                         throw new IllegalArgumentException(
-                                "Sub resource type is not an interface: " + returnType.name().toString());
+                                "Client interface method: " + jandexMethod.declaringClass().name() + "#" + jandexMethod
+                                        + " has no HTTP method annotation  (@GET, @POST, etc) and it's return type: "
+                                        + returnType.name().toString() + " is not an interface. "
+                                        + "If it's a sub resource method, it has to return an interface. "
+                                        + "If it's not, it has to have one of the HTTP method annotations.");
                     }
                     // generate implementation for a method from the jaxrs interface:
                     MethodCreator methodCreator = c.getMethodCreator(method.getName(), method.getSimpleReturnType(),
@@ -989,7 +996,7 @@ public class JaxrsClientReactiveProcessor {
                                             formClass.name() + "." + field.name());
                         }
                         ResultHandle filePath = methodCreator.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(File.class, "getPath", String.class), fieldValue);
+                                MethodDescriptor.ofMethod(File.class, "toPath", Path.class), fieldValue);
                         addFile(methodCreator, multipartForm, formParamName, partType, filePath);
                     } else if (is(PATH, fieldClass, index)) {
                         // and so is path
@@ -998,9 +1005,7 @@ public class JaxrsClientReactiveProcessor {
                                     "No @PartType annotation found on multipart form field of type Path: " +
                                             formClass.name() + "." + field.name());
                         }
-                        ResultHandle filePath = methodCreator.invokeInterfaceMethod(
-                                MethodDescriptor.ofMethod(Path.class, "toString", String.class), fieldValue);
-                        addFile(methodCreator, multipartForm, formParamName, partType, filePath);
+                        addFile(methodCreator, multipartForm, formParamName, partType, fieldValue);
                     } else if (is(BUFFER, fieldClass, index)) {
                         // and buffer
                         addBuffer(methodCreator, multipartForm, formParamName, partType, fieldValue, field);
@@ -1047,6 +1052,9 @@ public class JaxrsClientReactiveProcessor {
      */
     private void addFile(MethodCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
             String partType, ResultHandle filePath) {
+        ResultHandle fileNamePath = methodCreator.invokeInterfaceMethod(PATH_GET_FILENAME, filePath);
+        ResultHandle fileName = methodCreator.invokeVirtualMethod(OBJECT_TO_STRING, fileNamePath);
+        ResultHandle pathString = methodCreator.invokeVirtualMethod(OBJECT_TO_STRING, filePath);
         if (partType.equalsIgnoreCase(MediaType.APPLICATION_OCTET_STREAM)) {
             methodCreator.assign(multipartForm,
                     // MultipartForm#binaryFileUpload(String name, String filename, String pathname, String mediaType);
@@ -1055,8 +1063,8 @@ public class JaxrsClientReactiveProcessor {
                             MethodDescriptor.ofMethod(MultipartForm.class, "binaryFileUpload",
                                     MultipartForm.class, String.class, String.class, String.class,
                                     String.class),
-                            multipartForm, methodCreator.load(formParamName), methodCreator.load(formParamName),
-                            filePath, methodCreator.load(partType)));
+                            multipartForm, methodCreator.load(formParamName), fileName,
+                            pathString, methodCreator.load(partType)));
         } else {
             methodCreator.assign(multipartForm,
                     // MultipartForm#textFileUpload(String name, String filename, String pathname, String mediaType);;
@@ -1065,8 +1073,8 @@ public class JaxrsClientReactiveProcessor {
                             MethodDescriptor.ofMethod(MultipartForm.class, "textFileUpload",
                                     MultipartForm.class, String.class, String.class, String.class,
                                     String.class),
-                            multipartForm, methodCreator.load(formParamName), methodCreator.load(formParamName),
-                            filePath, methodCreator.load(partType)));
+                            multipartForm, methodCreator.load(formParamName), fileName,
+                            pathString, methodCreator.load(partType)));
         }
     }
 

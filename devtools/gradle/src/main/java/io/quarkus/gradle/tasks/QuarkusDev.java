@@ -74,6 +74,8 @@ public class QuarkusDev extends QuarkusTask {
 
     private List<String> compilerArgs = new LinkedList<>();
 
+    private boolean shouldPropagateJavaCompilerArgs = true;
+
     @Inject
     public QuarkusDev() {
         super("Development mode: enables hot deployment with background compilation");
@@ -303,7 +305,7 @@ public class QuarkusDev extends QuarkusTask {
             builder.targetJavaVersion(javaPluginConvention.getTargetCompatibility().toString());
         }
 
-        if (getCompilerArgs().isEmpty()) {
+        if (getCompilerArgs().isEmpty() && shouldPropagateJavaCompilerArgs) {
             getJavaCompileTask()
                     .map(compileTask -> compileTask.getOptions().getCompilerArgs())
                     .ifPresent(builder::compilerOptions);
@@ -570,5 +572,9 @@ public class QuarkusDev extends QuarkusTask {
             getProject().getLogger().debug("Adding dependency {}", file);
             classPathManifest.classpathEntry(file);
         }
+    }
+
+    public void shouldPropagateJavaCompilerArgs(boolean shouldPropagateJavaCompilerArgs) {
+        this.shouldPropagateJavaCompilerArgs = shouldPropagateJavaCompilerArgs;
     }
 }

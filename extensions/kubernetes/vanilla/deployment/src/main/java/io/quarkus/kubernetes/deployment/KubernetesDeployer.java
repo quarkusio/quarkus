@@ -11,11 +11,12 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -25,6 +26,7 @@ import io.dekorate.utils.Clients;
 import io.dekorate.utils.Serialization;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesList;
+import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.openshift.api.model.Route;
@@ -42,7 +44,6 @@ import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHandler;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
-import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 
 public class KubernetesDeployer {
 
@@ -60,7 +61,7 @@ public class KubernetesDeployer {
         Optional<String> activeContainerImageCapability = ContainerImageCapabilitiesUtil
                 .getActiveContainerImageCapability(capabilities);
 
-        if (!activeContainerImageCapability.isPresent()) {
+        if (activeContainerImageCapability.isEmpty()) {
             // we can't thrown an exception here, because it could prevent the Kubernetes resources from being generated
             return;
         }
@@ -85,10 +86,10 @@ public class KubernetesDeployer {
             return;
         }
 
-        if (!selectedDeploymentTarget.isPresent()) {
+        if (selectedDeploymentTarget.isEmpty()) {
 
-            if (!ContainerImageCapabilitiesUtil
-                    .getActiveContainerImageCapability(capabilities).isPresent()) {
+            if (ContainerImageCapabilitiesUtil
+                    .getActiveContainerImageCapability(capabilities).isEmpty()) {
                 throw new RuntimeException(
                         "A Kubernetes deployment was requested but no extension was found to build a container image. Consider adding one of following extensions: "
                                 + CONTAINER_IMAGE_EXTENSIONS_STR + ".");
@@ -158,11 +159,6 @@ public class KubernetesDeployer {
         return selectedTarget;
     }
 
-    private Optional<KubernetesDeploymentTargetBuildItem> getOptionalDeploymentTarget(
-            List<KubernetesDeploymentTargetBuildItem> deploymentTargets, String name) {
-        return deploymentTargets.stream().filter(d -> name.equals(d.getName())).findFirst();
-    }
-
     private DeploymentResultBuildItem deploy(DeploymentTargetEntry deploymentTarget,
             KubernetesClient client, Path outputDir,
             OpenshiftConfig openshiftConfig, ApplicationInfoBuildItem applicationInfo) {
@@ -174,12 +170,13 @@ public class KubernetesDeployer {
 
         try (FileInputStream fis = new FileInputStream(manifest)) {
             KubernetesList list = Serialization.unmarshalAsList(fis);
-            distinct(list.getItems()).forEach(i -> {
-                if (KNATIVE.equals(deploymentTarget.getName().toLowerCase())) {
-                    client.resource(i).inNamespace(namespace).deletingExisting().createOrReplace();
-                } else {
-                    client.resource(i).inNamespace(namespace).createOrReplace();
+            list.getItems().stream().filter(distinctByResourceKey()).forEach(i -> {
+                final var r = client.resource(i).inNamespace(namespace);
+                if (shouldDeleteExisting(deploymentTarget, i)) {
+                    r.delete();
+                    r.waitUntilCondition(Objects::isNull, 10, TimeUnit.SECONDS);
                 }
+                r.createOrReplace();
                 log.info("Applied: " + i.getKind() + " " + i.getMetadata().getName() + ".");
             });
 
@@ -221,13 +218,15 @@ public class KubernetesDeployer {
         }
     }
 
-    public static Predicate<HasMetadata> distictByResourceKey() {
+    private static boolean shouldDeleteExisting(DeploymentTargetEntry deploymentTarget, HasMetadata resource) {
+        return KNATIVE.equalsIgnoreCase(deploymentTarget.getName())
+                || resource instanceof Service
+                || (Objects.equals("v1", resource.getApiVersion()) && Objects.equals("Service", resource.getKind()));
+    }
+
+    private static Predicate<HasMetadata> distinctByResourceKey() {
         Map<Object, Boolean> seen = new ConcurrentHashMap<>();
         return t -> seen.putIfAbsent(t.getApiVersion() + "/" + t.getKind() + ":" + t.getMetadata().getName(),
                 Boolean.TRUE) == null;
-    }
-
-    private static Collection<HasMetadata> distinct(Collection<HasMetadata> resources) {
-        return resources.stream().filter(distictByResourceKey()).collect(Collectors.toList());
     }
 }

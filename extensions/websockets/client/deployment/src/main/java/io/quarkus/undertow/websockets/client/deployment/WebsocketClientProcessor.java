@@ -12,6 +12,7 @@ import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
 import javax.websocket.Endpoint;
 import javax.websocket.server.ServerApplicationConfig;
+import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -34,10 +35,11 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.undertow.deployment.ServletContextAttributeBuildItem;
 import io.quarkus.undertow.websockets.client.runtime.WebsocketCoreRecorder;
 import io.undertow.websockets.DefaultContainerConfigurator;
+import io.undertow.websockets.ServerWebSocketContainer;
 import io.undertow.websockets.UndertowContainerProvider;
 import io.undertow.websockets.WebSocketDeploymentInfo;
 
@@ -70,16 +72,16 @@ public class WebsocketClientProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
+    @Record(ExecutionTime.STATIC_INIT)
     public ServerWebSocketContainerBuildItem deploy(final CombinedIndexBuildItem indexBuildItem,
             WebsocketCoreRecorder recorder,
             BuildProducer<ReflectiveClassBuildItem> reflection,
-            EventLoopSupplierBuildItem eventLoopSupplierBuildItem,
             List<AnnotatedWebsocketEndpointBuildItem> annotatedEndpoints,
             BeanContainerBuildItem beanContainerBuildItem,
             WebsocketConfig websocketConfig,
             BuildProducer<WebSocketDeploymentInfoBuildItem> infoBuildItemBuildProducer,
-            Optional<ServerWebSocketContainerFactoryBuildItem> factoryBuildItem) throws Exception {
+            Optional<ServerWebSocketContainerFactoryBuildItem> factoryBuildItem,
+            BuildProducer<ServletContextAttributeBuildItem> servletContextAttributeBuildItemBuildProducer) throws Exception {
 
         final Set<String> endpoints = new HashSet<>();
         final Set<String> config = new HashSet<>();
@@ -121,10 +123,14 @@ public class WebsocketClientProcessor {
                 websocketConfig.maxFrameSize,
                 websocketConfig.dispatchToWorker);
         infoBuildItemBuildProducer.produce(new WebSocketDeploymentInfoBuildItem(deploymentInfo));
+        RuntimeValue<ServerWebSocketContainer> serverContainer = recorder.createServerContainer(
+                beanContainerBuildItem.getValue(),
+                deploymentInfo,
+                factoryBuildItem.map(ServerWebSocketContainerFactoryBuildItem::getFactory).orElse(null));
+        servletContextAttributeBuildItemBuildProducer
+                .produce(new ServletContextAttributeBuildItem(ServerContainer.class.getName(), serverContainer));
         return new ServerWebSocketContainerBuildItem(
-                recorder.createServerContainer(beanContainerBuildItem.getValue(), eventLoopSupplierBuildItem.getMainSupplier(),
-                        deploymentInfo,
-                        factoryBuildItem.map(ServerWebSocketContainerFactoryBuildItem::getFactory).orElse(null)));
+                serverContainer);
     }
 
     public static void registerCodersForReflection(BuildProducer<ReflectiveClassBuildItem> reflection,

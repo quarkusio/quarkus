@@ -80,6 +80,7 @@ public class KeycloakDevServicesProcessor {
     private static volatile String capturedKeycloakUrl;
     private static volatile FileTime capturedRealmFileLastModifiedDate;
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
+    private static volatile KeycloakDevServicesConfigBuildItem existingDevServiceConfig;
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = { IsEnabled.class, GlobalDevServicesConfig.Enabled.class })
     public KeycloakDevServicesConfigBuildItem startKeycloakContainer(
@@ -108,7 +109,7 @@ public class KeycloakDevServicesProcessor {
                 }
             }
             if (!restartRequired) {
-                return null;
+                return existingDevServiceConfig;
             }
             for (Closeable closeable : closeables) {
                 try {
@@ -120,6 +121,7 @@ public class KeycloakDevServicesProcessor {
             closeables = null;
             capturedDevServicesConfiguration = null;
             capturedKeycloakUrl = null;
+            existingDevServiceConfig = null;
         }
         capturedDevServicesConfiguration = currentDevServicesConfiguration;
 
@@ -199,7 +201,8 @@ public class KeycloakDevServicesProcessor {
         configProperties.put(CLIENT_SECRET_CONFIG_KEY, oidcClientSecret);
         configProperties.put(OIDC_USERS, users);
 
-        return new KeycloakDevServicesConfigBuildItem(configProperties);
+        existingDevServiceConfig = new KeycloakDevServicesConfigBuildItem(configProperties);
+        return existingDevServiceConfig;
     }
 
     private StartResult startContainer(boolean useSharedContainer) {

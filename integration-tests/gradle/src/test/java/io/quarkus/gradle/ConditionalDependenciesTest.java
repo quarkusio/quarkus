@@ -22,7 +22,10 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
     @Order(1)
     public void publishTestExtensions() throws IOException, InterruptedException, URISyntaxException {
         File dependencyProject = getProjectDir("conditional-dependencies");
-        runGradleWrapper(dependencyProject, ":ext-a:runtime:publishToMavenLocal",
+        runGradleWrapper(dependencyProject, ":transitive-dependency:publishToMavenLocal",
+                ":simple-dependency:publishToMavenLocal");
+        runGradleWrapper(dependencyProject,
+                ":ext-a:runtime:publishToMavenLocal",
                 ":ext-a:deployment:publishToMavenLocal",
                 ":ext-b:runtime:publishToMavenLocal",
                 ":ext-b:deployment:publishToMavenLocal",
@@ -79,10 +82,11 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
         assertThat(mainLib.resolve("org.acme.ext-c-1.0-SNAPSHOT.jar")).exists();
         assertThat(mainLib.resolve("org.acme.ext-e-1.0-SNAPSHOT.jar")).exists();
         assertThat(mainLib.resolve("org.acme.ext-d-1.0-SNAPSHOT.jar")).doesNotExist();
-        assertThat(mainLib.resolve("net.bytebuddy.byte-buddy-1.11.12.jar")).doesNotExist();
+        assertThat(mainLib.resolve("org.acme.transitive-dependency-1.0-SNAPSHOT.jar")).doesNotExist();
 
         final Path deploymentLib = buildDir.toPath().resolve("quarkus-app").resolve("lib").resolve("deployment");
-        assertThat(deploymentLib.resolve("net.bytebuddy.byte-buddy-1.11.12.jar")).exists();
+        assertThat(deploymentLib.resolve("org.acme.transitive-dependency-1.0-SNAPSHOT.jar")).exists();
+        assertThat(deploymentLib.resolve("io.quarkus.quarkus-agroal-" + getQuarkusVersion() + ".jar")).doesNotExist();
     }
 
     @Test

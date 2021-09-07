@@ -166,7 +166,7 @@ final class QuarkusCommandHandlers {
                 .filter(e -> !isUnlisted(e)).collect(Collectors.toList());
     }
 
-    private static boolean matchLabels(Pattern pattern, List<String> labels) {
+    private static boolean matchLabels(Pattern pattern, Set<String> labels) {
         boolean matches = false;
         // if any label match it's ok
         for (String label : labels) {

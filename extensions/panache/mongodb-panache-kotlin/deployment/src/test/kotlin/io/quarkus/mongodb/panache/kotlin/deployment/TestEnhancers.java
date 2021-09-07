@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.StringJoiner;
-import java.util.TreeMap;
+import java.util.HashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -101,7 +101,7 @@ public class TestEnhancers {
         InputStream inputStream = config.getArchiveProducer().get().get(path).getAsset().openStream();
         new ClassReader(inputStream).accept(new TraceClassVisitor(
                 new ClassNode(Gizmo.ASM_API_VERSION), printer, null), ClassReader.EXPAND_FRAMES);
-        Map<String, BytecodeMethod> methods = new TreeMap<>();
+        Map<String, BytecodeMethod> methods = new HashMap<>();
         ListIterator<Object> iterator = printer.text.listIterator();
         while (iterator.hasNext()) {
             Object t = iterator.next();
@@ -125,7 +125,7 @@ public class TestEnhancers {
         ClassNode node = new ClassNode(Gizmo.ASM_API_VERSION);
         new ClassReader(type.getName())
                 .accept(node, ClassReader.SKIP_FRAMES);
-        Map<String, MethodNode> map = new TreeMap<>();
+        Map<String, MethodNode> map = new HashMap<>();
         node.methods.stream()
                 .filter(m -> m.visibleAnnotations != null && m.visibleAnnotations.stream()
                         .map(a -> a.desc)

@@ -31,6 +31,7 @@ public final class EngineBuilder {
         this.resultMappers = new ArrayList<>();
         this.parserHooks = new ArrayList<>();
         this.strictRendering = true;
+        this.removeStandaloneLines = true;
     }
 
     public EngineBuilder addSectionHelper(SectionHelperFactory<?> factory) {

@@ -6,6 +6,8 @@ import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.catalog.Extension;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -99,14 +101,14 @@ public final class ExtensionProcessor {
     }
 
     /**
-     * List of strings to use for matching.
+     * Set of strings to use for matching.
      * <br/>
      * <br/>
      * It includes a mix of static keywords, the artifactId, and keywords extracted from the description
      *
-     * @return list of keywords to use for matching.
+     * @return set of keywords to use for matching.
      */
-    public static List<String> getExtendedKeywords(Extension extension) {
+    public static Set<String> getExtendedKeywords(Extension extension) {
         return ExtendedKeywords.extendsKeywords(extension.getArtifact().getArtifactId(), extension.getDescription(),
                 getKeywords(extension));
     }
@@ -182,14 +184,14 @@ public final class ExtensionProcessor {
     }
 
     /**
-     * List of strings to use for matching.
+     * Set of strings to use for matching.
      * <br/>
      * <br/>
      * It includes a mix of static keywords, the artifactId, and keywords extracted from the description
      *
-     * @return list of keywords to use for matching.
+     * @return set of keywords to use for matching.
      */
-    public List<String> getExtendedKeywords() {
+    public Set<String> getExtendedKeywords() {
         return getExtendedKeywords(extension);
     }
 

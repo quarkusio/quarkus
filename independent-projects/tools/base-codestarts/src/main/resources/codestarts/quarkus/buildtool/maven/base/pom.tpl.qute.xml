@@ -8,9 +8,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.source>{java.version}</maven.compiler.source>
-        <maven.compiler.target>{java.version}</maven.compiler.target>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
+        <maven.compiler.release>{java.version}</maven.compiler.release>
 
         <quarkus.platform.group-id>{quarkus.platform.group-id}</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>{quarkus.platform.artifact-id}</quarkus.platform.artifact-id>
@@ -143,9 +141,10 @@
                 <groupId>org.apache.maven.plugins</groupId>     
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>$\{compiler-plugin.version}</version>
-                <!-- Workaround to support maven.compiler.parameters property (see https://youtrack.jetbrains.com/issue/IDEA-201496) -->
                 <configuration>
-                    <parameters>$\{maven.compiler.parameters}</parameters>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <!-- Run the tests in JVM mode -->

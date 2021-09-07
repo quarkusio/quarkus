@@ -7,8 +7,11 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-If you prefer to use Spring Boot `@ConfigurationProperties` annotated class to access application properties instead of a
-Quarkus native `@ConfigProperties` or a MicroProfile `@ConfigProperty` approach, you can do that with this extension.
+If you prefer to use Spring Boot `@ConfigurationProperties` annotated class to access application properties instead of
+a Quarkus native `@ConfigProperties` or a MicroProfile `@ConfigProperty` approach, you can do that with this extension.
+
+IMPORTANT: Spring Boot `@ConfigurationProperties` has a few limitations. For instance, `Map` injection is not
+supported. Consider using link:config-mappings.adoc[Mapping configuration to objects].
 
 == Prerequisites
 

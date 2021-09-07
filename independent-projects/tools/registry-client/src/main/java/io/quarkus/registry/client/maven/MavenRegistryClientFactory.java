@@ -90,7 +90,7 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
                 if (areMatching(registryRepos, aggregatedRepos)) {
                     // the original and aggregated repos are matching, meaning no mirrors/proxies have been applied
                     // there is nothing to fallback to
-                    throw new RegistryResolutionException(getDescriptorResolutionFailureMessage(config, resolver, e));
+                    throw new RegistryResolutionException(getDescriptorResolutionFailureMessage(config, resolver, e), e);
                 }
                 // if the mirror and proxies in the user settings were configured w/o taking the extension registry into account
                 // we will warn the user and try the original registry repos as a fallback

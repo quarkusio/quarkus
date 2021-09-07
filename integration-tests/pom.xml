@@ -154,6 +154,7 @@
                 <module>jpa-oracle</module>
                 <module>hibernate-orm-panache</module>
                 <module>hibernate-orm-rest-data-panache</module>
+                <module>hibernate-orm-graphql-panache</module>
                 <module>hibernate-orm-panache-kotlin</module>
                 <module>hibernate-reactive-db2</module>
                 <module>hibernate-reactive-mysql</module>

@@ -23,14 +23,15 @@ public class ContinuousTestingTestUtils {
                 public Boolean call() throws Exception {
                     ContinuousTestingSharedStateManager.State ts = ContinuousTestingSharedStateManager.getLastState();
                     if (ts.lastRun > runToWaitFor) {
-                        throw new RuntimeException(
-                                "Waiting for run " + runToWaitFor + " but run " + ts.lastRun + " has already occurred");
+                        //sometimes we can run spuriously, because of the way file systems work
+                        //we just roll with it, and take the updated results
+                        runToWaitFor = ts.lastRun;
                     }
                     boolean runComplete = ts.lastRun == runToWaitFor;
                     if (runComplete && ts.inProgress) {
                         //there is a small chance of a race, where changes are picked up twice, due to how filesystems work
                         //this works around it by waiting for the next run
-                        runToWaitFor = ts.lastRun;
+                        runToWaitFor = ts.lastRun + 1;
                         return false;
                     } else if (runComplete) {
                         runToWaitFor++;
@@ -40,7 +41,7 @@ public class ContinuousTestingTestUtils {
             });
         } catch (Exception e) {
             ContinuousTestingSharedStateManager.State ts = ContinuousTestingSharedStateManager.getLastState();
-            throw new ConditionTimeoutException("Failed to wait for test run " + runToWaitFor + " " + ts);
+            throw new ConditionTimeoutException("Failed to wait for test run " + runToWaitFor + " " + ts, e);
         }
         var s = ContinuousTestingSharedStateManager.getLastState();
         return new TestStatus(s.lastRun, s.running ? s.lastRun + 1 : -1, s.run, s.currentPassed, s.currentFailed,

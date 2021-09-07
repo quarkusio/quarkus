@@ -40,8 +40,8 @@ import io.quarkus.runtime.annotations.QuarkusMain;
 public class HelloWorldMain implements QuarkusApplication {
   @Override
   public int run(String... args) throws Exception {   // <.>
-    System.out.println("Hello World");
-    return 10;
+    System.out.println("Hello " + args[1]);
+    return 0;
  }
 }
 ----
@@ -129,4 +129,55 @@ Press [space] to restart, [e] to edit command line args (currently '-w --tags 1.
 You can press the `Space bar` key and the application will be started again.
 You can also use the `e` hotkey to edit the command line arguments and restart your application.
 
+== Testing Command Mode Applications
 
+Command Mode applications can be tested using the `@QuarkusMainTest` and `@QuarkusMainIntegrationTest` annotations. These
+work in a similar way to `@QuarkusTest` and `@QuarkusIntegrationTest` where `@QuarkusMainTest` will run the CLI tests
+within the current JVM, while `QuarkusIntegrationTest` is used to run the generated executable (both jars and native).
+
+We can write a simple test for our CLI application above as follows:
+
+[source,java]
+----
+import io.quarkus.test.junit.main.Launch;
+import io.quarkus.test.junit.main.LaunchResult;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+@QuarkusMainTest
+public class HelloTest {
+
+    @Test
+    @Launch("World")
+    public void testLaunchCommand(LaunchResult result) {
+        Assertions.assertEquals("Hello World", result.getOutput());
+    }
+
+    @Test
+    @Launch(value = {}, exitCode = 1)
+    public void testLaunchCommandFailed() {
+    }
+
+    @Test
+    public void testManualLaunch(QuarkusMainLauncher launcher) {
+        LaunchResult result = launcher.launch("Everyone");
+        Assertions.assertEquals(0, result.exitCode());
+        Assertions.assertEquals("Hello Everyone", result.getOutput());
+    }
+}
+
+----
+
+We can then extend this with an integration test that can be used to test the native executable or runnable jar:
+
+[source,java]
+----
+import io.quarkus.test.junit.main.QuarkusMainIntegrationTest;
+
+@QuarkusMainIntegrationTest
+public class HelloIT extends HelloTest {
+}
+
+----

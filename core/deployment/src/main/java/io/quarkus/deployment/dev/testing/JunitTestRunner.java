@@ -1,12 +1,10 @@
 package io.quarkus.deployment.dev.testing;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,7 +24,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -73,8 +70,10 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.dev.ClassScanResult;
 import io.quarkus.deployment.dev.DevModeContext;
+import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.dev.console.QuarkusConsole;
+import io.quarkus.dev.testing.TestWatchedFiles;
 import io.quarkus.dev.testing.TracingHandler;
 
 /**
@@ -84,6 +83,7 @@ public class JunitTestRunner {
 
     private static final Logger log = Logger.getLogger(JunitTestRunner.class);
     public static final DotName QUARKUS_TEST = DotName.createSimple("io.quarkus.test.junit.QuarkusTest");
+    public static final DotName QUARKUS_MAIN_TEST = DotName.createSimple("io.quarkus.test.junit.main.QuarkusMainTest");
     public static final DotName QUARKUS_INTEGRATION_TEST = DotName.createSimple("io.quarkus.test.junit.QuarkusIntegrationTest");
     public static final DotName NATIVE_IMAGE_TEST = DotName.createSimple("io.quarkus.test.junit.NativeImageTest");
     public static final DotName TEST_PROFILE = DotName.createSimple("io.quarkus.test.junit.TestProfile");
@@ -132,6 +132,8 @@ public class JunitTestRunner {
     public void runTests() {
         long start = System.currentTimeMillis();
         ClassLoader old = Thread.currentThread().getContextClassLoader();
+        LogCapturingOutputFilter logHandler = new LogCapturingOutputFilter(testApplication, true, true,
+                TestSupport.instance().get()::isDisplayTestOutput);
         try (QuarkusClassLoader tcl = testApplication.createDeploymentClassLoader()) {
             synchronized (this) {
                 if (aborted) {
@@ -196,8 +198,7 @@ public class JunitTestRunner {
                     listener.runStarted(toRun);
                 }
                 log.debug("Starting test run with " + testPlan.countTestIdentifiers((s) -> true) + " tests");
-                TestLogCapturingHandler logHandler = new TestLogCapturingHandler();
-                QuarkusConsole.INSTANCE.setOutputFilter(logHandler);
+                QuarkusConsole.INSTANCE.addOutputFilter(logHandler);
 
                 final Deque<Set<String>> touchedClasses = new LinkedBlockingDeque<>();
                 Map<TestIdentifier, Long> startTimes = new HashMap<>();
@@ -377,8 +378,13 @@ public class JunitTestRunner {
                     testState.classesRemoved(classScanResult.getDeletedClassNames());
                 }
 
-                QuarkusConsole.INSTANCE.setOutputFilter(null);
+                QuarkusConsole.INSTANCE.removeOutputFilter(logHandler);
 
+                //this has to happen before notifying the listeners
+                Map<String, Boolean> watched = TestWatchedFiles.retrieveWatchedFilePaths();
+                if (watched != null) {
+                    RuntimeUpdatesProcessor.INSTANCE.setWatchedFilePaths(watched, true);
+                }
                 for (TestRunListener listener : listeners) {
                     listener.runComplete(new TestRunResults(runId, classScanResult, classScanResult == null, start,
                             System.currentTimeMillis(), toResultsMap(testState.getCurrentResults())));
@@ -391,7 +397,7 @@ public class JunitTestRunner {
         } finally {
             try {
                 TracingHandler.setTracingHandler(null);
-                QuarkusConsole.INSTANCE.setOutputFilter(null);
+                QuarkusConsole.INSTANCE.removeOutputFilter(logHandler);
                 Thread.currentThread().setContextClassLoader(old);
             } finally {
                 synchronized (this) {
@@ -540,12 +546,14 @@ public class JunitTestRunner {
             }
         }
         Set<String> quarkusTestClasses = new HashSet<>();
-        for (AnnotationInstance i : index.getAnnotations(QUARKUS_TEST)) {
-            DotName name = i.target().asClass().name();
-            quarkusTestClasses.add(name.toString());
-            for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
-                if (!integrationTestClasses.contains(clazz.name().toString())) {
-                    quarkusTestClasses.add(clazz.name().toString());
+        for (var a : Arrays.asList(QUARKUS_TEST, QUARKUS_MAIN_TEST)) {
+            for (AnnotationInstance i : index.getAnnotations(a)) {
+                DotName name = i.target().asClass().name();
+                quarkusTestClasses.add(name.toString());
+                for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
+                    if (!integrationTestClasses.contains(clazz.name().toString())) {
+                        quarkusTestClasses.add(clazz.name().toString());
+                    }
                 }
             }
         }
@@ -672,51 +680,6 @@ public class JunitTestRunner {
 
     public boolean isRunning() {
         return testsRunning;
-    }
-
-    private class TestLogCapturingHandler implements Predicate<String> {
-
-        private final List<String> logOutput;
-
-        public TestLogCapturingHandler() {
-            this.logOutput = new ArrayList<>();
-        }
-
-        public List<String> captureOutput() {
-            List<String> ret = new ArrayList<>(logOutput);
-            logOutput.clear();
-            return ret;
-        }
-
-        @Override
-        public boolean test(String logRecord) {
-            Thread thread = Thread.currentThread();
-            ClassLoader cl = thread.getContextClassLoader();
-            if (cl == null) {
-                return true;
-            }
-            while (cl.getParent() != null) {
-                if (cl == testApplication.getAugmentClassLoader()
-                        || cl == testApplication.getBaseRuntimeClassLoader()) {
-                    //TODO: for convenience we save the log records as HTML rather than ANSI here
-                    synchronized (logOutput) {
-                        ByteArrayOutputStream out = new ByteArrayOutputStream();
-                        HtmlAnsiOutputStream outputStream = new HtmlAnsiOutputStream(out) {
-                        };
-                        try {
-                            outputStream.write(logRecord.getBytes(StandardCharsets.UTF_8));
-                            logOutput.add(new String(out.toByteArray(), StandardCharsets.UTF_8));
-                        } catch (IOException e) {
-                            log.error("Failed to capture log record", e);
-                            logOutput.add(logRecord);
-                        }
-                    }
-                    return TestSupport.instance().get().isDisplayTestOutput();
-                }
-                cl = cl.getParent();
-            }
-            return true;
-        }
     }
 
     static class Builder {

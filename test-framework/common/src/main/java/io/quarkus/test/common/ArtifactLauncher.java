@@ -12,6 +12,8 @@ public interface ArtifactLauncher<T extends ArtifactLauncher.InitContext> extend
 
     void start() throws IOException;
 
+    LaunchResult runToCompletion(String[] args);
+
     void includeAsSysProps(Map<String, String> systemProps);
 
     boolean listensOnSsl();
@@ -30,11 +32,37 @@ public interface ArtifactLauncher<T extends ArtifactLauncher.InitContext> extend
 
         ArtifactLauncher.InitContext.DevServicesLaunchResult getDevServicesLaunchResult();
 
-        interface DevServicesLaunchResult {
+        interface DevServicesLaunchResult extends AutoCloseable {
 
             Map<String, String> properties();
 
             String networkId();
+
+            void close();
+        }
+    }
+
+    class LaunchResult {
+        final int statusCode;
+        final byte[] output;
+        final byte[] stderror;
+
+        public LaunchResult(int statusCode, byte[] output, byte[] stderror) {
+            this.statusCode = statusCode;
+            this.output = output;
+            this.stderror = stderror;
+        }
+
+        public int getStatusCode() {
+            return statusCode;
+        }
+
+        public byte[] getOutput() {
+            return output;
+        }
+
+        public byte[] getStderror() {
+            return stderror;
         }
     }
 }

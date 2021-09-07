@@ -129,7 +129,7 @@ public class TestSupport implements TestController {
                         .setAssertionsEnabled(true)
                         .setDisableClasspathCache(false)
                         .setIsolateDeployment(true)
-                        .setBaseClassLoader(getClass().getClassLoader())
+                        .setBaseClassLoader(getClass().getClassLoader().getParent())
                         .setTest(true)
                         .setAuxiliaryApplication(true)
                         .setHostApplicationIsTestOnly(devModeType == DevModeType.TEST_ONLY)

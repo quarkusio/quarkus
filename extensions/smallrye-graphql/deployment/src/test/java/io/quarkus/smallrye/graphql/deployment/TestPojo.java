@@ -45,6 +45,8 @@ public class TestPojo {
         this.number = number;
     }
 
+    // <placeholder>
+
     @Override
     public String toString() {
         return "TestPojo{" + "message=" + message + ", list=" + list + ", number=" + number + '}';

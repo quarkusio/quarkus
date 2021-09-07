@@ -141,7 +141,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         run(false, "-Dquarkus.args='1 2'");
 
         // Wait until this file exists
-        final File done = new File(testDir, "target/done.txt");
+        final File done = new File(testDir, "done.txt");
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(20, TimeUnit.MINUTES).until(() -> done.exists());
@@ -159,7 +159,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         run(false);
 
         // Wait until this file exists
-        final File done = new File(testDir, "target/done.txt");
+        final File done = new File(testDir, "done.txt");
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(20, TimeUnit.MINUTES).until(() -> done.exists());
@@ -817,7 +817,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     @Test
     public void testThatExternalConfigOverridesConfigInJar() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-external-config");
-        File configurationFile = new File(testDir, "target/config/application.properties");
+        File configurationFile = new File(testDir, "config/application.properties");
         assertThat(configurationFile).doesNotExist();
 
         String uuid = UUID.randomUUID().toString();

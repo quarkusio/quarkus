@@ -24,8 +24,6 @@ import org.junit.platform.launcher.PostDiscoveryFilter;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.deployment.dev.ClassScanResult;
 import io.quarkus.deployment.dev.DevModeContext;
-import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
-import io.quarkus.dev.testing.TestWatchedFiles;
 import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 
 public class TestRunner {
@@ -253,10 +251,6 @@ public class TestRunner {
         runner.runTests();
         synchronized (this) {
             runner = null;
-        }
-        Map<String, Boolean> watched = TestWatchedFiles.retrieveWatchedFilePaths();
-        if (watched != null) {
-            RuntimeUpdatesProcessor.INSTANCE.setWatchedFilePaths(watched, true);
         }
         if (disabled) {
             return;

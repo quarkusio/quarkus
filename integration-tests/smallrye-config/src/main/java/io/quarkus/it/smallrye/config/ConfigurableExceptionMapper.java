@@ -13,15 +13,13 @@ public class ConfigurableExceptionMapper
     @Inject
     @ConfigProperty(name = "exception.message")
     String message;
-    @Inject
-    ExceptionConfig exceptionConfig;
+
+    public ConfigurableExceptionMapper() {
+        System.out.println("ConfigurableExceptionMapper.ConfigurableExceptionMapper");
+    }
 
     @Override
     public Response toResponse(final ConfigurableExceptionMapperException exception) {
-        if (!message.equals(exceptionConfig.message())) {
-            return Response.serverError().build();
-        }
-
         return Response.ok().entity(message).build();
     }
 

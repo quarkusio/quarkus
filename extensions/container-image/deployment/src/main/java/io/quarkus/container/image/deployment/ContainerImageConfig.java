@@ -1,6 +1,7 @@
 package io.quarkus.container.image.deployment;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -32,6 +33,12 @@ public class ContainerImageConfig {
      */
     @ConfigItem
     public Optional<List<String>> additionalTags;
+
+    /**
+     * Custom labels to add to the generated image.
+     */
+    @ConfigItem
+    public Map<String, String> labels;
 
     /**
      * The container registry to use

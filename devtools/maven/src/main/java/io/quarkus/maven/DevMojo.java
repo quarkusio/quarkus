@@ -227,7 +227,7 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.sourceDirectory}")
     private File sourceDir;
 
-    @Parameter(defaultValue = "${project.build.directory}")
+    @Parameter
     private File workingDir;
 
     @Parameter(defaultValue = "${jvm.args}")
@@ -765,7 +765,7 @@ public class DevMojo extends AbstractMojo {
             final ProcessBuilder processBuilder = new ProcessBuilder(launcher.args())
                     .redirectErrorStream(true)
                     .inheritIO()
-                    .directory(workingDir == null ? buildDir : workingDir);
+                    .directory(workingDir == null ? project.getBasedir() : workingDir);
             if (!environmentVariables.isEmpty()) {
                 processBuilder.environment().putAll(environmentVariables);
             }

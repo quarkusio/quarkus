@@ -13,6 +13,7 @@ import org.keycloak.jose.jwk.JWK;
 import org.keycloak.jose.jws.JWSHeader;
 import org.keycloak.json.StringListMapDeserializer;
 import org.keycloak.json.StringOrArrayDeserializer;
+import org.keycloak.protocol.oidc.representations.MTLSEndpointAliases;
 import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.AccessTokenResponse;
@@ -63,6 +64,7 @@ public class KeycloakReflectionBuildStep {
                 ResourceOwnerRepresentation.class.getName(),
                 StringListMapDeserializer.class.getName(),
                 StringOrArrayDeserializer.class.getName(),
+                MTLSEndpointAliases.class.getName(),
                 OIDCConfigurationRepresentation.class.getName()));
     }
 

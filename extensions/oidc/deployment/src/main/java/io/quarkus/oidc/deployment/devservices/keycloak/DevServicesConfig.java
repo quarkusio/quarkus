@@ -24,7 +24,7 @@ public class DevServicesConfig {
     /**
      * The container image name to use, for container based DevServices providers.
      */
-    @ConfigItem(defaultValue = "quay.io/keycloak/keycloak:14.0.0")
+    @ConfigItem(defaultValue = "quay.io/keycloak/keycloak:15.0.2")
     public String imageName;
 
     /**

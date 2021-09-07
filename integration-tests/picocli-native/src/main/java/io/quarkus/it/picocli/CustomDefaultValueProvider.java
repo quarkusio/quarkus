@@ -7,6 +7,6 @@ public class CustomDefaultValueProvider implements IDefaultValueProvider {
 
     @Override
     public String defaultValue(ArgSpec argSpec) throws Exception {
-        return "false";
+        return "default-value";
     }
 }

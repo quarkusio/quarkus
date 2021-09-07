@@ -36,6 +36,11 @@ public class PicocliRunner implements QuarkusApplication {
 
     @Override
     public int run(String... args) throws Exception {
-        return commandLine.execute(args);
+        try {
+            return commandLine.execute(args);
+        } finally {
+            commandLine.getOut().flush();
+            commandLine.getErr().flush();
+        }
     }
 }

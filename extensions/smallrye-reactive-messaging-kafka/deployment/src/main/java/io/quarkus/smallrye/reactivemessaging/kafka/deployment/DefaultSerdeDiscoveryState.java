@@ -27,9 +27,11 @@ class DefaultSerdeDiscoveryState {
     private Boolean hasApicurio1;
     private Boolean hasApicurio2;
     private Boolean hasJsonb;
+    final boolean onlyKafka;
 
-    DefaultSerdeDiscoveryState(IndexView index) {
+    DefaultSerdeDiscoveryState(IndexView index, boolean onlyKafka) {
         this.index = index;
+        this.onlyKafka = onlyKafka;
     }
 
     boolean isKafkaConnector(boolean incoming, String channelName) {
@@ -38,7 +40,7 @@ class DefaultSerdeDiscoveryState {
             String connectorKey = "mp.messaging." + channelType + "." + channelName + ".connector";
             String connector = ConfigProvider.getConfig()
                     .getOptionalValue(connectorKey, String.class)
-                    .orElse("ignored");
+                    .orElse(onlyKafka ? KafkaConnector.CONNECTOR_NAME : "ignored");
             return KafkaConnector.CONNECTOR_NAME.equals(connector);
         });
     }

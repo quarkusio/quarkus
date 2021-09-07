@@ -201,18 +201,10 @@ public class QuotesResource {
 <2> On a post request, generate a random UUID and send it to the Kafka topic using the emitter.
 <3> Return the same UUID to the client.
 
-We need to instruct Quarkus to map the `quote-requests` channel to a Kafka topic.
-In the `src/main/resources/application.properties` file in the _producer_ project, add:
-
-[source, properties]
-----
-# Configure the outgoing `quote-requests` Kafka topic
-mp.messaging.outgoing.quote-requests.connector=smallrye-kafka
-----
-
-All we need to specify is the `smallrye-kafka` connector.
+At this stage no configuration is required.
 By default, the Kafka connector uses the channel name (`quote-requests`) as the Kafka topic name.
 Quarkus configures the serializer automatically, because it finds that the `Emitter` produces `String` values.
+As we have only added the Kafka connector we don't need to configure the connector type to use.
 
 == Processing quote requests
 
@@ -265,12 +257,10 @@ As with the previous example, we need to configure the connectors in the `applic
 %dev.quarkus.http.port=8081
 
 # Configure the incoming `quote-requests` Kafka topic
-mp.messaging.incoming.requests.connector=smallrye-kafka
 mp.messaging.incoming.requests.topic=quote-requests
 mp.messaging.incoming.requests.auto.offset.reset=earliest
 
 # Configure the outgoing `quotes` Kafka topic
-mp.messaging.outgoing.quotes.connector=smallrye-kafka
 mp.messaging.outgoing.quotes.value.serializer=io.quarkus.kafka.client.serialization.ObjectMapperSerializer
 ----
 
@@ -322,14 +312,7 @@ public Multi<Quote> stream() {
 <2> Indicates that the content is sent using `Server Sent Events`
 <3> Returns the stream (_Reactive Stream_)
 
-Again we need to configure the incoming `quotes` channel inside _producer_ project.
-Add the following inside `application.properties` file:
-
-[source, properties]
-----
-# Configure the incoming `quotes` Kafka topic
-mp.messaging.incoming.quotes.connector=smallrye-kafka
-----
+Again no configuration is required at this stage.
 
 [NOTE]
 ====

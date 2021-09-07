@@ -30,6 +30,7 @@ import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.ConnectorProviderBuildItem;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Multi;
 
@@ -78,6 +79,13 @@ public class RegistrationForReflectionTest {
                             }
                         }).consumes(ReflectiveClassBuildItem.class)
                         .produces(GeneratedResourceBuildItem.class).build();
+                chainBuilder.addBuildStep(new BuildStep() {
+                    @Override
+                    public void execute(BuildContext context) {
+                        //this stops the endpoints being automatically started, to avoid having to configure paths
+                        context.produce(new ConnectorProviderBuildItem("bogus-connector"));
+                    }
+                }).produces(ConnectorProviderBuildItem.class).build();
             }
         };
     }

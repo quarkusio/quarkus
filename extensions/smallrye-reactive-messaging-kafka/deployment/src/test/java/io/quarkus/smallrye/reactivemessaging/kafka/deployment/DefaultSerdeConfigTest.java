@@ -46,7 +46,7 @@ public class DefaultSerdeConfigTest {
     private static void doTest(Tuple[] expectations, Class<?>... classesToIndex) {
         List<RunTimeConfigurationDefaultBuildItem> configs = new ArrayList<>();
 
-        DefaultSerdeDiscoveryState discovery = new DefaultSerdeDiscoveryState(index(classesToIndex)) {
+        DefaultSerdeDiscoveryState discovery = new DefaultSerdeDiscoveryState(index(classesToIndex), false) {
             @Override
             boolean isKafkaConnector(boolean incoming, String channelName) {
                 return true;

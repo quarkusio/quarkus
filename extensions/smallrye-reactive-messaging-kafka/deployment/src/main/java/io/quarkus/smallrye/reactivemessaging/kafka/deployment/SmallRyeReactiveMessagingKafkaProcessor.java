@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -28,6 +29,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.ConnectorProviderBuildItem;
 import io.quarkus.smallrye.reactivemessaging.kafka.ReactiveMessagingKafkaConfig;
 import io.vertx.kafka.client.consumer.impl.KafkaReadStreamImpl;
 
@@ -51,6 +53,11 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     }
 
     @BuildStep
+    ConnectorProviderBuildItem connectorProviderBuildItem() {
+        return new ConnectorProviderBuildItem("smallrye-kafka");
+    }
+
+    @BuildStep
     public void ignoreDuplicateJmxRegistrationInDevAndTestModes(LaunchModeBuildItem launchMode,
             BuildProducer<LogCleanupFilterBuildItem> log) {
         if (launchMode.getLaunchMode().isDevOrTest()) {
@@ -69,9 +76,12 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             ReactiveMessagingKafkaBuildTimeConfig buildTimeConfig,
             ReactiveMessagingKafkaConfig runtimeConfig,
             CombinedIndexBuildItem combinedIndex,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigProducer) {
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigProducer,
+            List<ConnectorProviderBuildItem> connectorProviderBuildItems) {
 
-        DefaultSerdeDiscoveryState discoveryState = new DefaultSerdeDiscoveryState(combinedIndex.getIndex());
+        //if we are the only connector
+        boolean onlyKafka = connectorProviderBuildItems.size() == 1;
+        DefaultSerdeDiscoveryState discoveryState = new DefaultSerdeDiscoveryState(combinedIndex.getIndex(), onlyKafka);
         if (buildTimeConfig.serializerAutodetectionEnabled) {
             discoverDefaultSerdeConfig(discoveryState, defaultConfigProducer);
         }
@@ -79,7 +89,9 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         if (launchMode.getLaunchMode().isDevOrTest()) {
             if (!runtimeConfig.enableGracefulShutdownInDevAndTestMode) {
                 List<AnnotationInstance> incomings = discoveryState.findAnnotationsOnMethods(DotNames.INCOMING);
-                List<AnnotationInstance> channels = discoveryState.findAnnotationsOnInjectionPoints(DotNames.CHANNEL);
+                List<AnnotationInstance> channels = discoveryState.findAnnotationsOnInjectionPoints(DotNames.CHANNEL).stream()
+                        .filter(s -> getIncomingTypeFromChannelInjectionPoint(getInjectionPointType(s)) != null)
+                        .collect(Collectors.toList());
                 List<AnnotationInstance> annotations = new ArrayList<>();
                 annotations.addAll(incomings);
                 annotations.addAll(channels);
@@ -142,10 +154,6 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
         for (AnnotationInstance annotation : discovery.findAnnotationsOnInjectionPoints(DotNames.CHANNEL)) {
             String channelName = annotation.value().asString();
-            if (!discovery.isKafkaConnector(false, channelName)
-                    && !discovery.isKafkaConnector(true, channelName)) {
-                continue;
-            }
 
             Type injectionPointType = getInjectionPointType(annotation);
             if (injectionPointType == null) {
@@ -153,26 +161,30 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             }
 
             Type incomingType = getIncomingTypeFromChannelInjectionPoint(injectionPointType);
-            processIncomingType(discovery, incomingType, (keyDeserializer, valueDeserializer) -> {
-                produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        "mp.messaging.incoming." + channelName + ".key.deserializer", keyDeserializer);
-                produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        "mp.messaging.incoming." + channelName + ".value.deserializer", valueDeserializer);
+            if (incomingType != null && discovery.isKafkaConnector(true, channelName)) {
+                processIncomingType(discovery, incomingType, (keyDeserializer, valueDeserializer) -> {
+                    produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                            "mp.messaging.incoming." + channelName + ".key.deserializer", keyDeserializer);
+                    produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                            "mp.messaging.incoming." + channelName + ".value.deserializer", valueDeserializer);
 
-                handleAdditionalProperties("mp.messaging.incoming." + channelName + ".", discovery,
-                        config, keyDeserializer, valueDeserializer);
-            });
+                    handleAdditionalProperties("mp.messaging.incoming." + channelName + ".", discovery,
+                            config, keyDeserializer, valueDeserializer);
+                });
+            }
 
             Type outgoingType = getOutgoingTypeFromChannelInjectionPoint(injectionPointType);
-            processOutgoingType(discovery, outgoingType, (keySerializer, valueSerializer) -> {
-                produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        "mp.messaging.outgoing." + channelName + ".key.serializer", keySerializer);
-                produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        "mp.messaging.outgoing." + channelName + ".value.serializer", valueSerializer);
+            if (outgoingType != null && discovery.isKafkaConnector(false, channelName)) {
+                processOutgoingType(discovery, outgoingType, (keySerializer, valueSerializer) -> {
+                    produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                            "mp.messaging.outgoing." + channelName + ".key.serializer", keySerializer);
+                    produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                            "mp.messaging.outgoing." + channelName + ".value.serializer", valueSerializer);
 
-                handleAdditionalProperties("mp.messaging.outgoing." + channelName + ".", discovery,
-                        config, keySerializer, valueSerializer);
-            });
+                    handleAdditionalProperties("mp.messaging.outgoing." + channelName + ".", discovery,
+                            config, keySerializer, valueSerializer);
+                });
+            }
         }
     }
 

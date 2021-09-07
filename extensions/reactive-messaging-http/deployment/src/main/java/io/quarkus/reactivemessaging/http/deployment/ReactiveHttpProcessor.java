@@ -53,6 +53,7 @@ import io.quarkus.reactivemessaging.http.runtime.converters.ObjectConverter;
 import io.quarkus.reactivemessaging.http.runtime.converters.StringConverter;
 import io.quarkus.reactivemessaging.http.runtime.serializers.Serializer;
 import io.quarkus.reactivemessaging.http.runtime.serializers.SerializerFactoryBase;
+import io.quarkus.smallrye.reactivemessaging.deployment.ConnectorProviderBuildItem;
 import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.smallrye.mutiny.Multi;
@@ -73,6 +74,11 @@ public class ReactiveHttpProcessor {
     private static final DotName PUBLISHER_BUILDER = DotName.createSimple(PublisherBuilder.class.getName());
     private static final DotName SUBSCRIBER = DotName.createSimple(Subscriber.class.getName());
     private static final DotName SUBSCRIBER_BUILDER = DotName.createSimple(SubscriberBuilder.class.getName());
+
+    @BuildStep
+    ConnectorProviderBuildItem connectorProviderBuildItem() {
+        return new ConnectorProviderBuildItem("quarkus-http");
+    }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)

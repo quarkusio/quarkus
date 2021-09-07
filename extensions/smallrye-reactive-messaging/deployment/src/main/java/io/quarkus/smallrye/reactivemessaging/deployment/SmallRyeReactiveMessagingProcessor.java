@@ -16,6 +16,7 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Vetoed;
 import javax.enterprise.inject.spi.DeploymentException;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 import org.jboss.jandex.AnnotationInstance;
@@ -53,6 +54,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -100,6 +102,33 @@ public class SmallRyeReactiveMessagingProcessor {
         return new AdditionalBeanBuildItem(SmallRyeReactiveMessagingLifecycle.class, Connector.class,
                 Channel.class, io.smallrye.reactive.messaging.annotations.Channel.class,
                 QuarkusWorkerPoolRegistry.class);
+    }
+
+    @BuildStep
+    void defaultConnectorSettings(List<ConnectorProviderBuildItem> connectorProviderBuildItems,
+            CombinedIndexBuildItem indexBuildItem,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultBuildItemBuildProducer) {
+        if (connectorProviderBuildItems.size() != 1) {
+            //more than one connector
+            return;
+        }
+        var config = ConfigProvider.getConfig();
+        for (var an : indexBuildItem.getIndex().getAnnotations(ReactiveMessagingDotNames.INCOMING)) {
+            String name = an.value().asString();
+            String prop = "mp.messaging.incoming." + name + ".connector";
+            if (config.getOptionalValue(prop, String.class).isEmpty()) {
+                defaultBuildItemBuildProducer
+                        .produce(new RunTimeConfigurationDefaultBuildItem(prop, connectorProviderBuildItems.get(0).getName()));
+            }
+        }
+        for (var an : indexBuildItem.getIndex().getAnnotations(ReactiveMessagingDotNames.OUTGOING)) {
+            String name = an.value().asString();
+            String prop = "mp.messaging.outgoing." + name + ".connector";
+            if (config.getOptionalValue(prop, String.class).isEmpty()) {
+                defaultBuildItemBuildProducer
+                        .produce(new RunTimeConfigurationDefaultBuildItem(prop, connectorProviderBuildItems.get(0).getName()));
+            }
+        }
     }
 
     @BuildStep

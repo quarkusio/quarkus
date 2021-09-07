@@ -152,7 +152,7 @@ There are three configuration settings that alter the RBAC Deny behavior:
 
 `quarkus.security.jaxrs.deny-unannotated-endpoints=true|false`::
 If set to true, the access will be denied for all JAX-RS endpoints by default, so if a JAX-RS endpoint does not have any security annotations
-then it will default to `@DenyAll` behaviour. This is useful to ensure you cannot accidently expose an endpoint that is supposed to be secured. Defaults to `false`.
+then it will default to `@DenyAll` behaviour. This is useful to ensure you cannot accidentally expose an endpoint that is supposed to be secured. Defaults to `false`.
 
 `quarkus.security.jaxrs.default-roles-allowed=role1,role2`::
 Defines the default role requirements for unannotated endpoints. The role '**' is a special role that means any authenticated user. This cannot be combined with

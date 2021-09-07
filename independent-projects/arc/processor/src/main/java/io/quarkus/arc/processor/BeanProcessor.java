@@ -7,6 +7,7 @@ import io.quarkus.arc.processor.BuildExtension.Key;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -170,7 +171,7 @@ public class BeanProcessor {
                 injectionPointAnnotationsPredicate, allowMocking);
         AnnotationLiteralGenerator annotationLiteralsGenerator = new AnnotationLiteralGenerator(generateSources);
 
-        List<Resource> resources = new ArrayList<>();
+        List<Resource> resources = new LinkedList<>();
 
         // Generate interceptors
         for (InterceptorInfo interceptor : beanDeployment.getInterceptors()) {

@@ -3,7 +3,7 @@ package io.quarkus.bootstrap.classloading;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -81,11 +81,11 @@ public final class ClassLoaderLimiter implements ClassLoaderEventListener {
     }
 
     public static class Builder {
-        private final Set<String> vetoedResources = new TreeSet<>();
-        private final Set<String> vetoedClasses = new TreeSet<>();
-        private final Set<String> vetoedRuntimeClasses = new TreeSet<>();
-        private final Set<String> atMostOnceResources = new TreeSet<>();
-        private final Set<String> onHitPrintStacktrace = new TreeSet<>();
+        private final Set<String> vetoedResources = new HashSet<>();
+        private final Set<String> vetoedClasses = new HashSet<>();
+        private final Set<String> vetoedRuntimeClasses = new HashSet<>();
+        private final Set<String> atMostOnceResources = new HashSet<>();
+        private final Set<String> onHitPrintStacktrace = new HashSet<>();
         private boolean traceAllResourceLoad = false;
 
         private Builder() {

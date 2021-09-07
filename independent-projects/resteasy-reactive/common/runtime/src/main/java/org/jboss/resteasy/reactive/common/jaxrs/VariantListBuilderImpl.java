@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.common.jaxrs;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -11,7 +12,7 @@ import javax.ws.rs.core.Variant;
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  */
 public class VariantListBuilderImpl extends Variant.VariantListBuilder {
-    private final ArrayList<Variant> variants = new ArrayList<Variant>();
+    private final LinkedList<Variant> variants = new LinkedList<Variant>();
     private final ArrayList<Locale> currentLanguages = new ArrayList<Locale>();
     private final ArrayList<String> currentEncodings = new ArrayList<String>();
     private final ArrayList<MediaType> currentTypes = new ArrayList<MediaType>();

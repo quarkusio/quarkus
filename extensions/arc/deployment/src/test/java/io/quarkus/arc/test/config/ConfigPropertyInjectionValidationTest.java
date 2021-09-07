@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.Unremovable;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -27,13 +28,11 @@ public class ConfigPropertyInjectionValidationTest {
         Assertions.fail();
     }
 
+    @Unremovable
     @ApplicationScoped
     static class Configured {
-
         @Inject
         @ConfigProperty(name = "unconfigured")
         String foo;
-
     }
-
 }

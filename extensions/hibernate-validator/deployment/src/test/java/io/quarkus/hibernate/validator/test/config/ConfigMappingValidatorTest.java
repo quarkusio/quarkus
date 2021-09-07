@@ -12,6 +12,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.Unremovable;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.ConfigValidationException;
@@ -33,6 +34,7 @@ public class ConfigMappingValidatorTest {
                 "validator.server.host must be less than or equal to 3");
     }
 
+    @Unremovable
     @ConfigMapping(prefix = "validator.server")
     public interface Server {
         @Max(3)

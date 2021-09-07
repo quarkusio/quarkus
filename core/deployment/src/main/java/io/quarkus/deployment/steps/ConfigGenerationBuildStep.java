@@ -33,7 +33,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalBootstrapConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.AdditionalStaticInitConfigSourceProviderBuildItem;
-import io.quarkus.deployment.builditem.ConfigClassBuildItem;
+import io.quarkus.deployment.builditem.ConfigMappingBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -114,7 +114,7 @@ public class ConfigGenerationBuildStep {
             List<AdditionalBootstrapConfigSourceProviderBuildItem> additionalBootstrapConfigSourceProviders,
             List<StaticInitConfigSourceProviderBuildItem> staticInitConfigSourceProviders,
             List<StaticInitConfigSourceFactoryBuildItem> staticInitConfigSourceFactories,
-            List<ConfigClassBuildItem> configClasses)
+            List<ConfigMappingBuildItem> configMappings)
             throws IOException {
 
         if (liveReloadBuildItem.isLiveReload()) {
@@ -150,8 +150,8 @@ public class ConfigGenerationBuildStep {
                 .setRuntimeConfigSources(discoveredConfigSources)
                 .setRuntimeConfigSourceProviders(discoveredConfigSourceProviders)
                 .setRuntimeConfigSourceFactories(discoveredConfigSourceFactories)
-                .setStaticConfigMappings(staticSafeConfigMappings(configClasses))
-                .setRuntimeConfigMappings(runtimeConfigMappings(configClasses))
+                .setStaticConfigMappings(staticSafeConfigMappings(configMappings))
+                .setRuntimeConfigMappings(runtimeConfigMappings(configMappings))
                 .build()
                 .run();
     }
@@ -270,17 +270,15 @@ public class ConfigGenerationBuildStep {
         return staticSafe;
     }
 
-    private static Set<ConfigClassWithPrefix> staticSafeConfigMappings(List<ConfigClassBuildItem> configClasses) {
-        return configClasses.stream()
-                .filter(ConfigClassBuildItem::isMapping)
-                .filter(ConfigClassBuildItem::isStaticInitSafe)
+    private static Set<ConfigClassWithPrefix> staticSafeConfigMappings(List<ConfigMappingBuildItem> configMappings) {
+        return configMappings.stream()
+                .filter(ConfigMappingBuildItem::isStaticInitSafe)
                 .map(configMapping -> configClassWithPrefix(configMapping.getConfigClass(), configMapping.getPrefix()))
                 .collect(toSet());
     }
 
-    private static Set<ConfigClassWithPrefix> runtimeConfigMappings(List<ConfigClassBuildItem> configClasses) {
-        return configClasses.stream()
-                .filter(ConfigClassBuildItem::isMapping)
+    private static Set<ConfigClassWithPrefix> runtimeConfigMappings(List<ConfigMappingBuildItem> configMappings) {
+        return configMappings.stream()
                 .map(configMapping -> configClassWithPrefix(configMapping.getConfigClass(), configMapping.getPrefix()))
                 .collect(toSet());
     }

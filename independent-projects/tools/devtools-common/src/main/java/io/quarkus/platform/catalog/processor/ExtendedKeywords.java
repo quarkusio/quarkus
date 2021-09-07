@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
@@ -23,8 +22,8 @@ public final class ExtendedKeywords {
             "these", "her", "him", "has", "over", "than", "who", "may", "down", "been", "more", "implementing", "non",
             "quarkus"));
 
-    public static List<String> extendsKeywords(String artifactId, String description, List<String> keywords) {
-        final TreeSet<String> result = new TreeSet<>();
+    public static Set<String> extendsKeywords(String artifactId, String description, List<String> keywords) {
+        final HashSet<String> result = new HashSet<>();
         keywords.forEach(it -> result.add(it.toLowerCase(Locale.US)));
         result.add(artifactId.toLowerCase(Locale.US));
         if (!StringUtils.isEmpty(description)) {
@@ -36,6 +35,6 @@ public final class ExtendedKeywords {
                 }
             }
         }
-        return new ArrayList<>(result);
+        return result;
     }
 }

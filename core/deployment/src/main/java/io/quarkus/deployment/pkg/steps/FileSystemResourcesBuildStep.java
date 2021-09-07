@@ -7,31 +7,26 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceHandledBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.runtime.LaunchMode;
 
 public class FileSystemResourcesBuildStep {
 
-    @BuildStep(onlyIfNot = IsNormal.class)
-    public void notNormalMode(OutputTargetBuildItem outputTargetBuildItem,
-            LaunchModeBuildItem launchMode,
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public void developmentMode(OutputTargetBuildItem outputTargetBuildItem,
             List<GeneratedFileSystemResourceBuildItem> generatedFileSystemResources,
             BuildProducer<GeneratedFileSystemResourceHandledBuildItem> producer) {
-        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
-            write(generatedFileSystemResources, outputTargetBuildItem.getOutputDirectory());
-        }
+        write(generatedFileSystemResources, outputTargetBuildItem.getOutputDirectory());
         producer.produce(new GeneratedFileSystemResourceHandledBuildItem());
     }
 
-    @BuildStep(onlyIf = IsNormal.class)
-    public void normalMode(OutputTargetBuildItem outputTargetBuildItem,
+    @BuildStep(onlyIfNot = IsDevelopment.class)
+    public void notDevelopmentMode(OutputTargetBuildItem outputTargetBuildItem,
             List<GeneratedFileSystemResourceBuildItem> generatedFileSystemResources,
             // this is added to ensure that the build step will be run
             BuildProducer<ArtifactResultBuildItem> dummy) {

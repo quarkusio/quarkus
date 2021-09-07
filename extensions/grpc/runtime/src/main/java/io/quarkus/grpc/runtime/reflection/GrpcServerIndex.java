@@ -33,9 +33,9 @@ public class GrpcServerIndex {
         Set<String> files = new HashSet<>();
         Set<String> names = new HashSet<>();
         Set<FileDescriptor> services = new HashSet<>();
-        Map<String, FileDescriptor> descriptorsByName = new LinkedHashMap<>();
-        Map<String, FileDescriptor> descriptorsBySymbol = new LinkedHashMap<>();
-        Map<String, Map<Integer, FileDescriptor>> descriptorsByExtensionAndNumber = new LinkedHashMap<>();
+        Map<String, FileDescriptor> descriptorsByName = new HashMap<>();
+        Map<String, FileDescriptor> descriptorsBySymbol = new HashMap<>();
+        Map<String, Map<Integer, FileDescriptor>> descriptorsByExtensionAndNumber = new HashMap<>();
 
         // Collect the services
         for (ServerServiceDefinition definition : definitions) {

@@ -6,7 +6,7 @@
     <parent>
         <artifactId>quarkus-resteasy-reactive-jsonb-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>2.2.2.Final</version>
     </parent>
 
     <artifactId>quarkus-resteasy-reactive-jsonb</artifactId>

@@ -6,7 +6,7 @@
     <parent>
         <artifactId>quarkus-extensions-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>2.2.2.Final</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 

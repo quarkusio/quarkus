@@ -979,10 +979,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     }
 
     private void runAfterAllCallbacks(ExtensionContext context) throws Exception {
-        if (isNativeOrIntegrationTest(context.getRequiredTestClass()) || failedBoot) {
-            return;
-        }
-        if (afterAllCallbacks.isEmpty()) {
+        if (failedBoot
+                || runningQuarkusApplication == null
+                || afterAllCallbacks.isEmpty()
+                || isNativeOrIntegrationTest(context.getRequiredTestClass())) {
             return;
         }
 

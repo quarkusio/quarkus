@@ -39,6 +39,7 @@ public class ConfigMappingTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(new StringAsset("config.my.prop=1234\n" +
+                            "config.override.my.prop=5678\n" +
                             "group.host=localhost\n" +
                             "group.port=8080\n" +
                             "types.int=9\n" +
@@ -354,14 +355,21 @@ public class ConfigMappingTest {
     @Dependent
     public static class ConstructorInjection {
         private String myProp;
+        private String overrideProp;
 
         @Inject
-        public ConstructorInjection(@ConfigMapping(prefix = "config") MyConfigMapping myConfigMapping) {
+        public ConstructorInjection(@ConfigMapping(prefix = "config") MyConfigMapping myConfigMapping,
+                @ConfigMapping(prefix = "config.override") MyConfigMapping override) {
             this.myProp = myConfigMapping.myProp();
+            this.overrideProp = override.myProp();
         }
 
         public String getMyProp() {
             return myProp;
+        }
+
+        public String getOverrideProp() {
+            return overrideProp;
         }
     }
 
@@ -371,5 +379,6 @@ public class ConfigMappingTest {
     @Test
     void constructorInjection() {
         assertEquals("1234", constructorInjection.getMyProp());
+        assertEquals("5678", constructorInjection.getOverrideProp());
     }
 }

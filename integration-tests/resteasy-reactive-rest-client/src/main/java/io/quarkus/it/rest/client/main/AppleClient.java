@@ -9,6 +9,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
+import org.jboss.resteasy.reactive.RestResponse;
 
 import io.smallrye.mutiny.Uni;
 
@@ -54,4 +55,12 @@ public interface AppleClient {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     Uni<String> uniStringApple();
+
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    RestResponse<Apple> restResponseApple();
+
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    Uni<RestResponse<Apple>> uniRestResponseApple();
 }

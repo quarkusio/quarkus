@@ -1,6 +1,7 @@
 package io.quarkus.deployment.dev.testing;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,9 +27,9 @@ public class TestState {
     public List<TestClassResult> getPassingClasses() {
         List<TestClassResult> ret = new ArrayList<>();
         for (Map.Entry<String, Map<UniqueId, TestResult>> i : resultsByClass.entrySet()) {
-            List<TestResult> passing = new ArrayList<>();
-            List<TestResult> failing = new ArrayList<>();
-            List<TestResult> skipped = new ArrayList<>();
+            List<TestResult> passing = new LinkedList<>();
+            List<TestResult> failing = new LinkedList<>();
+            List<TestResult> skipped = new LinkedList<>();
             long time = 0;
             for (TestResult j : i.getValue().values()) {
                 if (j.getTestExecutionResult().getStatus() == TestExecutionResult.Status.FAILED) {
@@ -56,9 +57,9 @@ public class TestState {
         List<TestClassResult> ret = new ArrayList<>();
         for (Map.Entry<String, Map<UniqueId, TestResult>> i : resultsByClass.entrySet()) {
             long time = 0;
-            List<TestResult> passing = new ArrayList<>();
-            List<TestResult> failing = new ArrayList<>();
-            List<TestResult> skipped = new ArrayList<>();
+            List<TestResult> passing = new LinkedList<>();
+            List<TestResult> failing = new LinkedList<>();
+            List<TestResult> skipped = new LinkedList<>();
             for (TestResult j : i.getValue().values()) {
                 if (j.getTestExecutionResult().getStatus() == TestExecutionResult.Status.FAILED) {
                     failing.add(j);

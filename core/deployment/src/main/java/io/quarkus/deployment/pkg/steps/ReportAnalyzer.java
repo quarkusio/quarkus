@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -162,7 +163,7 @@ public class ReportAnalyzer {
         final String className;
         final String method;
         final Node parent;
-        List<Node> children = new ArrayList<>();
+        List<Node> children = new LinkedList<>();
 
         Node(int indent, String type, String className, String method, Node parent) {
             this.indent = indent;

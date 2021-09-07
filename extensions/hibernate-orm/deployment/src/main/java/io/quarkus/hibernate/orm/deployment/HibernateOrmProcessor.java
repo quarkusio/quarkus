@@ -41,6 +41,7 @@ import javax.persistence.ValidationMode;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 import javax.transaction.TransactionManager;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
@@ -87,12 +88,14 @@ import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -175,6 +178,55 @@ public final class HibernateOrmProcessor {
                 }
             }
         }
+    }
+
+    @BuildStep
+    void devServicesAutoGenerateByDefault(DevServicesLauncherConfigResultBuildItem devServicesResult,
+            List<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItems,
+            HibernateOrmConfig config,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfigurationDefaultBuildItemBuildProducer) {
+        if (!schemaReadyBuildItems.isEmpty()) {
+            //we don't want to enable auto generation if somebody else is managing the schema
+            return;
+        }
+        String dsName;
+        if (config.defaultPersistenceUnit.datasource.isEmpty()) {
+            dsName = "quarkus.datasource.username";
+        } else {
+            dsName = "quarkus.datasource." + config.defaultPersistenceUnit.datasource.get() + ".username";
+        }
+
+        if (ConfigProvider.getConfig().getOptionalValue(dsName, String.class).isEmpty()) {
+            if (devServicesResult.getConfig().containsKey(dsName)) {
+                if (ConfigProvider.getConfig().getOptionalValue("quarkus.hibernate-orm.database.generation", String.class)
+                        .isEmpty()) {
+                    LOG.info(
+                            "Setting quarkus.hibernate-orm.database.generation=drop-and-create to initialize Dev Services managed database");
+                    runTimeConfigurationDefaultBuildItemBuildProducer.produce(new RunTimeConfigurationDefaultBuildItem(
+                            "quarkus.hibernate-orm.database.generation", "drop-and-create"));
+                }
+            }
+        }
+
+        for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.persistenceUnits.entrySet()) {
+
+            if (entry.getValue().datasource.isEmpty()) {
+                dsName = "quarkus.datasource.jdbc.url";
+            } else {
+                dsName = "quarkus.datasource." + entry.getValue().datasource.get() + ".username";
+            }
+            if (ConfigProvider.getConfig().getOptionalValue(dsName, String.class).isEmpty()) {
+                if (devServicesResult.getConfig().containsKey(dsName)) {
+                    String propertyName = "quarkus.hibernate-orm." + entry.getKey() + ".database.generation";
+                    if (ConfigProvider.getConfig().getOptionalValue(propertyName, String.class).isEmpty()) {
+                        LOG.info("Setting " + propertyName + "=drop-and-create to initialize Dev Services managed database");
+                        runTimeConfigurationDefaultBuildItemBuildProducer
+                                .produce(new RunTimeConfigurationDefaultBuildItem(propertyName, "drop-and-create"));
+                    }
+                }
+            }
+        }
+
     }
 
     @BuildStep

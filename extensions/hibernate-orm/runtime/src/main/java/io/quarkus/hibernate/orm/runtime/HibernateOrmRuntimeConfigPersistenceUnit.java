@@ -72,6 +72,9 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
          *
          * `drop-and-create` is awesome in development mode.
          *
+         * This defaults to 'none', however if Dev Services is in use and no other extensions that manage the schema are present
+         * this will default to 'drop-and-create'.
+         *
          * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`, `validate`.
          */
         @ConfigItem(name = ConfigItem.PARENT, defaultValue = "none")

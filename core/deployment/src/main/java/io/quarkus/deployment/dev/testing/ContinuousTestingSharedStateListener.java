@@ -16,17 +16,25 @@ public class ContinuousTestingSharedStateListener implements TestListener {
     @Override
     public void testsEnabled() {
         if (lastState == null) {
-            ContinuousTestingSharedStateManager
-                    .setLastState(new ContinuousTestingSharedStateManager.State(
-                            ContinuousTestingSharedStateManager.getLastState().lastRun, true, false,
-                            0, 0, 0, 0,
-                            0, 0, 0, ContinuousTestingSharedStateManager.getLastState().isBrokenOnly,
-                            ContinuousTestingSharedStateManager.getLastState().isTestOutput,
-                            ContinuousTestingSharedStateManager.getLastState().isInstrumentationBasedReload,
-                            ContinuousTestingSharedStateManager.getLastState().isLiveReload));
+            ContinuousTestingSharedStateManager.setRunning(true);
         } else {
             ContinuousTestingSharedStateManager
-                    .setLastState(lastState);
+                    .setLastState((s) -> {
+                        if (s.getLastRun() > lastState.lastRun) {
+                            //small chance of race, next run already compled
+                            return s.setRunning(true).build();
+                        } else {
+                            return s.setRunning(true)
+                                    .setCurrentFailed(lastState.currentFailed)
+                                    .setCurrentSkipped(lastState.currentSkipped)
+                                    .setCurrentFailed(lastState.currentFailed)
+                                    .setFailed(lastState.failed)
+                                    .setSkipped(lastState.skipped)
+                                    .setPassed(lastState.passed)
+                                    .setRun(lastState.run)
+                                    .build();
+                        }
+                    });
         }
     }
 
@@ -42,19 +50,21 @@ public class ContinuousTestingSharedStateListener implements TestListener {
 
             @Override
             public void runComplete(TestRunResults testRunResults) {
-                lastState = new ContinuousTestingSharedStateManager.State(testRunResults.getId(), true, false,
-                        testRunResults.getPassedCount() +
-                                testRunResults.getFailedCount() +
-                                testRunResults.getSkippedCount(),
-                        testRunResults.getPassedCount(),
-                        testRunResults.getFailedCount(), testRunResults.getSkippedCount(),
-                        testRunResults.getCurrentPassedCount(), testRunResults.getCurrentFailedCount(),
-                        testRunResults.getCurrentSkippedCount(),
-                        ContinuousTestingSharedStateManager.getLastState().isBrokenOnly,
-                        ContinuousTestingSharedStateManager.getLastState().isTestOutput,
-                        ContinuousTestingSharedStateManager.getLastState().isInstrumentationBasedReload,
-                        ContinuousTestingSharedStateManager.getLastState().isLiveReload);
-                ContinuousTestingSharedStateManager.setLastState(lastState);
+                ContinuousTestingSharedStateManager.setLastState(s -> {
+                    return lastState = s.setLastRun(testRunResults.getId())
+                            .setInProgress(false)
+                            .setRun(testRunResults.getPassedCount() +
+                                    testRunResults.getFailedCount() +
+                                    testRunResults.getSkippedCount())
+                            .setPassed(testRunResults.getPassedCount())
+                            .setFailed(testRunResults.getFailedCount())
+                            .setSkipped(testRunResults.getSkippedCount())
+                            .setCurrentPassed(testRunResults.getCurrentPassedCount())
+                            .setCurrentFailed(testRunResults.getCurrentFailedCount())
+                            .setCurrentSkipped(testRunResults.getCurrentSkippedCount())
+                            .build();
+
+                });
             }
 
             @Override

@@ -21,6 +21,7 @@ import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
+import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -55,6 +56,8 @@ import io.quarkus.runtime.graal.ResourcesFeature;
 import io.quarkus.runtime.graal.WeakReflection;
 
 public class NativeImageAutoFeatureStep {
+
+    private static final Logger log = Logger.getLogger(NativeImageAutoFeatureStep.class);
 
     private static final String GRAAL_AUTOFEATURE = "io/quarkus/runner/AutoFeature";
     private static final MethodDescriptor VERSION_CURRENT = ofMethod(Version.class, "getCurrent", Version.class);
@@ -123,6 +126,7 @@ public class NativeImageAutoFeatureStep {
         ClassCreator file = new ClassCreator(new ClassOutput() {
             @Override
             public void write(String s, byte[] bytes) {
+                log.info("create GeneratedNativeImageClassBuildItem name=" + s);
                 nativeImageClass.produce(new GeneratedNativeImageClassBuildItem(s, bytes));
             }
         }, GRAAL_AUTOFEATURE, null,
@@ -345,6 +349,7 @@ public class NativeImageAutoFeatureStep {
                         carray);
 
                 if (entry.getValue().constructors) {
+                    log.info("invokeStaticMethod register constructors for " + entry.getKey());
                     tc.invokeStaticMethod(
                             ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
                             constructors);
@@ -421,6 +426,8 @@ public class NativeImageAutoFeatureStep {
                     registerSerializationMethod = createRegisterSerializationForClassMethod(file);
                 }
 
+                log.info("invokeStaticMethod " + registerSerializationMethod.getDeclaringClass() + ":"
+                        + registerSerializationMethod.getName() + " on " + entry.getKey());
                 tc.invokeStaticMethod(registerSerializationMethod, clazz);
             }
 

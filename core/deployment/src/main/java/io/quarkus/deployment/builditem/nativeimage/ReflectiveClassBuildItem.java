@@ -6,12 +6,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Used to register a class for reflection in native mode
  */
 public final class ReflectiveClassBuildItem extends MultiBuildItem {
+
+    private static final Logger log = Logger.getLogger(ReflectiveClassBuildItem.class);
 
     private final List<String> className;
     private final boolean methods;
@@ -88,6 +92,12 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
     private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
             boolean weak, boolean serialization, String... className) {
+
+        if (serialization) {
+            log.info("ReflectiveClassBuildItem => constructors=" + constructors + " methods=" + methods + " fields=" + fields
+                    + " finalFieldsWritable=" + finalFieldsWritable + " weak=" + weak + " serialization=" + serialization + " "
+                    + Arrays.toString(className));
+        }
         for (String i : className) {
             if (i == null) {
                 throw new NullPointerException();

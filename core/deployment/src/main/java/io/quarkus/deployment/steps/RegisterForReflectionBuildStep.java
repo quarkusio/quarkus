@@ -65,6 +65,8 @@ public class RegisterForReflectionBuildStep {
      */
     private void registerClass(ClassLoader classLoader, String className, boolean methods, boolean fields,
             boolean ignoreNested, boolean serialization, final BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        log.info("registerClass " + className + " methods=" + methods + " fields=" + fields + " ignoreNested=" + ignoreNested
+                + " serialization=" + serialization);
         reflectiveClass.produce(serialization ? ReflectiveClassBuildItem.serializationClass(methods, fields, className)
                 : new ReflectiveClassBuildItem(methods, fields, className));
 

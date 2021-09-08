@@ -1,7 +1,6 @@
 package io.quarkus.deployment.console;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -12,29 +11,10 @@ import org.aesh.terminal.Connection;
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.dev.console.BasicConsole;
 import io.quarkus.dev.console.QuarkusConsole;
-import io.quarkus.dev.console.RedirectPrintStream;
 import io.quarkus.runtime.console.ConsoleRuntimeConfig;
 import io.quarkus.runtime.util.ColorSupport;
 
 public class ConsoleHelper {
-
-    static boolean redirectsInstalled = false;
-
-    final static PrintStream out = System.out;
-    final static PrintStream err = System.err;
-
-    public synchronized static void installRedirects() {
-        if (redirectsInstalled) {
-            return;
-        }
-        redirectsInstalled = true;
-
-        //force console init
-        //otherwise you can get a stack overflow as it sees the redirected output
-        QuarkusConsole.INSTANCE.isInputSupported();
-        System.setOut(new RedirectPrintStream(false));
-        System.setErr(new RedirectPrintStream(true));
-    }
 
     public static synchronized void installConsole(TestConfig config, ConsoleConfig consoleConfig,
             ConsoleRuntimeConfig consoleRuntimeConfig, io.quarkus.runtime.logging.ConsoleConfig logConfig, boolean test) {
@@ -50,7 +30,7 @@ public class ConsoleHelper {
         if (!inputSupport) {
             //note that in this case we don't hold onto anything from this class loader
             //which is important for the test suite
-            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled, false, out, System.console());
+            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled, false, QuarkusConsole.ORIGINAL_OUT, System.console());
             return;
         }
         try {
@@ -109,8 +89,8 @@ public class ConsoleHelper {
                 }
             });
         } catch (IOException e) {
-            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled, false, out, System.console());
+            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled, false, QuarkusConsole.ORIGINAL_OUT, System.console());
         }
-        installRedirects();
+        QuarkusConsole.installRedirects();
     }
 }

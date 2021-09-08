@@ -17,7 +17,6 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
 import io.quarkus.bootstrap.app.StartupAction;
-import io.quarkus.deployment.console.ConsoleHelper;
 import io.quarkus.deployment.dev.testing.LogCapturingOutputFilter;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
@@ -69,7 +68,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
     private LaunchResult doLaunch(ExtensionContext context, String[] arguments) throws Exception {
         ensurePrepared(context);
-        ConsoleHelper.installRedirects();
+        QuarkusConsole.installRedirects();
         LogCapturingOutputFilter filter = new LogCapturingOutputFilter(prepareResult.curatedApplication, false, false,
                 () -> true);
         QuarkusConsole.addOutputFilter(filter);
@@ -182,7 +181,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
-        ConsoleHelper.installRedirects();
+        QuarkusConsole.installRedirects();
         currentTestClassStack.push(context.getRequiredTestClass());
 
     }

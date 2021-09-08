@@ -118,6 +118,7 @@ public class MicrometerTimedInterceptor {
                     .description(timed.description().isEmpty() ? null : timed.description())
                     .tags(commonTags)
                     .tags(timed.extraTags())
+                    .publishPercentileHistogram(timed.histogram())
                     .register(meterRegistry)
                     .start();
         } catch (Exception e) {

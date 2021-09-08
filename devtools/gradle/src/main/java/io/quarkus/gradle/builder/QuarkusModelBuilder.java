@@ -55,14 +55,23 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
 
     private static final String MAIN_RESOURCES_OUTPUT = "build/resources/main";
     private static final String CLASSES_OUTPUT = "build/classes";
-    private static final String DEPLOYMENT_CONFIGURATION = "deploymentConfiguration";
+    private static final String DEPLOYMENT_CONFIGURATION = "quarkusDeploymentConfiguration";
+    private static final String CLASSPATH_CONFIGURATION = "quarkusClasspathConfiguration";
 
     private static Configuration classpathConfig(Project project, LaunchMode mode) {
         if (LaunchMode.TEST.equals(mode)) {
             return project.getConfigurations().getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME);
         }
         if (LaunchMode.DEVELOPMENT.equals(mode)) {
-            return project.getConfigurations().getByName(QuarkusPlugin.DEV_MODE_CONFIGURATION_NAME);
+            Configuration classpathConfiguration = project.getConfigurations().findByName(CLASSPATH_CONFIGURATION);
+            if (classpathConfiguration != null) {
+                project.getConfigurations().remove(classpathConfiguration);
+            }
+
+            return project.getConfigurations().create(CLASSPATH_CONFIGURATION).extendsFrom(
+                    project.getConfigurations().getByName(QuarkusPlugin.DEV_MODE_CONFIGURATION_NAME),
+                    project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME),
+                    project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
         }
         return project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
     }
@@ -76,16 +85,29 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         }
 
         deploymentConfiguration = project.getConfigurations().create(DEPLOYMENT_CONFIGURATION)
-                .withDependencies(ds -> ds.addAll(platforms))
-                .extendsFrom(project.getConfigurations().getByName(ApplicationDeploymentClasspathBuilder
-                        .toDeploymentConfigurationName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)));
+                .withDependencies(ds -> ds.addAll(platforms));
+        Configuration implementationDeployment = project.getConfigurations().findByName(ApplicationDeploymentClasspathBuilder
+                .toDeploymentConfigurationName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME));
+        if (implementationDeployment != null) {
+            deploymentConfiguration.extendsFrom(implementationDeployment);
+        }
+
         if (LaunchMode.TEST.equals(mode)) {
-            deploymentConfiguration.extendsFrom(project.getConfigurations().getByName(ApplicationDeploymentClasspathBuilder
-                    .toDeploymentConfigurationName(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME)));
+            Configuration testDeploymentConfiguration = project.getConfigurations()
+                    .findByName(ApplicationDeploymentClasspathBuilder
+                            .toDeploymentConfigurationName(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME));
+            if (testDeploymentConfiguration != null) {
+                deploymentConfiguration.extendsFrom(testDeploymentConfiguration);
+            }
         }
         if (LaunchMode.DEVELOPMENT.equals(mode)) {
-            deploymentConfiguration.extendsFrom(project.getConfigurations().getByName(ApplicationDeploymentClasspathBuilder
-                    .toDeploymentConfigurationName(QuarkusPlugin.DEV_MODE_CONFIGURATION_NAME)));
+            Configuration devDeploymentConfiguration = project.getConfigurations()
+                    .findByName(ApplicationDeploymentClasspathBuilder
+                            .toDeploymentConfigurationName(QuarkusPlugin.DEV_MODE_CONFIGURATION_NAME));
+            if (devDeploymentConfiguration != null) {
+                deploymentConfiguration.extendsFrom(devDeploymentConfiguration);
+            }
+
         }
         return deploymentConfiguration;
     }

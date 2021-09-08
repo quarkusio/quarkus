@@ -22,14 +22,12 @@ public class ApplicationDeploymentClasspathBuilder {
         return baseConfigurationName + DEPLOYMENT_CONFIGURATION_SUFFIX;
     }
 
-    public void createBuildClasspath(String baseConfigurationName, boolean common) {
+    public void createBuildClasspath(Set<ExtensionDependency> extensions, String baseConfigurationName, boolean common) {
         String deploymentConfigurationName = toDeploymentConfigurationName(baseConfigurationName);
         project.getConfigurations().create(deploymentConfigurationName);
 
         DependencyHandler dependencies = project.getDependencies();
-        Set<ExtensionDependency> firstLevelExtensions = DependencyUtils.loadQuarkusExtension(project,
-                project.getConfigurations().findByName(baseConfigurationName));
-        for (ExtensionDependency extension : firstLevelExtensions) {
+        for (ExtensionDependency extension : extensions) {
             if (common) {
                 commonExtensions.add(extension);
             } else if (commonExtensions.contains(extension)) {

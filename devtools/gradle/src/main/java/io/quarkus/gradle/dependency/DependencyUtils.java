@@ -87,21 +87,6 @@ public class DependencyUtils {
         return false;
     }
 
-    public static Set<ExtensionDependency> loadQuarkusExtension(Project project, Configuration configuration) {
-        Set<ExtensionDependency> extensions = new HashSet<>();
-        Configuration configurationCopy = duplicateConfiguration(project, configuration);
-
-        Set<ResolvedArtifact> resolvedArtifacts = configurationCopy.getResolvedConfiguration().getResolvedArtifacts();
-        for (ResolvedArtifact artifact : resolvedArtifacts) {
-            ExtensionDependency extension = getExtensionInfoOrNull(project, artifact);
-            if (extension != null) {
-                extensions.add(extension);
-            }
-        }
-
-        return extensions;
-    }
-
     public static boolean isTestFixtureDependency(Dependency dependency) {
         if (!(dependency instanceof ModuleDependency)) {
             return false;

@@ -3,18 +3,21 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Dev Services for OpenId Connect (OIDC)
+= Dev Services and UI for OpenId Connect (OIDC)
 
 include::./attributes.adoc[]
 
-This guide covers the Dev Services for OpenId Connect (OIDC) Keycloak provider and explains how to support other OpenId Connect providers.
+This guide covers the Dev Services and UI for OpenId Connect (OIDC) Keycloak provider and explains how to support Dev Services and UI for other OpenId Connect providers.
+It also describes Dev UI for all OpenId Connect providers which have already been started before Quarkus is launched in a dev mode.
 
 == Introduction
 
 Quarkus introduces an experimental `Dev Services For Keycloak` feature which is enabled by default when the `quarkus-oidc` extension is started in dev mode with `mvn quarkus:dev` and when the integration tests are running in test mode, but only when no `quarkus.oidc.auth-server-url` property is configured.
 It starts a Keycloak container for both the dev and/or test modes and initializes them by registering the existing Keycloak realm or creating a new realm with the client and users for you to start developing your Quarkus application secured by Keycloak immediately. It will restart the container when the `application.properties` or the realm file changes have been detected.
 
-Additionally, link:dev-ui[Dev UI] available at http://localhost:8080/q/dev[/q/dev] supports this feature with a Keycloak specific page which helps to acquire the tokens from Keycloak and test your Quarkus application.
+Additionally, link:dev-ui[Dev UI] available at http://localhost:8080/q/dev[/q/dev] complements this feature with a Dev UI page which helps to acquire the tokens from Keycloak and test your Quarkus application.
+
+If `quarkus.oidc.auth-server-url` is already set then a generic OpenId Connect Dev Console which can be used with all OpenId Connect providers will be activated, please see <<dev-ui-all-oidc-providers,Dev UI for all OpenId Connect Providers>> for more information.
 
 == Dev Services for Keycloak
 
@@ -58,6 +61,7 @@ Click on the `Provider: Keycloak` link and you will see a Keycloak page which wi
 
 By default the Keycloak page can be used to support the development of a link:security-openid-connect[Quarkus OIDC service application].
 
+[[keycloak-authorization-code-grant]]
 ==== Authorization Code Grant
 
 If you set `quarkus.keycloak.devservices.grant.type=code` in `applicatin.properties` (this is a default value) then an `authorization_code` grant will be used to acquire both access and ID tokens. Using this grant is recommended to emulate a typical flow where a `Single Page Application` acquires the tokens and uses them to access Quarkus services.
@@ -172,13 +176,44 @@ Note that even if you initialize Keycloak from a realm file, it is still needed 
 
 If you prefer not to have a `Dev Services for Keycloak` container started or do not work with Keycloak then you can also disable this feature with `quarkus.keycloak.devservices.enabled=false` - it will only be necessary if you expect to start `quarkus:dev` without `quarkus.oidc.auth-server-url`.
 
-The main Dev UI page will include an empty `OpenId Connect Card` when `Dev Services for Keycloak` is disabled:
+The main Dev UI page will include an empty `OpenId Connect Card` when `Dev Services for Keycloak` is disabled and the `quarkus.oidc.auth-server-url` property
+has not been initialized:
 
 image::dev-ui-oidc-card.png[alt=Dev UI OpenId Connect Card,role="center"]
 
-== Dev Services Support for other OpenId Connect Providers
+If `quarkus.oidc.auth-server-url` is already set then a generic OpenId Connect Dev Console which can be used with all OpenId Connect providers may be activated, please see <<dev-ui-all-oidc-providers,Dev UI for all OpenId Connect Providers>> for more information.
 
-Your custom extension would need to extend `quarkus-oidc` only and add the dependencies required to support your provider to the extension's `deployment` module only.
+[[dev-ui-all-oidc-providers]]
+== Dev UI for all OpenId Connect Providers
+
+If `quarkus.oidc.auth-server-url` points to an already started OpenId Connect provider (which can be Keycloak or other provider), `quarkus.oidc.auth-server-url` is set to `service` (which is a default value) and at least `quarkus.oidc.client-id` is set then `Dev UI for all OpenId Connect Providers` will be activated. 
+
+Setting `quarkus.oidc.credentials.secret` will mostly likely be required for Keycloak and other providers for the authorization code flow initiated from Dev UI to complete, unless the client identified with `quarkus.oidc.client-id` is configured as a public client in your OpenId Connect provider's administration console.
+
+Run `mvn`quarkus:dev` and you will see the following message:
+[source,shell]
+----
+$ mvn quarkus:dev
+...
+2021-09-07 15:53:42,697 INFO  [io.qua.oid.dep.dev.OidcDevConsoleProcessor] (build-41) OIDC Dev Console: discovering the provider metadata at http://localhost:8180/auth/realms/quarkus/.well-known/openid-configuration
+...
+----
+
+If the provider metadata discovery has been successful then, after you open the main link:http://localhost:8080/q/dev[Dev UI page], you will see the `OpenId Connect Card` page linking to `Dev Console`:
+
+image::dev-ui-oidc-devconsole-card.png[alt=Generic Dev UI OpenId Connect Card,role="center"]
+
+Follow the link and you'll be able log in to your provider, get the tokens and test the application. The experience will be the same as described in the <<keycloak-authorization-code-grant,Authorization Code Grant for Keycloak>> section, where `Dev Services for Keycloak` container has been started, especially if you work with Keycloak (please also pay attention to a `redirect_uri` note in that section).
+
+If you work with other providers then a Dev UI experience described in the <<keycloak-authorization-code-grant,Authorization Code Grant for Keycloak>> section might differ slightly. For example, an access token may not be in a JWT format so it won't be possibe to show its internal content, though all providers should return an ID Token as JWT.
+
+Some providers such as `Auth0` do not support a standard RP initiated logout so a logout option will also be hidden.
+
+At the moment `Dev UI for all OpenId Connect Providers` only supports an authorization code grant. More grants may be supported in the future, similarly to how it is done with `Dev Services for Keycloak`.
+
+== Dev Services and UI Support for other OpenId Connect Providers
+
+Your custom extension would need to extend `quarkus-oidc` and add the dependencies required to support your provider to the extension's `deployment` module only.
 
 The build step dealing with the `Dev Services` should additionally register two runtime properties into the "io.quarkus.quarkus-oidc" namespace: `oidcProviderName` (for example, `Google`) and `oidcProviderUrlBase` (for example: `mycompany.devservices-google`) for the `OpenId Connect Card` to link to the Dev UI page representing your provider, for example:
 

@@ -6,5 +6,8 @@
 <a href="{urlbase}/provider" class="badge badge-light">
   <i class="fa fa-boxes fa-fw"></i>
   Provider: <span class="badge badge-light">Keycloak</span></a>
-{#else}
+{#else if info:authorizationUrl??}
+<a href="{urlbase}/provider" class="badge badge-light">
+  <i class="fa fa-boxes fa-fw"></i>
+  Dev Console</a>
 {/if}  

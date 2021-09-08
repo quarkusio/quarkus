@@ -2,6 +2,7 @@ package io.quarkus.it.keycloak;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -305,6 +306,7 @@ public class BearerTokenAuthorizationTest {
         RestAssured.when().get("/oidc/jwk-endpoint-call-count").then().body(equalTo("2"));
         // both requests with kid `3` and with the opaque token required the remote introspection
         RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("3"));
+        RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
         RestAssured.when().post("/oidc/disable-rotate").then().body(equalTo("false"));
     }
 
@@ -338,23 +340,76 @@ public class BearerTokenAuthorizationTest {
         // JWT introspection is disallowed
         RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
         RestAssured.when().post("/oidc/disable-rotate").then().body(equalTo("false"));
+        RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
     }
 
     @Test
-    public void testJwtTokenIntrospectionOnly() {
+    public void testJwtTokenIntrospectionOnlyAndUserInfo() {
         RestAssured.when().post("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
         RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/userinfo-endpoint-call-count").then().body(equalTo("0"));
         RestAssured.when().post("/oidc/enable-introspection").then().body(equalTo("true"));
+        RestAssured.when().post("/cache/clear").then().body(equalTo("0"));
 
-        // JWK is available now in Quarkus OIDC, confirm that no timeout is needed 
-        RestAssured.given().auth().oauth2(getAccessTokenFromSimpleOidc("2"))
-                .when().get("/tenant/tenant-oidc-introspection-only/api/user")
-                .then()
-                .statusCode(200)
-                .body(equalTo("tenant-oidc-introspection-only:alice"));
+        // Caching token introspection and userinfo is not allowed for this tenant,
+        // 3 calls to introspection and user info endpoints are expected.
+        // Cache size must stay 0.
+        for (int i = 0; i < 3; i++) {
+            // unique token is created each time
+            RestAssured.given().auth().oauth2(getAccessTokenFromSimpleOidc("2"))
+                    .when().get("/tenant/tenant-oidc-introspection-only/api/user")
+                    .then()
+                    .statusCode(200)
+                    .body(equalTo("tenant-oidc-introspection-only:alice:0"));
+        }
 
         RestAssured.when().get("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("3"));
+        RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
+        RestAssured.when().get("/oidc/userinfo-endpoint-call-count").then().body(equalTo("3"));
+        RestAssured.when().get("/cache/size").then().body(equalTo("0"));
+    }
+
+    @Test
+    public void testJwtTokenIntrospectionOnlyAndUserInfoCache() {
+        RestAssured.when().post("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/userinfo-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/enable-introspection").then().body(equalTo("true"));
+        RestAssured.when().get("/cache/size").then().body(equalTo("0"));
+
+        // Max cache size is 3
+        String token1 = getAccessTokenFromSimpleOidc("2");
+        // 3 calls are made, only 1 call to introspection and user info endpoints is expected, and only one entry in the cache is expected
+        verifyTokenIntrospectionAndUserInfoAreCached(token1, 1);
+        String token2 = getAccessTokenFromSimpleOidc("2");
+        assertNotEquals(token1, token2);
+        // next 3 calls are made, only 1 call to introspection and user info endpoints is expected, and only two entries in the cache are expected
+        verifyTokenIntrospectionAndUserInfoAreCached(token2, 2);
+        String token3 = getAccessTokenFromSimpleOidc("2");
+        assertNotEquals(token1, token3);
+        assertNotEquals(token2, token3);
+        // next 3 calls are made, only 1 call to introspection and user info endpoints is expected, and only three entries in the cache are expected
+        verifyTokenIntrospectionAndUserInfoAreCached(token3, 3);
+
+        RestAssured.when().get("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
+        RestAssured.when().get("/cache/size").then().body(equalTo("3"));
+    }
+
+    private void verifyTokenIntrospectionAndUserInfoAreCached(String token1, int expectedCacheSize) {
+        // Each token is unique, each sequence of 3 calls should only result in a single introspection endpoint call
+        for (int i = 0; i < 3; i++) {
+            RestAssured.given().auth().oauth2(token1)
+                    .when().get("/tenant/tenant-oidc-introspection-only-cache/api/user")
+                    .then()
+                    .statusCode(200)
+                    .body(equalTo("tenant-oidc-introspection-only-cache:alice:" + expectedCacheSize));
+        }
         RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("1"));
+        RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().get("/oidc/userinfo-endpoint-call-count").then().body(equalTo("1"));
+        RestAssured.when().post("/oidc/userinfo-endpoint-call-count").then().body(equalTo("0"));
     }
 
     @Test

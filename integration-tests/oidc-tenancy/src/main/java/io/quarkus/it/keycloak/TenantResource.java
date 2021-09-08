@@ -29,6 +29,9 @@ public class TenantResource {
     AccessTokenCredential accessTokenCred;
 
     @Inject
+    CustomIntrospectionUserInfoCache tokenCache;
+
+    @Inject
     @IdToken
     JsonWebToken idToken;
 
@@ -48,7 +51,12 @@ public class TenantResource {
                 name = name + "." + userInfo.getString(Claims.preferred_username.name());
             }
         }
-        return tenant + ":" + name;
+
+        String response = tenant + ":" + name;
+        if (tenant.startsWith("tenant-oidc-introspection-only")) {
+            response += (":" + tokenCache.getCacheSize());
+        }
+        return response;
     }
 
     @GET

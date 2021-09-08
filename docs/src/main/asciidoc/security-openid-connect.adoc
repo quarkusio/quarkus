@@ -388,6 +388,46 @@ quarkus.oidc.introspection-path=/protocol/openid-connect/tokens/introspect
 
 Note that `io.quarkus.oidc.TokenIntrospection` (a simple `javax.json.JsonObject` wrapper) object will be created and can be either injected or accessed as a SecurityIdentity `introspection` attribute if either JWT or opaque token has been successfully introspected.
 
+[[token-introspection-userinfo-cache]]
+== Token Introspection and UserInfo Cache
+
+All opaque and sometimes JWT Bearer access tokens have to be remotely introspected. If `UserInfo` is also required then the same access token will be used to do a remote call to OpenId Connect Provider again. So, if `UserInfo` is required and the current access token is opaque then for every such token there will be 2 remote calls done - one to introspect it and one to get UserInfo with it, and if the token is JWT then usually only a single remote call will be needed - to get UserInfo with it.
+
+The cost of making up to 2 remote calls per every incoming bearer or code flow access token can sometimes be problematic.
+
+If it is the case in your production then it can be recommended that the token introspection and `UserInfo` data are cached for a short period of time, for example, for 3 or 5 minutes.
+
+`quarkus-oidc` provides `quarkus.oidc.TokenIntrospectionCache` and `quarkus.oidc.UserInfoCache` interfaces which can be used to implement `@ApplicationScoped` cache implementation which can be used to store and retrieve `quarkus.oidc.TokenIntrospection` and/or `quarkus.oidc.UserInfo` objects, for example:
+
+[source, java]
+----
+@ApplicationScoped
+@AlternativePriority(1)
+public class CustomIntrospectionUserInfoCache implements TokenIntrospectionCache, UserInfoCache {
+...
+}
+----
+
+Each OIDC tenant can either permit or deny storing its `quarkus.oidc.TokenIntrospection` and/or `quarkus.oidc.UserInfo` data with boolean `quarkus.oidc."tenant".allow-token-introspection-cache` and `quarkus.oidc."tenant".allow-user-info-cache` properties.
+
+Additionally, `quarkus-oidc` provides a simple default memory based token cache which implements both `quarkus.oidc.TokenIntrospectionCache` and `quarkus.oidc.UserInfoCache` interfaces.
+
+It can be activated and configured as follows:
+
+[source, properties]
+----
+# 'max-size' is 0 by default so the cache can be activated by setting 'max-size' to a positive value.
+quarkus.oidc.token-cache.max-size=1000
+# 'time-to-live' specifies how long a cache entry can be valid for and will be used by a clean up timer.
+quarkus.oidc.token-cache.time-to-live=3M
+# 'clean-up-timer-interval' is not set by default so the clean up timer can be activated by setting 'clean-up-timer-interval'.
+quarkus.oidc.token-cache.clean-up-timer-interval=1M
+----
+
+The default cache uses a token as a key and each entry can have `TokenIntrospection` and/or `UserInfo`. It will only keep up to a `max-size` number of entries. If the cache is full when a new entry is to be added then an attempt will be made to find a space for it by removing a single expired entry. Additionally, the clean up timer, if activated, will periodically check for the expired entries and remove them.
+
+Please experiment with the default cache implementation or register a custom one.
+
 [[single-page-applications]]
 == Single Page Applications
 

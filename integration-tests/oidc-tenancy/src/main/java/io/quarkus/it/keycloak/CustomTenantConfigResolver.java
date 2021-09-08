@@ -36,6 +36,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.getCredentials().setSecret("secret");
                     config.getToken().setIssuer(getIssuerUrl() + "/realms/quarkus-d");
                     config.getAuthentication().setUserInfoRequired(true);
+                    config.setAllowUserInfoCache(false);
                     return config;
                 } else if ("tenant-oidc".equals(tenantId)) {
                     OidcTenantConfig config = new OidcTenantConfig();
@@ -46,6 +47,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                             : uri.replace("/tenant/tenant-oidc/api/user", "/oidc");
                     config.setAuthServerUrl(authServerUri);
                     config.setClientId("client");
+                    config.setAllowTokenIntrospectionCache(false);
                     return config;
                 } else if ("tenant-oidc-no-discovery".equals(tenantId)) {
                     OidcTenantConfig config = new OidcTenantConfig();
@@ -66,14 +68,21 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.token.setAllowJwtIntrospection(false);
                     config.setClientId("client");
                     return config;
-                } else if ("tenant-oidc-introspection-only".equals(tenantId)) {
+                } else if ("tenant-oidc-introspection-only".equals(tenantId)
+                        || "tenant-oidc-introspection-only-cache".equals(tenantId)) {
                     OidcTenantConfig config = new OidcTenantConfig();
-                    config.setTenantId("tenant-oidc-introspection-only");
+                    config.setTenantId(tenantId);
                     String uri = context.request().absoluteURI();
-                    String authServerUri = uri.replace("/tenant/tenant-oidc-introspection-only/api/user", "/oidc");
+                    String authServerUri = uri.replace("/tenant/" + tenantId + "/api/user", "/oidc");
                     config.setAuthServerUrl(authServerUri);
                     config.setDiscoveryEnabled(false);
+                    config.authentication.setUserInfoRequired(true);
+                    if ("tenant-oidc-introspection-only".equals(tenantId)) {
+                        config.setAllowTokenIntrospectionCache(false);
+                        config.setAllowUserInfoCache(false);
+                    }
                     config.setIntrospectionPath("introspect");
+                    config.setUserInfoPath("userinfo");
                     config.setClientId("client");
                     return config;
                 } else if ("tenant-oidc-no-opaque-token".equals(tenantId)) {
@@ -93,6 +102,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.getCredentials().setSecret("secret");
                     config.getAuthentication().setUserInfoRequired(true);
                     config.getRoles().setSource(Source.userinfo);
+                    config.setAllowUserInfoCache(false);
                     config.setApplicationType(ApplicationType.WEB_APP);
                     return config;
                 }

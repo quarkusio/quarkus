@@ -1143,7 +1143,7 @@ public class QuarkusTestExtension
     }
 
     private void runAfterAllCallbacks(ExtensionContext context) throws Exception {
-        if (isNativeOrIntegrationTest(context.getRequiredTestClass())) {
+        if (isNativeOrIntegrationTest(context.getRequiredTestClass()) || failedBoot) {
             return;
         }
         if (afterAllCallbacks.isEmpty()) {

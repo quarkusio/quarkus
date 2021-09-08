@@ -21,6 +21,6 @@ public class HibernateOrmDevConsoleIntegrator implements Integrator {
     @Override
     public void disintegrate(SessionFactoryImplementor sessionFactoryImplementor,
             SessionFactoryServiceRegistry sessionFactoryServiceRegistry) {
-        // Nothing to do
+        HibernateOrmDevConsoleInfoSupplier.clearData();
     }
 }

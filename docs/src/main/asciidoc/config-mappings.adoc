@@ -450,7 +450,7 @@ The `Server` can be injected as a mock into a Quarkus test class with `@InjectMo
 ----
 @QuarkusTest
 class ServerMockTest {
-    @Inject
+    @InjectMock
     Server server;
 
     @Test

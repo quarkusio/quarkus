@@ -513,9 +513,9 @@ Sample Dockerfile for building with Maven:
 ----
 ## Stage 1 : build with maven builder image with native capabilities
 FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor} AS build
-COPY pom.xml /code/
-COPY mvnw /code/mvnw
-COPY .mvn /code/.mvn
+COPY --chown=quarkus:quarkus mvnw /code/mvnw
+COPY --chown=quarkus:quarkus .mvn /code/.mvn
+COPY --chown=quarkus:quarkus pom.xml /code/
 USER quarkus
 WORKDIR /code
 RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.1.2:go-offline
@@ -551,11 +551,11 @@ Sample Dockerfile for building with Gradle:
 ----
 ## Stage 1 : build with maven builder image with native capabilities
 FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor} AS build
-COPY gradlew /code/gradlew
-COPY gradle /code/gradle
-COPY build.gradle /code/
-COPY settings.gradle /code/
-COPY gradle.properties /code/
+COPY --chown=quarkus:quarkus gradlew /code/gradlew
+COPY --chown=quarkus:quarkus /code/gradle
+COPY --chown=quarkus:quarkus build.gradle /code/
+COPY --chown=quarkus:quarkus settings.gradle /code/
+COPY --chown=quarkus:quarkus gradle.properties /code/
 USER quarkus
 WORKDIR /code
 COPY src /code/src

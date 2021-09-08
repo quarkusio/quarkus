@@ -1091,6 +1091,26 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     protected void handleLocalDateParam(PARAM builder) {
     }
 
+    protected DeclaredTypes getDeclaredTypes(Type paramType, ClassInfo currentClassInfo, ClassInfo actualEndpointInfo) {
+        String declaredType = toClassName(paramType, currentClassInfo, actualEndpointInfo, index);
+        String declaredUnresolvedType;
+        if (paramType.kind() == Kind.TYPE_VARIABLE) {
+            // we need to handle this specially since we want the actual declared type here and not the resolved type
+            // that toClassName(...) gives us
+            TypeVariable typeVariable = paramType.asTypeVariable();
+            if (typeVariable.bounds().isEmpty()) {
+                declaredUnresolvedType = Object.class.getName();
+            } else {
+                declaredUnresolvedType = typeVariable.bounds().get(0).name().toString();
+            }
+
+        } else {
+            declaredUnresolvedType = declaredType;
+        }
+
+        return new DeclaredTypes(declaredType, declaredUnresolvedType);
+    }
+
     protected void handleOtherParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
             PARAM builder, String elementType) {
     }
@@ -1235,6 +1255,24 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         public ResourceMethod getResourceMethod() {
             return resourceMethod;
+        }
+    }
+
+    public static class DeclaredTypes {
+        private final String declaredType;
+        private final String declaredUnresolvedType;
+
+        public DeclaredTypes(String declaredType, String declaredUnresolvedType) {
+            this.declaredType = declaredType;
+            this.declaredUnresolvedType = declaredUnresolvedType;
+        }
+
+        public String getDeclaredType() {
+            return declaredType;
+        }
+
+        public String getDeclaredUnresolvedType() {
+            return declaredUnresolvedType;
         }
     }
 

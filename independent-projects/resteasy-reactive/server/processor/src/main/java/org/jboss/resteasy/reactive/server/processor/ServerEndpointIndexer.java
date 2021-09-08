@@ -260,8 +260,9 @@ public class ServerEndpointIndexer
             Type paramType, ServerIndexedParameter parameterResult, String name, String defaultValue, ParameterType type,
             String elementType, boolean single, String signature) {
         ParameterConverterSupplier converter = parameterResult.getConverter();
+        DeclaredTypes declaredTypes = getDeclaredTypes(paramType, currentClassInfo, actualEndpointInfo);
         return new ServerMethodParameter(name,
-                elementType, toClassName(paramType, currentClassInfo, actualEndpointInfo, index),
+                elementType, declaredTypes.getDeclaredType(), declaredTypes.getDeclaredUnresolvedType(),
                 type, single, signature,
                 converter, defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded,
                 parameterResult.getCustomerParameterExtractor());

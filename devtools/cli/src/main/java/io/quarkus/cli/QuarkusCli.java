@@ -3,7 +3,6 @@ package io.quarkus.cli;
 import static picocli.CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIST;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
@@ -94,22 +93,28 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
             if (spec.subcommands().isEmpty()) {
                 return "";
             }
-            Map<String, String> tableElements = new LinkedHashMap<>();
-            addHierarchy(spec.subcommands().values(), tableElements, "");
-            return help.createTextTable(tableElements).toString();
+
+            Help.Column commands = new Help.Column(24, 2, CommandLine.Help.Column.Overflow.SPAN);
+            Help.Column descriptions = new Help.Column(spec.usageMessage().width() - 24, 2,
+                    CommandLine.Help.Column.Overflow.WRAP);
+            Help.TextTable textTable = Help.TextTable.forColumns(help.colorScheme(), commands, descriptions);
+            textTable.setAdjustLineBreaksForWideCJKCharacters(spec.usageMessage().adjustLineBreaksForWideCJKCharacters());
+
+            addHierarchy(spec.subcommands().values(), textTable, "");
+            return textTable.toString();
         }
 
-        private void addHierarchy(Collection<CommandLine> collection, Map<String, String> tableElements,
+        private void addHierarchy(Collection<CommandLine> collection, Help.TextTable textTable,
                 String indent) {
             collection.stream().distinct().forEach(subcommand -> {
                 // create comma-separated list of command name and aliases
                 String names = String.join(", ", subcommand.getCommandSpec().names());
                 String description = description(subcommand.getCommandSpec().usageMessage());
-                tableElements.put(indent + names, description);
+                textTable.addRowValues(indent + names, description);
 
                 Map<String, CommandLine> subcommands = subcommand.getSubcommands();
                 if (!subcommands.isEmpty()) {
-                    addHierarchy(subcommands.values(), tableElements, indent + "  ");
+                    addHierarchy(subcommands.values(), textTable, indent + "  ");
                 }
             });
         }

@@ -9,6 +9,11 @@ public class MethodParameter {
      * will be the collection type
      */
     public String declaredType;
+    /**
+     * This will only be different from the declaredType if a TypeVariable was used.
+     * It is needed for proper reflection method lookups
+     */
+    public String declaredUnresolvedType;
     public String signature;
     public ParameterType parameterType;
     public boolean encoded;
@@ -20,12 +25,14 @@ public class MethodParameter {
     public MethodParameter() {
     }
 
-    public MethodParameter(String name, String type, String declaredType, String signature, ParameterType parameterType,
+    public MethodParameter(String name, String type, String declaredType, String declaredUnresolvedType, String signature,
+            ParameterType parameterType,
             boolean single,
             String defaultValue, boolean isObtainedAsCollection, boolean optional, boolean encoded) {
         this.name = name;
         this.type = type;
         this.declaredType = declaredType;
+        this.declaredUnresolvedType = declaredUnresolvedType;
         this.signature = signature;
         this.parameterType = parameterType;
         this.single = single;

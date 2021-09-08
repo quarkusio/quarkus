@@ -23,7 +23,7 @@ include::./status-include.adoc[]
 * Add the required dependencies to your `pom.xml`
 ** Hibernate ORM REST Data with Panache extension (`quarkus-hibernate-orm-rest-data-panache`)
 ** A JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
-** One of the RESTEasy JSON serialization extensions (`quarkus-resteasy-jackson` or `quarkus-resteasy-jsonb`)
+** One of the RESTEasy JSON serialization extensions (`quarkus-resteasy-reactive-jackson` or `quarkus-resteasy-reactive-jsonb`)
 
 [source,xml]
 ----
@@ -38,7 +38,7 @@ include::./status-include.adoc[]
     </dependency>
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy-jackson</artifactId>
+        <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
     </dependency>
 </dependencies>
 ----
@@ -50,7 +50,7 @@ include::./status-include.adoc[]
 
 * Add the required dependencies to your `pom.xml`
 ** MongoDB REST Data with Panache extension (`quarkus-mongodb-rest-data-panache`)
-** One of the RESTEasy JSON serialization extensions (`quarkus-resteasy-jackson` or `quarkus-resteasy-jsonb`)
+** One of the RESTEasy JSON serialization extensions (`quarkus-resteasy-reactive-jackson` or `quarkus-resteasy-reactive-jsonb`)
 
 [source,xml]
 ----
@@ -61,7 +61,7 @@ include::./status-include.adoc[]
     </dependency>
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy-jackson</artifactId>
+        <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
     </dependency>
 </dependencies>
 ----

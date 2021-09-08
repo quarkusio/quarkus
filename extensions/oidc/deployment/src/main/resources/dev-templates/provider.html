@@ -135,6 +135,32 @@ var port = {config:property('quarkus.http.port')};
         copyToClipboard(idToken,"dummyIdTokenClipBoard");
     }
 
+    function navigateToSwaggerUi(){
+        var url = "{config:http-path('quarkus.swagger-ui.path')}";
+        
+        var authorizedValue = {
+            "SecurityScheme":{
+                "schema":{
+                    "flow":"implicit",
+                    "authorizationUrl":"{info:authorizationUrl}",
+                    "tokenUrl":"{info:tokenUrl}",
+                    "type":"oauth2",
+                    "description":"Authentication"
+                },
+                "clientId":"{info:clientId}",
+                "name":"SecurityScheme",
+                "token":{
+                    "access_token":accessToken,
+                    "token_type":"Bearer",
+                    "expires_in":"900"
+                }
+            }
+        };
+        
+        localStorage.setItem('authorized', JSON.stringify(authorizedValue));
+        window.open(url, '_blank').focus();
+    }
+    
     function copyToClipboard(token, type){
         var dummy = document.createElement("input");
         document.body.appendChild(dummy);
@@ -146,6 +172,8 @@ var port = {config:property('quarkus.http.port')};
     }
 
     function logout() {
+        localStorage.removeItem('authorized');
+    
         window.location.assign('{info:logoutUrl??}'
           + "?post_logout_redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + "%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider");
     }
@@ -374,7 +402,16 @@ function signInToService(servicePath) {
         <br>
         <div class="card implicitLoggedIn">
             <div class="card-header">
-                Test your service
+                <div class="float-left">
+                    Test your service
+                </div>
+                <div class="float-right">
+                    {#if info:swaggerIsAvailable}
+                    <a onclick="navigateToSwaggerUi();" class="btn btn-link" title="Test in Swagger UI">
+                        <i class="fas fa-external-link-alt"></i> Swagger UI
+                    </a>
+                    {/if}
+                </div>
             </div>
             <div class="card-body border-0">
                 <div class="row">

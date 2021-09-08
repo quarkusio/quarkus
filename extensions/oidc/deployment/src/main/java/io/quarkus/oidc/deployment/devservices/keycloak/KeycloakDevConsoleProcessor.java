@@ -3,6 +3,8 @@ package io.quarkus.oidc.deployment.devservices.keycloak;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -20,7 +22,8 @@ public class KeycloakDevConsoleProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     public void setConfigProperties(BuildProducer<DevConsoleTemplateInfoBuildItem> console,
-            Optional<KeycloakDevServicesConfigBuildItem> configProps) {
+            Optional<KeycloakDevServicesConfigBuildItem> configProps,
+            Capabilities capabilities) {
         if (configProps.isPresent() && configProps.get().getProperties().containsKey("keycloak.url")) {
             String keycloakUrl = (String) configProps.get().getProperties().get("keycloak.url");
             String realmUrl = keycloakUrl + "/realms/" + configProps.get().getProperties().get("keycloak.realm");
@@ -41,6 +44,9 @@ public class KeycloakDevConsoleProcessor {
                     new DevConsoleTemplateInfoBuildItem("authorizationUrl", realmUrl + "/protocol/openid-connect/auth"));
             console.produce(new DevConsoleTemplateInfoBuildItem("logoutUrl", realmUrl + "/protocol/openid-connect/logout"));
             console.produce(new DevConsoleTemplateInfoBuildItem("oidcGrantType", config.devservices.grant.type.getGrantType()));
+            console.produce(new DevConsoleTemplateInfoBuildItem("swaggerIsAvailable",
+                    capabilities.isPresent(Capability.SMALLRYE_OPENAPI)));
+
         }
     }
 

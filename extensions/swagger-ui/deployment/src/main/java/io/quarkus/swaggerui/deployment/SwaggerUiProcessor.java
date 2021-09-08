@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -15,6 +16,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
@@ -51,6 +53,9 @@ public class SwaggerUiProcessor {
     private static final String BRANDING_FAVICON_GENERAL = BRANDING_DIR + "favicon.ico";
     private static final String BRANDING_FAVICON_MODULE = BRANDING_DIR + "smallrye-open-api-ui.ico";
 
+    // To autoset some security config from OIDC
+    private static final String OIDC_CLIENT_ID = "quarkus.oidc.client-id";
+
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature,
             LaunchModeBuildItem launchMode,
@@ -81,7 +86,8 @@ public class SwaggerUiProcessor {
             LaunchModeBuildItem launchMode,
             SwaggerUiConfig swaggerUiConfig,
             SmallRyeOpenApiConfig openapi,
-            LiveReloadBuildItem liveReloadBuildItem) throws Exception {
+            LiveReloadBuildItem liveReloadBuildItem,
+            Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig) throws Exception {
 
         if (shouldInclude(launchMode, swaggerUiConfig)) {
             if ("/".equals(swaggerUiConfig.path)) {
@@ -96,6 +102,18 @@ public class SwaggerUiProcessor {
 
             }
 
+            if (devServicesLauncherConfig.isPresent()) {
+                DevServicesLauncherConfigResultBuildItem devServicesLauncherConfigResult = devServicesLauncherConfig.get();
+                Map<String, String> devServiceConfig = devServicesLauncherConfigResult.getConfig();
+                if (devServiceConfig != null && !devServiceConfig.isEmpty()) {
+                    // Map client Id from OIDC Dev Services
+                    if (devServiceConfig.containsKey(OIDC_CLIENT_ID) && !swaggerUiConfig.oauthClientId.isPresent()) {
+                        String clientId = devServiceConfig.get(OIDC_CLIENT_ID);
+                        swaggerUiConfig.oauthClientId = Optional.of(clientId);
+                    }
+                }
+            }
+
             String openApiPath = nonApplicationRootPathBuildItem.resolvePath(openapi.path);
             String swaggerUiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path);
 
@@ -103,6 +121,12 @@ public class SwaggerUiProcessor {
                     SWAGGER_UI_WEBJAR_ARTIFACT_ID);
 
             if (launchMode.getLaunchMode().isDevOrTest()) {
+
+                // In dev mode, default to persist Authorization true
+                if (!swaggerUiConfig.persistAuthorization.isPresent()) {
+                    swaggerUiConfig.persistAuthorization = Optional.of(true);
+                }
+
                 Path tempPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem, curateOutcomeBuildItem, launchMode,
                         artifact,
                         SWAGGER_UI_WEBJAR_PREFIX);

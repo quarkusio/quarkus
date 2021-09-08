@@ -16,8 +16,8 @@ import io.quarkus.registry.config.json.JsonRegistryConfig;
 import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "add", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Add a Quarkus extension registry to the registry client configuration", description = "%n"
-        + "This command will add a Quarkus extension registry to the registry client configuration unless it's already present", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
+@CommandLine.Command(name = "add", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Add a Quarkus extension registry", description = "%n"
+        + "This command will add a Quarkus extension registry to the registry client configuration unless it's already present.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class RegistryAddCommand extends BaseRegistryCommand {
 
     @CommandLine.Mixin

@@ -4,13 +4,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleDependency;
-import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.plugins.JavaPlugin;
 
@@ -35,17 +33,23 @@ public abstract class GradleProjectBuildFile extends AbstractGradleBuildFile {
 
         final List<Dependency> boms = boms();
 
-        final Set<ResolvedArtifact> resolvedArtifacts = project.getConfigurations()
-                .getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME).getResolvedConfiguration()
-                .getResolvedArtifacts();
-        final List<ArtifactCoords> coords = new ArrayList<>(boms.size() + resolvedArtifacts.size());
+        final List<ArtifactCoords> coords = new ArrayList<>();
         boms.forEach(d -> {
             coords.add(new ArtifactCoords(d.getGroup(), d.getName(), null, "pom", d.getVersion()));
         });
-        resolvedArtifacts.forEach(a -> {
-            coords.add(new ArtifactCoords(a.getModuleVersion().getId().getGroup(), a.getName(),
-                    a.getClassifier(), a.getExtension(), a.getModuleVersion().getId().getVersion()));
-        });
+        project.getConfigurations()
+                .getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME).getIncoming().getDependencies().forEach(d -> {
+                    if (!(d instanceof ModuleDependency)) {
+                        return;
+                    }
+                    final ModuleDependency module = (ModuleDependency) d;
+                    coords.add(new ArtifactCoords(module.getGroup(), module.getName(), module.getVersion()));
+                    // why is the following code does not return any artifact?
+                    //module.getArtifacts().forEach(a -> {
+                    //    coords.add(new ArtifactCoords(module.getGroup(), module.getName(), a.getClassifier(),
+                    //            a.getExtension(), module.getVersion()));
+                    //});
+                });
         return coords;
     }
 

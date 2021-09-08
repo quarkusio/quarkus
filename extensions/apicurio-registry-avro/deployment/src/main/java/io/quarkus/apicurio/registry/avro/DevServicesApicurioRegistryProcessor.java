@@ -82,6 +82,7 @@ public class DevServicesApicurioRegistryProcessor {
             apicurioRegistry = startApicurioRegistry(configuration, launchMode,
                     devServicesSharedNetworkBuildItem.isPresent());
             if (apicurioRegistry == null) {
+                compressor.close();
                 return;
             }
             compressor.close();

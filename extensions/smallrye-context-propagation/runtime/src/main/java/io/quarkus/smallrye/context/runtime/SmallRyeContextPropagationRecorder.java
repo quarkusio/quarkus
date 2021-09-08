@@ -50,7 +50,8 @@ public class SmallRyeContextPropagationRecorder {
         SmallRyeContextManager contextManager = builder.build();
 
         contextManagerProvider.registerContextManager(contextManager, Thread.currentThread().getContextClassLoader());
-        shutdownContext.addShutdownTask(new Runnable() {
+        //needs to be late, as running threads can re-create an implicit one
+        shutdownContext.addLastShutdownTask(new Runnable() {
             @Override
             public void run() {
                 contextManagerProvider.releaseContextManager(contextManager);

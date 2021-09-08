@@ -13,13 +13,15 @@ import javax.json.JsonReader;
 import javax.json.JsonValue;
 
 public class AbstractJsonObjectResponse {
+    private String jsonString;
     private JsonObject json;
 
     public AbstractJsonObjectResponse() {
     }
 
-    public AbstractJsonObjectResponse(String introspectionJson) {
-        this(toJsonObject(introspectionJson));
+    public AbstractJsonObjectResponse(String jsonString) {
+        this(toJsonObject(jsonString));
+        this.jsonString = jsonString;
     }
 
     public AbstractJsonObjectResponse(JsonObject json) {
@@ -47,6 +49,10 @@ public class AbstractJsonObjectResponse {
         return json.getJsonObject(name);
     }
 
+    public JsonObject getJsonObject() {
+        return json;
+    }
+
     public Object get(String name) {
         return json.get(name);
     }
@@ -61,6 +67,10 @@ public class AbstractJsonObjectResponse {
 
     public Set<Map.Entry<String, JsonValue>> getAllProperties() {
         return Collections.unmodifiableSet(json.entrySet());
+    }
+
+    protected String getNonNullJsonString() {
+        return jsonString == null ? json.toString() : jsonString;
     }
 
     private static JsonObject toJsonObject(String userInfoJson) {

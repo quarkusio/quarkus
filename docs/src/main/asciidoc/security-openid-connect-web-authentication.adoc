@@ -437,6 +437,13 @@ Please see link:security-openid-connect#token-verification-introspection for det
 
 Note that in case of `web-app` applications only `IdToken` is verified by default since the access token is not used by default to access the current Quarkus `web-app` endpoint and instead meant to be propagated to the services expecting this access token, for example, to the OpenId Connect Provider's UserInfo endpoint, etc. However if you expect the access token to contain the roles required to access the current Quarkus endpoint (`quarkus.oidc.roles.source=accesstoken`) then it will also be verified.
 
+[[token-introspection-userinfo-cache]]
+== Token Introspection and UserInfo Cache
+
+Code flow access tokens are not introspected unless they are expected to be the source of roles but will be used to get `UserInfo`. So there will be one or two remote calls with the code flow access token, if the token introspection and/or `UserInfo` are required.
+
+Please see link:security-openid-connect#token-introspection-userinfo-cache for more information about using a default token cache or registering a custom cache implementation.
+
 [[session-management]]
 == Session Management
 

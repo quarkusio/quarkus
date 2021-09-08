@@ -38,6 +38,10 @@ public class OidcRecorder {
 
     private static final Map<String, TenantConfigContext> dynamicTenantsConfig = new ConcurrentHashMap<>();
 
+    public Supplier<DefaultTokenIntrospectionUserInfoCache> setupTokenCache(OidcConfig config, Supplier<Vertx> vertx) {
+        return () -> new DefaultTokenIntrospectionUserInfoCache(config, vertx.get());
+    }
+
     public Supplier<TenantConfigBean> setup(OidcConfig config, Supplier<Vertx> vertx, TlsConfig tlsConfig) {
         final Vertx vertxValue = vertx.get();
 

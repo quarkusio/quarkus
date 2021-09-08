@@ -20,4 +20,8 @@ public class TokenIntrospection extends AbstractJsonObjectResponse {
     public TokenIntrospection(JsonObject json) {
         super(json);
     }
+
+    public String getIntrospectionString() {
+        return getNonNullJsonString();
+    }
 }

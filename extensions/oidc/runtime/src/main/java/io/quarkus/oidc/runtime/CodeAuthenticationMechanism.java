@@ -10,9 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
@@ -28,8 +26,6 @@ import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
-import io.quarkus.runtime.BlockingOperationControl;
-import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
@@ -37,7 +33,6 @@ import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.impl.CookieImpl;
@@ -663,48 +658,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return !"Default".equals(tenantId) ? "_" + tenantId : "";
     }
 
-    private static class CreateTokenStateRequestContext extends BlockingTaskRunner<String>
+    private static class CreateTokenStateRequestContext extends AbstractBlockingTaskRunner<String>
             implements TokenStateManager.CreateTokenStateRequestContext {
     }
 
-    private static class GetTokensRequestContext extends BlockingTaskRunner<AuthorizationCodeTokens>
+    private static class GetTokensRequestContext extends AbstractBlockingTaskRunner<AuthorizationCodeTokens>
             implements TokenStateManager.GetTokensRequestContext {
     }
 
-    private static class DeleteTokensRequestContext extends BlockingTaskRunner<Void>
+    private static class DeleteTokensRequestContext extends AbstractBlockingTaskRunner<Void>
             implements TokenStateManager.DeleteTokensRequestContext {
-    }
-
-    private static class BlockingTaskRunner<T> {
-        public Uni<T> runBlocking(Supplier<T> function) {
-            return Uni.createFrom().deferred(new Supplier<Uni<? extends T>>() {
-                @Override
-                public Uni<T> get() {
-                    if (BlockingOperationControl.isBlockingAllowed()) {
-                        try {
-                            return Uni.createFrom().item(function.get());
-                        } catch (Throwable t) {
-                            return Uni.createFrom().failure(t);
-                        }
-                    } else {
-                        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super T>>() {
-                            @Override
-                            public void accept(UniEmitter<? super T> uniEmitter) {
-                                ExecutorRecorder.getCurrent().execute(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        try {
-                                            uniEmitter.complete(function.get());
-                                        } catch (Throwable t) {
-                                            uniEmitter.fail(t);
-                                        }
-                                    }
-                                });
-                            }
-                        });
-                    }
-                }
-            });
-        }
     }
 }

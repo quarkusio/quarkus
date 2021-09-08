@@ -1,8 +1,6 @@
 package io.quarkus.oidc.runtime;
 
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
@@ -18,11 +16,11 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.TenantResolver;
+import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.TokenStateManager;
-import io.quarkus.runtime.BlockingOperationControl;
-import io.quarkus.runtime.ExecutorRecorder;
+import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.UserInfoCache;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
@@ -46,47 +44,19 @@ public class DefaultTenantConfigResolver {
     Instance<TokenStateManager> tokenStateManager;
 
     @Inject
+    Instance<TokenIntrospectionCache> tokenIntrospectionCache;
+
+    @Inject
+    Instance<UserInfoCache> userInfoCache;
+
+    @Inject
     Event<SecurityEvent> securityEvent;
 
     @Inject
     @ConfigProperty(name = "quarkus.http.proxy.enable-forwarded-prefix")
     boolean enableHttpForwardedPrefix;
 
-    private final TenantConfigResolver.TenantConfigRequestContext blockingRequestContext = new TenantConfigResolver.TenantConfigRequestContext() {
-        @Override
-        public Uni<OidcTenantConfig> runBlocking(Supplier<OidcTenantConfig> function) {
-            return Uni.createFrom().deferred(new Supplier<Uni<? extends OidcTenantConfig>>() {
-                @Override
-                public Uni<OidcTenantConfig> get() {
-                    if (BlockingOperationControl.isBlockingAllowed()) {
-                        try {
-                            OidcTenantConfig result = function.get();
-                            return Uni.createFrom().item(result);
-                        } catch (Throwable t) {
-                            return Uni.createFrom().failure(t);
-                        }
-                    } else {
-                        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super OidcTenantConfig>>() {
-                            @Override
-                            public void accept(UniEmitter<? super OidcTenantConfig> uniEmitter) {
-                                ExecutorRecorder.getCurrent().execute(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        try {
-                                            uniEmitter.complete(function.get());
-                                        } catch (Throwable t) {
-                                            uniEmitter.fail(t);
-                                        }
-                                    }
-                                });
-                            }
-                        });
-                    }
-                }
-            });
-        }
-
-    };
+    private final TenantConfigRequestContext blockingRequestContext = new TenantConfigRequestContext();
 
     private volatile boolean securityEventObserved;
 
@@ -100,6 +70,12 @@ public class DefaultTenantConfigResolver {
         }
         if (tokenStateManager.isAmbiguous()) {
             throw new IllegalStateException("Multiple " + TokenStateManager.class + " beans registered");
+        }
+        if (tokenIntrospectionCache.isAmbiguous()) {
+            throw new IllegalStateException("Multiple " + TokenIntrospectionCache.class + " beans registered");
+        }
+        if (userInfoCache.isAmbiguous()) {
+            throw new IllegalStateException("Multiple " + UserInfo.class + " beans registered");
         }
     }
 
@@ -190,6 +166,14 @@ public class DefaultTenantConfigResolver {
         return tokenStateManager.get();
     }
 
+    TokenIntrospectionCache getTokenIntrospectionCache() {
+        return tokenIntrospectionCache.isResolvable() ? tokenIntrospectionCache.get() : null;
+    }
+
+    UserInfoCache getUserInfoCache() {
+        return userInfoCache.isResolvable() ? userInfoCache.get() : null;
+    }
+
     private Uni<OidcTenantConfig> getDynamicTenantConfig(RoutingContext context) {
         if (tenantConfigResolver.isResolvable()) {
             Uni<OidcTenantConfig> oidcConfig = context.get(CURRENT_DYNAMIC_TENANT_CONFIG);
@@ -230,4 +214,7 @@ public class DefaultTenantConfigResolver {
         return enableHttpForwardedPrefix;
     }
 
+    private static class TenantConfigRequestContext extends AbstractBlockingTaskRunner<OidcTenantConfig>
+            implements TenantConfigResolver.TenantConfigRequestContext {
+    }
 }

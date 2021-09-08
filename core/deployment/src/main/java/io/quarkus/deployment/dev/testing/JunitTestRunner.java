@@ -808,22 +808,37 @@ public class JunitTestRunner {
         }
 
         public FilterResult filterTags(AnnotatedElement clz) {
-            Tag tag = clz.getAnnotation(Tag.class);
-            Tags tagsAnn = clz.getAnnotation(Tags.class);
-            List<Tag> all = null;
-            if (tag != null) {
-                all = Collections.singletonList(tag);
-            } else if (tagsAnn != null) {
-                all = Arrays.asList(tagsAnn.value());
-            } else {
+            List<Tag> all = new ArrayList<>();
+            gatherTags(clz, all);
+            if (all.isEmpty())
                 return null;
-            }
             for (Tag i : all) {
                 if (tags.contains(i.value())) {
                     return FilterResult.includedIf(!exclude);
                 }
             }
             return FilterResult.includedIf(exclude);
+        }
+
+        private void gatherTags(AnnotatedElement clz, List<Tag> all) {
+            Tag tag = clz.getAnnotation(Tag.class);
+            Tags tagsAnn = clz.getAnnotation(Tags.class);
+            if (tag != null) {
+                all.add(tag);
+            } else if (tagsAnn != null) {
+                all.addAll(List.of(tagsAnn.value()));
+            }
+            if (clz instanceof Class) {
+                if (((Class<?>) clz).isAnnotation()) {
+                    //only scan meta annotations one level deep
+                    return;
+                }
+            }
+
+            //meta annotations can also provide tags
+            for (var a : clz.getAnnotations()) {
+                gatherTags(a.annotationType(), all);
+            }
         }
     }
 

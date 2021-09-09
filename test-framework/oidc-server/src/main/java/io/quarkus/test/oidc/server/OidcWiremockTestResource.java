@@ -26,6 +26,11 @@ import com.google.common.collect.ImmutableSet;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.smallrye.jwt.build.Jwt;
 
+/**
+ * Provides a mock OIDC server to tests.
+ *
+ * @see OidcWireMock
+ */
 public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleManager {
 
     private static final Logger LOG = Logger.getLogger(OidcWiremockTestResource.class);
@@ -190,6 +195,12 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                 .jws()
                 .keyId("1")
                 .sign("privateKey.jwk");
+    }
+
+    @Override
+    public void inject(TestInjector testInjector) {
+        testInjector.injectIntoFields(server,
+                new TestInjector.AnnotatedAndMatchesType(OidcWireMock.class, WireMockServer.class));
     }
 
     @Override

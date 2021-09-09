@@ -7,7 +7,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.Unmatched;
 
-@CommandLine.Command(name = "registry", sortOptions = false, mixinStandardHelpOptions = false, header = "Manage extension registries.", subcommands = {
+@CommandLine.Command(name = "registry", sortOptions = false, mixinStandardHelpOptions = false, header = "Configure Quarkus registry client", subcommands = {
         RegistryAddCommand.class,
         RegistryListCommand.class,
         RegistryRemoveCommand.class }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")

@@ -14,7 +14,7 @@ import io.quarkus.registry.config.RegistryConfig;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "list", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "List enabled Quarkus registries", description = "%n"
-        + "This command will list currently enabled Quarkus extension registries", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
+        + "This command will list currently enabled Quarkus extension registries.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class RegistryListCommand extends BaseRegistryCommand {
 
     @CommandLine.Mixin

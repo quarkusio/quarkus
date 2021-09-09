@@ -283,6 +283,7 @@ quarkus.kubernetes.env.vars.my-env-var=foobar
 The command above will add `MY_ENV_VAR=foobar` as an environment variable.
 Please note that the key `my-env-var` will be converted to uppercase and dashes will be replaced by underscores resulting in `MY_ENV_VAR`.
 
+[[secret-mapping]]
 ===== Environment variables from Secret
 
 To add all key/value pairs of `Secret` as environment variables just apply the following configuration, separating each `Secret`

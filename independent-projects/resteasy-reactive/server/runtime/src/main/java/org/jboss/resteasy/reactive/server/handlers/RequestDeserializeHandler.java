@@ -88,7 +88,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
                 return;
             }
         }
-        throw new NotSupportedException();
+        throw new NotSupportedException("No supported MessageBodyReader found");
     }
 
     private boolean isReadable(MessageBodyReader<?> reader, ResteasyReactiveRequestContext requestContext,

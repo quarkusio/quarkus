@@ -35,7 +35,7 @@ public class DependencyTreeMojo extends AbstractMojo {
 
     /**
      * Target launch mode corresponding to {@link io.quarkus.runtime.LaunchMode} for which the dependency tree should be built.
-     * {@link io.quarkus.runtime.LaunchMode.PROD} is the default.
+     * {@code io.quarkus.runtime.LaunchMode.NORMAL} is the default.
      */
     @Parameter(property = "mode", required = false, defaultValue = "prod")
     String mode;
@@ -45,9 +45,8 @@ public class DependencyTreeMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
-        final StringBuilder buf = new StringBuilder();
-        buf.append("Quarkus application ").append(mode.toUpperCase()).append(" mode build dependency tree:");
-        getLog().info(buf.toString());
+        String buf = "Quarkus application " + mode.toUpperCase() + " mode build dependency tree:";
+        getLog().info(buf);
 
         final AppArtifact appArtifact = new AppArtifact(project.getGroupId(), project.getArtifactId(), null, "pom",
                 project.getVersion());

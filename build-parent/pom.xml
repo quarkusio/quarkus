@@ -92,7 +92,7 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
-        <keycloak.docker.image>quay.io/keycloak/keycloak:14.0.0</keycloak.docker.image>
+        <keycloak.docker.image>quay.io/keycloak/keycloak:15.0.2</keycloak.docker.image>
 
         <unboundid-ldap.version>4.0.13</unboundid-ldap.version>
 

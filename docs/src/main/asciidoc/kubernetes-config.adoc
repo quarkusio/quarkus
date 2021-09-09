@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::./attributes.adoc[]
 
 
-Quarkus includes the `kubernetes-config` extension which allows developers to use Kubernetes https://cloud.google.com/kubernetes-engine/docs/concepts/configmap[ConfigMaps] and https://cloud.google.com/kubernetes-engine/docs/concepts/secret[Secrets] as a configuration source, without having to mount them into the https://kubernetes.io/docs/concepts/workloads/pods/pod/[Pod] running the Quarkus application.
+Quarkus includes the `kubernetes-config` extension which allows developers to use Kubernetes https://cloud.google.com/kubernetes-engine/docs/concepts/configmap[ConfigMaps] and https://cloud.google.com/kubernetes-engine/docs/concepts/secret[Secrets] as a configuration source, without having to mount them into the https://kubernetes.io/docs/concepts/workloads/pods/pod/[Pod] running the Quarkus application or make any other modifications to their Kubernetes `Deployment` (or Openshift `DeploymentConfig`).
 
 
 == Configuration
@@ -40,12 +40,10 @@ The extension understands the following types of ConfigMaps and Secrets as input
 * ConfigMaps and Secrets that contain literal data (see https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#create-configmaps-from-literal-values[this] for an example on how to create one)
 * ConfigMaps and Secrets created from files named `application.properties`, `application.yaml` or `application.yml` (see https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#create-configmaps-from-files[this] for an example on how to create one).
 
-You have to explicitly enable the retrieval of ConfigMaps and Secrets by setting `quarkus.kubernetes-config.enabled=true`.
-The default is `false` in order to make it easy to test the application locally.
+The extension is disabled by default in order to prevent the application for making API calls when it is not running in a Kubernetes environment. To enable it, set `quarkus.kubernetes-config.enabled=true` (for example using a specific xref:config-reference.adoc#profiles[profile]).
 
-Afterwards, set the `quarkus.kubernetes-config.config-maps` property to configure which ConfigMaps should be used.
-Set the `quarkus.kubernetes-config.secrets` property to configure which Secrets should be used.
-To access ConfigMaps and Secrets from a specific namespace, you can set the `quarkus.kubernetes-config.namespace` property.
+The values of `quarkus.kubernetes-config.config-maps` and `quarkus.kubernetes-config.secrets` determine which ConfigMaps and/or Secrets will be used as configuration sources. Keep in mind that these ConfigMaps and Secrets must be in the same Kubernetes `Namespace`
+as the running application. If they are to be found in a different namespace, then `quarkus.kubernetes-config.namespace` must be set to the proper value.
 
 === Priority of obtained properties
 
@@ -66,6 +64,81 @@ Thankfully, when using the `kubernetes-config` extension along with the link:dep
 
 By default, the link:deploying-to-kubernetes[Kubernetes] extension doesn't generate the necessary resources to allow accessing secrets.
 Set `quarkus.kubernetes-config.secrets.enabled=true` to generate the necessary role and corresponding role binding.
+
+== Example configuration
+
+A very common use case is to deploy a Quarkus application that needs to access a relational database which has itself already been deployed on Kubernetes. Using the `quarkus-kubernetes-config` extension makes this use case very simple to handle.
+
+Let's assume that our Quarkus application needs to talk to PostgreSQL and that when PostgreSQL was deployed on our Kubernetes cluster, a `Secret` named `postgresql` was created as part of that deployment and contains the following entries:
+
+* `database-name`
+* `database-user`
+* `database-password`
+
+One possible way to make Quarkus use these entries to connect the database is to use the following configuration:
+
+[source,properties]
+----
+%prod.quarkus.kubernetes-config.secrets.enabled=true                            <1>
+quarkus.kubernetes-config.secrets=postgresql                                    <2>
+
+%prod.quarkus.datasource.jdbc.url=postgresql://somehost:5432/${database-name}   <3>
+%prod.quarkus.datasource.username=${database-user}                              <4>
+%prod.quarkus.datasource.password=${database-password}                          <5>
+----
+<1> Enable reading of secrets. Note the use of `%prod` profile as we only want this setting applied when the application is running in production.
+<2> Configure the name of the secret that will be used. This doesn't need to be prefixed with the `%prod` profile as it won't have any effect if secret reading is disabled.
+<3> Quarkus will substitute `${database-name}` with the value obtained from the entry with name `database-name` of the `postgres` Secret. `somehost` is the name of the Kubernetes `Service` that was created when PostgreSQL was deployed to Kubernetes.
+<4> Quarkus will substitute `${database-user}` with the value obtained from the entry with name `database-user` of the `postgres` Secret.
+<5> Quarkus will substitute `${database-password}` with the value obtained from the entry with name `database-password` of the `postgres` Secret.
+
+The values above allow the application to be completely agnostic of the actual database configuration used in production while also not inhibiting the usability of the application at development time.
+
+=== Alternatives
+
+The use of the `quarkus-kubernetes-config` extensions is completely optional as there are other ways an application can be configured to use ConfigMaps or Secrets.
+
+One common alternative is to map each entry of the ConfigMap and / Secret to an environment variable on the Kubernetes `Deployment` - see link:https://kubernetes.io/docs/concepts/configuration/secret/#use-case-as-container-environment-variables[this] for more details.
+To achieve that in Quarkus, we could use the `quarkus-kubernetes` extension (which is responsible for creating Kubernetes manifests and include the following configuration) and configure it as so:
+
+[source,properties]
+----
+quarkus.kubernetes.env.secrets=postgresql
+quarkus.kubernetes.env.mapping.database-name.from-secret=postgresql
+quarkus.kubernetes.env.mapping.database-name.with-key=database-name
+quarkus.kubernetes.env.mapping.database-user.from-secret=postgresql
+quarkus.kubernetes.env.mapping.database-user.with-key=database-user
+quarkus.kubernetes.env.mapping.database-password.from-secret=postgresql
+quarkus.kubernetes.env.mapping.database-password.with-key=database-password
+
+%prod.quarkus.datasource.jdbc.url=postgresql://somehost:5432/${database-name}
+%prod.quarkus.datasource.username=${database-user}
+%prod.quarkus.datasource.password=${database-password}
+----
+
+The end result of the above configuration would be the following `env` part being applied the generated `Deployment`:
+
+[source,yaml]
+----
+          env:
+            - name: DATABASE_NAME
+              valueFrom:
+                secretKeyRef:
+                  key: database-name
+                  name: postgresql
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  key: database-user
+                  name: postgresql
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: database-password
+                  name: postgresql
+----
+
+See xref:deploying-to-kubernetes.adoc#secret-mapping[this] for more details.
 
 == Configuration Reference
 

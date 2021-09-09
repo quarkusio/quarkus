@@ -142,16 +142,25 @@ public class RuntimeResourceDeployment {
         }
 
         Class<Object> resourceClass = loadClass(clazz.getClassName());
-        Class<?>[] parameterClasses = new Class[method.getParameters().length];
+        Class<?>[] parameterDeclaredTypes = new Class[method.getParameters().length];
+        Class<?>[] parameterDeclaredUnresolvedTypes = new Class[method.getParameters().length];
         for (int i = 0; i < method.getParameters().length; ++i) {
-            parameterClasses[i] = loadClass(method.getParameters()[i].declaredType);
+            MethodParameter parameter = method.getParameters()[i];
+            String declaredType = parameter.declaredType;
+            String declaredUnresolvedType = parameter.declaredUnresolvedType;
+            parameterDeclaredTypes[i] = loadClass(declaredType);
+            parameterDeclaredUnresolvedTypes[i] = parameterDeclaredTypes[i];
+            if (!declaredType.equals(declaredUnresolvedType)) {
+                parameterDeclaredUnresolvedTypes[i] = loadClass(declaredUnresolvedType);
+            }
         }
+
         Set<String> classAnnotationNames = new HashSet<>();
         for (Annotation annotation : resourceClass.getAnnotations()) {
             classAnnotationNames.add(annotation.annotationType().getName());
         }
         ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
-                parameterClasses, classAnnotationNames, method.getMethodAnnotationNames());
+                parameterDeclaredUnresolvedTypes, classAnnotationNames, method.getMethodAnnotationNames());
 
         RuntimeInterceptorDeployment.MethodInterceptorContext interceptorDeployment = runtimeInterceptorDeployment
                 .forMethod(method, lazyMethod);
@@ -417,7 +426,7 @@ public class RuntimeResourceDeployment {
                 classPathTemplate,
                 method.getProduces() == null ? null : serverMediaType,
                 consumesMediaTypes, invoker,
-                clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterClasses,
+                clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterDeclaredTypes,
                 nonAsyncReturnType, method.isBlocking(), resourceClass,
                 lazyMethod,
                 pathParameterIndexes, score, sseElementType, clazz.resourceExceptionMapper());

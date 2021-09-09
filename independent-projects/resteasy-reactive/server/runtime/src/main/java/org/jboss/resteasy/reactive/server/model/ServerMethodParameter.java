@@ -13,12 +13,14 @@ public class ServerMethodParameter extends MethodParameter {
     public ServerMethodParameter() {
     }
 
-    public ServerMethodParameter(String name, String type, String declaredType, ParameterType parameterType, boolean single,
+    public ServerMethodParameter(String name, String type, String declaredType, String declaredUnresolvedType,
+            ParameterType parameterType, boolean single,
             String signature,
             ParameterConverterSupplier converter, String defaultValue, boolean isObtainedAsCollection, boolean isOptional,
             boolean encoded,
             ParameterExtractor customerParameterExtractor) {
-        super(name, type, declaredType, signature, parameterType, single, defaultValue, isObtainedAsCollection, isOptional,
+        super(name, type, declaredType, declaredUnresolvedType, signature, parameterType, single, defaultValue,
+                isObtainedAsCollection, isOptional,
                 encoded);
         this.converter = converter;
         this.customerParameterExtractor = customerParameterExtractor;

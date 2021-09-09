@@ -9,6 +9,7 @@ import io.vertx.ext.web.multipart.MultipartForm;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.Arrays;
@@ -29,6 +30,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
@@ -102,9 +104,23 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
             this.responseTypeSpecified = false;
         } else {
             this.responseType = responseType;
-            boolean isJaxResponse = responseType.getRawType().equals(Response.class);
-            this.checkSuccessfulFamily = !isJaxResponse;
-            this.responseTypeSpecified = !isJaxResponse;
+            if (responseType.getRawType().equals(Response.class)) {
+                this.checkSuccessfulFamily = false;
+                this.responseTypeSpecified = false;
+            } else if (responseType.getRawType().equals(RestResponse.class)) {
+                if (responseType.getType() instanceof ParameterizedType) {
+                    ParameterizedType type = (ParameterizedType) responseType.getType();
+                    if (type.getActualTypeArguments().length == 1) {
+                        Type restResponseType = type.getActualTypeArguments()[0];
+                        this.responseType = new GenericType<>(restResponseType);
+                    }
+                }
+                this.checkSuccessfulFamily = false;
+                this.responseTypeSpecified = true;
+            } else {
+                this.checkSuccessfulFamily = true;
+                this.responseTypeSpecified = true;
+            }
         }
         this.registerBodyHandler = registerBodyHandler;
         this.result = new CompletableFuture<>();

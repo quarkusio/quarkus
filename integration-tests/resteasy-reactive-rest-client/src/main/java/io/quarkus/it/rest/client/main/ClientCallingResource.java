@@ -3,6 +3,7 @@ package io.quarkus.it.rest.client.main;
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -12,6 +13,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.resteasy.reactive.RestResponse;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -74,12 +76,15 @@ public class ClientCallingResource {
             Uni<Apple> apple8 = Uni.createFrom().completionStage(client.completionStringApple()).onItem()
                     .transform(this::toApple);
             Uni<Apple> apple9 = client.uniStringApple().onItem().transform(this::toApple);
-            Uni.combine().all().unis(apple1, apple2, apple3, apple4, apple5, apple6, apple7, apple8, apple9).asTuple()
+            Uni<Apple> apple10 = Uni.createFrom().item(client.restResponseApple().getEntity());
+            Uni<Apple> apple11 = client.uniRestResponseApple().onItem().transform(RestResponse::getEntity);
+            Uni.combine().all().unis(apple1, apple2, apple3, apple4, apple5, apple6, apple7, apple8, apple9, apple10, apple11)
+                    .combinedWith(Function.identity())
                     .subscribe()
-                    .with(tuple -> {
+                    .with(list -> {
                         try {
                             rc.response().putHeader("content-type", "application/json")
-                                    .end(mapper.writeValueAsString(tuple.asList()));
+                                    .end(mapper.writeValueAsString(list));
                         } catch (JsonProcessingException e) {
                             fail(rc, e.getMessage());
                         }
@@ -105,6 +110,15 @@ public class ClientCallingResource {
                     .build(HelloClient.class);
             String greeting = client.greeting("John", 2);
             rc.response().end(greeting);
+        });
+
+        router.route("/rest-response").blockingHandler(rc -> {
+            String url = rc.getBody().toString();
+            RestResponseClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
+                    .property("microprofile.rest.client.disable.default.mapper", true)
+                    .build(RestResponseClient.class);
+            RestResponse<String> restResponse = client.response();
+            rc.response().end("" + restResponse.getStatus());
         });
 
         router.route("/export-clear").blockingHandler(rc -> {

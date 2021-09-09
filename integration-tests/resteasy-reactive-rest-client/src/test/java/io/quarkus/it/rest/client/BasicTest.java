@@ -41,6 +41,12 @@ public class BasicTest {
         assertThat(response.asString()).isEqualTo("Hello, JohnJohn");
     }
 
+    @Test
+    public void restResponseShouldWorkWithNonSuccessfulResponse() {
+        Response response = RestAssured.with().body(helloUrl).post("/rest-response");
+        assertThat(response.asString()).isEqualTo("405");
+    }
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     void shouldMakeJsonRequest() {
@@ -49,11 +55,11 @@ public class BasicTest {
                 .statusCode(200)
                 .contentType("application/json")
                 .extract().body().jsonPath().getList(".", Map.class);
-        assertThat(results).hasSize(9).allSatisfy(m -> {
+        assertThat(results).hasSize(11).allSatisfy(m -> {
             assertThat(m).containsOnlyKeys("cultivar");
         });
         Map<Object, Long> valueByCount = results.stream().collect(Collectors.groupingBy(m -> m.get("cultivar"), counting()));
-        assertThat(valueByCount).containsOnly(entry("cortland", 3L), entry("lobo", 3L), entry("golden delicious", 3L));
+        assertThat(valueByCount).containsOnly(entry("cortland", 4L), entry("lobo", 4L), entry("golden delicious", 3L));
     }
 
     @Test

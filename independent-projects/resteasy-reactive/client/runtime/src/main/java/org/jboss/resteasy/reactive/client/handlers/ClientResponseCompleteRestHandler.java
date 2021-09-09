@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.client.handlers;
 
 import java.io.IOException;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.client.impl.ClientResponseBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientResponseContextImpl;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
@@ -22,7 +23,10 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
         builder.status(responseContext.getStatus(), responseContext.getReasonPhrase());
         builder.setAllHeaders(responseContext.getHeaders());
         builder.invocationState(context);
-        if (context.isResponseTypeSpecified() && parseContent) { // this case means that a specific response type was requested
+        if (context.isResponseTypeSpecified()
+                // when we are returning a RestResponse, we don't want to do any parsing
+                && (Response.Status.Family.familyOf(context.getResponseStatus()) == Response.Status.Family.SUCCESSFUL)
+                && parseContent) { // this case means that a specific response type was requested
             Object entity = context.readEntity(responseContext.getEntityStream(),
                     context.getResponseType(),
                     responseContext.getMediaType(),

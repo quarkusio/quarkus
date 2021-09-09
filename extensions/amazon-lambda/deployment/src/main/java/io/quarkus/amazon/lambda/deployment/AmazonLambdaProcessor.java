@@ -240,9 +240,10 @@ public final class AmazonLambdaProcessor {
     @Record(value = ExecutionTime.RUNTIME_INIT)
     void startPoolLoop(AmazonLambdaRecorder recorder,
             ShutdownContextBuildItem shutdownContextBuildItem,
+            LaunchModeBuildItem launchModeBuildItem,
             List<ServiceStartBuildItem> orderServicesFirst // try to order this after service recorders
     ) {
-        recorder.startPollLoop(shutdownContextBuildItem);
+        recorder.startPollLoop(shutdownContextBuildItem, launchModeBuildItem.getLaunchMode());
     }
 
     @BuildStep
@@ -253,7 +254,7 @@ public final class AmazonLambdaProcessor {
             LaunchModeBuildItem launchModeBuildItem) {
         LaunchMode mode = launchModeBuildItem.getLaunchMode();
         if (mode.isDevOrTest()) {
-            recorder.startPollLoop(shutdownContextBuildItem);
+            recorder.startPollLoop(shutdownContextBuildItem, mode);
         }
     }
 

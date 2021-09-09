@@ -45,7 +45,7 @@ public class DevConsoleRecorder {
         return new DevConsoleStaticHandler(devConsoleFinalDestination);
     }
 
-    public Handler<RoutingContext> continousTestHandler(ShutdownContext context) {
+    public Handler<RoutingContext> continuousTestHandler(ShutdownContext context) {
 
         ContinuousTestWebSocketHandler handler = new ContinuousTestWebSocketHandler();
         ContinuousTestingSharedStateManager.addStateListener(handler);
@@ -53,7 +53,6 @@ public class DevConsoleRecorder {
             @Override
             public void run() {
                 ContinuousTestingSharedStateManager.removeStateListener(handler);
-                ContinuousTestingSharedStateManager.reset();
 
             }
         });

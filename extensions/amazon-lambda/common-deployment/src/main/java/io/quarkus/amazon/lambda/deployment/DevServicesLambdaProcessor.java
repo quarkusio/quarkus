@@ -14,9 +14,11 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.RuntimeApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
@@ -47,12 +49,14 @@ public class DevServicesLambdaProcessor {
         }
     }
 
+    @Produce(ServiceStartBuildItem.class)
     @BuildStep(onlyIfNot = IsNormal.class)
     public void startEventServer(LaunchModeBuildItem launchMode,
             LambdaConfig config,
             Optional<EventServerOverrideBuildItem> override,
-            BuildProducer<DevServicesNativeConfigResultBuildItem> devServicePropertiesProducer,
-            BuildProducer<ServiceStartBuildItem> serviceStartBuildItemBuildProducer) throws Exception {
+            BuildProducer<DevServicesConfigResultBuildItem> devServicePropertiesProducer,
+            BuildProducer<RuntimeApplicationShutdownBuildItem> runtimeApplicationShutdownBuildItemBuildProducer)
+            throws Exception {
         if (!launchMode.getLaunchMode().isDevOrTest())
             return;
         if (legacyTestingEnabled())
@@ -73,9 +77,8 @@ public class DevServicesLambdaProcessor {
         startMode = launchMode.getLaunchMode();
         server.start(port);
         String baseUrl = "localhost:" + port + MockEventServer.BASE_PATH;
-        System.setProperty(AmazonLambdaApi.QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, baseUrl);
         devServicePropertiesProducer.produce(
-                new DevServicesNativeConfigResultBuildItem(AmazonLambdaApi.QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, baseUrl));
+                new DevServicesConfigResultBuildItem(AmazonLambdaApi.QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, baseUrl));
         Runnable closeTask = () -> {
             if (server != null) {
                 try {
@@ -91,5 +94,8 @@ public class DevServicesLambdaProcessor {
         };
         QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
         ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
+        if (launchMode.isTest()) {
+            runtimeApplicationShutdownBuildItemBuildProducer.produce(new RuntimeApplicationShutdownBuildItem(closeTask));
+        }
     }
 }

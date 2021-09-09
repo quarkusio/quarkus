@@ -25,6 +25,7 @@ import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.dev.testing.ContinuousTestingSharedStateManager;
 import io.quarkus.dev.testing.TracingHandler;
 import io.quarkus.gizmo.Gizmo;
 
@@ -82,6 +83,8 @@ public class TestTracingProcessor {
                 testSupport.stop();
             }
         }
+        QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
+        ((QuarkusClassLoader) cl.parent()).addCloseTask(ContinuousTestingSharedStateManager::reset);
     }
 
     @BuildStep(onlyIf = IsTest.class)

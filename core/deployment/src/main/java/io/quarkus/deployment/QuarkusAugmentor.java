@@ -32,6 +32,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.RawCommandLineArgumentsBuildItem;
+import io.quarkus.deployment.builditem.RuntimeApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.dev.spi.DevModeType;
@@ -127,6 +128,9 @@ public class QuarkusAugmentor {
             }
             for (Consumer<BuildChainBuilder> i : buildChainCustomizers) {
                 i.accept(chainBuilder);
+            }
+            if (launchMode.isDevOrTest()) {
+                chainBuilder.addFinal(RuntimeApplicationShutdownBuildItem.class);
             }
 
             final ArchiveRootBuildItem.Builder rootBuilder = ArchiveRootBuildItem.builder();

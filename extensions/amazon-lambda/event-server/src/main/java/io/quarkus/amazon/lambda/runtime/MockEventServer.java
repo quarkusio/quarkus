@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -24,21 +25,6 @@ public class MockEventServer implements Closeable {
     protected static final Logger log = Logger.getLogger(MockEventServer.class);
     public static final int DEFAULT_PORT = 8081;
 
-    public void start() {
-        int port = DEFAULT_PORT;
-        start(port);
-    }
-
-    public void start(int port) {
-        this.port = port;
-        vertx = Vertx.vertx();
-        httpServer = vertx.createHttpServer();
-        router = Router.router(vertx);
-        setupRoutes();
-        httpServer.requestHandler(router).listen(port).result();
-        log.info("Mock Lambda Event Server Started");
-    }
-
     private Vertx vertx;
     private int port;
     protected HttpServer httpServer;
@@ -50,9 +36,29 @@ public class MockEventServer implements Closeable {
     public static final String INVOCATION = BASE_PATH + AmazonLambdaApi.API_PATH_INVOCATION;
     public static final String NEXT_INVOCATION = BASE_PATH + AmazonLambdaApi.API_PATH_INVOCATION_NEXT;
     public static final String POST_EVENT = BASE_PATH;
+    final AtomicBoolean closed = new AtomicBoolean();
 
     public MockEventServer() {
         queue = new LinkedBlockingQueue<>();
+    }
+
+    public void start() {
+        int port = DEFAULT_PORT;
+        start(port);
+    }
+
+    public void start(int port) {
+        this.port = port;
+        vertx = Vertx.vertx();
+        httpServer = vertx.createHttpServer();
+        router = Router.router(vertx);
+        setupRoutes();
+        try {
+            httpServer.requestHandler(router).listen(port).toCompletionStage().toCompletableFuture().get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+        log.info("Mock Lambda Event Server Started");
     }
 
     public HttpServer getHttpServer() {
@@ -85,19 +91,11 @@ public class MockEventServer implements Closeable {
         }
         ctx.put(AmazonLambdaApi.LAMBDA_TRACE_HEADER_KEY, traceId);
         try {
+            log.debugf("Putting message %s into the queue", requestId);
             queue.put(ctx);
         } catch (InterruptedException e) {
             log.error("Publish interrupted");
             ctx.fail(500);
-        }
-    }
-
-    private RoutingContext pollNextEvent() throws InterruptedException {
-        for (;;) {
-            RoutingContext request = queue.poll(10, TimeUnit.MILLISECONDS);
-            if (request != null)
-                return request;
-
         }
     }
 
@@ -106,12 +104,17 @@ public class MockEventServer implements Closeable {
         blockingPool.execute(() -> {
             final AtomicBoolean closed = new AtomicBoolean(false);
             ctx.response().closeHandler((v) -> closed.set(true));
+            ctx.response().exceptionHandler((v) -> closed.set(true));
+            ctx.request().connection().closeHandler((v) -> closed.set(true));
+            ctx.request().connection().exceptionHandler((v) -> closed.set(true));
             RoutingContext request = null;
             try {
                 for (;;) {
                     request = queue.poll(10, TimeUnit.MILLISECONDS);
                     if (request != null) {
                         if (closed.get()) {
+                            log.debugf("Polled message %s but connection was closed, returning to queue",
+                                    request.get(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID));
                             queue.put(request);
                             return;
                         } else {
@@ -135,6 +138,7 @@ public class MockEventServer implements Closeable {
                 ctx.response().putHeader(AmazonLambdaApi.LAMBDA_TRACE_HEADER_KEY, traceId);
             }
             String requestId = request.get(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID);
+            log.debugf("Starting processing %s, added to pending request map", requestId);
             responsePending.put(requestId, request);
             ctx.response().putHeader(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID, requestId);
             Buffer body = processEventBody(request);
@@ -162,6 +166,7 @@ public class MockEventServer implements Closeable {
             ctx.fail(404);
             return;
         }
+        log.debugf("Sending response %s", requestId);
         Buffer buffer = ctx.getBody();
         processResponse(ctx, pending, buffer);
         ctx.response().setStatusCode(204);
@@ -176,6 +181,7 @@ public class MockEventServer implements Closeable {
             ctx.fail(404);
             return;
         }
+        log.debugf("Requeue %s", requestId);
         try {
             queue.put(pending);
         } catch (InterruptedException e) {
@@ -209,6 +215,7 @@ public class MockEventServer implements Closeable {
             ctx.fail(404);
             return;
         }
+        log.debugf("Sending response %s", requestId);
         Buffer buffer = ctx.getBody();
         processError(ctx, pending, buffer);
         ctx.response().setStatusCode(204);
@@ -232,9 +239,28 @@ public class MockEventServer implements Closeable {
 
     @Override
     public void close() throws IOException {
+        if (!closed.compareAndSet(false, true)) {
+            return;
+        }
         log.info("Stopping Mock Lambda Event Server");
-        httpServer.close().result();
-        vertx.close().result();
-        blockingPool.shutdown();
+        for (var i : responsePending.entrySet()) {
+            i.getValue().response().setStatusCode(503).end();
+        }
+        for (var i : queue) {
+            i.response().setStatusCode(503).end();
+        }
+        try {
+            httpServer.close().toCompletionStage().toCompletableFuture().get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                vertx.close().toCompletionStage().toCompletableFuture().get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            } finally {
+                blockingPool.shutdown();
+            }
+        }
     }
 }

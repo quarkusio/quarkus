@@ -16,19 +16,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
 import io.quarkus.runtime.Application;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
 
 public abstract class AbstractLambdaPollLoop {
     private static final Logger log = Logger.getLogger(AbstractLambdaPollLoop.class);
 
-    private ObjectMapper objectMapper;
-    private ObjectReader cognitoIdReader;
-    private ObjectReader clientCtxReader;
+    private final ObjectMapper objectMapper;
+    private final ObjectReader cognitoIdReader;
+    private final ObjectReader clientCtxReader;
+    private final LaunchMode launchMode;
 
-    public AbstractLambdaPollLoop(ObjectMapper objectMapper, ObjectReader cognitoIdReader, ObjectReader clientCtxReader) {
+    public AbstractLambdaPollLoop(ObjectMapper objectMapper, ObjectReader cognitoIdReader, ObjectReader clientCtxReader,
+            LaunchMode launchMode) {
         this.objectMapper = objectMapper;
         this.cognitoIdReader = cognitoIdReader;
         this.clientCtxReader = clientCtxReader;
+        this.launchMode = launchMode;
     }
 
     protected abstract boolean isStream();
@@ -45,7 +49,7 @@ public abstract class AbstractLambdaPollLoop {
             @Override
             public void run() {
                 try {
-                    if (!LambdaHotReplacementRecorder.enabled) {
+                    if (!LambdaHotReplacementRecorder.enabled && launchMode == LaunchMode.DEVELOPMENT) {
                         // when running with continuous testing, this method fails
                         // because currentApplication is not set when running as an
                         // auxiliary application.  So, just skip it if hot replacement enabled.
@@ -81,7 +85,7 @@ public abstract class AbstractLambdaPollLoop {
                                 continue;
                             }
                             try {
-                                if (LambdaHotReplacementRecorder.enabled) {
+                                if (LambdaHotReplacementRecorder.enabled && launchMode == LaunchMode.DEVELOPMENT) {
                                     try {
                                         // do not interrupt during a hot replacement
                                         // as shutdown will abort and do nasty things.
@@ -125,7 +129,7 @@ public abstract class AbstractLambdaPollLoop {
                                 if (abortGracefully(e)) {
                                     return;
                                 }
-                                log.error("Failed to run lambda", e);
+                                log.error("Failed to run lambda (" + launchMode + ")", e);
 
                                 postError(AmazonLambdaApi.invocationError(baseUrl, requestId),
                                         new FunctionError(e.getClass().getName(), e.getMessage()));
@@ -134,7 +138,7 @@ public abstract class AbstractLambdaPollLoop {
 
                         } catch (Exception e) {
                             if (!abortGracefully(e))
-                                log.error("Error running lambda", e);
+                                log.error("Error running lambda (" + launchMode + ")", e);
                             Application app = Application.currentApplication();
                             if (app != null) {
                                 app.stop();
@@ -150,24 +154,24 @@ public abstract class AbstractLambdaPollLoop {
                     }
                 } catch (Exception e) {
                     try {
-                        log.error("Lambda init error", e);
+                        log.error("Lambda init error (" + launchMode + ")", e);
                         postError(AmazonLambdaApi.initError(baseUrl),
                                 new FunctionError(e.getClass().getName(), e.getMessage()));
                     } catch (Exception ex) {
-                        log.error("Failed to report init error", ex);
+                        log.error("Failed to report init error (" + launchMode + ")", ex);
                     } finally {
                         // our main loop is done, time to shutdown
                         Application app = Application.currentApplication();
                         if (app != null) {
-                            log.error("Shutting down Quarkus application because of error");
+                            log.error("Shutting down Quarkus application because of error (" + launchMode + ")");
                             app.stop();
                         }
                     }
                 } finally {
-                    log.info("Lambda polling thread complete");
+                    log.info("Lambda polling thread complete (" + launchMode + ")");
                 }
             }
-        }, "Lambda Thread");
+        }, "Lambda Thread (" + launchMode + ")");
         pollingThread.setDaemon(true);
         context.addShutdownTask(() -> {
             running.set(false);
@@ -261,7 +265,7 @@ public abstract class AbstractLambdaPollLoop {
         // if we are running in test mode, or native mode outside of the lambda container, then don't output stack trace for socket errors
 
         boolean lambdaEnv = System.getenv("AWS_LAMBDA_RUNTIME_API") != null;
-        boolean testEnv = System.getProperty(AmazonLambdaApi.QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API) != null;
+        boolean testEnv = LaunchMode.current() == LaunchMode.TEST;
         boolean graceful = ((ex instanceof SocketException || ex instanceof ConnectException) && testEnv)
                 || (ex instanceof UnknownHostException && !lambdaEnv);
 

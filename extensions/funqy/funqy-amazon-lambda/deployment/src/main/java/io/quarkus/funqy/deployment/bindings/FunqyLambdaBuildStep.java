@@ -59,9 +59,10 @@ public class FunqyLambdaBuildStep {
     public void startPoolLoop(FunqyLambdaBindingRecorder recorder,
             RuntimeComplete ignored,
             ShutdownContextBuildItem shutdownContextBuildItem,
+            LaunchModeBuildItem launchModeBuildItem,
             List<ServiceStartBuildItem> orderServicesFirst // try to order this after service recorders
     ) {
-        recorder.startPollLoop(shutdownContextBuildItem);
+        recorder.startPollLoop(shutdownContextBuildItem, launchModeBuildItem.getLaunchMode());
     }
 
     @BuildStep
@@ -73,7 +74,7 @@ public class FunqyLambdaBuildStep {
             LaunchModeBuildItem launchModeBuildItem) {
         LaunchMode mode = launchModeBuildItem.getLaunchMode();
         if (mode.isDevOrTest()) {
-            recorder.startPollLoop(shutdownContextBuildItem);
+            recorder.startPollLoop(shutdownContextBuildItem, mode);
         }
     }
 }

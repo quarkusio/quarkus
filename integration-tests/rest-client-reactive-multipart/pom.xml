@@ -8,8 +8,8 @@
         <version>999-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>quarkus-integration-test-resteasy-reactive-rest-client-multipart</artifactId>
-    <name>Quarkus - Integration Tests - REST client Reactive multipart messages</name>
+    <artifactId>quarkus-integration-test-rest-client-reactive-multipart</artifactId>
+    <name>Quarkus - Integration Tests - REST Client Reactive: multipart messages</name>
 
     <dependencies>
         <!-- Client dependencies -->

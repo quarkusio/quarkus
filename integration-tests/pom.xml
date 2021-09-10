@@ -254,8 +254,8 @@
                 <module>reactive-messaging-http</module>
                 <module>rest-client</module>
                 <module>resteasy-reactive-kotlin</module>
-                <module>resteasy-reactive-rest-client</module>
-                <module>resteasy-reactive-rest-client-multipart</module>
+                <module>rest-client-reactive</module>
+                <module>rest-client-reactive-multipart</module>
                 <module>packaging</module>
                 <module>simple with space</module>
                 <module>consul-config</module>

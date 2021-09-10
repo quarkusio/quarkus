@@ -29,7 +29,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-core-deployment</artifactId>
+            <artifactId>quarkus-vertx-deployment</artifactId>
         </dependency>
 
         <dependency>

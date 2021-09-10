@@ -21,7 +21,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-core</artifactId>
+            <artifactId>quarkus-vertx</artifactId>
         </dependency>
         <dependency>
             <groupId>jakarta.websocket</groupId>

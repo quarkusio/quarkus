@@ -21,9 +21,7 @@ public class PersistentAppModel implements Serializable {
     private final String baseName;
     private final SerializedDep appArtifact;
 
-    private List<SerializedDep> deploymentDeps;
-    private List<SerializedDep> fullDeploymentDeps;
-    private List<SerializedDep> runtimeDeps;
+    private List<SerializedDep> dependencies;
     private Set<AppArtifactKey> parentFirstArtifacts;
     private Set<AppArtifactKey> runnerParentFirstArtifacts;
     private Set<AppArtifactKey> lesserPriorityArtifacts;
@@ -36,19 +34,11 @@ public class PersistentAppModel implements Serializable {
             String userProvidersDirectory, String appArchivePath) {
         this.baseName = baseName;
         this.userProvidersDirectory = userProvidersDirectory;
-        appArtifact = new SerializedDep(appModel.getAppArtifact(), paths);
+        appArtifact = new SerializedDep(appModel.getAppArtifact(), paths, 0);
         appArtifact.paths = Collections.singletonList(appArchivePath.replace('\\', '/'));
-        deploymentDeps = new ArrayList<>(appModel.getDeploymentDependencies().size());
-        for (AppDependency i : appModel.getDeploymentDependencies()) {
-            deploymentDeps.add(new SerializedDep(i, paths));
-        }
-        fullDeploymentDeps = new ArrayList<>(appModel.getFullDeploymentDeps().size());
+        dependencies = new ArrayList<>(appModel.getFullDeploymentDeps().size());
         for (AppDependency i : appModel.getFullDeploymentDeps()) {
-            fullDeploymentDeps.add(new SerializedDep(i, paths));
-        }
-        runtimeDeps = new ArrayList<>(appModel.getUserDependencies().size());
-        for (AppDependency i : appModel.getUserDependencies()) {
-            runtimeDeps.add(new SerializedDep(i, paths));
+            dependencies.add(new SerializedDep(i, paths, i.getFlags()));
         }
         platformProperties = new HashMap<>(appModel.getPlatformProperties());
         localProjectArtifacts = new HashSet<>(appModel.getLocalProjectArtifacts());
@@ -65,15 +55,8 @@ public class PersistentAppModel implements Serializable {
     public AppModel getAppModel(Path root) {
         AppModel.Builder model = new AppModel.Builder();
         model.setAppArtifact(appArtifact.getDep(root).getArtifact());
-
-        for (SerializedDep i : deploymentDeps) {
-            model.addDeploymentDep(i.getDep(root));
-        }
-        for (SerializedDep i : fullDeploymentDeps) {
-            model.addFullDeploymentDep(i.getDep(root));
-        }
-        for (SerializedDep i : runtimeDeps) {
-            model.addRuntimeDep(i.getDep(root));
+        for (SerializedDep i : dependencies) {
+            model.addDependency(i.getDep(root));
         }
         for (AppArtifactKey i : parentFirstArtifacts) {
             model.addParentFirstArtifact(i);
@@ -101,8 +84,9 @@ public class PersistentAppModel implements Serializable {
     private static class SerializedDep extends AppArtifactCoords {
 
         private List<String> paths;
+        private final int flags;
 
-        public SerializedDep(AppArtifact dependency, Map<AppArtifactKey, List<String>> paths) {
+        public SerializedDep(AppArtifact dependency, Map<AppArtifactKey, List<String>> paths, int flags) {
             super(dependency.getGroupId(), dependency.getArtifactId(),
                     dependency.getClassifier(), dependency.getType(),
                     dependency.getVersion());
@@ -111,10 +95,11 @@ public class PersistentAppModel implements Serializable {
                 pathList = Collections.emptyList();
             }
             this.paths = pathList.stream().map(s -> s.replace('\\', '/')).collect(Collectors.toList());
+            this.flags = flags;
         }
 
-        public SerializedDep(AppDependency dependency, Map<AppArtifactKey, List<String>> paths) {
-            this(dependency.getArtifact(), paths);
+        public SerializedDep(AppDependency dependency, Map<AppArtifactKey, List<String>> paths, int flags) {
+            this(dependency.getArtifact(), paths, flags);
         }
 
         public AppDependency getDep(Path root) {
@@ -125,12 +110,7 @@ public class PersistentAppModel implements Serializable {
 
             AppArtifact appArtifact = new AppArtifact(getGroupId(), getArtifactId(), getClassifier(), getType(), getVersion());
             appArtifact.setPaths(builder.build());
-            return new AppDependency(appArtifact, "compile", false); //we don't care about scope at this point
-        }
-
-        public List<String> getPaths() {
-            return paths;
+            return new AppDependency(appArtifact, "compile", flags); //we don't care about scope at this point
         }
     }
-
 }

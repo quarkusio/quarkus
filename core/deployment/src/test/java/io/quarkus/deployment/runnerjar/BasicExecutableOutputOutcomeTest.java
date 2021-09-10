@@ -31,7 +31,7 @@ public class BasicExecutableOutputOutcomeTest extends ExecutableOutputOutcomeTes
         final TsArtifact providedDep = TsArtifact.jar("provided-dep");
 
         final TsArtifact optionalDep = TsArtifact.jar("optional-dep");
-        addToExpectedLib(optionalDep); // TODO should direct optional deps be included?
+        addToExpectedLib(optionalDep);
 
         final TsArtifact directRtDep = TsArtifact.jar("runtime-dep");
         addToExpectedLib(directRtDep);

@@ -110,6 +110,7 @@ public abstract class ExecutableOutputOutcomeTestBase extends CreatorOutcomeTest
         return platformPropsDep;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     protected void testCreator(QuarkusBootstrap creator) throws Exception {
         System.setProperty("quarkus.package.type", "legacy-jar");
@@ -193,6 +194,7 @@ public abstract class ExecutableOutputOutcomeTestBase extends CreatorOutcomeTest
         }
     }
 
+    @SuppressWarnings("deprecation")
     private static void assertExtensionDependencies(AppModel appModel, String[] expectedExtensions) {
         final Set<AppArtifact> expectedRuntime = new HashSet<>(expectedExtensions.length);
         final Set<AppArtifact> expectedDeployment = new HashSet<>(expectedExtensions.length);

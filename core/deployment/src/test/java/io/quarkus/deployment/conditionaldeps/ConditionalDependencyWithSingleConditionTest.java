@@ -43,11 +43,14 @@ public class ConditionalDependencyWithSingleConditionTest extends ExecutableOutp
         final List<AppDependency> deploymentDeps = appModel.getDeploymentDependencies();
         final Set<AppDependency> expected = new HashSet<>();
         expected.add(new AppDependency(
-                new AppArtifact(TsArtifact.DEFAULT_GROUP_ID, "ext-c-deployment", TsArtifact.DEFAULT_VERSION), "compile"));
+                new AppArtifact(TsArtifact.DEFAULT_GROUP_ID, "ext-c-deployment", TsArtifact.DEFAULT_VERSION), "compile",
+                AppDependency.DEPLOYMENT_CP_FLAG));
         expected.add(new AppDependency(
-                new AppArtifact(TsArtifact.DEFAULT_GROUP_ID, "ext-a-deployment", TsArtifact.DEFAULT_VERSION), "compile"));
+                new AppArtifact(TsArtifact.DEFAULT_GROUP_ID, "ext-a-deployment", TsArtifact.DEFAULT_VERSION), "compile",
+                AppDependency.DEPLOYMENT_CP_FLAG));
         expected.add(new AppDependency(
-                new AppArtifact(TsArtifact.DEFAULT_GROUP_ID, "ext-b-deployment", TsArtifact.DEFAULT_VERSION), "runtime"));
+                new AppArtifact(TsArtifact.DEFAULT_GROUP_ID, "ext-b-deployment", TsArtifact.DEFAULT_VERSION), "runtime",
+                AppDependency.DEPLOYMENT_CP_FLAG));
         assertEquals(expected, new HashSet<>(deploymentDeps));
     }
 }

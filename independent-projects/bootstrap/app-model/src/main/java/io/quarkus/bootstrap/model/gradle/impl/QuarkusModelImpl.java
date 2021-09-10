@@ -10,20 +10,14 @@ import java.util.List;
 public class QuarkusModelImpl implements QuarkusModel, Serializable {
 
     private final Workspace workspace;
-    private final List<Dependency> appDependencies;
-    private final List<Dependency> extensionDependencies;
-    private final List<Dependency> enforcedPlatformDependencies;
+    private final List<Dependency> dependencies;
     private final PlatformImports platformImports;
 
     public QuarkusModelImpl(Workspace workspace,
-            List<Dependency> appDependencies,
-            List<Dependency> extensionDependencies,
-            List<Dependency> enforcedPlatformDependencies,
+            List<Dependency> dependencies,
             PlatformImports platformImports) {
         this.workspace = workspace;
-        this.appDependencies = appDependencies;
-        this.extensionDependencies = extensionDependencies;
-        this.enforcedPlatformDependencies = enforcedPlatformDependencies;
+        this.dependencies = dependencies;
         this.platformImports = platformImports;
     }
 
@@ -33,18 +27,8 @@ public class QuarkusModelImpl implements QuarkusModel, Serializable {
     }
 
     @Override
-    public List<Dependency> getAppDependencies() {
-        return appDependencies;
-    }
-
-    @Override
-    public List<Dependency> getExtensionDependencies() {
-        return extensionDependencies;
-    }
-
-    @Override
-    public List<Dependency> getEnforcedPlatformDependencies() {
-        return enforcedPlatformDependencies;
+    public List<Dependency> getDependencies() {
+        return dependencies;
     }
 
     @Override

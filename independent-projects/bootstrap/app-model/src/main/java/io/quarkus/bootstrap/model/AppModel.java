@@ -32,19 +32,20 @@ public class AppModel implements Serializable {
     private final AppArtifact appArtifact;
 
     /**
-     * The deployment dependencies, less the runtime parts. This will likely go away
-     */
-    private final List<AppDependency> deploymentDeps;
-    /**
      * The deployment dependencies, including all transitive dependencies. This is used to build an isolated class
      * loader to run the augmentation
      */
-    private final List<AppDependency> fullDeploymentDeps;
+    private final List<AppDependency> dependencies;
 
     /**
      * The runtime dependencies of the application, including the runtime parts of all extensions.
      */
-    private final List<AppDependency> runtimeDeps;
+    private transient List<AppDependency> runtimeDeps;
+
+    /**
+     * The deployment dependencies, less the runtime parts. This will likely go away
+     */
+    private transient List<AppDependency> deploymentDeps;
 
     private final Set<AppArtifactKey> parentFirstArtifacts;
 
@@ -68,9 +69,7 @@ public class AppModel implements Serializable {
 
     private AppModel(Builder builder) {
         this.appArtifact = builder.appArtifact;
-        this.runtimeDeps = builder.filter(builder.runtimeDeps);
-        this.deploymentDeps = builder.filter(builder.deploymentDeps);
-        this.fullDeploymentDeps = builder.filter(builder.fullDeploymentDeps);
+        this.dependencies = builder.filter(builder.dependencies);
         this.parentFirstArtifacts = builder.parentFirstArtifacts;
         this.runnerParentFirstArtifacts = builder.runnerParentFirstArtifacts;
         this.lesserPriorityArtifacts = builder.lesserPriorityArtifacts;
@@ -96,7 +95,9 @@ public class AppModel implements Serializable {
      * Dependencies that the user has added that have nothing to do with Quarkus (3rd party libs, additional modules etc)
      */
     public List<AppDependency> getUserDependencies() {
-        return runtimeDeps;
+        return runtimeDeps == null
+                ? runtimeDeps = dependencies.stream().filter(d -> d.isRuntimeCp()).collect(Collectors.toList())
+                : runtimeDeps;
     }
 
     /**
@@ -105,11 +106,13 @@ public class AppModel implements Serializable {
      */
     @Deprecated
     public List<AppDependency> getDeploymentDependencies() {
-        return deploymentDeps;
+        return deploymentDeps == null
+                ? deploymentDeps = dependencies.stream().filter(d -> !d.isRuntimeCp()).collect(Collectors.toList())
+                : deploymentDeps;
     }
 
     public List<AppDependency> getFullDeploymentDeps() {
-        return fullDeploymentDeps;
+        return dependencies;
     }
 
     public Set<AppArtifactKey> getParentFirstArtifacts() {
@@ -136,9 +139,7 @@ public class AppModel implements Serializable {
     public String toString() {
         return "AppModel{" +
                 "appArtifact=" + appArtifact +
-                ", deploymentDeps=" + deploymentDeps +
-                ", fullDeploymentDeps=" + fullDeploymentDeps +
-                ", runtimeDeps=" + runtimeDeps +
+                ", fullDeploymentDeps=" + dependencies +
                 ", parentFirstArtifacts=" + parentFirstArtifacts +
                 ", runnerParentFirstArtifacts=" + runnerParentFirstArtifacts +
                 '}';
@@ -148,9 +149,7 @@ public class AppModel implements Serializable {
 
         private AppArtifact appArtifact;
 
-        private final List<AppDependency> deploymentDeps = new ArrayList<>();
-        private final List<AppDependency> fullDeploymentDeps = new ArrayList<>();
-        private final List<AppDependency> runtimeDeps = new ArrayList<>();
+        private final List<AppDependency> dependencies = new ArrayList<>();
         private final Set<AppArtifactKey> parentFirstArtifacts = new HashSet<>();
         private final Set<AppArtifactKey> runnerParentFirstArtifacts = new HashSet<>();
         private final Set<AppArtifactKey> excludedArtifacts = new HashSet<>();
@@ -176,34 +175,44 @@ public class AppModel implements Serializable {
             return this;
         }
 
+        public Builder addDependency(AppDependency dep) {
+            dependencies.add(dep);
+            return this;
+        }
+
+        public Builder addDependencies(Collection<AppDependency> deps) {
+            dependencies.addAll(deps);
+            return this;
+        }
+
+        @Deprecated
         public Builder addDeploymentDep(AppDependency dep) {
-            this.deploymentDeps.add(dep);
-            return this;
+            return addDependency(dep);
         }
 
+        @Deprecated
         public Builder addDeploymentDeps(List<AppDependency> deps) {
-            this.deploymentDeps.addAll(deps);
-            return this;
+            return addDependencies(deps);
         }
 
+        @Deprecated
         public Builder addFullDeploymentDep(AppDependency dep) {
-            this.fullDeploymentDeps.add(dep);
-            return this;
+            return addDependency(dep);
         }
 
+        @Deprecated
         public Builder addFullDeploymentDeps(List<AppDependency> deps) {
-            this.fullDeploymentDeps.addAll(deps);
-            return this;
+            return addDependencies(deps);
         }
 
+        @Deprecated
         public Builder addRuntimeDep(AppDependency dep) {
-            this.runtimeDeps.add(dep);
-            return this;
+            return addDependency(dep);
         }
 
+        @Deprecated
         public Builder addRuntimeDeps(List<AppDependency> deps) {
-            this.runtimeDeps.addAll(deps);
-            return this;
+            return addDependencies(deps);
         }
 
         public Builder addParentFirstArtifact(AppArtifactKey deps) {

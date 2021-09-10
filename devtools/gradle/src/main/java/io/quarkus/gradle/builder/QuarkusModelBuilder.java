@@ -8,19 +8,16 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
+import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
-import org.gradle.api.attributes.Category;
 import org.gradle.api.initialization.IncludedBuild;
 import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
@@ -31,10 +28,11 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.tooling.provider.model.ParameterizedToolingModelBuilder;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.PlatformImports;
 import io.quarkus.bootstrap.model.PlatformImportsImpl;
 import io.quarkus.bootstrap.model.gradle.ArtifactCoords;
-import io.quarkus.bootstrap.model.gradle.Dependency;
 import io.quarkus.bootstrap.model.gradle.ModelParameter;
 import io.quarkus.bootstrap.model.gradle.QuarkusModel;
 import io.quarkus.bootstrap.model.gradle.WorkspaceModule;
@@ -116,13 +114,13 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         final List<org.gradle.api.artifacts.Dependency> deploymentDeps = DependencyUtils.getEnforcedPlatforms(project);
         final PlatformImports platformImports = resolvePlatformImports(project, deploymentDeps);
 
-        final Map<ArtifactCoords, Dependency> appDependencies = new LinkedHashMap<>();
+        final Map<ArtifactCoords, DependencyImpl> appDependencies = new LinkedHashMap<>();
         Configuration classpathConfig = classpathConfig(project, mode);
         final ResolvedConfiguration resolvedConfiguration = classpathConfig.getResolvedConfiguration();
         collectDependencies(resolvedConfiguration, mode, project, appDependencies);
 
         Configuration deploymentConfig = deploymentClasspathConfig(project, mode, deploymentDeps);
-        final List<Dependency> extensionDependencies = collectExtensionDependencies(deploymentConfig);
+        collectExtensionDependencies(deploymentConfig, appDependencies);
 
         ArtifactCoords appArtifactCoords = new ArtifactCoordsImpl(project.getGroup().toString(), project.getName(),
                 project.getVersion().toString());
@@ -130,9 +128,6 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         return new QuarkusModelImpl(
                 new WorkspaceImpl(appArtifactCoords, getWorkspace(project.getRootProject(), mode, appArtifactCoords)),
                 new ArrayList<>(appDependencies.values()),
-                extensionDependencies,
-                deploymentDeps.stream().map(QuarkusModelBuilder::toEnforcedPlatformDependency)
-                        .filter(Objects::nonNull).collect(Collectors.toList()),
                 platformImports);
     }
 
@@ -211,62 +206,31 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
                 project.getBuildDir().getAbsoluteFile(), getSourceSourceSet(mainSourceSet), modelSourceSet);
     }
 
-    private List<Dependency> collectExtensionDependencies(Configuration deploymentConfiguration) {
-        final List<Dependency> extensionDependencies = new ArrayList<>();
+    private void collectExtensionDependencies(Configuration deploymentConfiguration,
+            Map<ArtifactCoords, DependencyImpl> appDependencies) {
         final ResolvedConfiguration rc = deploymentConfiguration.getResolvedConfiguration();
         for (ResolvedArtifact a : rc.getResolvedArtifacts()) {
             if (isDependency(a)) {
-                extensionDependencies.add(toDependency(a));
+                DependencyImpl dep = appDependencies.computeIfAbsent(
+                        toAppDependenciesKey(a.getModuleVersion().getId().getGroup(), a.getName(), a.getClassifier()),
+                        k -> toDependency(a, AppDependency.DEPLOYMENT_CP_FLAG));
+                dep.setFlag(AppDependency.DEPLOYMENT_CP_FLAG);
             }
         }
-
-        return extensionDependencies;
     }
 
     private void collectDependencies(ResolvedConfiguration configuration,
-            LaunchMode mode, Project project, Map<ArtifactCoords, Dependency> appDependencies) {
+            LaunchMode mode, Project project, Map<ArtifactCoords, DependencyImpl> appDependencies) {
 
-        final Set<ResolvedArtifact> artifacts = configuration.getResolvedArtifacts();
-        Set<File> artifactFiles = null;
-
+        final Set<ResolvedArtifact> resolvedArtifacts = configuration.getResolvedArtifacts();
         // if the number of artifacts is less than the number of files then probably
         // the project includes direct file dependencies
-        if (artifacts.size() < configuration.getFiles().size()) {
-            artifactFiles = new HashSet<>(artifacts.size());
-        }
-        for (ResolvedArtifact a : artifacts) {
-            if (!isDependency(a)) {
-                continue;
-            }
-            final DependencyImpl dep = initDependency(a);
-            if ((LaunchMode.DEVELOPMENT.equals(mode) || LaunchMode.TEST.equals(mode)) &&
-                    a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
-                if ("test-fixtures".equals(a.getClassifier()) || "test".equals(a.getClassifier())) {
-                    //TODO: test-fixtures are broken under the new ClassLoading model
-                    dep.addPath(a.getFile());
-                } else {
-                    IncludedBuild includedBuild = DependencyUtils.includedBuild(project.getRootProject(), a.getName());
-                    if (includedBuild != null) {
-                        addSubstitutedProject(dep, includedBuild.getProjectDir());
-                    } else {
-                        Project projectDep = project.getRootProject()
-                                .findProject(
-                                        ((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getProjectPath());
-                        if (projectDep != null) {
-                            addDevModePaths(dep, a, projectDep);
-                        } else {
-                            dep.addPath(a.getFile());
-                        }
-                    }
-                }
-            } else {
-                dep.addPath(a.getFile());
-            }
-            appDependencies.put(toAppDependenciesKey(dep.getGroupId(), dep.getName(), dep.getClassifier()), dep);
-            if (artifactFiles != null) {
-                artifactFiles.add(a.getFile());
-            }
-        }
+        final Set<File> artifactFiles = resolvedArtifacts.size() < configuration.getFiles().size()
+                ? new HashSet<>(resolvedArtifacts.size())
+                : null;
+
+        configuration.getFirstLevelModuleDependencies()
+                .forEach(d -> collectDependencies(d, mode, project, appDependencies, artifactFiles, new HashSet<>()));
 
         if (artifactFiles != null) {
             // detect FS paths that aren't provided by the resolved artifacts
@@ -290,10 +254,60 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
                 }
                 // hash could be a better way to represent the version
                 final String version = String.valueOf(f.lastModified());
-                final ArtifactCoords key = toAppDependenciesKey(group, name, "");
-                final DependencyImpl dep = new DependencyImpl(name, group, version, "compile", type, null);
+                final DependencyImpl dep = new DependencyImpl(name, group, version, "compile", type, null,
+                        AppDependency.DIRECT_FLAG, AppDependency.RUNTIME_CP_FLAG);
                 dep.addPath(f);
+                final ArtifactCoords key = toAppDependenciesKey(group, name, "");
                 appDependencies.put(key, dep);
+            }
+        }
+    }
+
+    private void collectDependencies(ResolvedDependency resolvedDep, LaunchMode mode, Project project,
+            Map<ArtifactCoords, DependencyImpl> appDependencies, Set<File> artifactFiles,
+            Set<AppArtifactKey> processedModules) {
+
+        for (ResolvedArtifact a : resolvedDep.getModuleArtifacts()) {
+            final ArtifactCoords artifactKey = toAppDependenciesKey(a.getModuleVersion().getId().getGroup(), a.getName(),
+                    a.getClassifier());
+            if (!isDependency(a) || appDependencies.containsKey(artifactKey)) {
+                continue;
+            }
+            final DependencyImpl dep = initDependency(a, processedModules.isEmpty() ? AppDependency.DIRECT_FLAG : 0,
+                    AppDependency.RUNTIME_CP_FLAG);
+            if ((LaunchMode.DEVELOPMENT.equals(mode) || LaunchMode.TEST.equals(mode)) &&
+                    a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
+                if ("test-fixtures".equals(a.getClassifier()) || "test".equals(a.getClassifier())) {
+                    //TODO: test-fixtures are broken under the new ClassLoading model
+                    dep.addPath(a.getFile());
+                } else {
+                    IncludedBuild includedBuild = DependencyUtils.includedBuild(project.getRootProject(), a.getName());
+                    if (includedBuild != null) {
+                        addSubstitutedProject(dep, includedBuild.getProjectDir());
+                    } else {
+                        Project projectDep = project.getRootProject()
+                                .findProject(
+                                        ((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getProjectPath());
+                        if (projectDep != null) {
+                            addDevModePaths(dep, a, projectDep);
+                        } else {
+                            dep.addPath(a.getFile());
+                        }
+                    }
+                }
+            } else {
+                dep.addPath(a.getFile());
+            }
+            appDependencies.put(artifactKey, dep);
+            if (artifactFiles != null) {
+                artifactFiles.add(a.getFile());
+            }
+        }
+
+        processedModules.add(new AppArtifactKey(resolvedDep.getModuleGroup(), resolvedDep.getModuleName()));
+        for (ResolvedDependency child : resolvedDep.getChildren()) {
+            if (!processedModules.contains(new AppArtifactKey(child.getModuleGroup(), child.getModuleName()))) {
+                collectDependencies(child, mode, project, appDependencies, artifactFiles, processedModules);
             }
         }
     }
@@ -384,31 +398,19 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
     /**
      * Creates an instance of Dependency and associates it with the ResolvedArtifact's path
      */
-    static Dependency toDependency(ResolvedArtifact a) {
-        final DependencyImpl dependency = initDependency(a);
+    static DependencyImpl toDependency(ResolvedArtifact a, int... flags) {
+        final DependencyImpl dependency = initDependency(a, flags);
         dependency.addPath(a.getFile());
         return dependency;
-    }
-
-    static Dependency toEnforcedPlatformDependency(org.gradle.api.artifacts.Dependency dependency) {
-        if (dependency instanceof ExternalModuleDependency) {
-            ExternalModuleDependency emd = (ExternalModuleDependency) dependency;
-            Category category = emd.getAttributes().getAttribute(Category.CATEGORY_ATTRIBUTE);
-            if (category != null && Category.ENFORCED_PLATFORM.equals(category.getName())) {
-                return new DependencyImpl(emd.getName(), emd.getGroup(), emd.getVersion(),
-                        "compile", "pom", null);
-            }
-        }
-        return null;
     }
 
     /**
      * Creates an instance of DependencyImpl but does not associates it with a path
      */
-    private static DependencyImpl initDependency(ResolvedArtifact a) {
+    private static DependencyImpl initDependency(ResolvedArtifact a, int... flags) {
         final String[] split = a.getModuleVersion().toString().split(":");
         return new DependencyImpl(split[1], split[0], split.length > 2 ? split[2] : null,
-                "compile", a.getType(), a.getClassifier());
+                "compile", a.getType(), a.getClassifier(), flags);
     }
 
     private static ArtifactCoords toAppDependenciesKey(String groupId, String artifactId, String classifier) {

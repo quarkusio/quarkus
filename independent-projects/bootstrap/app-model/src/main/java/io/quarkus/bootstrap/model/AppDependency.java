@@ -1,26 +1,32 @@
 package io.quarkus.bootstrap.model;
 
 import java.io.Serializable;
+import java.util.Objects;
 
-/**
- * Represents an application artifact dependency.
- *
- * @author Alexey Loubyansky
- */
 public class AppDependency implements Serializable {
+
+    public static final int OPTIONAL_FLAG = 0b000001;
+    public static final int DIRECT_FLAG = 0b000010;
+    public static final int RUNTIME_CP_FLAG = 0b000100;
+    public static final int DEPLOYMENT_CP_FLAG = 0b001000;
+    public static final int RUNTIME_EXTENSION_ARTIFACT_FLAG = 0b010000;
 
     private final AppArtifact artifact;
     private final String scope;
-    private final boolean optional;
+    private final int flags;
 
-    public AppDependency(AppArtifact artifact, String scope) {
-        this(artifact, scope, false);
+    public AppDependency(AppArtifact artifact, String scope, int... flags) {
+        this(artifact, scope, false, flags);
     }
 
-    public AppDependency(AppArtifact artifact, String scope, boolean optional) {
+    public AppDependency(AppArtifact artifact, String scope, boolean optional, int... flags) {
         this.artifact = artifact;
         this.scope = scope;
-        this.optional = optional;
+        int tmpFlags = optional ? OPTIONAL_FLAG : 0;
+        for (int f : flags) {
+            tmpFlags |= f;
+        }
+        this.flags = tmpFlags;
     }
 
     public AppArtifact getArtifact() {
@@ -32,17 +38,36 @@ public class AppDependency implements Serializable {
     }
 
     public boolean isOptional() {
-        return optional;
+        return isFlagSet(OPTIONAL_FLAG);
+    }
+
+    public boolean isDirect() {
+        return isFlagSet(DIRECT_FLAG);
+    }
+
+    public boolean isRuntimeExtensionArtifact() {
+        return isFlagSet(RUNTIME_EXTENSION_ARTIFACT_FLAG);
+    }
+
+    public boolean isRuntimeCp() {
+        return isFlagSet(RUNTIME_CP_FLAG);
+    }
+
+    public boolean isDeploymentCp() {
+        return isFlagSet(DEPLOYMENT_CP_FLAG);
+    }
+
+    public boolean isFlagSet(int flag) {
+        return (flags & flag) > 0;
+    }
+
+    public int getFlags() {
+        return flags;
     }
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((artifact == null) ? 0 : artifact.hashCode());
-        result = prime * result + (optional ? 1231 : 1237);
-        result = prime * result + ((scope == null) ? 0 : scope.hashCode());
-        return result;
+        return Objects.hash(artifact, flags, scope);
     }
 
     @Override
@@ -54,28 +79,28 @@ public class AppDependency implements Serializable {
         if (getClass() != obj.getClass())
             return false;
         AppDependency other = (AppDependency) obj;
-        if (artifact == null) {
-            if (other.artifact != null)
-                return false;
-        } else if (!artifact.equals(other.artifact))
-            return false;
-        if (optional != other.optional)
-            return false;
-        if (scope == null) {
-            if (other.scope != null)
-                return false;
-        } else if (!scope.equals(other.scope))
-            return false;
-        return true;
+        return Objects.equals(artifact, other.artifact) && flags == other.flags && Objects.equals(scope, other.scope);
     }
 
     @Override
     public String toString() {
         final StringBuilder buf = new StringBuilder();
-        artifact.append(buf).append('(').append(scope);
-        if (optional) {
-            buf.append(" optional");
+        artifact.append(buf).append('(');
+        if (isDirect()) {
+            buf.append("direct ");
         }
-        return buf.append(')').toString();
+        if (isOptional()) {
+            buf.append("optional ");
+        }
+        if (isRuntimeExtensionArtifact()) {
+            buf.append("extension ");
+        }
+        if (isRuntimeCp()) {
+            buf.append("runtime-cp ");
+        }
+        if (isDeploymentCp()) {
+            buf.append("deployment-cp ");
+        }
+        return buf.append(scope).append(')').toString();
     }
 }

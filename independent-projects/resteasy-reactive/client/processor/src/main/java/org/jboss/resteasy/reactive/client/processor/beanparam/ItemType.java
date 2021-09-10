@@ -5,5 +5,6 @@ public enum ItemType {
     QUERY_PARAM,
     COOKIE,
     HEADER_PARAM,
+    PATH_PARAM,
     // TODO: more
 }

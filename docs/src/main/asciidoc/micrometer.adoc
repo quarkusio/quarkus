@@ -475,7 +475,7 @@ To use the Micrometer StackDriver MeterRegistry, for example, you would use the
 [source,xml]
 ----
 <dependency>
-    <groupId>io.quarkiverse</groupId>
+    <groupId>io.quarkiverse.micrometer.registry</groupId>
     <artifactId>quarkus-micrometer-registry-stackdriver</artifactId>
 </dependency>
 ----

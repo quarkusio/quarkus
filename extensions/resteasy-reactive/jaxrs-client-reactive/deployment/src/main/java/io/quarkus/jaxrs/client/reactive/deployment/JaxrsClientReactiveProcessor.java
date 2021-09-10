@@ -63,6 +63,7 @@ import org.jboss.resteasy.reactive.client.processor.beanparam.ClientBeanParamInf
 import org.jboss.resteasy.reactive.client.processor.beanparam.CookieParamItem;
 import org.jboss.resteasy.reactive.client.processor.beanparam.HeaderParamItem;
 import org.jboss.resteasy.reactive.client.processor.beanparam.Item;
+import org.jboss.resteasy.reactive.client.processor.beanparam.PathParamItem;
 import org.jboss.resteasy.reactive.client.processor.beanparam.QueryParamItem;
 import org.jboss.resteasy.reactive.client.processor.scanning.ClientEndpointIndexer;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
@@ -480,7 +481,7 @@ public class JaxrsClientReactiveProcessor {
                 methodIndex++;
 
                 // finding corresponding jandex method, used by enricher (MicroProfile enricher stores it in a field
-                // to later fill in context with corresponding java.lang.reflect.Method
+                // to later fill in context with corresponding java.lang.reflect.Method)
                 String[] javaMethodParameters = new String[method.getParameters().length];
                 for (int i = 0; i < method.getParameters().length; i++) {
                     MethodParameter param = method.getParameters()[i];
@@ -1587,6 +1588,12 @@ public class JaxrsClientReactiveProcessor {
                             headerParam.getHeaderName(),
                             headerParam.extract(invoEnricher, invoEnricher.getMethodParam(1)));
                     break;
+                case PATH_PARAM:
+                    PathParamItem pathParam = (PathParamItem) item;
+                    addPathParam(creator, target,
+                            pathParam.getPathParamName(),
+                            pathParam.extract(creator, param));
+                    break;
                 default:
                     throw new IllegalStateException("Unimplemented"); // TODO form params, etc
             }
@@ -1637,6 +1644,14 @@ public class JaxrsClientReactiveProcessor {
                         MethodDescriptor.ofMethod(Invocation.Builder.class, "header", Invocation.Builder.class, String.class,
                                 Object.class),
                         invocationBuilder, invoBuilderEnricher.load(paramName), headerParamHandle));
+    }
+
+    private void addPathParam(BytecodeCreator methodCreator, AssignableResultHandle methodTarget,
+            String paramName, ResultHandle pathParamHandle) {
+        methodCreator.assign(methodTarget,
+                methodCreator.invokeInterfaceMethod(WEB_TARGET_RESOLVE_TEMPLATE_METHOD,
+                        methodTarget,
+                        methodCreator.load(paramName), pathParamHandle));
     }
 
     private void addCookieParam(BytecodeCreator invoBuilderEnricher, AssignableResultHandle invocationBuilder,

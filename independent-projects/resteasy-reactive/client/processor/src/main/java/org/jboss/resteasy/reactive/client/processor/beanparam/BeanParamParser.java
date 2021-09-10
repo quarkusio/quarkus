@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.client.processor.beanparam;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BEAN_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COOKIE_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEADER_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.QUERY_PARAM;
 
 import java.util.ArrayList;
@@ -81,15 +82,31 @@ public class BeanParamParser {
 
         List<AnnotationInstance> headerParams = annotations.get(HEADER_PARAM);
         if (headerParams != null) {
-            for (AnnotationInstance queryParamAnnotation : headerParams) {
-                AnnotationTarget target = queryParamAnnotation.target();
+            for (AnnotationInstance headerParamAnnotation : headerParams) {
+                AnnotationTarget target = headerParamAnnotation.target();
                 if (target.kind() == AnnotationTarget.Kind.FIELD) {
                     FieldInfo fieldInfo = target.asField();
-                    resultList.add(new HeaderParamItem(queryParamAnnotation.value().asString(),
+                    resultList.add(new HeaderParamItem(headerParamAnnotation.value().asString(),
                             new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString())));
                 } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
                     MethodInfo getterMethod = getGetterMethod(beanParamClass, target.asMethod());
-                    resultList.add(new HeaderParamItem(queryParamAnnotation.value().asString(),
+                    resultList.add(new HeaderParamItem(headerParamAnnotation.value().asString(),
+                            new GetterExtractor(getterMethod)));
+                }
+            }
+        }
+
+        List<AnnotationInstance> pathParams = annotations.get(PATH_PARAM);
+        if (pathParams != null) {
+            for (AnnotationInstance pathParamAnnotation : pathParams) {
+                AnnotationTarget target = pathParamAnnotation.target();
+                if (target.kind() == AnnotationTarget.Kind.FIELD) {
+                    FieldInfo fieldInfo = target.asField();
+                    resultList.add(new PathParamItem(pathParamAnnotation.value().asString(),
+                            new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString())));
+                } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
+                    MethodInfo getterMethod = getGetterMethod(beanParamClass, target.asMethod());
+                    resultList.add(new PathParamItem(pathParamAnnotation.value().asString(),
                             new GetterExtractor(getterMethod)));
                 }
             }

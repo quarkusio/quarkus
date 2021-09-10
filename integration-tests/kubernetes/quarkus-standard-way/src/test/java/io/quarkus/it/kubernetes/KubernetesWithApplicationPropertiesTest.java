@@ -88,6 +88,7 @@ public class KubernetesWithApplicationPropertiesTest {
             assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getMetadata()).satisfies(m -> {
                     assertThat(m.getNamespace()).isEqualTo("applications");
+                    assertThat(m.getLabels()).contains(entry("foo", "bar"));
                 });
 
                 assertThat(s.getSpec()).satisfies(spec -> {

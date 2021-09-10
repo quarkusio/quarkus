@@ -45,7 +45,7 @@
         <!-- remove if not using vertx web -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-web</artifactId>
+            <artifactId>quarkus-reactive-routes</artifactId>
         </dependency>
         <!-- remove if not using funqy -->
         <dependency>

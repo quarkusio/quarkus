@@ -10,8 +10,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-vertx-web-parent</artifactId>
-    <name>Quarkus - Vert.x Web</name>
+    <artifactId>quarkus-reactive-routes-parent</artifactId>
+    <name>Quarkus - Reactive Routes</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

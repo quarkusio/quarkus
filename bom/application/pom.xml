@@ -1552,12 +1552,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-vertx-web</artifactId>
+                <artifactId>quarkus-reactive-routes</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-vertx-web-deployment</artifactId>
+                <artifactId>quarkus-reactive-routes-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

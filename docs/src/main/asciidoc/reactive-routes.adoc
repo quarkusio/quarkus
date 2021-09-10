@@ -30,7 +30,7 @@ See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture do
 == Declaring reactive routes
 
 The first way to use reactive routes is to use the `@Route` annotation.
-To have access to this annotation, you need to add the `quarkus-vertx-web` extension:
+To have access to this annotation, you need to add the `quarkus-reactive-routes` extension:
 
 In your `pom.xml` file, add:
 
@@ -38,7 +38,7 @@ In your `pom.xml` file, add:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-vertx-web</artifactId>
+    <artifactId>quarkus-reactive-routes</artifactId>
 </dependency>
 ----
 
@@ -606,7 +606,7 @@ Check the https://vertx.io/docs/vertx-web/java/#_basic_vert_x_web_concepts[Vert.
 [NOTE]
 ====
 `Router` access is provided by the `quarkus-vertx-http` extension.
-If you use `quarkus-resteasy` or `quarkus-vertx-web`, the extension will be added automatically.
+If you use `quarkus-resteasy` or `quarkus-reactive-routes`, the extension will be added automatically.
 ====
 
 == Intercepting HTTP requests

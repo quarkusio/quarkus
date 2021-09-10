@@ -5,7 +5,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.hibernate.orm.runtime.devconsole.HibernateOrmDevConsoleInfoSupplier;
 
-public class DevConsoleProcessor {
+public class HibernateDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public DevConsoleRuntimeTemplateInfoBuildItem collectDeploymentUnits() {

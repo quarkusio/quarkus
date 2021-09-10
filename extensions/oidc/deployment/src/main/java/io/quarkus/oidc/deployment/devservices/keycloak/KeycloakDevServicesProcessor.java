@@ -158,6 +158,7 @@ public class KeycloakDevServicesProcessor {
         try {
             startResult = startContainer(devServicesSharedNetworkBuildItem.isPresent());
             if (startResult == null) {
+                compressor.close();
                 return null;
             }
 

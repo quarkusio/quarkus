@@ -116,70 +116,60 @@ public class DevServicesDatasourceProcessor {
         Map<String, DevServicesDatasourceProvider> devDBProviderMap = devDBProviders.stream()
                 .collect(Collectors.toMap(DevServicesDatasourceProviderBuildItem::getDatabase,
                         DevServicesDatasourceProviderBuildItem::getDevServicesProvider));
-        StartupLogCompressor compressor = new StartupLogCompressor(
-                (launchMode.isTest() ? "(test) " : "") + "Database Starting:",
-                consoleInstalledBuildItem,
+        defaultResult = startDevDb(null, curateOutcomeBuildItem, installedDrivers,
+                !dataSourceBuildTimeConfig.namedDataSources.isEmpty(),
+                devDBProviderMap,
+                dataSourceBuildTimeConfig.defaultDataSource,
+                configHandlersByDbType, propertiesMap, closeableList, launchMode.getLaunchMode(), consoleInstalledBuildItem,
                 loggingSetupBuildItem);
-        try {
-            defaultResult = startDevDb(null, curateOutcomeBuildItem, installedDrivers,
-                    !dataSourceBuildTimeConfig.namedDataSources.isEmpty(),
-                    devDBProviderMap,
-                    dataSourceBuildTimeConfig.defaultDataSource,
-                    configHandlersByDbType, propertiesMap, closeableList, launchMode.getLaunchMode());
-            List<DevServicesConfigResultBuildItem> dbConfig = new ArrayList<>();
-            if (defaultResult != null) {
-                for (Map.Entry<String, String> i : defaultResult.getConfigProperties().entrySet()) {
+        List<DevServicesConfigResultBuildItem> dbConfig = new ArrayList<>();
+        if (defaultResult != null) {
+            for (Map.Entry<String, String> i : defaultResult.getConfigProperties().entrySet()) {
+                dbConfig.add(new DevServicesConfigResultBuildItem(i.getKey(), i.getValue()));
+            }
+        }
+        for (Map.Entry<String, DataSourceBuildTimeConfig> entry : dataSourceBuildTimeConfig.namedDataSources.entrySet()) {
+            DevServicesDatasourceResultBuildItem.DbResult result = startDevDb(entry.getKey(), curateOutcomeBuildItem,
+                    installedDrivers, true,
+                    devDBProviderMap, entry.getValue(), configHandlersByDbType, propertiesMap, closeableList,
+                    launchMode.getLaunchMode(), consoleInstalledBuildItem, loggingSetupBuildItem);
+            if (result != null) {
+                namedResults.put(entry.getKey(), result);
+                for (Map.Entry<String, String> i : result.getConfigProperties().entrySet()) {
                     dbConfig.add(new DevServicesConfigResultBuildItem(i.getKey(), i.getValue()));
                 }
             }
-            for (Map.Entry<String, DataSourceBuildTimeConfig> entry : dataSourceBuildTimeConfig.namedDataSources.entrySet()) {
-                DevServicesDatasourceResultBuildItem.DbResult result = startDevDb(entry.getKey(), curateOutcomeBuildItem,
-                        installedDrivers, true,
-                        devDBProviderMap, entry.getValue(), configHandlersByDbType, propertiesMap, closeableList,
-                        launchMode.getLaunchMode());
-                if (result != null) {
-                    namedResults.put(entry.getKey(), result);
-                    for (Map.Entry<String, String> i : result.getConfigProperties().entrySet()) {
-                        dbConfig.add(new DevServicesConfigResultBuildItem(i.getKey(), i.getValue()));
-                    }
-                }
-            }
-            for (DevServicesConfigResultBuildItem i : dbConfig) {
-                devServicesResultBuildItemBuildProducer
-                        .produce(i);
-            }
+        }
+        for (DevServicesConfigResultBuildItem i : dbConfig) {
+            devServicesResultBuildItemBuildProducer
+                    .produce(i);
+        }
 
-            if (first) {
-                first = false;
-                Runnable closeTask = new Runnable() {
-                    @Override
-                    public void run() {
-                        if (databases != null) {
-                            for (Closeable i : databases) {
-                                try {
-                                    i.close();
-                                } catch (Throwable t) {
-                                    log.error("Failed to stop database", t);
-                                }
+        if (first) {
+            first = false;
+            Runnable closeTask = new Runnable() {
+                @Override
+                public void run() {
+                    if (databases != null) {
+                        for (Closeable i : databases) {
+                            try {
+                                i.close();
+                            } catch (Throwable t) {
+                                log.error("Failed to stop database", t);
                             }
                         }
-                        first = true;
-                        databases = null;
-                        cachedProperties = null;
                     }
-                };
-                QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-                ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
-            }
-            databases = closeableList;
-            cachedProperties = propertiesMap;
-            compressor.close();
-            log.info("Dev Services for datasources started.");
-            return new DevServicesDatasourceResultBuildItem(defaultResult, namedResults);
-        } catch (Throwable t) {
-            compressor.closeAndDumpCaptured();
-            throw new RuntimeException(t);
+                    first = true;
+                    databases = null;
+                    cachedProperties = null;
+                }
+            };
+            QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
+            ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
         }
+        databases = closeableList;
+        cachedProperties = propertiesMap;
+        return new DevServicesDatasourceResultBuildItem(defaultResult, namedResults);
     }
 
     private DevServicesDatasourceResultBuildItem.DbResult startDevDb(String dbName,
@@ -189,7 +179,8 @@ public class DevServicesDatasourceProcessor {
             Map<String, DevServicesDatasourceProvider> devDBProviders, DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
             Map<String, List<DevServicesDatasourceConfigurationHandlerBuildItem>> configurationHandlerBuildItems,
             Map<String, String> propertiesMap, List<Closeable> closeableList,
-            LaunchMode launchMode) {
+            LaunchMode launchMode, Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+            LoggingSetupBuildItem loggingSetupBuildItem) {
         boolean explicitlyDisabled = !(dataSourceBuildTimeConfig.devservices.enabled
                 .orElse(dataSourceBuildTimeConfig.devservices.enabledDeprecated.orElse(true)));
         if (explicitlyDisabled) {
@@ -235,9 +226,10 @@ public class DevServicesDatasourceProcessor {
             }
         }
 
+        String prettyName = dbName == null ? "the default datasource" : " datasource '" + dbName + "'";
         if (devDbProvider.isDockerRequired() && !isDockerWorking.getAsBoolean()) {
             String message = "Please configure the datasource URL for "
-                    + (dbName == null ? "the default datasource" : " datasource '" + dbName + "'")
+                    + prettyName
                     + " or ensure the Docker daemon is up and running.";
             if (launchMode == LaunchMode.TEST) {
                 throw new IllegalStateException(message);
@@ -251,32 +243,45 @@ public class DevServicesDatasourceProcessor {
 
         //ok, so we know we need to start one
 
-        String prefix = "quarkus.datasource.";
-        if (dbName != null) {
-            prefix = prefix + dbName + ".";
-        }
+        StartupLogCompressor compressor = new StartupLogCompressor(
+                (launchMode == LaunchMode.TEST ? "(test) " : "") + "Database for " + prettyName
+                        + " (" + defaultDbKind.get() + ") starting:",
+                consoleInstalledBuildItem,
+                loggingSetupBuildItem);
+        try {
+            String prefix = "quarkus.datasource.";
+            if (dbName != null) {
+                prefix = prefix + dbName + ".";
+            }
 
-        DevServicesDatasourceProvider.RunningDevServicesDatasource datasource = devDbProvider
-                .startDatabase(ConfigProvider.getConfig().getOptionalValue(prefix + "username", String.class),
-                        ConfigProvider.getConfig().getOptionalValue(prefix + "password", String.class),
-                        Optional.ofNullable(dbName), dataSourceBuildTimeConfig.devservices.imageName,
-                        dataSourceBuildTimeConfig.devservices.properties,
-                        dataSourceBuildTimeConfig.devservices.port, launchMode);
-        closeableList.add(datasource.getCloseTask());
+            DevServicesDatasourceProvider.RunningDevServicesDatasource datasource = devDbProvider
+                    .startDatabase(ConfigProvider.getConfig().getOptionalValue(prefix + "username", String.class),
+                            ConfigProvider.getConfig().getOptionalValue(prefix + "password", String.class),
+                            Optional.ofNullable(dbName), dataSourceBuildTimeConfig.devservices.imageName,
+                            dataSourceBuildTimeConfig.devservices.properties,
+                            dataSourceBuildTimeConfig.devservices.port, launchMode);
+            closeableList.add(datasource.getCloseTask());
 
-        Map<String, String> devDebProperties = new HashMap<>();
-        propertiesMap.put(prefix + "db-kind", dataSourceBuildTimeConfig.dbKind.orElse(null));
-        for (DevServicesDatasourceConfigurationHandlerBuildItem devDbConfigurationHandlerBuildItem : configHandlers) {
-            devDebProperties.putAll(devDbConfigurationHandlerBuildItem.getConfigProviderFunction()
-                    .apply(dbName, datasource));
+            Map<String, String> devDebProperties = new HashMap<>();
+            propertiesMap.put(prefix + "db-kind", dataSourceBuildTimeConfig.dbKind.orElse(null));
+            for (DevServicesDatasourceConfigurationHandlerBuildItem devDbConfigurationHandlerBuildItem : configHandlers) {
+                devDebProperties.putAll(devDbConfigurationHandlerBuildItem.getConfigProviderFunction()
+                        .apply(dbName, datasource));
+            }
+            devDebProperties.put(prefix + "db-kind", defaultDbKind.get());
+            if (datasource.getUsername() != null) {
+                devDebProperties.put(prefix + "username", datasource.getUsername());
+            }
+            if (datasource.getPassword() != null) {
+                devDebProperties.put(prefix + "password", datasource.getPassword());
+            }
+            compressor.close();
+            log.info("Dev Services for " + prettyName
+                    + " (" + defaultDbKind.get() + ") started.");
+            return new DevServicesDatasourceResultBuildItem.DbResult(defaultDbKind.get(), devDebProperties);
+        } catch (Throwable t) {
+            compressor.closeAndDumpCaptured();
+            throw new RuntimeException(t);
         }
-        devDebProperties.put(prefix + "db-kind", defaultDbKind.get());
-        if (datasource.getUsername() != null) {
-            devDebProperties.put(prefix + "username", datasource.getUsername());
-        }
-        if (datasource.getPassword() != null) {
-            devDebProperties.put(prefix + "password", datasource.getPassword());
-        }
-        return new DevServicesDatasourceResultBuildItem.DbResult(defaultDbKind.get(), devDebProperties);
     }
 }

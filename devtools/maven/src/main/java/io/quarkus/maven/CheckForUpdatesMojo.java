@@ -135,24 +135,30 @@ public class CheckForUpdatesMojo extends AbstractMojo {
             }
         }
 
-        final List<Extension> notAvailableExtensions = new ArrayList<>(0);
+        final List<ArtifactKey> notAvailableExtensions = new ArrayList<>(0);
         final List<Extension> recommendedExtensions = new ArrayList<>(previousExtensions.size());
         for (ArtifactKey key : previousExtensions.keySet()) {
             final Extension e = recommendedExtensionMap.get(key);
             if (e == null) {
-                notAvailableExtensions.add(e);
+                notAvailableExtensions.add(key);
             } else {
                 recommendedExtensions.add(e);
             }
         }
 
         if (!notAvailableExtensions.isEmpty()) {
-            final StringBuilder buf = new StringBuilder();
-            buf.append(
-                    "Could not find any information about the following extensions in the currently configured registries: ");
-            buf.append(notAvailableExtensions.get(0).getArtifact().getKey().toGacString());
-            for (int i = 1; i < notAvailableExtensions.size(); ++i) {
-                buf.append(", ").append(notAvailableExtensions.get(i).getArtifact().getKey().toGacString());
+            final StringWriter buf = new StringWriter();
+            try (BufferedWriter writer = new BufferedWriter(buf)) {
+                writer.append(
+                        "Could not find any information about the following extensions in the currently configured registries: ");
+                writer.newLine();
+                writer.append(" - ").append(notAvailableExtensions.get(0).toGacString());
+                for (int i = 1; i < notAvailableExtensions.size(); ++i) {
+                    writer.newLine();
+                    writer.append(" - ").append(notAvailableExtensions.get(i).toGacString());
+                }
+            } catch (IOException e) {
+                getLog().warn("Failed to compose a warning message", e);
             }
             getLog().warn(buf.toString());
             return;
@@ -166,19 +172,41 @@ public class CheckForUpdatesMojo extends AbstractMojo {
             return;
         }
 
+        ArtifactCoords rhUniverseBom = null;
+        ArtifactCoords rhProdBom = null;
         final List<ArtifactCoords> previousBomImports = new ArrayList<>();
         for (Dependency d : project.getDependencyManagement().getDependencies()) {
-            if (PlatformArtifacts.isCatalogArtifactId(d.getArtifactId())) {
-                final ArtifactCoords platformBomCoords = new ArtifactCoords(d.getGroupId(),
-                        PlatformArtifacts.ensureBomArtifactId(d.getArtifactId()), "pom", d.getVersion());
-                if (d.getArtifactId().startsWith("quarkus-universe-bom-")) {
-                    // in pre-2.x quarkus versions, the quarkus-bom descriptor would show up as a parent of the quarkus-universe-bom one
-                    // even if it was not actually imported, so here we simply remove it, if it was found
-                    previousBomImports.remove(new ArtifactCoords(platformBomCoords.getGroupId(), "quarkus-bom", "pom",
-                            platformBomCoords.getVersion()));
-                }
-                previousBomImports.add(platformBomCoords);
+            if (!PlatformArtifacts.isCatalogArtifactId(d.getArtifactId())) {
+                continue;
             }
+            final ArtifactCoords platformBomCoords = new ArtifactCoords(d.getGroupId(),
+                    PlatformArtifacts.ensureBomArtifactId(d.getArtifactId()), "pom", d.getVersion());
+            if (d.getArtifactId().startsWith("quarkus-universe-bom-")) {
+                // in pre-2.x quarkus versions, the quarkus-bom descriptor would show up as a
+                // parent of the quarkus-universe-bom one
+                // even if it was not actually imported, so here we simply remove it, if it was
+                // found
+                previousBomImports.remove(new ArtifactCoords(platformBomCoords.getGroupId(), "quarkus-bom", "pom",
+                        platformBomCoords.getVersion()));
+
+                if (platformBomCoords.getVersion().contains("-redhat-")) {
+                    rhUniverseBom = platformBomCoords;
+                } else if (rhUniverseBom != null && platformBomCoords.getVersion().regionMatches(0, rhUniverseBom.getVersion(),
+                        0, rhUniverseBom.getVersion().length() - 1 - rhUniverseBom.getVersion().indexOf("-redhat-"))) {
+                    continue;
+                }
+            } else if (d.getArtifactId().startsWith("quarkus-product-bom-")) {
+                // rhbq 1.x filtering
+                rhProdBom = platformBomCoords;
+                if (previousBomImports.contains(new ArtifactCoords(platformBomCoords.getGroupId(),
+                        "quarkus-universe-bom", "pom", platformBomCoords.getVersion()))) {
+                    continue;
+                }
+            } else if (rhProdBom != null && platformBomCoords.getVersion().equals(rhProdBom.getVersion()) // rhbq 1.x filtering
+                    && platformBomCoords.getArtifactId().equals("quarkus-bom")) {
+                continue;
+            }
+            previousBomImports.add(platformBomCoords);
         }
 
         final List<ArtifactCoords> recommendedBomImports = new ArrayList<>();

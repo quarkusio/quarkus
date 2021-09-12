@@ -259,7 +259,6 @@ re-build the jacoco report after the integration tests are complete, and thus pr
                     <configuration>
                         <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>
                         <append>true</append>
-                        <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
                     </configuration>
                 </execution>
                 <execution>

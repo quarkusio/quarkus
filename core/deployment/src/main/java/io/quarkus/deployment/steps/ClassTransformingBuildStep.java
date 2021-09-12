@@ -2,7 +2,10 @@ package io.quarkus.deployment.steps;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,6 +37,7 @@ import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
@@ -66,7 +70,8 @@ public class ClassTransformingBuildStep {
     TransformedClassesBuildItem handleClassTransformation(List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems,
             ApplicationArchivesBuildItem appArchives, LiveReloadBuildItem liveReloadBuildItem,
             LaunchModeBuildItem launchModeBuildItem, ClassLoadingConfig classLoadingConfig,
-            CurateOutcomeBuildItem curateOutcomeBuildItem, List<RemovedResourceBuildItem> removedResourceBuildItems)
+            CurateOutcomeBuildItem curateOutcomeBuildItem, List<RemovedResourceBuildItem> removedResourceBuildItems,
+            ArchiveRootBuildItem archiveRoot, LaunchModeBuildItem launchMode)
             throws ExecutionException, InterruptedException {
         if (bytecodeTransformerBuildItems.isEmpty() && classLoadingConfig.removedResources.isEmpty()
                 && removedResourceBuildItems.isEmpty()) {
@@ -226,7 +231,37 @@ public class ClassTransformingBuildStep {
                 }
             }
         }
+
+        if (launchMode.getLaunchMode() == LaunchMode.NORMAL) {
+            // the idea here is to write the transformed classes into the build tool's output directory to make core coverage work
+
+            for (Path path : archiveRoot.getRootDirs()) {
+                copyTransformedClasses(path, transformedClassesByJar.get(path));
+            }
+        }
+
         return new TransformedClassesBuildItem(transformedClassesByJar);
+    }
+
+    private void copyTransformedClasses(Path originalClassesPath,
+            Set<TransformedClassesBuildItem.TransformedClass> transformedClasses) {
+        if ((transformedClasses == null) || transformedClasses.isEmpty()) {
+            return;
+        }
+
+        for (TransformedClassesBuildItem.TransformedClass transformedClass : transformedClasses) {
+            String classFileName = transformedClass.getFileName();
+            String[] fileNameParts = classFileName.split("/");
+            Path classFilePath = originalClassesPath;
+            for (String fileNamePart : fileNameParts) {
+                classFilePath = classFilePath.resolve(fileNamePart);
+            }
+            try {
+                Files.write(classFilePath, transformedClass.getData(), StandardOpenOption.WRITE);
+            } catch (IOException e) {
+                log.debug("Unable to overwrite file '" + classFilePath.toAbsolutePath() + "' with transformed class data");
+            }
+        }
     }
 
     private void handleRemovedResources(ClassLoadingConfig classLoadingConfig, CurateOutcomeBuildItem curateOutcomeBuildItem,

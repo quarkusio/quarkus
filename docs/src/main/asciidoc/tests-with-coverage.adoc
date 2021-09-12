@@ -237,7 +237,13 @@ you can simply use the Jacoco plugin in the standard manner with no additional c
 
 === Coverage for Integration Tests
 
-To get code coverage data from integration tests, Jacoco needs to be configured, and your `@QuarkusIntegrationTest` classes must be run using a jar package,
+To get code coverage data from integration tests, the following need to be requirements need to be met:
+
+* The built artifact is a jar (and not a container or native binary).
+* Jacoco needs to be configured in your build tool.
+* The application must have been built with `quarkus.package.write-transformed-bytecode-to-build-output` set to `true`
+
+WARNING: Setting `quarkus.package.write-transformed-bytecode-to-build-output=true` should be done with a caution and only if subsequent builds are done in a clean environment - i.e. the build tool's output directory has been completely cleaned.
 
 In the `pom.xml`, you can add the following plugin configuration for Jacoco. This will append integration test data into the same destination file as unit tests,
 re-build the jacoco report after the integration tests are complete, and thus produce a comprehensive code-coverage report.
@@ -259,7 +265,6 @@ re-build the jacoco report after the integration tests are complete, and thus pr
                     <configuration>
                         <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>
                         <append>true</append>
-                        <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
                     </configuration>
                 </execution>
                 <execution>

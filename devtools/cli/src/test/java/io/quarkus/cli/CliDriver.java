@@ -278,8 +278,8 @@ public class CliDriver {
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
-        Assertions.assertTrue(result.stdout.contains("quarkus-vertx-web"),
-                "quarkus-vertx-web should be returned in search result. Found:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("quarkus-reactive-routes"),
+                "quarkus-reactive-routes should be returned in search result. Found:\n" + result);
         Assertions.assertFalse(result.stdout.contains("quarkus-vertx-http"),
                 "quarkus-vertx-http should not be returned in search result (already installed). Found:\n" + result);
 
@@ -290,8 +290,8 @@ public class CliDriver {
         Result result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--concise");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
-        Assertions.assertTrue(result.stdout.contains("quarkus-vertx-web"),
-                "quarkus-vertx-web should be returned in result. Found:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("quarkus-reactive-routes"),
+                "quarkus-reactive-routes should be returned in result. Found:\n" + result);
         Assertions.assertTrue(result.stdout.contains("Reactive Routes"),
                 "'Reactive Routes' descriptive name should be returned in results. Found:\n" + result);
 

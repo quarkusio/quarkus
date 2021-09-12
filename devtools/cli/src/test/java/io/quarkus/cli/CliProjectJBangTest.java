@@ -90,7 +90,7 @@ public class CliProjectJBangTest {
         Path javaMain = valdiateJBangSourcePackage(project, "");
 
         String source = CliDriver.readFileAsString(project, javaMain);
-        Assertions.assertTrue(source.contains("quarkus-vertx-web"),
+        Assertions.assertTrue(source.contains("quarkus-reactive-routes"),
                 "Generated source should reference vertx-web. Found:\n" + source);
 
         result = CliDriver.invokeValidateDryRunBuild(project);

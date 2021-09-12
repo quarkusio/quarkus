@@ -252,7 +252,7 @@ There is nothing special about the POM other than the inclusion of the `quarkus-
 (if you are deploying an AWS Gateway HTTP API) or the `quarkus-amazon-lambda-rest` extension (if you are deploy an AWS Gateway REST API).
 These extensions automatically generate everything you might need for your lambda deployment.
 
-Also, at least in the generated Maven archetype `pom.xml`, the `quarkus-resteasy`, `quarkus-vertx-web`, and `quarkus-undertow`
+Also, at least in the generated Maven archetype `pom.xml`, the `quarkus-resteasy`, `quarkus-reactive-routes`, and `quarkus-undertow`
 dependencies are all optional.  Pick which HTTP framework(s) you want to use (JAX-RS, Vertx Web, and/or Servlet) and
 remove the other dependencies to shrink your deployment.
 

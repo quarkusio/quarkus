@@ -76,7 +76,7 @@ public class CliProjectJBangTest {
                 "--package-name=custom.pkg",
                 "--output-directory=" + nested,
                 "--app-config=" + String.join(",", configs),
-                "-x vertx-web",
+                "-x reactive-routes",
                 "silly:my-project:0.1.0");
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
@@ -91,7 +91,7 @@ public class CliProjectJBangTest {
 
         String source = CliDriver.readFileAsString(project, javaMain);
         Assertions.assertTrue(source.contains("quarkus-reactive-routes"),
-                "Generated source should reference vertx-web. Found:\n" + source);
+                "Generated source should reference quarkus-reactive-routes. Found:\n" + source);
 
         result = CliDriver.invokeValidateDryRunBuild(project);
 

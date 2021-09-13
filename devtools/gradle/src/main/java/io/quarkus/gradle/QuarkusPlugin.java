@@ -157,14 +157,6 @@ public class QuarkusPlugin implements Plugin<Project> {
                     ConfigurationContainer configurations = project.getConfigurations();
                     JavaCompile compileJavaTask = (JavaCompile) tasks.getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME);
 
-                    // By default, gradle looks for annotation processors in the annotationProcessor configuration.
-                    // This configure the compile task to look for annotation processors in the compileClasspath.
-                    Configuration annotationProcessorConfig = configurations.create(ANNOTATION_PROCESSOR_CONFIGURATION_NAME)
-                            .extendsFrom(
-                                    configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME),
-                                    configurations.getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME));
-                    compileJavaTask.getOptions().setAnnotationProcessorPath(annotationProcessorConfig);
-
                     compileJavaTask.dependsOn(quarkusGenerateCode);
 
                     JavaCompile compileTestJavaTask = (JavaCompile) tasks.getByName(JavaPlugin.COMPILE_TEST_JAVA_TASK_NAME);
@@ -229,6 +221,15 @@ public class QuarkusPlugin implements Plugin<Project> {
                                 new File(generatedTestSourceSet.getJava().getClassesDirectory().get().getAsFile(), provider));
                     }
 
+                    // enable the Panache annotation processor on the classpath, if it's found among the dependencies
+                    configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
+                            .getResolutionStrategy().eachDependency(d -> {
+                                if ("quarkus-panache-common".equals(d.getTarget().getName())
+                                        && "io.quarkus".equals(d.getTarget().getGroup())) {
+                                    project.getDependencies().add("annotationProcessor", d.getRequested().getGroup() + ":"
+                                            + d.getRequested().getName() + ":" + d.getRequested().getVersion());
+                                }
+                            });
                 });
 
         project.getPlugins().withId("org.jetbrains.kotlin.jvm", plugin -> {

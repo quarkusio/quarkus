@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.regex.PatternSyntaxException;
 import javax.ws.rs.core.MultivaluedMap;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -45,6 +46,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterCo
 import org.jboss.resteasy.reactive.server.core.parameters.converters.PathSegmentParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SetConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SortedSetConverter;
+import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
@@ -173,6 +175,18 @@ public class ServerEndpointIndexer
             methodAnnotationNames.add(instance.name().toString());
         }
         method.setMethodAnnotationNames(methodAnnotationNames);
+
+        // validate the path
+        validateMethodPath(method, currentClassInfo, info);
+    }
+
+    private void validateMethodPath(ServerResourceMethod method, ClassInfo currentClassInfo, MethodInfo info) {
+        try {
+            new URITemplate(method.getPath(), false);
+        } catch (PatternSyntaxException e) {
+            throw new IllegalArgumentException("Path '" + method.getPath() + "' of method '" + currentClassInfo.name() + "#"
+                    + info.name() + "' is not a valid expression", e);
+        }
     }
 
     protected InjectableBean scanInjectableBean(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,

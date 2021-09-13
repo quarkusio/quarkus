@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static org.hamcrest.Matchers.equalTo;
 
 import java.time.Instant;
@@ -10,8 +11,12 @@ import java.util.Set;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
+
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.oidc.server.OidcWireMock;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
 import io.restassured.RestAssured;
 import io.smallrye.jwt.build.Jwt;
@@ -19,6 +24,9 @@ import io.smallrye.jwt.build.Jwt;
 @QuarkusTest
 @QuarkusTestResource(OidcWiremockTestResource.class)
 public class BearerTokenAuthorizationTest {
+
+    @OidcWireMock
+    WireMockServer wireMockServer;
 
     @Test
     public void testSecureAccessSuccessPreferredUsername() {
@@ -92,6 +100,19 @@ public class BearerTokenAuthorizationTest {
         String token = getAccessTokenWrongAudience("alice", new HashSet<>(Arrays.asList("user")));
 
         RestAssured.given().auth().oauth2(token).when()
+                .get("/api/users/me/bearer")
+                .then()
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("Bearer"));
+    }
+
+    @Test
+    public void testInvalidBearerToken() {
+        wireMockServer.stubFor(WireMock.post("/auth/realms/quarkus/protocol/openid-connect/token/introspect")
+                .withRequestBody(matching(".*token=invalid_token.*"))
+                .willReturn(WireMock.aResponse().withStatus(400)));
+
+        RestAssured.given().auth().oauth2("invalid_token").when()
                 .get("/api/users/me/bearer")
                 .then()
                 .statusCode(401)

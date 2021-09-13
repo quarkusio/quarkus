@@ -553,8 +553,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
             return method;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to process method " + currentMethodInfo.declaringClass().name() + "#"
-                    + currentMethodInfo, e);
+            throw new RuntimeException("Failed to process method '" + currentMethodInfo.declaringClass().name() + "#"
+                    + currentMethodInfo.name() + "'", e);
         }
     }
 

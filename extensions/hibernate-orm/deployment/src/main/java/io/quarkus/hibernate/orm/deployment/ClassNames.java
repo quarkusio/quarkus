@@ -31,6 +31,10 @@ public class ClassNames {
             "io.quarkus.hibernate.orm.PersistenceUnit$List");
     public static final DotName JPA_PERSISTENCE_UNIT = createConstant("javax.persistence.PersistenceUnit");
     public static final DotName JPA_PERSISTENCE_CONTEXT = createConstant("javax.persistence.PersistenceContext");
+    public static final DotName PERSISTENCE_UNIT_EXTENSION = createConstant(
+            "io.quarkus.hibernate.orm.PersistenceUnitExtension");
+    public static final DotName PERSISTENCE_UNIT_EXTENSION_REPEATABLE_CONTAINER = createConstant(
+            "io.quarkus.hibernate.orm.PersistenceUnitExtension$List");
 
     public static final DotName JPA_ENTITY = createConstant("javax.persistence.Entity");
     public static final DotName MAPPED_SUPERCLASS = createConstant("javax.persistence.MappedSuperclass");

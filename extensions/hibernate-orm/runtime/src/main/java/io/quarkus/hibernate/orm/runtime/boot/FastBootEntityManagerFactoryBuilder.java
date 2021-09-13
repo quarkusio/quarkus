@@ -8,6 +8,7 @@ import javax.persistence.EntityNotFoundException;
 import javax.persistence.PersistenceException;
 import javax.sql.DataSource;
 
+import org.hibernate.Interceptor;
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.SessionFactory;
 import org.hibernate.SessionFactoryObserver;
@@ -28,6 +29,8 @@ import org.hibernate.tool.schema.spi.CommandAcceptanceException;
 import org.hibernate.tool.schema.spi.DelayedDropRegistryNotAvailableImpl;
 import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
 
+import io.quarkus.arc.InjectableInstance;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.tenant.HibernateCurrentTenantIdentifierResolver;
@@ -164,6 +167,11 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
             options.applyCurrentTenantIdentifierResolver(new HibernateCurrentTenantIdentifierResolver(persistenceUnitName));
         }
 
+        InjectableInstance<Interceptor> interceptorInstance = PersistenceUnitUtil.singleExtensionInstanceForPersistenceUnit(
+                Interceptor.class, persistenceUnitName);
+        if (!interceptorInstance.isUnsatisfied()) {
+            options.applyStatelessInterceptorSupplier(interceptorInstance::get);
+        }
     }
 
     private static class ServiceRegistryCloser implements SessionFactoryObserver {

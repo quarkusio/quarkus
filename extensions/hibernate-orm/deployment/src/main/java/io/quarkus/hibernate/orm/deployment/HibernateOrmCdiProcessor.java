@@ -17,6 +17,7 @@ import org.jboss.jandex.FieldInfo;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.DotNames;
@@ -104,9 +105,6 @@ public class HibernateOrmCdiProcessor {
             return;
         }
 
-        // add the @PersistenceUnit class otherwise it won't be registered as a qualifier
-        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(PersistenceUnit.class).build());
-
         // we have only one persistence unit defined in a persistence.xml: we make it the default even if it has a name
         if (persistenceUnitDescriptors.size() == 1
                 && !impliedBlockingPersistenceUnitType.shouldGenerateImpliedBlockingPersistenceUnit()) {
@@ -147,6 +145,24 @@ public class HibernateOrmCdiProcessor {
                             recorder.sessionSupplier(persistenceUnitName),
                             false));
         }
+    }
+
+    @BuildStep
+    void registerAnnotations(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
+        // add the @PersistenceUnit and @PersistenceUnitExtension classes
+        // otherwise they won't be registered as qualifiers
+        additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClasses(ClassNames.QUARKUS_PERSISTENCE_UNIT.toString(),
+                        ClassNames.PERSISTENCE_UNIT_EXTENSION.toString())
+                .build());
+
+        // Register the default scope for @PersistenceUnitExtension and make such beans unremovable by default
+        // TODO make @PUExtension beans unremovable only if the corresponding PU actually exists and is enabled
+        //   (I think there's a feature request for a configuration property to disable a PU at runtime?)
+        beanDefiningAnnotations
+                .produce(new BeanDefiningAnnotationBuildItem(ClassNames.PERSISTENCE_UNIT_EXTENSION, DotNames.APPLICATION_SCOPED,
+                        false));
     }
 
     private static <T> SyntheticBeanBuildItem createSyntheticBean(String persistenceUnitName, boolean isDefaultPersistenceUnit,

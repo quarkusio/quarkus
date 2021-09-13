@@ -136,6 +136,7 @@ var port = {config:property('quarkus.http.port')};
     }
 
     function navigateToSwaggerUi(){
+        {#if info:swaggerIsAvailable}
         var url = "{config:http-path('quarkus.swagger-ui.path')}";
         
         var authorizedValue = {
@@ -159,6 +160,7 @@ var port = {config:property('quarkus.http.port')};
         
         localStorage.setItem('authorized', JSON.stringify(authorizedValue));
         window.open(url, '_blank').focus();
+        {/if}
     }
     
     function copyToClipboard(token, type){

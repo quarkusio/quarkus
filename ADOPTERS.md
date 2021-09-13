@@ -17,6 +17,7 @@ If any organization would like get added or removed please make a pull request b
 |B<>com                 | https://5g.labs.b-com.com/                                                       |
 |Carrefour              | https://horizons.carrefour.com/efficient-java-in-the-cloud-with-quarkus          |
 |Cytech                 | https://quarkus.io/blog/cytech-customer-story/                                   |
+|Decathlon              | https://quarkus.io/blog/decathlon-user-story/                                    |
 |Ennovative Solutions   | https://quarkus.io/blog/ennovativesolutions-uses-quarkus-with-aws-lambda/        |
 |GoWithFlow             | https://quarkus.io/blog/gowithflow-chooses-quarkus-to-deliver-fast-to-production/|
 |Lufthansa Technik      | https://quarkus.io/blog/aviatar-experiences-significant-savings/                 |

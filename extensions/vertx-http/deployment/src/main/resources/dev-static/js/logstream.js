@@ -59,6 +59,13 @@ $('document').ready(function () {
         }
     });
     
+    $("#logLevelFilterInput").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#logstreamLogLevelsModalTableBody tr").filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        });
+    });
+    
     $('#logstreamFilterModal').on('shown.bs.modal', function () {
         $('#logstreamFilterModalInput').trigger('focus');
     });

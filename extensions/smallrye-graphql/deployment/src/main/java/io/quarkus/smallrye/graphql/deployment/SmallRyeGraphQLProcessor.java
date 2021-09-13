@@ -100,6 +100,8 @@ public class SmallRyeGraphQLProcessor {
     private static final String LINE_FORMAT = LINE_TO_UPDATE + "%s';";
     private static final String UI_LINE_TO_UPDATE = "const ui = '";
     private static final String UI_LINE_FORMAT = UI_LINE_TO_UPDATE + "%s';";
+    private static final String LOGO_LINE_TO_UPDATE = "const logo = '";
+    private static final String LOGO_LINE_FORMAT = LOGO_LINE_TO_UPDATE + "%s';";
 
     // Branding files to monitor for changes
     private static final String BRANDING_DIR = "META-INF/branding/";
@@ -519,6 +521,8 @@ public class SmallRyeGraphQLProcessor {
                 WebJarUtil.updateUrl(tempPath.resolve(FILE_TO_UPDATE), graphQLPath, LINE_TO_UPDATE, LINE_FORMAT);
                 WebJarUtil.updateUrl(tempPath.resolve(FILE_TO_UPDATE), graphQLUiPath,
                         UI_LINE_TO_UPDATE, UI_LINE_FORMAT);
+                WebJarUtil.updateUrl(tempPath.resolve(FILE_TO_UPDATE), nonApplicationRootPathBuildItem.resolvePath("dev"),
+                        LOGO_LINE_TO_UPDATE, LOGO_LINE_FORMAT);
 
                 smallRyeGraphQLBuildProducer
                         .produce(new SmallRyeGraphQLBuildItem(tempPath.toAbsolutePath().toString(), graphQLUiPath));
@@ -545,6 +549,11 @@ public class SmallRyeGraphQLProcessor {
                                 .updateUrl(new String(content, StandardCharsets.UTF_8), graphQLUiPath,
                                         UI_LINE_TO_UPDATE,
                                         UI_LINE_FORMAT)
+                                .getBytes(StandardCharsets.UTF_8);
+                        content = WebJarUtil
+                                .updateUrl(new String(content, StandardCharsets.UTF_8), graphQLUiPath,
+                                        LOGO_LINE_TO_UPDATE,
+                                        LOGO_LINE_FORMAT)
                                 .getBytes(StandardCharsets.UTF_8);
                     }
                     fileName = GRAPHQL_UI_FINAL_DESTINATION + "/" + fileName;

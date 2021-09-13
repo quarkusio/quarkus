@@ -132,7 +132,7 @@ public class SwaggerUiProcessor {
                         SWAGGER_UI_WEBJAR_PREFIX);
                 // Update index.html
                 WebJarUtil.updateFile(tempPath.resolve("index.html"),
-                        generateIndexHtml(openApiPath, swaggerUiPath, swaggerUiConfig));
+                        generateIndexHtml(openApiPath, swaggerUiPath, swaggerUiConfig, nonApplicationRootPathBuildItem));
 
                 swaggerUiBuildProducer.produce(new SwaggerUiBuildItem(tempPath.toAbsolutePath().toString(), swaggerUiPath));
 
@@ -151,7 +151,7 @@ public class SwaggerUiProcessor {
                     if (fileName.equals(theme.toString()) || !fileName.startsWith("theme-")) {
                         byte[] content;
                         if (fileName.endsWith("index.html")) {
-                            content = generateIndexHtml(openApiPath, swaggerUiPath, swaggerUiConfig);
+                            content = generateIndexHtml(openApiPath, swaggerUiPath, swaggerUiConfig, null);
                         } else {
                             content = file.getValue();
                         }
@@ -194,12 +194,18 @@ public class SwaggerUiProcessor {
         }
     }
 
-    private byte[] generateIndexHtml(String openApiPath, String swaggerUiPath, SwaggerUiConfig swaggerUiConfig)
+    private byte[] generateIndexHtml(String openApiPath, String swaggerUiPath, SwaggerUiConfig swaggerUiConfig,
+            NonApplicationRootPathBuildItem nonApplicationRootPath)
             throws IOException {
         Map<Option, String> options = new HashMap<>();
         Map<String, String> urlsMap = null;
 
         options.put(Option.selfHref, swaggerUiPath);
+        if (nonApplicationRootPath != null) {
+            options.put(Option.backHref, nonApplicationRootPath.resolvePath("dev"));
+        } else {
+            options.put(Option.backHref, swaggerUiPath);
+        }
 
         // Only add the url if the user did not specified urls
         if (swaggerUiConfig.urls != null && !swaggerUiConfig.urls.isEmpty()) {

@@ -1990,7 +1990,7 @@ public Multi<String> stream() {
     return Multi.createBy().merging()
             .streams(
                     fruits.map(this::toJson),
-                    getPingStream()
+                    emitAPeriodicPing()
             );
 }
 

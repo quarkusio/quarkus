@@ -48,5 +48,15 @@ public class OtlpExporterConfig {
         @ConfigItem(defaultValue = "10S")
         public Duration exportTimeout;
 
+        /**
+         * Compression method to be used by exporter to compress the payload.
+         * <p>
+         * See <a href=
+         * "https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md#opentelemetry-protocol-exporter">
+         * Configuration Options</a> for the supported compression methods.
+         */
+        @ConfigItem()
+        public Optional<String> compression;
+
     }
 }

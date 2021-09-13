@@ -31,6 +31,9 @@ public class OtlpRecorder {
                     Map<String, String> headers = OpenTelemetryUtil.convertKeyValueListToMap(runtimeConfig.headers.get());
                     headers.forEach(otlpGrpcSpanExporterBuilder::addHeader);
                 }
+
+                runtimeConfig.compression.ifPresent(otlpGrpcSpanExporterBuilder::setCompression);
+
                 OtlpGrpcSpanExporter otlpSpanExporter = otlpGrpcSpanExporterBuilder.build();
 
                 // Create BatchSpanProcessor for OTLP and install into LateBoundBatchSpanProcessor

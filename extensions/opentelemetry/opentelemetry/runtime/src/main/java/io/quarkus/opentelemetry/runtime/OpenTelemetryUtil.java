@@ -1,6 +1,7 @@
 package io.quarkus.opentelemetry.runtime;
 
 import java.util.AbstractMap;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,10 @@ public final class OpenTelemetryUtil {
                 ServiceLoader.load(ConfigurablePropagatorProvider.class).spliterator(), false)
                 .collect(
                         Collectors.toMap(ConfigurablePropagatorProvider::getName,
-                                ConfigurablePropagatorProvider::getPropagator));
+                                // Even though this param was added, propagators currently don't use any config properties
+                                // when the time arrives, and they do use it, we will need to implement a Quarkus
+                                // backed `ConfigProperties` class
+                                o -> o.getPropagator(null)));
 
         Set<TextMapPropagator> selectedPropagators = propagators.stream()
                 .map(propagator -> getPropagator(propagator.trim(), spiPropagators))
@@ -61,7 +65,7 @@ public final class OpenTelemetryUtil {
      */
     public static Map<String, String> convertKeyValueListToMap(List<String> headers) {
         if (headers == null) {
-            return new LinkedHashMap();
+            return Collections.emptyMap();
         }
 
         return headers.stream()

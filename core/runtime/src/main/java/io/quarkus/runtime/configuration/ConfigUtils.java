@@ -217,6 +217,15 @@ public final class ConfigUtils {
         }
     }
 
+    public static void addMapping(SmallRyeConfigBuilder builder, String mappingClass, String prefix) {
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            builder.withMapping(contextClassLoader.loadClass(mappingClass), prefix);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Checks if a property is present in the current Configuration.
      * <p>

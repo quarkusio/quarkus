@@ -38,6 +38,37 @@ prefix, and the method name with `.` (dot) as the separator.
 NOTE: If a mapping fails to match a configuration property a `NoSuchElementException` is thrown, unless the mapped
 element is an `Optional`.
 
+=== Registration
+
+When a Quarkus application starts, a config mapping can be registered twice. One time for _STATIC INIT_ and a second
+time for _RUNTIME INIT_:
+
+==== STATIC INIT
+
+Quarkus starts some of its services during static initialization, and `Config` is usually one of the first things that
+is created. In certain situations it may not be possible to correctly initialize a config mapping. For instance, if the
+mapping requires values from a custom `ConfigSource`. For this reason, any config mapping requires the annotation
+`@io.quarkus.runtime.configuration.StaticInitSafe` to mark the mapping as safe to be used at this stage. Learn more
+about xref:config-extending-support.adoc#custom-config-source[registration] of a custom `ConfigSource`.
+
+===== Example
+
+[source,java]
+----
+@StaticInitSafe
+@ConfigMapping(prefix = "server")
+interface Server {
+    String host();
+
+    int port();
+}
+----
+
+==== RUNTIME INIT
+
+The _RUNTIME INIT_ stage happens after _STATIC INIT_. There are no restrictions at this stage, and any config mapping
+is added to the `Config` instance as expected.
+
 === Retrieval
 
 A config mapping interface can be injected into any CDI aware bean:

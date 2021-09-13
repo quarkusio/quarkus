@@ -91,10 +91,10 @@ public class SmallRyeGraphQLConfig {
     Optional<String> defaultErrorMessage;
 
     /**
-     * Print the data fetcher exception to the log file.
+     * Print the data fetcher exception to the log file. Default `true` in dev and test mode, default `false` in prod.
      */
-    @ConfigItem(defaultValue = "false")
-    boolean printDataFetcherException;
+    @ConfigItem
+    Optional<Boolean> printDataFetcherException;
 
     /**
      * Make the schema available over HTTP.

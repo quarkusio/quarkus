@@ -399,6 +399,22 @@ public class SmallRyeGraphQLProcessor {
         return classes;
     }
 
+    @BuildStep
+    void printDataFetcherExceptionInDevMode(SmallRyeGraphQLConfig graphQLConfig,
+            LaunchModeBuildItem launchMode,
+            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+
+        // User did not set this explisitly 
+        if (!graphQLConfig.printDataFetcherException.isPresent()) {
+            if (launchMode.getLaunchMode().isDevOrTest()) {
+                systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.PRINT_DATAFETCHER_EXCEPTION, TRUE));
+            }
+        } else {
+            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.PRINT_DATAFETCHER_EXCEPTION,
+                    String.valueOf(graphQLConfig.printDataFetcherException.get())));
+        }
+    }
+
     // Services Integrations
 
     @BuildStep

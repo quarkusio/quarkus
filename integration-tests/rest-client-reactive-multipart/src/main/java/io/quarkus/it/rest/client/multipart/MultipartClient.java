@@ -67,6 +67,46 @@ public interface MultipartClient {
     @Path("/text")
     String sendPathAsTextFile(@MultipartForm WithPathAsTextFile data);
 
+    @POST
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Path("/with-pojo")
+    String sendFileWithPojo(@MultipartForm FileWithPojo data);
+
+    class FileWithPojo {
+        @FormParam("file")
+        @PartType(MediaType.APPLICATION_OCTET_STREAM)
+        public byte[] file;
+
+        @FormParam("fileName")
+        @PartType(MediaType.TEXT_PLAIN)
+        public String fileName;
+
+        @FormParam("pojo")
+        @PartType(MediaType.APPLICATION_JSON)
+        public Pojo pojo;
+    }
+
+    class Pojo {
+        private String name;
+        private String value;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+    }
+
     class WithByteArrayAsBinaryFile {
 
         @FormParam("file")

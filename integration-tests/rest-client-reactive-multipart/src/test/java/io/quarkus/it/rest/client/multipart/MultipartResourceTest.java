@@ -105,4 +105,29 @@ public class MultipartResourceTest {
                 .body(equalTo("fileOk:true,numberOk:true"));
         // @formatter:on
     }
+
+    @Test
+    public void shouldSendByteArrayAndPojo() {
+        // @formatter:off
+        given()
+                .header("Content-Type", "text/plain")
+        .when().get("/client/byte-array-as-binary-file-with-pojo")
+        .then()
+                .statusCode(200)
+                .body(equalTo("fileOk:true,nameOk:true,pojoOk:true"));
+        // @formatter:on
+    }
+
+    @Test
+    public void shouldSendByteArrayAndPojoWithNullPojo() {
+        // @formatter:off
+        given()
+                .queryParam("withPojo", "false")
+                .header("Content-Type", "text/plain")
+        .when().get("/client/byte-array-as-binary-file-with-pojo")
+        .then()
+                .statusCode(200)
+                .body(equalTo("fileOk:true,nameOk:true,pojoOk:null"));
+        // @formatter:on
+    }
 }

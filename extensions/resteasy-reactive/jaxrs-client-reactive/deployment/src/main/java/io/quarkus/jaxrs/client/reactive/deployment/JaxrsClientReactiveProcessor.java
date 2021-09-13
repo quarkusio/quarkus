@@ -61,6 +61,7 @@ import org.jboss.resteasy.reactive.client.impl.ClientImpl;
 import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
 import org.jboss.resteasy.reactive.client.impl.UniInvoker;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
+import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
 import org.jboss.resteasy.reactive.client.processor.beanparam.BeanParamItem;
 import org.jboss.resteasy.reactive.client.processor.beanparam.ClientBeanParamInfo;
 import org.jboss.resteasy.reactive.client.processor.beanparam.CookieParamItem;
@@ -121,7 +122,6 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.jaxrs.client.reactive.runtime.ClientResponseBuilderFactory;
 import io.quarkus.jaxrs.client.reactive.runtime.JaxrsClientReactiveRecorder;
-import io.quarkus.jaxrs.client.reactive.runtime.MultipartFormUtils;
 import io.quarkus.jaxrs.client.reactive.runtime.ToObjectArray;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
@@ -137,7 +137,6 @@ import io.quarkus.runtime.metrics.MetricsFactory;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.ext.web.multipart.MultipartForm;
 
 public class JaxrsClientReactiveProcessor {
 
@@ -963,11 +962,9 @@ public class JaxrsClientReactiveProcessor {
      */
     private ResultHandle createMultipartForm(MethodCreator methodCreator, ResultHandle methodParam, Type formClassType,
             IndexView index) {
-        AssignableResultHandle multipartForm = methodCreator.createVariable(MultipartForm.class);
+        AssignableResultHandle multipartForm = methodCreator.createVariable(QuarkusMultipartForm.class);
         methodCreator.assign(multipartForm,
-                methodCreator
-                        .invokeStaticMethod(
-                                MethodDescriptor.ofMethod(MultipartFormUtils.class, "create", MultipartForm.class)));
+                methodCreator.newInstance(MethodDescriptor.ofConstructor(QuarkusMultipartForm.class)));
 
         ClassInfo formClass = index.getClassByName(formClassType.name());
 
@@ -1016,10 +1013,8 @@ public class JaxrsClientReactiveProcessor {
                     } else if (is(BUFFER, fieldClass, index)) {
                         // and buffer
                         addBuffer(methodCreator, multipartForm, formParamName, partType, fieldValue, field);
-                    } else {
-                        throw new IllegalArgumentException("Unsupported multipart form field on: " + formClassType.name()
-                                + "." + fieldType.name() +
-                                ". Supported types are: java.lang.String, java.io.File, java.nio.Path and io.vertx.core.Buffer");
+                    } else { // assume POJO:
+                        addPojo(methodCreator, multipartForm, formParamName, partType, fieldValue, field);
                     }
                     break;
                 case ARRAY:
@@ -1030,8 +1025,8 @@ public class JaxrsClientReactiveProcessor {
                         throw new IllegalArgumentException("Array of unsupported type: " + componentType.name()
                                 + " on " + formClassType.name() + "." + field.name());
                     }
-                    ResultHandle buffer = methodCreator.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(MultipartFormUtils.class, "buffer", Buffer.class, byte[].class),
+                    ResultHandle buffer = methodCreator.invokeStaticInterfaceMethod(
+                            MethodDescriptor.ofMethod(Buffer.class, "buffer", Buffer.class, byte[].class),
                             fieldValue);
                     addBuffer(methodCreator, multipartForm, formParamName, partType, buffer, field);
                     break;
@@ -1053,9 +1048,18 @@ public class JaxrsClientReactiveProcessor {
         return multipartForm;
     }
 
+    private void addPojo(MethodCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
+            String partType, ResultHandle fieldValue, FieldInfo field) {
+        methodCreator.assign(multipartForm,
+                methodCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "entity",
+                        QuarkusMultipartForm.class, String.class, Object.class, String.class, Class.class),
+                        multipartForm, methodCreator.load(field.name()), fieldValue, methodCreator.load(partType),
+                        methodCreator.loadClass(field.type().name().toString())));
+    }
+
     /**
-     * add file upload, see {@link MultipartForm#binaryFileUpload(String, String, String, String)} and
-     * {@link MultipartForm#textFileUpload(String, String, String, String)}
+     * add file upload, see {@link QuarkusMultipartForm#binaryFileUpload(String, String, String, String)} and
+     * {@link QuarkusMultipartForm#textFileUpload(String, String, String, String)}
      */
     private void addFile(MethodCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
             String partType, ResultHandle filePath) {
@@ -1066,9 +1070,9 @@ public class JaxrsClientReactiveProcessor {
             methodCreator.assign(multipartForm,
                     // MultipartForm#binaryFileUpload(String name, String filename, String pathname, String mediaType);
                     // filename = name
-                    methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(MultipartForm.class, "binaryFileUpload",
-                                    MultipartForm.class, String.class, String.class, String.class,
+                    methodCreator.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "binaryFileUpload",
+                                    QuarkusMultipartForm.class, String.class, String.class, String.class,
                                     String.class),
                             multipartForm, methodCreator.load(formParamName), fileName,
                             pathString, methodCreator.load(partType)));
@@ -1076,9 +1080,9 @@ public class JaxrsClientReactiveProcessor {
             methodCreator.assign(multipartForm,
                     // MultipartForm#textFileUpload(String name, String filename, String pathname, String mediaType);;
                     // filename = name
-                    methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(MultipartForm.class, "textFileUpload",
-                                    MultipartForm.class, String.class, String.class, String.class,
+                    methodCreator.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "textFileUpload",
+                                    QuarkusMultipartForm.class, String.class, String.class, String.class,
                                     String.class),
                             multipartForm, methodCreator.load(formParamName), fileName,
                             pathString, methodCreator.load(partType)));
@@ -1115,8 +1119,8 @@ public class JaxrsClientReactiveProcessor {
     private void addString(MethodCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
             ResultHandle fieldValue) {
         methodCreator.assign(multipartForm,
-                methodCreator.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(MultipartForm.class, "attribute", MultipartForm.class,
+                methodCreator.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "attribute", QuarkusMultipartForm.class,
                                 String.class, String.class),
                         multipartForm, methodCreator.load(formParamName), fieldValue));
     }
@@ -1132,9 +1136,9 @@ public class JaxrsClientReactiveProcessor {
             methodCreator.assign(multipartForm,
                     // MultipartForm#binaryFileUpload(String name, String filename, String pathname, String mediaType);
                     // filename = name
-                    methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(MultipartForm.class, "binaryFileUpload",
-                                    MultipartForm.class, String.class, String.class, Buffer.class,
+                    methodCreator.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "binaryFileUpload",
+                                    QuarkusMultipartForm.class, String.class, String.class, Buffer.class,
                                     String.class),
                             multipartForm, methodCreator.load(formParamName), methodCreator.load(formParamName),
                             buffer, methodCreator.load(partType)));
@@ -1142,9 +1146,9 @@ public class JaxrsClientReactiveProcessor {
             methodCreator.assign(multipartForm,
                     // MultipartForm#textFileUpload(String name, String filename, io.vertx.mutiny.core.buffer.Buffer content, String mediaType)
                     // filename = name
-                    methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(MultipartForm.class, "textFileUpload",
-                                    MultipartForm.class, String.class, String.class, Buffer.class,
+                    methodCreator.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "textFileUpload",
+                                    QuarkusMultipartForm.class, String.class, String.class, Buffer.class,
                                     String.class),
                             multipartForm, methodCreator.load(formParamName), methodCreator.load(formParamName),
                             buffer, methodCreator.load(partType)));

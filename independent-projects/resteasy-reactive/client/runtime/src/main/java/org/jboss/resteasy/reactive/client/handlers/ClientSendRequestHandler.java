@@ -13,8 +13,6 @@ import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.streams.Pipe;
-import io.vertx.ext.web.client.impl.MultipartFormUpload;
-import io.vertx.ext.web.multipart.MultipartForm;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -28,6 +26,8 @@ import javax.ws.rs.core.Variant;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
+import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
+import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 
@@ -62,7 +62,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 Future<HttpClientResponse> sent;
                 if (requestContext.isMultipart()) {
                     Promise<HttpClientRequest> requestPromise = Promise.promise();
-                    MultipartFormUpload actualEntity;
+                    QuarkusMultipartFormUpload actualEntity;
                     try {
                         actualEntity = ClientSendRequestHandler.this.setMultipartHeadersAndPrepareBody(httpClientRequest,
                                 requestContext);
@@ -173,20 +173,24 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         return httpClient.request(requestOptions);
     }
 
-    private MultipartFormUpload setMultipartHeadersAndPrepareBody(HttpClientRequest httpClientRequest,
+    private QuarkusMultipartFormUpload setMultipartHeadersAndPrepareBody(HttpClientRequest httpClientRequest,
             RestClientRequestContext state) throws Exception {
-        if (!(state.getEntity().getEntity() instanceof MultipartForm)) {
+        if (!(state.getEntity().getEntity() instanceof QuarkusMultipartForm)) {
             throw new IllegalArgumentException(
                     "Multipart form upload expects an entity of type MultipartForm, got: " + state.getEntity().getEntity());
         }
         MultivaluedMap<String, String> headerMap = state.getRequestHeaders().asMap();
-        MultipartForm entity = (MultipartForm) state.getEntity().getEntity();
+        QuarkusMultipartForm multipartForm = (QuarkusMultipartForm) state.getEntity().getEntity();
+        multipartForm.preparePojos(state);
+
         Object property = state.getConfiguration().getProperty(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE);
         HttpPostRequestEncoder.EncoderMode mode = HttpPostRequestEncoder.EncoderMode.RFC1738;
         if (property != null) {
             mode = (HttpPostRequestEncoder.EncoderMode) property;
         }
-        MultipartFormUpload multipartFormUpload = new MultipartFormUpload(Vertx.currentContext(), entity, true, mode);
+        QuarkusMultipartFormUpload multipartFormUpload = new QuarkusMultipartFormUpload(Vertx.currentContext(), multipartForm,
+                true,
+                mode);
         setEntityRelatedHeaders(headerMap, state.getEntity());
 
         // multipart has its own headers:

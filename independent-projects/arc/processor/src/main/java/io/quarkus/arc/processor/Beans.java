@@ -684,7 +684,7 @@ final class Beans {
         ClassInfo requiredClazz = beanDeployment.getQualifier(requiredQualifier.name());
         List<AnnotationValue> values = new ArrayList<>();
         Set<String> nonBindingFields = beanDeployment.getQualifierNonbindingMembers(requiredQualifier.name());
-        for (AnnotationValue val : requiredQualifier.values()) {
+        for (AnnotationValue val : requiredQualifier.valuesWithDefaults(beanDeployment.getBeanArchiveIndex())) {
             if (!requiredClazz.method(val.name()).hasAnnotation(DotNames.NONBINDING)
                     && !nonBindingFields.contains(val.name())) {
                 values.add(val);
@@ -695,7 +695,7 @@ final class Beans {
                 // Must have the same annotation member value for each member which is not annotated @Nonbinding
                 boolean matches = true;
                 for (AnnotationValue value : values) {
-                    if (!value.equals(qualifier.value(value.name()))) {
+                    if (!value.equals(qualifier.valueWithDefault(beanDeployment.getBeanArchiveIndex(), value.name()))) {
                         matches = false;
                         break;
                     }

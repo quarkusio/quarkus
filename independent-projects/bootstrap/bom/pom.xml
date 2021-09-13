@@ -14,7 +14,7 @@
         <!-- Versions -->
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
         <jboss-logging.version>3.4.2.Final</jboss-logging.version>
-        <junit.jupiter.version>5.7.2</junit.jupiter.version>
+        <junit.jupiter.version>5.8.0</junit.jupiter.version>
         <maven-core.version>3.8.1</maven-core.version><!-- Keep in sync with sisu.version -->
         <sisu.version>0.3.4</sisu.version><!-- Keep in sync with maven-core.version -->
         <maven-plugin-annotations.version>3.6.0</maven-plugin-annotations.version>

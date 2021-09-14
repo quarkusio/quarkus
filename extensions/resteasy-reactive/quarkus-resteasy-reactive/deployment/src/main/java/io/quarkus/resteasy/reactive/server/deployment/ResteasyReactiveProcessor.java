@@ -51,6 +51,7 @@ import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
@@ -113,6 +114,7 @@ import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.ForbiddenExc
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.UnauthorizedExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler;
 import io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler;
+import io.quarkus.resteasy.reactive.server.spi.AnnotationsTransformerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
@@ -282,6 +284,7 @@ public class ResteasyReactiveProcessor {
             ContextResolversBuildItem contextResolversBuildItem,
             List<ApplicationClassPredicateBuildItem> applicationClassPredicateBuildItems,
             List<MethodScannerBuildItem> methodScanners, ResteasyReactiveServerConfig serverConfig,
+            List<AnnotationsTransformerBuildItem> annotationTransformerBuildItems,
             LaunchModeBuildItem launchModeBuildItem)
             throws NoSuchMethodException {
 
@@ -426,6 +429,15 @@ public class ResteasyReactiveProcessor {
                 serverEndpointIndexerBuilder
                         .setDefaultProducesHandler(new DefaultProducesHandler.DelegatingDefaultProducesHandler(handlers));
             }
+
+            if (!annotationTransformerBuildItems.isEmpty()) {
+                List<AnnotationsTransformer> annotationsTransformers = new ArrayList<>(annotationTransformerBuildItems.size());
+                for (AnnotationsTransformerBuildItem bi : annotationTransformerBuildItems) {
+                    annotationsTransformers.add(bi.getAnnotationsTransformer());
+                }
+                serverEndpointIndexerBuilder.setAnnotationsTransformers(annotationsTransformers);
+            }
+
             serverEndpointIndexer = serverEndpointIndexerBuilder.build();
 
             for (ClassInfo i : scannedResources.values()) {

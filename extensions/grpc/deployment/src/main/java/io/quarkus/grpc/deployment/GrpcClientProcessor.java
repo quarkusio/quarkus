@@ -36,10 +36,13 @@ import org.jboss.logging.Logger;
 import io.grpc.Channel;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.InjectionPointTransformerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.arc.processor.InjectionPointsTransformer;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -275,6 +278,39 @@ public class GrpcClientProcessor {
                 }
             }
         }
+    }
+
+    @BuildStep
+    InjectionPointTransformerBuildItem transformInjectionPoints() {
+        return new InjectionPointTransformerBuildItem(new InjectionPointsTransformer() {
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                // If annotated with @GrpcClient and no explicit value is used, i.e. @GrpcClient(), 
+                // then we need to determine the service name from the annotated element and transform the injection point
+                AnnotationInstance clientAnnotation = Annotations.find(ctx.getQualifiers(), GrpcDotNames.GRPC_CLIENT);
+                if (clientAnnotation != null && clientAnnotation.value() == null) {
+                    String clientName = null;
+                    if (ctx.getTarget().kind() == Kind.FIELD) {
+                        clientName = clientAnnotation.target().asField().name();
+                    } else if (ctx.getTarget().kind() == Kind.METHOD_PARAMETER) {
+                        MethodParameterInfo param = clientAnnotation.target().asMethodParameter();
+                        // We don't need to check if parameter names are recorded - that's validated elsewhere
+                        clientName = param.method().parameterName(param.position());
+                    }
+                    if (clientName != null) {
+                        ctx.transform().remove(GrpcDotNames::isGrpcClient)
+                                .add(GrpcDotNames.GRPC_CLIENT, AnnotationValue.createStringValue("value", clientName)).done();
+                    }
+                }
+            }
+
+            @Override
+            public boolean appliesTo(Type requiredType) {
+                return true;
+            }
+
+        });
     }
 
     private DeploymentException invalidInjectionPoint(InjectionPointInfo injectionPoint) {

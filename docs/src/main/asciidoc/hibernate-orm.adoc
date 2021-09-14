@@ -1033,3 +1033,46 @@ INSERT INTO known_fruits(id, name) VALUES (3, 'Blackberries');
 === Programmatically Resolving Tenants Connections
 
 If you need a more dynamic configuration for the different tenants you want to support and don't want to end up with multiple entries in your configuration file, you can use the `io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver` interface to implement your own logic for retrieving a connection. Creating an application scoped bean that implements this interface will replace the current Quarkus default implementation `io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver`. Your custom connection resolver would allow for example to read tenant information from a database and create a connection per tenant at runtime based on it.
+
+[[interceptors]]
+== Interceptors
+
+You can assign an link:{orm-doc-url-prefix}#events-interceptors[`org.hibernate.Interceptor`]
+to your `SessionFactory` by simply defining a CDI bean with the appropriate qualifier:
+
+[source,java]
+----
+@PersistenceUnitExtension // <1>
+public static class MyInterceptor extends EmptyInterceptor { // <2>
+    @Override
+    public boolean onLoad(Object entity, Serializable id, Object[] state, // <3>
+            String[] propertyNames, Type[] types) {
+        // ...
+        return false;
+    }
+}
+----
+<1> Annotate the interceptor implementation with the `@PersistenceUnitExtension` qualifier
+to tell Quarkus it should be used in the default persistence unit.
++
+For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`
+<2> Either extend `org.hibernate.EmptyInterceptor` or implement `org.hibernate.Interceptor` directly.
+<3> Implement methods as necessary.
+
+[TIP]
+====
+By default, interceptor beans annotated with `@PersistenceUnitExtension` are application-scoped,
+which means only one interceptor instance will be created per application
+and reused across all entity managers.
+For this reason, the interceptor implementation must be thread-safe.
+
+In order to create one interceptor instance per entity manager instead,
+annotate your bean with `@Dependent`.
+In that case, the interceptor implementation doesn't need to be thread-safe.
+====
+
+[NOTE]
+====
+Due to a limitation in Hibernate ORM itself,
+`@PreDestroy` methods on `@Dependent`-scoped interceptors will never get called.
+====

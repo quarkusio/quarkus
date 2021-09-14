@@ -5,9 +5,11 @@ import javax.inject.Inject;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.hibernate.orm.PersistenceUnitExtension;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
 
+@PersistenceUnitExtension
 @RequestScoped
 public class CustomTenantResolver implements TenantResolver {
 

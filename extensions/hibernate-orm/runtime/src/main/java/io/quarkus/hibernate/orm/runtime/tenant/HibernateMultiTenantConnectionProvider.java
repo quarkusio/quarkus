@@ -14,6 +14,7 @@ import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.hibernate.orm.PersistenceUnit.PersistenceUnitLiteral;
@@ -79,14 +80,12 @@ public final class HibernateMultiTenantConnectionProvider extends AbstractMultiT
     private static ConnectionProvider resolveConnectionProvider(String persistenceUnitName, String tenantIdentifier) {
         LOG.debugv("resolveConnectionProvider(persistenceUnitName={0}, tenantIdentifier={1})", persistenceUnitName,
                 tenantIdentifier);
-        InstanceHandle<TenantConnectionResolver> instance;
-        if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
-            instance = Arc.container().instance(TenantConnectionResolver.class, Default.Literal.INSTANCE);
-        } else {
-            instance = Arc.container().instance(TenantConnectionResolver.class,
-                    new PersistenceUnitLiteral(persistenceUnitName));
-        }
-        if (!instance.isAvailable()) {
+        // TODO when we switch to the non-legacy method, don't forget to update the definition of the default bean
+        //   of type DataSourceTenantConnectionResolver (add the @PersistenceUnitExtension qualifier to that bean)
+        InjectableInstance<TenantConnectionResolver> instance = PersistenceUnitUtil
+                .legacySingleExtensionInstanceForPersistenceUnit(
+                        TenantConnectionResolver.class, persistenceUnitName);
+        if (instance.isUnsatisfied()) {
             throw new IllegalStateException(
                     String.format(
                             Locale.ROOT, "No instance of %1$s was found for persistence unit %2$s. "

@@ -824,7 +824,8 @@ import javax.enterprise.context.ApplicationScoped;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
 
-@RequestScoped <1>
+@PersistenceUnitExtension // <1>
+@RequestScoped // <2>
 public class CustomTenantResolver implements TenantResolver {
 
     @Inject
@@ -850,32 +851,13 @@ public class CustomTenantResolver implements TenantResolver {
     
 }
 ----
-<1> The bean is made `@RequestScoped` as the tenant resolution depends on the incoming request.
+<1> Annotate the TenantResolver implementation with the `@PersistenceUnitExtension` qualifier
+to tell Quarkus it should be used in the default persistence unit.
++
+For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`.
+<2> The bean is made `@RequestScoped` as the tenant resolution depends on the incoming request.
 
 From the implementation above, tenants are resolved from the request path so that in case no tenant could be inferred, the default tenant identifier is returned.
-
-[NOTE]
-====
-If <<multiple-persistence-units,named persistence units>> are used, you need to qualify the `TenantResolver` with the persistence unit name:
-
-[source,java]
-----
-import javax.enterprise.context.ApplicationScoped;
-
-import io.quarkus.hibernate.orm.PersistenceUnit;
-import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
-import io.vertx.ext.web.RoutingContext;
-
-@PersistenceUnit("name-of-persistence-unit") <1>
-@RequestScoped
-public class CustomTenantResolver implements TenantResolver {
-
-   // ...
-
-}
-----
-<1> Make sure to use the `@io.quarkus.hibernate.orm.PersistenceUnit` annotation, not the JPA one.
-====
 
 [NOTE]
 ====
@@ -886,6 +868,7 @@ If you also use link:security-openid-connect-multitenancy[OIDC multitenancy] and
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
 
+@PersistenceUnitExtension
 @RequestScoped
 public class CustomTenantResolver implements TenantResolver {
 
@@ -1032,7 +1015,12 @@ INSERT INTO known_fruits(id, name) VALUES (3, 'Blackberries');
 
 === Programmatically Resolving Tenants Connections
 
-If you need a more dynamic configuration for the different tenants you want to support and don't want to end up with multiple entries in your configuration file, you can use the `io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver` interface to implement your own logic for retrieving a connection. Creating an application scoped bean that implements this interface will replace the current Quarkus default implementation `io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver`. Your custom connection resolver would allow for example to read tenant information from a database and create a connection per tenant at runtime based on it.
+If you need a more dynamic configuration for the different tenants you want to support and don't want to end up with multiple entries in your configuration file,
+you can use the `io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver` interface to implement your own logic for retrieving a connection.
+Creating an application-scoped bean that implements this interface
+and annotating it with `@PersistenceUnitExtension` (or `@PersistenceUnitExtension("nameOfYourPU")` for a <<multiple-persistence-units,named persistence unit>>)
+will replace the current Quarkus default implementation `io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver`.
+Your custom connection resolver would allow for example to read tenant information from a database and create a connection per tenant at runtime based on it.
 
 [[interceptors]]
 == Interceptors

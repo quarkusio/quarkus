@@ -602,6 +602,49 @@ public class BearerTokenAuthorizationTest {
 Testing your `quarkus-oidc` `service` application with `OidcWiremockTestResource` provides the best coverage as even the communication channel is tested against the Wiremock HTTP stubs.
 `OidcWiremockTestResource` will be enhanced going forward to support more complex Bearer token test scenarios.
 
+If there is an immediate need for a test to define Wiremock stubs not currently supported by `OidcWiremockTestResource`
+one can do so via a `WireMockServer` instance injected into the test class, for example:
+
+[source, java]
+----
+package io.quarkus.it.keycloak;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static org.hamcrest.Matchers.equalTo;
+
+import org.junit.jupiter.api.Test;
+
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
+
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.oidc.server.OidcWireMock;
+import io.quarkus.test.oidc.server.OidcWiremockTestResource;
+import io.restassured.RestAssured;
+
+@QuarkusTest
+@QuarkusTestResource(OidcWiremockTestResource.class)
+public class CustomOidcWireMockStubTest {
+
+    @OidcWireMock
+    WireMockServer wireMockServer;
+
+    @Test
+    public void testInvalidBearerToken() {
+        wireMockServer.stubFor(WireMock.post("/auth/realms/quarkus/protocol/openid-connect/token/introspect")
+                .withRequestBody(matching(".*token=invalid_token.*"))
+                .willReturn(WireMock.aResponse().withStatus(400)));
+
+        RestAssured.given().auth().oauth2("invalid_token").when()
+                .get("/api/users/me/bearer")
+                .then()
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("Bearer"));
+    }
+}
+----
+
 [[integration-testing-keycloak-devservices]]
 === Dev Services for Keycloak
 

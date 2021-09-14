@@ -573,7 +573,7 @@ public class ExtensionCatalogResolver {
                 for (int i = 1; i < e.conflictingRegistries.size(); ++i) {
                     buf.append(", ").append(e.conflictingRegistries.get(i).getId());
                 }
-                throw new RuntimeException(buf.toString());
+                throw new RegistryResolutionException(buf.toString());
             }
 
             if (registries.isEmpty()) {
@@ -600,7 +600,7 @@ public class ExtensionCatalogResolver {
                     buf.append(", ").append(registries.get(i++));
                 }
                 log.warn(buf.toString());
-                continue;
+                throw new RegistryResolutionException(buf.toString());
             }
 
             if (quarkusVersion == null) {

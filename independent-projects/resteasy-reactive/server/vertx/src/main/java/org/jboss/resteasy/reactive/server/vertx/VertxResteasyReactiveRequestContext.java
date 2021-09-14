@@ -39,16 +39,19 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     protected final HttpServerRequest request;
     protected final HttpServerResponse response;
     private final Executor contextExecutor;
+    private final ClassLoader devModeTccl;
     protected Consumer<ResteasyReactiveRequestContext> preCommitTask;
     ContinueState continueState = ContinueState.NONE;
 
     public VertxResteasyReactiveRequestContext(Deployment deployment, ProvidersImpl providers,
             RoutingContext context,
-            ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
+            ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain,
+            ClassLoader devModeTccl) {
         super(deployment, providers, requestContext, handlerChain, abortHandlerChain);
         this.context = context;
         this.request = context.request();
         this.response = context.response();
+        this.devModeTccl = devModeTccl;
         context.addHeadersEndHandler(this);
         String expect = request.getHeader(HttpHeaderNames.EXPECT);
         ContextInternal internal = ((ConnectionBase) context.request().connection()).getContext();
@@ -164,16 +167,6 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     }
 
     @Override
-    public String getFormAttribute(String name) {
-        return request.getFormAttribute(name);
-    }
-
-    @Override
-    public List<String> getAllFormAttributes(String name) {
-        return request.formAttributes().getAll(name);
-    }
-
-    @Override
     public String getQueryParam(String name) {
         return context.queryParams().get(name);
     }
@@ -196,11 +189,6 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     public boolean isRequestEnded() {
         return request.isEnded();
-    }
-
-    @Override
-    public void setExpectMultipart(boolean expectMultipart) {
-        request.setExpectMultipart(expectMultipart);
     }
 
     @Override
@@ -242,12 +230,18 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         request.handler(new Handler<Buffer>() {
             @Override
             public void handle(Buffer event) {
+                if (devModeTccl != null) {
+                    Thread.currentThread().setContextClassLoader(devModeTccl);
+                }
                 callback.data(ByteBuffer.wrap(event.getBytes()));
             }
         });
         request.endHandler(new Handler<Void>() {
             @Override
             public void handle(Void event) {
+                if (devModeTccl != null) {
+                    Thread.currentThread().setContextClassLoader(devModeTccl);
+                }
                 callback.done();
             }
         });

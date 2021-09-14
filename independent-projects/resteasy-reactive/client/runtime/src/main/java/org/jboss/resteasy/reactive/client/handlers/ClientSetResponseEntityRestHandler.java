@@ -21,7 +21,7 @@ public class ClientSetResponseEntityRestHandler implements ClientRestHandler {
         ClientResponseContextImpl responseContext = new ClientResponseContextImpl(context);
         if (context.isCheckSuccessfulFamily()) {
             if (Response.Status.Family.familyOf(context.getResponseStatus()) != Response.Status.Family.SUCCESSFUL) {
-                throw new WebClientApplicationException("Server response status was: " + context.getResponseStatus());
+                throw new WebClientApplicationException(context.getResponseStatus(), context.getResponseReasonPhrase());
             }
         }
         ClientRequestContextImpl requestContext = context.getClientRequestContext();

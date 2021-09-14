@@ -1,0 +1,24 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "RESTEasy Reactive Jackson"
+metadata:
+  short-name: "resteasy-reactive-jackson"
+  keywords:
+    - "rest-jackson"
+    - "quarkus-resteasy-reactive-json"
+    - "jaxrs-json"
+    - "rest"
+    - "jaxrs"
+    - "json"
+    - "jackson"
+  categories:
+  - "web"
+  - "reactive"
+  status: "experimental"
+  codestart:
+    name: "resteasy-reactive"
+    languages:
+      - "java"
+      - "kotlin"
+      - "scala"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

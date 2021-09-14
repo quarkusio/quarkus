@@ -6,7 +6,6 @@ import java.util.function.Supplier;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractJpaOperations;
-import io.quarkus.hibernate.reactive.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Parameters;
 import io.smallrye.mutiny.Uni;
 
@@ -22,8 +21,8 @@ public class Panache {
      * 
      * @return the current {@link Mutiny.Session}
      */
-    public static Mutiny.Session getSession() {
-        return JpaOperations.getSession();
+    public static Uni<Mutiny.Session> getSession() {
+        return AbstractJpaOperations.getSession();
     }
 
     /**
@@ -34,9 +33,10 @@ public class Panache {
      * @param <T> The function's return type
      * @param work The function to execute in the new transaction
      * @return the result of executing the function
+     * @see Panache#currentTransaction()
      */
     public static <T> Uni<T> withTransaction(Supplier<Uni<T>> work) {
-        return getSession().withTransaction(t -> work.get());
+        return getSession().flatMap(session -> session.withTransaction(t -> work.get()));
     }
 
     /**
@@ -70,5 +70,24 @@ public class Panache {
      */
     public static Uni<Integer> executeUpdate(String query, Parameters params) {
         return AbstractJpaOperations.executeUpdate(query, params.map());
+    }
+
+    /**
+     * Flush all pending changes to the database.
+     *
+     * @return void
+     */
+    public static Uni<Void> flush() {
+        return getSession().flatMap(session -> session.flush());
+    }
+
+    /**
+     * Returns the current transaction, if any, or <code>null</code>.
+     * 
+     * @return the current transaction, if any, or <code>null</code>.
+     * @see Panache#withTransaction(Supplier)
+     */
+    public static Uni<Mutiny.Transaction> currentTransaction() {
+        return getSession().map(session -> session.currentTransaction());
     }
 }

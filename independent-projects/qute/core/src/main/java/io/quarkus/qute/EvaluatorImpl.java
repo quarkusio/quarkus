@@ -2,7 +2,7 @@ package io.quarkus.qute;
 
 import io.quarkus.qute.Expression.Part;
 import io.quarkus.qute.ExpressionImpl.PartImpl;
-import io.quarkus.qute.Results.Result;
+import io.quarkus.qute.Results.NotFound;
 import io.smallrye.mutiny.Uni;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,21 +12,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.jboss.logging.Logger;
 
-/**
- * 
- */
 class EvaluatorImpl implements Evaluator {
 
     private static final Logger LOGGER = Logger.getLogger(EvaluatorImpl.class);
 
     private final List<ValueResolver> resolvers;
     private final Map<String, List<NamespaceResolver>> namespaceResolvers;
+    private final boolean strictRendering;
 
-    EvaluatorImpl(List<ValueResolver> valueResolvers, List<NamespaceResolver> namespaceResolvers) {
+    EvaluatorImpl(List<ValueResolver> valueResolvers, List<NamespaceResolver> namespaceResolvers, boolean strictRendering) {
         this.resolvers = valueResolvers;
         Map<String, List<NamespaceResolver>> namespaceResolversMap = new HashMap<>();
         for (NamespaceResolver namespaceResolver : namespaceResolvers) {
@@ -47,6 +44,7 @@ class EvaluatorImpl implements Evaluator {
             }
         }
         this.namespaceResolvers = namespaceResolversMap;
+        this.strictRendering = strictRendering;
     }
 
     @Override
@@ -58,44 +56,47 @@ class EvaluatorImpl implements Evaluator {
             if (matching == null) {
                 String msg = "No namespace resolver found for: " + expression.getNamespace();
                 LOGGER.errorf(msg);
-                return Futures.failure(new TemplateException(msg));
+                return CompletedStage.failure(new TemplateException(msg));
             }
             EvalContext context = new EvalContextImpl(false, null, parts.next(), resolutionContext);
             if (matching.size() == 1) {
                 // Very often a single matching resolver will be found
                 return matching.get(0).resolve(context).thenCompose(r -> {
                     if (parts.hasNext()) {
-                        return resolveReference(false, r, parts, resolutionContext);
+                        return resolveReference(false, r, parts, resolutionContext, expression);
                     } else {
                         return toCompletionStage(r);
                     }
                 });
             } else {
                 // Multiple namespace resolvers match
-                return resolveNamespace(context, resolutionContext, parts, matching.iterator());
+                return resolveNamespace(context, resolutionContext, parts, matching.iterator(), expression);
             }
         } else {
             if (expression.isLiteral()) {
-                return expression.getLiteralValue();
+                return expression.asLiteral();
             } else {
                 parts = expression.getParts().iterator();
-                return resolveReference(true, resolutionContext.getData(), parts, resolutionContext);
+                return resolveReference(true, resolutionContext.getData(), parts, resolutionContext, expression);
             }
         }
     }
 
     private CompletionStage<Object> resolveNamespace(EvalContext context, ResolutionContext resolutionContext,
-            Iterator<Part> parts, Iterator<NamespaceResolver> resolvers) {
+            Iterator<Part> parts, Iterator<NamespaceResolver> resolvers, Expression expression) {
         NamespaceResolver resolver = resolvers.next();
         return resolver.resolve(context).thenCompose(r -> {
-            if (Result.NOT_FOUND.equals(r)) {
+            if (Results.isNotFound(r)) {
                 if (resolvers.hasNext()) {
-                    return resolveNamespace(context, resolutionContext, parts, resolvers);
+                    return resolveNamespace(context, resolutionContext, parts, resolvers, expression);
                 } else {
-                    return Results.NOT_FOUND;
+                    if (strictRendering && !parts.hasNext()) {
+                        throw propertyNotFound(r, expression);
+                    }
+                    return Results.notFound(context);
                 }
             } else if (parts.hasNext()) {
-                return resolveReference(false, r, parts, resolutionContext);
+                return resolveReference(false, r, parts, resolutionContext, expression);
             } else {
                 return toCompletionStage(r);
             }
@@ -103,29 +104,29 @@ class EvaluatorImpl implements Evaluator {
     }
 
     private CompletionStage<Object> resolveReference(boolean tryParent, Object ref, Iterator<Part> parts,
-            ResolutionContext resolutionContext) {
+            ResolutionContext resolutionContext, final Expression expression) {
         Part part = parts.next();
         EvalContextImpl evalContext = new EvalContextImpl(tryParent, ref, part, resolutionContext);
         if (!parts.hasNext()) {
             // The last part - no need to compose
-            return resolve(evalContext, null, true);
+            return resolve(evalContext, null, true, expression, true);
         } else {
             // Next part - no need to try the parent context/outer scope
-            return resolve(evalContext, null, true)
-                    .thenCompose(r -> resolveReference(false, r, parts, resolutionContext));
+            return resolve(evalContext, null, true, expression, false)
+                    .thenCompose(r -> resolveReference(false, r, parts, resolutionContext, expression));
         }
     }
 
     private CompletionStage<Object> resolve(EvalContextImpl evalContext, Iterator<ValueResolver> resolvers,
-            boolean tryCachedResolver) {
+            boolean tryCachedResolver, final Expression expression, boolean isLastPart) {
 
         if (tryCachedResolver) {
             // Try the cached resolver first
             ValueResolver cachedResolver = evalContext.getCachedResolver();
             if (cachedResolver != null && cachedResolver.appliesTo(evalContext)) {
                 return cachedResolver.resolve(evalContext).thenCompose(r -> {
-                    if (Result.NOT_FOUND.equals(r)) {
-                        return resolve(evalContext, null, false);
+                    if (Results.isNotFound(r)) {
+                        return resolve(evalContext, null, false, expression, isLastPart);
                     } else {
                         return toCompletionStage(r);
                     }
@@ -152,18 +153,29 @@ class EvaluatorImpl implements Evaluator {
                 return resolve(
                         new EvalContextImpl(true, parent.getData(), parent,
                                 evalContext.part),
-                        null, false);
+                        null, false, expression, isLastPart);
             }
             LOGGER.tracef("Unable to resolve %s", evalContext);
-            return Results.NOT_FOUND;
+            Object notFound;
+            if (Results.isNotFound(evalContext.getBase())) {
+                // If the base is "not found" then just return it
+                notFound = evalContext.getBase();
+            } else {
+                notFound = Results.NotFound.from(evalContext);
+            }
+            // If in strict mode then just throw an exception
+            if (strictRendering && isLastPart) {
+                throw propertyNotFound(notFound, expression);
+            }
+            return CompletedStage.of(notFound);
         }
 
         final Iterator<ValueResolver> remainingResolvers = resolvers;
         final ValueResolver foundResolver = applicableResolver;
         return applicableResolver.resolve(evalContext).thenCompose(r -> {
-            if (Result.NOT_FOUND.equals(r)) {
+            if (Results.isNotFound(r)) {
                 // Result not found - try the next resolver
-                return resolve(evalContext, remainingResolvers, false);
+                return resolve(evalContext, remainingResolvers, false, expression, isLastPart);
             } else {
                 // Cache the first resolver where a result is found
                 evalContext.setCachedResolver(foundResolver);
@@ -181,7 +193,19 @@ class EvaluatorImpl implements Evaluator {
             // Subscribe to the Uni
             return ((Uni<Object>) result).subscribeAsCompletionStage();
         }
-        return CompletableFuture.completedFuture(result);
+        return CompletedStage.of(result);
+    }
+
+    private static TemplateException propertyNotFound(Object result, Expression expression) {
+        String propertyMessage;
+        if (result instanceof NotFound) {
+            propertyMessage = ((NotFound) result).asMessage();
+        } else {
+            propertyMessage = "Property not found";
+        }
+        return new TemplateException(
+                String.format("%s in expression {%s} in template %s on line %s", propertyMessage, expression.toOriginalString(),
+                        expression.getOrigin().getTemplateId(), expression.getOrigin().getLine()));
     }
 
     static class EvalContextImpl implements EvalContext {

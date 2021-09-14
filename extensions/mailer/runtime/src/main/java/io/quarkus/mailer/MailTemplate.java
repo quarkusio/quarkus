@@ -48,11 +48,29 @@ public interface MailTemplate {
 
         MailTemplateInstance replyTo(String replyTo);
 
+        MailTemplateInstance replyTo(String... replyTo);
+
         MailTemplateInstance bounceAddress(String bounceAddress);
 
         MailTemplateInstance addInlineAttachment(String name, File file, String contentType, String contentId);
 
+        /**
+         * 
+         * @param key
+         * @param value
+         * @return self
+         * @see io.quarkus.qute.TemplateInstance#data(String, Object)
+         */
         MailTemplateInstance data(String key, Object value);
+
+        /**
+         * 
+         * @param key
+         * @param value
+         * @return self
+         * @see io.quarkus.qute.TemplateInstance#setAttribute(String, Object)
+         */
+        MailTemplateInstance setAttribute(String key, Object value);
 
         Uni<Void> send();
     }

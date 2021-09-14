@@ -225,18 +225,20 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                                     parameters);
 
                             // call JpaOperations.executeUpdate
-                            updateCount = methodCreator.invokeStaticMethod(
+                            updateCount = methodCreator.invokeVirtualMethod(
                                     MethodDescriptor.ofMethod(AbstractJpaOperations.class, "executeUpdate", int.class,
                                             String.class, Map.class),
+                                    methodCreator.readStaticField(operationsField),
                                     methodCreator.load(queryString),
                                     parametersMap);
                         } else {
                             ResultHandle paramsArray = generateParamsArray(queryParameterIndexes, methodCreator);
 
                             // call JpaOperations.executeUpdate
-                            updateCount = methodCreator.invokeStaticMethod(
+                            updateCount = methodCreator.invokeVirtualMethod(
                                     MethodDescriptor.ofMethod(AbstractJpaOperations.class, "executeUpdate",
                                             int.class, String.class, Object[].class),
+                                    methodCreator.readStaticField(operationsField),
                                     methodCreator.load(queryString),
                                     paramsArray);
                         }
@@ -314,7 +316,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                                 methodCreator.readStaticField(operationsField),
                                 methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
                                 methodCreator.load(queryString), methodCreator.load(countQueryString),
-                                generateSort(sortParameterIndex, methodCreator), parameters);
+                                generateSort(sortParameterIndex, pageableParameterIndex, methodCreator), parameters);
 
                     } else {
                         ResultHandle paramsArray = generateParamsArray(queryParameterIndexes, methodCreator);
@@ -327,7 +329,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                                 methodCreator.readStaticField(operationsField),
                                 methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
                                 methodCreator.load(queryString), methodCreator.load(countQueryString),
-                                generateSort(sortParameterIndex, methodCreator), paramsArray);
+                                generateSort(sortParameterIndex, pageableParameterIndex, methodCreator), paramsArray);
                     }
 
                     generateFindQueryResultHandling(methodCreator, panacheQuery, pageableParameterIndex, repositoryClassInfo,
@@ -391,7 +393,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
     }
 
     // ensure that Sort is correctly handled whether it's specified from the method name or a method param
-    private ResultHandle generateSort(Integer sortParameterIndex, MethodCreator methodCreator) {
+    private ResultHandle generateSort(Integer sortParameterIndex, Integer pageableParameterIndex, MethodCreator methodCreator) {
         ResultHandle sort = methodCreator.loadNull();
         if (sortParameterIndex != null) {
             sort = methodCreator.invokeStaticMethod(
@@ -399,6 +401,12 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                             io.quarkus.panache.common.Sort.class,
                             org.springframework.data.domain.Sort.class),
                     methodCreator.getMethodParam(sortParameterIndex));
+        } else if (pageableParameterIndex != null) {
+            sort = methodCreator.invokeStaticMethod(
+                    MethodDescriptor.ofMethod(TypesConverter.class, "pageToPanacheSort",
+                            io.quarkus.panache.common.Sort.class,
+                            org.springframework.data.domain.Pageable.class),
+                    methodCreator.getMethodParam(pageableParameterIndex));
         }
         return sort;
     }

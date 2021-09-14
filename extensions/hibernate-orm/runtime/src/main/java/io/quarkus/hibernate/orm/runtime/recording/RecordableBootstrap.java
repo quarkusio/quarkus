@@ -19,7 +19,6 @@ import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.service.spi.ServiceContributor;
 
-import io.quarkus.hibernate.orm.runtime.boot.QuarkusEnvironment;
 import io.quarkus.hibernate.orm.runtime.service.InitialInitiatorListProvider;
 
 /**
@@ -42,13 +41,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 
     public RecordableBootstrap(BootstrapServiceRegistry bootstrapServiceRegistry,
             InitialInitiatorListProvider initialInitiatorsProvider) {
-        this(bootstrapServiceRegistry, initialProperties(), LoadedConfig.baseline(), initialInitiatorsProvider);
-    }
-
-    private static Map initialProperties() {
-        HashMap map = new HashMap();
-        map.putAll(QuarkusEnvironment.getInitialProperties());
-        return map;
+        this(bootstrapServiceRegistry, new HashMap(), LoadedConfig.baseline(), initialInitiatorsProvider);
     }
 
     private RecordableBootstrap(BootstrapServiceRegistry bootstrapServiceRegistry, Map properties,

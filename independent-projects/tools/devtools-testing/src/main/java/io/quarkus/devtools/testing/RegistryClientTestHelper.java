@@ -5,6 +5,8 @@ import io.quarkus.registry.Constants;
 import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
 import io.quarkus.registry.catalog.json.JsonPlatform;
 import io.quarkus.registry.catalog.json.JsonPlatformCatalog;
+import io.quarkus.registry.catalog.json.JsonPlatformRelease;
+import io.quarkus.registry.catalog.json.JsonPlatformStream;
 import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.registry.config.json.JsonRegistriesConfig;
 import io.quarkus.registry.config.json.JsonRegistryConfig;
@@ -19,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Collections;
 import java.util.Properties;
 
 public class RegistryClientTestHelper {
@@ -43,6 +46,7 @@ public class RegistryClientTestHelper {
 
         properties.setProperty("io.quarkus.maven.secondary-local-repo", registryRepoPath.toString());
         properties.setProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY, toolsConfigPath.toString());
+        properties.setProperty("quarkusRegistryClient", "true");
     }
 
     private static void generatePlatformCatalog(final Path groupIdDir) {
@@ -63,11 +67,16 @@ public class RegistryClientTestHelper {
         }
         final ArtifactCoords bom = new ArtifactCoords("io.quarkus", "quarkus-bom", null, "pom", projectVersion);
         final JsonPlatformCatalog platforms = new JsonPlatformCatalog();
-        platforms.setDefaultPlatform(bom);
         final JsonPlatform platform = new JsonPlatform();
         platforms.addPlatform(platform);
-        platform.setBom(bom);
-        platform.setQuarkusCoreVersion(projectVersion);
+        platform.setPlatformKey(bom.getGroupId());
+        final JsonPlatformStream stream = new JsonPlatformStream();
+        platform.setStreams(Collections.singletonList(stream));
+        stream.setId(projectVersion);
+        final JsonPlatformRelease release = new JsonPlatformRelease();
+        stream.setReleases(Collections.singletonList(release));
+        release.setMemberBoms(Collections.singletonList(bom));
+        release.setQuarkusCoreVersion(projectVersion);
         try {
             JsonCatalogMapperHelper.serialize(platforms, platformsPath);
             Files.copy(platformsPath, versionedPlatformsPath, StandardCopyOption.REPLACE_EXISTING);
@@ -134,5 +143,6 @@ public class RegistryClientTestHelper {
     public static void disableRegistryClientTestConfig(Properties properties) {
         properties.remove("io.quarkus.maven.secondary-local-repo");
         properties.remove(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY);
+        properties.remove("quarkusRegistryClient");
     }
 }

@@ -1,0 +1,224 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Deploying to Heroku
+include::./attributes.adoc[]
+
+In this guide you will learn how to deploy a Quarkus based web application as a web-dyno to Heroku.
+
+This guide covers:
+
+* Update Quarkus HTTP Port
+* Install the Heroku CLI
+* Deploy the application to Heroku
+* Deploy the application as Docker image to Heroku
+* Deploy the native application as Docker image to Heroku
+
+== Prerequisites
+
+For this guide you need:
+
+* Roughly 1 hour for all modalities
+* JDK 11
+* Apache Maven {maven-version}
+* https://www.heroku.com/[A Heroku Account]. Free accounts work.
+* https://devcenter.heroku.com/articles/heroku-cli[Heroku CLI installed]
+
+== Introduction
+
+Heroku is a platform as a service (PaaS) that enables developers to build, run, and operate applications entirely in the cloud.
+It supports several languages like Java, Ruby, Node.js, Scala, Clojure, Python, PHP, and Go.
+In addition it offers a container registry that can be used to deploy prebuilt container images.
+
+Heroku can be used in different ways to run a Quarkus application:
+
+* As a plain Java program running in a container defined by Heroku's environment
+* As a containerized Java program running in a container defined by the Quarkus build process
+* As a containerized native program running in a container defined by the Quarkus build process
+
+All three approaches need to be aware of the port that Heroku assigns to it to handle traffic.
+Luckily, there's a dynamic configuration property for it.
+
+The guide assumes that you have the https://devcenter.heroku.com/articles/heroku-cli[Heroku CLI] installed.
+
+== Common project setup
+
+This guide will take as input an application developed in the link:getting-started[Getting Started guide].
+
+Make sure you have the getting-started application at hand, or clone the Git repository: `git clone {quickstarts-clone-url}`,
+or download an {quickstarts-archive-url}[archive]. The solution is located in the `getting-started` directory.
+
+Or, just generate a fresh project:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=code-with-quarkus-on-heroku \
+    -DclassName="org.acme.getting.started.GreetingResource" \
+    -Dpath="/hello"
+cd code-with-quarkus-on-heroku
+git init && git add . && git commit -am "Create initial project."
+----
+
+Heroku can react on changes in your repository, run CI and redeploy your application when your code changes.
+Therefore we start with a valid repository already.
+
+Also, make sure your Heroku CLI is working:
+
+[source,bash]
+----
+heroku --version
+heroku login
+----
+
+== Prepare the Quarkus HTTP Port
+
+Heroku picks a random port and assigns it to the container that is eventually running your Quarkus application.
+That port is available as an environment variable under `$PORT`.
+The easiest way to make Quarkus in all deployment scenarios aware of it is using the following configuration:
+
+[source,properties]
+----
+quarkus.http.port=${PORT:8080}
+----
+
+This reads as: "Listen on `$PORT` if this is a defined variable, otherwise listen on 8080 as usual."
+Run the following to add this to your `application.properties`:
+
+[source,bash]
+----
+echo "quarkus.http.port=\${PORT:8080}" >> src/main/resources/application.properties
+git commit -am "Configure the HTTP Port."
+----
+
+== Deploy the repository and build on Heroku
+
+The first variant uses the Quarkus Maven build to create the _quarkus-app_ application structure containing the runnable "fast-jar" as well as all libraries needed
+inside Heroku's build infrastructure and then deploying that result, the other one uses a local build process to create an optimized container.
+
+Two additional files are needed in your application's root directory:
+
+* `system.properties` to configure the Java version
+* `Procfile` to configure how Heroku starts your application
+
+Quarkus needs JDK 11, so we specify that first:
+
+[source,bash]
+----
+echo "java.runtime.version=11" >> system.properties
+git add system.properties
+git commit -am "Configure the Java version for Heroku."
+----
+
+We will deploy a web application so we need to configure the type `web` in the Heroku `Procfile` like this:
+
+[source,bash]
+----
+echo "web: java \$JAVA_OPTS -jar target/quarkus-app/quarkus-run.jar" >> Procfile
+git add Procfile
+git commit -am "Add a Procfile."
+----
+
+Your application should already be runnable via `heroku local web`.
+
+Let's create an application in your account and deploy that repository to it:
+
+[source,bash]
+----
+heroku create
+git push heroku master
+heroku open
+----
+
+The application will have a generated name and the terminal should output that. `heroku open` opens your default browser to access your new application.
+
+To access the REST endpoint via curl, run:
+
+[source,bash]
+----
+APP_NAME=`heroku info | grep  "=== .*" |sed "s/=== //"`
+curl $APP_NAME.herokuapp.com/hello
+----
+
+Of course, you can use the Heroku CLI to connect this repo to your GitHub account, too, but this is out of scope for this guide.
+
+== Deploy as container
+
+The advantage of pushing a whole container is that we are in complete control over its content and maybe even choose to deploy a container with a native executable running on GraalVM.
+
+First, login to Heroku's container registry:
+
+[source,bash]
+-----
+heroku container:login
+-----
+
+We need to add an extension to our project to build container images via the Quarkus Maven plugin:
+
+[source,bash]
+----
+mvn quarkus:add-extension -Dextensions="container-image-docker"
+git add pom.xml
+git commit -am "Add container-image-docker extension."
+----
+
+The image we are going to build needs to be named accordingly to work with Heroku's registry and deployment. 
+We get the generated name via `heroku info` and pass it on to the (local) build:
+
+[source,bash]
+----
+APP_NAME=`heroku info | grep  "=== .*" |sed "s/=== //"`
+mvn clean package\
+  -Dquarkus.container-image.build=true\
+  -Dquarkus.container-image.group=registry.heroku.com/$APP_NAME\
+  -Dquarkus.container-image.name=web\
+  -Dquarkus.container-image.tag=latest
+----
+
+With Docker installed, you can now push the image and release it:
+
+[source,bash]
+----
+docker push registry.heroku.com/$APP_NAME/web
+heroku container:release web --app $APP_NAME
+----
+
+You can and should check the logs to see if your application is now indeed running from the container:
+
+[source,bash]
+----
+heroku logs --app $APP_NAME --tail
+----
+
+The initial push is rather big, as all layers of the image need to be transferred.
+The following pushes will be smaller.
+
+The biggest advantage we take when deploying our app as a container is to deploy a container with the natively compiled application.
+Why? Because Heroku will stop or sleep the application when there's no incoming traffic.
+A native application will wake up much faster from its sleep.
+
+The process is pretty much the same.
+We opt in to compiling a native image inside a local container, so that we don't have to deal with installing GraalVM locally:
+
+[source,bash]
+----
+APP_NAME=`heroku info | grep  "=== .*" |sed "s/=== //"`
+mvn clean package\
+  -Dquarkus.container-image.build=true\
+  -Dquarkus.container-image.group=registry.heroku.com/$APP_NAME\
+  -Dquarkus.container-image.name=web\
+  -Dquarkus.container-image.tag=latest\
+  -Pnative\
+  -Dquarkus.native.container-build=true
+----
+
+After that, push and release again:
+
+[source,bash]
+----
+docker push registry.heroku.com/$APP_NAME/web
+heroku container:release web --app $APP_NAME
+----

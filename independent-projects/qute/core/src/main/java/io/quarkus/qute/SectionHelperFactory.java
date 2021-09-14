@@ -91,6 +91,8 @@ public interface SectionHelperFactory<T extends SectionHelper> {
 
         /**
          * Parse and register an expression for the specified parameter.
+         * <p>
+         * A registered expression contributes to the {@link Template#getExpressions()}, i.e. can be validated at build time.
          * 
          * @param param
          * @param value
@@ -114,15 +116,37 @@ public interface SectionHelperFactory<T extends SectionHelper> {
             return getBlocks().get(0).parameters;
         }
 
+        /**
+         * 
+         * @return {@code true} if the main block declares a parameter of the given name
+         */
         default public boolean hasParameter(String name) {
             return getParameters().containsKey(name);
         }
 
+        /**
+         * 
+         * @return the parameter, or null/{@link Parameter.EMPTY} if the main block does not declare a parameter of the given
+         *         name
+         */
         default public String getParameter(String name) {
             return getParameters().get(name);
         }
 
         /**
+         * 
+         * @param name
+         * @param defaultValue
+         * @return the param or the default value if not specified
+         */
+        default public String getParameterOrDefault(String name, String defaultValue) {
+            String param = getParameter(name);
+            return param == null || Parameter.EMPTY.equals(param) ? defaultValue : param;
+        }
+
+        /**
+         * Note that the expression must be registered in the {@link SectionHelperFactory#initializeBlock(Scope, BlockInfo)}
+         * first.
          * 
          * @param parameterName
          * @return an expression registered for the specified param name, or {@code null}
@@ -139,6 +163,20 @@ public interface SectionHelperFactory<T extends SectionHelper> {
         public Expression parseValue(String value);
 
         public List<SectionBlock> getBlocks();
+
+        /**
+         * 
+         * @param label
+         * @return the first block with the given label, or {code null} if no such exists
+         */
+        default SectionBlock getBlock(String label) {
+            for (SectionBlock block : getBlocks()) {
+                if (label.equals(block.label)) {
+                    return block;
+                }
+            }
+            return null;
+        }
 
         public Engine getEngine();
 

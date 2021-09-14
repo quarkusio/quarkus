@@ -13,6 +13,18 @@
     <artifactId>quarkus-bootstrap-gradle-resolver</artifactId>
     <name>Quarkus - Bootstrap - Gradle Resolver</name>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-bom</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -79,7 +91,7 @@
         <repository>
             <id>gradle-dependencies</id>
             <name>Gradle releases repository</name>
-            <url>https://repo.gradle.org/gradle/libs-releases</url>
+            <url>https://repo.gradle.org/artifactory/libs-releases</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>

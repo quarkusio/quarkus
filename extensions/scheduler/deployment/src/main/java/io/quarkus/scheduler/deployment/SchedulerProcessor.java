@@ -3,6 +3,7 @@ package io.quarkus.scheduler.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,6 +11,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -38,6 +40,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
+import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
@@ -83,11 +86,13 @@ public class SchedulerProcessor {
 
     static final DotName SCHEDULED_NAME = DotName.createSimple(Scheduled.class.getName());
     static final DotName SCHEDULES_NAME = DotName.createSimple(Scheduled.Schedules.class.getName());
+    static final DotName SKIP_NEVER_NAME = DotName.createSimple(Scheduled.Never.class.getName());
 
     static final Type SCHEDULED_EXECUTION_TYPE = Type.create(DotName.createSimple(ScheduledExecution.class.getName()),
             Kind.CLASS);
 
     static final String INVOKER_SUFFIX = "_ScheduledInvoker";
+    static final String NESTED_SEPARATOR = "$_";
 
     @BuildStep
     void beans(Capabilities capabilities, BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -159,6 +164,12 @@ public class SchedulerProcessor {
         for (ScheduledBusinessMethodItem scheduledMethod : scheduledMethods) {
             MethodInfo method = scheduledMethod.getMethod();
 
+            if (Modifier.isPrivate(method.flags()) || Modifier.isStatic(method.flags())) {
+                errors.add(new IllegalStateException("@Scheduled method must be non-private and non-static: "
+                        + method.declaringClass().name() + "#" + method.name() + "()"));
+                continue;
+            }
+
             // Validate method params and return type
             List<Type> params = method.parameters();
             if (params.size() > 1
@@ -175,7 +186,7 @@ public class SchedulerProcessor {
             // Validate cron() and every() expressions
             CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(config.cronType));
             for (AnnotationInstance scheduled : scheduledMethod.getSchedules()) {
-                Throwable error = validateScheduled(parser, scheduled, encounteredIdentities);
+                Throwable error = validateScheduled(parser, scheduled, encounteredIdentities, validationPhase.getContext());
                 if (error != null) {
                     errors.add(error);
                 }
@@ -198,11 +209,24 @@ public class SchedulerProcessor {
     @Record(RUNTIME_INIT)
     public FeatureBuildItem build(SchedulerConfig config, BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             SchedulerRecorder recorder, List<ScheduledBusinessMethodItem> scheduledMethods,
-            BuildProducer<GeneratedClassBuildItem> generatedClass, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             AnnotationProxyBuildItem annotationProxy, ExecutorBuildItem executor) {
 
         List<ScheduledMethodMetadata> scheduledMetadata = new ArrayList<>();
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
+        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, new Function<String, String>() {
+            @Override
+            public String apply(String name) {
+                // org/acme/Foo_ScheduledInvoker_run_0000 -> org.acme.Foo
+                int idx = name.indexOf(INVOKER_SUFFIX);
+                if (idx != -1) {
+                    name = name.substring(0, idx);
+                }
+                if (name.contains(NESTED_SEPARATOR)) {
+                    name = name.replace(NESTED_SEPARATOR, "$");
+                }
+                return name;
+            }
+        });
 
         for (ScheduledBusinessMethodItem scheduledMethod : scheduledMethods) {
             ScheduledMethodMetadata metadata = new ScheduledMethodMetadata();
@@ -247,8 +271,8 @@ public class SchedulerProcessor {
 
         String baseName;
         if (bean.getImplClazz().enclosingClass() != null) {
-            baseName = DotNames.simpleName(bean.getImplClazz().enclosingClass()) + "_"
-                    + DotNames.simpleName(bean.getImplClazz().name());
+            baseName = DotNames.simpleName(bean.getImplClazz().enclosingClass()) + NESTED_SEPARATOR
+                    + DotNames.simpleName(bean.getImplClazz());
         } else {
             baseName = DotNames.simpleName(bean.getImplClazz().name());
         }
@@ -303,39 +327,38 @@ public class SchedulerProcessor {
     }
 
     private Throwable validateScheduled(CronParser parser, AnnotationInstance schedule,
-            Map<String, AnnotationInstance> encounteredIdentities) {
+            Map<String, AnnotationInstance> encounteredIdentities,
+            BeanDeploymentValidator.ValidationContext validationContext) {
         MethodInfo method = schedule.target().asMethod();
         AnnotationValue cronValue = schedule.value("cron");
         AnnotationValue everyValue = schedule.value("every");
         if (cronValue != null && !cronValue.asString().trim().isEmpty()) {
             String cron = cronValue.asString().trim();
-            if (SchedulerUtils.isConfigValue(cron)) {
-                // Don't validate config property
-                return null;
+            if (!SchedulerUtils.isConfigValue(cron)) {
+                try {
+                    parser.parse(cron).validate();
+                } catch (IllegalArgumentException e) {
+                    return new IllegalStateException("Invalid cron() expression on: " + schedule, e);
+                }
+                if (everyValue != null && !everyValue.asString().trim().isEmpty()) {
+                    LOGGER.warnf(
+                            "%s declared on %s#%s() defines both cron() and every() - the cron expression takes precedence",
+                            schedule, method.declaringClass().name(), method.name());
+                }
             }
-            try {
-                parser.parse(cron).validate();
-            } catch (IllegalArgumentException e) {
-                return new IllegalStateException("Invalid cron() expression on: " + schedule, e);
-            }
-            if (everyValue != null && !everyValue.asString().trim().isEmpty()) {
-                LOGGER.warnf(
-                        "%s declared on %s#%s() defines both cron() and every() - the cron expression takes precedence",
-                        schedule, method.declaringClass().name(), method.name());
-            }
+
         } else {
             if (everyValue != null && !everyValue.asString().trim().isEmpty()) {
                 String every = everyValue.asString().trim();
-                if (SchedulerUtils.isConfigValue(every)) {
-                    return null;
-                }
-                if (Character.isDigit(every.charAt(0))) {
-                    every = "PT" + every;
-                }
-                try {
-                    Duration.parse(every);
-                } catch (Exception e) {
-                    return new IllegalStateException("Invalid every() expression on: " + schedule, e);
+                if (!SchedulerUtils.isConfigValue(every)) {
+                    if (Character.isDigit(every.charAt(0))) {
+                        every = "PT" + every;
+                    }
+                    try {
+                        Duration.parse(every);
+                    } catch (Exception e) {
+                        return new IllegalStateException("Invalid every() expression on: " + schedule, e);
+                    }
                 }
             } else {
                 return new IllegalStateException("@Scheduled must declare either cron() or every(): " + schedule);
@@ -346,17 +369,17 @@ public class SchedulerProcessor {
         if (delay == null || delay.asLong() <= 0) {
             if (delayedValue != null && !delayedValue.asString().trim().isEmpty()) {
                 String delayed = delayedValue.asString().trim();
-                if (SchedulerUtils.isConfigValue(delayed)) {
-                    return null;
+                if (!SchedulerUtils.isConfigValue(delayed)) {
+                    if (Character.isDigit(delayed.charAt(0))) {
+                        delayed = "PT" + delayed;
+                    }
+                    try {
+                        Duration.parse(delayed);
+                    } catch (Exception e) {
+                        return new IllegalStateException("Invalid delayed() expression on: " + schedule, e);
+                    }
                 }
-                if (Character.isDigit(delayed.charAt(0))) {
-                    delayed = "PT" + delayed;
-                }
-                try {
-                    Duration.parse(delayed);
-                } catch (Exception e) {
-                    return new IllegalStateException("Invalid delayed() expression on: " + schedule, e);
-                }
+
             }
         } else {
             if (delayedValue != null && !delayedValue.asString().trim().isEmpty()) {
@@ -377,8 +400,19 @@ public class SchedulerProcessor {
             } else {
                 encounteredIdentities.put(identity, schedule);
             }
-
         }
+
+        AnnotationValue skipExecutionIfValue = schedule.value("skipExecutionIf");
+        if (skipExecutionIfValue != null) {
+            DotName skipPredicate = skipExecutionIfValue.asClass().name();
+            if (!SKIP_NEVER_NAME.equals(skipPredicate)
+                    && validationContext.beans().withBeanType(skipPredicate).collect().size() != 1) {
+                String message = String.format("There must be exactly one bean that matches the skip predicate: \"%s\" on: %s",
+                        skipPredicate, schedule);
+                return new IllegalStateException(message);
+            }
+        }
+
         return null;
     }
 

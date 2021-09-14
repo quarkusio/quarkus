@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "gRPC Common"
+metadata:
+  keywords:
+    - "gRPC"
+  categories:
+    - "web"
+    - "serialization"
+    - "reactive"
+  status: "experimental"
+  unlisted: "true"

@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "SmallRye Reactive Messaging"
+metadata:
+  keywords:
+  - "smallrye-reactive-messaging"
+  - "reactive-messaging"
+  - "reactive"
+  guide: "https://quarkus.io/guides/reactive-messaging"
+  categories:
+  - "messaging"
+  status: "stable"

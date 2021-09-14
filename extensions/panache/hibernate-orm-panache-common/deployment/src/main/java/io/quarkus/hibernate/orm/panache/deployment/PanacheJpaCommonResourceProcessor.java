@@ -21,7 +21,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
-import io.quarkus.hibernate.orm.deployment.JpaEntitiesBuildItem;
+import io.quarkus.hibernate.orm.deployment.JpaModelBuildItem;
 import io.quarkus.hibernate.orm.panache.common.runtime.PanacheHibernateRecorder;
 
 public final class PanacheJpaCommonResourceProcessor {
@@ -32,8 +32,8 @@ public final class PanacheJpaCommonResourceProcessor {
     @BuildStep
     void lookupNamedQueries(CombinedIndexBuildItem index,
             BuildProducer<PanacheNamedQueryEntityClassBuildStep> namedQueries,
-            JpaEntitiesBuildItem jpaEntities) {
-        for (String modelClass : jpaEntities.getAllModelClassNames()) {
+            JpaModelBuildItem jpaModel) {
+        for (String modelClass : jpaModel.getAllModelClassNames()) {
             // lookup for `@NamedQuery` on the hierarchy and produce NamedQueryEntityClassBuildStep
             Set<String> typeNamedQueries = new HashSet<>();
             lookupNamedQueries(index, DotName.createSimple(modelClass), typeNamedQueries);

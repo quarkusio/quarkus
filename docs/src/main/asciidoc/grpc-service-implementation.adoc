@@ -7,44 +7,68 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-gRPC service implementations exposed as beans are automatically registered and served by quarkus-grpc.
+gRPC service implementations exposed as CDI beans are automatically registered and served by quarkus-grpc.
 
 IMPORTANT: Implementing a gRPC service requires the gRPC classes to be generated.
 Place your `proto` files in `src/main/proto` and run `mvn compile`.
 
-== Implementation base
+== Generated Code
 
-The generation has created 2 implementation bases:
+Quarkus generates a few implementation classes for services declared in the `proto` file:
 
-1. One using the default gRPC API
-2. One using the Mutiny API
+1. A _service interface_ using the Mutiny API
+  - the class name is `${JAVA_PACKAGE}.${NAME_OF_THE_SERVICE}`
+2. An _implementation base_ class using the gRPC API
+  - the class name is structured as follows: `${JAVA_PACKAGE}.${NAME_OF_THE_SERVICE}Grpc.${NAME_OF_THE_SERVICE}ImplBase`
 
-The first classname is structured as follows: `${NAME_OF_THE_SERVICE}Grpc.${NAME_OF_THE_SERVICE}ImplBase`.
-The second classname is structured as follows: `Mutiny${NAME_OF_THE_SERVICE}Grpc.${NAME_OF_THE_SERVICE}ImplBase`.
-
-For example, if you use `Greeter` as service name as in:
+For example, if you use the following `proto` file snippet:
 
 [source]
 ----
-service Greeter {
+option java_package = "hello"; <1>
+
+service Greeter { <2>
     rpc SayHello (HelloRequest) returns (HelloReply) {}
 }
 ----
+<1> `hello` is the java package for the generated classes.
+<2> `Greeter` is the service name.
 
-The regular implementation base is: `GreeterGrpc.GreeterImplBase`.
-The second implementation base is: `MutinyGreeterGrpc.GreeterImplBase`.
+Then the service interface is `hello.Greeter` and the implementation base is the abstract static nested class: `hello.GreeterGrpc.GreeterImplBase`.
 
-Note that these classes are not interfaces but regular classes.
-When extending them, you need to override the service methods defined in the service definition.
+IMPORTANT: You'll need to implement the _service interface_ or extend the _base class_ with your service implementation bean as described in the following sections.
 
-gRPC service implementations have to be annotated with `@GrpcService` annotation.
+== Implementing a Service with the Mutiny API
 
-NOTE: gRPC services have to be CDI beans with `Singleton` scope. The `@GrpcService` annotation makes sure of that
-and, additionally, makes sure that `RequestContext`, needed e.g. to make database calls, is enabled in your service.
+To implement a gRPC service using the Mutiny API, create a class that implements the service interface.
+Then, implement the methods defined in the service interface.
+If you don't want to implement a service method just throw an `java.lang.UnsupportedOperationException` from the method body (the exception will be automatically converted to the appropriate gRPC exception).
+Finally, implement the service and add the `@GrpcService` annotation:
 
-== Implementing a service with the default gRPC API
+[source, java]
+----
+import io.quarkus.grpc.GrpcService;
+import hello.Greeter;
 
-To implement a gRPC service using the default gRPC API, create a class extending the default implementation base.
+@GrpcService <1>
+public class HelloService implements Greeter { <2>
+
+    @Override
+    public Uni<HelloReply> sayHello(HelloRequest request) {
+        return Uni.createFrom().item(() ->
+                HelloReply.newBuilder().setMessage("Hello " + request.getName()).build()
+        );
+    }
+}
+----
+<1> A gRPC service implementation bean must be annotated with the `@GrpcService` annotation and should not declare any other CDI qualifier. All gRPC services have the `javax.inject.Singleton` scope. Additionally, the request context is always active during a service call.
+<2> `hello.Greeter` is the generated service interface.
+
+NOTE: The service implementation bean can also extend the Mutiny implementation base, where the class name is structured as follows: `Mutiny${NAME_OF_THE_SERVICE}Grpc.${NAME_OF_THE_SERVICE}ImplBase`.
+
+== Implementing a Service with the default gRPC API
+
+To implement a gRPC service using the default gRPC API, create a class that extends the default implementation base.
 Then, override the methods defined in the service interface.
 Finally, implement the service and add the `@GrpcService` annotation:
 
@@ -65,30 +89,7 @@ public class HelloService extends GreeterGrpc.GreeterImplBase {
 }
 ----
 
-== Implementing a service with the Mutiny API
-
-To implement a gRPC service using the Mutiny gRPC API, create a class extending the Mutiny implementation base.
-Then, override the methods defined in the service interface.
-These methods are using Mutiny types.
-Finally, implement the service and add the `@GrpcService` annotation:
-
-[source, java]
-----
-import io.quarkus.grpc.GrpcService;
-
-@GrpcService
-public class ReactiveHelloService extends MutinyGreeterGrpc.GreeterImplBase {
-
-    @Override
-    public Uni<HelloReply> sayHello(HelloRequest request) {
-        return Uni.createFrom().item(() ->
-                HelloReply.newBuilder().setMessage("Hello " + request.getName()).build()
-        );
-    }
-}
-----
-
-== Blocking service implementation
+== Blocking Service Implementation
 
 By default, all the methods from a gRPC service run on the event loop.
 As a consequence, you must **not** block.
@@ -103,7 +104,7 @@ public Uni<HelloReply> sayHelloBlocking(HelloRequest request) {
 }
 ----
 
-== Handling streams
+== Handling Streams
 
 gRPC allows receiving and returning streams:
 
@@ -123,7 +124,7 @@ Using Mutiny, you can implement these as follows:
 import io.quarkus.grpc.GrpcService;
 
 @GrpcService
-public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
+public class StreamingService implements Streaming {
 
     @Override
     public Multi<Item> source(Empty request) {
@@ -156,7 +157,7 @@ public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
 }
 ----
 
-== Health check
+== Health Check
 For the implemented services, Quarkus gRPC exposes health information in the following format:
 [source,protobuf]
 ----
@@ -206,11 +207,11 @@ By default, quarkus-grpc starts a single gRPC server running on a single event l
 
 If you wish to scale your server, you can set the number of server instances by setting `quarkus.grpc.server.instances`.
 
-== Server configuration
+== Server Configuration
 
 include::{generated-dir}/config/quarkus-grpc-config-group-config-grpc-server-configuration.adoc[opts=optional, leveloffset=+1]
 
-== Example of configuration
+== Example of Configuration
 
 === Enabling TLS
 
@@ -281,4 +282,3 @@ public class MyInterceptor implements ServerInterceptor, Prioritized {
 
 Interceptors with the highest priority are called first.
 The default priority, used if the interceptor does not implement the `Prioritized` interface, is `0`.
-

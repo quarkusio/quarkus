@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Logging JSON"
+metadata:
+  keywords:
+  - "logging"
+  - "json"
+  - "formatter"
+  categories:
+  - "core"
+  status: "preview"
+  guide: "https://quarkus.io/guides/logging#json-logging"

@@ -189,7 +189,7 @@ quarkus.oidc.tls.verification=none
 quarkus.keycloak.policy-enforcer.enable=true
 ----
 
-NOTE: By default, applications using the `quarkus-oidc` extension are marked as a `service` type application (see `quarkus.oidc.application-type`). This extension currently supports only such `service` type applications.
+NOTE: By default, applications using the `quarkus-oidc` extension are marked as a `service` type application (see `quarkus.oidc.application-type`). This extension also supports only  `web-app` type applications but only if the access token returned as part of the authorization code grant response is marked as a source of roles: `quarkus.oidc.roles.source=accesstoken` (`web-app` type applications check ID token roles by default).
 
 == Starting and Configuring the Keycloak Server
 
@@ -408,16 +408,30 @@ quarkus.keycloak.policy-enforcer.paths.1.name=Permission Resource
 quarkus.keycloak.policy-enforcer.paths.1.path=/api/permission
 quarkus.keycloak.policy-enforcer.paths.1.claim-information-point.claims.static-claim=static-claim
 
-# Tenant1
+# Service Tenant
 
-quarkus.oidc.tenant1.auth-server-url=${keycloak.url}/realms/quarkus
-quarkus.oidc.tenant1.client-id=quarkus-app
-quarkus.oidc.tenant1.credentials.secret=secret
+quarkus.oidc.service-tenant.auth-server-url=${keycloak.url}/realms/quarkus
+quarkus.oidc.service-tenant.client-id=quarkus-app
+quarkus.oidc.service-tenant.credentials.secret=secret
 
-quarkus.keycloak.tenant1.policy-enforcer.enforcement-mode=PERMISSIVE
-quarkus.keycloak.tenant1.policy-enforcer.paths.1.name=Permission Resource
-quarkus.keycloak.tenant1.policy-enforcer.paths.1.path=/api/permission
-quarkus.keycloak.tenant1.policy-enforcer.paths.1.claim-information-point.claims.static-claim=static-claim
+quarkus.keycloak.service-tenant.policy-enforcer.enforcement-mode=PERMISSIVE
+quarkus.keycloak.service-tenant.policy-enforcer.paths.1.name=Permission Resource Service
+quarkus.keycloak.service-tenant.policy-enforcer.paths.1.path=/api/permission
+quarkus.keycloak.service-tenant.policy-enforcer.paths.1.claim-information-point.claims.static-claim=static-claim
+
+
+# WebApp Tenant
+
+quarkus.oidc.webapp-tenant.auth-server-url=${keycloak.url}/realms/quarkus
+quarkus.oidc.webapp-tenant.client-id=quarkus-app
+quarkus.oidc.webapp-tenant.credentials.secret=secret
+quarkus.oidc.webapp-tenant.application-type=web-app
+quarkus.oidc.webapp-tenant.roles.source=accesstoken
+
+quarkus.keycloak.webapp-tenant.policy-enforcer.enforcement-mode=PERMISSIVE
+quarkus.keycloak.webapp-tenant.policy-enforcer.paths.1.name=Permission Resource WebApp
+quarkus.keycloak.webapp-tenant.policy-enforcer.paths.1.path=/api/permission
+quarkus.keycloak.webapp-tenant.policy-enforcer.paths.1.claim-information-point.claims.static-claim=static-claim
 ----
 
 == Configuration Reference

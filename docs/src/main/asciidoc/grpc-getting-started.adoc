@@ -13,6 +13,15 @@ While this page describes how to configure it with Maven, it is also possible to
 Let's imagine you have a regular Quarkus project, generated from the https://code.quarkus.io[Quarkus project generator].
 The default configuration is enough, but you can also select some extensions if you want.
 
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `grpc-plain-text-quickstart` {quickstarts-tree-url}/grpc-plain-text-quickstart[directory].
+
 == Configuring your project
 
 Edit the `pom.xml` file to add the Quarkus gRPC extension dependency (just under `<dependencies>`):
@@ -109,6 +118,9 @@ target/generated-sources/grpc
 └── io
     └── quarkus
         └── example
+            ├── Greeter.java
+            ├── GreeterBean.java
+            ├── GreeterClient.java
             ├── GreeterGrpc.java
             ├── HelloReply.java
             ├── HelloReplyOrBuilder.java
@@ -144,13 +156,40 @@ To override it, set the `quarkus.generate-code.grpc.scan-for-imports` property i
 
 Now that we have the generated classes let's implement our _hello_ service.
 
-With Quarkus, implementing a service requires to _extend_ the generated service base implementation and expose it as as a CDI bean. We encourage you to annotate the service class with the `@io.quarkus.grpc.GrpcService` CDI stereotype.
-
-IMPORTANT: If a gRPC service bean had other scope annotation than `@Singleton` the build would fail.
+With Quarkus, implementing a service requires to implement the generated service interface based on Mutiny, a Reactive Programming API integrated in Quarkus, and expose it as a CDI bean. 
+Learn more about Mutiny on the xref:mutiny-primer.adoc[Mutiny guide].
+The service class must be annotated with the `@io.quarkus.grpc.GrpcService` annotation.
 
 === Implementing a service
 
 Create the `src/main/java/org/acme/HelloService.java` file with the following content:
+
+[source,java]
+----
+package org.acme;
+
+import io.grpc.stub.StreamObserver;
+import io.quarkus.example.Greeter;
+import io.quarkus.example.HelloReply;
+import io.quarkus.example.HelloRequest;
+import io.quarkus.grpc.GrpcService;
+
+@GrpcService <1>
+public class HelloService implements Greeter {  <2>
+
+    @Override
+    public Uni<HelloReply> sayHello(HelloRequest request) { <3>
+        return Uni.createFrom().item(() ->
+                HelloReply.newBuilder().setMessage("Hello " + request.getName()).build()
+        );
+    }
+}
+----
+<1> Expose your implementation as a bean.
+<2> Implement the generated service interface.
+<3> Implement the methods defined in the service definition (here we have a single method).
+
+You can also use the default gRPC API instead of Mutiny:
 
 [source,java]
 ----
@@ -162,56 +201,23 @@ import io.quarkus.example.HelloReply;
 import io.quarkus.example.HelloRequest;
 import io.quarkus.grpc.GrpcService;
 
-@GrpcService                                                                                  // <1>
-public class HelloService extends GreeterGrpc.GreeterImplBase {                               // <2>
+@GrpcService <1>
+public class HelloService extends GreeterGrpc.GreeterImplBase { <2>
 
     @Override
-    public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) { // <3>
+    public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) { <3>
         String name = request.getName();
         String message = "Hello " + name;
-        responseObserver.onNext(HelloReply.newBuilder().setMessage(message).build());         // <4>
-        responseObserver.onCompleted();                                                       // <5>
-    }
-}
-
-----
-1. Expose your implementation as bean.
-2. Extends the `ImplBase` class. This is a generated class.
-3. Implement the methods defined in the service definition (here we have a single method).
-4. Build and send the response.
-5. Close the response.
-
-Quarkus also provides an additional model with Mutiny, a Reactive Programming API integrated in Quarkus.
-Learn more about Mutiny on the link:getting-started-reactive#mutiny[Getting Started with Reactive guide].
-A Mutiny implementation of this service would be:
-
-[source, java]
-----
-package org.acme;
-
-import io.quarkus.example.HelloReply;
-import io.quarkus.example.HelloRequest;
-import io.quarkus.example.MutinyGreeterGrpc;
-import io.quarkus.grpc.GrpcService;
-
-import io.smallrye.mutiny.Uni;
-
-@GrpcService
-public class ReactiveHelloService extends MutinyGreeterGrpc.GreeterImplBase {
-
-    @Override
-    public Uni<HelloReply> sayHello(HelloRequest request) {
-        return Uni.createFrom().item(() ->
-                HelloReply.newBuilder().setMessage("Hello " + request.getName()).build()
-        );
+        responseObserver.onNext(HelloReply.newBuilder().setMessage(message).build()); <4>
+        responseObserver.onCompleted(); <5>
     }
 }
 ----
-
-The main differences are the following:
-
-* it extends the `ImplBase` from `MutinyGreeterGrpc` instead of `GreeterGrpc`
-* the signature of the method is using Mutiny types
+<1> Expose your implementation as a bean.
+<2> Extends the `ImplBase` class. This is a generated class.
+<3> Implement the methods defined in the service definition (here we have a single method).
+<4> Build and send the response.
+<5> Close the response.
 
 NOTE: If your service implementation logic is blocking (use blocking I/O for example), annotate your method with
 `@Blocking`.
@@ -239,11 +245,10 @@ Open the existing `org.acme.ExampleResource` class, and edit the content to beco
 ----
 package org.acme;
 
-import io.quarkus.example.GreeterGrpc;
+import io.quarkus.example.Greeter;
 import io.quarkus.example.HelloRequest;
 import io.quarkus.grpc.GrpcClient;
 
-import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -254,7 +259,7 @@ import javax.ws.rs.core.MediaType;
 public class ExampleResource {
 
     @GrpcClient                               // <1>
-    GreeterGrpc.GreeterBlockingStub hello;    // <2>
+    Greeter hello;                            // <2>
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -269,10 +274,9 @@ public class ExampleResource {
     }
 }
 ----
-
-1. Inject the service and configure its name. The service name is used in the application configuration. If not specified then the field name is used instead: `hello` in this particular case.
-2. Use the _blocking_ stub (also a generated class).
-3. Invoke the service.
+<1> Inject the service and configure its name. The name is used in the application configuration. If not specified then the field name is used instead: `hello` in this particular case.
+<2> Use the generated service interface based on Mutiny API.
+<3> Invoke the service.
 
 We need to configure the application to indicate where the `hello` service is found.
 In the `src/main/resources/application.properties` file, add the following property:
@@ -282,7 +286,7 @@ In the `src/main/resources/application.properties` file, add the following prope
 quarkus.grpc.clients.hello.host=localhost
 ----
 
-- `hello` is the name of the service used in the `@GrpcClient` annotation.
+- `hello` is the name used in the `@GrpcClient` annotation.
 - `host` configures the service host (here it's localhost).
 
 Then, open http://localhost:8080/hello/quarkus in a browser, and you should get `Hello quarkus`!

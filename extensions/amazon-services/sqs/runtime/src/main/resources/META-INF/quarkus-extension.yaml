@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Amazon SQS"
+metadata:
+  keywords:
+    - "sqs"
+    - "aws"
+    - "amazon"
+  guide: "https://quarkus.io/guides/amazon-sqs"
+  categories:
+    - "data"
+  status: "preview"

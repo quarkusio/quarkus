@@ -14,71 +14,119 @@ Place your `proto` files in `src/main/proto` and run `mvn compile`.
 
 == Stubs and Injection
 
-gRPC generation provides several stubs, providing different way to consume a service.
-Quarkus gRPC can inject:
+gRPC generation provides several stubs, providing different ways to consume a gRPC service.
+You can inject:
 
-* blocking stubs
-* reactive stubs based on Mutiny
-
-In addition, it also can inject the gRPC `io.grpc.Channel`, that lets you create other types of stubs.
+* a service interface using the Mutiny API,
+* a blocking stub using the gRPC API,
+* a reactive stub based on Mutiny,
+* the gRPC `io.grpc.Channel`, that lets you create other types of stubs.
 
 [source, java]
 ----
 import io.quarkus.grpc.GrpcClient;
 
-@GrpcClient("helloService")                   // <1>
-MutinyGreeterGrpc.MutinyGreeterStub mutiny;
+import hello.Greeter;
+import hello.GreeterGrpc.GreeterBlockingStub;
+import hello.MutinyGreeterGrpc.MutinyGreeterStub;
 
-@GrpcClient
-GreeterGrpc.GreeterBlockingStub helloService; // <2>
+class MyBean {
 
-@GrpcClient("hello-service")
-Channel channel;
+   // A service interface using the Mutiny API
+   @GrpcClient("helloService")                   // <1>
+   Greeter greeter;
+
+   // A reactive stub based on Mutiny
+   @GrpcClient("helloService")
+   MutinyGreeterGrpc.MutinyGreeterStub mutiny;
+
+   // A blocking stub using the gRPC API
+   @GrpcClient
+   GreeterGrpc.GreeterBlockingStub helloService; // <2>
+
+   @GrpcClient("hello-service")
+   Channel channel;
+
+}
 ----
-1. Note that in Quarkus, you can skip the `@Inject` annotation completely if the injected point declares at least one qualifier.
-2. If the service name is not specified via `GrpcClient#value()` then the field name is used instead: `helloService` in this particular case.
+<1> A gRPC client injection point must be annotated with the `@GrpcClient` qualifier. This qualifier can be used to specify the name that is used to configure the underlying gRPC client. For example, if you set it to `hello-service`, configuring the host of the service is done using the `quarkus.grpc.clients.**hello-service**.host`.
+<2> If the name is not specified via the `GrpcClient#value()` then the field name is used instead, e.g. `helloService` in this particular case.
 
-The stub class names are computed from the service name.
-For example, if you use `Greeter` as service name as in:
+The stub class names are derived from the service name used in your `proto` file.
+For example, if you use `Greeter` as a service name as in:
 
 [source]
 ----
+option java_package = "hello";
+
 service Greeter {
     rpc SayHello (HelloRequest) returns (HelloReply) {}
 }
 ----
 
-The Mutiny stub name is: `MutinyGreeterGrpc.MutinyGreeterStub`
-The blocking stub name is: `GreeterGrpc.GreeterBlockingStub`
-
-Client injection must be qualified using `@GrpcClient`.
-This annotation indicates the configuration prefix used to configure the service.
-For example, if you set it to `hello-service`, configuring the host of the service is done using `hello-service.host`.
+Then the service interface name is: `hello.Greeter`, the Mutiny stub name is: `hello.MutinyGreeterGrpc.MutinyGreeterStub` and the blocking stub name is: `hello.GreeterGrpc.GreeterBlockingStub`.
 
 == Examples
 
-=== Using a blocking and mutiny stubs
+=== Service Interface
 
 [source, java]
 ----
-@GrpcClient("hello") GreeterGrpc.GreeterBlockingStub blockingHelloService;
-@GrpcClient("hello") MutinyGreeterGrpc.MutinyGreeterStub mutinyHelloService;
+import io.quarkus.grpc.GrpcClient;
 
-@GET
-@Path("/blocking/{name}")
-public String helloBlocking(@PathParam("name") String name) {
-    return blockingHelloService.sayHello(HelloRequest.newBuilder().setName(name).build()).getMessage();
-}
+import hello.Greeter;
 
-@GET
-@Path("/mutiny/{name}")
-public Uni<String> helloMutiny(@PathParam("name") String name) {
-    return mutinyHelloService.sayHello(HelloRequest.newBuilder().setName(name).build())
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/hello")
+public class ExampleResource {
+
+   @GrpcClient <1>
+   Greeter hello;
+
+   @GET
+   @Path("/mutiny/{name}")
+   public Uni<String> helloMutiny(@PathParam("name") String name) {
+      return hello.sayHello(HelloRequest.newBuilder().setName(name).build())
             .onItem().transform(HelloReply::getMessage);
+   }
 }
 ----
+<1> The service name is derived from the injection point - the field name is used. The `quarkus.grpc.clients.hello.host` property must be set.
 
-Note that in this example, the `quarkus.grpc.clients.hello.host` property must be set.
+=== Blocking Stub
+
+[source, java]
+----
+---
+import io.quarkus.grpc.GrpcClient;
+
+import hello.GreeterGrpc.GreeterBlockingStub;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/hello")
+public class ExampleResource {
+
+   @GrpcClient("hello") <1>
+   GreeterGrpc.GreeterBlockingStub blockingHelloService;
+
+   @GET
+   @Path("/blocking/{name}")
+   public String helloBlocking(@PathParam("name") String name) {
+      return blockingHelloService.sayHello(HelloRequest.newBuilder().setName(name).build()).getMessage();
+   }
+}
+----
+<1> The `quarkus.grpc.clients.hello.host` property must be set.
 
 === Handling streams
 
@@ -157,11 +205,9 @@ For each gRPC service you inject in your application, you can configure the foll
 
 include::{generated-dir}/config/quarkus-grpc-config-group-config-grpc-client-configuration.adoc[opts=optional, leveloffset=+1]
 
-The `service-name` is the name set in the `@GrpcClient` or derived from the injection point if not explicitly defined.
+The `client-name` is the name set in the `@GrpcClient` or derived from the injection point if not explicitly defined.
 
-== Example of configuration
-
-The 2 following examples uses _hello_ as service name.
+The following examples uses _hello_ as the client name.
 Don't forget to replace it with the name you used in in the `@GrpcClient` annotation.
 
 === Enabling TLS
@@ -195,6 +241,19 @@ quarkus.grpc.clients.hello.ssl.key=tls/client.key
 quarkus.grpc.clients.hello.ssl.trust-store=tls/ca.pem
 ----
 
+=== Client Deadlines
+
+It's always reasonable to set a deadline (timeout) for a gRPC client, i.e. to specify a duration of time after which the RPC times out and the client receives the status error `DEADLINE_EXCEEDED`.
+You can specify the deadline via the `quarkus.grpc.clients."service-name".deadline` configuration property, e.g.: 
+
+[source,properties]
+----
+quarkus.grpc.clients.hello.host=localhost
+quarkus.grpc.clients.hello.deadline=2s <1>
+----
+<1> Set the  deadline for all injected clients.
+
+
 == Client Interceptors
 
 You can implement a gRPC client interceptor by implementing an `@ApplicationScoped` bean implementing `io.grpc.ClientInterceptor`:
@@ -216,7 +275,7 @@ TIP: Check the https://grpc.github.io/grpc-java/javadoc/io/grpc/ClientIntercepto
 
 When you have multiple client interceptors, you can order them by implementing the `javax.enterprise.inject.spi.Prioritized` interface:
 
-source, java]
+[source, java]
 ----
 @ApplicationScoped
 public class MyInterceptor implements ClientInterceptor, Prioritized {
@@ -236,4 +295,3 @@ public class MyInterceptor implements ClientInterceptor, Prioritized {
 
 Interceptors with the highest priority are called first.
 The default priority, used if the interceptor does not implement the `Prioritized` interface, is `0`.
-

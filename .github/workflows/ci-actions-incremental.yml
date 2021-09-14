@@ -33,6 +33,10 @@ on:
       - '.github/*.conf'
   workflow_dispatch:
 
+concurrency:
+  group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, pr = ${{ github.event.pull_request.id }}"
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.repository != 'quarkusio/quarkus' }}
+
 env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
@@ -141,12 +145,12 @@ jobs:
           if [ -n "$PULL_REQUEST_BASE" ]
           then
             # The PR defines a clear merge target so just use that branch for reference, *unless*:
-            # - the current branch is a backport branch
-            GIB_ARGS+=" -Dgib.referenceBranch=origin/$PULL_REQUEST_BASE -Dgib.disableIfBranchMatches='.*backport.*'"
+            # - the current branch is a backport branch targeting some released branch like 1.10 (merge target is not main)
+            GIB_ARGS+=" -Dgib.referenceBranch=origin/$PULL_REQUEST_BASE -Dgib.disableIfReferenceBranchMatches='origin/\d+\.\d+'"
           else
             # No PR means the merge target is uncertain so fetch & use main of quarkusio/quarkus, *unless*:
             # - the current branch is main or some released branch like 1.10
-            # - the current branch is a backport branch targeting some released branch like 1.10 (merge target is not main)
+            # - the current branch is a backport branch which is going to target some released branch like 1.10 (merge target is not main)
             GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/main -Dgib.fetchReferenceBranch -Dgib.disableIfBranchMatches='main|\d+\.\d+|.*backport.*'"
           fi
           echo "GIB_ARGS: $GIB_ARGS"
@@ -156,7 +160,7 @@ jobs:
         # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
         run: |
           ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dtcks -Dquickly-ci ${{ steps.get-gib-args.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log validate
-          [ -f gib-impacted.log ] && GIB_IMPACTED=$(sed "s|$(pwd)/||" gib-impacted.log) || GIB_IMPACTED=''
+          [ -f gib-impacted.log ] && GIB_IMPACTED=$(cat gib-impacted.log) || GIB_IMPACTED=''
           echo "GIB_IMPACTED: ${GIB_IMPACTED}"
           echo "::set-output name=impacted_modules::${GIB_IMPACTED//$'\n'/'%0A'}"
       - name: Tar Maven Repo
@@ -235,11 +239,12 @@ jobs:
             maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g",
             os-name: "ubuntu-latest"
           }
+          # all the jdk.compiler ones are for Kotlin Kapt
           - {
             name: "16",
             java-version: 16,
             maven_args: "$JVM_TEST_MAVEN_ARGS -pl '!devtools/gradle' -Dno-descriptor-tests",
-            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g --add-opens java.base/java.util=ALL-UNNAMED",
+            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g --add-opens java.base/java.util=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.jvm=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
             os-name: "ubuntu-latest"
           }
           - {

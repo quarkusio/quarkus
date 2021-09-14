@@ -2,7 +2,7 @@ package io.quarkus.hibernate.orm.panache.kotlin
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations
-import io.quarkus.hibernate.orm.panache.kotlin.runtime.KotlinJpaOperations.INSTANCE
+import io.quarkus.hibernate.orm.panache.kotlin.runtime.KotlinJpaOperations.Companion.INSTANCE
 import javax.json.bind.annotation.JsonbTransient
 import javax.persistence.EntityManager
 
@@ -16,15 +16,6 @@ import javax.persistence.EntityManager
  */
 interface PanacheEntityBase {
     // Operations
-
-    /**
-     * Returns the default [EntityManager] for extra operations (eg. CriteriaQueries)
-     *
-     * @return the default [EntityManager]
-     */
-    @JsonbTransient
-    @JsonIgnore
-    fun getEntityManager(): EntityManager = AbstractJpaOperations.getEntityManager(this.javaClass)
 
     /**
      * Returns true if this entity is persistent in the database. If yes, all modifications to
@@ -69,12 +60,5 @@ interface PanacheEntityBase {
      */
     fun delete() {
         INSTANCE.delete(this)
-    }
-
-    /**
-     * Flushes all pending changes to the database.
-     */
-    fun flush() {
-        getEntityManager().flush()
     }
 }

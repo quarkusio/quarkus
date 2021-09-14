@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Undertow Servlet"
+metadata:
+  short-name: "servlet"
+  keywords:
+  - "undertow"
+  - "servlet"
+  - "http"
+  categories:
+  - "web"
+  status: "stable"

@@ -80,6 +80,7 @@ public class DependencyTreeMojo extends AbstractMojo {
                         .setRemoteRepositoryManager(bootstrapProvider.remoteRepositoryManager())
                         //.setRepositorySystemSession(repoSession) the session should be initialized with the loaded workspace
                         .setRemoteRepositories(repos)
+                        .setPreferPomsFromWorkspace(true)
                         .build()
                 : resolver;
     }

@@ -10,6 +10,8 @@ import javax.json.bind.annotation.JsonbTransient;
 import javax.persistence.LockModeType;
 import javax.persistence.Transient;
 
+import org.hibernate.reactive.mutiny.Mutiny;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.quarkus.panache.common.Parameters;
@@ -31,7 +33,14 @@ import io.smallrye.mutiny.Uni;
  */
 public abstract class PanacheEntityBase {
 
-    // Operations
+    /**
+     * Returns the current {@link Mutiny.Session}
+     *
+     * @return the current {@link Mutiny.Session}
+     */
+    public static Uni<Mutiny.Session> getSession() {
+        return INSTANCE.getSession();
+    }
 
     /**
      * Persist this entity in the database, if not already persisted. This will set your ID field if it is not already set.
@@ -43,8 +52,8 @@ public abstract class PanacheEntityBase {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    public Uni<Void> persist() {
-        return INSTANCE.persist(this);
+    public <T extends PanacheEntityBase> Uni<T> persist() {
+        return INSTANCE.persist(this).map(v -> (T) this);
     }
 
     /**
@@ -58,10 +67,10 @@ public abstract class PanacheEntityBase {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    public Uni<Void> persistAndFlush() {
+    public <T extends PanacheEntityBase> Uni<T> persistAndFlush() {
         return INSTANCE.persist(this)
                 .flatMap(v -> INSTANCE.flush())
-                .map(v -> null);
+                .map(v -> (T) this);
     }
 
     /**

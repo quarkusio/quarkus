@@ -1,8 +1,9 @@
 package io.quarkus.micrometer.deployment.binder;
 
 import static io.restassured.RestAssured.when;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
-import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -30,7 +31,8 @@ public class HttpDevModeConfigTest {
         when().get("/hello/two").then().statusCode(200);
         when().get("/hello/three").then().statusCode(200);
         when().get("/q/metrics").then().statusCode(200)
-                .body(Matchers.containsString("/hello/{message}"));
+                .body(containsString("/hello/{message}"))
+                .body(not(containsString("/goodbye/{message}")));
 
         test.modifyResourceFile("application.properties",
                 s -> s.replace("quarkus.micrometer.binder.http-server.ignore-patterns=/http",
@@ -40,7 +42,7 @@ public class HttpDevModeConfigTest {
         when().get("/hello/two").then().statusCode(200);
         when().get("/hello/three").then().statusCode(200);
         when().get("/q/metrics").then().statusCode(200)
-                .body(Matchers.containsString("/goodbye/{message}"));
+                .body(containsString("/goodbye/{message}"));
     }
 
 }

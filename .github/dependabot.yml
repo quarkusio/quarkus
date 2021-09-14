@@ -6,7 +6,7 @@ updates:
       interval: daily
       time: "23:00"
       timezone: Europe/Paris
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 4
     labels:
       - area/dependencies
     allow:
@@ -128,7 +128,7 @@ updates:
       interval: daily
       time: "21:00"
       timezone: Europe/Paris
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 4
     labels:
       - area/dependencies
     rebase-strategy: disabled
@@ -138,7 +138,7 @@ updates:
       interval: daily
       time: "21:00"
       timezone: Europe/Paris
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 4
     labels:
       - area/dependencies
     rebase-strategy: disabled

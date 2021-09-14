@@ -78,7 +78,7 @@ public final class Expressions {
             if (splitConfig.isSeparator(c)) {
                 // Adjacent separators may be ignored
                 if (separator == 0 || separator != c) {
-                    if (!literal && brackets == 0) {
+                    if (!literal && brackets == 0 && infix == 0) {
                         if (splitConfig.shouldPrependSeparator(c)) {
                             buffer.append(c);
                         }
@@ -99,20 +99,27 @@ public final class Expressions {
                 }
                 // Non-separator char
                 if (!literal) {
-                    if (brackets == 0 && buffer.length() > 0 && c == ' ') {
+                    if (splitConfig.isInfixNotationSupported() && brackets == 0 && c == ' ') {
+                        // Not inside a virtual method
                         if (infix == 1) {
                             // The second space after the infix method
+                            // foo or bar
+                            // ------^
                             buffer.append(LEFT_BRACKET);
                             infix++;
                         } else if (infix == 2) {
                             // Next infix method
+                            // foo or bar or baz
+                            // ----------^
                             infix = 1;
                             buffer.append(RIGHT_BRACKET);
                             if (addPart(buffer, parts)) {
                                 buffer = new StringBuilder();
                             }
                         } else {
-                            // First space - start infix method
+                            // First space - start a new infix method
+                            // foo or bar
+                            // ---^
                             infix++;
                             if (addPart(buffer, parts)) {
                                 buffer = new StringBuilder();
@@ -120,8 +127,10 @@ public final class Expressions {
                         }
                     } else {
                         if (Parser.isLeftBracket(c)) {
+                            // Start of a virtual method
                             brackets++;
                         } else if (Parser.isRightBracket(c)) {
+                            // End of a virtual method
                             brackets--;
                         }
                         buffer.append(c);
@@ -138,6 +147,10 @@ public final class Expressions {
         }
         addPart(buffer, parts);
         return parts.build();
+    }
+
+    public static String typeInfoFrom(String typeName) {
+        return TYPE_INFO_SEPARATOR + typeName + TYPE_INFO_SEPARATOR;
     }
 
     /**
@@ -164,6 +177,10 @@ public final class Expressions {
         @Override
         public boolean isSeparator(char candidate) {
             return ',' == candidate;
+        }
+
+        public boolean isInfixNotationSupported() {
+            return false;
         }
 
     };
@@ -209,6 +226,10 @@ public final class Expressions {
 
         default boolean shouldAppendSeparator(char candidate) {
             return false;
+        }
+
+        default boolean isInfixNotationSupported() {
+            return true;
         }
 
     }

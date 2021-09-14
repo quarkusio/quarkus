@@ -9,7 +9,9 @@ import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.VANI
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.dekorate.kubernetes.annotation.ServiceType;
@@ -115,6 +117,7 @@ public class VanillaKubernetesProcessor {
 
         result
                 .add(new DecoratorBuildItem(KUBERNETES, new ApplyImagePullPolicyDecorator(name, config.getImagePullPolicy())));
+        result.add(new DecoratorBuildItem(KUBERNETES, new AddSelectorToDeploymentDecorator(name)));
 
         Stream.concat(config.convertToBuildItems().stream(),
                 envs.stream().filter(e -> e.getTarget() == null || KUBERNETES.equals(e.getTarget()))).forEach(e -> {
@@ -133,8 +136,18 @@ public class VanillaKubernetesProcessor {
 
         // Service handling
         result.add(new DecoratorBuildItem(KUBERNETES, new ApplyServiceTypeDecorator(name, config.getServiceType().name())));
-        if ((config.getServiceType() == ServiceType.NodePort) && config.nodePort.isPresent()) {
-            result.add(new DecoratorBuildItem(KUBERNETES, new AddNodePortDecorator(name, config.nodePort.getAsInt())));
+        if ((config.getServiceType() == ServiceType.NodePort)) {
+            List<Map.Entry<String, PortConfig>> nodeConfigPorts = config.ports.entrySet().stream()
+                    .filter(e -> e.getValue().nodePort.isPresent())
+                    .collect(Collectors.toList());
+            if (!nodeConfigPorts.isEmpty()) {
+                for (Map.Entry<String, PortConfig> entry : nodeConfigPorts) {
+                    result.add(new DecoratorBuildItem(KUBERNETES,
+                            new AddNodePortDecorator(name, entry.getValue().nodePort.getAsInt(), Optional.of(entry.getKey()))));
+                }
+            } else if (config.nodePort.isPresent()) {
+                result.add(new DecoratorBuildItem(KUBERNETES, new AddNodePortDecorator(name, config.nodePort.getAsInt())));
+            }
         }
 
         // Probe port handling

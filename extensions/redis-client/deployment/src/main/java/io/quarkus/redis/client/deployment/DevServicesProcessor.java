@@ -1,15 +1,16 @@
 package io.quarkus.redis.client.deployment;
 
 import static io.quarkus.redis.client.runtime.RedisClientUtil.isDefault;
+import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
 
 import java.io.Closeable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.OptionalInt;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
@@ -20,12 +21,13 @@ import io.quarkus.deployment.IsDockerWorking.IsDockerRunningSilent;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Produce;
+import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.redis.client.deployment.RedisBuildTimeConfig.DevServiceConfiguration;
-import io.quarkus.redis.client.deployment.devservices.DevServicesRedisResultBuildItem;
-import io.quarkus.redis.client.deployment.devservices.DevServicesRedisResultBuildItem.Result;
 import io.quarkus.redis.client.runtime.RedisClientUtil;
 import io.quarkus.redis.client.runtime.RedisConfig;
 import io.quarkus.runtime.LaunchMode;
@@ -36,16 +38,27 @@ public class DevServicesProcessor {
     private static final String REDIS_6_ALPINE = "redis:6-alpine";
     private static final int REDIS_EXPOSED_PORT = 6379;
     private static final String REDIS_SCHEME = "redis://";
+
+    /**
+     * Label to add to shared Dev Service for Redis running in containers.
+     * This allows other applications to discover the running service and use it instead of starting a new instance.
+     */
+    private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-redis";
+
+    private static final ContainerLocator redisContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL, REDIS_EXPOSED_PORT);
+
     private static final String QUARKUS = "quarkus.";
     private static final String DOT = ".";
     private static volatile List<Closeable> closeables;
     private static volatile Map<String, DevServiceConfiguration> capturedDevServicesConfiguration;
     private static volatile boolean first = true;
 
+    @Produce(ServiceStartBuildItem.class)
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = IsDockerRunningSilent.class)
-    public DevServicesRedisResultBuildItem startRedisContainers(LaunchModeBuildItem launchMode,
+    public void startRedisContainers(LaunchModeBuildItem launchMode,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
-            BuildProducer<ServiceStartBuildItem> serviceStartBuildItemBuildProducer, RedisBuildTimeConfig config) {
+
+            BuildProducer<DevServicesNativeConfigResultBuildItem> devConfigProducer, RedisBuildTimeConfig config) {
 
         Map<String, DevServiceConfiguration> currentDevServicesConfiguration = new HashMap<>(config.additionalDevServices);
         currentDevServicesConfiguration.put(RedisClientUtil.DEFAULT_CLIENT, config.defaultDevService);
@@ -58,7 +71,7 @@ public class DevServicesProcessor {
                 restartRequired = !currentDevServicesConfiguration.equals(capturedDevServicesConfiguration);
             }
             if (!restartRequired) {
-                return null;
+                return;
             }
             for (Closeable closeable : closeables) {
                 try {
@@ -72,62 +85,46 @@ public class DevServicesProcessor {
         }
 
         capturedDevServicesConfiguration = currentDevServicesConfiguration;
-        Result defaultConnectionResult = null;
         List<Closeable> currentCloseables = new ArrayList<>();
-        Map<String, Result> namedConnectionResults = new HashMap<>();
         for (Entry<String, DevServiceConfiguration> entry : currentDevServicesConfiguration.entrySet()) {
             String connectionName = entry.getKey();
-            StartResult startResult = startContainer(connectionName, entry.getValue().devservices);
+            StartResult startResult = startContainer(connectionName, entry.getValue().devservices, launchMode.getLaunchMode());
             if (startResult == null) {
                 continue;
             }
             currentCloseables.add(startResult.closeable);
             String configKey = getConfigPrefix(connectionName) + RedisConfig.HOSTS_CONFIG_NAME;
             runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(configKey, startResult.url));
-            Result result = new Result(Collections.singletonMap(configKey, startResult.url));
-            if (isDefault(connectionName)) {
-                defaultConnectionResult = result;
-            } else {
-                namedConnectionResults.put(connectionName, result);
-            }
+            devConfigProducer.produce(new DevServicesNativeConfigResultBuildItem(configKey, startResult.url));
         }
 
         closeables = currentCloseables;
 
         if (first) {
             first = false;
-            Runnable closeTask = new Runnable() {
-                @Override
-                public void run() {
-                    if (closeables != null) {
-                        for (Closeable closeable : closeables) {
-                            try {
-                                closeable.close();
-                            } catch (Throwable t) {
-                                log.error("Failed to stop database", t);
-                            }
+            Runnable closeTask = () -> {
+                if (closeables != null) {
+                    for (Closeable closeable : closeables) {
+                        try {
+                            closeable.close();
+                        } catch (Throwable t) {
+                            log.error("Failed to stop database", t);
                         }
                     }
-                    first = true;
-                    closeables = null;
-                    capturedDevServicesConfiguration = null;
                 }
+                first = true;
+                closeables = null;
+                capturedDevServicesConfiguration = null;
             };
             QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
             ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
             Thread closeHookThread = new Thread(closeTask, "Redis container shutdown thread");
             Runtime.getRuntime().addShutdownHook(closeHookThread);
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(new Runnable() {
-                @Override
-                public void run() {
-                    Runtime.getRuntime().removeShutdownHook(closeHookThread);
-                }
-            });
+            ((QuarkusClassLoader) cl.parent()).addCloseTask(() -> Runtime.getRuntime().removeShutdownHook(closeHookThread));
         }
-        return new DevServicesRedisResultBuildItem(defaultConnectionResult, namedConnectionResults);
     }
 
-    private StartResult startContainer(String connectionName, DevServicesConfig devServicesConfig) {
+    private StartResult startContainer(String connectionName, DevServicesConfig devServicesConfig, LaunchMode launchMode) {
         if (!devServicesConfig.enabled) {
             // explicitly disabled
             log.debug("Not starting devservices for " + (isDefault(connectionName) ? "default redis client" : connectionName)
@@ -146,16 +143,20 @@ public class DevServicesProcessor {
 
         DockerImageName dockerImageName = DockerImageName.parse(devServicesConfig.imageName.orElse(REDIS_6_ALPINE))
                 .asCompatibleSubstituteFor(REDIS_6_ALPINE);
-        FixedPortRedisContainer redisContainer = new FixedPortRedisContainer(dockerImageName, devServicesConfig.port);
-        redisContainer.start();
-        String redisHost = REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort();
-        return new StartResult(redisHost,
-                new Closeable() {
-                    @Override
-                    public void close() {
-                        redisContainer.close();
-                    }
-                });
+
+        Supplier<StartResult> defaultRedisServerSupplier = () -> {
+            FixedPortRedisContainer redisContainer = new FixedPortRedisContainer(dockerImageName, devServicesConfig.port,
+                    launchMode == DEVELOPMENT ? devServicesConfig.serviceName : null);
+            redisContainer.start();
+            String redisHost = REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort();
+            return new StartResult(redisHost,
+                    redisContainer::close);
+        };
+
+        return redisContainerLocator.locateContainer(devServicesConfig.serviceName, devServicesConfig.shared, launchMode)
+                .map(containerAddress -> new StartResult(containerAddress.getUrl(), null))
+                .orElseGet(defaultRedisServerSupplier);
+
     }
 
     private String getConfigPrefix(String connectionName) {
@@ -176,12 +177,15 @@ public class DevServicesProcessor {
         }
     }
 
-    private static class FixedPortRedisContainer extends GenericContainer {
+    private static class FixedPortRedisContainer extends GenericContainer<FixedPortRedisContainer> {
         OptionalInt fixedExposedPort;
 
-        public FixedPortRedisContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort) {
+        public FixedPortRedisContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, String serviceName) {
             super(dockerImageName);
             this.fixedExposedPort = fixedExposedPort;
+            if (serviceName != null) {
+                withLabel(DEV_SERVICE_LABEL, serviceName);
+            }
         }
 
         @Override

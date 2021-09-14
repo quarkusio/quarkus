@@ -240,10 +240,9 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     }
 
     private void descriptors(MethodInfo method, StringJoiner joiner) {
+        ByteCodeType id = typeArguments.get("Id");
         for (Type parameter : method.parameters()) {
-            if (parameter.kind() == Type.Kind.TYPE_VARIABLE
-                    || method.name().endsWith("ById")
-                            && parameter.name().equals(typeArguments.get("Id").dotName())) {
+            if (!id.isPrimitive() && parameter.name().equals(id.dotName())) {
                 joiner.add(OBJECT.descriptor());
             } else {
                 joiner.add(mapType(parameter));
@@ -360,13 +359,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         }
     }
 
-    private void generateBridge(MethodInfo method) {
-        // get a bounds-erased descriptor
-        String descriptor = bridgeMethodDescriptor(method, type -> {
-            ByteCodeType mapped = typeArguments.get(type);
-            return mapped != null ? mapped.descriptor() : type;
-        });
-        // make sure we need a bridge
+    private void generateBridge(MethodInfo method, String descriptor) {
         MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE,
                 method.name(),
                 descriptor,
@@ -407,6 +400,31 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
 
     }
 
+    private void generatePrimitiveBridge(MethodInfo method, String descriptor) {
+        String substring = descriptor.substring(0, descriptor.lastIndexOf(')') + 1);
+        String descriptor1 = substring + OBJECT.descriptor();
+        MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE,
+                method.name(),
+                descriptor1,
+                null,
+                null);
+        AsmUtil.copyParameterNames(mv, method);
+        mv.visitCode();
+        // this
+        mv.visitIntInsn(Opcodes.ALOAD, 0);
+        mv.visitIntInsn(typeArguments.get("Id").type().getOpcode(ILOAD), 1);
+        String targetDescriptor = getDescriptor(method, name -> typeArguments.get(name).descriptor());
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
+                classInfo.name().toString().replace('.', '/'),
+                method.name(),
+                targetDescriptor, false);
+        String targetReturnTypeDescriptor = targetDescriptor.substring(targetDescriptor.indexOf(')') + 1);
+        mv.visitInsn(AsmUtil.getReturnInstruction(targetReturnTypeDescriptor));
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
+
+    }
+
     private void invokeOperation(MethodVisitor mv, MethodInfo method) {
         String operationDescriptor;
 
@@ -424,7 +442,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
 
         mv.visitMethodInsn(INVOKEVIRTUAL, typeBundle.operations().internalName(), method.name(),
                 operationDescriptor, false);
-        if (returnType.kind() != Type.Kind.PRIMITIVE) {
+        if (returnType.kind() != Type.Kind.PRIMITIVE && returnType.kind() != Type.Kind.VOID) {
             String retType = operationReturnType.substring(1, operationReturnType.length() - 1);
             String annotationDesc = NOT_NULL_DESCRIPTOR;
             if ("findById".equals(method.name())) {
@@ -538,7 +556,16 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                             return mapped != null ? mapped.descriptor() : type;
                         });
                         if (!definedMethods.containsKey(method.name() + bridgeDescriptor)) {
-                            generateBridge(method);
+                            generateBridge(method, bridgeDescriptor);
+                        }
+
+                        AnnotationValue targetReturnTypeErased = bridge.value("targetReturnTypeErased");
+                        if (typeArguments.get("Id").isPrimitive() && targetReturnTypeErased != null
+                                && targetReturnTypeErased.asBoolean()) {
+                            if (method.parameters().size() == 1
+                                    && method.parameters().get(0).asTypeVariable().identifier().equals("Id")) {
+                                generatePrimitiveBridge(method, descriptor);
+                            }
                         }
                     }
                 }

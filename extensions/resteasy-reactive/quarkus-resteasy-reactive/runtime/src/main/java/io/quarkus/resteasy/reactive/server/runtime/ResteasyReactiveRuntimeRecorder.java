@@ -51,6 +51,11 @@ public class ResteasyReactiveRuntimeRecorder {
                                 return Optional.empty();
                             }
                         }
+
+                        @Override
+                        public long maxFormAttributeSize() {
+                            return configuration.limits.maxFormAttributeSize.asLongValue();
+                        }
                     };
                 }
             });

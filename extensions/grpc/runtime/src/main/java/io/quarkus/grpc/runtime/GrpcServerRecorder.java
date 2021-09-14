@@ -33,6 +33,7 @@ import io.grpc.ServerInterceptors;
 import io.grpc.ServerMethodDefinition;
 import io.grpc.ServerServiceDefinition;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.Subclass;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerNettyConfig;
@@ -40,8 +41,8 @@ import io.quarkus.grpc.runtime.devmode.GrpcHotReplacementInterceptor;
 import io.quarkus.grpc.runtime.devmode.GrpcServerReloader;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 import io.quarkus.grpc.runtime.reflection.ReflectionService;
-import io.quarkus.grpc.runtime.supports.BlockingServerInterceptor;
 import io.quarkus.grpc.runtime.supports.CompressionInterceptor;
+import io.quarkus.grpc.runtime.supports.blocking.BlockingServerInterceptor;
 import io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
@@ -67,6 +68,11 @@ public class GrpcServerRecorder {
     private Map<String, List<String>> blockingMethodsPerService = Collections.emptyMap();
 
     private static volatile DevModeWrapper devModeWrapper;
+    private static volatile List<GrpcServiceDefinition> services = Collections.emptyList();
+
+    public static List<GrpcServiceDefinition> getServices() {
+        return services;
+    }
 
     public void initializeGrpcServer(RuntimeValue<Vertx> vertxSupplier,
             GrpcConfiguration cfg,
@@ -92,7 +98,7 @@ public class GrpcServerRecorder {
             if (GrpcServerReloader.getServer() == null) {
                 devModeStart(grpcContainer, vertx, configuration, shutdown, launchMode);
             } else {
-                devModeReload(grpcContainer, vertx, configuration);
+                devModeReload(grpcContainer, vertx, configuration, shutdown);
             }
         } else {
             prodStart(grpcContainer, vertx, configuration, launchMode);
@@ -117,7 +123,7 @@ public class GrpcServerRecorder {
                         if (result.failed()) {
                             startResult.completeExceptionally(result.cause());
                         } else {
-                            GrpcServerRecorder.this.postStartup(grpcContainer, configuration, launchMode == LaunchMode.TEST);
+                            GrpcServerRecorder.this.postStartup(configuration, launchMode == LaunchMode.TEST);
 
                             startResult.complete(null);
                         }
@@ -136,25 +142,20 @@ public class GrpcServerRecorder {
         }
     }
 
-    private void postStartup(GrpcContainer grpcContainer, GrpcServerConfiguration configuration, boolean test) {
-        grpcContainer.getHealthStorage().stream().forEach(new Consumer<GrpcHealthStorage>() { //NOSONAR
-            @Override
-            public void accept(GrpcHealthStorage storage) {
-                storage.setStatus(GrpcHealthStorage.DEFAULT_SERVICE_NAME,
-                        HealthOuterClass.HealthCheckResponse.ServingStatus.SERVING);
-                grpcContainer.getServices().forEach(
-                        new Consumer<BindableService>() { // NOSONAR
-                            @Override
-                            public void accept(BindableService service) {
-                                ServerServiceDefinition definition = service.bindService();
-                                storage.setStatus(definition.getServiceDescriptor().getName(),
-                                        HealthOuterClass.HealthCheckResponse.ServingStatus.SERVING);
-                            }
-                        });
-            }
-        });
+    private void postStartup(GrpcServerConfiguration configuration, boolean test) {
+        initHealthStorage();
         LOGGER.infof("gRPC Server started on %s:%d [SSL enabled: %s]",
                 configuration.host, test ? configuration.testPort : configuration.port, !configuration.plainText);
+    }
+
+    private void initHealthStorage() {
+        GrpcHealthStorage storage = Arc.container().instance(GrpcHealthStorage.class).get();
+        storage.setStatus(GrpcHealthStorage.DEFAULT_SERVICE_NAME,
+                HealthOuterClass.HealthCheckResponse.ServingStatus.SERVING);
+        for (GrpcServiceDefinition service : services) {
+            storage.setStatus(service.definition.getServiceDescriptor().getName(),
+                    HealthOuterClass.HealthCheckResponse.ServingStatus.SERVING);
+        }
     }
 
     private void devModeStart(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration,
@@ -171,7 +172,7 @@ public class GrpcServerRecorder {
                             LOGGER.error("Unable to start the gRPC server", ar.cause());
                             future.completeExceptionally(ar.cause());
                         } else {
-                            postStartup(grpcContainer, configuration, false);
+                            postStartup(configuration, false);
                             future.complete(true);
                             grpcVerticleCount.incrementAndGet();
                         }
@@ -242,10 +243,15 @@ public class GrpcServerRecorder {
             ServerServiceDefinition definition = service.bindService();
             definitions.add(new GrpcServiceDefinition(service, definition));
         }
+
+        // Set the last service definitions in use, referenced in the Dev UI
+        GrpcServerRecorder.services = definitions;
+
         return definitions;
     }
 
-    private static class GrpcServiceDefinition {
+    public static final class GrpcServiceDefinition {
+
         public final BindableService service;
         public final ServerServiceDefinition definition;
 
@@ -255,13 +261,16 @@ public class GrpcServerRecorder {
         }
 
         public String getImplementationClassName() {
-            // all grpc services have a io.quarkus.grpc.runtime.supports.context.GrpcRequestContextCdiInterceptor
-            // this means Arc passes a subclass to grpc internals. That's why we take superclass here
-            return service.getClass().getSuperclass().getName();
+            if (service instanceof Subclass) {
+                // All intercepted services are represented by a generated subclass 
+                return service.getClass().getSuperclass().getName();
+            }
+            return service.getClass().getName();
         }
     }
 
-    private void devModeReload(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration) {
+    private void devModeReload(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration,
+            ShutdownContext shutdown) {
         List<GrpcServiceDefinition> services = collectServiceDefinitions(grpcContainer.getServices());
 
         List<ServerServiceDefinition> definitions = new ArrayList<>();
@@ -288,7 +297,17 @@ public class GrpcServerRecorder {
         }
         devModeWrapper = new DevModeWrapper(Thread.currentThread().getContextClassLoader());
 
+        initHealthStorage();
+
         GrpcServerReloader.reinitialize(servicesWithInterceptors, methods, grpcContainer.getSortedInterceptors());
+
+        shutdown.addShutdownTask(
+                new Runnable() { // NOSONAR
+                    @Override
+                    public void run() {
+                        GrpcServerReloader.reset();
+                    }
+                });
     }
 
     public static int getVerticleCount() {

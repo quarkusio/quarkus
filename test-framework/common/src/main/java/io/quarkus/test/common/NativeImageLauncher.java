@@ -108,6 +108,8 @@ public class NativeImageLauncher implements ArtifactLauncher {
         System.out.println("Executing " + args);
 
         Files.deleteIfExists(logFile);
+        Files.createDirectories(logFile.getParent());
+
         quarkusProcess = LauncherUtil.launchProcess(args);
 
         if (startedSupplier != null) {

@@ -87,7 +87,7 @@
             <plugin>
                 <groupId>net.revelc.code.formatter</groupId>
                 <artifactId>formatter-maven-plugin</artifactId>
-                <version>2.15.0</version>
+                <version>2.16.0</version>
                 <dependencies>
                     <dependency>
                         <artifactId>quarkus-ide-config</artifactId>
@@ -106,7 +106,7 @@
             <plugin>
                 <groupId>net.revelc.code</groupId>
                 <artifactId>impsort-maven-plugin</artifactId>
-                <version>1.6.0</version>
+                <version>1.6.2</version>
                 <configuration>
                     <!-- store outside of target to speed up formatting when mvn clean is used -->
                     <cachedir>.cache</cachedir>

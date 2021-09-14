@@ -53,18 +53,17 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
 
     @Test
     public void testRunTogetherCodestartsJava() throws Exception {
-        generateProjectRunTests("maven", "java", getExtensionCodestarts(), Collections.emptyMap());
+        generateProjectRunTests("maven", "java", getExtensionCodestarts());
     }
 
     @Test
-    @org.junit.jupiter.api.Tag("failsOnJDK16")
     public void testRunTogetherCodestartsKotlin() throws Exception {
-        generateProjectRunTests("maven", "kotlin", getExtensionCodestarts(), Collections.emptyMap());
+        generateProjectRunTests("maven", "kotlin", getExtensionCodestarts());
     }
 
     @Test
     public void testRunTogetherCodestartsScala() throws Exception {
-        generateProjectRunTests("maven", "scala", getExtensionCodestarts(), Collections.emptyMap());
+        generateProjectRunTests("maven", "scala", getExtensionCodestarts());
     }
 
     @ParameterizedTest
@@ -72,7 +71,7 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
     @org.junit.jupiter.api.Tag("failsOnJDK16")
     public void testGradle(String language) throws Exception {
         final List<String> codestarts = getExtensionCodestarts();
-        generateProjectRunTests("gradle", language, codestarts, Collections.emptyMap());
+        generateProjectRunTests("gradle", language, codestarts);
     }
 
     @ParameterizedTest
@@ -80,51 +79,49 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
     @org.junit.jupiter.api.Tag("failsOnJDK16")
     public void testGradleKotlinDSL(String language) throws Exception {
         final List<String> codestarts = getExtensionCodestarts();
-        generateProjectRunTests("gradle-kotlin-dsl", language, codestarts, Collections.emptyMap());
+        generateProjectRunTests("gradle-kotlin-dsl", language, codestarts);
     }
 
     @ParameterizedTest
     @MethodSource("provideRunAloneCodestarts")
     public void testRunAloneCodestartsJava(String codestart) throws Exception {
-        generateProjectRunTests("maven", "java", singletonList(codestart), Collections.emptyMap());
+        generateProjectRunTests("maven", "java", singletonList(codestart));
     }
 
     @ParameterizedTest
     @MethodSource("provideRunAloneCodestarts")
-    @org.junit.jupiter.api.Tag("failsOnJDK16")
     public void testRunAloneCodestartsKotlin(String codestart) throws Exception {
-        generateProjectRunTests("maven", "kotlin", singletonList(codestart), Collections.emptyMap());
+        generateProjectRunTests("maven", "kotlin", singletonList(codestart));
     }
 
     @ParameterizedTest
     @MethodSource("provideRunAloneCodestarts")
     public void testRunAloneCodestartsScala(String codestart) throws Exception {
-        generateProjectRunTests("maven", "scala", singletonList(codestart), Collections.emptyMap());
+        generateProjectRunTests("maven", "scala", singletonList(codestart));
     }
 
     @Test
     public void generateAzureFunctionsHttpExampleProjectRun() throws Exception {
-        generateProjectRunTests("maven", "java", singletonList("azure-functions-http-example"),
-                Collections.emptyMap());
+        generateProjectRunTests("maven", "java", singletonList("azure-functions-http-example"));
     }
 
-    private void generateProjectRunTests(String buildTool, String language, List<String> codestarts, Map<String, Object> data)
+    private void generateProjectRunTests(String buildTool, String language, List<String> codestarts)
             throws Exception {
-        generateProjectRunTests(buildTool, language, codestarts, data, genName(buildTool, language, codestarts));
+        generateProjectRunTests(buildTool, language, codestarts, genName(buildTool, language, codestarts));
     }
 
-    private void generateProjectRunTests(String buildToolName, String language, List<String> codestarts,
-            Map<String, Object> data, String name)
+    private void generateProjectRunTests(String buildToolName, String language, List<String> codestarts, String name)
             throws Exception {
         final BuildTool buildTool = BuildTool.findTool(buildToolName);
 
+        final Map<String, Object> data = getTestInputData(Collections.singletonMap("artifact-id", name));
         // for JVM 8 and 14 this will generate project with java 1.8, for JVM 11 project with java 11
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .addData(getTestInputData(Collections.singletonMap("artifact-id", name)))
+                .addData(data)
                 .buildTool(buildTool)
                 .addCodestarts(codestarts)
                 .addCodestart(language)
-                .addData(data)
+                .addBoms(QuarkusCodestartTesting.getBoms(data))
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
         Path projectDir = testDirPath.resolve(name);

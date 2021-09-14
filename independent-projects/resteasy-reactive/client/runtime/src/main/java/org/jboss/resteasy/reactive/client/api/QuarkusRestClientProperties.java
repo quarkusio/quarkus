@@ -7,4 +7,9 @@ public class QuarkusRestClientProperties {
      */
     public static final String MAX_REDIRECTS = "io.quarkus.rest.client.max-redirects";
     public static final String READ_TIMEOUT = "io.quarkus.rest.client.read-timeout";
+
+    /**
+     * See {@link io.netty.handler.codec.http.multipart.HttpPostRequestEncoder.EncoderMode}, RFC1738 by default
+     */
+    public static final String MULTIPART_ENCODER_MODE = "io.quarkus.rest.client.multipart-post-encoder-mode";
 }

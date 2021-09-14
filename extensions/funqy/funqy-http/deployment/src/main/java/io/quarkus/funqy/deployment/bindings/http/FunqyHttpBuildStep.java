@@ -86,7 +86,7 @@ public class FunqyHttpBuildStep {
             String name = function.getFunctionName() == null ? function.getMethodName() : function.getFunctionName();
             //String path = rootPath + name;
             String path = "/" + name;
-            routes.produce(new RouteBuildItem(path, handler, false));
+            routes.produce(RouteBuildItem.builder().route(path).handler(handler).build());
         }
     }
 }

@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import io.quarkus.arc.InjectableBean;
@@ -108,7 +109,8 @@ public class Invocation {
         private long start;
         private long duration;
         private Method method;
-        private List<Builder> children;
+        // If async processing and the request context is not propagated a new child can be added when/after the builder is built
+        private final List<Builder> children = new CopyOnWriteArrayList<>();
         private Builder parent;
         private Kind kind;
         private String message;
@@ -159,9 +161,6 @@ public class Invocation {
         }
 
         boolean addChild(Builder child) {
-            if (children == null) {
-                children = new ArrayList<>();
-            }
             child.setParent(this);
             return children.add(child);
         }
@@ -169,7 +168,7 @@ public class Invocation {
         Invocation build() {
             List<Invocation> invocations = null;
             if (children != null) {
-                invocations = new ArrayList<>(children.size());
+                invocations = new ArrayList<>();
                 for (Builder builder : children) {
                     invocations.add(builder.build());
                 }

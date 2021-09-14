@@ -5,7 +5,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperties;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @RegisterForReflection
-@ConfigProperties(prefix = "server")
+@ConfigProperties(prefix = "http.server")
 public class ServerProperties {
     private String host;
     private int port;

@@ -81,15 +81,9 @@
         </dependency>
     </dependencies>
 
-    <pluginRepositories>
-        <pluginRepository>
-            <id>jcenter</id>
-            <name>JCenter</name>
-            <url>https://jcenter.bintray.com/</url>
-        </pluginRepository>
-    </pluginRepositories>
-
     <build>
+        <sourceDirectory>src/main/kotlin</sourceDirectory>
+        <testSourceDirectory>src/test/kotlin</testSourceDirectory>
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
@@ -123,12 +117,6 @@
                         <goals>
                             <goal>compile</goal>
                         </goals>
-                        <configuration>
-                            <sourceDirs>
-                                <source>src/main/java</source>
-                                <source>src/main/kotlin</source>
-                            </sourceDirs>
-                        </configuration>
                     </execution>
                     <execution>
                         <id>test-compile</id>
@@ -136,17 +124,8 @@
                         <goals>
                             <goal>test-compile</goal>
                         </goals>
-                        <configuration>
-                            <sourceDirs>
-                                <source>src/test/java</source>
-                                <source>src/test/kotlin</source>
-                            </sourceDirs>
-                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <javaParameters>true</javaParameters>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -175,7 +154,9 @@
                     <execution>
                         <id>java-test-compile</id>
                         <phase>test-compile</phase>
-                        <goals> <goal>testCompile</goal> </goals>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
@@ -184,30 +165,6 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <configuration>
                     <failOnError>false</failOnError>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.jetbrains.dokka</groupId>
-                <artifactId>dokka-maven-plugin</artifactId>
-                <version>1.4.30</version>
-                <executions>
-                    <execution>
-                        <id>javadoc</id>
-                        <phase>deploy</phase>
-                        <goals>
-                            <goal>javadocJar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <jdkVersion>11</jdkVersion>
-                    <outputFormat>html</outputFormat>
-                    <externalDocumentationLinks>
-                        <link>
-                            <!-- Root URL of the generated documentation to link with. The trailing slash is required! -->
-                            <url>https://docs.oracle.com/en/java/javase/11/docs/api/</url>
-                        </link>
-                    </externalDocumentationLinks>
                 </configuration>
             </plugin>
         </plugins>

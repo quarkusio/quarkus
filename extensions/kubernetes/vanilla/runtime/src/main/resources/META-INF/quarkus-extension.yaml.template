@@ -1,9 +1,0 @@
----
-name: "Kubernetes"
-metadata:
-  keywords:
-  - "kubernetes"
-  guide: "https://quarkus.io/guides/kubernetes"
-  categories:
-  - "cloud"
-  status: "stable"

@@ -17,6 +17,10 @@
             {#insert style/}
         </style>
 
+        <script src="{devRootAppend}/resources/js/jquery.min.js"></script>
+        <script src="{devRootAppend}/resources/js/bootstrap.bundle.min.js"></script>
+        <script src="{devRootAppend}/resources/js/dev-console.js"></script>
+
         <title>
             {#if currentExtensionName && currentExtensionName != 'Eclipse Vert.x - HTTP'}
             {currentExtensionName} ›
@@ -38,7 +42,7 @@
                     {#if currentExtensionName == 'Eclipse Vert.x - HTTP'}
                     <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {#insert title/}
                     {#else}
-                    <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {currentExtensionName} <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {#insert title/}
+                    <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {currentExtensionName}{#insert breadcrumbs/}<i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {#insert title/}
                     {/if}
                 </span>
             </span>   
@@ -100,10 +104,7 @@
         
         {#include logmanagerModals}{/include}
         {#include testsModals}{/include}
-        
-        <script src="{devRootAppend}/resources/js/jquery.min.js"></script>
-        <script src="{devRootAppend}/resources/js/bootstrap.bundle.min.js"></script>
-        <script src="{devRootAppend}/resources/js/dev-console.js"></script>
+
         <script src="{devRootAppend}/resources/js/logstream.js"></script>
         <script src="{devRootAppend}/resources/js/tests.js"></script>
         

@@ -25,7 +25,6 @@ import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
@@ -105,8 +104,9 @@ public class ResteasyStandaloneBuildStep {
         Handler<RoutingContext> handler = recorder.vertxRequestHandler(vertx.getVertx(), beanContainer.getValue(),
                 executorBuildItem.getExecutorProxy(), httpConfiguration, resteasyVertxConfig);
         // Exact match for resources matched to the root path
-        routes.produce(new RouteBuildItem(
-                new BasicRoute(standalone.deploymentRootPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1), handler));
+        routes.produce(
+                RouteBuildItem.builder().orderedRoute(standalone.deploymentRootPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1)
+                        .handler(handler).build());
         String matchPath = standalone.deploymentRootPath;
         if (matchPath.endsWith("/")) {
             matchPath += "*";
@@ -114,7 +114,8 @@ public class ResteasyStandaloneBuildStep {
             matchPath += "/*";
         }
         // Match paths that begin with the deployment path
-        routes.produce(new RouteBuildItem(new BasicRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1), handler));
+        routes.produce(RouteBuildItem.builder().orderedRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1)
+                .handler(handler).build());
 
         recorder.start(shutdown, requireVirtual.isPresent());
     }

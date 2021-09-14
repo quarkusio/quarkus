@@ -21,6 +21,7 @@ public final class EngineBuilder {
     Function<String, SectionHelperFactory<?>> sectionHelperFunc;
     final List<ParserHook> parserHooks;
     boolean removeStandaloneLines;
+    boolean strictRendering;
 
     EngineBuilder() {
         this.sectionHelperFactories = new HashMap<>();
@@ -29,6 +30,7 @@ public final class EngineBuilder {
         this.locators = new ArrayList<>();
         this.resultMappers = new ArrayList<>();
         this.parserHooks = new ArrayList<>();
+        this.strictRendering = true;
     }
 
     public EngineBuilder addSectionHelper(SectionHelperFactory<?> factory) {
@@ -54,7 +56,7 @@ public final class EngineBuilder {
     public EngineBuilder addDefaultSectionHelpers() {
         return addSectionHelpers(new IfSectionHelper.Factory(), new LoopSectionHelper.Factory(),
                 new WithSectionHelper.Factory(), new IncludeSectionHelper.Factory(), new InsertSectionHelper.Factory(),
-                new SetSectionHelper.Factory(), new WhenSectionHelper.Factory());
+                new SetSectionHelper.Factory(), new WhenSectionHelper.Factory(), new EvalSectionHelper.Factory());
     }
 
     public EngineBuilder addValueResolver(Supplier<ValueResolver> resolverSupplier) {
@@ -91,13 +93,14 @@ public final class EngineBuilder {
     }
 
     public EngineBuilder addNamespaceResolver(NamespaceResolver resolver) {
+        String namespace = Namespaces.requireValid(resolver.getNamespace());
         for (NamespaceResolver nsResolver : namespaceResolvers) {
-            if (nsResolver.getNamespace().equals(resolver.getNamespace())
+            if (nsResolver.getNamespace().equals(namespace)
                     && resolver.getPriority() == nsResolver.getPriority()) {
                 throw new IllegalArgumentException(
                         String.format(
                                 "Namespace [%s] may not be handled by multiple resolvers of the same priority [%s]: %s and %s",
-                                resolver.getNamespace(), resolver.getPriority(), nsResolver, resolver));
+                                namespace, resolver.getPriority(), nsResolver, resolver));
             }
         }
         this.namespaceResolvers.add(resolver);
@@ -147,6 +150,20 @@ public final class EngineBuilder {
      */
     public EngineBuilder removeStandaloneLines(boolean value) {
         this.removeStandaloneLines = value;
+        return this;
+    }
+
+    /**
+     * If set to {@code true} then any expression that is evaluated to a {@link Results.NotFound} will always result in a
+     * {@link TemplateException} and the rendering is aborted.
+     * <p>
+     * Strict rendering is enabled by default.
+     * 
+     * @param value
+     * @return self
+     */
+    public EngineBuilder strictRendering(boolean value) {
+        this.strictRendering = value;
         return this;
     }
 

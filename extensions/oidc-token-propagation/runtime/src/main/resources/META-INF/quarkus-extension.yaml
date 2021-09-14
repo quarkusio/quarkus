@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "OpenID Connect Token Propagation"
+metadata:
+  keywords:
+  - "oauth2"
+  - "openid-connect"
+  - "oidc"
+  - "oidc-client"
+  - "oidc-token-propagation"
+  guide: "https://quarkus.io/guides/security-openid-connect-client"
+  categories:
+  - "security"
+  status: "preview"

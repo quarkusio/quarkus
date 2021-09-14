@@ -6,6 +6,8 @@ import java.util.function.Predicate;
 
 public abstract class QuarkusConsole {
 
+    public static final String FORCE_COLOR_SUPPORT = "io.quarkus.force-color-support";
+
     public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
 
     /**
@@ -38,7 +40,9 @@ public abstract class QuarkusConsole {
     private volatile boolean started = false;
 
     public static boolean hasColorSupport() {
-
+        if (Boolean.getBoolean(FORCE_COLOR_SUPPORT)) {
+            return true; //assume the IDE run window has color support
+        }
         if (IS_WINDOWS) {
             // On Windows without a known good emulator
             // TODO: optimally we would check if Win32 getConsoleMode has
@@ -61,11 +65,11 @@ public abstract class QuarkusConsole {
             holder.setEnabled(false);
         }
         holder = createHolder(inputHandler);
-        inputHandler.promptHandler(holder);
         if (started) {
             holder.setEnabled(true);
         }
         inputHandlers.push(holder);
+        inputHandler.promptHandler(holder);
     }
 
     public synchronized void popInputHandler() {
@@ -115,6 +119,8 @@ public abstract class QuarkusConsole {
         volatile boolean enabled;
         String prompt;
         String status;
+        String results;
+        String compileError;
 
         protected InputHolder(InputHandler handler) {
             this.handler = handler;
@@ -125,6 +131,8 @@ public abstract class QuarkusConsole {
             if (enabled) {
                 setStatus(status);
                 setPrompt(prompt);
+                setResults(results);
+                setCompileError(compileError);
             }
             return this;
         }
@@ -137,8 +145,6 @@ public abstract class QuarkusConsole {
             }
         }
 
-        protected abstract void setPromptMessage(String prompt);
-
         @Override
         public void setStatus(String status) {
             this.status = status;
@@ -147,6 +153,28 @@ public abstract class QuarkusConsole {
             }
         }
 
+        @Override
+        public void setResults(String results) {
+            this.results = results;
+            if (enabled) {
+                setResultsMessage(results);
+            }
+        }
+
+        @Override
+        public void setCompileError(String compileError) {
+            this.compileError = compileError;
+            if (enabled) {
+                setCompileErrorMessage(compileError);
+            }
+        }
+
         protected abstract void setStatusMessage(String status);
+
+        protected abstract void setPromptMessage(String prompt);
+
+        protected abstract void setResultsMessage(String results);
+
+        protected abstract void setCompileErrorMessage(String results);
     }
 }

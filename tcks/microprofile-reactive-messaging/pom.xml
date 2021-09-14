@@ -23,6 +23,7 @@
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                         <smallrye-messaging-strict-binding>true</smallrye-messaging-strict-binding>
+                        <quarkus.reactive-messaging.strict>true</quarkus.reactive-messaging.strict>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->
@@ -31,10 +32,15 @@
                         <dependency>org.eclipse.microprofile.reactive.messaging:microprofile-reactive-messaging-tck</dependency>
                     </dependenciesToScan>
                     <excludes>
-                        <!-- There tests have been corrected in the next version of the TCK, some signatures are now considered invalid -->
-                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.invalid.InvalidConfigurationTest</exclude>
                         <!-- The new wiring fails at the Quarkus startup because of the incorrect configuration -->
-                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.connector.MissingConnectorTest</exclude>
+                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.invalid.InvalidConfigurationTest</exclude>
+
+                        <!-- the test need to be challenged - the error emission may happen after -->
+                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.channel.overflow.DefaultOverflowStrategyOverflowTest</exclude>
+                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.channel.overflow.FailOverflowStrategyOverflowTest</exclude>
+
+                        <!-- No Metrics support in Quarkus (Micrometer) -->
+                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.metrics.MetricsTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>
@@ -53,6 +59,19 @@
             <groupId>org.eclipse.microprofile.reactive.messaging</groupId>
             <artifactId>microprofile-reactive-messaging-tck</artifactId>
             <version>${microprofile-reactive-messaging-api.version}</version>
+            <exclusions>
+                <!-- fix convergence: assertj is bumped to >= 3.19.0 via Quarkus BOM which is too new (see futher down) -->
+                <exclusion>
+                    <groupId>org.assertj</groupId>
+                    <artifactId>assertj-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- latest version of assertj that is known to work -->
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>3.19.0</version>
         </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->

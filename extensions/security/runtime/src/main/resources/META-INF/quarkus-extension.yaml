@@ -1,0 +1,10 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Security"
+metadata:
+  unlisted: true
+  keywords:
+  - "security"
+  categories:
+    - "security"
+  status: "preview"

@@ -2,11 +2,12 @@ package io.quarkus.qute.generator;
 
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.qute.CompletedStage;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.EvaluatedParams;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Results;
-import io.quarkus.qute.Results.Result;
+import io.quarkus.qute.Results.NotFound;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -34,8 +35,8 @@ public final class Descriptors {
     public static final MethodDescriptor EVALUATE = MethodDescriptor.ofMethod(EvalContext.class, "evaluate",
             CompletionStage.class, Expression.class);
     static final MethodDescriptor LIST_GET = MethodDescriptor.ofMethod(List.class, "get", Object.class, int.class);
-    static final MethodDescriptor COMPLETED_FUTURE = MethodDescriptor.ofMethod(CompletableFuture.class,
-            "completedFuture", CompletableFuture.class, Object.class);
+    static final MethodDescriptor COMPLETED_STAGE = MethodDescriptor.ofMethod(CompletedStage.class,
+            "of", CompletedStage.class, Object.class);
     public static final MethodDescriptor COMPLETABLE_FUTURE_ALL_OF = MethodDescriptor.ofMethod(CompletableFuture.class,
             "allOf",
             CompletableFuture.class, CompletableFuture[].class);
@@ -86,11 +87,11 @@ public final class Descriptors {
             CharSequence.class);
     public static final MethodDescriptor MATCHER_MATCHES = MethodDescriptor.ofMethod(Matcher.class, "matches", boolean.class);
     public static final MethodDescriptor OBJECT_CONSTRUCTOR = MethodDescriptor.ofConstructor(Object.class);
+    public static final MethodDescriptor RESULTS_NOT_FOUND_EC = MethodDescriptor.ofMethod(Results.class, "notFound",
+            CompletionStage.class, EvalContext.class);
+    public static final MethodDescriptor NOT_FOUND_FROM_EC = MethodDescriptor.ofMethod(NotFound.class, "from",
+            NotFound.class, EvalContext.class);
 
-    public static final FieldDescriptor RESULTS_NOT_FOUND = FieldDescriptor.of(Results.class, "NOT_FOUND",
-            CompletionStage.class);
-    public static final FieldDescriptor RESULT_NOT_FOUND = FieldDescriptor.of(Result.class, "NOT_FOUND",
-            Result.class);
     public static final FieldDescriptor EVALUATED_PARAMS_STAGE = FieldDescriptor.of(EvaluatedParams.class, "stage",
             CompletionStage.class);
 

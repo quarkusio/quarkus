@@ -3,8 +3,12 @@ package io.quarkus.qute;
 import io.quarkus.qute.TemplateNode.Origin;
 
 /**
- * The first result mapper that applies to the result object is used to map the result to the string value. The mapper with
- * higher priority wins.
+ * This component can be used to map a result of an evaluated value expression to a string value.
+ * <p>
+ * The first result mapper that applies to the result object is used. The mapper with higher priority wins.
+ * 
+ * @see Engine#getResultMappers()
+ * @see Engine#mapResult(Object, Expression)
  */
 @FunctionalInterface
 public interface ResultMapper extends WithPriority {

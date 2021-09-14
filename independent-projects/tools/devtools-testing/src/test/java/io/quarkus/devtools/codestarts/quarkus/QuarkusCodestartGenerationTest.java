@@ -41,6 +41,7 @@ class QuarkusCodestartGenerationTest {
                 .noDockerfiles()
                 .noBuildToolWrapper()
                 .addData(getGenerationTestInputData())
+                .addBoms(QuarkusCodestartTesting.getPlatformBoms())
                 .build();
         final Path projectDir = testDirPath.resolve("default");
         getCatalog().createProject(input).generate(projectDir);
@@ -83,6 +84,7 @@ class QuarkusCodestartGenerationTest {
     void generateMavenWithCustomDep(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addData(getGenerationTestInputData())
+                .addBoms(QuarkusCodestartTesting.getPlatformBoms())
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(ArtifactCoords.fromString("commons-io:commons-io:2.5"))
 
@@ -274,18 +276,18 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.jvm")).exists()
                 .satisfies(checkContains("./mvnw package"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.3"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
                 .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
                 .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
                 .satisfies(checkContains("./mvnw package -Dquarkus.package.type=legacy-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.3"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
                 .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
                 .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
                 .satisfies(checkContains("./mvnw package -Pnative"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.3"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
                 .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
     }
 
@@ -294,18 +296,18 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.jvm")).exists()
                 .satisfies(checkContains("./gradlew build"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.3"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
                 .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
                 .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
                 .satisfies(checkContains("./gradlew build -Dquarkus.package.type=legacy-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.3"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
                 .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
                 .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
                 .satisfies(checkContains("./gradlew build -Dquarkus.package.type=native"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.3"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
                 .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
     }
 

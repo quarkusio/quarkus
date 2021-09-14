@@ -127,7 +127,7 @@ public class RuntimeResourceDeployment {
 
         Map<String, Integer> pathParameterIndexes = buildParamIndexMap(classPathTemplate, methodPathTemplate);
         List<ServerRestHandler> handlers = new ArrayList<>();
-        addHandlers(handlers, method, info, HandlerChainCustomizer.Phase.AFTER_MATCH);
+        addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.AFTER_MATCH);
         MediaType sseElementType = null;
         if (method.getSseElementType() != null) {
             sseElementType = MediaType.valueOf(method.getSseElementType());
@@ -184,8 +184,9 @@ public class RuntimeResourceDeployment {
                     "Endpoints that return an AsyncFile cannot have any WriterInterceptor set");
         }
 
-        //spec doesn't seem to test this, but RESTEasy does not run request filters again for sub resources (which makes sense)
-        if (!locatableResource) {
+        //spec doesn't seem to test this, but RESTEasy does not run request filters for both root and sub resources (which makes sense)
+        //so only only run request filters for methods that are leaf resources - i.e. have a HTTP method annotation so we ensure only one will run
+        if (method.getHttpMethod() != null) {
             List<ResourceRequestFilterHandler> containerRequestFilterHandlers = interceptorDeployment
                     .setupRequestFilterHandler();
             if (blockingHandlerIndex.isPresent()) {
@@ -219,18 +220,9 @@ public class RuntimeResourceDeployment {
             }
         }
         // form params can be everywhere (field, beanparam, param)
-        if (method.isFormParamRequired() && !defaultBlocking) {
+        if (method.isFormParamRequired() || method.isMultipart()) {
             // read the body as multipart in one go
-            handlers.add(new FormBodyHandler(bodyParameter != null));
-        } else if (method.isMultipart()) {
-            Supplier<ServerRestHandler> multipartHandlerSupplier = customServerRestHandlers.getMultipartHandlerSupplier();
-            if (multipartHandlerSupplier != null) {
-                // multipart needs special body handling
-                handlers.add(multipartHandlerSupplier.get());
-            } else {
-                throw new RuntimeException(
-                        "The current execution environment does not implement a ServerRestHandler for multipart form support");
-            }
+            handlers.add(new FormBodyHandler(bodyParameter != null, executorSupplier));
         } else if (bodyParameter != null) {
             if (!defaultBlocking) {
                 if (method.isBlocking()) {
@@ -275,7 +267,7 @@ public class RuntimeResourceDeployment {
             handlers.add(instanceHandler);
         }
 
-        addHandlers(handlers, method, info, HandlerChainCustomizer.Phase.RESOLVE_METHOD_PARAMETERS);
+        addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.RESOLVE_METHOD_PARAMETERS);
         for (int i = 0; i < parameters.length; i++) {
             ServerMethodParameter param = (ServerMethodParameter) parameters[i];
             boolean single = param.isSingle();
@@ -306,7 +298,7 @@ public class RuntimeResourceDeployment {
                     converter, param.parameterType,
                     param.isObtainedAsCollection(), param.isOptional()));
         }
-        addHandlers(handlers, method, info, HandlerChainCustomizer.Phase.BEFORE_METHOD_INVOKE);
+        addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.BEFORE_METHOD_INVOKE);
         EndpointInvoker invoker = method.getInvoker().get();
         ServerRestHandler alternate = alternateInvoker(method, invoker);
         if (alternate != null) {
@@ -314,7 +306,7 @@ public class RuntimeResourceDeployment {
         } else {
             handlers.add(new InvocationHandler(invoker));
         }
-        addHandlers(handlers, method, info, HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE);
+        addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE);
 
         Type returnType = TypeSignatureParser.parse(method.getReturnType());
         Type nonAsyncReturnType = getNonAsyncReturnType(returnType);
@@ -402,6 +394,7 @@ public class RuntimeResourceDeployment {
             responseFilterHandlers = Collections.emptyList();
         } else {
             handlers.add(new ResponseHandler());
+            addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED);
             responseFilterHandlers = new ArrayList<>(interceptorDeployment.setupResponseFilterHandler());
             handlers.addAll(responseFilterHandlers);
             handlers.add(new ResponseWriterHandler(dynamicEntityWriter));
@@ -438,13 +431,14 @@ public class RuntimeResourceDeployment {
         return buildTimeWriters.get(0) instanceof ServerMessageBodyWriter.AllWriteableMessageBodyWriter;
     }
 
-    private void addHandlers(List<ServerRestHandler> handlers, ServerResourceMethod method, DeploymentInfo info,
+    private void addHandlers(List<ServerRestHandler> handlers, ResourceClass clazz, ServerResourceMethod method,
+            DeploymentInfo info,
             HandlerChainCustomizer.Phase phase) {
         for (int i = 0; i < info.getGlobalHandlerCustomizers().size(); i++) {
-            handlers.addAll(info.getGlobalHandlerCustomizers().get(i).handlers(phase));
+            handlers.addAll(info.getGlobalHandlerCustomizers().get(i).handlers(phase, clazz, method));
         }
         for (int i = 0; i < method.getHandlerChainCustomizers().size(); i++) {
-            handlers.addAll(method.getHandlerChainCustomizers().get(i).handlers(phase));
+            handlers.addAll(method.getHandlerChainCustomizers().get(i).handlers(phase, clazz, method));
         }
     }
 

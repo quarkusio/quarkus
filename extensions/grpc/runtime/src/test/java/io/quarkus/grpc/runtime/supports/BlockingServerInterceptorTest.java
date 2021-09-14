@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -16,8 +16,12 @@ import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
+import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.ManagedContext;
+import io.quarkus.grpc.runtime.supports.blocking.BlockingServerInterceptor;
 import io.vertx.core.Vertx;
 
+@SuppressWarnings({ "rawtypes", "unchecked" })
 class BlockingServerInterceptorTest {
     public static final Context.Key<String> USERNAME = Context.key("username");
 
@@ -27,7 +31,15 @@ class BlockingServerInterceptorTest {
     @BeforeEach
     void setup() {
         vertx = Vertx.vertx();
-        blockingServerInterceptor = new BlockingServerInterceptor(vertx, Arrays.asList("blocking"), false);
+        InjectableContext.ContextState contextState = mock(InjectableContext.ContextState.class);
+        ManagedContext requestContext = mock(ManagedContext.class);
+        when(requestContext.getState()).thenReturn(contextState);
+        blockingServerInterceptor = new BlockingServerInterceptor(vertx, Collections.singletonList("blocking"), false) {
+            @Override
+            protected ManagedContext getRequestContext() {
+                return requestContext;
+            }
+        };
     }
 
     @Test
@@ -61,8 +73,8 @@ class BlockingServerInterceptorTest {
     static class BlockingServerCallHandler implements ServerCallHandler {
         String threadName;
         String contextUserName;
-        private CountDownLatch latch = new CountDownLatch(1);
-        private CountDownLatch setupLatch = new CountDownLatch(1);
+        private final CountDownLatch latch = new CountDownLatch(1);
+        private final CountDownLatch setupLatch = new CountDownLatch(1);
 
         @Override
         public ServerCall.Listener startCall(ServerCall serverCall, Metadata metadata) {

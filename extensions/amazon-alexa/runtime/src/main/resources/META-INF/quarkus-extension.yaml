@@ -1,0 +1,11 @@
+---
+name: "Amazon Alexa"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "lambda"
+  - "alexa"
+  categories:
+  - "cloud"
+  guide: "https://quarkus.io/guides/amazon-lambda"
+  status: "preview"

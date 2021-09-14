@@ -90,6 +90,7 @@ public class QuarkusBootstrap implements Serializable {
     private final Set<AppArtifactKey> localArtifacts;
     private final List<ClassLoaderEventListener> classLoadListeners;
     private final boolean auxiliaryApplication;
+    private final boolean hostApplicationIsTestOnly;
     private final boolean flatClassPath;
     private final ConfiguredClassLoading classLoadingConfig;
 
@@ -124,6 +125,7 @@ public class QuarkusBootstrap implements Serializable {
         this.auxiliaryApplication = builder.auxiliaryApplication;
         this.flatClassPath = builder.flatClassPath;
         this.classLoadingConfig = classLoadingConfig;
+        this.hostApplicationIsTestOnly = builder.hostApplicationIsTestOnly;
     }
 
     public CuratedApplication bootstrap() throws BootstrapException {
@@ -248,6 +250,10 @@ public class QuarkusBootstrap implements Serializable {
         return auxiliaryApplication;
     }
 
+    public boolean isHostApplicationIsTestOnly() {
+        return hostApplicationIsTestOnly;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -323,6 +329,7 @@ public class QuarkusBootstrap implements Serializable {
 
     public static class Builder {
         public List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
+        public boolean hostApplicationIsTestOnly;
         boolean flatClassPath;
         boolean rebuild;
         PathsCollection applicationRoot;
@@ -421,12 +428,17 @@ public class QuarkusBootstrap implements Serializable {
             return this;
         }
 
+        public Builder setHostApplicationIsTestOnly(boolean hostApplicationIsTestOnly) {
+            this.hostApplicationIsTestOnly = hostApplicationIsTestOnly;
+            return this;
+        }
+
         public Builder setAuxiliaryApplication(boolean auxiliaryApplication) {
             this.auxiliaryApplication = auxiliaryApplication;
             return this;
         }
 
-        public Builder setLocalProjectDiscovery(boolean localProjectDiscovery) {
+        public Builder setLocalProjectDiscovery(Boolean localProjectDiscovery) {
             this.localProjectDiscovery = localProjectDiscovery;
             return this;
         }
@@ -565,6 +577,7 @@ public class QuarkusBootstrap implements Serializable {
         TEST,
         PROD,
         REMOTE_DEV_SERVER,
-        REMOTE_DEV_CLIENT;
+        REMOTE_DEV_CLIENT,
+        CONTINUOUS_TEST;
     }
 }

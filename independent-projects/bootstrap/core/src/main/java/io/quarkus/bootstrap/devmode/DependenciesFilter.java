@@ -85,7 +85,7 @@ public class DependenciesFilter {
             if (project == null) {
                 continue;
             }
-            if ("test".equals(a.getScope())) {
+            if ("test".equals(a.getScope()) || "pom".equals(a.getType())) {
                 continue;
             }
             if (!project.getVersion().equals(a.getVersion())) {

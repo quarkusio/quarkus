@@ -8,6 +8,7 @@ import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,6 +23,8 @@ import org.graalvm.nativeimage.hosted.RuntimeReflection;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ForceNonWeakReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -44,12 +47,16 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.ResourceHelper;
+import io.quarkus.runtime.graal.ResourcesFeature;
 
 public class NativeImageAutoFeatureStep {
 
     private static final String GRAAL_AUTOFEATURE = "io/quarkus/runner/AutoFeature";
     private static final MethodDescriptor IMAGE_SINGLETONS_LOOKUP = ofMethod(ImageSingletons.class, "lookup", Object.class,
             Class.class);
+    private static final MethodDescriptor BUILD_TIME_INITIALIZATION = ofMethod(
+            "org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport",
+            "initializeAtBuildTime", void.class, String.class, String.class);
     private static final MethodDescriptor INITIALIZE_CLASSES_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
             "initializeAtRunTime", void.class, Class[].class);
     private static final MethodDescriptor INITIALIZE_PACKAGES_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
@@ -71,17 +78,34 @@ public class NativeImageAutoFeatureStep {
     static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.localization.LocalizationFeature";
 
     @BuildStep
+    GeneratedResourceBuildItem generateNativeResourcesList(List<NativeImageResourceBuildItem> resources,
+            BuildProducer<NativeImageResourcePatternsBuildItem> resourcePatternsBuildItemBuildProducer) {
+        StringBuilder sb = new StringBuilder();
+        for (NativeImageResourceBuildItem i : resources) {
+            for (String r : i.getResources()) {
+                sb.append(r);
+                sb.append("\n");
+            }
+        }
+        //we don't want this file in the final image
+        resourcePatternsBuildItemBuildProducer.produce(NativeImageResourcePatternsBuildItem.builder()
+                .excludePattern(ResourcesFeature.META_INF_QUARKUS_NATIVE_RESOURCES_TXT).build());
+        return new GeneratedResourceBuildItem(ResourcesFeature.META_INF_QUARKUS_NATIVE_RESOURCES_TXT,
+                sb.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    @BuildStep
     void generateFeature(BuildProducer<GeneratedNativeImageClassBuildItem> nativeImageClass,
             List<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems,
             List<RuntimeInitializedPackageBuildItem> runtimeInitializedPackageBuildItems,
             List<RuntimeReinitializedClassBuildItem> runtimeReinitializedClassBuildItems,
             List<NativeImageProxyDefinitionBuildItem> proxies,
-            List<NativeImageResourceBuildItem> resources,
             List<NativeImageResourcePatternsBuildItem> resourcePatterns,
             List<NativeImageResourceBundleBuildItem> resourceBundles,
             List<ReflectiveMethodBuildItem> reflectiveMethods,
             List<ReflectiveFieldBuildItem> reflectiveFields,
             List<ReflectiveClassBuildItem> reflectiveClassBuildItems,
+            List<ForceNonWeakReflectiveClassBuildItem> nonWeakReflectiveClassBuildItems,
             List<ServiceProviderBuildItem> serviceProviderBuildItems,
             List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields,
             List<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses) {
@@ -114,6 +138,13 @@ public class NativeImageAutoFeatureStep {
             CatchBlockCreator cc = tc.addCatch(Throwable.class);
             cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
         }
+
+        ResultHandle imageSingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
+                overallCatch.loadClass("org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport"));
+        overallCatch.invokeInterfaceMethod(BUILD_TIME_INITIALIZATION,
+                imageSingleton,
+                overallCatch.load(""), // empty string means everything
+                overallCatch.load("Quarkus build time init default"));
 
         if (!runtimeInitializedClassBuildItems.isEmpty()) {
             ResultHandle thisClass = overallCatch.loadClass(GRAAL_AUTOFEATURE);
@@ -151,15 +182,13 @@ public class NativeImageAutoFeatureStep {
             ResultHandle thisClass = overallCatch.loadClass(GRAAL_AUTOFEATURE);
             ResultHandle cl = overallCatch.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class),
                     thisClass);
-            ResultHandle initSingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
-                    overallCatch.loadClass("org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport"));
             ResultHandle quarkus = overallCatch.load("Quarkus");
             for (RuntimeReinitializedClassBuildItem runtimeReinitializedClass : runtimeReinitializedClassBuildItems) {
                 TryBlock tc = overallCatch.tryBlock();
                 ResultHandle clazz = tc.invokeStaticMethod(
                         ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
                         tc.load(runtimeReinitializedClass.getClassName()), tc.load(false), cl);
-                tc.invokeInterfaceMethod(RERUN_INITIALIZATION, initSingleton, clazz, quarkus);
+                tc.invokeInterfaceMethod(RERUN_INITIALIZATION, imageSingleton, clazz, quarkus);
 
                 CatchBlockCreator cc = tc.addCatch(Throwable.class);
                 cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
@@ -182,13 +211,6 @@ public class NativeImageAutoFeatureStep {
                 }
                 overallCatch.invokeInterfaceMethod(ofMethod(DYNAMIC_PROXY_REGISTRY,
                         "addProxyClass", void.class, Class[].class), proxySupport, array);
-            }
-        }
-
-        for (NativeImageResourceBuildItem i : resources) {
-            for (String j : i.getResources()) {
-                overallCatch.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class),
-                        overallCatch.load(j));
             }
         }
 
@@ -259,8 +281,13 @@ public class NativeImageAutoFeatureStep {
         int count = 0;
 
         final Map<String, ReflectionInfo> reflectiveClasses = new LinkedHashMap<>();
+        final Set<String> forcedNonWeakClasses = new HashSet<>();
+        for (ForceNonWeakReflectiveClassBuildItem nonWeakReflectiveClassBuildItem : nonWeakReflectiveClassBuildItems) {
+            forcedNonWeakClasses.add(nonWeakReflectiveClassBuildItem.getClassName());
+        }
         for (ReflectiveClassBuildItem i : reflectiveClassBuildItems) {
-            addReflectiveClass(reflectiveClasses, i.isConstructors(), i.isMethods(), i.isFields(), i.areFinalFieldsWritable(),
+            addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, i.isConstructors(), i.isMethods(), i.isFields(),
+                    i.areFinalFieldsWritable(),
                     i.isWeak(),
                     i.getClassNames().toArray(new String[0]));
         }
@@ -272,7 +299,7 @@ public class NativeImageAutoFeatureStep {
         }
 
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
-            addReflectiveClass(reflectiveClasses, true, false, false, false, false,
+            addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, true, false, false, false, false,
                     i.providers().toArray(new String[] {}));
         }
 
@@ -445,13 +472,15 @@ public class NativeImageAutoFeatureStep {
         }
     }
 
-    public void addReflectiveClass(Map<String, ReflectionInfo> reflectiveClasses, boolean constructors, boolean method,
+    public void addReflectiveClass(Map<String, ReflectionInfo> reflectiveClasses, Set<String> forcedNonWeakClasses,
+            boolean constructors, boolean method,
             boolean fields, boolean finalFieldsWritable, boolean weak,
             String... className) {
         for (String cl : className) {
             ReflectionInfo existing = reflectiveClasses.get(cl);
             if (existing == null) {
-                reflectiveClasses.put(cl, new ReflectionInfo(constructors, method, fields, finalFieldsWritable, weak));
+                reflectiveClasses.put(cl, new ReflectionInfo(constructors, method, fields, finalFieldsWritable,
+                        !forcedNonWeakClasses.contains(cl) && weak));
             } else {
                 if (constructors) {
                     existing.constructors = true;

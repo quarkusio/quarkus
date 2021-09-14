@@ -40,7 +40,8 @@ public final class SkipConcurrentExecutionInvoker implements ScheduledInvoker {
             }
         } else {
             LOGGER.debugf("Skipped scheduled invoker execution: %s", delegate.getClass().getName());
-            SkippedExecution payload = new SkippedExecution(execution.getTrigger().getId(), execution.getFireTime());
+            SkippedExecution payload = new SkippedExecution(execution,
+                    "The scheduled method should not be executed concurrently");
             event.fire(payload);
             event.fireAsync(payload);
         }

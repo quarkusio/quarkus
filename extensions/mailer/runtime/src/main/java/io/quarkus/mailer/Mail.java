@@ -17,7 +17,7 @@ public class Mail {
     private List<String> bcc = new ArrayList<>();
     private List<String> cc = new ArrayList<>();
     private String from;
-    private String replyTo;
+    private List<String> replyTo = new ArrayList<>();
     private String bounceAddress;
     private String subject;
     private String text;
@@ -163,10 +163,27 @@ public class Mail {
     }
 
     /**
-     * @return the reply-to address.
+     * @return the reply-to address. In the case of multiple addresses, the comma-separated list is returned, following
+     *         the https://datatracker.ietf.org/doc/html/rfc5322#section-3.6.2 recommendation. If no reply-to address has been
+     *         set, it returns {@code null}.
      */
     public String getReplyTo() {
-        return replyTo;
+        if (replyTo == null || replyTo.isEmpty()) {
+            return null;
+        }
+        return String.join(",", replyTo);
+    }
+
+    /**
+     * Adds a reply-to address.
+     *
+     * @param replyTo the address to use as reply-to. Must be a valid email address.
+     * @return the current {@link Mail}
+     * @see #setReplyTo(String)
+     */
+    public Mail addReplyTo(String replyTo) {
+        this.replyTo.add(replyTo);
+        return this;
     }
 
     /**
@@ -174,9 +191,24 @@ public class Mail {
      *
      * @param replyTo the address to use as reply-to. Must be a valid email address.
      * @return the current {@link Mail}
+     * @see #setReplyTo(String[])
      */
     public Mail setReplyTo(String replyTo) {
-        this.replyTo = replyTo;
+        this.replyTo.clear();
+        this.replyTo.add(replyTo);
+        return this;
+    }
+
+    /**
+     * Sets the reply-to addresses.
+     *
+     * @param replyTo the addresses to use as reply-to. Must contain valid email addresses, must contain at least
+     *        one address.
+     * @return the current {@link Mail}
+     */
+    public Mail setReplyTo(String... replyTo) {
+        this.replyTo.clear();
+        Collections.addAll(this.replyTo, replyTo);
         return this;
     }
 
@@ -436,7 +468,8 @@ public class Mail {
      * @param disposition the disposition of the attachment
      * @return the current {@link Mail}
      */
-    public Mail addAttachment(String name, Publisher<Byte> data, String contentType, String description, String disposition) {
+    public Mail addAttachment(String name, Publisher<Byte> data, String contentType, String description,
+            String disposition) {
         this.attachments.add(new Attachment(name, data, contentType, description, disposition));
         return this;
     }

@@ -1,6 +1,5 @@
 package io.quarkus.resteasy.reactive.jsonb.deployment.processor;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -22,11 +21,11 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 
 public class ResteasyReactiveJsonbProcessor {
 
-    private static final List<String> VERTX_SERIALIZERS = Arrays.asList(
+    private static final List<String> VERTX_SERIALIZERS = List.of(
             VertxJson.JsonObjectSerializer.class.getName(),
             VertxJson.JsonArraySerializer.class.getName());
 
-    private static final List<String> VERTX_DESERIALIZERS = Arrays.asList(
+    private static final List<String> VERTX_DESERIALIZERS = List.of(
             VertxJson.JsonObjectDeserializer.class.getName(),
             VertxJson.JsonArrayDeserializer.class.getName());
 

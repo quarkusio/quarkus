@@ -239,7 +239,7 @@ public class StartupActionImpl implements StartupAction {
         Map<String, byte[]> data = new HashMap<>();
         for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
             if (i.isApplicationClass() == applicationClasses) {
-                data.put(i.getName().replace(".", "/") + ".class", i.getClassData());
+                data.put(i.getName().replace('.', '/') + ".class", i.getClassData());
                 if (BootstrapDebug.DEBUG_CLASSES_DIR != null) {
                     try {
                         File debugPath = new File(BootstrapDebug.DEBUG_CLASSES_DIR);

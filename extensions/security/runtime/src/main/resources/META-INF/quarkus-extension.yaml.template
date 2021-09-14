@@ -1,9 +1,0 @@
----
-name: "Security"
-metadata:
-  unlisted: true
-  keywords:
-  - "security"
-  categories:
-    - "security"
-  status: "preview"

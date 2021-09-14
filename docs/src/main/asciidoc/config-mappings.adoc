@@ -405,6 +405,63 @@ public interface Defaults {
 No configuration properties required. The `Defaults.foo()` will return the value `foo` and `Defaults.bar()` will return
 thevalue `bar`.
 
+=== Validation
+
+A config mapping may combine annotations from https://beanvalidation.org[Bean Validation] to validate configuration
+values:
+
+[source,java]
+----
+@ConfigMapping(prefix = "server")
+interface Server {
+    @Size(min = 2, max = 20)
+    String host();
+
+    @Max(10000)
+    int port();
+}
+----
+
+WARNING: For validation to work, the `quarkus-hibernate-validator` extension is required.
+
+=== Mocking
+
+A mapping interface implementation is not a proxy, so it cannot be mocked directly with `@InjectMock` like other CDI
+beans. One trick is to make it a proxyable implementation:
+
+[source,java]
+----
+@ApplicationScoped
+@io.quarkus.test.Mock
+public class ServerMock implements Server {
+    public String host() {
+        // Mockito will provide the mocking code, so this is never called
+        throw new IllegalStateException();
+    }
+
+    public int port() {
+        throw new IllegalStateException();
+    }
+}
+----
+
+The `ServerMock` can be injected as a mock into a Quarkus test class:
+
+[source,java]
+----
+@QuarkusTest
+class ServerMockTest {
+    @InjectMock
+    ServerMock serverMock;
+
+    @Test
+    void localhost() {
+        Mockito.when(serverMock.host()).thenReturn("localhost");
+        assertEquals("localhost", serverMock.host());
+    }
+}
+----
+
 [[config-properties]]
 == [.line-through]#`@ConfigProperties`# (Deprecated)
 
@@ -585,52 +642,6 @@ public class SomeBean {
 on `@ConfigProperties`.
 <2> At this injection point `otherConfiguration` will use the `other` prefix from `@ConfigPrefix` instead of the
 `greeting` prefix. Notice that in this case `@Inject` is not required.
-
-=== Using a list of objects
-
-In certain cases it might be necessary to support complex configuration structures that use a list of objects:
-
-[source,java]
-----
-@ConfigProperties(prefix = "complex")
-public class ComplexConfiguration {
-    public String name;
-    public String user;
-    public String password;
-    public List<Nested> inputs;
-    public List<Nested> outputs;
-
-    public static class Nested {
-        public String user;
-        public String password;
-    }
-}
-----
-
-Support for such use cases is only available when using YAML configuration with the `quarkus-config-yaml` extension. A
-corresponding example xref:config-yaml.adoc[YAML] configuration could be:
-
-`application.yaml`
-[source,yaml]
-----
-complex:
-  name: defaultName
-  user: defaultUser
-  password: defaultPassword
-  inputs:
-    - user: user
-      password: secret
-    - user: otheruser
-      password: secret2
-  outputs:
-    - user: someuser
-      password: asecret
-    - user: someotheruser
-      password: anothersecret
-----
-
-WARNING: A limitation of such configuration is that the types used as the generic types of the lists need to be classes
-and not interfaces.
 
 === Combining ConfigProperties with build time conditions
 

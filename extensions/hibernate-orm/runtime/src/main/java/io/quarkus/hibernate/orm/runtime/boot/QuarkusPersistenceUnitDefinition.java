@@ -11,6 +11,7 @@ import javax.persistence.spi.PersistenceUnitTransactionType;
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 
+import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.runtime.ObjectSubstitution;
 
@@ -23,18 +24,21 @@ public final class QuarkusPersistenceUnitDefinition {
     private final LightPersistenceXmlDescriptor actualHibernateDescriptor;
     private final String dataSource;
     private final MultiTenancyStrategy multitenancyStrategy;
+    private final List<RecordableXmlMapping> xmlMappings;
     private final boolean isReactive;
     private final boolean fromPersistenceXml;
     private final List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors;
 
     public QuarkusPersistenceUnitDefinition(PersistenceUnitDescriptor persistenceUnitDescriptor, String dataSource,
-            MultiTenancyStrategy multitenancyStrategy, boolean isReactive, boolean fromPersistenceXml,
+            MultiTenancyStrategy multitenancyStrategy, List<RecordableXmlMapping> xmlMappings,
+            boolean isReactive, boolean fromPersistenceXml,
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
         Objects.requireNonNull(persistenceUnitDescriptor);
         Objects.requireNonNull(multitenancyStrategy);
         this.actualHibernateDescriptor = LightPersistenceXmlDescriptor.validateAndReadFrom(persistenceUnitDescriptor);
         this.dataSource = dataSource;
         this.multitenancyStrategy = multitenancyStrategy;
+        this.xmlMappings = xmlMappings;
         this.isReactive = isReactive;
         this.fromPersistenceXml = fromPersistenceXml;
         this.integrationStaticDescriptors = integrationStaticDescriptors;
@@ -46,6 +50,7 @@ public final class QuarkusPersistenceUnitDefinition {
     private QuarkusPersistenceUnitDefinition(LightPersistenceXmlDescriptor persistenceUnitDescriptor,
             String dataSource,
             MultiTenancyStrategy multitenancyStrategy,
+            List<RecordableXmlMapping> xmlMappings,
             boolean isReactive,
             boolean fromPersistenceXml,
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
@@ -55,6 +60,7 @@ public final class QuarkusPersistenceUnitDefinition {
         this.actualHibernateDescriptor = persistenceUnitDescriptor;
         this.dataSource = dataSource;
         this.multitenancyStrategy = multitenancyStrategy;
+        this.xmlMappings = xmlMappings;
         this.isReactive = isReactive;
         this.fromPersistenceXml = fromPersistenceXml;
         this.integrationStaticDescriptors = integrationStaticDescriptors;
@@ -89,6 +95,10 @@ public final class QuarkusPersistenceUnitDefinition {
         return integrationStaticDescriptors;
     }
 
+    public List<RecordableXmlMapping> getXmlMappings() {
+        return xmlMappings;
+    }
+
     /**
      * This includes the state of both the QuarkusPersistenceUnitDefinition
      * and its more complex field of type LightPersistenceXmlDescriptor
@@ -97,6 +107,7 @@ public final class QuarkusPersistenceUnitDefinition {
 
         private String dataSource;
         private MultiTenancyStrategy multitenancyStrategy;
+        private List<RecordableXmlMapping> xmlMappingBindings;
         private boolean isReactive;
         private boolean fromPersistenceXml;
         private String puName;
@@ -133,6 +144,14 @@ public final class QuarkusPersistenceUnitDefinition {
 
         public void setMultitenancyStrategy(MultiTenancyStrategy multitenancyStrategy) {
             this.multitenancyStrategy = multitenancyStrategy;
+        }
+
+        public List<RecordableXmlMapping> getXmlMappingBindings() {
+            return xmlMappingBindings;
+        }
+
+        public void setXmlMappingBindings(List<RecordableXmlMapping> xmlMappingBindings) {
+            this.xmlMappingBindings = xmlMappingBindings;
         }
 
         public boolean isReactive() {
@@ -234,6 +253,7 @@ public final class QuarkusPersistenceUnitDefinition {
             //Remaining fields of QuarkusPersistenceUnitDefinition
             s.setDataSource(obj.getDataSource());
             s.setMultitenancyStrategy(obj.getMultitenancyStrategy());
+            s.setXmlMappingBindings(obj.getXmlMappings());
             s.setReactive(obj.isReactive);
             s.setFromPersistenceXml(obj.isFromPersistenceXml());
             s.setIntegrationStaticDescriptors(obj.getIntegrationStaticDescriptors());
@@ -247,7 +267,8 @@ public final class QuarkusPersistenceUnitDefinition {
                     obj.puValidationMode, obj.puSharedCachemode, obj.puManagedClassNames, obj.puProperties);
 
             return new QuarkusPersistenceUnitDefinition(xmlDescriptor, obj.getDataSource(), obj.getMultitenancyStrategy(),
-                    obj.isReactive(), obj.isFromPersistenceXml(), obj.getIntegrationStaticDescriptors());
+                    obj.getXmlMappingBindings(), obj.isReactive(), obj.isFromPersistenceXml(),
+                    obj.getIntegrationStaticDescriptors());
         }
     }
 

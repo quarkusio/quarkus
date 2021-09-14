@@ -2,6 +2,7 @@ package io.quarkus.amazon.iam.runtime;
 
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 
 import software.amazon.awssdk.services.iam.IamAsyncClient;
@@ -11,42 +12,40 @@ import software.amazon.awssdk.services.iam.IamClientBuilder;
 
 @ApplicationScoped
 public class IamClientProducer {
+    private final IamClient syncClient;
+    private final IamAsyncClient asyncClient;
 
-    private volatile IamClientBuilder syncConfiguredBuilder;
-    private volatile IamAsyncClientBuilder asyncConfiguredBuilder;
-
-    private IamClient client;
-    private IamAsyncClient asyncClient;
+    IamClientProducer(Instance<IamClientBuilder> syncClientBuilderInstance,
+            Instance<IamAsyncClientBuilder> asyncClientBuilderInstance) {
+        this.syncClient = syncClientBuilderInstance.isResolvable() ? syncClientBuilderInstance.get().build() : null;
+        this.asyncClient = asyncClientBuilderInstance.isResolvable() ? asyncClientBuilderInstance.get().build() : null;
+    }
 
     @Produces
     @ApplicationScoped
     public IamClient client() {
-        client = syncConfiguredBuilder.build();
-        return client;
+        if (syncClient == null) {
+            throw new IllegalStateException("The IamClient is required but has not been detected/configured.");
+        }
+        return syncClient;
     }
 
     @Produces
     @ApplicationScoped
     public IamAsyncClient asyncClient() {
-        asyncClient = asyncConfiguredBuilder.build();
+        if (asyncClient == null) {
+            throw new IllegalStateException("The IamAsyncClient is required but has not been detected/configured.");
+        }
         return asyncClient;
     }
 
     @PreDestroy
     public void destroy() {
-        if (client != null) {
-            client.close();
+        if (syncClient != null) {
+            syncClient.close();
         }
         if (asyncClient != null) {
             asyncClient.close();
         }
-    }
-
-    public void setSyncConfiguredBuilder(IamClientBuilder syncConfiguredBuilder) {
-        this.syncConfiguredBuilder = syncConfiguredBuilder;
-    }
-
-    public void setAsyncConfiguredBuilder(IamAsyncClientBuilder asyncConfiguredBuilder) {
-        this.asyncConfiguredBuilder = asyncConfiguredBuilder;
     }
 }

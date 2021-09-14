@@ -24,7 +24,6 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.AnnotationValue.Kind;
-import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
@@ -49,10 +48,10 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalStaticInitConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.ProxyUnwrapperBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.runtime.ResteasyInjectorFactoryRecorder;
@@ -148,16 +147,11 @@ public class ResteasyCommonProcessor {
     }
 
     @Record(STATIC_INIT)
+    @Consume(BeanContainerBuildItem.class)
     @BuildStep
-    ResteasyInjectionReadyBuildItem setupResteasyInjection(List<ProxyUnwrapperBuildItem> proxyUnwrappers,
-            BeanContainerBuildItem beanContainerBuildItem,
-            Capabilities capabilities,
+    ResteasyInjectionReadyBuildItem setupResteasyInjection(
             ResteasyInjectorFactoryRecorder recorder) {
-        List<Function<Object, Object>> unwrappers = new ArrayList<>();
-        for (ProxyUnwrapperBuildItem i : proxyUnwrappers) {
-            unwrappers.add(i.getUnwrapper());
-        }
-        RuntimeValue<InjectorFactory> injectorFactory = recorder.setup(beanContainerBuildItem.getValue(), unwrappers);
+        RuntimeValue<InjectorFactory> injectorFactory = recorder.setup();
         return new ResteasyInjectionReadyBuildItem(injectorFactory);
     }
 
@@ -181,7 +175,6 @@ public class ResteasyCommonProcessor {
                 annotatedProviders.add(i.target().asClass().name().toString());
             }
             checkProperConfigAccessInProvider(i);
-            checkProperConstructorInProvider(i);
         }
         contributedProviders.addAll(annotatedProviders);
         Set<String> availableProviders = new HashSet<>(ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
@@ -364,15 +357,6 @@ public class ResteasyCommonProcessor {
                             + " into a JAX-RS provider may lead to unexpected results. To ensure proper results, please change the type of the field to "
                             + ParameterizedType.create(ResteasyDotNames.CDI_INSTANCE, new Type[] { fieldType }, null)
                             + ". Offending field is '" + field.name() + "' of class '" + field.declaringClass() + "'");
-        }
-    }
-
-    private void checkProperConstructorInProvider(AnnotationInstance i) {
-        ClassInfo targetClass = i.target().asClass();
-        if (!targetClass.hasNoArgsConstructor()) {
-            LOGGER.warn(
-                    "Classes annotated with @Provider should have a single, no-argument constructor, otherwise dependency injection won't work properly. Offending class is "
-                            + targetClass);
         }
     }
 
@@ -661,10 +645,5 @@ public class ResteasyCommonProcessor {
         public boolean noProducesDefaultsToAll() {
             return noProducesDefaultsToAll;
         }
-    }
-
-    private enum NoMediaTypesDefault {
-        ALL,
-        JSON;
     }
 }

@@ -1,0 +1,11 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Quarkus Extension for Spring Boot properties"
+metadata:
+  keywords:
+  - "spring-boot"
+  - "properties"
+  guide: "https://quarkus.io/guides/spring-boot-properties"
+  categories:
+  - "compatibility"
+  status: "stable"

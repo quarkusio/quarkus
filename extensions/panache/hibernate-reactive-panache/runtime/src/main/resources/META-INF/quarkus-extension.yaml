@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Hibernate Reactive with Panache"
+metadata:
+  keywords:
+  - "hibernate-reactive-panache"
+  - "panache"
+  - "hibernate"
+  - "jpa"
+  categories:
+  - "data"
+  status: "preview"

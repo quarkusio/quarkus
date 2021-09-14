@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -534,29 +533,15 @@ public class QuteProcessor {
                     if (expression.getNamespace().equals(EngineProducer.INJECT_NAMESPACE)) {
                         validateInjectExpression(templateAnalysis, expression, index, incorrectExpressions,
                                 templateExtensionMethods, excludes, namedBeans, generatedIdsToMatches,
-                                implicitClassToMembersUsed,
-                                templateIdToPathFun);
+                                implicitClassToMembersUsed, templateIdToPathFun, checkedTemplate);
                     } else {
                         continue;
                     }
                 } else {
-                    if (checkedTemplate != null && checkedTemplate.requireTypeSafeExpressions && !expression.hasTypeInfo()) {
-                        incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                                "Only type-safe expressions are allowed in the checked template defined via: "
-                                        + checkedTemplate.method.declaringClass().name() + "."
-                                        + checkedTemplate.method.name()
-                                        + "(); an expression must be based on a checked template parameter "
-                                        + checkedTemplate.bindings.keySet()
-                                        + ", or bound via a param declaration, or the requirement must be relaxed via @CheckedTemplate(requireTypeSafeExpressions = false)",
-                                expression.getOrigin()));
-                        continue;
-                    }
-
                     generatedIdsToMatches.put(expression.getGeneratedId(),
                             validateNestedExpressions(templateAnalysis, null, new HashMap<>(), templateExtensionMethods,
-                                    excludes,
-                                    incorrectExpressions, expression, index, implicitClassToMembersUsed, templateIdToPathFun,
-                                    generatedIdsToMatches));
+                                    excludes, incorrectExpressions, expression, index, implicitClassToMembersUsed,
+                                    templateIdToPathFun, generatedIdsToMatches, checkedTemplate));
                 }
             }
 
@@ -587,25 +572,12 @@ public class QuteProcessor {
         return ignorePattern.toString();
     }
 
-    /**
-     * @param templateAnalysis
-     * @param rootClazz
-     * @param results Map of cached results within a single expression
-     * @param templateExtensionMethods
-     * @param excludes
-     * @param incorrectExpressions
-     * @param expression
-     * @param index
-     * @param implicitClassToMembersUsed
-     * @param templateIdToPathFun
-     * @return the last match object
-     */
     static Match validateNestedExpressions(TemplateAnalysis templateAnalysis, ClassInfo rootClazz, Map<String, Match> results,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
             List<TypeCheckExcludeBuildItem> excludes,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions, Expression expression, IndexView index,
             Map<DotName, Set<String>> implicitClassToMembersUsed, Function<String, String> templateIdToPathFun,
-            Map<Integer, Match> generatedIdsToMatches) {
+            Map<Integer, Match> generatedIdsToMatches, CheckedTemplateBuildItem checkedTemplate) {
 
         // First validate nested virtual methods
         for (Expression.Part part : expression.getParts()) {
@@ -614,13 +586,27 @@ public class QuteProcessor {
                     if (!results.containsKey(param.toOriginalString())) {
                         validateNestedExpressions(templateAnalysis, null, results, templateExtensionMethods, excludes,
                                 incorrectExpressions, param, index, implicitClassToMembersUsed, templateIdToPathFun,
-                                generatedIdsToMatches);
+                                generatedIdsToMatches, checkedTemplate);
                     }
                 }
             }
         }
         // Then validate the expression itself
         Match match = new Match(index);
+
+        if (checkedTemplate != null && checkedTemplate.requireTypeSafeExpressions && !expression.hasTypeInfo()) {
+            incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                    "Only type-safe expressions are allowed in the checked template defined via: "
+                            + checkedTemplate.method.declaringClass().name() + "."
+                            + checkedTemplate.method.name()
+                            + "(); an expression must be based on a checked template parameter "
+                            + checkedTemplate.bindings.keySet()
+                            + ", or bound via a param declaration, or the requirement must be relaxed via @CheckedTemplate(requireTypeSafeExpressions = false)",
+                    expression.getOrigin()));
+            results.put(expression.toOriginalString(), match);
+            return match;
+        }
+
         if (rootClazz == null && !expression.hasTypeInfo()) {
             // No type info available or a namespace expression
             results.put(expression.toOriginalString(), match);
@@ -669,7 +655,7 @@ public class QuteProcessor {
                 if (match.isArray()) {
                     if (info.isProperty()) {
                         String name = info.asProperty().name;
-                        if (name.equals("length")) {
+                        if (name.equals("length") || name.equals("size")) {
                             // myArray.length
                             match.setValues(null, PrimitiveType.INT);
                             continue;
@@ -683,21 +669,20 @@ public class QuteProcessor {
                                 // not an integer index
                             }
                         }
-                    } else if (info.isVirtualMethod() && info.asVirtualMethod().name.equals("get")) {
-                        // array.get(84)
+                    } else if (info.isVirtualMethod()) {
                         List<Expression> params = info.asVirtualMethod().part.asVirtualMethod().getParameters();
-                        if (params.size() == 1) {
+                        String name = info.asVirtualMethod().name;
+                        if (name.equals("get") && params.size() == 1) {
+                            // array.get(84)
                             Expression param = params.get(0);
-                            Object literalValue;
-                            try {
-                                literalValue = param.getLiteralValue().get();
-                            } catch (InterruptedException | ExecutionException e) {
-                                literalValue = null;
-                            }
+                            Object literalValue = param.getLiteral();
                             if (literalValue == null || literalValue instanceof Integer) {
                                 match.setValues(null, match.type().asArrayType().component());
                                 continue;
                             }
+                        } else if (name.equals("take") || name.equals("takeLast")) {
+                            // The returned array has the same component type
+                            continue;
                         }
                     }
                 }
@@ -875,7 +860,8 @@ public class QuteProcessor {
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods, List<TypeCheckExcludeBuildItem> excludes,
             Map<String, BeanInfo> namedBeans, Map<Integer, Match> generatedIdsToMatches,
-            Map<DotName, Set<String>> implicitClassToMembersUsed, Function<String, String> templateIdToPathFun) {
+            Map<DotName, Set<String>> implicitClassToMembersUsed, Function<String, String> templateIdToPathFun,
+            CheckedTemplateBuildItem checkedTemplate) {
         Expression.Part firstPart = expression.getParts().get(0);
         if (firstPart.isVirtualMethod()) {
             incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
@@ -902,7 +888,7 @@ public class QuteProcessor {
             generatedIdsToMatches.put(expression.getGeneratedId(),
                     validateNestedExpressions(templateAnalysis, bean.getImplClazz(), new HashMap<>(),
                             templateExtensionMethods, excludes, incorrectExpressions, expression, index,
-                            implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches));
+                            implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches, checkedTemplate));
 
         } else {
             // User is injecting a non-existing bean
@@ -1435,13 +1421,8 @@ public class QuteProcessor {
                 // Map<String,Long> => Entry<String,Long>
                 processLoopElementHint(match, index, expression, incorrectExpressions);
             } else if (helperHint.startsWith(LoopSectionHelper.Factory.HINT_PREFIX)) {
-                Expression valueExpr = findExpression(helperHint, LoopSectionHelper.Factory.HINT_PREFIX, templateAnalysis);
-                if (valueExpr != null) {
-                    Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
-                    if (valueExprMatch != null) {
-                        match.setValues(valueExprMatch.clazz, valueExprMatch.type);
-                    }
-                }
+                setMatchValues(match, findExpression(helperHint, LoopSectionHelper.Factory.HINT_PREFIX, templateAnalysis),
+                        generatedIdsToMatches, index);
             } else if (helperHint.startsWith(WhenSectionHelper.Factory.HINT_PREFIX)) {
                 // If a value expression resolves to an enum we attempt to use the enum type to validate the enum constant  
                 // This basically transforms the type info "ON<when:12345>" into something like "|org.acme.Status|.ON"
@@ -1454,16 +1435,43 @@ public class QuteProcessor {
                     }
                 }
             } else if (helperHint.startsWith(SetSectionHelper.Factory.HINT_PREFIX)) {
-                Expression valueExpr = findExpression(helperHint, SetSectionHelper.Factory.HINT_PREFIX, templateAnalysis);
-                if (valueExpr != null) {
-                    Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
-                    if (valueExprMatch != null) {
-                        match.setValues(valueExprMatch.clazz, valueExprMatch.type);
-                    }
-                }
+                setMatchValues(match, findExpression(helperHint, SetSectionHelper.Factory.HINT_PREFIX, templateAnalysis),
+                        generatedIdsToMatches, index);
             }
         }
         return false;
+    }
+
+    private static void setMatchValues(Match match, Expression valueExpr, Map<Integer, Match> generatedIdsToMatches,
+            IndexView index) {
+        if (valueExpr != null) {
+            if (valueExpr.isLiteral()) {
+                Object literalValue = valueExpr.getLiteral();
+                if (literalValue == null) {
+                    match.clearValues();
+                } else {
+                    if (literalValue instanceof Boolean) {
+                        match.setValues(index.getClassByName(DotNames.BOOLEAN), Types.box(Primitive.BOOLEAN));
+                    } else if (literalValue instanceof String) {
+                        match.setValues(index.getClassByName(DotNames.STRING),
+                                Type.create(DotNames.STRING, org.jboss.jandex.Type.Kind.CLASS));
+                    } else if (literalValue instanceof Integer) {
+                        match.setValues(index.getClassByName(DotNames.INTEGER), Types.box(Primitive.INT));
+                    } else if (literalValue instanceof Long) {
+                        match.setValues(index.getClassByName(DotNames.LONG), Types.box(Primitive.LONG));
+                    } else if (literalValue instanceof Double) {
+                        match.setValues(index.getClassByName(DotNames.DOUBLE), Types.box(Primitive.DOUBLE));
+                    } else if (literalValue instanceof Float) {
+                        match.setValues(index.getClassByName(DotNames.FLOAT), Types.box(Primitive.FLOAT));
+                    }
+                }
+            } else {
+                Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
+                if (valueExprMatch != null) {
+                    match.setValues(valueExprMatch.clazz, valueExprMatch.type);
+                }
+            }
+        }
     }
 
     private static Expression findExpression(String helperHint, String hintPrefix, TemplateAnalysis templateAnalysis) {
@@ -1473,7 +1481,7 @@ public class QuteProcessor {
 
     static void processLoopElementHint(Match match, IndexView index, Expression expression,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions) {
-        if (match.type().name().equals(DotNames.INTEGER)) {
+        if (match.isEmpty() || match.type().name().equals(DotNames.INTEGER)) {
             return;
         }
         Type matchType = null;

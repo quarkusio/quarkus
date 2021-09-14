@@ -1,9 +1,7 @@
 package io.quarkus.smallrye.graphql.runtime;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringReader;
-import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.List;
@@ -14,17 +12,10 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 import javax.json.JsonReaderFactory;
-import javax.json.JsonWriter;
-import javax.json.JsonWriterFactory;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ManagedContext;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
-import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
-import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
-import io.smallrye.graphql.execution.ExecutionService;
-import io.vertx.core.Handler;
+import io.smallrye.graphql.execution.ExecutionResponse;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
@@ -34,51 +25,29 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * Handler that does the execution of GraphQL Requests
  */
-public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> {
-    private static boolean allowGet = false;
+public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHandler {
+    private boolean allowGet = false;
+    private boolean allowPostWithQueryParameters = false;
     private static final String QUERY = "query";
+    private static final String OPERATION_NAME = "operationName";
     private static final String VARIABLES = "variables";
+    private static final String EXTENSIONS = "extensions";
+    private static final String APPLICATION_GRAPHQL = "application/graphql";
     private static final String OK = "OK";
-    private volatile ExecutionService executionService;
-    private final CurrentIdentityAssociation currentIdentityAssociation;
-    private final CurrentVertxRequest currentVertxRequest;
+
     private static final JsonBuilderFactory jsonObjectFactory = Json.createBuilderFactory(null);
     private static final JsonReaderFactory jsonReaderFactory = Json.createReaderFactory(null);
-    private static final JsonWriterFactory jsonWriterFactory = Json.createWriterFactory(null);
 
-    public SmallRyeGraphQLExecutionHandler(boolean allowGet, CurrentIdentityAssociation currentIdentityAssociation,
+    public SmallRyeGraphQLExecutionHandler(boolean allowGet, boolean allowPostWithQueryParameters,
+            CurrentIdentityAssociation currentIdentityAssociation,
             CurrentVertxRequest currentVertxRequest) {
-        SmallRyeGraphQLExecutionHandler.allowGet = allowGet;
-        this.currentIdentityAssociation = currentIdentityAssociation;
-        this.currentVertxRequest = currentVertxRequest;
+        super(currentIdentityAssociation, currentVertxRequest);
+        this.allowGet = allowGet;
+        this.allowPostWithQueryParameters = allowPostWithQueryParameters;
     }
 
     @Override
-    public void handle(final RoutingContext ctx) {
-        ManagedContext requestContext = Arc.container().requestContext();
-        if (requestContext.isActive()) {
-            doHandle(ctx);
-        } else {
-            try {
-                requestContext.activate();
-                doHandle(ctx);
-            } finally {
-                requestContext.terminate();
-            }
-        }
-    }
-
-    private void doHandle(final RoutingContext ctx) {
-        if (currentIdentityAssociation != null) {
-            QuarkusHttpUser existing = (QuarkusHttpUser) ctx.user();
-            if (existing != null) {
-                SecurityIdentity identity = existing.getSecurityIdentity();
-                currentIdentityAssociation.setIdentity(identity);
-            } else {
-                currentIdentityAssociation.setIdentity(QuarkusHttpUser.getSecurityIdentity(ctx, null));
-            }
-        }
-        currentVertxRequest.setCurrent(ctx);
+    protected void doHandle(final RoutingContext ctx) {
 
         HttpServerRequest request = ctx.request();
         HttpServerResponse response = ctx.response();
@@ -96,7 +65,7 @@ public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> 
                 handleGet(response, ctx);
                 break;
             default:
-                response.setStatusCode(405).end();
+                ctx.next();
                 break;
         }
     }
@@ -107,51 +76,146 @@ public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> 
     }
 
     private void handlePost(HttpServerResponse response, RoutingContext ctx) {
-        if (ctx.getBody() != null) {
-            byte[] bytes = ctx.getBody().getBytes();
-            String postResponse = doRequest(bytes);
+        try {
+            JsonObject jsonObjectFromBody = getJsonObjectFromBody(ctx);
+            String postResponse;
+            if (hasQueryParameters(ctx) && allowPostWithQueryParameters) {
+                JsonObject jsonObjectFromQueryParameters = getJsonObjectFromQueryParameters(ctx);
+                JsonObject mergedJsonObject = Json.createMergePatch(jsonObjectFromQueryParameters).apply(jsonObjectFromBody)
+                        .asJsonObject();
+                postResponse = doRequest(mergedJsonObject);
+            } else {
+                postResponse = doRequest(jsonObjectFromBody);
+            }
             response.setStatusCode(200).setStatusMessage(OK).end(Buffer.buffer(postResponse));
-        } else {
-            response.setStatusCode(204).end();
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
     }
 
     private void handleGet(HttpServerResponse response, RoutingContext ctx) {
         if (allowGet) {
-            String query = getQueryParameter(ctx, QUERY);
-            if (query != null && !query.isEmpty()) {
-                try {
-                    String variables = getQueryParameter(ctx, VARIABLES);
+            try {
+                JsonObject input = getJsonObjectFromQueryParameters(ctx);
 
-                    JsonObjectBuilder input = jsonObjectFactory.createObjectBuilder();
-                    input.add(QUERY, URLDecoder.decode(query, "UTF8"));
-                    if (variables != null && !variables.isEmpty()) {
-                        JsonObject jsonObject = toJsonObject(URLDecoder.decode(variables, "UTF8"));
-                        input.add(VARIABLES, jsonObject);
-                    }
-
-                    String getResponse = doRequest(input.build());
-
+                if (input.containsKey(QUERY)) {
+                    String getResponse = doRequest(input);
                     response.setStatusCode(200)
                             .setStatusMessage(OK)
                             .end(Buffer.buffer(getResponse));
-                } catch (UnsupportedEncodingException ex) {
-                    throw new RuntimeException(ex);
+
+                } else {
+                    response.setStatusCode(204).end();
                 }
-            } else {
-                response.setStatusCode(204).end();
+            } catch (UnsupportedEncodingException uee) {
+                throw new RuntimeException(uee);
             }
         } else {
             response.setStatusCode(405).end();
         }
     }
 
-    private String getQueryParameter(RoutingContext ctx, String parameterName) {
+    private JsonObject getJsonObjectFromQueryParameters(RoutingContext ctx) throws UnsupportedEncodingException {
+        JsonObjectBuilder input = Json.createObjectBuilder();
+        // Query
+        String query = stripNewlinesAndTabs(readQueryParameter(ctx, QUERY));
+        if (query != null && !query.isEmpty()) {
+            input.add(QUERY, URLDecoder.decode(query, "UTF8"));
+        }
+        // OperationName
+        String operationName = readQueryParameter(ctx, OPERATION_NAME);
+        if (operationName != null && !operationName.isEmpty()) {
+            input.add(OPERATION_NAME, URLDecoder.decode(query, "UTF8"));
+        }
+
+        // Variables
+        String variables = stripNewlinesAndTabs(readQueryParameter(ctx, VARIABLES));
+        if (variables != null && !variables.isEmpty()) {
+            JsonObject jsonObject = toJsonObject(URLDecoder.decode(variables, "UTF8"));
+            input.add(VARIABLES, jsonObject);
+        }
+
+        // Extensions
+        String extensions = stripNewlinesAndTabs(readQueryParameter(ctx, EXTENSIONS));
+        if (extensions != null && !extensions.isEmpty()) {
+            JsonObject jsonObject = toJsonObject(URLDecoder.decode(extensions, "UTF8"));
+            input.add(EXTENSIONS, jsonObject);
+        }
+
+        return input.build();
+    }
+
+    private JsonObject getJsonObjectFromBody(RoutingContext ctx) throws IOException {
+
+        String contentType = readContentType(ctx);
+        String body = stripNewlinesAndTabs(readBody(ctx));
+
+        // If the content type is application/graphql, the query is in the body
+        if (contentType != null && contentType.startsWith(APPLICATION_GRAPHQL)) {
+            JsonObjectBuilder input = Json.createObjectBuilder();
+            input.add(QUERY, body);
+            return input.build();
+            // Else we expect a Json in the content    
+        } else {
+            try (StringReader bodyReader = new StringReader(body);
+                    JsonReader jsonReader = jsonReaderFactory.createReader(bodyReader)) {
+                return jsonReader.readObject();
+            }
+        }
+
+    }
+
+    private String readBody(RoutingContext ctx) {
+        if (ctx.getBody() != null) {
+            byte[] bytes = ctx.getBody().getBytes();
+            return new String(bytes);
+        }
+        return null;
+    }
+
+    private String readContentType(RoutingContext ctx) {
+        String contentType = ctx.request().getHeader("Content-Type");
+        if (contentType != null && !contentType.isEmpty()) {
+            return contentType;
+        }
+        return null;
+    }
+
+    private String readQueryParameter(RoutingContext ctx, String parameterName) {
         List<String> all = ctx.queryParam(parameterName);
         if (all != null && !all.isEmpty()) {
             return all.get(0);
         }
         return null;
+    }
+
+    /**
+     * Strip away unescaped tabs and line breaks from the incoming JSON document so that it can be
+     * successfully parsed by a JSON parser.
+     * This does NOT remove properly escaped \n and \t inside the document, just the raw characters (ASCII
+     * values 9 and 10). Technically, this is not compliant with the JSON spec,
+     * but we want to seamlessly support queries from Java text blocks, for example,
+     * which preserve line breaks and tab characters.
+     */
+    private String stripNewlinesAndTabs(String input) {
+        if (input == null || input.isEmpty()) {
+            return input;
+        }
+        return input.replaceAll("\\n", " ")
+                .replaceAll("\\t", " ");
+    }
+
+    private boolean hasQueryParameters(RoutingContext ctx) {
+        return hasQueryParameter(ctx, QUERY) || hasQueryParameter(ctx, OPERATION_NAME) || hasQueryParameter(ctx, VARIABLES)
+                || hasQueryParameter(ctx, EXTENSIONS);
+    }
+
+    private boolean hasQueryParameter(RoutingContext ctx, String parameterName) {
+        List<String> all = ctx.queryParam(parameterName);
+        if (all != null && !all.isEmpty()) {
+            return true;
+        }
+        return false;
     }
 
     private String getAllowedMethods() {
@@ -162,27 +226,10 @@ public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> 
         }
     }
 
-    private String doRequest(final byte[] body) {
-        try (ByteArrayInputStream input = new ByteArrayInputStream(body);
-                final JsonReader jsonReader = jsonReaderFactory.createReader(input)) {
-            JsonObject jsonInput = jsonReader.readObject();
-            return doRequest(jsonInput);
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
     private String doRequest(JsonObject jsonInput) {
-        JsonObject outputJson = getExecutionService().execute(jsonInput);
-        if (outputJson != null) {
-            try (StringWriter output = new StringWriter();
-                    final JsonWriter jsonWriter = jsonWriterFactory.createWriter(output)) {
-                jsonWriter.writeObject(outputJson);
-                output.flush();
-                return output.toString();
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
+        ExecutionResponse executionResponse = getExecutionService().execute(jsonInput);
+        if (executionResponse != null) {
+            return executionResponse.getExecutionResultAsString();
         }
         return null;
     }
@@ -195,12 +242,5 @@ public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> 
         try (JsonReader jsonReader = jsonReaderFactory.createReader(new StringReader(jsonString))) {
             return jsonReader.readObject();
         }
-    }
-
-    private ExecutionService getExecutionService() {
-        if (this.executionService == null) {
-            this.executionService = Arc.container().instance(ExecutionService.class).get();
-        }
-        return this.executionService;
     }
 }

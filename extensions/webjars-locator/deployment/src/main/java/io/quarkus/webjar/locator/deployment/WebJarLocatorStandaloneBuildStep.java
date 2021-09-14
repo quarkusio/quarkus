@@ -35,9 +35,8 @@ public class WebJarLocatorStandaloneBuildStep {
             String webjarRootPath = (rootPath.endsWith("/")) ? rootPath + "webjars/" : rootPath + "/webjars/";
             feature.produce(new FeatureBuildItem(Feature.WEBJARS_LOCATOR));
             routes.produce(
-                    new RouteBuildItem(webjarRootPath + "*",
-                            recorder.getHandler(webjarRootPath, webjarNameToVersionMap),
-                            false));
+                    RouteBuildItem.builder().route(webjarRootPath + "*")
+                            .handler(recorder.getHandler(webjarRootPath, webjarNameToVersionMap)).build());
         } else {
             log.warn("No WebJars were found in the project. Requests to the /webjars/ path will always return 404 (Not Found)");
         }

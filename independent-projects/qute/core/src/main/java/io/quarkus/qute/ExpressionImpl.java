@@ -1,17 +1,16 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.TemplateNode.Origin;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletionStage;
 
 final class ExpressionImpl implements Expression {
 
-    static final ExpressionImpl EMPTY = new ExpressionImpl(0, null, Collections.emptyList(), null, null);
+    static final ExpressionImpl EMPTY = new ExpressionImpl(0, null, Collections.emptyList(), Results.NotFound.EMPTY, null);
 
     /**
      * 
@@ -42,9 +41,7 @@ final class ExpressionImpl implements Expression {
         }
         return new ExpressionImpl(id, null,
                 Collections.singletonList(new PartImpl(literal,
-                        value != null
-                                ? Expressions.TYPE_INFO_SEPARATOR + value.getClass().getName() + Expressions.TYPE_INFO_SEPARATOR
-                                : null)),
+                        value != null ? Expressions.typeInfoFrom(value.getClass().getName()) : null)),
                 value, origin);
     }
 
@@ -55,14 +52,14 @@ final class ExpressionImpl implements Expression {
     private final int id;
     private final String namespace;
     private final List<Part> parts;
-    private final CompletableFuture<Object> literal;
+    private final CompletedStage<Object> literal;
     private final Origin origin;
 
     ExpressionImpl(int id, String namespace, List<Part> parts, Object literal, Origin origin) {
         this.id = id;
         this.namespace = namespace;
         this.parts = parts;
-        this.literal = literal != Result.NOT_FOUND ? CompletableFuture.completedFuture(literal) : null;
+        this.literal = literal != Results.NotFound.EMPTY ? CompletedStage.of(literal) : null;
         this.origin = origin;
     }
 
@@ -80,6 +77,19 @@ final class ExpressionImpl implements Expression {
     }
 
     public CompletableFuture<Object> getLiteralValue() {
+        return literal != null ? literal.toCompletableFuture() : null;
+    }
+
+    @Override
+    public Object getLiteral() {
+        return literal != null ? literal.get() : null;
+    }
+
+    @Override
+    public CompletionStage<Object> asLiteral() {
+        if (literal == null) {
+            throw new IllegalStateException("Expression is not a literal: " + toString());
+        }
         return literal;
     }
 
@@ -139,11 +149,7 @@ final class ExpressionImpl implements Expression {
 
     private Object literalValue() {
         if (literal != null) {
-            try {
-                return literal.get();
-            } catch (InterruptedException | ExecutionException e) {
-                return null;
-            }
+            return literal.get();
         }
         return null;
     }

@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "OpenID Connect"
+metadata:
+  keywords:
+  - "oauth2"
+  - "openid-connect"
+  - "oidc"
+  guide: "https://quarkus.io/guides/security-openid-connect"
+  categories:
+  - "security"
+  status: "stable"

@@ -8,6 +8,8 @@ import java.util.stream.Stream;
 
 import javax.persistence.LockModeType;
 
+import org.hibernate.reactive.mutiny.Mutiny;
+
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.impl.GenerateBridge;
@@ -28,7 +30,14 @@ import io.smallrye.mutiny.Uni;
  */
 public interface PanacheRepositoryBase<Entity, Id> {
 
-    // Operations
+    /**
+     * Returns the current {@link Mutiny.Session}
+     *
+     * @return the current {@link Mutiny.Session}
+     */
+    public default Uni<Mutiny.Session> getSession() {
+        return INSTANCE.getSession();
+    }
 
     /**
      * Persist the given entity in the database, if not already persisted.
@@ -40,8 +49,8 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    public default Uni<Void> persist(Entity entity) {
-        return INSTANCE.persist(entity);
+    public default Uni<Entity> persist(Entity entity) {
+        return INSTANCE.persist(entity).map(v -> entity);
     }
 
     /**
@@ -55,10 +64,10 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
-    public default Uni<Void> persistAndFlush(Entity entity) {
+    public default Uni<Entity> persistAndFlush(Entity entity) {
         return INSTANCE.persist(entity)
                 .flatMap(v -> INSTANCE.flush())
-                .map(v -> null);
+                .map(v -> entity);
     }
 
     /**

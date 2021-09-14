@@ -320,6 +320,19 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-apicurio-registry-avro</artifactId>
+                    <version>${project.version}</version>
+                    <type>pom</type>
+                    <scope>test</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>*</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-arc</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
@@ -893,6 +906,19 @@
                 <dependency>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-hibernate-search-orm-elasticsearch</artifactId>
+                    <version>${project.version}</version>
+                    <type>pom</type>
+                    <scope>test</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>*</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-hibernate-search-orm-elasticsearch-aws</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>
@@ -1672,6 +1698,32 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-opentelemetry-exporter-otlp</artifactId>
+                    <version>${project.version}</version>
+                    <type>pom</type>
+                    <scope>test</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>*</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-opentelemetry-rest-client</artifactId>
+                    <version>${project.version}</version>
+                    <type>pom</type>
+                    <scope>test</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>*</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-picocli</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
@@ -2062,6 +2114,19 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-resteasy-reactive-kotlin</artifactId>
+                    <version>${project.version}</version>
+                    <type>pom</type>
+                    <scope>test</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>*</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-resteasy-reactive-links</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
@@ -2193,6 +2258,19 @@
                 <dependency>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-smallrye-graphql</artifactId>
+                    <version>${project.version}</version>
+                    <type>pom</type>
+                    <scope>test</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>*</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-smallrye-graphql-client</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>
@@ -2609,6 +2687,19 @@
                 <dependency>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-websockets</artifactId>
+                    <version>${project.version}</version>
+                    <type>pom</type>
+                    <scope>test</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>*</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-websockets-client</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>

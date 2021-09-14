@@ -1,0 +1,11 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "JDBC Driver - Derby"
+metadata:
+  keywords:
+  - "jdbc-derby"
+  - "jdbc"
+  - "derby"
+  categories:
+  - "data"
+  status: "stable"

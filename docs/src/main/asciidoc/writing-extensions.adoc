@@ -535,9 +535,6 @@ TIP: The `name` parameter of the mojo is optional.
 If you do not specify it on the command line, the plugin will derive it from `extensionId` by replacing dashes with spaces and uppercasing each token.
 So you may consider omitting explicit `name` in some cases.
 
-NOTE: You can also name your file `quarkus-extension.yaml.template` and the plugin will rename it for you. This can avoid problems with running Dev Mode tests in your IDE, as the IDE can overwrite
-the modified file with the original.
-
 // The following link should point to the mojo page once https://github.com/quarkusio/quarkusio.github.io/issues/265 is fixed
 Please refer to https://github.com/quarkusio/quarkus/blob/{quarkus-version}/devtools/maven/src/main/java/io/quarkus/maven/CreateExtensionMojo.java[CreateExtensionMojo JavaDoc] for all the available options of the mojo.
 
@@ -1822,6 +1819,30 @@ The JSON-B extension will then use the produced build item to register your seri
 If you need more customization capabilities than registering a serializer or a deserializer,
 you can produce a CDI bean that implements `io.quarkus.jsonb.JsonbConfigCustomizer` via an `AdditionalBeanBuildItem`.
 More info about customizing JSON-B can be found on the JSON guide link:rest-json#configuring-json-support[Configuring JSON support]
+
+=== Integrating with Development Mode
+
+There are various APIS that you can use to integrate with development mode, and to get information about the current state.
+
+==== Handling restarts
+
+When Quarkus is starting the `io.quarkus.deployment.builditem.LiveReloadBuildItem` is guaranteed to be present that gives
+information about this start, in particular:
+
+- Is this a clean start or a live reload
+- If this is a live reload which changed files / classes triggered the reload
+
+It also provides a global context map you can use to store information between restarts, without needing to resort to
+static fields.
+
+==== Triggering Live Reload
+
+Live reload is generally triggered by a HTTP request, however not all applications are HTTP applications and some extensions
+may want to trigger live reload based on other events. To do this you need to implement `io.quarkus.dev.spi.HotReplacementSetup`
+in your runtime module, and add a `META-INF/services/io.quarkus.dev.spi.HotReplacementSetup` that lists your implementation.
+
+On startup the `setupHotDeployment` method will be called, and you can use the provided `io.quarkus.dev.spi.HotReplacementContext`
+to initiate a scan for changed files.
 
 === Testing Extensions
 

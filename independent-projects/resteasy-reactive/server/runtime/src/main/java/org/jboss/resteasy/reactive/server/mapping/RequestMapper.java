@@ -2,7 +2,6 @@ package org.jboss.resteasy.reactive.server.mapping;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -12,9 +11,6 @@ import org.jboss.resteasy.reactive.common.util.URIDecoder;
 
 public class RequestMapper<T> {
 
-    /**
-     * TODO: this needs a lot of work
-     */
     private final PathMatcher<List<RequestPath<T>>> requestPaths;
     private final List<RequestPath<T>> templates;
     final int maxParams;
@@ -32,20 +28,25 @@ public class RequestMapper<T> {
             paths.add(i);
             max = Math.max(max, i.template.countPathParamNames());
         }
-        for (Map.Entry<String, List<RequestPath<T>>> entry : aggregates.entrySet()) {
-            Collections.sort(entry.getValue(), new Comparator<RequestPath<T>>() {
-                @Override
-                public int compare(RequestPath<T> t1, RequestPath<T> t2) {
-                    return t2.template.compareTo(t1.template);
-                }
-            });
-        }
-        for (Map.Entry<String, List<RequestPath<T>>> entry : aggregates.entrySet()) {
-            requestPaths.addPrefixPath(entry.getKey(), entry.getValue());
-        }
+        aggregates.forEach(this::sortAggregates);
+        aggregates.forEach(this::addPrefixPaths);
         maxParams = max;
     }
 
+    private void sortAggregates(String stem, List<RequestPath<T>> list) {
+        list.sort(new Comparator<RequestPath<T>>() {
+            @Override
+            public int compare(RequestPath<T> t1, RequestPath<T> t2) {
+                return t2.template.compareTo(t1.template);
+            }
+        });
+    }
+
+    private void addPrefixPaths(String stem, List<RequestPath<T>> list) {
+        requestPaths.addPrefixPath(stem, list);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public RequestMatch<T> map(String path) {
         int pathLength = path.length();
         PathMatcher.PathMatch<List<RequestPath<T>>> initialMatch = requestPaths.match(path);

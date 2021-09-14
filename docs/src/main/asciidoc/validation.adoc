@@ -294,6 +294,7 @@ If you create a bean of the following types in your application, it will automat
  * `javax.validation.ParameterNameProvider`
  * `javax.validation.TraversableResolver`
  * `org.hibernate.validator.spi.properties.GetterPropertySelectionStrategy`
+ * `org.hibernate.validator.spi.nodenameprovider.PropertyNodeNameProvider`
  * `org.hibernate.validator.spi.scripting.ScriptEvaluatorFactory`
 
 You don't have to wire anything.

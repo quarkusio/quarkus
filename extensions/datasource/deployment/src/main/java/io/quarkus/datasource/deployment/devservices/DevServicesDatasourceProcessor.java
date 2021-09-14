@@ -25,10 +25,12 @@ import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.runtime.LaunchMode;
 
 public class DevServicesDatasourceProcessor {
 
@@ -52,6 +54,7 @@ public class DevServicesDatasourceProcessor {
             LaunchModeBuildItem launchMode,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfigurationDefaultBuildItemBuildProducer,
             List<DevServicesDatasourceConfigurationHandlerBuildItem> configurationHandlerBuildItems,
+            BuildProducer<DevServicesNativeConfigResultBuildItem> devServicesResultBuildItemBuildProducer,
             BuildProducer<ServiceStartBuildItem> serviceStartBuildItemBuildProducer) {
         //figure out if we need to shut down and restart existing databases
         //if not and the DB's have already started we just return
@@ -112,7 +115,7 @@ public class DevServicesDatasourceProcessor {
                 !dataSourceBuildTimeConfig.namedDataSources.isEmpty(),
                 devDBProviderMap,
                 dataSourceBuildTimeConfig.defaultDataSource,
-                configHandlersByDbType, propertiesMap, closeableList);
+                configHandlersByDbType, propertiesMap, closeableList, launchMode.getLaunchMode());
         List<RunTimeConfigurationDefaultBuildItem> dbConfig = new ArrayList<>();
         if (defaultResult != null) {
             for (Map.Entry<String, String> i : defaultResult.getConfigProperties().entrySet()) {
@@ -122,7 +125,8 @@ public class DevServicesDatasourceProcessor {
         for (Map.Entry<String, DataSourceBuildTimeConfig> entry : dataSourceBuildTimeConfig.namedDataSources.entrySet()) {
             DevServicesDatasourceResultBuildItem.DbResult result = startDevDb(entry.getKey(), curateOutcomeBuildItem,
                     installedDrivers, true,
-                    devDBProviderMap, entry.getValue(), configHandlersByDbType, propertiesMap, closeableList);
+                    devDBProviderMap, entry.getValue(), configHandlersByDbType, propertiesMap, closeableList,
+                    launchMode.getLaunchMode());
             if (result != null) {
                 namedResults.put(entry.getKey(), result);
                 for (Map.Entry<String, String> i : result.getConfigProperties().entrySet()) {
@@ -168,6 +172,19 @@ public class DevServicesDatasourceProcessor {
         }
         databases = closeableList;
         cachedProperties = propertiesMap;
+
+        if (defaultResult != null) {
+            for (Map.Entry<String, String> entry : defaultResult.getConfigProperties().entrySet()) {
+                devServicesResultBuildItemBuildProducer
+                        .produce(new DevServicesNativeConfigResultBuildItem(entry.getKey(), entry.getValue()));
+            }
+        }
+        for (DevServicesDatasourceResultBuildItem.DbResult i : namedResults.values()) {
+            for (Map.Entry<String, String> entry : i.getConfigProperties().entrySet()) {
+                devServicesResultBuildItemBuildProducer
+                        .produce(new DevServicesNativeConfigResultBuildItem(entry.getKey(), entry.getValue()));
+            }
+        }
         return new DevServicesDatasourceResultBuildItem(defaultResult, namedResults);
     }
 
@@ -177,17 +194,13 @@ public class DevServicesDatasourceProcessor {
             boolean hasNamedDatasources,
             Map<String, DevServicesDatasourceProvider> devDBProviders, DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
             Map<String, List<DevServicesDatasourceConfigurationHandlerBuildItem>> configurationHandlerBuildItems,
-            Map<String, String> propertiesMap, List<Closeable> closeableList) {
+            Map<String, String> propertiesMap, List<Closeable> closeableList,
+            LaunchMode launchMode) {
         Optional<Boolean> enabled = dataSourceBuildTimeConfig.devservices.enabled;
         if (enabled.isPresent() && !enabled.get()) {
             //explicitly disabled
             log.debug("Not starting devservices for " + (dbName == null ? "default datasource" : dbName)
                     + " as it has been disabled in the config");
-            return null;
-        }
-        if (!isDockerWorking.getAsBoolean()) {
-            log.warn("Please configure datasource URL for "
-                    + (dbName == null ? "default datasource" : dbName) + " or get a working docker instance");
             return null;
         }
 
@@ -209,6 +222,20 @@ public class DevServicesDatasourceProcessor {
             log.warn("Unable to start devservices for " + (dbName == null ? "default datasource" : dbName)
                     + " as this datasource type (" + defaultDbKind.get() + ") does not support devservices");
             return null;
+        }
+
+        if (devDbProvider.isDockerRequired() && !isDockerWorking.getAsBoolean()) {
+            String message = "Please configure the datasource URL for "
+                    + (dbName == null ? "the default datasource" : " datasource '" + dbName + "'")
+                    + " or ensure the Docker daemon is up and running.";
+            if (launchMode == LaunchMode.TEST) {
+                throw new IllegalStateException(message);
+            } else {
+                // in dev-mode we just want to warn users and allow them to recover
+                log.warn(message);
+                return null;
+            }
+
         }
 
         if (!enabled.isPresent()) {
@@ -235,7 +262,7 @@ public class DevServicesDatasourceProcessor {
                         ConfigProvider.getConfig().getOptionalValue(prefix + "password", String.class),
                         Optional.ofNullable(dbName), dataSourceBuildTimeConfig.devservices.imageName,
                         dataSourceBuildTimeConfig.devservices.properties,
-                        dataSourceBuildTimeConfig.devservices.port);
+                        dataSourceBuildTimeConfig.devservices.port, launchMode);
         closeableList.add(datasource.getCloseTask());
 
         Map<String, String> devDebProperties = new HashMap<>();

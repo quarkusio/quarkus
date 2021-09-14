@@ -63,7 +63,18 @@ public class OidcClientConfig extends OidcCommonConfig {
              * 'urn:ietf:params:oauth:grant-type:token-exchange' grant requiring an OIDC client authentication as well as
              * at least 'subject_token' parameter which must be passed to OidcClient at the token request time.
              */
-            EXCHANGE("urn:ietf:params:oauth:grant-type:token-exchange");
+            EXCHANGE("urn:ietf:params:oauth:grant-type:token-exchange"),
+
+            /**
+             * 'refresh_token' grant requiring an OIDC client authentication and a refresh token.
+             * Note, OidcClient supports this grant by default if an access token acquisition response contained a refresh
+             * token.
+             * However, in some cases, the refresh token is provided out of band, for example, it can be shared between
+             * several of the confidential client's services, etc.
+             * If 'quarkus.oidc-client.grant-type' is set to 'refresh' then `OidcClient` will only support refreshing the
+             * tokens.
+             */
+            REFRESH("refresh_token");
 
             private String grantType;
 

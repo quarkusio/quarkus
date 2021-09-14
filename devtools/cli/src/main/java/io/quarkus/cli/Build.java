@@ -1,57 +1,75 @@
 package io.quarkus.cli;
 
-import java.nio.file.Path;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.Callable;
 
-import io.quarkus.cli.core.BaseSubCommand;
-import io.quarkus.cli.core.BuildsystemCommand;
+import io.quarkus.cli.build.BaseBuildCommand;
+import io.quarkus.cli.build.BuildSystemRunner;
+import io.quarkus.cli.common.BuildOptions;
+import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
+import picocli.CommandLine.Parameters;
 
-@CommandLine.Command(name = "build", mixinStandardHelpOptions = false, description = "Build your quarkus project")
-public class Build extends BaseSubCommand implements BuildsystemCommand {
+@CommandLine.Command(name = "build", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, showEndOfOptionsDelimiterInUsageHelp = true, header = "Build the current project.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
+public class Build extends BaseBuildCommand implements Callable<Integer> {
 
-    @CommandLine.Option(names = { "-n",
-            "--native" }, order = 4, description = "Build native executable.")
-    boolean isNative = false;
+    @CommandLine.Mixin
+    protected RunModeOption runMode;
 
-    @CommandLine.Option(names = { "-s",
-            "--skip-tests" }, order = 5, description = "Skip tests.")
-    boolean skipTests = false;
+    @CommandLine.ArgGroup(order = 1, exclusive = false, validate = false, heading = "%nBuild options:%n")
+    BuildOptions buildOptions = new BuildOptions();
 
-    @CommandLine.Option(names = { "--offline" }, order = 6, description = "Work offline.")
-    boolean offline = false;
+    @Parameters(description = "Additional parameters passed to the build system")
+    List<String> params = new ArrayList<>();
 
     @Override
-    public boolean aggregate(BuildTool buildtool) {
-        return true;
+    public Integer call() {
+        try {
+            output.debug("Build project with initial parameters: %s", this);
+            output.throwIfUnmatchedArguments(spec.commandLine());
+
+            BuildSystemRunner runner = getRunner();
+            BuildSystemRunner.BuildCommandArgs commandArgs = runner.prepareBuild(buildOptions, runMode, params);
+
+            if (runMode.isDryRun()) {
+                dryRunBuild(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs);
+                return CommandLine.ExitCode.OK;
+            }
+
+            return runner.run(commandArgs);
+        } catch (Exception e) {
+            return output.handleCommandException(e,
+                    "Unable to build project: " + e.getMessage());
+        }
+    }
+
+    void dryRunBuild(CommandLine.Help help, BuildTool buildTool, BuildSystemRunner.BuildCommandArgs args) {
+        output.printText(new String[] {
+                "\nBuild current project\n",
+                "\t" + projectRoot().toString()
+        });
+        Map<String, String> dryRunOutput = new TreeMap<>();
+        dryRunOutput.put("Build tool", buildTool.name());
+        output.info(help.createTextTable(dryRunOutput).toString());
+
+        output.printText(new String[] {
+                "\nCommand line:\n",
+                args.showCommand()
+        });
     }
 
     @Override
-    public List<String> getArguments(Path projectDir, BuildTool buildtool) {
-        LinkedList<String> args = new LinkedList<>();
-        if (buildtool == BuildTool.MAVEN) {
-            args.add("install");
-            if (isNative)
-                args.add("-Dnative");
-            if (skipTests) {
-                args.add("-DskipTests");
-                args.add("-Dmaven.test.skip=true");
-            }
-            if (offline)
-                args.add("--offline");
-        } else {
-            args.add("build");
-            if (isNative)
-                args.add("-Dquarkus.package.type=native");
-            if (skipTests) {
-                args.add("-x");
-                args.add("test");
-            }
-            if (offline)
-                args.add("--offline");
-        }
-        return args;
+    public String toString() {
+        return "Build [clean=" + buildOptions.clean
+                + ", buildNative=" + buildOptions.buildNative
+                + ", offline=" + buildOptions.offline
+                + ", runTests=" + buildOptions.runTests
+                + ", properties=" + propertiesOptions.properties
+                + ", output=" + output
+                + ", params=" + params + "]";
     }
 }

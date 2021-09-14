@@ -8,14 +8,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.core.SecurityContext;
 
+import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
+import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveSecurityContext;
 import io.quarkus.security.credential.Credential;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
@@ -24,8 +26,7 @@ import io.smallrye.mutiny.Uni;
 
 public class SecurityContextOverrideHandler implements ServerRestHandler {
 
-    private volatile SecurityIdentity securityIdentity;
-    private volatile CurrentIdentityAssociation currentIdentityAssociation;
+    private volatile InjectableInstance<CurrentIdentityAssociation> currentIdentityAssociation;
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
@@ -43,88 +44,84 @@ public class SecurityContextOverrideHandler implements ServerRestHandler {
 
     private void updateIdentity(ResteasyReactiveRequestContext requestContext, SecurityContext modified) {
         requestContext.requireCDIRequestScope();
-        CurrentIdentityAssociation currentIdentityAssociation = Arc.container().select(CurrentIdentityAssociation.class).get();
-        Uni<SecurityIdentity> oldIdentity = currentIdentityAssociation.getDeferredIdentity();
-        currentIdentityAssociation.setIdentity(oldIdentity.map(new Function<SecurityIdentity, SecurityIdentity>() {
-            @Override
-            public SecurityIdentity apply(SecurityIdentity old) {
-                Set<Credential> oldCredentials = old.getCredentials();
-                Map<String, Object> oldAttributes = old.getAttributes();
-                return new SecurityIdentity() {
-                    @Override
-                    public Principal getPrincipal() {
-                        return modified.getUserPrincipal();
-                    }
-
-                    @Override
-                    public boolean isAnonymous() {
-                        return modified.getUserPrincipal() == null;
-                    }
-
-                    @Override
-                    public Set<String> getRoles() {
-                        throw new UnsupportedOperationException(
-                                "retrieving all roles not supported when JAX-RS security context has been replaced");
-                    }
-
-                    @Override
-                    public boolean hasRole(String role) {
-                        return modified.isUserInRole(role);
-                    }
-
-                    @Override
-                    public <T extends Credential> T getCredential(Class<T> credentialType) {
-                        for (Credential cred : getCredentials()) {
-                            if (credentialType.isAssignableFrom(cred.getClass())) {
-                                return (T) cred;
-                            }
+        InjectableInstance<CurrentIdentityAssociation> instance = getCurrentIdentityAssociation();
+        if (instance.isResolvable()) {
+            CurrentIdentityAssociation currentIdentityAssociation = instance.get();
+            Uni<SecurityIdentity> oldIdentity = currentIdentityAssociation.getDeferredIdentity();
+            currentIdentityAssociation.setIdentity(oldIdentity.map(new Function<SecurityIdentity, SecurityIdentity>() {
+                @Override
+                public SecurityIdentity apply(SecurityIdentity old) {
+                    Set<Credential> oldCredentials = old.getCredentials();
+                    Map<String, Object> oldAttributes = old.getAttributes();
+                    return new SecurityIdentity() {
+                        @Override
+                        public Principal getPrincipal() {
+                            return modified.getUserPrincipal();
                         }
-                        return null;
-                    }
 
-                    @Override
-                    public Set<Credential> getCredentials() {
-                        return oldCredentials;
-                    }
+                        @Override
+                        public boolean isAnonymous() {
+                            return modified.getUserPrincipal() == null;
+                        }
 
-                    @Override
-                    public <T> T getAttribute(String name) {
-                        return (T) oldAttributes.get(name);
-                    }
+                        @Override
+                        public Set<String> getRoles() {
+                            throw new UnsupportedOperationException(
+                                    "retrieving all roles not supported when JAX-RS security context has been replaced");
+                        }
 
-                    @Override
-                    public Map<String, Object> getAttributes() {
-                        return oldAttributes;
-                    }
+                        @Override
+                        public boolean hasRole(String role) {
+                            return modified.isUserInRole(role);
+                        }
 
-                    @Override
-                    public Uni<Boolean> checkPermission(Permission permission) {
-                        return Uni.createFrom().nullItem();
-                    }
-                };
-            }
-        }));
+                        @Override
+                        public <T extends Credential> T getCredential(Class<T> credentialType) {
+                            for (Credential cred : getCredentials()) {
+                                if (credentialType.isAssignableFrom(cred.getClass())) {
+                                    return (T) cred;
+                                }
+                            }
+                            return null;
+                        }
+
+                        @Override
+                        public Set<Credential> getCredentials() {
+                            return oldCredentials;
+                        }
+
+                        @Override
+                        public <T> T getAttribute(String name) {
+                            return (T) oldAttributes.get(name);
+                        }
+
+                        @Override
+                        public Map<String, Object> getAttributes() {
+                            return oldAttributes;
+                        }
+
+                        @Override
+                        public Uni<Boolean> checkPermission(Permission permission) {
+                            return Uni.createFrom().nullItem();
+                        }
+                    };
+                }
+            }));
+        }
     }
 
-    private CurrentIdentityAssociation getCurrentIdentityAssociation() {
-        CurrentIdentityAssociation identityAssociation = this.currentIdentityAssociation;
+    private InjectableInstance<CurrentIdentityAssociation> getCurrentIdentityAssociation() {
+        InjectableInstance<CurrentIdentityAssociation> identityAssociation = this.currentIdentityAssociation;
         if (identityAssociation == null) {
-            return this.currentIdentityAssociation = CDI.current().select(CurrentIdentityAssociation.class).get();
+            return this.currentIdentityAssociation = Arc.container().select(CurrentIdentityAssociation.class);
         }
         return identityAssociation;
     }
 
-    private SecurityIdentity getSecurityIdentity() {
-        SecurityIdentity identity = this.securityIdentity;
-        if (identity == null) {
-            return this.securityIdentity = CDI.current().select(SecurityIdentity.class).get();
-        }
-        return identity;
-    }
-
     public static class Customizer implements HandlerChainCustomizer {
         @Override
-        public List<ServerRestHandler> handlers(Phase phase) {
+        public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
+                ServerResourceMethod serverResourceMethod) {
             return Collections.singletonList(new SecurityContextOverrideHandler());
         }
     }

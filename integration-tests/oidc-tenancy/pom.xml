@@ -60,7 +60,11 @@
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-security-oidc</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
             <groupId>io.quarkus</groupId>

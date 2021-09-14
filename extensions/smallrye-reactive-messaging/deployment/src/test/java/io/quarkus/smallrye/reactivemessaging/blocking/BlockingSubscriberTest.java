@@ -50,7 +50,7 @@ public class BlockingSubscriberTest {
             assertThat(name.startsWith("my-pool-")).isTrue();
         }
         for (String name : threadNames) {
-            assertThat(name.startsWith("vert.x-worker-thread-")).isFalse();
+            assertThat(name.startsWith("executor-thread-")).isFalse();
         }
     }
 
@@ -66,7 +66,7 @@ public class BlockingSubscriberTest {
             assertThat(name.startsWith("another-pool-")).isTrue();
         }
         for (String name : threadNames) {
-            assertThat(name.startsWith("vert.x-worker-thread-")).isFalse();
+            assertThat(name.startsWith("executor-thread-")).isFalse();
         }
     }
 

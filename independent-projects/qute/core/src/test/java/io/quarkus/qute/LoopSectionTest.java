@@ -7,10 +7,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.Test;
 
@@ -22,25 +22,25 @@ public class LoopSectionTest {
         Map<String, String> item = new HashMap<>();
         item.put("name", "Lu");
 
-        List<Map<String, String>> listOfMaps = new ArrayList<>();
-        listOfMaps.add(item);
-        listOfMaps.add(new HashMap<>());
+        List<Map<String, String>> items = new ArrayList<>();
+        items.add(item);
+        items.add(new HashMap<>());
 
         Engine engine = Engine.builder()
                 .addSectionHelper(new IfSectionHelper.Factory())
                 .addSectionHelper(new LoopSectionHelper.Factory()).addDefaultValueResolvers()
                 .build();
 
-        Template template = engine.parse("{#for item in this}{count}.{item.name}{#if hasNext}\n{/if}{/for}");
-        assertEquals("1.Lu\n2.NOT_FOUND", template.render(listOfMaps));
+        Template template = engine.parse("{#for item in this}{count}.{item.name ?: 'NOT_FOUND'}{#if hasNext}\n{/if}{/for}");
+        assertEquals("1.Lu\n2.NOT_FOUND", template.render(items));
 
-        template = engine.parse("{#each this}{count}.{it.name}{#if hasNext}\n{/if}{/each}");
+        template = engine.parse("{#each this}{count}.{it.name ?: 'NOT_FOUND'}{#if hasNext}\n{/if}{/each}");
         assertEquals("1.Lu\n2.NOT_FOUND",
-                template.render(listOfMaps));
+                template.render(items));
 
         template = engine.parse("{#each this}{#if odd}odd{#else}even{/if}{/each}");
         assertEquals("oddeven",
-                template.render(listOfMaps));
+                template.render(items));
     }
 
     @Test
@@ -89,7 +89,7 @@ public class LoopSectionTest {
                         for (char c : context.getBase().toString().toCharArray()) {
                             chars.add(c);
                         }
-                        return CompletableFuture.completedFuture(chars);
+                        return CompletedStage.of(chars);
                     }
                 })
                 .build();
@@ -152,7 +152,7 @@ public class LoopSectionTest {
 
     @Test
     public void testNotFound() {
-        Engine engine = Engine.builder().addDefaults().build();
+        Engine engine = Engine.builder().addDefaults().strictRendering(false).build();
         try {
             engine.parse("{#for i in items}{i}:{/for}").render();
             fail();
@@ -169,7 +169,7 @@ public class LoopSectionTest {
         final HashMap<String, Object> data = new HashMap<>();
         data.put("dependencies", Arrays.asList(dep1, new HashMap<>()));
         data.put("version", "hellllllo");
-        Engine engine = Engine.builder().addDefaults().build();
+        Engine engine = Engine.builder().strictRendering(false).addDefaults().build();
         String result = engine.parse("{#for dep in dependencies}{#if dep.version}<version>{dep.version}</version>{/if}{/for}")
                 .render(data);
         assertFalse(result.contains("hellllllo"), result);
@@ -182,6 +182,13 @@ public class LoopSectionTest {
         result = engine.parse("{#each dependencies}{#if it.version}<version>{version}</version>{/if}{/each}")
                 .render(data);
         assertTrue(result.contains("hellllllo"), result);
+    }
+
+    @Test
+    public void testElseBlock() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("No items.",
+                engine.parse("{#for i in items}{item}{#else}No items.{/for}").data("items", Collections.emptyList()).render());
     }
 
 }

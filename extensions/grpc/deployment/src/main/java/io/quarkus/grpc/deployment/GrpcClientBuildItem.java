@@ -10,34 +10,40 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 public final class GrpcClientBuildItem extends MultiBuildItem {
 
-    private final String name;
-    private final Set<StubInfo> stubs;
+    private final String clientName;
+    private final Set<ClientInfo> clients;
 
     public GrpcClientBuildItem(String name) {
-        this.name = name;
-        this.stubs = new HashSet<>();
+        this.clientName = name;
+        this.clients = new HashSet<>();
     }
 
-    public Set<StubInfo> getStubs() {
-        return stubs;
+    public Set<ClientInfo> getClients() {
+        return clients;
     }
 
-    public void addStub(DotName stubClass, StubType type) {
-        stubs.add(new StubInfo(stubClass, type));
+    public void addClient(ClientInfo client) {
+        clients.add(client);
     }
 
-    public String getServiceName() {
-        return name;
+    public String getClientName() {
+        return clientName;
     }
 
-    public static final class StubInfo {
+    public static final class ClientInfo {
 
         public final DotName className;
-        public final StubType type;
+        public final ClientType type;
+        public final DotName implName;
 
-        public StubInfo(DotName className, StubType type) {
+        public ClientInfo(DotName className, ClientType type) {
+            this(className, type, null);
+        }
+
+        public ClientInfo(DotName className, ClientType type, DotName implName) {
             this.className = className;
             this.type = type;
+            this.implName = implName;
         }
 
         @Override
@@ -56,20 +62,21 @@ public final class GrpcClientBuildItem extends MultiBuildItem {
             if (getClass() != obj.getClass()) {
                 return false;
             }
-            StubInfo other = (StubInfo) obj;
+            ClientInfo other = (ClientInfo) obj;
             return Objects.equals(className, other.className);
         }
 
     }
 
-    public enum StubType {
+    public enum ClientType {
 
-        BLOCKING("newBlockingStub"),
-        MUTINY("newMutinyStub");
+        BLOCKING_STUB("newBlockingStub"),
+        MUTINY_STUB("newMutinyStub"),
+        MUTINY_CLIENT(null);
 
         private final String factoryMethodName;
 
-        StubType(String factoryMethodName) {
+        ClientType(String factoryMethodName) {
             this.factoryMethodName = factoryMethodName;
         }
 

@@ -3,18 +3,20 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-build-parent</artifactId>
+        <artifactId>quarkus-extensions-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../../build-parent/pom.xml</relativePath>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-opentelemetry-parent</artifactId>
-    <name>Quarkus - OpenTelemetry</name>
+    <artifactId>quarkus-opentelemetry-parent-aggregator</artifactId>
+    <name>Quarkus - OpenTelemetry - Parent - Aggregator</name>
     <packaging>pom</packaging>
     <modules>
-        <module>deployment</module>
-        <module>runtime</module>
+        <module>opentelemetry</module>
+        <module>opentelemetry-exporter-jaeger</module>
+        <module>opentelemetry-exporter-otlp</module>
+        <module>rest-client</module>
     </modules>
 </project>

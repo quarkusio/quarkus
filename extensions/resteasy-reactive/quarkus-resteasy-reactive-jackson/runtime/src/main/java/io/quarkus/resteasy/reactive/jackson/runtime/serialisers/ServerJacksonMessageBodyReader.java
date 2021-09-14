@@ -49,12 +49,7 @@ public class ServerJacksonMessageBodyReader extends JacksonBasicMessageBodyReade
     @Override
     public Object readFrom(Class<Object> type, Type genericType, MediaType mediaType, ServerRequestContext context)
             throws WebApplicationException, IOException {
-        try {
-            return doReadFrom(type, genericType, context.getInputStream());
-        } catch (MismatchedInputException e) {
-            context.abortWith(Response.status(Response.Status.BAD_REQUEST).build());
-            return null;
-        }
+        return doReadFrom(type, genericType, context.getInputStream());
     }
 
     private Object doReadFrom(Class<Object> type, Type genericType, InputStream entityStream) throws IOException {

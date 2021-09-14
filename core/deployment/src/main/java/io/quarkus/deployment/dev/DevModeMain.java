@@ -226,5 +226,7 @@ public class DevModeMain implements Closeable {
         if (ApplicationStateNotification.getState() == ApplicationStateNotification.State.STARTED) {
             ApplicationStateNotification.waitForApplicationStop();
         }
+        curatedApplication.close();
+        curatedApplication = null;
     }
 }

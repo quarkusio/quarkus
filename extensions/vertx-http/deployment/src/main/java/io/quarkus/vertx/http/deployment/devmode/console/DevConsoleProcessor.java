@@ -28,10 +28,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
@@ -54,12 +56,12 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.dev.BrowserOpenerBuildItem;
 import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
 import io.quarkus.deployment.ide.Ide;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.util.ArtifactInfoUtil;
 import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.dev.console.DevConsoleManager;
@@ -79,7 +81,6 @@ import io.quarkus.qute.RawString;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.ResultMapper;
 import io.quarkus.qute.Results;
-import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.TemplateNode.Origin;
@@ -89,6 +90,8 @@ import io.quarkus.qute.ValueResolvers;
 import io.quarkus.qute.Variant;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.TemplateHtmlBuilder;
+import io.quarkus.utilities.OS;
+import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
@@ -106,8 +109,10 @@ import io.vertx.core.http.impl.Http1xServerConnection;
 import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.impl.VertxHandler;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
 
 public class DevConsoleProcessor {
 
@@ -317,10 +322,16 @@ public class DevConsoleProcessor {
         for (DevConsoleRouteBuildItem i : routes) {
             Entry<String, String> groupAndArtifact = i.groupIdAndArtifactId(curateOutcomeBuildItem);
             // deployment side handling
-            if (!(i.getHandler() instanceof BytecodeRecorderImpl.ReturnedProxy)) {
-                router.route(HttpMethod.valueOf(i.getMethod()),
-                        "/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath())
-                        .handler(i.getHandler());
+            if (i.isDeploymentSide()) {
+                Route route = router
+                        .route("/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath());
+                if (i.getMethod() != null) {
+                    route = route.method(HttpMethod.valueOf(i.getMethod()));
+                }
+                if (i.isBodyHandlerRequired()) {
+                    route.handler(BodyHandler.create());
+                }
+                route.handler(i.getHandler());
             }
         }
 
@@ -369,7 +380,7 @@ public class DevConsoleProcessor {
             Entry<String, String> groupAndArtifact = i.groupIdAndArtifactId(curateOutcomeBuildItem);
             // if the handler is a proxy, then that means it's been produced by a recorder and therefore belongs in the regular runtime Vert.x instance
             // otherwise this is handled in the setupDeploymentSideHandling method
-            if (i.getHandler() instanceof BytecodeRecorderImpl.ReturnedProxy) {
+            if (!i.isDeploymentSide()) {
                 routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                         .routeFunction(
                                 "dev/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath(),
@@ -400,6 +411,49 @@ public class DevConsoleProcessor {
         }
     }
 
+    @BuildStep
+    BrowserOpenerBuildItem builder(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np) {
+        return new BrowserOpenerBuildItem(new Consumer<String>() {
+            @Override
+            public void accept(String s) {
+                if (s.startsWith("/q")) {
+                    s = np.resolvePath(s.substring(3));
+                } else {
+                    s = rp.resolvePath(s.substring(1));
+                }
+
+                StringBuilder sb = new StringBuilder("http://");
+                Config c = ConfigProvider.getConfig();
+                sb.append(c.getOptionalValue("quarkus.http.host", String.class).orElse("localhost"));
+                sb.append(":");
+                sb.append(c.getOptionalValue("quarkus.http.port", String.class).orElse("8080"));
+                sb.append(s);
+                String url = sb.toString();
+
+                Runtime rt = Runtime.getRuntime();
+                OS os = OS.determineOS();
+                try {
+                    switch (os) {
+                        case MAC:
+                            rt.exec("open " + url);
+                            break;
+                        case LINUX:
+                            rt.exec("xdg-open " + url);
+                            break;
+                        case WINDOWS:
+                            rt.exec("rundll32 url.dll,FileProtocolHandler " + url);
+                            break;
+                        case OTHER:
+                            log.error("Cannot launch browser on this operating system");
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to launch browser", e);
+                }
+
+            }
+        });
+    }
+
     private Engine buildEngine(List<DevTemplatePathBuildItem> devTemplatePaths,
             List<RouteBuildItem> allRoutes,
             BuildSystemTargetBuildItem buildSystemTargetBuildItem,
@@ -421,14 +475,14 @@ public class DevConsoleProcessor {
                 .addNamespaceResolver(NamespaceResolver.builder("info").resolve(ctx -> {
                     String ext = DevConsole.currentExtension.get();
                     if (ext == null) {
-                        return Results.Result.NOT_FOUND;
+                        return Results.NotFound.from(ctx);
                     }
                     Map<String, Object> map = DevConsoleManager.getTemplateInfo().get(ext);
                     if (map == null) {
-                        return Results.Result.NOT_FOUND;
+                        return Results.NotFound.from(ctx);
                     }
                     Object result = map.get(ctx.getName());
-                    return result == null ? Results.Result.NOT_FOUND : result;
+                    return result == null ? Results.NotFound.from(ctx) : result;
                 }).build());
 
         // Create map of resolved paths
@@ -447,17 +501,17 @@ public class DevConsoleProcessor {
         builder.addNamespaceResolver(NamespaceResolver.builder("config").resolveAsync(ctx -> {
             List<Expression> params = ctx.getParams();
             if (params.size() != 1 || (!ctx.getName().equals("property") && !ctx.getName().equals("http-path"))) {
-                return Results.NOT_FOUND;
+                return Results.notFound(ctx);
             }
             if (ctx.getName().equals("http-path")) {
                 return ctx.evaluate(params.get(0)).thenCompose(propertyName -> {
                     String value = resolvedPaths.get(propertyName.toString());
-                    return CompletableFuture.completedFuture(value != null ? value : Result.NOT_FOUND);
+                    return CompletableFuture.completedFuture(value != null ? value : Results.NotFound.from(ctx));
                 });
             } else {
                 return ctx.evaluate(params.get(0)).thenCompose(propertyName -> {
                     Optional<String> val = ConfigProvider.getConfig().getOptionalValue(propertyName.toString(), String.class);
-                    return CompletableFuture.completedFuture(val.isPresent() ? val.get() : Result.NOT_FOUND);
+                    return CompletableFuture.completedFuture(val.isPresent() ? val.get() : Results.NotFound.from(ctx));
                 });
             }
         }).build());
@@ -486,7 +540,7 @@ public class DevConsoleProcessor {
 
             @Override
             public boolean appliesTo(Origin origin, Object result) {
-                return result.equals(Result.NOT_FOUND);
+                return Results.isNotFound(result);
             }
 
             @Override
@@ -783,12 +837,12 @@ public class DevConsoleProcessor {
                     }
                     return "/io.quarkus.quarkus-vertx-http/openInIDE";
             }
-            return Results.Result.NOT_FOUND;
+            return Results.notFound(ctx);
         }
 
         /**
          * Return the most general packages used in the application
-         *
+         * <p>
          * TODO: this likely covers almost all typical use cases, but probably needs some tweaks for extreme corner cases
          */
         private List<String> sourcePackagesForLang(Path srcMainPath, String lang) {

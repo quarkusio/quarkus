@@ -12,6 +12,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -22,6 +23,8 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
+
+import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder;
 
 public class RestClientCDIDelegateBuilder<T> {
 
@@ -44,6 +47,7 @@ public class RestClientCDIDelegateBuilder<T> {
     private static final String REST_URI_FORMAT = "%s/" + MP_REST + "/uri";
 
     private static final String MAX_REDIRECTS = "quarkus.rest.client.max-redirects";
+    private static final String MULTIPART_POST_ENCODER_MODE = "quarkus.rest.client.multipart-post-encoder-mode";
 
     private final Class<T> jaxrsInterface;
     private final String baseUriFromAnnotation;
@@ -68,7 +72,17 @@ public class RestClientCDIDelegateBuilder<T> {
         configureRedirects(builder);
         configureQueryParamStyle(builder);
         configureProxy(builder);
+        configureCustomProperties(builder);
         return builder.build(jaxrsInterface);
+    }
+
+    private void configureCustomProperties(RestClientBuilder builder) {
+        Optional<String> encoder = getOptionalProperty(MULTIPART_POST_ENCODER_MODE, String.class);
+        if (encoder.isPresent()) {
+            HttpPostRequestEncoder.EncoderMode mode = HttpPostRequestEncoder.EncoderMode
+                    .valueOf(encoder.get().toUpperCase(Locale.ROOT));
+            builder.property(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE, mode);
+        }
     }
 
     private void configureProxy(RestClientBuilder builder) {

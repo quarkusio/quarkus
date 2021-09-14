@@ -16,7 +16,7 @@ public class GlobalNamespaceResolverTest {
                     @Override
                     public CompletionStage<Object> resolve(EvalContext context) {
                         if (!context.getName().equals("foo")) {
-                            return Results.NOT_FOUND;
+                            return Results.notFound(context);
                         }
                         CompletableFuture<Object> ret = new CompletableFuture<>();
                         context.evaluate(context.getParams().get(0)).whenComplete((r, e) -> {

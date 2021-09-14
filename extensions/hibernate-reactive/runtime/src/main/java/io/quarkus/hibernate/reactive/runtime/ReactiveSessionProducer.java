@@ -6,14 +6,10 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.stage.Stage;
 
 import io.quarkus.arc.DefaultBean;
 
 public class ReactiveSessionProducer {
-
-    @Inject
-    Stage.SessionFactory reactiveSessionFactory;
 
     @Inject
     Mutiny.SessionFactory mutinySessionFactory;
@@ -21,26 +17,8 @@ public class ReactiveSessionProducer {
     @Produces
     @RequestScoped
     @DefaultBean
-    public Stage.Session createStageSession() {
-        return reactiveSessionFactory.openSession();
-    }
-
-    @Produces
-    @RequestScoped
-    @DefaultBean
     public Mutiny.Session createMutinySession() {
         return mutinySessionFactory.openSession();
-    }
-
-    public void disposeStageSession(@Disposes Stage.Session reactiveSession) {
-        if (reactiveSession != null) {
-            //We're ignoring the returned CompletionStage!
-            //This could certainly done better but it should be effective enough to
-            //eventually close the session: the connection pool will order the operations
-            //as it won't be able to return connections to other consumers when it's saturated,
-            //ensuring close operations are handled.
-            reactiveSession.close().toCompletableFuture().join();
-        }
     }
 
     public void disposeMutinySession(@Disposes Mutiny.Session reactiveSession) {

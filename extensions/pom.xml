@@ -47,7 +47,6 @@
         <module>micrometer</module>
         <module>micrometer-registry-prometheus</module>
         <module>opentelemetry</module>
-        <module>opentelemetry-exporter-jaeger</module>
 
         <!-- REST services -->
         <module>resteasy-classic</module>
@@ -87,6 +86,7 @@
         <module>hibernate-validator</module>
         <module>panache</module>
         <module>hibernate-search-orm-elasticsearch</module>
+        <module>hibernate-search-orm-elasticsearch-aws</module>
         <module>elasticsearch-rest-client-common</module>
         <module>elasticsearch-rest-client</module>
         <module>elasticsearch-rest-high-level-client</module>
@@ -100,6 +100,7 @@
         <module>artemis-core</module>
         <module>artemis-jms</module>
         <module>avro</module>
+        <module>apicurio-registry-avro</module>
         <module>devservices</module>
 
         <!-- Spring -->
@@ -180,6 +181,7 @@
         <!-- GraphQL -->
         <module>vertx-graphql</module>
         <module>smallrye-graphql</module>
+        <module>smallrye-graphql-client</module>
 
         <!-- Logging -->
         <module>logging-json</module>
@@ -197,6 +199,12 @@
     </modules>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

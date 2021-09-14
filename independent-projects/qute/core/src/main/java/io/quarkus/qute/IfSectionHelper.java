@@ -2,7 +2,6 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Booleans.isFalsy;
 
-import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.SectionHelperFactory.ParserDelegate;
 import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 import java.math.BigDecimal;
@@ -16,7 +15,6 @@ import java.util.ListIterator;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 /**
@@ -176,17 +174,7 @@ public class IfSectionHelper implements SectionHelper {
         OperandCondition(Operator operator, Expression expression) {
             this.operator = operator;
             this.expression = expression;
-            CompletableFuture<Object> literalVal = expression.getLiteralValue();
-            if (literalVal != null) {
-                try {
-                    this.literalValue = literalVal.get();
-                } catch (InterruptedException | ExecutionException e) {
-                    throw new IllegalStateException(e);
-                }
-            } else {
-                this.literalValue = null;
-            }
-
+            this.literalValue = expression.getLiteral();
         }
 
         @Override
@@ -280,11 +268,11 @@ public class IfSectionHelper implements SectionHelper {
             } else {
                 // Binary operator
                 try {
-                    if (Result.NOT_FOUND.equals(conditionValue)) {
+                    if (Results.isNotFound(conditionValue)) {
                         conditionValue = null;
                     }
                     Object localValue = previousValue;
-                    if (Result.NOT_FOUND.equals(localValue)) {
+                    if (Results.isNotFound(localValue)) {
                         localValue = null;
                     }
                     val = operator.evaluate(localValue, conditionValue);

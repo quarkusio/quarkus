@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.BiConsumer;
 import javax.ws.rs.core.MultivaluedMap;
 
 /**
@@ -19,7 +20,7 @@ public class MultivaluedTreeMap<K, V> implements QuarkusMultivaluedMap<K, V>, Se
     private final Map<K, List<V>> map;
 
     public MultivaluedTreeMap() {
-        map = new TreeMap<K, List<V>>();
+        map = new TreeMap<>();
     }
 
     /**
@@ -242,5 +243,10 @@ public class MultivaluedTreeMap<K, V> implements QuarkusMultivaluedMap<K, V>, Se
             }
         }
         return true;
+    }
+
+    @Override
+    public void forEach(BiConsumer<? super K, ? super List<V>> action) {
+        map.forEach(action);
     }
 }

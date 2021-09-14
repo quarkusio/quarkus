@@ -72,6 +72,7 @@ triage:
         - integration-tests/jpa-mssql/
         - integration-tests/jpa-mysql/
         - integration-tests/jpa-postgresql/
+        - integration-tests/jpa-postgresql-withxml/
         - integration-tests/jpa-without-entity/
         - integration-tests/jpa/
         - integration-tests/infinispan-cache-jpa/
@@ -80,7 +81,9 @@ triage:
       notify: [gsmet, yrodiere]
       directories:
         - extensions/hibernate-search-orm-elasticsearch/
+        - extensions/hibernate-search-orm-elasticsearch-aws/
         - integration-tests/hibernate-search-orm-elasticsearch/
+        - integration-tests/hibernate-search-orm-elasticsearch-aws/
         - extensions/elasticsearch-rest-client/
         - extensions/elasticsearch-rest-client-common/
     - labels: [area/elasticsearch]
@@ -124,8 +127,11 @@ triage:
       notify: [phillip-kruger, jmartisk]
       directories:
         - extensions/smallrye-graphql/
+        - extensions/smallrye-graphql-client/
         - extensions/vertx-graphql/
         - integration-tests/vertx-graphql/
+        - integration-tests/smallrye-graphql/
+        - integration-tests/smallrye-graphql-client/
     - labels: [area/tracing, area/smallrye]
       title: "(trace|tracing)"
       notify: [kenfinnigan, Ladicek]
@@ -152,7 +158,7 @@ triage:
         - extensions/smallrye-metrics
     - labels: [area/metrics]
       title: "micrometer"
-      notify: [ebullient, phillip-kruger]
+      notify: [ebullient, kenfinnigan]
       notifyInPullRequest: true
       directories:
         - extensions/micrometer
@@ -458,6 +464,9 @@ triage:
     - labels: [area/continuous-testing]
       title: "continuous.testing"
       notify: [stuartwdouglas]
+    - labels: [area/testing]
+      title: "quarkusintegrationtest"
+      notify: [geoand]
     - labels: [area/devservices]
       title: "dev.?services"
       notify: [stuartwdouglas]

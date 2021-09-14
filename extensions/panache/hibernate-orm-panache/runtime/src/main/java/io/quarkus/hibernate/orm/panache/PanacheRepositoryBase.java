@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.panache;
 
+import static io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations.implementationInjectionMissing;
 import static io.quarkus.hibernate.orm.panache.runtime.JpaOperations.INSTANCE;
 
 import java.util.List;
@@ -10,7 +11,6 @@ import java.util.stream.Stream;
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
 
-import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.impl.GenerateBridge;
@@ -32,21 +32,26 @@ public interface PanacheRepositoryBase<Entity, Id> {
     // Operations
 
     /**
-     * Returns the default {@link EntityManager} for extra operations (eg. CriteriaQueries)
+     * Returns the {@link EntityManager} for the <Entity> entity class for extra operations (eg. CriteriaQueries)
      *
-     * @return the default {@link EntityManager}
+     * @return the {@link EntityManager} for the <Entity> entity class
      */
+    @GenerateBridge
     default EntityManager getEntityManager() {
-        return INSTANCE.getEntityManager(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+        throw implementationInjectionMissing();
     }
 
     /**
-     * Returns the {@link EntityManager} for the given entity class
+     * Returns the {@link EntityManager} tied to the given class for extra operations (eg. CriteriaQueries)
      *
-     * @return the default {@link EntityManager}
+     * @return the {@link EntityManager} tied to the given class
+     * 
+     * @deprecated use {@link Panache#getEntityManager(Class)} instead to access an entity manager for any entity class
      */
+    @GenerateBridge(ignoreEntityTypeParam = true)
+    @Deprecated
     default EntityManager getEntityManager(Class<?> clazz) {
-        return INSTANCE.getEntityManager(clazz);
+        throw implementationInjectionMissing();
     }
 
     /**

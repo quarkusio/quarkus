@@ -56,6 +56,10 @@
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib-jdk8</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-reflect</artifactId>
+        </dependency>
         <!-- Is this the right place for this? We don't really want users to have to add it-->
         <dependency>
             <groupId>io.smallrye.reactive</groupId>

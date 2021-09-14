@@ -522,7 +522,7 @@ COPY src /project/src
 RUN ./mvnw package -Pnative
 
 ## Stage 2 : create the docker final image
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4
 WORKDIR /work/
 COPY --from=build /project/target/*-runner /work/application
 

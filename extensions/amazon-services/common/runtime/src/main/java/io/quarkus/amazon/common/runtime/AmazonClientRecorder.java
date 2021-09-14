@@ -33,25 +33,7 @@ public class AmazonClientRecorder {
     public void initAwsClient(AwsClientBuilder builder, String extension, AwsConfig config) {
         config.region.ifPresent(builder::region);
 
-        if (config.credentials.type == AwsCredentialsProviderType.STATIC) {
-            if (!config.credentials.staticProvider.accessKeyId.isPresent()
-                    || !config.credentials.staticProvider.secretAccessKey.isPresent()) {
-                throw new RuntimeConfigurationError(
-                        String.format("quarkus.%s.aws.credentials.static-provider.access-key-id and "
-                                + "quarkus.%s.aws.credentials.static-provider.secret-access-key cannot be empty if STATIC credentials provider used.",
-                                extension, extension));
-            }
-        }
-        if (config.credentials.type == AwsCredentialsProviderType.PROCESS) {
-            if (!config.credentials.processProvider.command.isPresent()) {
-                throw new RuntimeConfigurationError(
-                        String.format(
-                                "quarkus.%s.aws.credentials.process-provider.command cannot be empty if PROCESS credentials provider used.",
-                                extension));
-            }
-        }
-
-        builder.credentialsProvider(config.credentials.type.create(config.credentials));
+        builder.credentialsProvider(config.credentials.type.create(config.credentials, "quarkus." + extension));
     }
 
     public void initSdkClient(SdkClientBuilder builder, String extension, SdkConfig config, SdkBuildTimeConfig buildConfig) {

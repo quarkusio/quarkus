@@ -32,7 +32,7 @@ public class MultiplePersistenceUnitsClassLevelAnnotationTest {
 
     @Entity
     @PersistenceUnit("inventory")
-    public class EntityWithClassLevelPersistenceUnit {
+    public static class EntityWithClassLevelPersistenceUnit {
 
         private long id;
 

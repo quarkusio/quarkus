@@ -1,0 +1,10 @@
+name: "Quarkus Extension for Spring Scheduled"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "spring-scheduled"
+  - "spring"
+  guide: "https://quarkus.io/guides/spring-scheduled"
+  categories:
+  - "compatibility"
+  status: "stable"

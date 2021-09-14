@@ -66,7 +66,7 @@ public class MySQLPoolRecorder {
             log.warn(
                     "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");
         }
-        return new ThreadLocalMySQLPool(vertx, mysqlConnectOptions, poolOptions);
+        return MySQLPool.pool(vertx, mysqlConnectOptions, poolOptions);
     }
 
     private PoolOptions toPoolOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,

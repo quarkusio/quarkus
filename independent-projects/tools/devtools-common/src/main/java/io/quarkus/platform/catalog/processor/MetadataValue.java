@@ -2,6 +2,7 @@ package io.quarkus.platform.catalog.processor;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 final class MetadataValue {
@@ -71,7 +72,7 @@ final class MetadataValue {
         if (name == null) {
             return defaultValue;
         }
-        return T.valueOf(clazz, name.toUpperCase().replace("-", "_"));
+        return T.valueOf(clazz, name.toUpperCase(Locale.ROOT).replace('-', '_'));
     }
 
 }

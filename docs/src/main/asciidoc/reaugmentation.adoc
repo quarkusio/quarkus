@@ -1,0 +1,71 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Re-augment a Quarkus Application
+
+include::./attributes.adoc[]
+
+== What is augmentation?
+
+Quarkus application configuration may include two types of configuration options: 
+
+- Build time options, handled during the application build time;
+- Runtime options, that may be adjusted after the application has been built but before it has been launched.
+
+The augmentation is a phase of an application build process during which the byte code of the application is optimized according to the application build time configuration.
+Initialization steps that used to happen when an EAR file was deployed on a Jakarta EE server such as parsing static configuration, creating proxy instances, etc. now happen at augmentation time.
+CDI beans added after augmentation won't work (because of the missing proxy classes) as well as build time properties (e.g. `quarkus.datasource.db-kind`) changed after augmentation will be ignored.
+Build time properties are marked with a lock icon (icon:lock[]) in the link:all-config[list of all configuration options].
+It doesn't matter if you use profiles or any other way to override the properties.
+The build time properties that were active during augmentation are baked into the build.
+
+> Re-augmentation is the process of recreating the augmentation output for a different build time configuration
+
+== When is re-augmentation useful?
+
+Re-augmentation is useful in case the users of your application want to be able to change some of its build time properties.
+For instance changing the database driver or switching features on or off (e.g. link:opentracing[opentracing] or link:consul-config[consul-config]).
+If there are only two or three build time properties that depend on the user environment, you may consider providing alternative builds of the application. However, in case there are more such properties you may prefer shipping a mutable jar instead and let your users re-augment the application for their environment.
+Please notice that you won't be able to use native images with the package type `mutable-jar`.
+Think of the consequences and what other options you have!
+
+It is not a good idea to do re-augmentation at runtime unless you miss the good old times when starting up a server took several minutes and you could enjoy a cup of coffee until it was ready.
+
+== How to re-augment a Quarkus application
+
+In order to run the augmentation steps you need the deployment JARs of the used Quarkus extensions.
+These JARs are only present in the `mutable-jar` distribution. This means that you need to build your application with `quarkus.package.type=mutable-jar`.
+The `mutable-jar` distribution is the same as the `fast-jar` distribution, except for the additional folder `quarkus-app/lib/deployment`
+which contains the deployment JARs and their dependencies (and some class-loader configuration).
+
+TIP: By default, you'll get a warning if a build time property has been changed at runtime.
+You may set the `quarkus.configuration.build-time-mismatch-at-runtime=fail` property to make sure your application does not startup if there is a mismatch.
+However, as of this writing changing `quarkus.datasource.db-kind` at runtime did neither fail nor produce a warning but was silently ignored.
+
+=== 1. Build your application as `mutable-jar`
+
+[source,bash]
+----
+mvn clean install -Dquarkus.package.type=mutable-jar
+----
+
+=== 2. Re-augment your application with a different build time configuration
+
+In order to re-augment your Quarkus application with different build time properties, start the application with the desired configuration plus the `quarkus.launch.rebuild` system property set to `true`.
+
+The following example changes the `quarkus.datasource.db-kind` to `mysql`. For this to work the `mysql-extension` must have been included in the build. Augmentation can only use extensions that were present during compile time.
+
+[source,bash]
+----
+java -jar -Dquarkus.launch.rebuild=true -Dquarkus.datasource.db-kind=mysql target/quarkus-app/quarkus-run.jar
+----
+
+NOTE: It does not matter if you use system properties, environment variables, profiles, or an external config file. The current
+configuration will be used for augmentation (the content of `quarkus-app/quarkus` will be replaced with the new augmentation output).
+The command line above will not launch the application. Quarkus will exit immediately after the application has been re-augmented.
+
+=== 3. Optional: Delete the deployments folder
+
+You may delete the directory `quarkus-app/lib/deployment` to save some space in your ZIP distribution or Docker image (remember to use a multistage Docker build to avoid unnecessary layers). After deleting the `deployment` directory, it is obviously not possible anymore to re-augment the application.

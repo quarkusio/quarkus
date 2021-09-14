@@ -7,7 +7,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.objectweb.asm.ClassVisitor;
 
-import io.quarkus.panache.common.deployment.visitors.PanacheJpaEntityClassAccessorGenerationVisitor;
+import io.quarkus.panache.common.deployment.visitors.PanacheEntityClassAccessorGenerationVisitor;
 
 public class PanacheJpaEntityAccessorsEnhancer
         implements BiFunction<String, ClassVisitor, ClassVisitor> {
@@ -24,6 +24,6 @@ public class PanacheJpaEntityAccessorsEnhancer
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
         ClassInfo entityInfo = indexView.getClassByName(DotName.createSimple(className));
         EntityModel entityModel = modelInfo.getEntityModel(className);
-        return new PanacheJpaEntityClassAccessorGenerationVisitor(outputClassVisitor, entityInfo, entityModel);
+        return new PanacheEntityClassAccessorGenerationVisitor(outputClassVisitor, entityInfo, entityModel);
     }
 }

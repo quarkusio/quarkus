@@ -9,6 +9,7 @@ import java.util.Map;
 
 public class CodestartProjectInputBuilder {
     Collection<String> dependencies = new ArrayList<>();
+    Collection<String> boms = new ArrayList<>();
     CodestartsSelection selection = new CodestartsSelection();
     Map<String, Object> data = new HashMap<>();
     MessageWriter messageWriter = MessageWriter.info();
@@ -24,6 +25,11 @@ public class CodestartProjectInputBuilder {
 
     public CodestartProjectInputBuilder addDependency(String dependency) {
         return this.addDependencies(Collections.singletonList(dependency));
+    }
+
+    public CodestartProjectInputBuilder addBoms(Collection<String> boms) {
+        this.boms.addAll(boms);
+        return this;
     }
 
     public CodestartProjectInputBuilder addCodestarts(Collection<String> codestarts) {

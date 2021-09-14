@@ -1,0 +1,10 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Jackson"
+metadata:
+  keywords:
+  - "jackson"
+  - "json"
+  categories:
+  - "serialization"
+  status: "stable"

@@ -53,9 +53,20 @@
             <artifactId>quarkus-grpc-codegen</artifactId>
         </dependency>
 
+        <!-- for dev mode -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-deployment</artifactId>
+        </dependency>
+
        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-micrometer-registry-prometheus-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

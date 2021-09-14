@@ -131,7 +131,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         try {
             ClassLoaderState state = getState();
             synchronized (getClassLoadingLock(name)) {
-                String resourceName = sanitizeName(name).replace(".", "/") + ".class";
+                String resourceName = sanitizeName(name).replace('.', '/') + ".class";
                 return parentFirst(resourceName, state);
             }
 
@@ -249,7 +249,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                             } else {
                                 List<ClassPathElement> list = elementMap.get(i);
                                 if (list == null) {
-                                    elementMap.put(i, list = new ArrayList<>());
+                                    elementMap.put(i, list = new ArrayList<>(2)); //default initial capacity of 10 is way too large
                                 }
                                 list.add(element);
                             }
@@ -415,7 +415,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 if (c != null) {
                     return c;
                 }
-                String resourceName = sanitizeName(name).replace(".", "/") + ".class";
+                String resourceName = sanitizeName(name).replace('.', '/') + ".class";
                 boolean parentFirst = parentFirst(resourceName, state);
                 if (state.bannedResources.contains(resourceName)) {
                     throw new ClassNotFoundException(name);
@@ -515,7 +515,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         List<String> ret = new ArrayList<>();
         for (String name : getState().loadableResources.keySet()) {
             if (name.endsWith(".class")) {
-                ret.add(name.substring(0, name.length() - 6).replace("/", "."));
+                ret.add(name.substring(0, name.length() - 6).replace('/', '.'));
             }
         }
         return ret;
@@ -587,7 +587,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public String toString() {
-        return "QuarkusClassLoader:" + name;
+        return "QuarkusClassLoader:" + name + "@" + Integer.toHexString(hashCode());
     }
 
     public static class Builder {
@@ -750,6 +750,11 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             this.bannedResources = bannedResources;
             this.parentFirstResources = parentFirstResources;
         }
+    }
+
+    @Override
+    public String getName() {
+        return name;
     }
 
 }

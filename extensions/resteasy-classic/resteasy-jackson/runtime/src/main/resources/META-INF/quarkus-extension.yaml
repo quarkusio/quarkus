@@ -1,0 +1,15 @@
+name: "RESTEasy Jackson"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "resteasy-jackson"
+  - "jaxrs-json"
+  - "resteasy-json"
+  - "resteasy"
+  - "jaxrs"
+  - "json"
+  - "jackson"
+  categories:
+  - "web"
+  - "serialization"
+  status: "stable"

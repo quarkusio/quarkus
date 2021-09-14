@@ -118,6 +118,46 @@ public class LocalWorkspaceDiscoveryTest {
     }
 
     @Test
+    public void nonParentAggregator() throws Exception {
+        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
+                .getResource("non-parent-aggregator/service-extension/deployment");
+        assertNotNull(moduleUrl);
+        final Path moduleDir = Paths.get(moduleUrl.toURI());
+
+        final URL aggregatorUrl = Thread.currentThread().getContextClassLoader()
+                .getResource("non-parent-aggregator/aggregator");
+        assertNotNull(aggregatorUrl);
+        final Path aggregatorDir = Paths.get(aggregatorUrl.toURI());
+
+        final String topLevelBaseDirProp = "maven.top-level-basedir";
+        final String originalBaseDir = System.getProperty(topLevelBaseDirProp);
+        final LocalProject module1;
+        try {
+            System.setProperty(topLevelBaseDirProp, aggregatorDir.toString());
+            module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
+                    .setEffectiveModelBuilder(true)
+                    .setCurrentProject(moduleDir.toString()))
+                            .getCurrentProject();
+        } finally {
+            if (originalBaseDir == null) {
+                System.clearProperty(topLevelBaseDirProp);
+            } else {
+                System.setProperty(topLevelBaseDirProp, originalBaseDir);
+            }
+        }
+        final LocalWorkspace ws = module1.getWorkspace();
+
+        assertNotNull(ws.getProject("org.example", "service-extension-deployment"));
+        assertNotNull(ws.getProject("org.example", "service-extension"));
+        assertNotNull(ws.getProject("org.example", "service-extension-parent"));
+        assertNotNull(ws.getProject("org.example", "model-extension-deployment"));
+        assertNotNull(ws.getProject("org.example", "model-extension"));
+        assertNotNull(ws.getProject("org.example", "model-extension-parent"));
+        assertNotNull(ws.getProject("org.example", "aggregator"));
+        assertEquals(7, ws.getProjects().size());
+    }
+
+    @Test
     public void loadModulesInProfiles() throws Exception {
         final URL moduleUrl = Thread.currentThread().getContextClassLoader()
                 .getResource("modules-in-profiles/integration-tests/rest-tests");

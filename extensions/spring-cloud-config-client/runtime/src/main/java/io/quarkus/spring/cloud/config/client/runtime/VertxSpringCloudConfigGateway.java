@@ -179,8 +179,8 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
         final String requestURI = finalURI(applicationName, profile);
         String finalURI = getFinalURI(applicationName, profile);
         HttpRequest<Buffer> request = webClient
-                .get(baseURI.getPort(), baseURI.getHost(), requestURI)
-                .ssl(baseURI.getScheme().contains("https") ? true : false)
+                .get(getPort(baseURI), baseURI.getHost(), requestURI)
+                .ssl(isHttps(baseURI))
                 .putHeader("Accept", "application/json");
         if (springCloudConfigClientConfig.usernameAndPasswordSet()) {
             request.basicAuthentication(springCloudConfigClientConfig.username.get(),
@@ -206,6 +206,14 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
                 }
             }
         });
+    }
+
+    private boolean isHttps(URI uri) {
+        return uri.getScheme().contains("https");
+    }
+
+    private int getPort(URI uri) {
+        return uri.getPort() != -1 ? uri.getPort() : (isHttps(uri) ? 443 : 80);
     }
 
     private String getFinalURI(String applicationName, String profile) {

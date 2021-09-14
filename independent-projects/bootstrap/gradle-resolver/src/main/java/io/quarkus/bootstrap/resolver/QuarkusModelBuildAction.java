@@ -1,7 +1,7 @@
 package io.quarkus.bootstrap.resolver;
 
-import io.quarkus.bootstrap.resolver.model.ModelParameter;
-import io.quarkus.bootstrap.resolver.model.QuarkusModel;
+import io.quarkus.bootstrap.model.gradle.ModelParameter;
+import io.quarkus.bootstrap.model.gradle.QuarkusModel;
 import java.io.Serializable;
 import org.gradle.tooling.BuildAction;
 import org.gradle.tooling.BuildController;

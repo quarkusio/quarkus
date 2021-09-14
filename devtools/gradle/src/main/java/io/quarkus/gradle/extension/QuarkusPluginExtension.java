@@ -26,10 +26,10 @@ import org.gradle.jvm.tasks.Jar;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.gradle.ModelParameter;
+import io.quarkus.bootstrap.model.gradle.QuarkusModel;
+import io.quarkus.bootstrap.model.gradle.impl.ModelParameterImpl;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
-import io.quarkus.bootstrap.resolver.model.ModelParameter;
-import io.quarkus.bootstrap.resolver.model.QuarkusModel;
-import io.quarkus.bootstrap.resolver.model.impl.ModelParameterImpl;
 import io.quarkus.gradle.AppModelGradleResolver;
 import io.quarkus.gradle.builder.QuarkusModelBuilder;
 import io.quarkus.gradle.tasks.QuarkusGradleUtils;
@@ -112,7 +112,7 @@ public class QuarkusPluginExtension {
             JavaPluginConvention javaConvention = convention.findPlugin(JavaPluginConvention.class);
             if (javaConvention != null) {
                 final SourceSet mainSourceSet = javaConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-                final String classesPath = QuarkusGradleUtils.getClassesDir(mainSourceSet, jarTask.getTemporaryDir());
+                final String classesPath = QuarkusGradleUtils.getClassesDir(mainSourceSet, jarTask.getTemporaryDir(), false);
                 if (classesPath != null) {
                     classesDir = Paths.get(classesPath);
                 }

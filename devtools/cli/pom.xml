@@ -148,9 +148,21 @@
                         </goals>
                         <configuration>
                             <skipOriginalJarRename>true</skipOriginalJarRename>
+                            <environmentVariables>
+                                <MAVEN_REPO_LOCAL>${settings.localRepository}</MAVEN_REPO_LOCAL>
+                                <GRADLE_OPTS>${env.MAVEN_OPTS}</GRADLE_OPTS>
+                            </environmentVariables>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <environmentVariables>
+                        <JBANG_REPO>${settings.localRepository}</JBANG_REPO>
+                    </environmentVariables>
+                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -4,9 +4,11 @@ import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -108,8 +110,9 @@ public class JibProcessor {
             Optional<AppCDSResultBuildItem> appCDSResult,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
 
-        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
-                && !pushRequest.isPresent()) {
+        Boolean buildContainerImage = containerImageConfig.build || buildRequest.isPresent();
+        Boolean pushContainerImage = containerImageConfig.push || pushRequest.isPresent();
+        if (!buildContainerImage && !pushContainerImage) {
             return;
         }
 
@@ -130,9 +133,11 @@ public class JibProcessor {
         handleExtraFiles(outputTarget, jibContainerBuilder);
         JibContainer container = containerize(containerImageConfig, jibConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
+        writeOutputFiles(container, jibConfig, outputTarget);
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
-                Collections.singletonMap("container-image", container.getTargetImage().toString())));
+                Map.of("container-image", container.getTargetImage().toString(), "pull-required",
+                        pushContainerImage.toString())));
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, JibBuild.class, NativeBuild.class })
@@ -145,8 +150,9 @@ public class JibProcessor {
             List<ContainerImageLabelBuildItem> containerImageLabels,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
 
-        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
-                && !pushRequest.isPresent()) {
+        Boolean buildContainerImage = containerImageConfig.build || buildRequest.isPresent();
+        Boolean pushContainerImage = containerImageConfig.push || pushRequest.isPresent();
+        if (!buildContainerImage && !pushContainerImage) {
             return;
         }
 
@@ -162,9 +168,11 @@ public class JibProcessor {
         handleExtraFiles(outputTarget, jibContainerBuilder);
         JibContainer container = containerize(containerImageConfig, jibConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
+        writeOutputFiles(container, jibConfig, outputTarget);
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
-                Collections.singletonMap("container-image", container.getTargetImage().toString())));
+                Map.of("container-image", container.getTargetImage().toString(), "pull-required",
+                        pushContainerImage.toString())));
     }
 
     private JibContainer containerize(ContainerImageConfig containerImageConfig,
@@ -216,14 +224,31 @@ public class JibProcessor {
         return containerizer;
     }
 
+    private void writeOutputFiles(JibContainer jibContainer, JibConfig jibConfig, OutputTargetBuildItem outputTarget) {
+        doWriteOutputFile(outputTarget, Paths.get(jibConfig.imageDigestFile), jibContainer.getDigest().toString());
+        doWriteOutputFile(outputTarget, Paths.get(jibConfig.imageIdFile), jibContainer.getImageId().toString());
+    }
+
+    private void doWriteOutputFile(OutputTargetBuildItem outputTarget, Path configPath, String output) {
+        if (!configPath.isAbsolute()) {
+            configPath = outputTarget.getOutputDirectory().resolve(configPath);
+        }
+        try {
+            Files.write(configPath, output.getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            log.errorf(e, "Unable to write file '%s'.", configPath.toAbsolutePath().toString());
+        }
+    }
+
     private RegistryImage toRegistryImage(ImageReference imageReference, Optional<String> username, Optional<String> password) {
         CredentialRetrieverFactory credentialRetrieverFactory = CredentialRetrieverFactory.forImage(imageReference,
                 log::info);
         RegistryImage registryImage = RegistryImage.named(imageReference);
-        registryImage.addCredentialRetriever(credentialRetrieverFactory.wellKnownCredentialHelpers());
-        registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig());
         if (username.isPresent() && password.isPresent()) {
             registryImage.addCredential(username.get(), password.get());
+        } else {
+            registryImage.addCredentialRetriever(credentialRetrieverFactory.wellKnownCredentialHelpers());
+            registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig());
         }
         return registryImage;
     }
@@ -400,7 +425,7 @@ public class JibProcessor {
                     .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS)), workDirInContainer)
                     .setWorkingDirectory(workDirInContainer)
                     .setEntrypoint(entrypoint)
-                    .setEnvironment(jibConfig.environmentVariables)
+                    .setEnvironment(getEnvironmentVariables(jibConfig))
                     .setLabels(allLabels(jibConfig, containerImageLabels))
                     .setCreationTime(Instant.now());
             for (int port : jibConfig.ports) {
@@ -475,7 +500,7 @@ public class JibProcessor {
             }
 
             JibContainerBuilder jibContainerBuilder = javaContainerBuilder.toContainerBuilder()
-                    .setEnvironment(jibConfig.environmentVariables)
+                    .setEnvironment(getEnvironmentVariables(jibConfig))
                     .setLabels(allLabels(jibConfig, containerImageLabels))
                     .setCreationTime(Instant.now());
 
@@ -514,7 +539,7 @@ public class JibProcessor {
                             .build())
                     .setWorkingDirectory(workDirInContainer)
                     .setEntrypoint(entrypoint)
-                    .setEnvironment(jibConfig.environmentVariables)
+                    .setEnvironment(getEnvironmentVariables(jibConfig))
                     .setLabels(allLabels(jibConfig, containerImageLabels))
                     .setCreationTime(Instant.now());
             for (int port : jibConfig.ports) {
@@ -524,6 +549,18 @@ public class JibProcessor {
         } catch (InvalidImageReferenceException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private Map<String, String> getEnvironmentVariables(JibConfig jibConfig) {
+        Map<String, String> original = jibConfig.environmentVariables;
+        if (original.isEmpty()) {
+            return original;
+        }
+        Map<String, String> converted = new HashMap<>();
+        for (Map.Entry<String, String> entry : original.entrySet()) {
+            converted.put(entry.getKey().toUpperCase().replace('-', '_').replace('.', '_').replace('/', '_'), entry.getValue());
+        }
+        return converted;
     }
 
     /**

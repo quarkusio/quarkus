@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Amazon S3"
+metadata:
+  keywords:
+    - "s3"
+    - "aws"
+    - "amazon"
+  guide: "https://quarkus.io/guides/amazon-s3"
+  categories:
+    - "data"
+  status: "preview"

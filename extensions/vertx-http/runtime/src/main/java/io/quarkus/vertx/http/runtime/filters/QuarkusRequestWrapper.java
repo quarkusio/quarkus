@@ -205,6 +205,11 @@ public class QuarkusRequestWrapper extends AbstractRequestWrapper {
         }
 
         @Override
+        public long getMaxAge() {
+            return Long.MIN_VALUE;
+        }
+
+        @Override
         public Cookie setSecure(boolean secure) {
             return null;
         }

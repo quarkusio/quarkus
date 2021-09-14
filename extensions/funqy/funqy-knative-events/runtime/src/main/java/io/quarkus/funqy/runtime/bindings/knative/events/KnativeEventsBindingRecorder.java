@@ -3,9 +3,15 @@ package io.quarkus.funqy.runtime.bindings.knative.events;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executor;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
@@ -23,10 +29,12 @@ import io.quarkus.arc.impl.Reflections;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.funqy.knative.events.CloudEvent;
 import io.quarkus.funqy.knative.events.CloudEventMapping;
+import io.quarkus.funqy.knative.events.EventAttribute;
 import io.quarkus.funqy.runtime.FunctionConstructor;
 import io.quarkus.funqy.runtime.FunctionInvoker;
 import io.quarkus.funqy.runtime.FunctionRecorder;
 import io.quarkus.funqy.runtime.FunqyConfig;
+import io.quarkus.funqy.runtime.bindings.knative.events.filters.CEAttributeLiteralEqualsFilter;
 import io.quarkus.funqy.runtime.query.QueryObjectMapper;
 import io.quarkus.funqy.runtime.query.QueryReader;
 import io.quarkus.runtime.ShutdownContext;
@@ -44,7 +52,8 @@ public class KnativeEventsBindingRecorder {
 
     private static ObjectMapper objectMapper;
     private static QueryObjectMapper queryMapper;
-    private static Map<String, FunctionInvoker> typeTriggers;
+    private static Map<String, Collection<FunctionInvoker>> typeTriggers;
+    private static Map<String, List<Predicate<CloudEvent>>> invokersFilters;
 
     public static final String RESPONSE_TYPE = "response.cloud.event.type";
     public static final String RESPONSE_SOURCE = "response.cloud.event.source";
@@ -55,18 +64,38 @@ public class KnativeEventsBindingRecorder {
 
     public void init() {
         typeTriggers = new HashMap<>();
+        invokersFilters = new HashMap<>();
         objectMapper = getObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
         queryMapper = new QueryObjectMapper();
         for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
             Method method = invoker.getMethod();
+            String trigger;
             CloudEventMapping annotation = method.getAnnotation(CloudEventMapping.class);
+            final List<Predicate<CloudEvent>> filter;
             if (annotation != null && !annotation.trigger().isEmpty()) {
-                typeTriggers.put(annotation.trigger(), invoker);
+                trigger = annotation.trigger();
+                filter = filter(invoker.getName(), annotation);
             } else {
-                typeTriggers.put(invoker.getName(), invoker);
+                trigger = invoker.getName();
+                filter = Collections.emptyList();
             }
+            invokersFilters.put(invoker.getName(), filter);
+            typeTriggers.compute(trigger, (k, v) -> {
+                if (v == null) {
+                    v = new ArrayList<>();
+                }
+                // validate if there are no conflicts for the same type (trigger) and defined filters
+                // as resolution based on trigger (ce-type) and optional filters (on ce-attributes) can return only
+                // one function invoker
+                if (v.stream().anyMatch(i -> hasSameFilters(i.getName(), invokersFilters.get(i.getName()), filter))) {
+                    throw new IllegalStateException("Function for trigger '" + trigger + "' has multiple matching invokers");
+                }
+
+                v.add(invoker);
+                return v;
+            });
 
             if (invoker.hasInput()) {
                 Type inputType = invoker.getInputType();
@@ -171,7 +200,13 @@ public class KnativeEventsBindingRecorder {
                 }
                 FunqyKnativeEventsConfig.FunctionMapping mapping = entry.getValue();
                 if (mapping.trigger.isPresent()) {
-                    typeTriggers.put(mapping.trigger.get(), invoker);
+                    typeTriggers.compute(mapping.trigger.get(), (k, v) -> {
+                        if (v == null) {
+                            v = new ArrayList<>();
+                        }
+                        v.add(invoker);
+                        return v;
+                    });
                 }
                 if (invoker.hasOutput()) {
                     if (mapping.responseSource.isPresent()) {
@@ -187,8 +222,45 @@ public class KnativeEventsBindingRecorder {
 
         Handler<RoutingContext> handler = new VertxRequestHandler(vertx.get(), rootPath, beanContainer, objectMapper,
                 eventsConfig,
-                defaultInvoker, typeTriggers, executor);
+                defaultInvoker, typeTriggers, invokersFilters, executor);
 
         return handler;
+    }
+
+    private List<Predicate<CloudEvent>> filter(String functionName, CloudEventMapping mapping) {
+
+        if (mapping.attributes() == null || mapping.attributes().length == 0) {
+            return Collections.emptyList();
+        }
+        List<Predicate<CloudEvent>> filters = new ArrayList<>();
+        for (EventAttribute attribute : mapping.attributes()) {
+            Objects.requireNonNull(attribute.name(),
+                    "Attribute name of the EventAttribure on function " + functionName + " is required");
+            Objects.requireNonNull(attribute.value(),
+                    "Attribute name of the EventAttribure on function " + functionName + " is required");
+
+            filters.add(new CEAttributeLiteralEqualsFilter(attribute.name(), attribute.value()));
+
+        }
+
+        return filters;
+    }
+
+    private boolean hasSameFilters(String name, List<Predicate<CloudEvent>> one, List<Predicate<CloudEvent>> two) {
+
+        final List<Predicate<CloudEvent>> first = one != null ? one : Collections.emptyList();
+        final List<Predicate<CloudEvent>> second = two != null ? two : Collections.emptyList();
+
+        // empty set is sub-set of any set
+        if (first.size() <= 0 || second.size() <= 0) {
+            log.warn("Invoker " + name + " has multiple matching filters " + one + " " + two);
+            return true;
+        }
+
+        boolean result = first.size() <= second.size() ? second.containsAll(first) : first.containsAll(second);
+        if (result) {
+            log.warn("Invoker " + name + " has multiple matching filters " + one + " " + two);
+        }
+        return result;
     }
 }

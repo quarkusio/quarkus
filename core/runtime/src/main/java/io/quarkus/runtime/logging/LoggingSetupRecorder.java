@@ -13,12 +13,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logmanager.EmbeddedConfigurator;
@@ -54,12 +54,16 @@ public class LoggingSetupRecorder {
 
     @SuppressWarnings("unused") //called via reflection, as it is in an isolated CL
     public static void handleFailedStart() {
+        handleFailedStart(new RuntimeValue<>(Optional.empty()));
+    }
+
+    public static void handleFailedStart(RuntimeValue<Optional<Supplier<String>>> banner) {
         LogConfig config = new LogConfig();
         ConfigInstantiator.handleObject(config);
         LogBuildTimeConfig buildConfig = new LogBuildTimeConfig();
         ConfigInstantiator.handleObject(buildConfig);
         new LoggingSetupRecorder().initializeLogging(config, buildConfig, Collections.emptyList(), Collections.emptyList(),
-                Collections.emptyList(), null);
+                Collections.emptyList(), banner);
     }
 
     public void initializeLogging(LogConfig config, LogBuildTimeConfig buildConfig,
@@ -76,10 +80,18 @@ public class LoggingSetupRecorder {
 
         ErrorManager errorManager = new OnlyOnceErrorManager();
         final Map<String, CleanupFilterConfig> filters = config.filters;
-        List<LogCleanupFilterElement> filterElements = new ArrayList<>(filters.size());
-        for (Entry<String, CleanupFilterConfig> entry : filters.entrySet()) {
-            filterElements.add(
-                    new LogCleanupFilterElement(entry.getKey(), entry.getValue().targetLevel, entry.getValue().ifStartsWith));
+        List<LogCleanupFilterElement> filterElements;
+        if (filters.isEmpty()) {
+            filterElements = Collections.emptyList();
+        } else {
+            filterElements = new ArrayList<>(filters.size());
+            filters.forEach(new BiConsumer<String, CleanupFilterConfig>() {
+                @Override
+                public void accept(String loggerName, CleanupFilterConfig config) {
+                    filterElements.add(
+                            new LogCleanupFilterElement(loggerName, config.targetLevel, config.ifStartsWith));
+                }
+            });
         }
 
         final ArrayList<Handler> handlers = new ArrayList<>(3 + additionalHandlers.size());
@@ -102,44 +114,41 @@ public class LoggingSetupRecorder {
             }
         }
 
-        Map<String, Handler> namedHandlers = createNamedHandlers(config, possibleFormatters, errorManager, filterElements);
+        if (!categories.isEmpty()) {
+            Map<String, Handler> namedHandlers = createNamedHandlers(config, possibleFormatters, errorManager, filterElements);
 
-        Map<String, Handler> additionalNamedHandlersMap = additionalNamedHandlers.stream().map(RuntimeValue::getValue)
-                .flatMap(map -> map.entrySet().stream())
-                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-
-        for (Handler additionalNamedHandler : additionalNamedHandlersMap.values()) {
-            additionalNamedHandler.setErrorManager(errorManager);
-            additionalNamedHandler.setFilter(new LogCleanupFilter(filterElements));
-        }
-        namedHandlers.putAll(additionalNamedHandlersMap);
-
-        for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
-            final CategoryBuildTimeConfig buildCategory = isSubsetOf(entry.getKey(), buildConfig.categories);
-            final Level logLevel = getLogLevel(entry.getKey(), entry.getValue(), categories, buildConfig.minLevel);
-            final Level minLogLevel = buildCategory == null
-                    ? buildConfig.minLevel
-                    : buildCategory.minLevel.getLevel();
-
-            if (logLevel.intValue() < minLogLevel.intValue()) {
-                log.warnf("Log level %s for category '%s' set below minimum logging level %s, promoting it to %s", logLevel,
-                        entry.getKey(), minLogLevel, minLogLevel);
-
-                entry.getValue().level = InheritableLevel.of(minLogLevel.toString());
+            Map<String, Handler> additionalNamedHandlersMap;
+            if (additionalNamedHandlers.isEmpty()) {
+                additionalNamedHandlersMap = Collections.emptyMap();
+            } else {
+                additionalNamedHandlersMap = new HashMap<>();
+                for (RuntimeValue<Map<String, Handler>> runtimeValue : additionalNamedHandlers) {
+                    runtimeValue.getValue().forEach(
+                            new AdditionalNamedHandlersConsumer(additionalNamedHandlersMap, errorManager, filterElements));
+                }
             }
-        }
 
-        for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
-            final String name = entry.getKey();
-            final Logger categoryLogger = logContext.getLogger(name);
-            final CategoryConfig categoryConfig = entry.getValue();
-            if (!categoryConfig.level.isInherited()) {
-                categoryLogger.setLevel(categoryConfig.level.getLevel());
-            }
-            categoryLogger.setUseParentHandlers(categoryConfig.useParentHandlers);
-            if (categoryConfig.handlers.isPresent()) {
-                addNamedHandlersToCategory(categoryConfig, namedHandlers, categoryLogger, errorManager);
-            }
+            namedHandlers.putAll(additionalNamedHandlersMap);
+
+            categories.forEach(new BiConsumer<String, CategoryConfig>() {
+                @Override
+                public void accept(String categoryName, CategoryConfig config) {
+                    final CategoryBuildTimeConfig buildCategory = isSubsetOf(categoryName, buildConfig.categories);
+                    final Level logLevel = getLogLevel(categoryName, config, categories, buildConfig.minLevel);
+                    final Level minLogLevel = buildCategory == null
+                            ? buildConfig.minLevel
+                            : buildCategory.minLevel.getLevel();
+
+                    if (logLevel.intValue() < minLogLevel.intValue()) {
+                        log.warnf("Log level %s for category '%s' set below minimum logging level %s, promoting it to %s",
+                                logLevel,
+                                categoryName, minLogLevel, minLogLevel);
+
+                        config.level = InheritableLevel.of(minLogLevel.toString());
+                    }
+                }
+            });
+            categories.forEach(new CategoryLoggerConsumer(logContext, namedHandlers, errorManager));
         }
 
         for (RuntimeValue<Optional<Handler>> additionalHandler : additionalHandlers) {
@@ -244,16 +253,28 @@ public class LoggingSetupRecorder {
             List<LogCleanupFilterElement> filterElements) {
         Map<String, Handler> namedHandlers = new HashMap<>();
         for (Entry<String, ConsoleConfig> consoleConfigEntry : config.consoleHandlers.entrySet()) {
-            final Handler consoleHandler = configureConsoleHandler(consoleConfigEntry.getValue(), errorManager, filterElements,
+            ConsoleConfig namedConsoleConfig = consoleConfigEntry.getValue();
+            if (!namedConsoleConfig.enable) {
+                continue;
+            }
+            final Handler consoleHandler = configureConsoleHandler(namedConsoleConfig, errorManager, filterElements,
                     possibleFormatters, null);
             addToNamedHandlers(namedHandlers, consoleHandler, consoleConfigEntry.getKey());
         }
         for (Entry<String, FileConfig> fileConfigEntry : config.fileHandlers.entrySet()) {
-            final Handler fileHandler = configureFileHandler(fileConfigEntry.getValue(), errorManager, filterElements);
+            FileConfig namedFileConfig = fileConfigEntry.getValue();
+            if (!namedFileConfig.enable) {
+                continue;
+            }
+            final Handler fileHandler = configureFileHandler(namedFileConfig, errorManager, filterElements);
             addToNamedHandlers(namedHandlers, fileHandler, fileConfigEntry.getKey());
         }
         for (Entry<String, SyslogConfig> sysLogConfigEntry : config.syslogHandlers.entrySet()) {
-            final Handler syslogHandler = configureSyslogHandler(sysLogConfigEntry.getValue(), errorManager, filterElements);
+            SyslogConfig namedSyslogConfig = sysLogConfigEntry.getValue();
+            if (!namedSyslogConfig.enable) {
+                continue;
+            }
+            final Handler syslogHandler = configureSyslogHandler(namedSyslogConfig, errorManager, filterElements);
             if (syslogHandler != null) {
                 addToNamedHandlers(namedHandlers, syslogHandler, sysLogConfigEntry.getKey());
             }
@@ -343,7 +364,8 @@ public class LoggingSetupRecorder {
                 }
             }
         }
-        final ConsoleHandler consoleHandler = new ConsoleHandler(ConsoleHandler.Target.SYSTEM_OUT, formatter);
+        final ConsoleHandler consoleHandler = new ConsoleHandler(
+                config.stderr ? ConsoleHandler.Target.SYSTEM_ERR : ConsoleHandler.Target.SYSTEM_OUT, formatter);
         consoleHandler.setLevel(config.level);
         consoleHandler.setErrorManager(defaultErrorManager);
         consoleHandler.setFilter(new LogCleanupFilter(filterElements));
@@ -435,4 +457,52 @@ public class LoggingSetupRecorder {
         return asyncHandler;
     }
 
+    private static class CategoryLoggerConsumer implements BiConsumer<String, CategoryConfig> {
+        private final LogContext logContext;
+        private final Map<String, Handler> namedHandlers;
+        private final ErrorManager errorManager;
+
+        CategoryLoggerConsumer(LogContext logContext, Map<String, Handler> namedHandlers, ErrorManager errorManager) {
+            this.logContext = logContext;
+            this.namedHandlers = namedHandlers;
+            this.errorManager = errorManager;
+        }
+
+        @Override
+        public void accept(String name, CategoryConfig categoryConfig) {
+            final Logger categoryLogger = logContext.getLogger(name);
+            if (!categoryConfig.level.isInherited()) {
+                categoryLogger.setLevel(categoryConfig.level.getLevel());
+            }
+            categoryLogger.setUseParentHandlers(categoryConfig.useParentHandlers);
+            if (categoryConfig.handlers.isPresent()) {
+                addNamedHandlersToCategory(categoryConfig, namedHandlers, categoryLogger, errorManager);
+            }
+        }
+    }
+
+    private static class AdditionalNamedHandlersConsumer implements BiConsumer<String, Handler> {
+        private final Map<String, Handler> additionalNamedHandlersMap;
+        private final ErrorManager errorManager;
+        private final List<LogCleanupFilterElement> filterElements;
+
+        public AdditionalNamedHandlersConsumer(Map<String, Handler> additionalNamedHandlersMap, ErrorManager errorManager,
+                List<LogCleanupFilterElement> filterElements) {
+            this.additionalNamedHandlersMap = additionalNamedHandlersMap;
+            this.errorManager = errorManager;
+            this.filterElements = filterElements;
+        }
+
+        @Override
+        public void accept(String name, Handler handler) {
+            Handler previous = additionalNamedHandlersMap.putIfAbsent(name, handler);
+            if (previous != null) {
+                throw new IllegalStateException(String.format(
+                        "Duplicate key %s (attempted merging values %s and %s)",
+                        name, previous, handler));
+            }
+            handler.setErrorManager(errorManager);
+            handler.setFilter(new LogCleanupFilter(filterElements));
+        }
+    }
 }

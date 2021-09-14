@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "SmallRye Reactive Messaging - Kafka Connector"
+metadata:
+  short-name: "kafka"
+  keywords:
+  - "kafka"
+  - "reactive-kafka"
+  guide: "https://quarkus.io/guides/kafka"
+  categories:
+  - "messaging"
+  status: "stable"

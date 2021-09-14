@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -16,20 +17,17 @@ import java.util.function.Supplier;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.jutils.jprocesses.JProcesses;
-import org.jutils.jprocesses.model.ProcessInfo;
 
 public class DevModeTestUtils {
 
-    public static void killProcesses(String... cmdParts) {
-        for (ProcessInfo pi : JProcesses.getProcessList()) {
-            for (String part : cmdParts) {
-                if (pi.getCommand().contains(part)) {
-                    JProcesses.killProcess(Integer.parseInt(pi.getPid()));
-                    break;
-                }
-            }
-        }
+    public static void killDescendingProcesses() {
+        // Warning: Do not try to evaluate ProcessHandle.Info.arguments() or .commandLine() as those are always empty on Windows:
+        // https://bugs.openjdk.java.net/browse/JDK-8176725
+        ProcessHandle.current().descendants()
+                // destroy younger descendants first
+                .sorted((ph1, ph2) -> ph2.info().startInstant().orElse(Instant.EPOCH)
+                        .compareTo(ph1.info().startInstant().orElse(Instant.EPOCH)))
+                .forEach(ProcessHandle::destroy);
     }
 
     public static void filter(File input, Map<String, String> variables) throws IOException {

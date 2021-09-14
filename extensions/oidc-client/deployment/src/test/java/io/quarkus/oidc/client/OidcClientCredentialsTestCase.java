@@ -18,7 +18,8 @@ public class OidcClientCredentialsTestCase {
 
     private static Class<?>[] testClasses = {
             OidcClientsResource.class,
-            ProtectedResource.class
+            ProtectedResource.class,
+            SecretProvider.class
     };
 
     @RegisterExtension

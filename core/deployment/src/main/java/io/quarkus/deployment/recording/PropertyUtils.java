@@ -28,9 +28,14 @@ final class PropertyUtils {
                 if (i.getName().startsWith("get") && i.getName().length() > 3 && i.getParameterCount() == 0
                         && i.getReturnType() != void.class) {
                     String name = Character.toLowerCase(i.getName().charAt(3)) + i.getName().substring(4);
-                    getters.put(name, i);
+                    Method existingGetter = getters.get(name);
+                    // In some cases the overridden methods from supertypes can also appear in the array (for some reason).
+                    // We want the most specific methods.
+                    if (existingGetter == null || existingGetter.getReturnType().isAssignableFrom(i.getReturnType())) {
+                        getters.put(name, i);
+                    }
                 } else if (i.getName().startsWith("is") && i.getName().length() > 3 && i.getParameterCount() == 0
-                        && i.getReturnType() == boolean.class) {
+                        && (i.getReturnType() == boolean.class || i.getReturnType() == Boolean.class)) {
                     String name = Character.toLowerCase(i.getName().charAt(2)) + i.getName().substring(3);
                     getters.put(name, i);
                 } else if (i.getName().startsWith("set") && i.getName().length() > 3 && i.getParameterCount() == 1) {

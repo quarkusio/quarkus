@@ -56,50 +56,64 @@ public class TestConfig {
     public Optional<List<String>> excludeTags;
 
     /**
-     * Tests that should be included for continuous testing. This is a regular expression.
+     * Tests that should be included for continuous testing. This is a regular expression and
+     * is matched against the test class name (not the file name).
      */
     @ConfigItem
     public Optional<String> includePattern;
 
     /**
-     * Tests that should be excluded with continuous testing. This is a regular expression.
+     * Tests that should be excluded with continuous testing. This is a regular expression and
+     * is matched against the test class name (not the file name).
      *
      * This is ignored if include-pattern has been set.
      *
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = ".*\\.IT[^.]+|.*IT|.*ITCase")
     public Optional<String> excludePattern;
+
     /**
      * Disable the testing status/prompt message at the bottom of the console
      * and log these messages to STDOUT instead.
      *
      * Use this option if your terminal does not support ANSI escape sequences.
+     *
+     * This is deprecated, {@literal quarkus.console.basic} should be used instead.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean basicConsole;
+    @Deprecated
+    @ConfigItem
+    public Optional<Boolean> basicConsole;
 
     /**
      * Disable color in the testing status and prompt messages.
      *
      * Use this option if your terminal does not support color.
+     *
+     * This is deprecated, {@literal quarkus.console.disable-color} should be used instead.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean disableColor;
+    @ConfigItem
+    @Deprecated
+    public Optional<Boolean> disableColor;
 
     /**
      * If test results and status should be displayed in the console.
      *
      * If this is false results can still be viewed in the dev console.
+     *
+     * This is deprecated, {@literal quarkus.console.enabled} should be used instead.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean console;
+    @Deprecated
+    @ConfigItem
+    public Optional<Boolean> console;
 
     /**
      * Disables the ability to enter input on the console.
      *
+     * This is deprecated, {@literal quarkus.console.disable-input} should be used instead.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean disableConsoleInput;
+    @ConfigItem
+    @Deprecated
+    public Optional<Boolean> disableConsoleInput;
 
     /**
      * Changes tests to use the 'flat' ClassPath used in Quarkus 1.x versions.
@@ -132,6 +146,12 @@ public class TestConfig {
     Profile profile;
 
     /**
+     * JVM parameters that are used to launch jar based integration tests.
+     */
+    @ConfigItem
+    Optional<String> integrationJvmArgLine;
+
+    /**
      * Configures the hang detection in @QuarkusTest. If no activity happens (i.e. no test callbacks are called) over
      * this period then QuarkusTest will dump all threads stack traces, to help diagnose a potential hang.
      *
@@ -151,6 +171,16 @@ public class TestConfig {
      */
     @ConfigItem(defaultValue = "all")
     TestType type;
+
+    /**
+     * If a class matches this pattern then it will be cloned into the Quarkus ClassLoader even if it
+     * is in a parent first artifact.
+     *
+     * This is important for collections which can contain objects from the Quarkus ClassLoader, but for
+     * most parent first classes it will just cause problems.
+     */
+    @ConfigItem(defaultValue = "java\\..*")
+    String classClonePattern;
 
     @ConfigGroup
     public static class Profile {

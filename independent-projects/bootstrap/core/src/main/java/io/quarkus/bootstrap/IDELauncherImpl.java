@@ -5,11 +5,12 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.devmode.DependenciesFilter;
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.model.gradle.QuarkusModel;
+import io.quarkus.bootstrap.model.gradle.WorkspaceModule;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.bootstrap.resolver.model.QuarkusModel;
-import io.quarkus.bootstrap.resolver.model.WorkspaceModule;
+import io.quarkus.bootstrap.util.PathsUtils;
 import io.quarkus.bootstrap.util.QuarkusModelHelper;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 import java.io.Closeable;
@@ -25,7 +26,11 @@ import java.util.Map;
  */
 public class IDELauncherImpl implements Closeable {
 
+    public static final String FORCE_COLOR_SUPPORT = "io.quarkus.force-color-support";
+
     public static Closeable launch(Path classesDir, Map<String, Object> context) {
+        System.setProperty(FORCE_COLOR_SUPPORT, "true");
+        System.setProperty("quarkus.test.basic-console", "true"); //IDE's don't support raw mode
         final Path projectDir = BuildToolHelper.getProjectDir(classesDir);
         if (projectDir == null) {
             throw new IllegalStateException("Failed to locate project dir for " + classesDir);
@@ -52,10 +57,11 @@ public class IDELauncherImpl implements Closeable {
                 for (WorkspaceModule additionalModule : quarkusModel.getWorkspace().getAllModules()) {
                     if (!additionalModule.getArtifactCoords().equals(launchingModule.getArtifactCoords())) {
                         builder.addAdditionalApplicationArchive(new AdditionalDependency(
-                                QuarkusModelHelper.toPathsCollection(additionalModule.getSourceSet().getSourceDirectories()),
+                                PathsUtils.toPathsCollection(additionalModule.getSourceSet().getSourceDirectories()),
                                 true, false));
                         builder.addAdditionalApplicationArchive(new AdditionalDependency(
-                                additionalModule.getSourceSet().getResourceDirectory().toPath(), true, false));
+                                PathsUtils.toPathsCollection(additionalModule.getSourceSet().getResourceDirectories()),
+                                true, false));
                     }
                 }
             } else {

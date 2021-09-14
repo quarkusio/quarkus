@@ -3,912 +3,326 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Getting started with Reactive
+= Getting Started With Reactive
 
 include::./attributes.adoc[]
 
-Learn how to create a reactive application with Quarkus and explore the different reactive features offered by Quarkus.
-This guide covers:
+_Reactive_ is a set of principles to build robust, efficient, and concurrent applications and systems.
+These principles let you handle more load than traditional approaches while using the resources (CPU and memory) more efficiently while also reacting to failures gracefully.
 
-* A quick glance at the Quarkus engine and how it enables reactive
-* A brief introduction to Mutiny - the reactive programming library used by Quarkus
-* The difference between RESTEasy, RESTEasy Reactive and Reactive Routes
-* The bootstrap of a reactive application using RESTEasy Reactive
-* Creating a reactive JAX-RS endpoint (asynchronous, streams...)
-* Using reactive database access
-* Interacting with other reactive APIs
+Quarkus is a _Reactive_ framework.
+Since the beginning, _Reactive_ has been an essential tenet of the Quarkus architecture.
+It includes many reactive features and offers a broad ecosystem.
+
+This guide is not an in-depth article about what _Reactive_ is and how Quarkus enables reactive architectures.
+If you want to read more about these topics, refer to xref:quarkus-reactive-architecture.adoc[], which provides an overview of the Quarkus reactive ecosystem.
+
+In this guide, we will get you started with some reactive features of Quarkus.
+We are going to implement a simple CRUD application.
+Yet, unlike in the xref:hibernate-orm-panache.adoc[Hibernate with Panache guide], it uses the reactive features of Quarkus.
+
+This guide will help you with:
+
+* Bootstrapping a reactive CRUD application with Quarkus
+* Using Hibernate Reactive with Panache to interact with a database in a reactive fashion
+* Using RESTEasy Reactive to implement HTTP API while enforcing the reactive principle
+* Packaging and Running the application
 
 == Prerequisites
 
 To complete this guide, you need:
 
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
+* around 15 minutes
+* your favorite IDE
+* Java 11+ installed with `JAVA_HOME` configured appropriately.
 * Apache Maven {maven-version}
 
-== Solutions
+NOTE: Verify that Maven is using the Java version you expect.
+If you have multiple JDKs installed, make sure Maven is using the expected one.
+You can verify which JDK Maven uses by running `mvn --version.`
 
-We recommend that you follow the instructions from <<bootstrapping-the-project,Bootstrapping project>> and onwards to create the application step by step.
+== Imperative vs. Reactive: a question of threads
 
-However, you can go right to the completed example.
+As mentioned above, in this guide, we are going to implement a reactive CRUD application.
+But you may wonder what the differences and benefits are in comparison to the traditional and imperative model.
 
-Download an {quickstarts-archive-url}[archive] or clone the git repository:
+To better understand the contrast, we need to explain the difference between the reactive and imperative execution models.
+It's essential to comprehend that _Reactive_ is not just a different execution model, but that distinction is necessary to understand this guide.
 
-[source,bash,subs=attributes+]
-----
-git clone {quickstarts-clone-url}
-----
+In the traditional and imperative approach, frameworks assign a thread to handle the request.
+So, the whole processing of the request runs on this worker thread.
+This model does not scale very well.
+Indeed, to handle multiple concurrent requests, you need multiple threads; and so your application concurrency is constrained by the number of threads.
+In addition, these threads are blocked as soon as your code interacts with remote services.
+So, it leads to inefficient usage of the resources, as you may need more threads, and each thread, as they are mapped to OS threads, has a cost in terms of memory and CPU.
 
-The solutions are located in the `getting-started-reactive` and `getting-started-reactive-crud` directories.
+image::blocking-threads.png[alt=Imperative Execution Model and Worker Threads, width=50%, align=center]
 
-== The multiple reactive facets of Quarkus
+On the other side, the reactive model relies on non-blocking I/Os and a different execution model.
+Non-blocking I/O provides an efficient way to deal with concurrent I/O.
+A minimal amount of threads called I/O threads, can handle many concurrent I/O.
+With such a model, request processing is not delegated to a worker thread but uses these I/O threads directly.It saves memory and CPU as there is no need to create worker threads to handle the requests.
+It also improves the concurrency as it removes the constraint on the number of threads.
+Finally, it also improves response time as it reduces the number of thread switches.
 
-Quarkus is reactive.
-If you look under the hood, you will find a reactive engine powering your Quarkus application.
-This engine is Eclipse Vert.x (https://vertx.io).
-All network I/O passes through the non-blocking and reactive Vert.x engine.
+image::reactive-thread.png[alt=Reactive Execution Model and I/O Threads, width=50%, align=center]
 
-image:quarkus-reactive-stack.png[alt=Quarkus is based on a reactive engine, 70%]
 
-Let's take 2 examples to explain how it works.
-Imagine an incoming HTTP request.
-The (Vert.x) HTTP server, embedded in Quarkus, receives the request and then routes it to the application.
-If the request targets an _imperative_ method (traditional JAX-RS, code annotated with `@Blocking`...), the routing layer invokes the resource method in a _worker_ thread and writes the response when the data is available.
-So far, nothing new or outstanding.
-The following picture depicts this behavior.
-In this case, the application code is invoked on a worker thread, and the business logic can block that thread.
+== From sequential to continuation style
 
-image:http-blocking-sequence.png[alt=Behavior when using the imperative routes, 70%]
+So, with the reactive execution model, the requests are processed using I/O threads.
+But that's not all.
+An I/O thread can handle multiple concurrent requests.
+How? Here is the trick and one of the most significant differences between reactive and imperative.
 
-But, if the HTTP request targets a reactive method (JAX-RS using RESTEasy Reactive, reactive routes, `@Incoming` method not annotated with `@Blocking`...), the routing layer invokes the route on the I/O thread giving lots of benefits such as higher concurrency and performance:
+When processing a request requires interacting with a remote service, like an HTTP API or a database, it does not block the execution while waiting for the response.
+Instead, it schedules the I/O operation and attaches a continuation, i.e., the request processing remaining code.
+This continuation can be passed as a callback (a function invoked with the I/O outcome), or use more advanced constructs such as reactive programming or co-routines.
+Regardless of how the continuation is expressed, the essential aspect is the release of the I/O thread and, as a consequence, the fact that this thread can be used to process another request.
+When the scheduled I/O completes, the I/O thread executes the continuation, and the processing of the pending request continues.
 
-image:http-reactive-sequence.png[alt=Behavior when using the reactive routes, 70%]
+So, unlike the imperative model, where I/O blocks the execution, reactive switches to a continuation-based design, where the I/O threads are released, and continuation invoked when the I/Os complete.
+As a result, the I/O thread can handle multiple concurrent requests, improving the overall concurrency of the application.
 
-Because Quarkus uses the I/O thread to invoke your code, we save context-switches, avoid large thread pool management, and so improve the resource utilization.
-However, the code must **NOT** block that thread.
-Why? Because, I/O threads are used to handle multiple concurrent requests.
-As soon as the handling of a request cannot make progress because it needs to execute some I/O, it schedules these I/O and passes a continuation.
-It releases the thread which can handle another request.
-When the scheduled I/O complete, the continuation is executed, back on the I/O thread.
+But, there is a catch.
+We need a way to write continuation-passing code.
+There are many ways of doing this.
+In Quarkus, we propose:
 
-As a consequence, many Quarkus components are designed with reactive in mind, such as database access (PostgreSQL, MySQL, Mongo, etc.), application services (mail, template engine, etc.), messaging (Kafka, AMQP, etc.) and so on.
-But, to fully benefit from this model, the application code should be written in a non-blocking manner.
-That’s where having a reactive API is an ultimate weapon.
+* Mutiny - an intuitive and event-driven reactive programming library
+* Kotlin co-routines - a way to write asynchronous code in a sequential manner
 
-[[mutiny]]
-== Mutiny - A reactive programming library
+In this guide, we will use Mutiny.
+To know more about Mutiny, check the xref:mutiny-primer.adoc[Mutiny documentation].
 
-https://github.com/smallrye/smallrye-mutiny[Mutiny] is a reactive programming library allowing to express and compose asynchronous actions.
-It offers two types:
+NOTE: Project Loom is coming to the JDK soon and proposes a virtual thread-based model.
+The Quarkus architecture is ready to support Loom as soon as it's become globally available.
 
-* `io.smallrye.mutiny.Uni` - for asynchronous action providing 0 or 1 result
-* `io.smallrye.mutiny.Multi` - for multi-item (with back-pressure) streams
+== Bootstrapping the Reactive Fruits application
 
-Both types are lazy and follow a subscription pattern.
-The computation only starts once there is an actual need for it (i.e. a subscriber enlists).
+With this in mind, let's see how we can develop a CRUD application with Quarkus, which will use the I/O thread to handle the HTTP requests, interact with a database, process the result, and write the HTTP response; in other words: a reactive CRUD application.
 
-[source, java]
-----
-uni.subscribe().with(
-    result -> System.out.println("result is " + result),
-    failure -> failure.printStackTrace()
-);
+While we recommend you to follow the step-by-step instructions, you can find the final solution on https://github.com/quarkusio/quarkus-quickstarts/tree/main/hibernate-reactive-panache-quickstart.
 
-multi.subscribe().with(
-    item -> System.out.println("Got " + item),
-    failure -> failure.printStackTrace()
-);
-----
+First, go to https://code.quarkus.io[code.quarkus.io] and select the following extensions:
 
-Both `Uni` and `Multi` expose event-driven APIs: you express what you want to do upon a given event (success, failure, etc.).
-These APIs are divided into groups (types of operations) to make it more expressive and avoid having 100s of methods attached to a single class.
-The main types of operations are about reacting to failure, completion, manipulating items, extracting, or collecting them.
-It provides a smooth coding experience, with a navigable API, and the result does not require too much knowledge around reactive.
+1. RESTEasy Reactive Jackson
+2. Hibernate Reactive with Panache
+3. Reactive PostgreSQL client
 
-[source, java]
-----
-httpCall
-    .onFailure().recoverWithItem("my fallback");
-----
+image::reactive-guide-code.png[alt=Extensions to select in https://code.quarkus.io,width=90%,align=center]
 
-You may wonder about Reactive Streams (https://www.reactive-streams.org/).
-`Multi` implements Reactive Streams `Publisher`, and so implements the Reactive Streams back-pressure mechanism.
-`Uni` does not implement `Publisher` as the subscription to the `Uni` is enough to indicate you are interested in the result.
-It is again with the idea of simpler and smoother APIs in mind as the Reactive Streams subscription/request ceremony is more complex.
+The last extension is the reactive database driver for PostgreSQL.
+Hibernate Reactive uses that driver to interact with the database without blocking the caller thread.
 
-Embracing the unification of reactive and imperative pillars from Quarkus, both `Uni` and `Multi` provide bridges to imperative constructs.
-For example, you can transform a `Multi` into an `Iterable` or _await_ the item produced by a `Uni`.
+Once selected, click on "Generate your application", download the zip file, unzip it and open the code in your favorite IDE.
+
+== Reactive Panache Entity
+
+Let's start with the `Fruit` entity.Create the `src/main/java/org/acme/hibernate/orm/panache/Fruit.java` file with the following content:
 
 [source, java]
 ----
-// Block until the result is available
-String result = uni.await().indefinitely();
+package org.acme.hibernate.orm.panache;
 
-// Transform an asynchronous stream into a blocking iterable
-stream.subscribe().asIterable().forEach(s -> System.out.println("Item is " + s));
-----
+import javax.persistence.Cacheable;
+import javax.persistence.Column;
+import javax.persistence.Entity;
 
-At that point, if you are a RxJava or a Reactor user, you may wonder how you can use your familiar `Flowable`, `Single`, `Flux`, `Mono`...
-Mutiny allows converting `Unis` and `Multis` from and to RX Java and Reactor types:
+import io.quarkus.hibernate.reactive.panache.PanacheEntity;  // <1>
 
-[source, java]
-----
-Maybe<String> maybe = uni.convert().with(UniRxConverters.toMaybe());
-Flux<String> flux = multi.convert().with(MultiReactorConverters.toFlux());
-----
+@Entity
+@Cacheable
+public class Fruit extends PanacheEntity {
 
-But, what about Vert.x?
-Vert.x APIs are also available using Mutiny types.
-The following snippet shows a usage of the Vert.x Web Client:
+	 @Column(length = 40, unique = true)
+	 public String name;
 
-[source, java]
-----
-// Use io.vertx.mutiny.ext.web.client.WebClient
-client = WebClient.create(vertx,
-                new WebClientOptions().setDefaultHost("fruityvice.com").setDefaultPort(443).setSsl(true)
-                        .setTrustAll(true));
-// ...
-Uni<JsonObject> uni =
-    client.get("/api/fruit/" + name)
-        .send()
-        .onItem().transform(resp -> {
-            if (resp.statusCode() == 200) {
-                return resp.bodyAsJsonObject();
-            } else {
-                return new JsonObject()
-                        .put("code", resp.statusCode())
-                        .put("message", resp.bodyAsString());
-            }
-        });
-----
-
-Last but not least, Mutiny has built-in integration with SmallRye Context Propagation so you can propagate transactions, traceability data, and so on in your reactive pipeline.
-
-But enough talking, let's get our hands dirty!
-
-== Bootstrapping the project
-
-There are several ways to implement reactive application with Quarkus.
-In this guide we are going to use RESTEasy Reactive, an implementation of RESTEasy benefiting from the Quarkus reactive engine.
-By default, it invokes the HTTP endpoint on the I/O thread.
-
-IMPORTANT: While it's possible to use _traditional_ RESTEasy, you would need to add the `quarkus-resteasy-mutiny` extension, and the method will still be invoked on a _worker_ thread.
-So, while it would use reactive programming, it would still require worker threads, which defeats the purpose.
-
-The easiest way to create a new Quarkus project is to open a terminal and run the following command:
-
-For Linux and macOS users
-
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=getting-started-reactive \
-    -DclassName="org.acme.getting.started.ReactiveGreetingResource" \
-    -Dpath="/hello" \
-    -Dextensions="resteasy-reactive"
-cd getting-started-reactive
-----
-
-For Windows users
-
-- If using cmd, (don't use forward slash `\`)
-
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create -DprojectGroupId=org.acme -DprojectArtifactId=getting-started-reactive -DclassName="org.acme.getting.started.ReactiveGreetingResource" -Dpath="/hello" -Dextensions="resteasy-reactive"
-----
-
-- If using Powershell, wrap `-D` parameters in double quotes
-
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create "-DprojectGroupId=org.acme" "-DprojectArtifactId=getting-started-reactive" "-DclassName=org.acme.getting.started.ReactiveGreetingResource" "-Dpath=/hello" "-Dextensions=resteasy-reactive"
-----
-
-It generates the following in  `./getting-started-reactive`:
-
-* the Maven structure
-* an `org.acme.quickstart.ReactiveGreetingResource` resource exposed on `/hello`
-* an associated unit test
-* a landing page that is accessible on `http://localhost:8080` after starting the application
-* example `Dockerfile` files for both `native` and `jvm` modes in `src/main/docker`
-* the application configuration file
-
-=== Reactive JAX-RS resources
-
-During the project creation, the `src/main/java/org/acme/getting/started/ReactiveGreetingResource.java` file has been created with the following content:
-
-[source,java]
-----
-package org.acme.getting.started;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
-@Path("/hello")
-public class ReactiveGreetingResource {
-
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public String hello() {
-        return "Hello RESTEasy Reactive";
-    }
 }
 ----
+1. Make sure you import the reactive variant of `PanacheEntity`.
 
-It's a very simple REST endpoint, returning "Hello RESTEasy Reactive" to requests on "/hello".
-As it uses RESTEAsy Reactive, this method is called on the I/O thread.
+This class represents `Fruits`.
+It's a straightforward entity with a single field (`name`).
+Note that it uses `io.quarkus.hibernate.reactive.panache.PanacheEntity`, the reactive variant of `PanacheEntity`.
+So, behind the scenes, Hibernate uses the execution model we described above.
+It interacts with the database without blocking the thread.
+In addition, this reactive `PanacheEntity` proposes a reactive API.
+We will use this API to implement the REST endpoint.
 
-[NOTE]
-====
-To instruct Quarkus to invoke this method on a _worker_ thread, annotate it with the `io.smallrye.common.annotation.Blocking` annotation.
-You can use `@Blocking` on a method, class or enable it for the whole application by annotated an `Application` class:
-
-[source, java]
-----
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.core.Application;
-import io.smallrye.common.annotation.Blocking;
-
-@ApplicationPath("/")
-@Blocking
-public class RestBlockingApplication extends Application {
-}
-----
-====
-
-Let's now create a `ReactiveGreetingService` class with the following content:
-
-[source, java]
-----
-package org.acme.getting.started;
-
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
-
-import javax.enterprise.context.ApplicationScoped;
-import java.time.Duration;
-
-@ApplicationScoped
-public class ReactiveGreetingService {
-
-    public Uni<String> greeting(String name) {
-        return Uni.createFrom().item(name)
-                .onItem().transform(n -> String.format("hello %s", n));
-    }
-}
-----
-
-Then, edit the `ReactiveGreetingResource` class to match the following content:
-
-[source, java]
-----
-package org.acme.getting.started;
-
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
-import org.reactivestreams.Publisher;
-
-@Path("/hello")
-public class ReactiveGreetingResource {
-
-    @Inject
-    ReactiveGreetingService service;
-
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    @Path("/greeting/{name}")
-    public Uni<String> greeting(String name) {
-        return service.greeting(name);
-    }
-
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public String hello() {
-        return "hello";
-    }
-}
-----
-
-The `ReactiveGreetingService` class contains a straightforward method producing a `Uni`.
-While, in this example, the resulting item is emitted immediately, you can imagine any async API producing a `Uni`.
-We cover this later in this guide.
-
-Now, start the application using:
-
-[source,bash]
-----
-./mvnw quarkus:dev
-----
-
-Once running, check you get the expected greeting message by opening http://localhost:8080/hello/greeting/neo.
-
-== Handling streams
-So far, we only return an asynchronous result.
-In this section, we extend the application with streams conveying multiple items.
-These streams could come from Kafka or any other source of data, but to keep things simple, we just generate periodic greeting messages.
-
-In the `ReactiveGreetingService`, add the following method:
-
-[source, java]
-----
-public Multi<String> greetings(int count, String name) {
-  return Multi.createFrom().ticks().every(Duration.ofSeconds(1))
-        .onItem().transform(n -> String.format("hello %s - %d", name, n))
-        .select().first(count);
-}
-----
-
-TIP: you may need to add the `import io.smallrye.mutiny.Multi;` and `import java.time.Duration;` statements.
-
-It generates a greeting message every second and stops after `count` messages.
-
-In the `ReactiveGreetingResource` add the following method:
-
-[source, java]
-----
-@GET
-@Produces(MediaType.APPLICATION_JSON)
-@Path("/greeting/{count}/{name}")
-public Multi<String> greetings(int count, String name) {
-  return service.greetings(count, name);
-}
-----
-
-This endpoint streams the items to the client as a JSON Array.
-The name and number of messages are parameterized using path parameters.
-
-So calling the endpoint produces something like:
-
-[source,shell]
-----
-$ curl http://localhost:8080/hello/greeting/3/neo
-["hello neo - 0", "hello neo - 1", "hello neo - 2"]
-----
-
-We can also generate Server-Sent Event responses by returning a `Multi`:
-
-[source, java]
-----
-@GET
-@Produces(MediaType.SERVER_SENT_EVENTS)
-@RestSseElementType(MediaType.TEXT_PLAIN)
-@Path("/stream/{count}/{name}")
-public Multi<String> greetingsAsStream(int count, String name) {
-    return service.greetings(count, name);
-}
-----
-
-The only difference with the previous snippet is the produced type and the `@RestSseElementType` annotation indicating the type of each event.
-As the `@Produces` annotation defines `SERVER_SENT_EVENTS`, JAX-RS needs it to knows the content type of each (nested) event.
-
-TIP: You may need to add the `import org.jboss.resteasy.reactive.RestSseElementType;` statement.
-
-You can see the result using:
-
-[source,shell]
-----
-$ curl -N http://localhost:8080/hello/stream/5/neo
-data: hello neo - 0
-
-data: hello neo - 1
-
-data: hello neo - 2
-
-data: hello neo - 3
-
-data: hello neo - 4
-----
-
-== Using Reactive APIs
-
-=== Using Quarkus reactive APIs
-
-Quarkus provides many reactive APIs using the Mutiny model.
-In this section, we are going to see how you can use the Reactive PostgreSQL driver to interact with your database in a non-blocking and reactive way.
-
-Create a new project using:
-
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=getting-started-reactive-crud \
-    -DclassName="org.acme.reactive.crud.FruitResource" \
-    -Dpath="/fruits" \
-    -Dextensions="resteasy-reactive,resteasy-reactive-jackson,reactive-pg-client"
-cd getting-started-reactive-crud
-----
-
-This application is interacting with a PostgreSQL database, so you need one:
-
-[source,bash]
-----
-docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 \
-           --name postgres-quarkus-reactive -e POSTGRES_USER=quarkus_test \
-           -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test \
-           -p 5432:5432 postgres:11.2
-----
-
-Then, let's configure our datasource.
-Open the `src/main/resources/application.properties` and add the following content:
+Before going further, open the `src/main/resource/application.properties` file and add:
 
 [source, properties]
 ----
 quarkus.datasource.db-kind=postgresql
-quarkus.datasource.username=quarkus_test
-quarkus.datasource.password=quarkus_test
-quarkus.datasource.reactive.url=postgresql://localhost:5432/quarkus_test
-myapp.schema.create=true
+quarkus.hibernate-orm.database.generation=drop-and-create
 ----
 
-The 3 first lines define the datasource.
-The last line is going to be used in the application to indicate whether we insert a few items when the application gets initialized.
+It instructs the application to use PostgreSQL for the database and to handle the database schema generation.
 
-Now, let's create our _entity_.
-Create the `org.acme.reactive.crud.Fruit` class with the following content:
+In the same directory, create an `import.sql` file, which inserts a few fruits, so we don't start with an empty database in dev mode:
+
+[source, text]
+----
+INSERT INTO fruit(id, name) VALUES (nextval('hibernate_sequence'), 'Cherry');
+INSERT INTO fruit(id, name) VALUES (nextval('hibernate_sequence'), 'Apple');
+INSERT INTO fruit(id, name) VALUES (nextval('hibernate_sequence'), 'Banana');
+----
+
+In a terminal, launch the application in dev mode using: `./mvnw quarkus:dev`.
+Quarkus automatically starts a database instance for you and configure the application. Now we only need to implement the HTTP endpoint.
+
+
+== Reactive Resource
+
+Because the interaction with the database is non-blocking and asynchronous, we need to use asynchronous constructs to implement our HTTP resource.
+Quarkus uses Mutiny as its central reactive programming model.
+So, it supports returning Mutiny types (`Uni` and `Multi`) from HTTP endpoints.
+Also, our Fruit Panache entity exposes methods using these types, so we only need to implement the _glue_.
+
+Create the `src/main/java/org/acme/hibernate/orm/panache/FruitResource.java` file with the following content:
 
 [source, java]
 ----
-package org.acme.reactive.crud;
-
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.pgclient.PgPool;
-import io.vertx.mutiny.sqlclient.Row;
-import io.vertx.mutiny.sqlclient.RowSet;
-import io.vertx.mutiny.sqlclient.Tuple;
-
-import java.util.stream.StreamSupport;
-
-public class Fruit {
-
-    public Long id;
-
-    public String name;
-
-    public Fruit() {
-        // default constructor.
-    }
-
-    public Fruit(String name) {
-        this.name = name;
-    }
-
-    public Fruit(Long id, String name) {
-        this.id = id;
-        this.name = name;
-    }
-
-    public static Multi<Fruit> findAll(PgPool client) {
-        return client.query("SELECT id, name FROM fruits ORDER BY name ASC").execute()
-                // Create a Multi from the set of rows:
-                .onItem().transformToMulti(set -> Multi.createFrom().items(() -> StreamSupport.stream(set.spliterator(), false)))
-                // For each row create a fruit instance
-                .onItem().transform(Fruit::from);
-    }
-
-    public static Uni<Fruit> findById(PgPool client, Long id) {
-        return client.preparedQuery("SELECT id, name FROM fruits WHERE id = $1").execute(Tuple.of(id))
-                .onItem().transform(RowSet::iterator)
-                .onItem().transform(iterator -> iterator.hasNext() ? from(iterator.next()) : null);
-    }
-
-    public Uni<Long> save(PgPool client) {
-        return client.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)").execute(Tuple.of(name))
-                .onItem().transform(pgRowSet -> pgRowSet.iterator().next().getLong("id"));
-    }
-
-    public Uni<Boolean> update(PgPool client) {
-        return client.preparedQuery("UPDATE fruits SET name = $1 WHERE id = $2").execute(Tuple.of(name, id))
-                .onItem().transform(pgRowSet -> pgRowSet.rowCount() == 1);
-    }
-
-    public static Uni<Boolean> delete(PgPool client, Long id) {
-        return client.preparedQuery("DELETE FROM fruits WHERE id = $1").execute(Tuple.of(id))
-                .onItem().transform(pgRowSet -> pgRowSet.rowCount() == 1);
-    }
-
-    private static Fruit from(Row row) {
-        return new Fruit(row.getLong("id"), row.getString("name"));
-    }
-}
-----
-
-This _entity_ contains a few fields and methods to find, update, and delete rows from the database.
-These methods return either `Unis` or `Multis` as the produced items are emitted asynchronously when the results have been retrieved.
-Notice that the reactive PostgreSQL client already provides `Uni` and `Multi` instances.
-So you only transform the results from the database into _business-friendly_ objects.
-
-For the purposes of initializing the database when the application starts, we will create a class named `DBInit` with the following content:
-
-[source, java]
-----
-package org.acme.reactive.crud;
-
-import io.quarkus.runtime.StartupEvent;
-import io.vertx.mutiny.pgclient.PgPool;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+package org.acme.hibernate.orm.panache;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-
-@ApplicationScoped
-public class DBInit {
-
-    private final PgPool client;
-    private final boolean schemaCreate;
-
-    public DBInit(PgPool client, @ConfigProperty(name = "myapp.schema.create", defaultValue = "true") boolean schemaCreate) {
-        this.client = client;
-        this.schemaCreate = schemaCreate;
-    }
-
-    void onStart(@Observes StartupEvent ev) {
-        if (schemaCreate) {
-            initdb();
-        }
-    }
-
-    private void initdb() {
-        client.query("DROP TABLE IF EXISTS fruits").execute()
-                .flatMap(r -> client.query("CREATE TABLE fruits (id SERIAL PRIMARY KEY, name TEXT NOT NULL)").execute())
-                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Kiwi')").execute())
-                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Durian')").execute())
-                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Pomelo')").execute())
-                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Lychee')").execute())
-                .await().indefinitely();
-    }
-}
-----
-
-Then, let's use this `Fruit` class in the `FruitResource`.
-Edit the `FruitResource` class to match the following content:
-
-[source, java]
-----
-package org.acme.reactive.crud;
-
-import java.net.URI;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
-import javax.ws.rs.core.Response.Status;
 
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.pgclient.PgPool;
-
-@Path("fruits")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
+@Path("/fruits")
+@ApplicationScoped
 public class FruitResource {
 
-    private final PgPool client;
-
-    public FruitResource(PgPool client) {
-        this.client = client;
-    }
-
-    @GET
-    public Multi<Fruit> get() {
-        return Fruit.findAll(client);
-    }
-
-    @GET
-    @Path("{id}")
-    public Uni<Response> getSingle(Long id) {
-        return Fruit.findById(client, id)
-                .onItem().transform(fruit -> fruit != null ? Response.ok(fruit) : Response.status(Status.NOT_FOUND))
-                .onItem().transform(ResponseBuilder::build);
-    }
-
-    @POST
-    public Uni<Response> create(Fruit fruit) {
-        return fruit.save(client)
-                .onItem().transform(id -> URI.create("/fruits/" + id))
-                .onItem().transform(uri -> Response.created(uri).build());
-    }
-
-    @PUT
-    @Path("{id}")
-    public Uni<Response> update(Long id, Fruit fruit) {
-        return fruit.update(client)
-                .onItem().transform(updated -> updated ? Status.OK : Status.NOT_FOUND)
-                .onItem().transform(status -> Response.status(status).build());
-    }
-
-    @DELETE
-    @Path("{id}")
-    public Uni<Response> delete(Long id) {
-        return Fruit.delete(client, id)
-                .onItem().transform(deleted -> deleted ? Status.NO_CONTENT : Status.NOT_FOUND)
-                .onItem().transform(status -> Response.status(status).build());
-    }
 }
 ----
 
-This resource returns `Uni` and `Multi` instances based on the result produced by the `Fruit` class.
-
-=== Using Vert.x clients
-
-The previous example uses a _service_ provided by Quarkus.
-Also, you can use Vert.x clients directly.
-
-First of all, make sure the `quarkus-vertx` extension is present. If not, activate the extension by executing the following command:
-
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:add-extensions \
-    -Dextensions=vertx
-----
-
-Or add `quarkus-vertx` into your dependencies manually.
-
-[source, xml]
-----
-<dependency>
-	<groupId>io.quarkus</groupId>
-	<artifactId>quarkus-vertx</artifactId>
-</dependency>
-----
-
-There is a Mutiny version of the Vert.x APIs.
-This API is divided into several artifacts you can import independently:
-
-|===
-|groupId:artifactId | Description
-
-|`io.smallrye.reactive:smallrye-mutiny-vertx-core`
-|Mutiny API for Vert.x Core
-
-|`io.smallrye.reactive:smallrye-mutiny-vertx-mail-client`
-|Mutiny API for the Vert.x Mail Client
-
-|`io.smallrye.reactive:smallrye-mutiny-vertx-web-client`
-|Mutiny API for the Vert.x Web Client
-
-|`io.smallrye.reactive:smallrye-mutiny-vertx-mongo-client`
-|Mutiny API for the Vert.x Mongo Client
-
-|`io.smallrye.reactive:smallrye-mutiny-vertx-redis-client`
-|Mutiny API for the Vert.x Redis Client
-
-|`io.smallrye.reactive:smallrye-mutiny-vertx-cassandra-client`
-|Mutiny API for the Vert.x Cassandra Client
-
-|`io.smallrye.reactive:smallrye-mutiny-vertx-consul-client`
-|Mutiny API for the Vert.x Consul Client
-
-|`io.smallrye.reactive:smallrye-mutiny-vertx-kafka-client`
-|Mutiny API for the Vert.x Kafka Client
-
-|`io.smallrye.reactive:smallrye-mutiny-vertx-amqp-client`
-|Mutiny API for the Vert.x AMQP Client
-
-|`io.smallrye.reactive:smallrye-mutiny-vertx-rabbitmq-client`
-|Mutiny API for the Vert.x RabbitMQ Client
-|===
-
-You can also check the available APIs on http://smallrye.io/smallrye-reactive-utils/apidocs/.
-
-Let's take an example.
-Add the following dependency to your application:
-
-[source, xml]
-----
-<dependency>
-    <groupId>io.smallrye.reactive</groupId>
-    <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
-</dependency>
-----
-
-It provides the Mutiny API of the Vert.x Web Client.
-Then, you can use the web client as follows:
+Let's start with the `getAll` method. The `getAll` method returns all the fruits stored in the database.
+In the `FruitResource`, add the following code:
 
 [source, java]
 ----
-package org.acme.vertx;
-
-import io.smallrye.mutiny.Uni;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.WebClientOptions;
-import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.ext.web.client.WebClient;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
-@Path("/fruit-data")
-public class ResourceUsingWebClient {
-
-    private final WebClient client;
-
-    public ResourceUsingWebClient(Vertx vertx) {
-        this.client = WebClient.create(vertx,
-                new WebClientOptions().setDefaultHost("fruityvice.com").setDefaultPort(443).setSsl(true)
-                        .setTrustAll(true));
-    }
-
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{name}")
-    public Uni<JsonObject> getFruitData(@PathParam("name") String name) {
-        return client.get("/api/fruit/" + name)
-                .send()
-                .map(resp -> {
-                    if (resp.statusCode() == 200) {
-                        return resp.bodyAsJsonObject();
-                    } else {
-                        return new JsonObject()
-                                .put("code", resp.statusCode())
-                                .put("message", resp.bodyAsString());
-                    }
-                });
-    }
-
+@GET
+public Uni<List<Fruit>> get() {
+    return Fruit.listAll(Sort.by("name"));
 }
 ----
 
-There are 2 important points:
+Open http://localhost:8080/fruits to invoke this method:
 
-1. The injected Vert.x instance has the `io.vertx.mutiny.core.Vertx` type which is the Mutiny variant of Vert.x;
-2. The Web Client is created from `io.vertx.mutiny.ext.web.client.WebClient`.
-
-The Mutiny version of the Vert.x APIs also offers:
-
-* `andAwait` methods such as `sendAndAwait`. `andAwait` indicates that the caller thread is blocked until the result is available.
-Be aware not to block the event loop / IO thread that way.
-* `andForget` methods such as `writeAndForget`. `andForget` is available for method returning a `Uni`.
-`andForget` indicates that you don't need the resulting `Uni` indicating the success or failure of the operation.
-However, remember that if you don't subscribe, the operation would not be triggered.
-`andForget` manages this for you and manage the subscription.
-* `toMulti` methods allowing to transform a Vert.x `ReadStream` into a `Multi`
-* `toBlockingIterable` / `toBlockingStream` methods allowing to transform a Vert.x `ReadStream` into a blocking iterable or blocking `java.util.Stream`
-
-=== Using RxJava or Reactor APIs
-
-Mutiny provides utilities to convert RxJava 2 and Project Reactor types to `Uni` and `Multi`.
-
-RxJava 2 converters are available in the following dependency:
-
-[source, xml]
+[source, json]
 ----
-<dependency>
-    <groupId>io.smallrye.reactive</groupId>
-    <artifactId>mutiny-rxjava</artifactId>
-</dependency>
+[{"id":2,"name":"Apple"},{"id":3,"name":"Banana"},{"id":1,"name":"Cherry"},{"id":4,"name":"peach"}]
 ----
 
-So if you have an API returning RxJava 2 types (`Completable`, `Single`, `Maybe`, `Observable`, `Flowable`), you can create `Unis` and `Multis` as follows:
+We get the expected JSON array.
+RESTEasy Reactive automatically maps the list into a JSON Array, except if instructed otherwise.
+
+Look at the return type; it returns a `Uni` of `List<Fruit>`.
+`Uni` is an asynchronous type.
+It's a bit like a future.
+It's a placeholder that will get its value (item) later.
+When it receives the item (Mutiny says it _emits_ its item), you can attach some behavior.
+That's how we express the continuation: get a uni, and when the uni emits its item, execute the rest of the processing.
+
+NOTE: Reactive developers may wonder why we can't return a stream of fruits directly.
+It tends to be a bad idea when dealing with a database.
+Relational databases do not handle streaming well.
+It’s a problem of protocols not designed for this use case.
+So, to stream rows from the database, you need to keep a connection (and sometimes a transaction) open until all the rows are consumed.
+If you have slow consumers, you break the golden rule of databases: don’t hold connections for too long.
+Indeed, the number of connections is rather low, and having consumers keeping them for too long will dramatically reduce the concurrency of your application.
+So, when possible, use a `Uni<List<T>>` and load the content.
+If you have a large set of results, implement pagination.
+
+Let's continue our API with `getSingle`:
 
 [source, java]
 ----
-import io.smallrye.mutiny.converters.multi.MultiRxConverters;
-import io.smallrye.mutiny.converters.uni.UniRxConverters;
-// ...
-Uni<Void> uniFromCompletable = Uni.createFrom().converter(UniRxConverters.fromCompletable(), completable);
-Uni<String> uniFromSingle = Uni.createFrom().converter(UniRxConverters.fromSingle(), single);
-Uni<String> uniFromMaybe = Uni.createFrom().converter(UniRxConverters.fromMaybe(), maybe);
-Uni<String> uniFromEmptyMaybe = Uni.createFrom().converter(UniRxConverters.fromMaybe(), emptyMaybe);
-Uni<String> uniFromObservable = Uni.createFrom().converter(UniRxConverters.fromObservable(), observable);
-Uni<String> uniFromFlowable = Uni.createFrom().converter(UniRxConverters.fromFlowable(), flowable);
-
-Multi<Void> multiFromCompletable = Multi.createFrom().converter(MultiRxConverters.fromCompletable(), completable);
-Multi<String> multiFromSingle = Multi.createFrom().converter(MultiRxConverters.fromSingle(), single);
-Multi<String> multiFromMaybe = Multi.createFrom().converter(MultiRxConverters.fromMaybe(), maybe);
-Multi<String> multiFromEmptyMaybe = Multi.createFrom().converter(MultiRxConverters.fromMaybe(), emptyMaybe);
-Multi<String> multiFromObservable = Multi.createFrom().converter(MultiRxConverters.fromObservable(), observable);
-Multi<String> multiFromFlowable = Multi.createFrom().converter(MultiRxConverters.fromFlowable(), flowable);
+@GET
+@Path("/{id}")
+public Uni<Fruit> getSingle(Long id) {
+    return Fruit.findById(id);
+}
 ----
 
-You can also transform `Unis` and `Multis` into RxJava types:
+In this case, we use `Fruit.findById` to retrieve the fruit.
+It returns a `Uni`, which will complete when the database has retrieved the row.
+
+The `create` method allows adding a new fruit to the database:
 
 [source, java]
 ----
-Completable completable = uni.convert().with(UniRxConverters.toCompletable());
-Single<Optional<String>> single = uni.convert().with(UniRxConverters.toSingle());
-Single<String> single2 = uni.convert().with(UniRxConverters.toSingle().failOnNull());
-Maybe<String> maybe = uni.convert().with(UniRxConverters.toMaybe());
-Observable<String> observable = uni.convert().with(UniRxConverters.toObservable());
-Flowable<String> flowable = uni.convert().with(UniRxConverters.toFlowable());
-// ...
-Completable completable = multi.convert().with(MultiRxConverters.toCompletable());
-Single<Optional<String>> single = multi.convert().with(MultiRxConverters.toSingle());
-Single<String> single2 = multi.convert().with(MultiRxConverters
-        .toSingle().onEmptyThrow(() -> new Exception("D'oh!")));
-Maybe<String> maybe = multi.convert().with(MultiRxConverters.toMaybe());
-Observable<String> observable = multi.convert().with(MultiRxConverters.toObservable());
-Flowable<String> flowable = multi.convert().with(MultiRxConverters.toFlowable());
+@POST
+public Uni<Response> create(Fruit fruit) {
+    return Panache.withTransaction(fruit::persist)
+        .replaceWith(Response.ok(fruit).status(Response.Status.CREATED)::build);
+}
 ----
 
-Project Reactor converters are available in the following dependency:
+The code is a bit more involved. To write to a database, we need a transaction.
+So we use `Panache.withTransaction` to get one (asynchronously) and call the `persist` method when we receive the transaction.
+The `persist` method is also returning a `Uni`.
+This `Uni` emits the result of the insertion of the fruit in the database.
+Once the insertion completes (and that's our continuation), we create a `201 CREATED` response.
+RESTEasy Reactive automatically reads the request body as JSON and creates the `Fruit` instance.
 
-[source, xml]
+If you have https://httpie.io/[httpie] on your machine, you can try the endpoint using `http POST :8080/fruits name=peach`.
+
+Following the same ideas, you can implement the other CRUD methods.
+
+== Testing and Running
+
+Testing a reactive application is similar to testing a non-reactive one: use the HTTP endpoint and verify the HTTP responses.
+The fact that the application is reactive does not change anything.
+
+In https://github.com/quarkusio/quarkus-quickstarts/blob/main/hibernate-reactive-panache-quickstart/src/test/java/org/acme/hibernate/orm/panache/FruitsEndpointTest.java[FruitsEndpointTest.java] you can see how the test for the fruit application can be implemented.
+
+Packaging and running the application does not change either.The `./mvnw package` and `./mvnw package -Pnative` to generate a native executable works as usual.You can also package the application in a container.
+
+To run the application, don’t forget to start a database and provide the configuration to your application.
+
+For example, you can use Docker to run your database:
+
+[source, bash]
 ----
-<dependency>
-    <groupId>io.smallrye.reactive</groupId>
-    <artifactId>mutiny-reactor</artifactId>
-</dependency>
-----
-
-So if you have an API returning Reactor types (`Mono`, `Flux`), you can create `Unis` and `Multis` as follows:
-
-[source, java]
-----
-import io.smallrye.mutiny.converters.multi.MultiReactorConverters;
-import io.smallrye.mutiny.converters.uni.UniReactorConverters;
-// ...
-Uni<String> uniFromMono = Uni.createFrom().converter(UniReactorConverters.fromMono(), mono);
-Uni<String> uniFromFlux = Uni.createFrom().converter(UniReactorConverters.fromFlux(), flux);
-
-Multi<String> multiFromMono = Multi.createFrom().converter(MultiReactorConverters.fromMono(), mono);
-Multi<String> multiFromFlux = Multi.createFrom().converter(MultiReactorConverters.fromFlux(), flux);
-----
-
-You can also transform `Unis` and `Multis` into Reactor types:
-
-[source, java]
-----
-Mono<String> mono = uni.convert().with(UniReactorConverters.toMono());
-Flux<String> flux = uni.convert().with(UniReactorConverters.toFlux());
-
-Mono<String> mono2 = multi.convert().with(MultiReactorConverters.toMono());
-Flux<String> flux2 = multi.convert().with(MultiReactorConverters.toFlux());
+docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 \
+    --name postgres-quarkus -e POSTGRES_USER=quarkus \
+    -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=fruits \
+    -p 5432:5432 postgres:13.1
 ----
 
-=== Using CompletionStages or Publisher API
+Then, launch the application using:
 
-If you are facing an API using `CompletionStage`, `CompletableFuture`, or `Publisher`, you can convert back and forth.
-First, both `Uni` and `Multi` can be created from a `CompletionStage` or from a `Supplier<CompletionStage>`. For example:
-
-[source, java]
+[source, bash]
 ----
-CompletableFuture<String> future = Uni
-        // Create from a Completion Stage
-        .createFrom().completionStage(CompletableFuture.supplyAsync(() -> "hello"));
+java \
+   -Dquarkus.datasource.reactive.url=postgresql://localhost/fruits \
+   -Dquarkus.datasource.username=quarkus \
+   -Dquarkus.datasource.password=quarkus \
+   -jar target/quarkus-app/quarkus-run.jar
 ----
 
-On `Uni`, you can also produce a `CompletionStage` using `subscribeAsCompletionStage()` that produces a `CompletionStage` that would get the item or failure emitted by the `Uni`.
+Or, if you packaged your application as native executable, use:
 
-You can also create `Unis` and `Multis` from instances of `Publisher` using `createFrom().publisher(Publisher)`.
-You can transform a `Uni` into a `Publisher` using `toMulti`.
-Indeed, `Multi` implements `Publisher`.
 
-== What's next?
+[source, bash]
+----
+./target/getting-started-with-reactive-runner \
+  -Dquarkus.datasource.reactive.url=postgresql://localhost/fruits \
+  -Dquarkus.datasource.username=quarkus \
+  -Dquarkus.datasource.password=quarkus
+----
 
-This guide is an introduction to reactive in Quarkus.
-There are plenty of Quarkus features that are already reactive.
-The following list gives you a few examples:
+The parameters passed to the application are described in the datasource guide.
+There are other ways to configure the application - please check the link:config-reference#configuration_sources[configuration guide] to have an overview of the possibilities (such as env variable, .env files and so on).
 
-* link:rest-json#reactive[Using Mutiny with RestEasy]
-* link:mailer[Sending email]
-* link:mongodb#reactive[Using MongoDB] and link:mongodb-panache#reactive[MongoDB with Panache]
-* link:reactive-sql-clients[Reactive Database Clients]
-* link:vertx[Using Vert.x]
-* link:kafka[Interacting with Kafka] and link:amqp[Interacting with AMQP]
-* link:neo4j#reactive[Using Neo4J]
-* link:reactive-routes[Using reactive routes]
+== Going further
+
+This guide is a brief introduction to some reactive features offered by Quarkus.
+Quarkus is a reactive framework, and so offers a lot of reactive features.
+
+If you want to continue on this topic check:
+
+* xref:quarkus-reactive-architecture.adoc[The Quarkus Reactive Architecture]
+* xref:mutiny-primer.adoc[Mutiny - an intuitive reactive programming library]
+

@@ -67,6 +67,6 @@ open class KotlinPanacheFunctionalityTest {
 
     @Test
     fun entityManagerIsInjected() {
-        assertNotNull(Dog().getEntityManager())
+        assertNotNull(Dog.getEntityManager())
     }
 }

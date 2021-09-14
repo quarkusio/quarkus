@@ -22,8 +22,6 @@ import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpServerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
-import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
-import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 
 /**
@@ -94,20 +92,8 @@ public class HttpBinderProcessor {
 
     @BuildStep(onlyIf = HttpServerBinderEnabled.class)
     void enableHttpServerSupport(Capabilities capabilities,
-            BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProviders,
-            BuildProducer<CustomContainerRequestFilterBuildItem> customContainerRequestFilter,
             BuildProducer<io.quarkus.undertow.deployment.FilterBuildItem> servletFilters,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-
-        // Will have one or the other of these (exclusive)
-        if (capabilities.isPresent(Capability.RESTEASY)) {
-            resteasyJaxrsProviders.produce(new ResteasyJaxrsProviderBuildItem(RESTEASY_CONTAINER_FILTER_CLASS_NAME));
-            createAdditionalBean(additionalBeans, RESTEASY_CONTAINER_FILTER_CLASS_NAME);
-        } else if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
-            customContainerRequestFilter
-                    .produce(new CustomContainerRequestFilterBuildItem(RESTEASY_REACTIVE_CONTAINER_FILTER_CLASS_NAME));
-            createAdditionalBean(additionalBeans, RESTEASY_REACTIVE_CONTAINER_FILTER_CLASS_NAME);
-        }
 
         // But this might be present as well (fallback. Rest URI processing preferred)
         if (capabilities.isPresent(Capability.SERVLET)) {

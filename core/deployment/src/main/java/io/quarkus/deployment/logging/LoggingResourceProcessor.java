@@ -36,6 +36,7 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
+import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.gizmo.AnnotationCreator;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -46,7 +47,6 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.logging.CategoryBuildTimeConfig;
@@ -133,7 +133,8 @@ public final class LoggingResourceProcessor {
             Optional<ConsoleFormatterBannerBuildItem> possibleBannerBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             List<LogCleanupFilterBuildItem> logCleanupFilters) {
-        if (!launchModeBuildItem.isAuxiliaryApplication()) {
+        if (!launchModeBuildItem.isAuxiliaryApplication()
+                || launchModeBuildItem.getAuxiliaryDevModeType().orElse(null) == DevModeType.TEST_ONLY) {
             final List<RuntimeValue<Optional<Handler>>> handlers = handlerBuildItems.stream()
                     .map(LogHandlerBuildItem::getHandlerValue)
                     .collect(Collectors.toList());
@@ -151,25 +152,23 @@ public final class LoggingResourceProcessor {
             recorder.initializeLogging(log, buildLog, handlers, namedHandlers,
                     consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList()),
                     possibleSupplier);
-            if (launchModeBuildItem.getLaunchMode() != LaunchMode.NORMAL) {
-                LogConfig logConfig = new LogConfig();
-                ConfigInstantiator.handleObject(logConfig);
-                for (LogCleanupFilterBuildItem i : logCleanupFilters) {
-                    CleanupFilterConfig value = new CleanupFilterConfig();
-                    LogCleanupFilterElement filterElement = i.getFilterElement();
-                    value.ifStartsWith = filterElement.getMessageStarts();
-                    value.targetLevel = filterElement.getTargetLevel() == null ? org.jboss.logmanager.Level.DEBUG
-                            : filterElement.getTargetLevel();
-                    logConfig.filters.put(filterElement.getLoggerName(), value);
-                }
-                LoggingSetupRecorder.initializeBuildTimeLogging(logConfig, buildLog);
-                ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader()).addCloseTask(new Runnable() {
-                    @Override
-                    public void run() {
-                        InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
-                    }
-                });
+            LogConfig logConfig = new LogConfig();
+            ConfigInstantiator.handleObject(logConfig);
+            for (LogCleanupFilterBuildItem i : logCleanupFilters) {
+                CleanupFilterConfig value = new CleanupFilterConfig();
+                LogCleanupFilterElement filterElement = i.getFilterElement();
+                value.ifStartsWith = filterElement.getMessageStarts();
+                value.targetLevel = filterElement.getTargetLevel() == null ? org.jboss.logmanager.Level.DEBUG
+                        : filterElement.getTargetLevel();
+                logConfig.filters.put(filterElement.getLoggerName(), value);
             }
+            LoggingSetupRecorder.initializeBuildTimeLogging(logConfig, buildLog);
+            ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader()).addCloseTask(new Runnable() {
+                @Override
+                public void run() {
+                    InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
+                }
+            });
         }
         return new LoggingSetupBuildItem();
     }

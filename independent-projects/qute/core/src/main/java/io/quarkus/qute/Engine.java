@@ -62,6 +62,16 @@ public interface Engine {
     public List<ResultMapper> getResultMappers();
 
     /**
+     * Maps the given result to a string value. If no result mappers are available the {@link Object#toString()} value is used.
+     * 
+     * @param result Must not be null
+     * @param expression Must not be null
+     * @return the string value
+     * @see Engine#getResultMappers()
+     */
+    public String mapResult(Object result, Expression expression);
+
+    /**
      *
      * @param id
      * @param template

@@ -3,16 +3,12 @@ package io.quarkus.maven;
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.codestartLoadersBuilder;
 import static org.fusesource.jansi.Ansi.ansi;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -40,6 +36,7 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.project.codegen.CreateProjectHelper;
 import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.Prompter;
@@ -50,7 +47,6 @@ import io.quarkus.platform.tools.maven.MojoMessageWriter;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.catalog.Platform;
 import io.quarkus.registry.catalog.PlatformCatalog;
 
 /**
@@ -184,9 +180,6 @@ public class CreateProjectMojo extends AbstractMojo {
     @Component
     RemoteRepositoryManager remoteRepoManager;
 
-    @Parameter(property = "enableRegistryClient")
-    private boolean enableRegistryClient;
-
     @Parameter(property = "appConfig")
     private String appConfig;
 
@@ -214,7 +207,7 @@ public class CreateProjectMojo extends AbstractMojo {
             throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
         }
         final MojoMessageWriter log = new MojoMessageWriter(getLog());
-        final ExtensionCatalogResolver catalogResolver = enableRegistryClient
+        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
                 ? QuarkusProjectHelper.getCatalogResolver(mvn, log)
                 : ExtensionCatalogResolver.empty();
 
@@ -274,8 +267,8 @@ public class CreateProjectMojo extends AbstractMojo {
         boolean success;
         final Path projectDirPath = projectRoot.toPath();
         try {
-            sanitizeExtensions();
-            final SourceType sourceType = CreateProject.determineSourceType(extensions);
+            extensions = CreateProjectHelper.sanitizeExtensions(extensions);
+            final SourceType sourceType = CreateProjectHelper.determineSourceType(extensions);
             sanitizeOptions(sourceType);
 
             final List<ResourceLoader> codestartsResourceLoader = codestartLoadersBuilder()
@@ -348,45 +341,8 @@ public class CreateProjectMojo extends AbstractMojo {
                 throw new MojoExecutionException(
                         "No platforms are available. Please make sure your .quarkus/config.yaml configuration includes proper extensions registry configuration");
             }
-            ArtifactCoords matchedBom = null;
-            List<ArtifactCoords> matchedBoms = null;
-            for (Platform p : platformsCatalog.getPlatforms()) {
-                final ArtifactCoords bom = p.getBom();
-                if (version != null && !bom.getVersion().equals(version)) {
-                    continue;
-                }
-                if (artifactId != null && !bom.getArtifactId().equals(artifactId)) {
-                    continue;
-                }
-                if (groupId != null && !bom.getGroupId().equals(groupId)) {
-                    continue;
-                }
-                if (matchedBom != null) {
-                    if (matchedBoms == null) {
-                        matchedBoms = new ArrayList<>();
-                        matchedBoms.add(matchedBom);
-                    }
-                    matchedBoms.add(bom);
-                } else {
-                    matchedBom = bom;
-                }
-            }
-            if (matchedBoms != null) {
-                StringWriter buf = new StringWriter();
-                buf.append("Multiple platforms were matching the requested platform BOM coordinates ");
-                buf.append(groupId == null ? "*" : groupId).append(':');
-                buf.append(artifactId == null ? "*" : artifactId).append(':');
-                buf.append(version == null ? "*" : version).append(": ");
-                try (BufferedWriter writer = new BufferedWriter(buf)) {
-                    for (ArtifactCoords bom : matchedBoms) {
-                        writer.newLine();
-                        writer.append("- ").append(bom.toString());
-                    }
-                } catch (IOException e) {
-                    //
-                }
-                throw new MojoExecutionException(buf.toString());
-            }
+            final ArtifactCoords matchedBom = QuarkusProjectMojoBase.getSingleMatchingBom(groupId, artifactId, version,
+                    platformsCatalog);
             return catalogResolver.resolveExtensionCatalog(Arrays.asList(matchedBom));
         } catch (RegistryResolutionException e) {
             throw new MojoExecutionException("Failed to resolve the extensions catalog", e);
@@ -471,10 +427,6 @@ public class CreateProjectMojo extends AbstractMojo {
             }
         }
         // if package name is empty, the groupId will be used as part of the CreateProject logic
-    }
-
-    private void sanitizeExtensions() {
-        extensions = extensions.stream().filter(Objects::nonNull).map(String::trim).collect(Collectors.toSet());
     }
 
     private void printUserInstructions(File root) {

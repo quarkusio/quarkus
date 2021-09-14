@@ -62,7 +62,7 @@ public class BlockingAndNonBlockingTest {
     @Test
     public void testInvokingABlockingService() {
         HelloReply reply = greeter.sayHello(HelloRequest.newBuilder().setName("neo").build());
-        assertThat(reply.getMessage()).contains("worker-thread", "neo");
+        assertThat(reply.getMessage()).contains("executor-thread", "neo");
     }
 
     @Test

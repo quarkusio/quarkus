@@ -1,0 +1,16 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Azure Functions HTTP"
+metadata:
+  keywords:
+  - "azure"
+  - "http"
+  categories:
+  - "cloud"
+  guide: "https://quarkus.io/guides/azure-functions-http"
+  status: "preview"
+  codestart:
+    name: "azure-functions-http"
+    kind: "example"
+    languages: "java"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

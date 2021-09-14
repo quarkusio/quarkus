@@ -90,9 +90,6 @@
                         </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <javaParameters>true</javaParameters>
-                </configuration>
             </plugin>
         </plugins>
     </build>

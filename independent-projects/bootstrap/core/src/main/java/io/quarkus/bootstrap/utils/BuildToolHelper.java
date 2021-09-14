@@ -4,9 +4,9 @@ import static io.quarkus.bootstrap.util.QuarkusModelHelper.DEVMODE_REQUIRED_TASK
 import static io.quarkus.bootstrap.util.QuarkusModelHelper.ENABLE_JAR_PACKAGING;
 import static io.quarkus.bootstrap.util.QuarkusModelHelper.TEST_REQUIRED_TASKS;
 
+import io.quarkus.bootstrap.model.gradle.QuarkusModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.QuarkusGradleModelFactory;
-import io.quarkus.bootstrap.resolver.model.QuarkusModel;
 import io.quarkus.bootstrap.util.QuarkusModelHelper;
 import java.io.IOException;
 import java.nio.file.Files;

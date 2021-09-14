@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Hibernate ORM with Panache and Kotlin"
+metadata:
+  keywords:
+  - "hibernate-orm-panache-kotlin"
+  - "panache"
+  - "hibernate"
+  - "jpa"
+  - "kotlin"
+  guide: "https://quarkus.io/guides/hibernate-orm-panache-kotlin"
+  categories:
+  - "data"
+  status: "experimental"

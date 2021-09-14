@@ -1,0 +1,17 @@
+name: "Funqy Knative Events Binding"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "knative"
+  - "function"
+  - "funqy"
+  - "cloud event"
+  guide: "https://quarkus.io/guides/funqy-knative-events"
+  categories:
+  - "cloud"
+  status: "experimental"
+  codestart:
+    name: "funqy-knative-events"
+    kind: "example"
+    languages: "java"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

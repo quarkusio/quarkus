@@ -241,10 +241,6 @@ public class MediaTypeHelper {
                         && mediaType.getSubtype().toLowerCase().startsWith("xml"));
     }
 
-    public static boolean isBlacklisted(MediaType mediaType) {
-        return "application".equals(mediaType.getType()) && "signed-exchange".equals(mediaType.getSubtype());
-    }
-
     public static boolean isUnsupportedWildcardSubtype(MediaType mediaType) {
         if (mediaType.isWildcardSubtype()) {
             return !mediaType.isWildcardType() && !"application".equals(mediaType.getType());

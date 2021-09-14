@@ -2,15 +2,15 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Parameter.EMPTY;
 
-import io.quarkus.qute.Results.Result;
+import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -21,16 +21,20 @@ import java.util.stream.Stream;
 public class LoopSectionHelper implements SectionHelper {
 
     private static final String DEFAULT_ALIAS = "it";
+    private static final String ELSE = "else";
+    private static final String ALIAS = "alias";
+    private static final String ITERABLE = "iterable";
 
     private final String alias;
     private final Expression iterable;
+    private final SectionBlock elseBlock;
 
-    LoopSectionHelper(String alias, Expression iterable) {
-        this.alias = Parameter.EMPTY.equals(alias) ? DEFAULT_ALIAS : alias;
-        this.iterable = Objects.requireNonNull(iterable);
+    LoopSectionHelper(SectionInitContext context) {
+        this.alias = context.getParameterOrDefault(ALIAS, DEFAULT_ALIAS);
+        this.iterable = Objects.requireNonNull(context.getExpression(ITERABLE));
+        this.elseBlock = context.getBlock(ELSE);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
         return context.resolutionContext().evaluate(iterable).thenCompose(it -> {
@@ -48,27 +52,18 @@ public class LoopSectionHelper implements SectionHelper {
                 results.add(nextElement(iterator.next(), idx++, iterator.hasNext(), context));
             }
             if (results.isEmpty()) {
-                return ResultNode.NOOP;
+                // Execute the {#else} block if present
+                if (elseBlock != null) {
+                    return context.execute(elseBlock, context.resolutionContext());
+                } else {
+                    return ResultNode.NOOP;
+                }
             }
             if (results.size() == 1) {
                 return results.get(0);
             }
-            CompletableFuture<ResultNode> result = new CompletableFuture<>();
-            CompletableFuture<ResultNode>[] allResults = new CompletableFuture[results.size()];
-            idx = 0;
-            for (CompletionStage<ResultNode> r : results) {
-                allResults[idx++] = r.toCompletableFuture();
-            }
-            CompletableFuture
-                    .allOf(allResults)
-                    .whenComplete((v, t) -> {
-                        if (t != null) {
-                            result.completeExceptionally(t);
-                        } else {
-                            result.complete(new MultiResultNode(allResults));
-                        }
-                    });
-            return result;
+
+            return Results.process(results);
         });
     }
 
@@ -106,7 +101,7 @@ public class LoopSectionHelper implements SectionHelper {
             return elements.iterator();
         } else {
             String msg;
-            if (Result.NOT_FOUND.equals(it)) {
+            if (Results.isNotFound(it)) {
                 msg = String.format(
                         "Iteration error in template [%s] on line %s: {%s} not found, use {%<s.orEmpty} to ignore this error",
                         iterable.getOrigin().getTemplateId(), iterable.getOrigin().getLine(), iterable.toOriginalString());
@@ -130,9 +125,7 @@ public class LoopSectionHelper implements SectionHelper {
 
         public static final String HINT_ELEMENT = "<loop-element>";
         public static final String HINT_PREFIX = "<loop#";
-        private static final String ALIAS = "alias";
         private static final String IN = "in";
-        private static final String ITERABLE = "iterable";
 
         @Override
         public List<String> getDefaultAliases() {
@@ -148,9 +141,13 @@ public class LoopSectionHelper implements SectionHelper {
                     .build();
         }
 
+        public List<String> getBlockLabels() {
+            return Collections.singletonList(ELSE);
+        }
+
         @Override
         public LoopSectionHelper initialize(SectionInitContext context) {
-            return new LoopSectionHelper(context.getParameter(ALIAS), context.getExpression(ITERABLE));
+            return new LoopSectionHelper(context);
         }
 
         @Override
@@ -172,6 +169,15 @@ public class LoopSectionHelper implements SectionHelper {
                     alias = alias.equals(Parameter.EMPTY) ? DEFAULT_ALIAS : alias;
                     Scope newScope = new Scope(previousScope);
                     newScope.putBinding(alias, alias + HINT_PREFIX + iterableExpr.getGeneratedId() + ">");
+                    // Put bindings for iteration metadata
+                    newScope.putBinding("count", Expressions.typeInfoFrom(Integer.class.getName()));
+                    newScope.putBinding("index", Expressions.typeInfoFrom(Integer.class.getName()));
+                    newScope.putBinding("indexParity", Expressions.typeInfoFrom(String.class.getName()));
+                    newScope.putBinding("hasNext", Expressions.typeInfoFrom(Boolean.class.getName()));
+                    newScope.putBinding("odd", Expressions.typeInfoFrom(Boolean.class.getName()));
+                    newScope.putBinding("isOdd", Expressions.typeInfoFrom(Boolean.class.getName()));
+                    newScope.putBinding("even", Expressions.typeInfoFrom(Boolean.class.getName()));
+                    newScope.putBinding("isEven", Expressions.typeInfoFrom(Boolean.class.getName()));
                     return newScope;
                 } else {
                     // Make sure we do not try to validate against the parent context
@@ -187,17 +193,17 @@ public class LoopSectionHelper implements SectionHelper {
 
     static class IterationElement implements Mapper {
 
-        static final CompletableFuture<Object> EVEN = CompletableFuture.completedFuture("even");
-        static final CompletableFuture<Object> ODD = CompletableFuture.completedFuture("odd");
+        static final CompletedStage<Object> EVEN = CompletedStage.of("even");
+        static final CompletedStage<Object> ODD = CompletedStage.of("odd");;
 
         final String alias;
-        final CompletableFuture<Object> element;
+        final CompletedStage<Object> element;
         final int index;
         final boolean hasNext;
 
         public IterationElement(String alias, Object element, int index, boolean hasNext) {
             this.alias = alias;
-            this.element = CompletableFuture.completedFuture(element);
+            this.element = CompletedStage.of(element);
             this.index = index;
             this.hasNext = hasNext;
         }
@@ -210,9 +216,9 @@ public class LoopSectionHelper implements SectionHelper {
             // Iteration metadata
             switch (key) {
                 case "count":
-                    return CompletableFuture.completedFuture(index + 1);
+                    return CompletedStage.of(index + 1);
                 case "index":
-                    return CompletableFuture.completedFuture(index);
+                    return CompletedStage.of(index);
                 case "indexParity":
                     return index % 2 != 0 ? EVEN : ODD;
                 case "hasNext":
@@ -224,7 +230,7 @@ public class LoopSectionHelper implements SectionHelper {
                 case "even":
                     return (index % 2 != 0) ? Results.TRUE : Results.FALSE;
                 default:
-                    return Results.NOT_FOUND;
+                    return Results.notFound(key);
             }
         }
 

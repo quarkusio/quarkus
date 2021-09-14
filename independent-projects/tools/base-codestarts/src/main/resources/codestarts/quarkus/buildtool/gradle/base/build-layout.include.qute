@@ -6,8 +6,8 @@ plugins {
 
 {#insert repositories}
 repositories {
-    mavenLocal()
     mavenCentral()
+    mavenLocal()
 {#if gradle.repositories}
 {#for rep in gradle.repositories}
     maven { url "{rep.url}" }
@@ -18,7 +18,17 @@ repositories {
 
 {#insert dependencies}
 dependencies {
+{#each boms}
+    {#if it.groupId == quarkus.platform.group-id && it.version == quarkus.platform.version}
+        {#if it.artifactId == quarkus.platform.artifact-id}
     implementation enforcedPlatform("$\{quarkusPlatformGroupId}:$\{quarkusPlatformArtifactId}:$\{quarkusPlatformVersion}")
+        {#else}
+    implementation enforcedPlatform("$\{quarkusPlatformGroupId}:{it.artifactId}:$\{quarkusPlatformVersion}")
+        {/if}
+    {#else}
+    implementation enforcedPlatform('{it.groupId}:{it.artifactId}:{it.version}')
+    {/if}
+{/each}
 {#for dep in dependencies}
     implementation '{dep}'
 {/for}

@@ -3,13 +3,12 @@ package io.quarkus.deployment.dev;
 import java.io.File;
 import java.io.Serializable;
 import java.net.URL;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,6 +16,7 @@ import java.util.Set;
 
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.model.PathsCollection;
 
 /**
  * Object that is used to pass context data from the plugin doing the invocation
@@ -26,7 +26,7 @@ import io.quarkus.bootstrap.model.AppArtifactKey;
  */
 public class DevModeContext implements Serializable {
 
-    public static final CompilationUnit EMPTY_COMPILATION_UNIT = new CompilationUnit(Collections.emptySet(), null, null, null);
+    public static final CompilationUnit EMPTY_COMPILATION_UNIT = new CompilationUnit(PathsCollection.of(), null, null, null);
 
     public static final String ENABLE_PREVIEW_FLAG = "--enable-preview";
 
@@ -235,18 +235,19 @@ public class DevModeContext implements Serializable {
         private final CompilationUnit test;
 
         private final String preBuildOutputDir;
-        private final Set<String> sourceParents;
+        private final PathsCollection sourceParents;
         private final String targetDir;
 
         ModuleInfo(Builder builder) {
             this.appArtifactKey = builder.appArtifactKey;
             this.name = builder.name;
             this.projectDirectory = builder.projectDirectory;
-            this.main = new CompilationUnit(new LinkedHashSet<>(builder.sourcePaths), builder.classesPath, builder.resourcePath,
+            this.main = new CompilationUnit(builder.sourcePaths, builder.classesPath,
+                    builder.resourcePaths,
                     builder.resourcesOutputPath);
             if (builder.testClassesPath != null) {
-                this.test = new CompilationUnit(new LinkedHashSet<>(builder.testSourcePaths),
-                        builder.testClassesPath, builder.testResourcePath, builder.testResourcesOutputPath);
+                this.test = new CompilationUnit(builder.testSourcePaths,
+                        builder.testClassesPath, builder.testResourcePaths, builder.testResourcesOutputPath);
             } else {
                 this.test = null;
             }
@@ -263,15 +264,17 @@ public class DevModeContext implements Serializable {
             return projectDirectory;
         }
 
-        public Set<String> getSourceParents() {
+        public PathsCollection getSourceParents() {
             return sourceParents;
         }
 
         //TODO: why isn't this immutable?
         public void addSourcePaths(Collection<String> additionalPaths) {
-            additionalPaths.stream()
-                    .map(p -> Paths.get(p).isAbsolute() ? p : (projectDirectory + File.separator + p))
-                    .forEach(main.sourcePaths::add);
+            this.main.sourcePaths = this.main.sourcePaths.add(
+                    additionalPaths.stream()
+                            .map(p -> Paths.get(p).isAbsolute() ? p : (projectDirectory + File.separator + p))
+                            .map(Paths::get)
+                            .toArray(Path[]::new));
         }
 
         public String getPreBuildOutputDir() {
@@ -299,18 +302,18 @@ public class DevModeContext implements Serializable {
             private AppArtifactKey appArtifactKey;
             private String name;
             private String projectDirectory;
-            private Set<String> sourcePaths = Collections.emptySet();
+            private PathsCollection sourcePaths = PathsCollection.of();
             private String classesPath;
-            private String resourcePath;
+            private PathsCollection resourcePaths = PathsCollection.of();
             private String resourcesOutputPath;
 
             private String preBuildOutputDir;
-            private Set<String> sourceParents = Collections.emptySet();
+            private PathsCollection sourceParents = PathsCollection.of();
             private String targetDir;
 
-            private Set<String> testSourcePaths = Collections.emptySet();
+            private PathsCollection testSourcePaths = PathsCollection.of();
             private String testClassesPath;
-            private String testResourcePath;
+            private PathsCollection testResourcePaths = PathsCollection.of();
             private String testResourcesOutputPath;
 
             public Builder setAppArtifactKey(AppArtifactKey appArtifactKey) {
@@ -328,7 +331,7 @@ public class DevModeContext implements Serializable {
                 return this;
             }
 
-            public Builder setSourcePaths(Set<String> sourcePaths) {
+            public Builder setSourcePaths(PathsCollection sourcePaths) {
                 this.sourcePaths = sourcePaths;
                 return this;
             }
@@ -338,8 +341,8 @@ public class DevModeContext implements Serializable {
                 return this;
             }
 
-            public Builder setResourcePath(String resourcePath) {
-                this.resourcePath = resourcePath;
+            public Builder setResourcePaths(PathsCollection resourcePaths) {
+                this.resourcePaths = resourcePaths;
                 return this;
             }
 
@@ -353,7 +356,7 @@ public class DevModeContext implements Serializable {
                 return this;
             }
 
-            public Builder setSourceParents(Set<String> sourceParents) {
+            public Builder setSourceParents(PathsCollection sourceParents) {
                 this.sourceParents = sourceParents;
                 return this;
             }
@@ -363,7 +366,7 @@ public class DevModeContext implements Serializable {
                 return this;
             }
 
-            public Builder setTestSourcePaths(Set<String> testSourcePaths) {
+            public Builder setTestSourcePaths(PathsCollection testSourcePaths) {
                 this.testSourcePaths = testSourcePaths;
                 return this;
             }
@@ -373,8 +376,8 @@ public class DevModeContext implements Serializable {
                 return this;
             }
 
-            public Builder setTestResourcePath(String testResourcePath) {
-                this.testResourcePath = testResourcePath;
+            public Builder setTestResourcePaths(PathsCollection testResourcePaths) {
+                this.testResourcePaths = testResourcePaths;
                 return this;
             }
 
@@ -390,19 +393,20 @@ public class DevModeContext implements Serializable {
     }
 
     public static class CompilationUnit implements Serializable {
-        private final Set<String> sourcePaths;
+        private PathsCollection sourcePaths;
         private final String classesPath;
-        private final String resourcePath;
+        private final PathsCollection resourcePaths;
         private final String resourcesOutputPath;
 
-        public CompilationUnit(Set<String> sourcePaths, String classesPath, String resourcePath, String resourcesOutputPath) {
+        public CompilationUnit(PathsCollection sourcePaths, String classesPath, PathsCollection resourcePaths,
+                String resourcesOutputPath) {
             this.sourcePaths = sourcePaths;
             this.classesPath = classesPath;
-            this.resourcePath = resourcePath;
+            this.resourcePaths = resourcePaths;
             this.resourcesOutputPath = resourcesOutputPath;
         }
 
-        public Set<String> getSourcePaths() {
+        public PathsCollection getSourcePaths() {
             return sourcePaths;
         }
 
@@ -410,8 +414,8 @@ public class DevModeContext implements Serializable {
             return classesPath;
         }
 
-        public String getResourcePath() {
-            return resourcePath;
+        public PathsCollection getResourcePaths() {
+            return resourcePaths;
         }
 
         public String getResourcesOutputPath() {

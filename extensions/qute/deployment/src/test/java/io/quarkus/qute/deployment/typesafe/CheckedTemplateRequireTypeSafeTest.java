@@ -1,6 +1,11 @@
 package io.quarkus.qute.deployment.typesafe;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -18,10 +23,31 @@ public class CheckedTemplateRequireTypeSafeTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(Templates.class)
-                    .addAsResource(new StringAsset("Hello {name}! {any}"),
+                    .addClasses(Templates.class, Fool.class)
+                    .addAsResource(new StringAsset(
+                            "Hello {name}!"
+                                    + "{any} "
+                                    + "{inject:fool.getJoke(identifier)} "
+                                    + "{#each name.chars.iterator}"
+                                    + "{! {index} is not considered an error because the binding is registered by the loop section !}"
+                                    + "{index}. {it}"
+                                    + "{/each}"),
                             "templates/CheckedTemplateRequireTypeSafeTest/hola.txt"))
-            .setExpectedException(TemplateException.class);
+            .assertException(t -> {
+                Throwable e = t;
+                TemplateException te = null;
+                while (e != null) {
+                    if (e instanceof TemplateException) {
+                        te = (TemplateException) e;
+                        break;
+                    }
+                    e = e.getCause();
+                }
+                assertNotNull(te);
+                assertTrue(te.getMessage().contains("Found template problems (2)"), te.getMessage());
+                assertTrue(te.getMessage().contains("any"), te.getMessage());
+                assertTrue(te.getMessage().contains("identifier"), te.getMessage());
+            });
 
     @Test
     public void testValidation() {
@@ -32,6 +58,16 @@ public class CheckedTemplateRequireTypeSafeTest {
     static class Templates {
 
         static native TemplateInstance hola(String name);
+
+    }
+
+    @Singleton
+    @Named
+    public static class Fool {
+
+        public String getJoke(Integer id) {
+            return "ok";
+        }
 
     }
 

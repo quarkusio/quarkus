@@ -546,7 +546,8 @@ public class DeploymentInjectingDependencyVisitor {
             collectingTopRuntimeNodes = false;
             final ExtensionDependency extDep = getExtensionDependency();
             final DependencyNode originalNode = collectDependencies(info.runtimeArtifact, extDep.exclusions);
-            final DependencyNode rtNode = extDep.runtimeNode;
+            final DefaultDependencyNode rtNode = (DefaultDependencyNode) extDep.runtimeNode;
+            rtNode.setRepositories(originalNode.getRepositories());
             // if this node has conditional dependencies on its own, they may have been activated by this time
             // in which case they would be included into its children
             List<DependencyNode> currentChildren = rtNode.getChildren();

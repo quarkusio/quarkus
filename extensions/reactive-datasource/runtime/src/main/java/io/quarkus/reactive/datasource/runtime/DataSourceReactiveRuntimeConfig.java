@@ -28,7 +28,6 @@ public class DataSourceReactiveRuntimeConfig {
 
     /**
      * The datasource pool maximum size.
-     * Note that a separate pool instance is started for each thread using it: the size limits each individual pool instance.
      */
     @ConfigItem
     public OptionalInt maxSize = OptionalInt.empty();
@@ -88,8 +87,7 @@ public class DataSourceReactiveRuntimeConfig {
     public PfxConfiguration keyCertificatePfx = new PfxConfiguration();
 
     /**
-     * Deprecated: this will be removed with no replacement.
-     * We always return a threadsafe pool now, using a separate Pool instance for each Thread.
+     * Deprecated: this was removed and is no longer available.
      * 
      * @Deprecated
      */

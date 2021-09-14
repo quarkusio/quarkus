@@ -1,14 +1,21 @@
 package io.quarkus.elytron.security.jdbc;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.vertx.http.deployment.devmode.tests.TestStatus;
+import io.quarkus.vertx.http.testrunner.ContinuousTestingTestUtils;
 import io.restassured.RestAssured;
 
 //see https://github.com/quarkusio/quarkus/issues/9296
@@ -20,10 +27,22 @@ public class CustomRoleDecoderDevModeTest extends JdbcSecurityRealmTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(testClassesWithCustomRoleDecoder)
-                    .addAsResource("custom-role-decoder/import.sql")
-                    .addAsResource("custom-role-decoder/application.properties", "application.properties"));
+            .setArchiveProducer(() -> {
+                try (var in = CustomRoleDecoderDevModeTest.class.getClassLoader()
+                        .getResourceAsStream("custom-role-decoder/application.properties")) {
+                    return ShrinkWrap.create(JavaArchive.class)
+                            .addClasses(testClassesWithCustomRoleDecoder)
+                            .addClasses(JdbcSecurityRealmTest.class)
+                            .addAsResource("custom-role-decoder/import.sql")
+                            .addAsResource(
+                                    new StringAsset(ContinuousTestingTestUtils
+                                            .appProperties(new String(FileUtil.readFileContents(in), StandardCharsets.UTF_8))),
+                                    "application.properties");
+
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }).setTestArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(CustomRoleDecoderET.class));
 
     @Test
     public void testConfigChange() {
@@ -42,6 +61,18 @@ public class CustomRoleDecoderDevModeTest extends JdbcSecurityRealmTest {
         config.modifyResourceFile("application.properties",
                 s -> s.replace("quarkus.security.jdbc.principal-query.attribute-mappings.0.index=3",
                         "quarkus.security.jdbc.principal-query.attribute-mappings.0.index=2"));
+        RestAssured.given().auth().preemptive().basic("user", "user")
+                .when().get("/servlet-secured").then()
+                .statusCode(200);
+    }
+
+    @Test
+    public void testContinuousTesting() {
+        RestAssured.given().auth().preemptive().basic("user", "user")
+                .when().get("/servlet-secured").then()
+                .statusCode(200);
+        TestStatus status = ContinuousTestingTestUtils.waitForFirstRunToComplete();
+        Assertions.assertEquals(0, status.getTotalTestsFailed());
         RestAssured.given().auth().preemptive().basic("user", "user")
                 .when().get("/servlet-secured").then()
                 .statusCode(200);

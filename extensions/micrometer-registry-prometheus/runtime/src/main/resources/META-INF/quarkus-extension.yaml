@@ -1,0 +1,13 @@
+name: "Micrometer Registry Prometheus"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "micrometer"
+  - "metrics"
+  - "metric"
+  - "prometheus"
+  - "monitoring"
+  guide: "https://quarkus.io/guides/micrometer-metrics"
+  categories:
+  - "observability"
+  status: "stable"

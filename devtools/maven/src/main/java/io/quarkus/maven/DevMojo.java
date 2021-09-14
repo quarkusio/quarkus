@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,15 +38,18 @@ import org.aesh.terminal.Connection;
 import org.aesh.terminal.utils.ANSI;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.BuildBase;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
+import org.apache.maven.model.Profile;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.MojoDescriptor;
+import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -70,10 +74,13 @@ import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
+import org.fusesource.jansi.internal.Kernel32;
+import org.fusesource.jansi.internal.WindowsSupport;
 
 import io.quarkus.bootstrap.devmode.DependenciesFilter;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.deployment.dev.DevModeContext;
@@ -100,7 +107,7 @@ public class DevMojo extends AbstractMojo {
      * running any one of these phases means the compile phase will have been run, if these have
      * not been run we manually run compile
      */
-    private static final Set<String> POST_COMPILE_PHASES = new HashSet<>(Arrays.asList(
+    private static final Set<String> POST_COMPILE_PHASES = Set.of(
             "compile",
             "process-classes",
             "generate-test-sources",
@@ -117,13 +124,13 @@ public class DevMojo extends AbstractMojo {
             "post-integration-test",
             "verify",
             "install",
-            "deploy"));
+            "deploy");
 
     /**
      * running any one of these phases means the test-compile phase will have been run, if these have
      * not been run we manually run test-compile
      */
-    private static final Set<String> POST_TEST_COMPILE_PHASES = new HashSet<>(Arrays.asList(
+    private static final Set<String> POST_TEST_COMPILE_PHASES = Set.of(
             "test-compile",
             "process-test-classes",
             "test",
@@ -134,9 +141,7 @@ public class DevMojo extends AbstractMojo {
             "post-integration-test",
             "verify",
             "install",
-            "deploy"));
-    private static final String QUARKUS_PLUGIN_GROUPID = "io.quarkus";
-    private static final String QUARKUS_PLUGIN_ARTIFACTID = "quarkus-maven-plugin";
+            "deploy");
     private static final String QUARKUS_GENERATE_CODE_GOAL = "generate-code";
 
     private static final String ORG_APACHE_MAVEN_PLUGINS = "org.apache.maven.plugins";
@@ -306,11 +311,16 @@ public class DevMojo extends AbstractMojo {
     @Component
     private ToolchainManager toolchainManager;
 
+    private Map<AppArtifactKey, Plugin> pluginMap;
+
     /**
      * console attributes, used to restore the console state
      */
     private Attributes attributes;
+    private int windowsAttributes;
+    private boolean windowsAttributesSet;
     private Connection connection;
+    private boolean windowsColorSupport;
 
     @Override
     public void setLog(Log log) {
@@ -355,7 +365,7 @@ public class DevMojo extends AbstractMojo {
                     nextCheck = System.currentTimeMillis() + 100;
                     if (!runner.alive()) {
                         restoreTerminalState();
-                        if (runner.exitValue() != 0) {
+                        if (!runner.isExpectedExitValue()) {
                             throw new MojoExecutionException("Dev mode process did not complete successfully");
                         }
                         return;
@@ -398,31 +408,52 @@ public class DevMojo extends AbstractMojo {
      */
     private void saveTerminalState() {
         try {
-            new TerminalConnection(new Consumer<Connection>() {
-                @Override
-                public void accept(Connection connection) {
-                    attributes = connection.getAttributes();
-                    DevMojo.this.connection = connection;
+            windowsAttributes = WindowsSupport.getConsoleMode();
+            windowsAttributesSet = true;
+            if (windowsAttributes > 0) {
+                long hConsole = Kernel32.GetStdHandle(Kernel32.STD_INPUT_HANDLE);
+                if (hConsole != (long) Kernel32.INVALID_HANDLE_VALUE) {
+                    final int VIRTUAL_TERMINAL_PROCESSING = 0x0004; //enable color on the windows console
+                    if (Kernel32.SetConsoleMode(hConsole, windowsAttributes | VIRTUAL_TERMINAL_PROCESSING) != 0) {
+                        windowsColorSupport = true;
+                    }
                 }
-            });
-        } catch (IOException e) {
-            getLog().error(
-                    "Failed to setup console restore, console may be left in an inconsistent state if the process is killed",
-                    e);
+            }
+        } catch (Throwable t) {
+            try {
+                //this does not work on windows
+                //jansi creates an input pump thread, that will steal
+                //input from the dev mode process
+                new TerminalConnection(new Consumer<Connection>() {
+                    @Override
+                    public void accept(Connection connection) {
+                        attributes = connection.getAttributes();
+                        DevMojo.this.connection = connection;
+                    }
+                });
+            } catch (IOException e) {
+                getLog().error(
+                        "Failed to setup console restore, console may be left in an inconsistent state if the process is killed",
+                        e);
+            }
         }
     }
 
     private void restoreTerminalState() {
-        if (attributes == null || connection == null) {
-            return;
+        if (windowsAttributesSet) {
+            WindowsSupport.setConsoleMode(windowsAttributes);
+        } else {
+            if (attributes == null || connection == null) {
+                return;
+            }
+            connection.setAttributes(attributes);
+            int height = connection.size().getHeight();
+            connection.write(ANSI.MAIN_BUFFER);
+            connection.write(ANSI.CURSOR_SHOW);
+            connection.write("\u001B[0m");
+            connection.write("\033[" + height + ";0H");
+            connection.close();
         }
-        connection.setAttributes(attributes);
-        int height = connection.size().getHeight();
-        connection.write(ANSI.MAIN_BUFFER);
-        connection.write(ANSI.CURSOR_SHOW);
-        connection.write("\u001B[0m");
-        connection.write("\033[" + height + ";0H");
-        connection.close();
     }
 
     private void handleAutoCompile() throws MojoExecutionException {
@@ -469,7 +500,8 @@ public class DevMojo extends AbstractMojo {
     }
 
     private void triggerPrepare() throws MojoExecutionException {
-        executeIfConfigured(QUARKUS_PLUGIN_GROUPID, QUARKUS_PLUGIN_ARTIFACTID, QUARKUS_GENERATE_CODE_GOAL);
+        final PluginDescriptor pluginDescr = (PluginDescriptor) getPluginContext().get("pluginDescriptor");
+        executeIfConfigured(pluginDescr.getGroupId(), pluginDescr.getArtifactId(), QUARKUS_GENERATE_CODE_GOAL);
     }
 
     private void triggerCompile(boolean test) throws MojoExecutionException {
@@ -494,10 +526,12 @@ public class DevMojo extends AbstractMojo {
     }
 
     private void executeIfConfigured(String pluginGroupId, String pluginArtifactId, String goal) throws MojoExecutionException {
-        final Plugin plugin = project.getPlugin(pluginGroupId + ":" + pluginArtifactId);
+        final Plugin plugin = getConfiguredPluginOrNull(pluginGroupId, pluginArtifactId);
         if (plugin == null || plugin.getExecutions().stream().noneMatch(exec -> exec.getGoals().contains(goal))) {
             return;
         }
+        getLog().info("Invoking " + plugin.getGroupId() + ":" + plugin.getArtifactId() + ":" + plugin.getVersion() + ":" + goal
+                + " @ " + project.getArtifactId());
         executeMojo(
                 plugin(
                         groupId(pluginGroupId),
@@ -557,6 +591,17 @@ public class DevMojo extends AbstractMojo {
         }
     }
 
+    private Plugin getConfiguredPluginOrNull(String groupId, String artifactId) {
+        if (pluginMap == null) {
+            pluginMap = new HashMap<>();
+            // the original plugin keys may include property expressions, so we can't rely on the exact groupId:artifactId keys
+            for (Plugin p : project.getBuildPlugins()) {
+                pluginMap.put(new AppArtifactKey(p.getGroupId(), p.getArtifactId()), p);
+            }
+        }
+        return pluginMap.get(new AppArtifactKey(groupId, artifactId));
+    }
+
     private Map<Path, Long> readPomFileTimestamps(DevModeRunner runner) throws IOException {
         Map<Path, Long> ret = new HashMap<>();
         for (Path i : runner.pomFiles()) {
@@ -575,13 +620,14 @@ public class DevMojo extends AbstractMojo {
 
     private void addProject(MavenDevModeLauncher.Builder builder, LocalProject localProject, boolean root) throws Exception {
 
-        String projectDirectory = null;
-        Set<String> sourcePaths = null;
+        String projectDirectory;
+        Set<Path> sourcePaths;
         String classesPath = null;
-        String resourcePath = null;
-        Set<String> testSourcePaths = null;
+        Set<Path> resourcePaths;
+        Set<Path> testSourcePaths;
         String testClassesPath = null;
-        String testResourcePath = null;
+        Set<Path> testResourcePaths;
+        List<Profile> activeProfiles = Collections.emptyList();
 
         final MavenProject mavenProject = session.getProjectMap().get(
                 String.format("%s:%s:%s", localProject.getGroupId(), localProject.getArtifactId(), localProject.getVersion()));
@@ -589,15 +635,13 @@ public class DevMojo extends AbstractMojo {
             projectDirectory = localProject.getDir().toAbsolutePath().toString();
             Path sourcePath = localProject.getSourcesSourcesDir().toAbsolutePath();
             if (Files.isDirectory(sourcePath)) {
-                sourcePaths = Collections.singleton(
-                        sourcePath.toString());
+                sourcePaths = Collections.singleton(sourcePath);
             } else {
                 sourcePaths = Collections.emptySet();
             }
             Path testSourcePath = localProject.getTestSourcesSourcesDir().toAbsolutePath();
             if (Files.isDirectory(testSourcePath)) {
-                testSourcePaths = Collections.singleton(
-                        testSourcePath.toString());
+                testSourcePaths = Collections.singleton(testSourcePath);
             } else {
                 testSourcePaths = Collections.emptySet();
             }
@@ -606,13 +650,14 @@ public class DevMojo extends AbstractMojo {
             sourcePaths = mavenProject.getCompileSourceRoots().stream()
                     .map(Paths::get)
                     .filter(Files::isDirectory)
-                    .map(src -> src.toAbsolutePath().toString())
-                    .collect(Collectors.toSet());
+                    .map(Path::toAbsolutePath)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
             testSourcePaths = mavenProject.getTestCompileSourceRoots().stream()
                     .map(Paths::get)
                     .filter(Files::isDirectory)
-                    .map(src -> src.toAbsolutePath().toString())
-                    .collect(Collectors.toSet());
+                    .map(Path::toAbsolutePath)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            activeProfiles = mavenProject.getActiveProfiles();
         }
         Path sourceParent = localProject.getSourcesDir().toAbsolutePath();
 
@@ -624,16 +669,32 @@ public class DevMojo extends AbstractMojo {
         if (Files.isDirectory(testClassesDir)) {
             testClassesPath = testClassesDir.toAbsolutePath().toString();
         }
-        Path resourcesSourcesDir = localProject.getResourcesSourcesDir();
-        if (Files.isDirectory(resourcesSourcesDir)) {
-            resourcePath = resourcesSourcesDir.toAbsolutePath().toString();
-        }
-        Path testResourcesSourcesDir = localProject.getTestResourcesSourcesDir();
-        if (Files.isDirectory(testResourcesSourcesDir)) {
-            testResourcePath = testResourcesSourcesDir.toAbsolutePath().toString();
+        resourcePaths = localProject.getResourcesSourcesDirs().toList().stream()
+                .map(Path::toAbsolutePath)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        testResourcePaths = localProject.getTestResourcesSourcesDirs().toList().stream()
+                .map(Path::toAbsolutePath)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        // Add the resources and test resources from the profiles
+        for (Profile profile : activeProfiles) {
+            final BuildBase build = profile.getBuild();
+            if (build != null) {
+                resourcePaths.addAll(
+                        build.getResources().stream()
+                                .map(Resource::getDirectory)
+                                .map(localProject::resolveRelativeToBaseDir)
+                                .map(Path::toAbsolutePath)
+                                .collect(Collectors.toList()));
+                testResourcePaths.addAll(
+                        build.getTestResources().stream()
+                                .map(Resource::getDirectory)
+                                .map(localProject::resolveRelativeToBaseDir)
+                                .map(Path::toAbsolutePath)
+                                .collect(Collectors.toList()));
+            }
         }
 
-        if (classesPath == null && (!sourcePaths.isEmpty() || resourcePath != null)) {
+        if (classesPath == null && (!sourcePaths.isEmpty() || !resourcePaths.isEmpty())) {
             throw new MojoExecutionException("Hot reloadable dependency " + localProject.getAppArtifact()
                     + " has not been compiled yet (the classes directory " + classesDir + " does not exist)");
         }
@@ -643,17 +704,17 @@ public class DevMojo extends AbstractMojo {
         DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo.Builder().setAppArtifactKey(localProject.getKey())
                 .setName(localProject.getArtifactId())
                 .setProjectDirectory(projectDirectory)
-                .setSourcePaths(sourcePaths)
+                .setSourcePaths(PathsCollection.from(sourcePaths))
                 .setClassesPath(classesPath)
                 .setResourcesOutputPath(classesPath)
-                .setResourcePath(resourcePath)
-                .setSourceParents(Collections.singleton(sourceParent.toAbsolutePath().toString()))
+                .setResourcePaths(PathsCollection.from(resourcePaths))
+                .setSourceParents(PathsCollection.of(sourceParent.toAbsolutePath()))
                 .setPreBuildOutputDir(targetDir.resolve("generated-sources").toAbsolutePath().toString())
                 .setTargetDir(targetDir.toAbsolutePath().toString())
-                .setTestSourcePaths(testSourcePaths)
+                .setTestSourcePaths(PathsCollection.from(testSourcePaths))
                 .setTestClassesPath(testClassesPath)
-                .setTestResourcePath(testResourcePath)
                 .setTestResourcesOutputPath(testClassesPath)
+                .setTestResourcePaths(PathsCollection.from(testResourcePaths))
                 .build();
 
         if (root) {
@@ -677,11 +738,16 @@ public class DevMojo extends AbstractMojo {
         }
 
         boolean alive() {
-            return process == null ? false : process.isAlive();
+            return process != null && process.isAlive();
         }
 
         int exitValue() {
             return process == null ? -1 : process.exitValue();
+        }
+
+        boolean isExpectedExitValue() {
+            // '130' is what the process exits with in remote-dev mode under bash
+            return exitValue() == 0 || exitValue() == 130;
         }
 
         void run() throws Exception {
@@ -705,8 +771,8 @@ public class DevMojo extends AbstractMojo {
                     process.destroy();
                     try {
                         process.waitFor();
-                    } catch (InterruptedException ignored) {
-                        getLog().warn("Unable to properly wait for dev-mode end", ignored);
+                    } catch (InterruptedException e) {
+                        getLog().warn("Unable to properly wait for dev-mode end", e);
                     }
                 }
             }, "Development Mode Shutdown Hook"));
@@ -740,6 +806,9 @@ public class DevMojo extends AbstractMojo {
                 .deleteDevJar(deleteDevJar);
 
         setJvmArgs(builder);
+        if (windowsColorSupport) {
+            builder.jvmArgs("-Dio.quarkus.force-color-support=true");
+        }
 
         builder.projectDir(project.getFile().getParentFile());
         builder.buildSystemProperties((Map) project.getProperties());

@@ -2,6 +2,7 @@ package io.quarkus.amazon.s3.runtime;
 
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -11,41 +12,40 @@ import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
 @ApplicationScoped
 public class S3ClientProducer {
-    private volatile S3ClientBuilder syncConfiguredBuilder;
-    private volatile S3AsyncClientBuilder asyncConfiguredBuilder;
+    private final S3Client syncClient;
+    private final S3AsyncClient asyncClient;
 
-    private S3Client client;
-    private S3AsyncClient asyncClient;
+    S3ClientProducer(Instance<S3ClientBuilder> syncClientBuilderInstance,
+            Instance<S3AsyncClientBuilder> asyncClientBuilderInstance) {
+        this.syncClient = syncClientBuilderInstance.isResolvable() ? syncClientBuilderInstance.get().build() : null;
+        this.asyncClient = asyncClientBuilderInstance.isResolvable() ? asyncClientBuilderInstance.get().build() : null;
+    }
 
     @Produces
     @ApplicationScoped
     public S3Client client() {
-        client = syncConfiguredBuilder.build();
-        return client;
+        if (syncClient == null) {
+            throw new IllegalStateException("The S3Client is required but has not been detected/configured.");
+        }
+        return syncClient;
     }
 
     @Produces
     @ApplicationScoped
     public S3AsyncClient asyncClient() {
-        asyncClient = asyncConfiguredBuilder.build();
+        if (asyncClient == null) {
+            throw new IllegalStateException("The S3AsyncClient is required but has not been detected/configured.");
+        }
         return asyncClient;
     }
 
     @PreDestroy
     public void destroy() {
-        if (client != null) {
-            client.close();
+        if (syncClient != null) {
+            syncClient.close();
         }
         if (asyncClient != null) {
             asyncClient.close();
         }
-    }
-
-    public void setSyncConfiguredBuilder(S3ClientBuilder syncConfiguredBuilder) {
-        this.syncConfiguredBuilder = syncConfiguredBuilder;
-    }
-
-    public void setAsyncConfiguredBuilder(S3AsyncClientBuilder asyncConfiguredBuilder) {
-        this.asyncConfiguredBuilder = asyncConfiguredBuilder;
     }
 }

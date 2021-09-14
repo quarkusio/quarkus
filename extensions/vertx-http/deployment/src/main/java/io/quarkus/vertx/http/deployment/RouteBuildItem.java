@@ -23,70 +23,14 @@ public final class RouteBuildItem extends MultiBuildItem {
     private final Handler<RoutingContext> handler;
     private final HandlerType type;
     private final RouteType routeType;
-    private final boolean requiresLegacyRedirect;
     private final NotFoundPageDisplayableEndpointBuildItem notFoundPageDisplayableEndpoint;
     private final ConfiguredPathInfo devConsoleResolvedPathBuildItem;
 
-    /**
-     * @deprecated Use the Builder instead.
-     */
-    @Deprecated
-    public RouteBuildItem(Function<Router, Route> routeFunction, Handler<RoutingContext> handler, HandlerType type) {
-        this.routeFunction = routeFunction;
-        this.handler = handler;
-        this.type = type;
-        this.routeType = RouteType.APPLICATION_ROUTE;
-        this.requiresLegacyRedirect = false;
-        this.notFoundPageDisplayableEndpoint = null;
-        this.devConsoleResolvedPathBuildItem = null;
-    }
-
-    /**
-     * @deprecated Use the Builder instead.
-     */
-    @Deprecated
-    public RouteBuildItem(Function<Router, Route> routeFunction, Handler<RoutingContext> handler) {
-        this(routeFunction, handler, HandlerType.NORMAL);
-    }
-
-    /**
-     * @deprecated Use the Builder instead.
-     */
-    @Deprecated
-    public RouteBuildItem(String route, Handler<RoutingContext> handler, HandlerType type, boolean resume) {
-        this(new BasicRoute(route), handler, type);
-    }
-
-    /**
-     * @deprecated Use the Builder instead.
-     */
-    @Deprecated
-    public RouteBuildItem(String route, Handler<RoutingContext> handler, HandlerType type) {
-        this(new BasicRoute(route), handler, type);
-    }
-
-    /**
-     * @deprecated Use the Builder instead.
-     */
-    @Deprecated
-    public RouteBuildItem(String route, Handler<RoutingContext> handler, boolean resume) {
-        this(new BasicRoute(route), handler, HandlerType.NORMAL);
-    }
-
-    /**
-     * @deprecated Use the Builder instead.
-     */
-    @Deprecated
-    public RouteBuildItem(String route, Handler<RoutingContext> handler) {
-        this(new BasicRoute(route), handler);
-    }
-
-    RouteBuildItem(Builder builder, RouteType routeType, boolean requiresLegacyRedirect) {
+    RouteBuildItem(Builder builder, RouteType routeType) {
         this.routeFunction = builder.routeFunction;
         this.handler = builder.handler;
         this.type = builder.type;
         this.routeType = routeType;
-        this.requiresLegacyRedirect = requiresLegacyRedirect;
         this.notFoundPageDisplayableEndpoint = builder.getNotFoundEndpoint();
         this.devConsoleResolvedPathBuildItem = builder.getRouteConfigInfo();
     }
@@ -113,10 +57,6 @@ public final class RouteBuildItem extends MultiBuildItem {
 
     public boolean isAbsoluteRoute() {
         return routeType.equals(RouteType.ABSOLUTE_ROUTE);
-    }
-
-    public boolean isRequiresLegacyRedirect() {
-        return requiresLegacyRedirect;
     }
 
     public NotFoundPageDisplayableEndpointBuildItem getNotFoundPageDisplayableEndpoint() {
@@ -147,18 +87,6 @@ public final class RouteBuildItem extends MultiBuildItem {
         protected String routePath;
         protected String routeConfigKey;
         protected String absolutePath;
-
-        /**
-         * Use HttpRootPathBuildItem and NonApplicationRootPathBuildItem to
-         * ensure paths are constructed/normalized correctly
-         *
-         * @deprecated
-         * @see HttpRootPathBuildItem#routeBuilder()
-         * @see NonApplicationRootPathBuildItem#routeBuilder()
-         */
-        @Deprecated
-        public Builder() {
-        }
 
         /**
          * {@link #routeFunction(String, Consumer)} should be used instead
@@ -194,6 +122,18 @@ public final class RouteBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * @param route A normalized path used to define a basic route
+         *        (e.g. use HttpRootPathBuildItem to construct/resolve the path value). This path this is also
+         *        used on the "Not Found" page in dev mode.
+         * @param order Priority ordering of the route
+         */
+        public Builder orderedRoute(String route, Integer order) {
+            this.routeFunction = new BasicRoute(route, order);
+            this.notFoundPagePath = this.routePath = route;
+            return this;
+        }
+
         public Builder handler(Handler<RoutingContext> handler) {
             this.handler = handler;
             return this;
@@ -225,26 +165,13 @@ public final class RouteBuildItem extends MultiBuildItem {
             return this;
         }
 
-        /**
-         * @deprecated Specify the path as part of defining the route
-         * @see #route(String)
-         * @see #routeFunction(String, Consumer)
-         */
-        @Deprecated
-        public Builder displayOnNotFoundPage(String notFoundPageTitle, String notFoundPagePath) {
-            this.displayOnNotFoundPage = true;
-            this.notFoundPageTitle = notFoundPageTitle;
-            this.notFoundPagePath = notFoundPagePath;
-            return this;
-        }
-
         public Builder routeConfigKey(String attributeName) {
             this.routeConfigKey = attributeName;
             return this;
         }
 
         public RouteBuildItem build() {
-            return new RouteBuildItem(this, RouteType.APPLICATION_ROUTE, false);
+            return new RouteBuildItem(this, RouteType.APPLICATION_ROUTE);
         }
 
         protected ConfiguredPathInfo getRouteConfigInfo() {

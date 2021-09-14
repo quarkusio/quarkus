@@ -40,4 +40,11 @@ public @interface CloudEventMapping {
      * @return
      */
     String responseType() default "";
+
+    /**
+     * If there is an extra requirement to match against cloud event attributes to find the function to be triggered
+     * 
+     * @return
+     */
+    EventAttribute[] attributes() default {};
 }

@@ -1,7 +1,6 @@
 package io.quarkus.qute;
 
 import io.quarkus.qute.Expression.Part;
-import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
 import io.quarkus.qute.TemplateNode.Origin;
 import java.io.IOException;
@@ -479,7 +478,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
             int spaceIdx = content.indexOf(" ");
             String key = content.substring(spaceIdx + 1, content.length());
             String value = content.substring(1, spaceIdx);
-            currentScope.putBinding(key, Expressions.TYPE_INFO_SEPARATOR + value + Expressions.TYPE_INFO_SEPARATOR);
+            currentScope.putBinding(key, Expressions.typeInfoFrom(value));
             sectionStack.peek().currentBlock().addNode(new ParameterDeclarationNode(content, origin(0)));
         } else {
             // Expression
@@ -714,7 +713,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
             if (strParts.size() == 1) {
                 String literal = strParts.get(0);
                 Object literalValue = LiteralSupport.getLiteralValue(literal);
-                if (!Result.NOT_FOUND.equals(literalValue)) {
+                if (!Results.isNotFound(literalValue)) {
                     return ExpressionImpl.literal(idGenerator.get(), literal, literalValue, origin);
                 }
             }
@@ -738,7 +737,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
             }
             parts.add(part);
         }
-        return new ExpressionImpl(idGenerator.get(), namespace, ImmutableList.copyOf(parts), Result.NOT_FOUND, origin);
+        return new ExpressionImpl(idGenerator.get(), namespace, ImmutableList.copyOf(parts), Results.NotFound.EMPTY, origin);
     }
 
     private static Part createPart(Supplier<Integer> idGenerator, String namespace, Part first,
@@ -760,7 +759,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
         if (Expressions.isBracketNotation(value)) {
             value = Expressions.parseBracketContent(value);
             Object literal = LiteralSupport.getLiteralValue(value);
-            if (literal != null && !Result.NOT_FOUND.equals(literal)) {
+            if (literal != null && !Results.isNotFound(literal)) {
                 value = literal.toString();
             } else {
                 StringBuilder builder = new StringBuilder(literal == null ? "Null" : "Non-literal");
@@ -989,7 +988,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
     public void addParameter(String name, String type) {
         // {@org.acme.Foo foo}
         Scope currentScope = scopeStack.peek();
-        currentScope.putBinding(name, Expressions.TYPE_INFO_SEPARATOR + type + Expressions.TYPE_INFO_SEPARATOR);
+        currentScope.putBinding(name, Expressions.typeInfoFrom(type));
     }
 
     @Override

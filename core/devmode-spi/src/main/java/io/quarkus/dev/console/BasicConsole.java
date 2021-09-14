@@ -11,9 +11,16 @@ public class BasicConsole extends QuarkusConsole {
     private static final Logger log = Logger.getLogger(BasicConsole.class.getName());
     private static final Logger statusLogger = Logger.getLogger("quarkus");
 
+    private static final ThreadLocal<Boolean> DISABLE_FILTER = new ThreadLocal<>() {
+        @Override
+        protected Boolean initialValue() {
+            return false;
+        }
+    };
     final PrintStream printStream;
     final boolean inputSupport;
     final boolean noColor;
+    volatile boolean readingLine;
 
     public BasicConsole(boolean noColor, boolean inputSupport, PrintStream printStream) {
         this.noColor = noColor;
@@ -28,6 +35,14 @@ public class BasicConsole extends QuarkusConsole {
                             int val = System.in.read();
                             if (val == -1) {
                                 return;
+                            }
+                            if (readingLine) {
+                                //when doing a read line we want to discard the first \n
+                                //as this was the one that was needed to activate this mode
+                                if (val == '\n') {
+                                    readingLine = false;
+                                    continue;
+                                }
                             }
                             InputHolder handler = inputHandlers.peek();
                             if (handler != null) {
@@ -50,6 +65,12 @@ public class BasicConsole extends QuarkusConsole {
     public InputHolder createHolder(InputHandler inputHandler) {
         return new InputHolder(inputHandler) {
             @Override
+            public void doReadLine() {
+                readingLine = true;
+                System.out.print(">");
+            }
+
+            @Override
             protected void setPromptMessage(String prompt) {
                 if (!inputSupport) {
                     return;
@@ -57,7 +78,38 @@ public class BasicConsole extends QuarkusConsole {
                 if (prompt == null) {
                     return;
                 }
-                statusLogger.info(prompt);
+                DISABLE_FILTER.set(true);
+                try {
+                    System.out.println(prompt);
+                } finally {
+                    DISABLE_FILTER.set(false);
+                }
+            }
+
+            @Override
+            protected void setResultsMessage(String results) {
+                if (results == null) {
+                    return;
+                }
+                DISABLE_FILTER.set(true);
+                try {
+                    System.out.println(results);
+                } finally {
+                    DISABLE_FILTER.set(false);
+                }
+            }
+
+            @Override
+            protected void setCompileErrorMessage(String results) {
+                if (results == null) {
+                    return;
+                }
+                DISABLE_FILTER.set(true);
+                try {
+                    System.out.println(results);
+                } finally {
+                    DISABLE_FILTER.set(false);
+                }
             }
 
             @Override
@@ -65,7 +117,12 @@ public class BasicConsole extends QuarkusConsole {
                 if (status == null) {
                     return;
                 }
-                statusLogger.info(status);
+                DISABLE_FILTER.set(true);
+                try {
+                    System.out.println(status);
+                } finally {
+                    DISABLE_FILTER.set(false);
+                }
             }
         };
     }
@@ -74,7 +131,10 @@ public class BasicConsole extends QuarkusConsole {
     public void write(String s) {
         if (outputFilter != null) {
             if (!outputFilter.test(s)) {
-                return;
+                //we still test, the output filter may be recording output
+                if (!DISABLE_FILTER.get()) {
+                    return;
+                }
             }
         }
         if (noColor || !hasColorSupport()) {

@@ -5,7 +5,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
@@ -82,7 +82,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
                 "        return \"bar\";\n" +
                 "    }\n" +
                 "}\n";
-        FileUtils.write(source, myNewResource, Charset.forName("UTF-8"));
+        FileUtils.write(source, myNewResource, StandardCharsets.UTF_8);
 
         // Wait until we get "bar"
         await()

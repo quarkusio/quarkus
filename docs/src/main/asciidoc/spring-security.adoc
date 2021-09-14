@@ -6,13 +6,10 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Quarkus - Quarkus Extension for Spring Security API
 
 include::./attributes.adoc[]
-:extension-status: preview
 
 While users are encouraged to use link:security#standard-security-annotations[Java standard annotations for security authorizations], Quarkus provides a compatibility layer for Spring Security in the form of the `spring-security` extension.
 
 This guide explains how a Quarkus application can leverage the well known Spring Security annotations to define authorizations on RESTful services using roles.
-
-include::./status-include.adoc[]
 
 == Prerequisites
 

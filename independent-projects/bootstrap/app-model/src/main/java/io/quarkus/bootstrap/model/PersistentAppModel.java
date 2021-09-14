@@ -29,6 +29,7 @@ public class PersistentAppModel implements Serializable {
     private Set<AppArtifactKey> lesserPriorityArtifacts;
     private Set<AppArtifactKey> localProjectArtifacts;
     private Map<String, String> platformProperties;
+    private Map<String, CapabilityContract> capabilitiesContracts;
     private String userProvidersDirectory;
 
     public PersistentAppModel(String baseName, Map<AppArtifactKey, List<String>> paths, AppModel appModel,
@@ -36,7 +37,7 @@ public class PersistentAppModel implements Serializable {
         this.baseName = baseName;
         this.userProvidersDirectory = userProvidersDirectory;
         appArtifact = new SerializedDep(appModel.getAppArtifact(), paths);
-        appArtifact.paths = Collections.singletonList(appArchivePath.replace("\\", "/"));
+        appArtifact.paths = Collections.singletonList(appArchivePath.replace('\\', '/'));
         deploymentDeps = new ArrayList<>(appModel.getDeploymentDependencies().size());
         for (AppDependency i : appModel.getDeploymentDependencies()) {
             deploymentDeps.add(new SerializedDep(i, paths));
@@ -54,6 +55,7 @@ public class PersistentAppModel implements Serializable {
         parentFirstArtifacts = new HashSet<>(appModel.getParentFirstArtifacts());
         runnerParentFirstArtifacts = new HashSet<>(appModel.getRunnerParentFirstArtifacts());
         lesserPriorityArtifacts = new HashSet<>(appModel.getLesserPriorityArtifacts());
+        capabilitiesContracts = new HashMap<>(appModel.getCapabilityContracts());
     }
 
     public String getUserProvidersDirectory() {
@@ -85,7 +87,10 @@ public class PersistentAppModel implements Serializable {
         for (AppArtifactKey i : localProjectArtifacts) {
             model.addLocalProjectArtifact(i);
         }
-        model.addPlatformProperties(platformProperties);
+        model.setCapabilitiesContracts(capabilitiesContracts);
+        final PlatformImportsImpl pi = new PlatformImportsImpl();
+        pi.setPlatformProperties(platformProperties);
+        model.setPlatformImports(pi);
         return model.build();
     }
 
@@ -105,7 +110,7 @@ public class PersistentAppModel implements Serializable {
             if (pathList == null) {
                 pathList = Collections.emptyList();
             }
-            this.paths = pathList.stream().map(s -> s.replace("\\", "/")).collect(Collectors.toList());
+            this.paths = pathList.stream().map(s -> s.replace('\\', '/')).collect(Collectors.toList());
         }
 
         public SerializedDep(AppDependency dependency, Map<AppArtifactKey, List<String>> paths) {

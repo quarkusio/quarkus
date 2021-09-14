@@ -48,6 +48,7 @@ import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.HttpRemoteDevClientProvider;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.runtime.CurrentRequestProducer;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
@@ -97,6 +98,7 @@ class VertxHttpProcessor {
                 .setUnremovable()
                 .addBeanClass(RouterProducer.class)
                 .addBeanClass(CurrentVertxRequest.class)
+                .addBeanClass(CurrentRequestProducer.class)
                 .build();
     }
 
@@ -156,10 +158,6 @@ class VertxHttpProcessor {
                 }
 
                 recorder.addRoute(frameworkRouter, route.getRouteFunction(), route.getHandler(), route.getType());
-
-                if (httpBuildTimeConfig.redirectToNonApplicationRootPath && route.isRequiresLegacyRedirect()) {
-                    redirectRoutes.add(route);
-                }
             } else if (route.isAbsoluteRoute()) {
                 // Add Route to "/"
                 if (!mainRouterCreated) {
@@ -301,8 +299,10 @@ class VertxHttpProcessor {
     }
 
     @BuildStep
-    RuntimeInitializedClassBuildItem configureNativeCompilation() {
-        return new RuntimeInitializedClassBuildItem("io.vertx.ext.web.handler.sockjs.impl.XhrTransport");
+    void configureNativeCompilation(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.vertx.ext.web.handler.sockjs.impl.XhrTransport"));
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("io.vertx.ext.auth.impl.jose.JWT"));
     }
 
     /**

@@ -82,6 +82,7 @@ import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -108,6 +109,7 @@ import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.Authenticati
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.ForbiddenExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.UnauthorizedExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler;
+import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
@@ -123,7 +125,6 @@ import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
@@ -275,7 +276,8 @@ public class ResteasyReactiveProcessor {
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
             ContextResolversBuildItem contextResolversBuildItem,
             List<ApplicationClassPredicateBuildItem> applicationClassPredicateBuildItems,
-            List<MethodScannerBuildItem> methodScanners, ResteasyReactiveServerConfig serverConfig)
+            List<MethodScannerBuildItem> methodScanners, ResteasyReactiveServerConfig serverConfig,
+            LaunchModeBuildItem launchModeBuildItem)
             throws NoSuchMethodException {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
@@ -526,6 +528,7 @@ public class ResteasyReactiveProcessor {
             }
 
             String deploymentPath = sanitizeApplicationPath(applicationPath);
+
             // Handler used for both the default and non-default deployment path (specified as application path or resteasyConfig.path)
             // Routes use the order VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1 to ensure the default route is called before the resteasy one
             Class<? extends Application> applicationClass = application == null ? Application.class : application.getClass();
@@ -550,7 +553,7 @@ public class ResteasyReactiveProcessor {
             RuntimeValue<Deployment> deployment = recorder.createDeployment(deploymentInfo,
                     beanContainerBuildItem.getValue(), shutdownContext, vertxConfig,
                     requestContextFactoryBuildItem.map(RequestContextFactoryBuildItem::getFactory).orElse(null),
-                    initClassFactory);
+                    initClassFactory, launchModeBuildItem.getLaunchMode());
 
             quarkusRestDeploymentBuildItemBuildProducer
                     .produce(new ResteasyReactiveDeploymentBuildItem(deployment, deploymentPath));
@@ -558,8 +561,8 @@ public class ResteasyReactiveProcessor {
                 Handler<RoutingContext> handler = recorder.handler(deployment);
 
                 // Exact match for resources matched to the root path
-                routes.produce(new RouteBuildItem(
-                        new BasicRoute(deploymentPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1), handler));
+                routes.produce(RouteBuildItem.builder()
+                        .orderedRoute(deploymentPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1).handler(handler).build());
                 String matchPath = deploymentPath;
                 if (matchPath.endsWith("/")) {
                     matchPath += "*";
@@ -568,7 +571,8 @@ public class ResteasyReactiveProcessor {
                 }
                 // Match paths that begin with the deployment path
                 routes.produce(
-                        new RouteBuildItem(new BasicRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1), handler));
+                        RouteBuildItem.builder().orderedRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1)
+                                .handler(handler).build());
             }
         }
     }
@@ -711,5 +715,4 @@ public class ResteasyReactiveProcessor {
         reader.setConstraint(constraint);
         recorder.registerReader(serialisers, entityClass.getName(), reader);
     }
-
 }

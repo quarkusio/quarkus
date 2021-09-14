@@ -53,7 +53,7 @@ To generate the index just add the following to your `pom.xml`:
     <plugin>
       <groupId>org.jboss.jandex</groupId>
       <artifactId>jandex-maven-plugin</artifactId>
-      <version>1.0.7</version>
+      <version>1.1.0</version>
       <executions>
         <execution>
           <id>make-index</id>
@@ -72,7 +72,7 @@ If you are are using gradle, you can apply the following plugin to your `build.g
 [source,groovy]
 ----
 plugins {
-    id 'org.kordamp.gradle.jandex' version '0.6.0'
+    id 'org.kordamp.gradle.jandex' version '0.11.0'
 }
 ----
 
@@ -783,6 +783,62 @@ class NaiveLoggingInterceptor {
 ----
 
 Other interceptors could be provided to log method invocations to different targets.
+
+=== Caching the Result of Programmatic Lookup
+
+In certain situations, it is practical to obtain a bean instance programmatically via an injected `javax.enterprise.inject.Instance` and `Instance.get()`.
+However, according to the specification the `get()` method must identify the matching bean and obtain a contextual reference.
+As a consequence, a new instance of a  `@Dependent` bean is returned from each invocation of `get()`.
+Moreover, this instance is a dependent object of the injected `Instance`.
+This behavior is well-defined but it may lead to unexpected errors and memory leaks.
+Therefore, Quarkus comes with the `io.quarkus.arc.WithCaching` annotation.
+An injected `Instance` annotated with this annotation will cache the result of the `Instance#get()` operation.
+The result is computed on the first call and the same value is returned for all subsequent calls, even for `@Dependent` beans.
+
+[source,java]
+----
+class Producer {
+     
+  AtomicLong nextLong = new AtomicLong();
+  AtomicInteger nextInt = new AtomicInteger();
+ 
+   @Dependent
+   @Produces 
+   Integer produceInt() {
+     return nextInt.incrementAndGet();
+   }
+     
+   @Dependent
+   @Produces 
+   Long produceLong() {
+     return nextLong.incrementAndGet();
+   }
+}
+
+class Consumer {
+  
+  @Inject
+  Instance<Long> longInstance;
+
+  @Inject
+  @WithCaching
+  Instance<Integer> intInstance;
+     
+  // this method should always return true
+  // Producer#produceInt() is only called once
+  boolean pingInt() {
+    return intInstance.get().equals(intInstance.get());
+  }
+
+  // this method should always return false
+  // Producer#produceLong() is called twice per each pingLong() invocation
+  boolean pingLong() {
+    return longInstance.get().equals(longInstance.get());
+  }
+}
+----
+
+TIP: It is also possible to clear the cached value via `io.quarkus.arc.InjectableInstance.clearCache()`. In this case, you'll need to inject the Quarkus-specific `io.quarkus.arc.InjectableInstance` instead of `javax.enterprise.inject.Instance`.
 
 [[build_time_apis]]
 == Build Time Extensions

@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Consul Config"
+metadata:
+  keywords:
+  - "consul-client"
+  - "config"
+  - "configuration"
+  - "consul"
+  categories:
+  - "core"
+  status: "preview"

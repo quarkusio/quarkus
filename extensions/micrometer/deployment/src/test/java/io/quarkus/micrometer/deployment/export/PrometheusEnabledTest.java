@@ -23,8 +23,7 @@ public class PrometheusEnabledTest {
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(PrometheusRegistryProcessor.REGISTRY_CLASS));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
 
     @Inject
     MeterRegistry registry;
@@ -37,9 +36,13 @@ public class PrometheusEnabledTest {
         // Prometheus is enabled (only registry)
         Assertions.assertNotNull(registry, "A registry should be configured");
         Set<MeterRegistry> subRegistries = ((CompositeMeterRegistry) registry).getRegistries();
+        Assertions.assertEquals(1, subRegistries.size(),
+                "There should be only one configured subregistry. Found " + subRegistries);
+
         PrometheusMeterRegistry subPromRegistry = (PrometheusMeterRegistry) subRegistries.iterator().next();
-        Assertions.assertEquals(PrometheusMeterRegistry.class, subPromRegistry.getClass(), "Should be PrometheusMeterRegistry");
+        Assertions.assertEquals(PrometheusMeterRegistry.class, subPromRegistry.getClass(),
+                "Should be PrometheusMeterRegistry");
         Assertions.assertEquals(subPromRegistry, promRegistry,
-                "The only MeterRegistry should be the same bean as the PrometheusMeterRegistry");
+                "Should be the same bean as the injected PrometheusMeterRegistry");
     }
 }

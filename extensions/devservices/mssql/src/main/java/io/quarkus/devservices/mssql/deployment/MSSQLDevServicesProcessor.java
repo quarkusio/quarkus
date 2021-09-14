@@ -14,6 +14,7 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.runtime.LaunchMode;
 
 public class MSSQLDevServicesProcessor {
 
@@ -28,7 +29,7 @@ public class MSSQLDevServicesProcessor {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt fixedExposedPort) {
+                    OptionalInt fixedExposedPort, LaunchMode launchMode) {
                 JdbcDatabaseContainer container = new MSSQLServerContainer(
                         DockerImageName
                                 .parse(imageName.orElse(MSSQLServerContainer.IMAGE + ":" + TAG))

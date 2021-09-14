@@ -52,12 +52,11 @@ public class BootstrapProfile {
         switch (mode) {
             case REMOTE_DEV_SERVER:
             case DEV:
+            case CONTINUOUS_TEST:
                 return DEV;
             case REMOTE_DEV_CLIENT:
             case PROD:
                 return PROD;
-            case TEST:
-                return TEST;
             default:
                 throw new RuntimeException("unknown mode:" + mode);
         }

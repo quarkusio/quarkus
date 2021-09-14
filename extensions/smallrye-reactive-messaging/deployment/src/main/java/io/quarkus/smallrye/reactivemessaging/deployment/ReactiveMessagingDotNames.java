@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.deployment;
 
+import java.util.concurrent.CompletionStage;
+
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
@@ -19,7 +21,9 @@ import io.smallrye.reactive.messaging.annotations.OnOverflow;
 public final class ReactiveMessagingDotNames {
 
     static final DotName VOID = DotName.createSimple(void.class.getName());
+    static final DotName VOID_CLASS = DotName.createSimple(Void.class.getName());
     static final DotName OBJECT = DotName.createSimple(Object.class.getName());
+    static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
     static final DotName INCOMING = DotName.createSimple(Incoming.class.getName());
     static final DotName INCOMINGS = DotName.createSimple(Incomings.class.getName());
     static final DotName OUTGOING = DotName.createSimple(Outgoing.class.getName());
@@ -51,6 +55,11 @@ public final class ReactiveMessagingDotNames {
     public static final DotName REST_CONTROLLER = DotName
             .createSimple("org.springframework.web.bind.annotation.RestController");
     public static final DotName JAXRS_PROVIDER = DotName.createSimple("javax.ws.rs.ext.Provider");
+
+    static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
+    static final DotName KOTLIN_UNIT = DotName.createSimple("kotlin.Unit");
+    static final DotName ABSTRACT_SUBSCRIBING_COROUTINE_INVOKER = DotName
+            .createSimple("io.quarkus.smallrye.reactivemessaging.runtime.kotlin.AbstractSubscribingCoroutineInvoker");
 
     private ReactiveMessagingDotNames() {
     }

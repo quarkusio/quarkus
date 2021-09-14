@@ -5,6 +5,7 @@ import java.util.Map;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.util.ArtifactInfoUtil;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
@@ -14,7 +15,11 @@ import io.vertx.ext.web.RoutingContext;
  * <p>
  * Routes are registered under /q/dev/{groupId}.{artifactId}/
  * <p>
- * This handler executes in the deployment class loader.
+ * The route is registered:
+ * <ul>
+ * <li>in the "regular" app router (runtime class loader), if the handler is produced by a recorder (i.e. implements
+ * {@link io.quarkus.deployment.recording.BytecodeRecorderImpl.ReturnedProxy}),</li>
+ * <li>in the Dev UI router (deployment class loader).</li>
  */
 public final class DevConsoleRouteBuildItem extends MultiBuildItem {
 
@@ -24,6 +29,7 @@ public final class DevConsoleRouteBuildItem extends MultiBuildItem {
     private final String method;
     private final Class<?> callerClass;
     private final Handler<RoutingContext> handler;
+    private final boolean isBodyHandlerRequired;
 
     public DevConsoleRouteBuildItem(String groupId, String artifactId, String path, String method,
             Handler<RoutingContext> handler) {
@@ -33,11 +39,14 @@ public final class DevConsoleRouteBuildItem extends MultiBuildItem {
         this.method = method;
         this.handler = handler;
         this.callerClass = null;
+        this.isBodyHandlerRequired = false;
     }
 
     public DevConsoleRouteBuildItem(String path, String method,
             Handler<RoutingContext> handler) {
-        String callerClassName = new RuntimeException().getStackTrace()[1].getClassName();
+        // we cannot use this() because the caller detection would not work
+        String callerClassName = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass()
+                .getCanonicalName();
         try {
             callerClass = Thread.currentThread().getContextClassLoader().loadClass(callerClassName);
         } catch (ClassNotFoundException e) {
@@ -48,6 +57,24 @@ public final class DevConsoleRouteBuildItem extends MultiBuildItem {
         this.path = path;
         this.method = method;
         this.handler = handler;
+        this.isBodyHandlerRequired = false;
+    }
+
+    public DevConsoleRouteBuildItem(String path, String method,
+            Handler<RoutingContext> handler, boolean isBodyHandlerRequired) {
+        String callerClassName = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass()
+                .getCanonicalName();
+        try {
+            callerClass = Thread.currentThread().getContextClassLoader().loadClass(callerClassName);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        this.groupId = null;
+        this.artifactId = null;
+        this.path = path;
+        this.method = method;
+        this.handler = handler;
+        this.isBodyHandlerRequired = isBodyHandlerRequired;
     }
 
     /**
@@ -72,6 +99,14 @@ public final class DevConsoleRouteBuildItem extends MultiBuildItem {
 
     public Handler<RoutingContext> getHandler() {
         return handler;
+    }
+
+    public boolean isDeploymentSide() {
+        return !(handler instanceof BytecodeRecorderImpl.ReturnedProxy);
+    }
+
+    public boolean isBodyHandlerRequired() {
+        return isBodyHandlerRequired;
     }
 
 }

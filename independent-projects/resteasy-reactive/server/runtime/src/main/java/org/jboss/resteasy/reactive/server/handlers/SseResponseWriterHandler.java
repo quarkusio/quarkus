@@ -14,5 +14,6 @@ public class SseResponseWriterHandler implements ServerRestHandler {
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         requestContext.getSseEventSink().sendInitialResponse(requestContext.serverResponse());
+        requestContext.suspend();
     }
 }

@@ -13,6 +13,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.examples.helloworld.Greeter;
+import io.grpc.examples.helloworld.GreeterBean;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloReplyOrBuilder;
@@ -28,7 +30,8 @@ public class ServerInterceptorPriorityReversedTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(MutinyHelloService.class, MySecondInterceptor.class, MyFirstInterceptor.class,
-                            GreeterGrpc.class, HelloRequest.class, HelloReply.class, MutinyGreeterGrpc.class,
+                            GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class, HelloReply.class,
+                            MutinyGreeterGrpc.class,
                             HelloRequestOrBuilder.class, HelloReplyOrBuilder.class));
 
     protected ManagedChannel channel;

@@ -21,8 +21,9 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
 
     public QuarkusResteasyReactiveRequestContext(Deployment deployment, ProvidersImpl providers,
             RoutingContext context, ThreadSetupAction requestContext, ServerRestHandler[] handlerChain,
-            ServerRestHandler[] abortHandlerChain, CurrentIdentityAssociation currentIdentityAssociation) {
-        super(deployment, providers, context, requestContext, handlerChain, abortHandlerChain);
+            ServerRestHandler[] abortHandlerChain, ClassLoader devModeTccl,
+            CurrentIdentityAssociation currentIdentityAssociation) {
+        super(deployment, providers, context, requestContext, handlerChain, abortHandlerChain, devModeTccl);
         this.association = currentIdentityAssociation;
     }
 

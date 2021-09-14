@@ -1,12 +1,27 @@
 package io.quarkus.registry.catalog;
 
-import io.quarkus.maven.ArtifactCoords;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.Collection;
+import java.util.Map;
 
 public interface Platform {
 
-    ArtifactCoords getBom();
+    String getPlatformKey();
 
-    String getQuarkusCoreVersion();
+    String getName();
 
-    String getUpstreamQuarkusCoreVersion();
+    Collection<PlatformStream> getStreams();
+
+    Map<String, Object> getMetadata();
+
+    PlatformStream getStream(String id);
+
+    @JsonIgnore
+    default PlatformStream getRecommendedStream() {
+        final Collection<PlatformStream> streams = getStreams();
+        if (streams.isEmpty()) {
+            throw new RuntimeException("Platform " + getPlatformKey() + " does not include any stream");
+        }
+        return streams.iterator().next();
+    }
 }

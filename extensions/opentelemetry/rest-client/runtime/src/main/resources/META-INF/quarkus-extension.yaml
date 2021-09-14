@@ -1,0 +1,16 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "OpenTelemetry REST Client"
+metadata:
+  keywords:
+    - "opentelemetry"
+    - "tracing"
+    - "distributed-tracing"
+    - "monitoring"
+    - "rest client"
+    - "microprofile-rest-client"
+  guide: "https://quarkus.io/guides/opentelemetry"
+  categories:
+    - "observability"
+  unlisted: true
+  status: "experimental"

@@ -50,7 +50,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-deployment</artifactId>
+            <artifactId>quarkus-vertx-web-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

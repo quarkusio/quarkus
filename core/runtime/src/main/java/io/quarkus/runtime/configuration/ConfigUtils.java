@@ -1,10 +1,10 @@
 package io.quarkus.runtime.configuration;
 
-import static io.smallrye.config.AbstractLocationConfigSourceFactory.SMALLRYE_LOCATIONS;
 import static io.smallrye.config.DotEnvConfigSourceProvider.dotEnvSources;
-import static io.smallrye.config.ProfileConfigSourceInterceptor.SMALLRYE_PROFILE;
-import static io.smallrye.config.ProfileConfigSourceInterceptor.SMALLRYE_PROFILE_PARENT;
 import static io.smallrye.config.PropertiesConfigSourceProvider.classPathSources;
+import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOCATIONS;
+import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
+import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT;
 import static io.smallrye.config.SmallRyeConfigBuilder.META_INF_MICROPROFILE_CONFIG_PROPERTIES;
 
 import java.io.IOException;
@@ -21,13 +21,12 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
-import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.ConfigSourceInterceptor;
@@ -35,9 +34,10 @@ import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
 import io.smallrye.config.DotEnvConfigSourceProvider;
 import io.smallrye.config.EnvConfigSource;
-import io.smallrye.config.Expressions;
+import io.smallrye.config.FallbackConfigSourceInterceptor;
 import io.smallrye.config.Priorities;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
+import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SysPropConfigSource;
 import io.smallrye.config.common.utils.ConfigSourceUtil;
@@ -46,8 +46,6 @@ import io.smallrye.config.common.utils.ConfigSourceUtil;
  *
  */
 public final class ConfigUtils {
-    private static final Logger log = Logger.getLogger("io.quarkus.config");
-
     private ConfigUtils() {
     }
 
@@ -116,11 +114,11 @@ public final class ConfigUtils {
 
     public static SmallRyeConfigBuilder emptyConfigBuilder() {
         final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
-        builder.withDefaultValue(SMALLRYE_PROFILE, ProfileManager.getActiveProfile());
+        builder.withDefaultValue(SMALLRYE_CONFIG_PROFILE, ProfileManager.getActiveProfile());
 
         final Map<String, String> relocations = new HashMap<>();
-        relocations.put(SMALLRYE_LOCATIONS, "quarkus.config.locations");
-        relocations.put(SMALLRYE_PROFILE_PARENT, "quarkus.config.profile.parent");
+        relocations.put(SMALLRYE_CONFIG_LOCATIONS, "quarkus.config.locations");
+        relocations.put(SMALLRYE_CONFIG_PROFILE_PARENT, "quarkus.config.profile.parent");
         // Override the priority, because of the ProfileConfigSourceInterceptor and profile.parent.
         builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
             @Override
@@ -134,9 +132,25 @@ public final class ConfigUtils {
             }
         });
 
+        final Map<String, String> fallbacks = new HashMap<>();
+        fallbacks.put("quarkus.config.locations", SMALLRYE_CONFIG_LOCATIONS);
+        fallbacks.put("quarkus.config.profile.parent", SMALLRYE_CONFIG_PROFILE_PARENT);
+        builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
+            @Override
+            public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
+                return new FallbackConfigSourceInterceptor(fallbacks);
+            }
+
+            @Override
+            public OptionalInt getPriority() {
+                return OptionalInt.of(Priorities.LIBRARY + 400 - 5);
+            }
+        });
+
         builder.addDefaultInterceptors();
         builder.addDiscoveredInterceptors();
         builder.addDiscoveredConverters();
+        builder.addDiscoveredValidator();
         return builder;
     }
 
@@ -179,8 +193,7 @@ public final class ConfigUtils {
      * @return true if the property is present or false otherwise.
      */
     public static boolean isPropertyPresent(String propertyName) {
-        Config config = ConfigProvider.getConfig();
-        return Expressions.withoutExpansion(() -> config.getOptionalValue(propertyName, String.class)).isPresent();
+        return ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).isPropertyPresent(propertyName);
     }
 
     /**
@@ -235,18 +248,25 @@ public final class ConfigUtils {
      */
     static class BuildTimeSysPropConfigSource extends SysPropConfigSource {
         public Map<String, String> getProperties() {
-            Map<String, String> output = new TreeMap<>();
-            for (Map.Entry<Object, Object> entry : System.getProperties().entrySet()) {
-                String key = (String) entry.getKey();
-                if (key.startsWith("quarkus.")) {
-                    output.put(key, entry.getValue().toString());
-                }
-            }
-            return output;
+            BuildTimeSysPropMapProducer buildTimeSysPropMapProducer = new BuildTimeSysPropMapProducer();
+            System.getProperties().forEach(buildTimeSysPropMapProducer);
+            return buildTimeSysPropMapProducer.output;
         }
 
         public String getName() {
             return "System properties";
+        }
+    }
+
+    private static class BuildTimeSysPropMapProducer implements BiConsumer<Object, Object> {
+        final Map<String, String> output = new TreeMap<>();
+
+        @Override
+        public void accept(Object k, Object v) {
+            String key = (String) k;
+            if (key.startsWith("quarkus.")) {
+                output.put(key, v.toString());
+            }
         }
     }
 }

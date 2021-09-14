@@ -211,6 +211,17 @@ public class VaultBootstrapConfig {
     public Duration readTimeout;
 
     /**
+     * List of remote hosts that are not proxied when the client is configured to use a proxy. This
+     * list serves the same purpose as the JVM {@code nonProxyHosts} configuration.
+     *
+     * <p>
+     * Entries can use the <i>*</i> wildcard character for pattern matching, e.g <i>*.example.com</i> matches
+     * <i>www.example.com</i>.
+     */
+    @ConfigItem
+    public Optional<List<String>> nonProxyHosts;
+
+    /**
      * List of named credentials providers, such as: `quarkus.vault.credentials-provider.foo.kv-path=mypath`
      * <p>
      * This defines a credentials provider `foo` returning key `password` from vault path `mypath`.

@@ -12,11 +12,16 @@ import static io.quarkus.funqy.runtime.bindings.knative.events.KnativeEventsBind
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
@@ -61,7 +66,8 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     protected final CurrentVertxRequest currentVertxRequest;
     protected final Executor executor;
     protected final FunctionInvoker defaultInvoker;
-    protected final Map<String, FunctionInvoker> typeTriggers;
+    protected final Map<String, Collection<FunctionInvoker>> typeTriggers;
+    protected final Map<String, List<Predicate<CloudEvent>>> invokersFilters;
     protected final String rootPath;
 
     public VertxRequestHandler(Vertx vertx,
@@ -70,7 +76,8 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             ObjectMapper mapper,
             FunqyKnativeEventsConfig config,
             FunctionInvoker defaultInvoker,
-            Map<String, FunctionInvoker> typeTriggers,
+            Map<String, Collection<FunctionInvoker>> typeTriggers,
+            Map<String, List<Predicate<CloudEvent>>> invokersFilters,
             Executor executor) {
         this.rootPath = rootPath;
         this.defaultInvoker = defaultInvoker;
@@ -79,6 +86,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         this.executor = executor;
         this.mapper = mapper;
         this.typeTriggers = typeTriggers;
+        this.invokersFilters = invokersFilters;
         Instance<CurrentIdentityAssociation> association = CDI.current().select(CurrentIdentityAssociation.class);
         this.association = association.isResolvable() ? association.get() : null;
         this.currentVertxRequest = CDI.current().select(CurrentVertxRequest.class).get();
@@ -145,17 +153,51 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                     log.warnf("Unexpected CloudEvent spec-version '%s'.", ceSpecVersion);
                 }
 
-                final FunctionInvoker invoker;
+                Collection<FunctionInvoker> candidates = new ArrayList<>();
                 if (defaultInvoker != null) {
-                    invoker = defaultInvoker;
+                    candidates.add(defaultInvoker);
                 } else {
-                    invoker = typeTriggers.get(ceType);
-                    if (invoker == null) {
+                    candidates = typeTriggers.get(ceType);
+
+                    if (candidates == null || candidates.isEmpty()) {
                         routingContext.fail(404);
                         log.error("Couldn't map CloudEvent type: '" + ceType + "' to a function.");
                         return;
                     }
                 }
+
+                final CloudEvent<?> evt;
+                if (binaryCE) {
+                    evt = new HeaderCloudEventImpl<>(
+                            httpRequest.headers(),
+                            null,
+                            null,
+                            null,
+                            null);
+                } else {
+                    evt = new JsonCloudEventImpl<>(
+                            structuredPayload,
+                            null,
+                            null,
+                            null);
+                }
+                List<FunctionInvoker> matchingCandidates = candidates
+                        .stream()
+                        .filter(fi -> match(fi, evt))
+                        .collect(Collectors.toList());
+
+                if (matchingCandidates.size() <= 0) {
+                    routingContext.fail(404);
+                    log.error("Couldn't map CloudEvent type: '" + ceType + "' to any function.");
+                    return;
+                }
+                if (matchingCandidates.size() > 1) {
+                    routingContext.fail(409);
+                    log.error("CloudEvent type: '" + ceType + "' matches multiple function.");
+                    return;
+                }
+
+                final FunctionInvoker invoker = matchingCandidates.get(0);
 
                 final Type inputCeDataType = (Type) invoker.getBindingContext().get(INPUT_CE_DATA_TYPE);
                 final Type outputCeDataType = (Type) invoker.getBindingContext().get(OUTPUT_CE_DATA_TYPE);
@@ -189,7 +231,8 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                         input = inputCloudEvent;
                     }
                 } else {
-                    input = inputCloudEvent = null;
+                    input = null;
+                    inputCloudEvent = null;
                 }
 
                 final Consumer<Object> sendOutput = output -> {
@@ -221,7 +264,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                         String specVersion;
                         if (outputCloudEvent.specVersion() != null) {
                             specVersion = outputCloudEvent.specVersion();
-                        } else if (inputCloudEvent.specVersion() != null) {
+                        } else if (inputCloudEvent != null && inputCloudEvent.specVersion() != null) {
                             specVersion = inputCloudEvent.specVersion();
                         } else {
                             specVersion = "1.0";
@@ -361,6 +404,15 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             }
         }));
 
+    }
+
+    private boolean match(FunctionInvoker invoker, CloudEvent<?> inputCloudEvent) {
+
+        if (invokersFilters.get(invoker.getName()) == null || invokersFilters.get(invoker.getName()).isEmpty()) {
+            return true;
+        }
+
+        return invokersFilters.get(invoker.getName()).stream().allMatch(p -> p.test(inputCloudEvent));
     }
 
     private void regularFunqyHttp(RoutingContext routingContext) {

@@ -156,7 +156,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
     }
 
     public AbstractPathAssert<?> checkGeneratedSource(String sourceDir, Language language, String className) throws Throwable {
-        final String modifiedClassName = className.replace(DEFAULT_PACKAGE_DIR, DEFAULT_PACKAGE_FOR_TESTING).replace(".", "/");
+        final String modifiedClassName = className.replace(DEFAULT_PACKAGE_DIR, DEFAULT_PACKAGE_FOR_TESTING).replace('.', '/');
         final String fileRelativePath = "src/" + sourceDir + "/" + language.key() + "/" + modifiedClassName
                 + getSourceFileExtension(language);
         return assertThatGeneratedFileMatchSnapshot(language, fileRelativePath)
@@ -194,6 +194,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
                 .addCodestarts(codestarts)
                 .addData(inputData)
                 .addData(data)
+                .addBoms(QuarkusCodestartTesting.getBoms(inputData))
                 .addExtensions(extensions)
                 .putData(PROJECT_PACKAGE_NAME, DEFAULT_PACKAGE_FOR_TESTING)
                 .build();

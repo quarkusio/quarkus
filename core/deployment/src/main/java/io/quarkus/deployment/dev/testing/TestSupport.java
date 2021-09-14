@@ -13,11 +13,13 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.deployment.dev.CompilationProvider;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.QuarkusCompiler;
 import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
+import io.quarkus.dev.spi.DevModeType;
 
 public class TestSupport implements TestController {
 
@@ -28,6 +30,7 @@ public class TestSupport implements TestController {
     final DevModeContext context;
     final List<TestListener> testListeners = new CopyOnWriteArrayList<>();
     final TestState testState = new TestState();
+    final DevModeType devModeType;
 
     volatile CuratedApplication testCuratedApplication;
     volatile QuarkusCompiler compiler;
@@ -40,14 +43,15 @@ public class TestSupport implements TestController {
     volatile Pattern exclude = null;
     volatile boolean displayTestOutput;
     volatile Boolean explicitDisplayTestOutput;
-    volatile boolean failingTestsOnly;
+    volatile boolean brokenOnlyMode;
     volatile TestType testType = TestType.ALL;
 
     public TestSupport(CuratedApplication curatedApplication, List<CompilationProvider> compilationProviders,
-            DevModeContext context) {
+            DevModeContext context, DevModeType devModeType) {
         this.curatedApplication = curatedApplication;
         this.compilationProviders = compilationProviders;
         this.context = context;
+        this.devModeType = devModeType;
     }
 
     public static Optional<TestSupport> instance() {
@@ -97,10 +101,10 @@ public class TestSupport implements TestController {
                         if (context.getApplicationRoot().getTest().isPresent()) {
                             started = true;
                             init();
+                            testRunner.enable();
                             for (TestListener i : testListeners) {
                                 i.testsEnabled();
                             }
-                            testRunner.enable();
                         }
                     } catch (Exception e) {
                         log.error("Failed to create compiler, runtime compilation will be unavailable", e);
@@ -127,11 +131,19 @@ public class TestSupport implements TestController {
                         .setBaseClassLoader(getClass().getClassLoader())
                         .setTest(true)
                         .setAuxiliaryApplication(true)
+                        .setHostApplicationIsTestOnly(devModeType == DevModeType.TEST_ONLY)
                         .setApplicationRoot(PathsCollection.from(paths))
                         .build()
                         .bootstrap();
                 compiler = new QuarkusCompiler(testCuratedApplication, compilationProviders, context);
                 testRunner = new TestRunner(this, context, testCuratedApplication);
+                QuarkusClassLoader cl = (QuarkusClassLoader) getClass().getClassLoader();
+                cl.addCloseTask(new Runnable() {
+                    @Override
+                    public void run() {
+                        testCuratedApplication.close();
+                    }
+                });
 
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -186,15 +198,17 @@ public class TestSupport implements TestController {
         return testRunResults;
     }
 
-    public synchronized void pause() {
-        if (started) {
-            testRunner.pause();
+    public void pause() {
+        TestRunner tr = this.testRunner;
+        if (tr != null) {
+            tr.pause();
         }
     }
 
-    public synchronized void resume() {
-        if (started) {
-            testRunner.resume();
+    public void resume() {
+        TestRunner tr = this.testRunner;
+        if (tr != null) {
+            tr.resume();
         }
     }
 
@@ -249,19 +263,19 @@ public class TestSupport implements TestController {
     @Override
     public boolean toggleBrokenOnlyMode() {
 
-        failingTestsOnly = !failingTestsOnly;
+        brokenOnlyMode = !brokenOnlyMode;
 
-        if (failingTestsOnly) {
+        if (brokenOnlyMode) {
             log.info("Broken only mode enabled");
         } else {
             log.info("Broken only mode disabled");
         }
 
         for (TestListener i : testListeners) {
-            i.setBrokenOnly(failingTestsOnly);
+            i.setBrokenOnly(brokenOnlyMode);
         }
 
-        return failingTestsOnly;
+        return brokenOnlyMode;
     }
 
     @Override
@@ -311,7 +325,7 @@ public class TestSupport implements TestController {
 
     @Override
     public boolean isBrokenOnlyMode() {
-        return failingTestsOnly;
+        return brokenOnlyMode;
     }
 
     @Override

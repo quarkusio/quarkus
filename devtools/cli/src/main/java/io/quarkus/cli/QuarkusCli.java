@@ -1,182 +1,124 @@
 package io.quarkus.cli;
 
-import java.io.PrintWriter;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.LinkedList;
+import static picocli.CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIST;
+
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 import javax.inject.Inject;
 
-import io.quarkus.cli.core.BuildsystemCommand;
-import io.quarkus.cli.core.ExecuteUtil;
-import io.quarkus.cli.core.QuarkusCliVersion;
-import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import picocli.CommandLine;
+import picocli.CommandLine.Help;
+import picocli.CommandLine.IHelpSectionRenderer;
+import picocli.CommandLine.IParameterExceptionHandler;
+import picocli.CommandLine.Mixin;
+import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Model.UsageMessageSpec;
+import picocli.CommandLine.ParameterException;
+import picocli.CommandLine.UnmatchedArgumentException;
 
 @QuarkusMain
-@CommandLine.Command(name = "qs", versionProvider = QuarkusCliVersion.class, subcommandsRepeatable = true, mixinStandardHelpOptions = true, subcommands = {
-        Build.class,
-        Clean.class, Create.class, CreateJBang.class, List.class, Platforms.class, Add.class, Remove.class, Dev.class,
-        CreateExtension.class })
-public class QuarkusCli implements QuarkusApplication {
+@CommandLine.Command(name = "quarkus", versionProvider = Version.class, subcommandsRepeatable = false, mixinStandardHelpOptions = true, subcommands = {
+        Create.class, Build.class, Dev.class, ProjectExtensions.class, Completion.class,
+        Version.class }, commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
+public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
-    public void usage() {
-        CommandLine.usage(this, System.out);
-
-    }
-
-    @CommandLine.Option(names = { "-e", "--errors" }, description = "Produce execution error messages.")
-    boolean showErrors;
-
-    @CommandLine.Option(names = { "--verbose" }, description = "Verbose mode.")
-    boolean verbose;
-
-    @CommandLine.Option(names = { "--manual-output" }, hidden = true, description = "For unit test purposes.")
-    boolean manualOutput;
-
-    @CommandLine.Spec
-    protected CommandLine.Model.CommandSpec spec;
-
-    public PrintWriter out() {
-        return spec.commandLine().getOut();
-    }
-
-    public PrintWriter err() {
-        return spec.commandLine().getErr();
-    }
-
-    public boolean isVerbose() {
-        return verbose;
-    }
-
-    public boolean isShowErrors() {
-        return showErrors;
-    }
-
-    public boolean isManualOutput() {
-        return manualOutput;
+    static {
+        System.setProperty("picocli.endofoptions.description", "End of command line options.");
+        // Change default short option to display version from "-V" to "-v":
+        System.setProperty("picocli.version.name.0", "-v");
     }
 
     @Inject
     CommandLine.IFactory factory;
 
-    private Path projectDirectory;
+    @Mixin
+    OutputOptionMixin output;
 
-    public Path getProjectDirectory() {
-        if (projectDirectory == null) {
-            projectDirectory = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
-        }
-        return projectDirectory;
-    }
+    @CommandLine.Spec
+    protected CommandLine.Model.CommandSpec spec;
 
-    public void setProjectDirectory(Path projectDirectory) {
-        this.projectDirectory = projectDirectory;
-    }
+    @CommandLine.ArgGroup(exclusive = false, validate = false)
+    protected PropertiesOptions propertiesOptions = new PropertiesOptions();
 
     @Override
     public int run(String... args) throws Exception {
         CommandLine cmd = factory == null ? new CommandLine(this) : new CommandLine(this, factory);
-        return cmd.setExecutionStrategy(new ExecutionStrategy())
-                .execute(args);
+        cmd.getHelpSectionMap().put(SECTION_KEY_COMMAND_LIST, new SubCommandListRenderer());
+        cmd.setParameterExceptionHandler(new ShortErrorMessageHandler());
+        return cmd.execute(args);
     }
 
-    public BuildTool resolveBuildTool(Path projectDirectory) {
-        return QuarkusProject.resolveExistingProjectBuildTool(projectDirectory.toAbsolutePath());
+    @Override
+    public Integer call() throws Exception {
+        spec.commandLine().usage(output.out());
+        return spec.exitCodeOnUsageHelp();
     }
 
-    public int executeBuildsystem(BuildTool buildtool, java.util.List<String> args) throws Exception {
-        String[] newArgs = args.toArray(new String[args.size()]);
-        if (buildtool == BuildTool.MAVEN) {
-            return ExecuteUtil.executeMavenTarget(getProjectDirectory().toFile(), this, newArgs);
-        } else {
-            return ExecuteUtil.executeGradleTarget(getProjectDirectory().toFile(), this, newArgs);
-        }
-    }
+    class ShortErrorMessageHandler implements IParameterExceptionHandler {
+        public int handleParseException(ParameterException ex, String[] args) {
+            CommandLine cmd = ex.getCommandLine();
+            CommandSpec spec = cmd.getCommandSpec();
 
-    class ExecutionStrategy implements CommandLine.IExecutionStrategy {
-        @Override
-        public int execute(CommandLine.ParseResult parseResult)
-                throws CommandLine.ExecutionException, CommandLine.ParameterException {
-            try {
-                // Aggregate any maven/gradle commands into one build process
-                // if BuildsystemCommand.aggregate() returns true
-                LinkedList<String> buildsystemArguments = new LinkedList<>();
-                BuildTool buildtool = null;
-                if (parseResult.hasSubcommand()) {
-                    for (CommandLine.ParseResult pr : parseResult.subcommands()) {
-                        if (CommandLine.printHelpIfRequested(pr)) {
-                            return CommandLine.ExitCode.USAGE;
-                        }
-                        // TODO: More recursion will be needed if any subcommand has sub-sub commands
-                        for (CommandLine cl : pr.asCommandLineList()) {
-                            try {
-                                Object cmd = cl.getCommand();
-                                if (cmd instanceof BuildsystemCommand) {
-                                    if (buildtool == null)
-                                        buildtool = resolveBuildTool(getProjectDirectory());
-                                    BuildsystemCommand build = (BuildsystemCommand) cmd;
-                                    if (build.aggregate(buildtool)) {
-                                        buildsystemArguments.addAll(build.getArguments(getProjectDirectory(), buildtool));
-                                    } else {
-                                        if (buildsystemArguments.size() > 0) {
-                                            int exitCode = executeBuildsystem(buildtool, buildsystemArguments);
-                                            if (exitCode != CommandLine.ExitCode.OK)
-                                                return exitCode;
-                                            buildsystemArguments.clear();
-                                        }
+            output.error(ex.getMessage()); // bold red
+            output.printStackTrace(ex);
 
-                                        int exitCode = build.execute(getProjectDirectory(), buildtool);
-                                        if (exitCode != CommandLine.ExitCode.OK)
-                                            return exitCode;
-                                    }
-                                } else if (cmd instanceof Callable) {
-                                    int exitCode = ((Callable<Integer>) cmd).call();
-                                    if (exitCode != CommandLine.ExitCode.OK)
-                                        return exitCode;
-                                } else {
-                                    err().println("Unknown execution type for : " + cl.getCommandName());
-                                    return CommandLine.ExitCode.SOFTWARE;
-                                }
-                            } catch (Exception e) {
-                                if (showErrors)
-                                    e.printStackTrace(err());
-                                err().println("Failure executing command : " + cl.getCommandName());
-                                return CommandLine.ExitCode.SOFTWARE;
-                            }
-                        }
-                    }
-                    if (buildsystemArguments.size() > 0) {
-                        try {
-                            return executeBuildsystem(buildtool, buildsystemArguments);
-                        } catch (Exception e) {
-                            if (showErrors)
-                                e.printStackTrace(err());
-                            err().print("Failure executing build command : ");
-                            ExecuteUtil.outputBuildCommand(err(), buildtool, buildsystemArguments);
-                            err().println();
-                            return CommandLine.ExitCode.SOFTWARE;
-                        }
-                    }
-                } else {
-                    if (parseResult.isVersionHelpRequested()) {
-                        parseResult.asCommandLineList().iterator().next().printVersionHelp(out());
-                    } else {
-                        // no subcommands executed
-                        usage();
-                    }
-                }
-                return CommandLine.ExitCode.OK;
-            } catch (Exception e) {
-                if (showErrors)
-                    e.printStackTrace(err());
-                return CommandLine.ExitCode.SOFTWARE;
+            UnmatchedArgumentException.printSuggestions(ex, output.err());
+            output.err().println(cmd.getHelp().fullSynopsis()); // normal text to error stream
+
+            if (spec.equals(spec.root())) {
+                output.err().println(cmd.getHelp().commandList()); // normal text to error stream
             }
+            output.err().printf("See '%s --help' for more information.%n", spec.qualifiedName());
+            output.err().flush();
+
+            return cmd.getExitCodeExceptionMapper() != null ? cmd.getExitCodeExceptionMapper().getExitCode(ex)
+                    : spec.exitCodeOnInvalidInput();
+        }
+    }
+
+    class SubCommandListRenderer implements IHelpSectionRenderer {
+        // @Override
+        public String render(Help help) {
+            CommandSpec spec = help.commandSpec();
+            if (spec.subcommands().isEmpty()) {
+                return "";
+            }
+            Map<String, String> tableElements = new LinkedHashMap<>();
+            addHierarchy(spec.subcommands().values(), tableElements, "");
+            return help.createTextTable(tableElements).toString();
         }
 
+        private void addHierarchy(Collection<CommandLine> collection, Map<String, String> tableElements,
+                String indent) {
+            collection.stream().distinct().forEach(subcommand -> {
+                // create comma-separated list of command name and aliases
+                String names = String.join(", ", subcommand.getCommandSpec().names());
+                String description = description(subcommand.getCommandSpec().usageMessage());
+                tableElements.put(indent + names, description);
+
+                Map<String, CommandLine> subcommands = subcommand.getSubcommands();
+                if (!subcommands.isEmpty()) {
+                    addHierarchy(subcommands.values(), tableElements, indent + "  ");
+                }
+            });
+        }
+
+        private String description(UsageMessageSpec usageMessage) {
+            if (usageMessage.header().length > 0) {
+                return usageMessage.header()[0];
+            }
+            if (usageMessage.description().length > 0) {
+                return usageMessage.description()[0];
+            }
+            return "";
+        }
     }
 
 }

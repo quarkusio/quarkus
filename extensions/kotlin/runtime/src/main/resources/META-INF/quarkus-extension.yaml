@@ -1,0 +1,13 @@
+name: "Kotlin"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "kotlin"
+  guide: "https://quarkus.io/guides/kotlin"
+  categories:
+  - "alt-languages"
+  status: "preview"
+  codestart:
+    name: "kotlin"
+    kind: "core"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

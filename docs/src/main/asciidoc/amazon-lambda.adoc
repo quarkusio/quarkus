@@ -258,11 +258,11 @@ or, if using Gradle:
 
 NOTE: If you are building on a non-Linux system, you will need to also pass in a property instructing quarkus to use a docker build as Amazon
 Lambda requires linux binaries.  You can do this by passing this property to your Maven build:
-`-Dnative-image.docker-build=true`, or for Gradle: `--docker-build=true`.  This requires you to have docker installed locally, however.
+`-Dquarkus.native.container-build=true`, or for Gradle: `--docker-build=true`.  This requires you to have docker installed locally, however.
 
 [source,bash,subs=attributes+]
 ----
-./mvnw clean install -Pnative -Dnative-image.docker-build=true
+./mvnw clean install -Pnative -Dquarkus.native.container-build=true 
 ----
 
 or, if using Gradle:

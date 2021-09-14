@@ -11,6 +11,15 @@ include::./attributes.adoc[]
 Hibernate ORM is the de facto standard JPA implementation and offers you the full breadth of an Object Relational Mapper.
 It works beautifully in Quarkus.
 
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `hibernate-orm-quickstart` {quickstarts-tree-url}/hibernate-orm-quickstart[directory].
+
 == Setting up and configuring Hibernate ORM
 
 When using Hibernate ORM in Quarkus, you don't need to have a `persistence.xml` resource to configure it.
@@ -348,6 +357,7 @@ You can inject the `EntityManagerFactory` of a named persistence unit using the 
 EntityManagerFactory entityManagerFactory;
 ----
 
+[[persistence-xml]]
 == Setting up and configuring Hibernate ORM with a `persistence.xml`
 
 Alternatively, you can use a `META-INF/persistence.xml` to set up Hibernate ORM.
@@ -404,6 +414,26 @@ so in this case the appropriate reference is the link:https://docs.jboss.org/hib
 
 Please remember these are not the same property names as the ones used in the Quarkus `{config-file}`, nor will
 the same defaults be applied.
+
+[[xml-mapping]]
+== XML mapping
+
+Hibernate ORM in Quarkus supports XML mapping.
+You can add mapping files following
+the https://jakarta.ee/specifications/persistence/3.0/jakarta-persistence-spec-3.0.html#a16944[`orm.xml` format (JPA)]
+or the http://hibernate.org/dtd/hibernate-mapping-3.0.dtd[`hbm.xml` format (specific to Hibernate ORM, deprecated)]:
+
+* in `application.properties` through the (build-time) link:#quarkus-hibernate-orm_quarkus.hibernate-orm.mapping-files[`quarkus.hibernate-orm.mapping-files`] property.
+* in <<persistence-xml,`persistence.xml`>> through the `<mapping-file>` element.
+
+XML mapping files are parsed at build time.
+
+[IMPORTANT]
+====
+The file `META-INF/orm.xml` will always be included by default, if it exists in the classpath.
+
+If that is not what you want, use `quarkus.hibernate-orm.mapping-files = no-file` or `<mapping-file>no-file</mapping-file>`.
+====
 
 == Defining entities in external projects or jars
 
@@ -700,10 +730,13 @@ A suitable implementation based on technologies from link:https://infinispan.org
 
 === Limitations
 
-XML mapping::
-Hibernate ORM allows to map entities using XML files; this capability isn't enabled in Quarkus: use annotations instead
-as Quarkus can handle them very efficiently.
-This limitation could be lifted in the future, if there's a compelling need for it and if someone contributes it.
+XML mapping with duplicate files in the classpath::
+<<xml-mapping,XML mapping>> files are expected to have a unique path.
++
+In practice, it's only possible to have duplicate XML mapping files in the classpath in very specific scenarios.
+For example, if two JARs include a `META-INF/orm.xml` file (with the exact same path, but in different JARs),
+then the mapping file path `META-INF/orm.xml` can only be referenced from a `persistence.xml`
+**in the same JAR as the `META-INF/orm.xml` file**.
 
 JMX::
 Management beans are not working in GraalVM native images;
@@ -748,7 +781,9 @@ Jump over to link:datasource[Quarkus - Datasources] for all details.
 
 "The term multitenancy, in general, is applied to software development to indicate an architecture in which a single running instance of an application simultaneously serves multiple clients (tenants). This is highly common in SaaS solutions. Isolating information (data, customizations, etc.) pertaining to the various tenants is a particular challenge in these systems. This includes the data owned by each tenant stored in the database" (link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#multitenacy[Hibernate User Guide]).
 
-Quarkus currently supports the link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#multitenacy-separate-database[separate database] and the link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#multitenacy-separate-schema[separate schema] approach. 
+Quarkus currently supports the link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#multitenacy-separate-database[separate database] and the link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#multitenacy-separate-schema[separate schema] approach.
+
+To see multitenancy in action, you can check out the {quickstarts-tree-url}/hibernate-orm-multi-tenancy-quickstart[hibernate-orm-multi-tenancy-quickstart] quickstart.
 
 === Writing the application
 

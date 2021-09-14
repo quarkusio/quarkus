@@ -30,7 +30,7 @@ public class BlockingRouteTest {
 
         get("/blocking")
                 .then().statusCode(200)
-                .body(containsString("blocking-"), containsString("worker"));
+                .body(containsString("blocking-"), containsString("executor"));
 
         get("/worker")
                 .then().statusCode(200)

@@ -20,6 +20,7 @@ import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
+import org.hibernate.reactive.context.impl.VertxContextInitiator;
 import org.hibernate.reactive.id.impl.ReactiveIdentifierGeneratorFactoryInitiator;
 import org.hibernate.reactive.provider.service.NoJtaPlatformInitiator;
 import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
@@ -29,7 +30,6 @@ import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilderInit
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
-import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.boot.registry.MirroringIntegratorService;
@@ -41,6 +41,7 @@ import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.orm.runtime.service.CfgXmlAccessServiceInitiatorQuarkus;
 import io.quarkus.hibernate.orm.runtime.service.DisabledJMXInitiator;
 import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusImportSqlCommandExtractorInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
 import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcConnectionProviderInitiator;
 import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcEnvironmentInitiator;
@@ -137,6 +138,7 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
 
         // Definitely exclusive to Hibernate Reactive, as it marks the registry as Reactive:
         serviceInitiators.add(ReactiveMarkerServiceInitiator.INSTANCE);
+        serviceInitiators.add(VertxContextInitiator.INSTANCE);
 
         //Custom for Hibernate Reactive:
         serviceInitiators.add(ReactiveSessionFactoryBuilderInitiator.INSTANCE);
@@ -158,8 +160,8 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         // TODO (optional): assume entities are already enhanced?
         serviceInitiators.add(PropertyAccessStrategyResolverInitiator.INSTANCE);
 
-        // TODO (optional): not a priority
-        serviceInitiators.add(ImportSqlCommandExtractorInitiator.INSTANCE);
+        // Custom one!
+        serviceInitiators.add(QuarkusImportSqlCommandExtractorInitiator.INSTANCE);
 
         // TODO disable?
         serviceInitiators.add(SchemaManagementToolInitiator.INSTANCE);

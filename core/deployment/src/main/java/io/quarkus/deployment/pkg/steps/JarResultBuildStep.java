@@ -68,6 +68,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
+import io.quarkus.deployment.configuration.ClassLoadingConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.AppCDSRequestedBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -203,6 +204,7 @@ public class JarResultBuildStep {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             ApplicationInfoBuildItem applicationInfo,
             PackageConfig packageConfig,
+            ClassLoadingConfig classLoadingConfig,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             List<UberJarRequiredBuildItem> uberJarRequired,
@@ -234,7 +236,7 @@ public class JarResultBuildStep {
                     packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem);
         } else {
             return buildThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
-                    packageConfig, applicationInfo, generatedClasses, generatedResources,
+                    packageConfig, classLoadingConfig, applicationInfo, generatedClasses, generatedResources,
                     additionalApplicationArchiveBuildItems, mainClassBuildItem);
         }
     }
@@ -509,6 +511,7 @@ public class JarResultBuildStep {
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             PackageConfig packageConfig,
+            ClassLoadingConfig classLoadingConfig,
             ApplicationInfoBuildItem applicationInfo,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
@@ -576,7 +579,7 @@ public class JarResultBuildStep {
         }
 
         List<Path> jars = new ArrayList<>();
-        List<Path> bootJars = new ArrayList<>();
+        List<Path> parentFirst = new ArrayList<>();
         //we process in order of priority
         //transformed classes first
         if (!transformedClasses.getTransformedClassesByJar().isEmpty()) {
@@ -603,7 +606,7 @@ public class JarResultBuildStep {
         jars.add(generatedZip);
         try (FileSystem out = ZipUtils.newZip(generatedZip)) {
             for (GeneratedClassBuildItem i : generatedClasses) {
-                String fileName = i.getName().replace(".", "/") + ".class";
+                String fileName = i.getName().replace('.', '/') + ".class";
                 Path target = out.getPath(fileName);
                 if (target.getParent() != null) {
                     Files.createDirectories(target.getParent());
@@ -641,18 +644,17 @@ public class JarResultBuildStep {
                 }
             }
         }
-
+        final Set<AppArtifactKey> parentFirstKeys = getParentFirstKeys(curateOutcomeBuildItem, classLoadingConfig);
         StringBuilder classPath = new StringBuilder();
         for (AppDependency appDep : curateOutcomeBuildItem.getEffectiveModel().getUserDependencies()) {
             if (rebuild) {
                 jars.addAll(appDep.getArtifact().getPaths().toList());
             } else {
-                copyDependency(curateOutcomeBuildItem, outputTargetBuildItem, copiedArtifacts, mainLib, baseLib, jars, true,
+                copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, mainLib, baseLib, jars, true,
                         classPath, appDep);
             }
-            if (curateOutcomeBuildItem.getEffectiveModel().getRunnerParentFirstArtifacts()
-                    .contains(appDep.getArtifact().getKey())) {
-                bootJars.addAll(appDep.getArtifact().getPaths().toList());
+            if (parentFirstKeys.contains(appDep.getArtifact().getKey())) {
+                parentFirst.addAll(appDep.getArtifact().getPaths().toList());
             }
         }
         for (AdditionalApplicationArchiveBuildItem i : additionalApplicationArchiveBuildItems) {
@@ -684,7 +686,8 @@ public class JarResultBuildStep {
 
         Path appInfo = buildDir.resolve(QuarkusEntryPoint.QUARKUS_APPLICATION_DAT);
         try (OutputStream out = Files.newOutputStream(appInfo)) {
-            SerializedApplication.write(out, mainClassBuildItem.getClassName(), buildDir, jars, bootJars, nonExistentResources);
+            SerializedApplication.write(out, mainClassBuildItem.getClassName(), buildDir, jars, parentFirst,
+                    nonExistentResources);
         }
 
         runnerJar.toFile().setReadable(true, false);
@@ -703,7 +706,7 @@ public class JarResultBuildStep {
                 Path deploymentLib = libDir.resolve(DEPLOYMENT_LIB);
                 Files.createDirectories(deploymentLib);
                 for (AppDependency appDep : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
-                    copyDependency(curateOutcomeBuildItem, outputTargetBuildItem, copiedArtifacts, deploymentLib, baseLib, jars,
+                    copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, deploymentLib, baseLib, jars,
                             false, classPath,
                             appDep);
                 }
@@ -711,7 +714,7 @@ public class JarResultBuildStep {
                 Map<AppArtifactKey, List<String>> relativePaths = new HashMap<>();
                 for (Map.Entry<AppArtifactKey, List<Path>> e : copiedArtifacts.entrySet()) {
                     relativePaths.put(e.getKey(),
-                            e.getValue().stream().map(s -> buildDir.relativize(s).toString().replace("\\", "/"))
+                            e.getValue().stream().map(s -> buildDir.relativize(s).toString().replace('\\', '/'))
                                     .collect(Collectors.toList()));
                 }
 
@@ -774,6 +777,23 @@ public class JarResultBuildStep {
         return new JarBuildItem(initJar, null, libDir, packageConfig.type, null);
     }
 
+    /**
+     * @return a {@code Set} containing the key of the artifacts to load from the parent ClassLoader first.
+     */
+    private Set<AppArtifactKey> getParentFirstKeys(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            ClassLoadingConfig classLoadingConfig) {
+        final Set<AppArtifactKey> parentFirstKeys = new HashSet<>(
+                curateOutcomeBuildItem.getEffectiveModel().getRunnerParentFirstArtifacts());
+        classLoadingConfig.parentFirstArtifacts.ifPresent(
+                parentFirstArtifacts -> {
+                    String[] artifacts = parentFirstArtifacts.split(",");
+                    for (String artifact : artifacts) {
+                        parentFirstKeys.add(new AppArtifactKey(artifact.split(":")));
+                    }
+                });
+        return parentFirstKeys;
+    }
+
     private boolean downloadFernflowerJar(PackageConfig packageConfig, Path fernflowerJar) {
         String downloadURL = String.format("https://jitpack.io/com/github/fesh0r/fernflower/%s/fernflower-%s.jar",
                 packageConfig.fernflower.hash, packageConfig.fernflower.hash);
@@ -826,7 +846,7 @@ public class JarResultBuildStep {
         return true;
     }
 
-    private void copyDependency(CurateOutcomeBuildItem curateOutcomeBuildItem, OutputTargetBuildItem outputTargetBuildItem,
+    private void copyDependency(Set<AppArtifactKey> parentFirstArtifacts, OutputTargetBuildItem outputTargetBuildItem,
             Map<AppArtifactKey, List<Path>> runtimeArtifacts, Path libDir, Path baseLib, List<Path> jars,
             boolean allowParentFirst, StringBuilder classPath, AppDependency appDep)
             throws IOException {
@@ -844,8 +864,7 @@ public class JarResultBuildStep {
             final String fileName = depArtifact.getGroupId() + "." + resolvedDep.getFileName();
             final Path targetPath;
 
-            if (allowParentFirst && curateOutcomeBuildItem.getEffectiveModel().getRunnerParentFirstArtifacts()
-                    .contains(depArtifact.getKey())) {
+            if (allowParentFirst && parentFirstArtifacts.contains(depArtifact.getKey())) {
                 targetPath = baseLib.resolve(fileName);
                 classPath.append(" ").append(LIB).append("/").append(BOOT_LIB).append("/").append(fileName);
             } else {
@@ -1137,7 +1156,7 @@ public class JarResultBuildStep {
             }
         }
         for (GeneratedClassBuildItem i : generatedClasses) {
-            String fileName = i.getName().replace(".", "/") + ".class";
+            String fileName = i.getName().replace('.', '/') + ".class";
             seen.put(fileName, "Current Application");
             Path target = runnerZipFs.getPath(fileName);
             handleParent(runnerZipFs, fileName, seen);
@@ -1205,6 +1224,7 @@ public class JarResultBuildStep {
                     while (entries.hasMoreElements()) {
                         ZipEntry entry = entries.nextElement();
                         if (!transformedFromThisArchive.contains(entry.getName())) {
+                            entry.setCompressedSize(-1);
                             out.putNextEntry(entry);
                             try (InputStream inStream = in.getInputStream(entry)) {
                                 int r = 0;

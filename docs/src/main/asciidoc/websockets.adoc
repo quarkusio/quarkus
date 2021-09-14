@@ -20,7 +20,6 @@ To complete this guide, you need:
 * Apache Maven {maven-version}
 
 
-
 == Architecture
 
 In this guide, we create a straightforward chat application using web sockets to receive and send messages to the other connected users.
@@ -69,6 +68,8 @@ This will add the following to your `pom.xml`:
     <artifactId>quarkus-websockets</artifactId>
 </dependency>
 ----
+
+NOTE: If you only want to use the WebSocket client you should include `quarkus-websockets-client` instead.
 
 == Handling web sockets
 
@@ -166,7 +167,7 @@ You can also test your web socket applications using the approach detailed {quic
 
 == WebSocket Clients
 
-Quarkus also contains a WebSocket client. You can call `ContainerProvider.getWebSocketContainer().connectToServer` to create a websocket connection.
+Quarkus also contains a WebSocket client. You can call `ContainerProvider.getWebSocketContainer().connectToServer` to create a websocket connection. By default the `quarkus-websockets` artifact includes both client and server support however if you only want the client you can include `quarkus-websockets-client` instead.
 
 When you connect to the server you can either pass in the Class of the annotated client endpoint you want to use, or an instance of `javax.websocket.Endpoint`. If you
 are using the annotated endpoint then you can use the exact same annotations as you can on the server, except it must be annotated with `@ClientEndpoint` instead of

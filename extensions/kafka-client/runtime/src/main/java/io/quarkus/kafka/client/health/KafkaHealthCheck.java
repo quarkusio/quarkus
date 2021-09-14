@@ -7,7 +7,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.inject.Named;
 
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
@@ -17,12 +16,14 @@ import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Readiness;
 
+import io.smallrye.common.annotation.Identifier;
+
 @Readiness
 @ApplicationScoped
 public class KafkaHealthCheck implements HealthCheck {
 
     @Inject
-    @Named("default-kafka-broker")
+    @Identifier("default-kafka-broker")
     Map<String, Object> config;
 
     private AdminClient client;

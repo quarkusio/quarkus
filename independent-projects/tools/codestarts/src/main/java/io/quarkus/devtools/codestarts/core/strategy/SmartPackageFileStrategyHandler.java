@@ -32,7 +32,7 @@ final class SmartPackageFileStrategyHandler implements CodestartFileStrategyHand
         String content = codestartFiles.get(0).getContent();
         if (optPackageName.isPresent()) {
             final String packageName = optPackageName.get();
-            final String packageNameAsDir = packageName.replace(".", "/");
+            final String packageNameAsDir = packageName.replace('.', '/');
             modifiedRelativePath = relativePath.replace(DEFAULT_PACKAGE_DIR, packageNameAsDir);
             content = refactorPackage(content, packageName);
         }

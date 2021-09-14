@@ -3,12 +3,16 @@ package io.quarkus.smallrye.reactivemessaging.deployment;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.ACKNOWLEDGMENT;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.BLOCKING;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.BROADCAST;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.COMPLETION_STAGE;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.INCOMING;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.KOTLIN_UNIT;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.MERGE;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.OUTGOING;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.SMALLRYE_BLOCKING;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.VOID_CLASS;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -17,12 +21,12 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
-import io.smallrye.reactive.messaging.Invoker;
 import io.smallrye.reactive.messaging.MediatorConfigurationSupport;
 import io.smallrye.reactive.messaging.Shape;
 import io.smallrye.reactive.messaging.annotations.Blocking;
@@ -33,27 +37,46 @@ public final class QuarkusMediatorConfigurationUtil {
     private QuarkusMediatorConfigurationUtil() {
     }
 
-    public static QuarkusMediatorConfiguration create(MethodInfo methodInfo, BeanInfo bean,
-            String generatedInvokerName, RecorderContext recorderContext, ClassLoader cl) {
+    public static QuarkusMediatorConfiguration create(MethodInfo methodInfo, boolean isSuspendMethod, BeanInfo bean,
+            RecorderContext recorderContext,
+            ClassLoader cl, boolean strict) {
 
-        Class<?> returnTypeClass = load(methodInfo.returnType().name().toString(), cl);
-        Class[] parameterTypeClasses = new Class[methodInfo.parameters().size()];
-        for (int i = 0; i < methodInfo.parameters().size(); i++) {
-            parameterTypeClasses[i] = load(methodInfo.parameters().get(i).name().toString(), cl);
+        Class[] parameterTypeClasses;
+        Class<?> returnTypeClass;
+        MediatorConfigurationSupport.GenericTypeAssignable genericReturnTypeAssignable;
+        if (isSuspendMethod) {
+            parameterTypeClasses = new Class[methodInfo.parameters().size() - 1];
+            for (int i = 0; i < methodInfo.parameters().size() - 1; i++) {
+                parameterTypeClasses[i] = load(methodInfo.parameters().get(i).name().toString(), cl);
+            }
+            // the generated invoker will always return a CompletionStage
+            // TODO: avoid hard coding this and use an SPI to communicate the info with the invoker generation code
+            returnTypeClass = CompletionStage.class;
+            genericReturnTypeAssignable = new JandexGenericTypeAssignable(determineReturnTypeOfSuspendMethod(methodInfo), cl);
+        } else {
+            parameterTypeClasses = new Class[methodInfo.parameters().size()];
+            for (int i = 0; i < methodInfo.parameters().size(); i++) {
+                parameterTypeClasses[i] = load(methodInfo.parameters().get(i).name().toString(), cl);
+            }
+            returnTypeClass = load(methodInfo.returnType().name().toString(), cl);
+            genericReturnTypeAssignable = new ReturnTypeGenericTypeAssignable(methodInfo, cl);
         }
 
         QuarkusMediatorConfiguration configuration = new QuarkusMediatorConfiguration();
         MediatorConfigurationSupport mediatorConfigurationSupport = new MediatorConfigurationSupport(
                 fullMethodName(methodInfo), returnTypeClass, parameterTypeClasses,
-                new ReturnTypeGenericTypeAssignable(methodInfo, cl),
+                genericReturnTypeAssignable,
                 methodInfo.parameters().isEmpty() ? new AlwaysInvalidIndexGenericTypeAssignable()
                         : new MethodParamGenericTypeAssignable(methodInfo, 0, cl));
+
+        if (strict) {
+            mediatorConfigurationSupport.strict();
+        }
 
         configuration.setBeanId(bean.getIdentifier());
         configuration.setMethodName(methodInfo.name());
 
-        configuration.setInvokerClass((Class<? extends Invoker>) recorderContext.classProxy(generatedInvokerName));
-        String returnTypeName = methodInfo.returnType().name().toString();
+        String returnTypeName = returnTypeClass.getName();
         configuration.setReturnType(recorderContext.classProxy(returnTypeName));
         Class<?>[] parameterTypes = new Class[methodInfo.parameters().size()];
         for (int i = 0; i < methodInfo.parameters().size(); i++) {
@@ -146,6 +169,27 @@ public final class QuarkusMediatorConfigurationUtil {
         }
 
         return configuration;
+    }
+
+    // TODO: avoid hard coding CompletionStage handling
+    private static Type determineReturnTypeOfSuspendMethod(MethodInfo methodInfo) {
+        Type lastParamType = methodInfo.parameters().get(methodInfo.parameters().size() - 1);
+        if (lastParamType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+            throw new IllegalStateException("Something went wrong during parameter type resolution - expected "
+                    + lastParamType + " to be a Continuation with a generic type");
+        }
+        lastParamType = lastParamType.asParameterizedType().arguments().get(0);
+        if (lastParamType.kind() != Type.Kind.WILDCARD_TYPE) {
+            throw new IllegalStateException("Something went wrong during parameter type resolution - expected "
+                    + lastParamType + " to be a Continuation with a generic type");
+        }
+        lastParamType = lastParamType.asWildcardType().superBound();
+        if (lastParamType.name().equals(KOTLIN_UNIT)) {
+            lastParamType = Type.create(VOID_CLASS, Type.Kind.CLASS);
+        }
+        lastParamType = ParameterizedType.create(COMPLETION_STAGE, new Type[] { lastParamType },
+                Type.create(COMPLETION_STAGE, Type.Kind.CLASS));
+        return lastParamType;
     }
 
     private static Class<?> load(String className, ClassLoader cl) {

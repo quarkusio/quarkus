@@ -8,13 +8,16 @@ import static org.hamcrest.Matchers.is;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
 public class MovieResourceTest {
@@ -182,6 +185,13 @@ public class MovieResourceTest {
         when().get("/movie/customFind/page/10/0").then()
                 .statusCode(200)
                 .body(containsString("false /"));
+
+        List<Movie> movies = when().get("/movie/customFind/all").then()
+                .statusCode(200)
+                .extract().body().as(new TypeRef<List<Movie>>() {
+                });
+        List<Long> ids = movies.stream().map(MovieSuperclass::getId).collect(Collectors.toList());
+        assertThat(ids).isNotEmpty().isSortedAccordingTo(Comparator.reverseOrder());
     }
 
     @Test

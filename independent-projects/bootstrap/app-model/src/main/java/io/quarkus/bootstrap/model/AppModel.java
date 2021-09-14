@@ -16,6 +16,8 @@ import org.jboss.logging.Logger;
 /**
  * A representation of the Quarkus dependency model for a given application.
  *
+ * Changes made to this class should also be reflected in {@link PersistentAppModel}
+ *
  * @author Alexey Loubyansky
  */
 public class AppModel implements Serializable {
@@ -60,7 +62,7 @@ public class AppModel implements Serializable {
      */
     private final Set<AppArtifactKey> localProjectArtifacts;
 
-    private final Map<String, String> platformProperties;
+    private final PlatformImports platformImports;
 
     private final Map<String, CapabilityContract> capabilitiesContracts;
 
@@ -73,13 +75,17 @@ public class AppModel implements Serializable {
         this.runnerParentFirstArtifacts = builder.runnerParentFirstArtifacts;
         this.lesserPriorityArtifacts = builder.lesserPriorityArtifacts;
         this.localProjectArtifacts = builder.localProjectArtifacts;
-        this.platformProperties = builder.platformProperties;
+        this.platformImports = builder.platformImports;
         this.capabilitiesContracts = builder.capabilitiesContracts;
         log.debugf("Created AppModel %s", this);
     }
 
     public Map<String, String> getPlatformProperties() {
-        return platformProperties;
+        return platformImports == null ? Collections.emptyMap() : platformImports.getPlatformProperties();
+    }
+
+    public PlatformImports getPlatforms() {
+        return platformImports;
     }
 
     public AppArtifact getAppArtifact() {
@@ -150,7 +156,7 @@ public class AppModel implements Serializable {
         private final Set<AppArtifactKey> excludedArtifacts = new HashSet<>();
         private final Set<AppArtifactKey> lesserPriorityArtifacts = new HashSet<>();
         private final Set<AppArtifactKey> localProjectArtifacts = new HashSet<>();
-        private Map<String, String> platformProperties = Collections.emptyMap();
+        private PlatformImports platformImports;
         private Map<String, CapabilityContract> capabilitiesContracts = Collections.emptyMap();
 
         private Predicate<AppDependency> depPredicate;
@@ -160,12 +166,8 @@ public class AppModel implements Serializable {
             return this;
         }
 
-        public Builder addPlatformProperties(Map<String, String> platformProperties) {
-            if (this.platformProperties.isEmpty()) {
-                this.platformProperties = platformProperties;
-            } else {
-                this.platformProperties.putAll(platformProperties);
-            }
+        public Builder setPlatformImports(PlatformImports platformImports) {
+            this.platformImports = platformImports;
             return this;
         }
 

@@ -18,21 +18,21 @@ abstract class ReactivePanacheMongoEntityBase {
      *
      * @see [persist]
      */
-    fun persist(): Uni<Void> = INSTANCE.persist(this)
+    fun <T : ReactivePanacheMongoEntityBase> persist(): Uni<T> = INSTANCE.persist(this).map { this as T }
 
     /**
      * Update this entity in the database.
      *
      * @see [update]
      */
-    fun update(): Uni<Void> = INSTANCE.update(this)
+    fun <T : ReactivePanacheMongoEntityBase> update(): Uni<T> = INSTANCE.update(this).map { this as T }
 
     /**
      * Persist this entity in the database or update it if it already exist.
      *
      * @see [persistOrUpdate]
      */
-    fun persistOrUpdate(): Uni<Void> = INSTANCE.persistOrUpdate(this)
+    fun <T : ReactivePanacheMongoEntityBase> persistOrUpdate(): Uni<T> = INSTANCE.persistOrUpdate(this).map { this as T }
 
     /**
      * Delete this entity from the database, if it is already persisted.

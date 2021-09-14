@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "SmallRye Reactive Type Converters"
+metadata:
+  keywords:
+  - "smallrye-reactive-type-converters"
+  - "reactive-type-converters"
+  - "reactive-streams"
+  - "microprofile-reactive-streams"
+  - "reactive"
+  categories:
+  - "reactive"
+  status: "stable"
+  unlisted: true

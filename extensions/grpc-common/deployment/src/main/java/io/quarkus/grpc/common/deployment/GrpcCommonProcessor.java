@@ -58,7 +58,8 @@ public class GrpcCommonProcessor {
                 // if they were not marked as runtime initialized:
                 .addRuntimeInitializedClass("io.grpc.netty.Utils")
                 .addRuntimeInitializedClass("io.grpc.netty.NettyServerBuilder")
-                .addRuntimeInitializedClass("io.grpc.netty.NettyChannelBuilder");
+                .addRuntimeInitializedClass("io.grpc.netty.NettyChannelBuilder")
+                .addRuntimeInitializedClass("io.grpc.internal.RetriableStream");
         return builder.build();
     }
 

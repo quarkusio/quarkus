@@ -14,7 +14,7 @@
     <description>Module that contains JPA related tests running with the Oracle database</description>
 
     <properties>
-        <oracledb.url>jdbc:oracle:thin:@localhost:1521:XE</oracledb.url>
+        <oracledb.url>jdbc:oracle:thin:@localhost:1521/XE</oracledb.url>
         <!-- See https://hub.docker.com/r/gvenzl/oracle-xe -->
         <oracle.image>gvenzl/oracle-xe:11-slim</oracle.image>
     </properties>
@@ -45,6 +45,11 @@
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -158,7 +163,7 @@
                 </property>
             </activation>
             <properties>
-                <oracledb.url>jdbc:oracle:thin:@localhost:1521:XE</oracledb.url>
+                <oracledb.url>jdbc:oracle:thin:@localhost:1521/XE</oracledb.url>
             </properties>
             <build>
                 <plugins>
@@ -184,7 +189,7 @@
                                         <wait>
                                             <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
                                             <!-- Unfortunately booting this is slow, needs to set a generous timeout: -->
-                                            <time>100000</time>
+                                            <time>60000</time>
                                             <log>DATABASE IS READY TO USE!</log>
                                         </wait>
                                     </run>

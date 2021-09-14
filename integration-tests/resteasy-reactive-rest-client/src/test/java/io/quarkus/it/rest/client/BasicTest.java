@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
 
 @QuarkusTest
 public class BasicTest {
@@ -22,9 +23,18 @@ public class BasicTest {
     @TestHTTPResource()
     String baseUrl;
 
+    @TestHTTPResource("/hello")
+    String helloUrl;
+
+    @Test
+    public void shouldMakeTextRequest() {
+        Response response = RestAssured.with().body(helloUrl).post("/call-hello-client");
+        assertThat(response.asString()).isEqualTo("Hello, JohnJohn");
+    }
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
-    void shouldWork() {
+    void shouldMakeJsonRequest() {
         List<Map> results = RestAssured.with().body(appleUrl).post("/call-client")
                 .then()
                 .statusCode(200)

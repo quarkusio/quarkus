@@ -47,9 +47,14 @@ final class QuteCodestartFileReader implements CodestartFileReader {
     public static String readQuteFile(CodestartResource projectResource, Source source, String languageName,
             Map<String, Object> data) {
         final String content = source.read();
+        final String templateId = source.absolutePath();
         final Engine engine = Engine.builder().addDefaults()
                 .addResultMapper(new MissingValueMapper())
                 .removeStandaloneLines(true)
+                // For now we need to disable strict rendering for codestarts
+                // A param of an {#if} section is not considered falsy if the value represents a "not found" result
+                // https://github.com/quarkusio/quarkus/pull/18227#discussion_r662301281
+                .strictRendering(false)
                 .addLocator(
                         id -> findIncludeTemplate(source.getCodestartResource(), languageName, id)
                                 .map(IncludeTemplateLocation::new))
@@ -59,7 +64,7 @@ final class QuteCodestartFileReader implements CodestartFileReader {
                 .addLocator(id -> Optional.of(new FallbackTemplateLocation()))
                 .build();
         try {
-            return engine.parse(content).render(data);
+            return engine.parse(content, null, templateId).render(data);
         } catch (Exception e) {
             throw new CodestartException("Error while rendering template: " + source.absolutePath(), e);
         }
@@ -112,7 +117,7 @@ final class QuteCodestartFileReader implements CodestartFileReader {
     static class MissingValueMapper implements ResultMapper {
 
         public boolean appliesTo(TemplateNode.Origin origin, Object result) {
-            return Results.Result.NOT_FOUND.equals(result);
+            return Results.isNotFound(result);
         }
 
         public String map(Object result, Expression expression) {

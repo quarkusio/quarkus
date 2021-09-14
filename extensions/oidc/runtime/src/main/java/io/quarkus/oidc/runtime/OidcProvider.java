@@ -21,6 +21,7 @@ import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
@@ -49,7 +50,7 @@ public class OidcProvider {
     final String issuer;
     final String[] audience;
 
-    public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeyCache jwks) {
+    public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks) {
         this.client = client;
         this.oidcConfig = oidcConfig;
         this.keyResolver = jwks == null ? null : new JsonWebKeyResolver(jwks, oidcConfig.token.forcedJwkRefreshInterval);
@@ -117,7 +118,11 @@ public class OidcProvider {
             if (!details.isEmpty()) {
                 detail = details.get(0).getErrorMessage();
             }
-            LOG.debugf("Token verification has failed: %s", detail);
+            if (oidcConfig.clientId.isPresent()) {
+                LOG.debugf("Verification of the token issued to client %s has failed: %s", oidcConfig.clientId.get(), detail);
+            } else {
+                LOG.debugf("Token verification has failed: %s", detail);
+            }
             throw ex;
         }
         return new TokenVerificationResult(OidcUtils.decodeJwtContent(token), null);
@@ -140,27 +145,29 @@ public class OidcProvider {
 
     public Uni<TokenVerificationResult> introspectToken(String token) {
         return client.introspectToken(token).onItemOrFailure()
-                .transform(new BiFunction<JsonObject, Throwable, TokenVerificationResult>() {
+                .transform(new BiFunction<TokenIntrospection, Throwable, TokenVerificationResult>() {
 
                     @Override
-                    public TokenVerificationResult apply(JsonObject jsonObject, Throwable t) {
+                    public TokenVerificationResult apply(TokenIntrospection introspectionResult, Throwable t) {
                         if (t != null) {
                             throw new AuthenticationFailedException(t);
                         }
-                        if (!Boolean.TRUE.equals(jsonObject.getBoolean(OidcConstants.INTROSPECTION_TOKEN_ACTIVE))) {
+                        if (!Boolean.TRUE.equals(introspectionResult.getBoolean(OidcConstants.INTROSPECTION_TOKEN_ACTIVE))) {
+                            LOG.debugf("Token issued to client %s is not active: %s", oidcConfig.clientId.get());
                             throw new AuthenticationFailedException();
                         }
-                        Long exp = jsonObject.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP);
+                        Long exp = introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP);
                         if (exp != null) {
                             final int lifespanGrace = client.getOidcConfig().token.lifespanGrace.isPresent()
                                     ? client.getOidcConfig().token.lifespanGrace.getAsInt()
                                     : 0;
                             if (System.currentTimeMillis() / 1000 > exp + lifespanGrace) {
+                                LOG.debugf("Token issued to client %s has expired %s", oidcConfig.clientId.get());
                                 throw new AuthenticationFailedException();
                             }
                         }
 
-                        return new TokenVerificationResult(null, jsonObject);
+                        return new TokenVerificationResult(null, introspectionResult);
                     }
 
                 });
@@ -183,11 +190,11 @@ public class OidcProvider {
     }
 
     private class JsonWebKeyResolver implements RefreshableVerificationKeyResolver {
-        volatile JsonWebKeyCache jwks;
+        volatile JsonWebKeySet jwks;
         volatile long lastForcedRefreshTime;
         volatile long forcedJwksRefreshIntervalMilliSecs;
 
-        JsonWebKeyResolver(JsonWebKeyCache jwks, Duration forcedJwksRefreshInterval) {
+        JsonWebKeyResolver(JsonWebKeySet jwks, Duration forcedJwksRefreshInterval) {
             this.jwks = jwks;
             this.forcedJwksRefreshIntervalMilliSecs = forcedJwksRefreshInterval.toMillis();
         }
@@ -210,10 +217,10 @@ public class OidcProvider {
             final long now = System.currentTimeMillis();
             if (now > lastForcedRefreshTime + forcedJwksRefreshIntervalMilliSecs) {
                 lastForcedRefreshTime = now;
-                return client.getJsonWebKeySet().onItem().transformToUni(new Function<JsonWebKeyCache, Uni<? extends Void>>() {
+                return client.getJsonWebKeySet().onItem().transformToUni(new Function<JsonWebKeySet, Uni<? extends Void>>() {
 
                     @Override
-                    public Uni<? extends Void> apply(JsonWebKeyCache t) {
+                    public Uni<? extends Void> apply(JsonWebKeySet t) {
                         jwks = t;
                         return Uni.createFrom().voidItem();
                     }

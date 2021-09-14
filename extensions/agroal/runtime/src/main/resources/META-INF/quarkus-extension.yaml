@@ -1,0 +1,13 @@
+---
+name: "Agroal - Database connection pool"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "agroal"
+  - "database-connection-pool"
+  - "datasource"
+  - "jdbc"
+  guide: "https://quarkus.io/guides/datasource"
+  categories:
+  - "data"
+  status: "stable"

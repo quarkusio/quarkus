@@ -41,19 +41,23 @@ match is found. This means that any configuration property may override a value 
 higher ordinal config source. For example, a property configured using an environment property overrides the value
 provided using the `application.properties` file.
 
-image::config-sources.png[]
+image::config-sources.png[align=center,align=center,width=90%]
 
 [[system-properties]]
 === System properties
 
-* for a runner jar: `java -Dquarkus.datasource.password=youshallnotpass -jar target/quarkus-app/quarkus-run.jar`
-* for a native executable: `./target/myapp-runner -Dquarkus.datasource.password=youshallnotpass`
+System properties can be handed to the application through the `-D` flag during startup. The following examples assign
+the value `youshallnotpass` to the attribute `quarkus.datasource.password`.
+
+* For Quarkus dev mode: `./mvnw quarkus:dev -Dquarkus.datasource.password=youshallnotpass`
+* For a runner jar: `java -Dquarkus.datasource.password=youshallnotpass -jar target/quarkus-app/quarkus-run.jar`
+* For a native executable: `./target/myapp-runner -Dquarkus.datasource.password=youshallnotpass`
 
 [[environment-variables]]
 === Environment variables
 
-* for a runner jar: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; java -jar target/quarkus-app/quarkus-run.jar`
-* for a native executable: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; ./target/myapp-runner`
+* For a runner jar: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; java -jar target/quarkus-app/quarkus-run.jar`
+* For a native executable: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; ./target/myapp-runner`
 
 NOTE: Environment variables names follow the conversion rules specified by
 link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc#default-configsources[MicroProfile Config].
@@ -248,24 +252,28 @@ Using `@ConfigProperty("quarkus.profile")` will *not* work properly.
 
 === Profile aware files
 
-In this case, properties for a specific profile may reside in an `application-{profile}.yaml` named file. The previous
+In this case, properties for a specific profile may reside in an `application-{profile}.properties` named file. The previous
 example may be expressed as:
 
 .application.properties
 [source,properties]
 ----
 quarkus.http.port=9090
+%staging.quarkus.http.test-port=9091
 ----
 
 .application-staging.properties
 [source,properties]
 ----
-quarkus.http.port=9999
+quarkus.http.port=9190
+quarkus.http.test-port=9191
 ----
 
 [NOTE]
 ====
 In this style, the configuration names in the profile aware file do not need to be prefixed with the profile name.
+
+Properties in the profile aware file have priority over profile aware properties defined in the main file.
 ====
 
 === Parent Profile
@@ -475,6 +483,10 @@ However, some extensions do define properties _overridable at runtime_. A simple
 and password which is only known specifically in your target environment, so they can be set and influence the
 application behaviour at runtime.
 
+== Change build time properties after your application has been published
+
+If you are in the rare situation that you need to change the build time configuration after your application is built, then check out how link:reaugmentation[re-augmentation] can be used to rebuild the augmentation output for a different build time configuration.
+
 [[additional-information]]
 == Additional Information
 
@@ -499,3 +511,7 @@ Quarkus relies on link:https://github.com/smallrye/smallrye-config/[SmallRye Con
 
 For more information, please check the
 link:https://smallrye.io/docs/smallrye-config/index.html[SmallRye Config documentation].
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-config-config.adoc[opts=optional, leveloffset=+1]

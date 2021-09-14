@@ -77,7 +77,7 @@ public class GeneratedClassGizmoAdaptor implements ClassOutput {
                 .getContextClassLoader();
         //if the class file is present in this (and not the parent) CL then it is an application class
         List<ClassPathElement> res = cl
-                .getElementsWithResource(className.replace(".", "/") + ".class", true);
+                .getElementsWithResource(className.replace('.', '/') + ".class", true);
         return !res.isEmpty();
     }
 

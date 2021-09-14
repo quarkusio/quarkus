@@ -7,8 +7,6 @@ import org.jboss.jandex.DotName;
 import io.quarkus.amazon.common.deployment.AbstractAmazonServiceProcessor;
 import io.quarkus.amazon.common.deployment.AmazonClientAsyncTransportBuildItem;
 import io.quarkus.amazon.common.deployment.AmazonClientBuildItem;
-import io.quarkus.amazon.common.deployment.AmazonClientBuilderBuildItem;
-import io.quarkus.amazon.common.deployment.AmazonClientBuilderConfiguredBuildItem;
 import io.quarkus.amazon.common.deployment.AmazonClientInterceptorsPathBuildItem;
 import io.quarkus.amazon.common.deployment.AmazonClientSyncTransportBuildItem;
 import io.quarkus.amazon.common.deployment.AmazonHttpClients;
@@ -21,8 +19,8 @@ import io.quarkus.amazon.kms.runtime.KmsClientProducer;
 import io.quarkus.amazon.kms.runtime.KmsConfig;
 import io.quarkus.amazon.kms.runtime.KmsRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -30,9 +28,10 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import software.amazon.awssdk.services.kms.KmsAsyncClient;
+import software.amazon.awssdk.services.kms.KmsAsyncClientBuilder;
 import software.amazon.awssdk.services.kms.KmsClient;
+import software.amazon.awssdk.services.kms.KmsClientBuilder;
 
 public class KmsProcessor extends AbstractAmazonServiceProcessor {
 
@@ -119,34 +118,23 @@ public class KmsProcessor extends AbstractAmazonServiceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void createClientBuilders(List<AmazonClientSyncTransportBuildItem> syncTransports,
-            List<AmazonClientAsyncTransportBuildItem> asyncTransports, KmsRecorder recorder,
-            KmsConfig runtimeConfig, BuildProducer<AmazonClientBuilderBuildItem> builderProducer) {
-
-        createClientBuilders(syncTransports, asyncTransports, builderProducer,
-                (syncTransport) -> recorder.createSyncBuilder(runtimeConfig, syncTransport),
-                (asyncTransport) -> recorder.createAsyncBuilder(runtimeConfig, asyncTransport));
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void configureClient(List<AmazonClientBuilderBuildItem> clients, KmsRecorder recorder,
+    void createClientBuilders(KmsRecorder recorder,
             AmazonClientRecorder commonRecorder,
             KmsConfig runtimeConfig,
-            BuildProducer<AmazonClientBuilderConfiguredBuildItem> producer) {
+            List<AmazonClientSyncTransportBuildItem> syncTransports,
+            List<AmazonClientAsyncTransportBuildItem> asyncTransports,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
 
-        initClientBuilders(clients, commonRecorder, recorder.getAwsConfig(runtimeConfig), recorder.getSdkConfig(runtimeConfig),
-                buildTimeConfig.sdk, producer);
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void buildClients(List<AmazonClientBuilderConfiguredBuildItem> configuredClients, KmsRecorder recorder,
-            BeanContainerBuildItem beanContainer,
-            ShutdownContextBuildItem shutdown) {
-
-        buildClients(configuredClients,
-                (syncBuilder) -> recorder.buildClient(syncBuilder, beanContainer.getValue(), shutdown),
-                (asyncBuilder) -> recorder.buildAsyncClient(asyncBuilder, beanContainer.getValue(), shutdown));
+        createClientBuilders(commonRecorder,
+                recorder.getAwsConfig(runtimeConfig),
+                recorder.getSdkConfig(runtimeConfig),
+                buildTimeConfig.sdk,
+                syncTransports,
+                asyncTransports,
+                KmsClientBuilder.class,
+                (syncTransport) -> recorder.createSyncBuilder(runtimeConfig, syncTransport),
+                KmsAsyncClientBuilder.class,
+                (asyncTransport) -> recorder.createAsyncBuilder(runtimeConfig, asyncTransport),
+                syntheticBeans);
     }
 }

@@ -1,0 +1,8 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Netty"
+metadata:
+  categories:
+  - "web"
+  status: "stable"
+  unlisted: true

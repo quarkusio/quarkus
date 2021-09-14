@@ -24,6 +24,7 @@ import io.quarkus.builder.BuildExecutionBuilder;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
+import io.quarkus.deployment.builditem.AppModelProviderBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
@@ -33,7 +34,6 @@ import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.RawCommandLineArgumentsBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.LaunchMode;
@@ -60,6 +60,7 @@ public class QuarkusAugmentor {
     private final Consumer<ConfigBuilder> configCustomizer;
     private final boolean rebuild;
     private final boolean auxiliaryApplication;
+    private final Optional<DevModeType> auxiliaryDevModeType;
 
     QuarkusAugmentor(Builder builder) {
         this.classLoader = builder.classLoader;
@@ -79,6 +80,7 @@ public class QuarkusAugmentor {
         this.rebuild = builder.rebuild;
         this.devModeType = builder.devModeType;
         this.auxiliaryApplication = builder.auxiliaryApplication;
+        this.auxiliaryDevModeType = Optional.ofNullable(builder.auxiliaryDevModeType);
     }
 
     public BuildResult run() throws Exception {
@@ -117,7 +119,7 @@ public class QuarkusAugmentor {
                     .addInitial(LiveReloadBuildItem.class)
                     .addInitial(AdditionalApplicationArchiveBuildItem.class)
                     .addInitial(BuildSystemTargetBuildItem.class)
-                    .addInitial(CurateOutcomeBuildItem.class);
+                    .addInitial(AppModelProviderBuildItem.class);
             for (Class<? extends BuildItem> i : finalResults) {
                 chainBuilder.addFinal(i);
             }
@@ -143,10 +145,11 @@ public class QuarkusAugmentor {
                     .produce(new ShutdownContextBuildItem())
                     .produce(new RawCommandLineArgumentsBuildItem())
                     .produce(new LaunchModeBuildItem(launchMode,
-                            devModeType == null ? Optional.empty() : Optional.of(devModeType), auxiliaryApplication))
+                            devModeType == null ? Optional.empty() : Optional.of(devModeType), auxiliaryApplication,
+                            auxiliaryDevModeType))
                     .produce(new BuildSystemTargetBuildItem(targetDir, baseName, rebuild,
                             buildSystemProperties == null ? new Properties() : buildSystemProperties))
-                    .produce(new CurateOutcomeBuildItem(effectiveModel));
+                    .produce(new AppModelProviderBuildItem(effectiveModel));
             for (PathsCollection i : additionalApplicationArchives) {
                 execBuilder.produce(new AdditionalApplicationArchiveBuildItem(i));
             }
@@ -180,6 +183,7 @@ public class QuarkusAugmentor {
 
     public static final class Builder {
 
+        public DevModeType auxiliaryDevModeType;
         boolean rebuild;
         List<PathsCollection> additionalApplicationArchives = new ArrayList<>();
         Collection<Path> excludedFromIndexing = Collections.emptySet();
@@ -220,6 +224,11 @@ public class QuarkusAugmentor {
 
         public Builder setAuxiliaryApplication(boolean auxiliaryApplication) {
             this.auxiliaryApplication = auxiliaryApplication;
+            return this;
+        }
+
+        public Builder setAuxiliaryDevModeType(DevModeType auxiliaryDevModeType) {
+            this.auxiliaryDevModeType = auxiliaryDevModeType;
             return this;
         }
 

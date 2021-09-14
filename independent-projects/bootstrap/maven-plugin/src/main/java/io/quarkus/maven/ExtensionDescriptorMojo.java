@@ -85,7 +85,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     private static final String GROUP_ID = "group-id";
     private static final String ARTIFACT_ID = "artifact-id";
     private static final String METADATA = "metadata";
-    public static final String TEMPLATE = ".template";
 
     /**
      * The entry point to Aether, i.e. the component doing all the work.
@@ -302,30 +301,19 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
 
         // extension.json
-        File extensionFileTemplate = null;
-
         if (extensionFile == null) {
             extensionFile = new File(outputDirectory,
                     "META-INF" + File.separator + BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME);
-            extensionFileTemplate = new File(outputDirectory,
-                    "META-INF" + File.separator + BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME + TEMPLATE);
-        } else {
-            extensionFileTemplate = new File(extensionFile.getParent(), extensionFile.getName() + TEMPLATE);
         }
 
         ObjectNode extObject;
-        if (!extensionFile.exists() && !extensionFileTemplate.exists()) {
+        if (!extensionFile.exists()) {
             // if does not exist look for fallback .json
-            // template is not supported for json
             extensionFile = new File(extensionFile.getParent(), "quarkus-extension.json");
-            extensionFileTemplate = null;
         }
 
         ObjectMapper mapper = null;
-        if (extensionFileTemplate != null && extensionFileTemplate.exists()) {
-            mapper = getMapper(true);
-            extObject = readJsonNode(extensionFileTemplate.toPath(), mapper);
-        } else if (extensionFile.exists()) {
+        if (extensionFile.exists()) {
             mapper = getMapper(extensionFile.toString().endsWith(".yaml"));
             extObject = readJsonNode(extensionFile.toPath(), mapper);
         } else {
@@ -752,9 +740,15 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             return;
         }
         final Node node = rootDeployment.expectedDeploymentNodes.get(key);
-        if (node != null && !node.present) {
-            node.present = true;
-            --rootDeployment.deploymentDepsTotal;
+
+        if (node != null) {
+            if (!node.present) {
+                node.present = true;
+                --rootDeployment.deploymentDepsTotal;
+                if (rootDeployment.allRtDeps.contains(key)) {
+                    rootDeployment.deploymentsOnRtCp.add(key);
+                }
+            }
         } else if (!rootDeployment.allRtDeps.contains(key)) {
             final AppArtifactKey deployment = getDeploymentKey(artifact);
             if (deployment != null) {
@@ -806,7 +800,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     private org.eclipse.aether.artifact.Artifact getDeploymentArtifact(org.eclipse.aether.artifact.Artifact a)
             throws MojoExecutionException {
-        final Properties props = getExtensionDescriptor(a, true);
+        final Properties props = getExtensionDescriptor(a, false);
         if (props == null) {
             return null;
         }
@@ -828,7 +822,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             return null;
         }
         // if it hasn't been packaged yet, we skip it, we are not packaging yet
-        if (packaged && !isJarFile(f)) {
+        if (!a.getExtension().equals("jar") || packaged && !isJarFile(f)) {
             return null;
         }
         try {
@@ -1031,7 +1025,8 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
 
         boolean hasErrors() {
-            return deploymentDepsTotal != 0 || runtimeCp != 0 || !unexpectedDeploymentDeps.isEmpty();
+            return deploymentDepsTotal != 0 || runtimeCp != 0 || !unexpectedDeploymentDeps.isEmpty()
+                    || !deploymentsOnRtCp.isEmpty();
         }
     }
 

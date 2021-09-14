@@ -10,6 +10,9 @@ on:
       - 'docs/src/main/asciidoc/**'
       - '.github/workflows/doc-build.yml'
 
+concurrency:
+  group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, pr = ${{ github.event.pull_request.id }}"
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.repository != 'quarkusio/quarkus' }}
 
 jobs:
   ci-sanity-check:

@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Elasticsearch REST High Level Client"
+metadata:
+  keywords:
+  - "elasticsearch"
+  - "full text"
+  - "search"
+  guide: "https://quarkus.io/guides/elasticsearch"
+  categories:
+  - "data"
+  status: "preview"

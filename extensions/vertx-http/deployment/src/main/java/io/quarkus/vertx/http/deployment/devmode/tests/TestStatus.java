@@ -14,16 +14,27 @@ public class TestStatus {
 
     private long testsSkipped = -1;
 
+    private long totalTestsPassed = -1;
+
+    private long totalTestsFailed = -1;
+
+    private long totalTestsSkipped = -1;
+
     public TestStatus() {
     }
 
-    public TestStatus(long lastRun, long running, long testsRun, long testsPassed, long testsFailed, long testsSkipped) {
+    public TestStatus(long lastRun, long running, long testsRun, long testsPassed, long testsFailed, long testsSkipped,
+            long totalTestsPassed, long totalTestsFailed, long totalTestsSkipped) {
         this.lastRun = lastRun;
         this.running = running;
         this.testsRun = testsRun;
         this.testsPassed = testsPassed;
         this.testsFailed = testsFailed;
         this.testsSkipped = testsSkipped;
+        this.totalTestsPassed = totalTestsPassed;
+        this.totalTestsFailed = totalTestsFailed;
+        this.totalTestsSkipped = totalTestsSkipped;
+
     }
 
     public long getLastRun() {
@@ -77,6 +88,33 @@ public class TestStatus {
 
     public TestStatus setTestsSkipped(long testsSkipped) {
         this.testsSkipped = testsSkipped;
+        return this;
+    }
+
+    public long getTotalTestsPassed() {
+        return totalTestsPassed;
+    }
+
+    public TestStatus setTotalTestsPassed(long totalTestsPassed) {
+        this.totalTestsPassed = totalTestsPassed;
+        return this;
+    }
+
+    public long getTotalTestsFailed() {
+        return totalTestsFailed;
+    }
+
+    public TestStatus setTotalTestsFailed(long totalTestsFailed) {
+        this.totalTestsFailed = totalTestsFailed;
+        return this;
+    }
+
+    public long getTotalTestsSkipped() {
+        return totalTestsSkipped;
+    }
+
+    public TestStatus setTotalTestsSkipped(long totalTestsSkipped) {
+        this.totalTestsSkipped = totalTestsSkipped;
         return this;
     }
 

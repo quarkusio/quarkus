@@ -5,6 +5,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
+import io.vertx.ext.web.multipart.MultipartForm;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -355,5 +356,13 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     public RestClientRequestContext setAbortedWith(Response abortedWith) {
         this.abortedWith = abortedWith;
         return this;
+    }
+
+    public boolean isMultipart() {
+        return entity != null && entity.getEntity() instanceof MultipartForm;
+    }
+
+    public Map<String, Object> getClientFilterProperties() {
+        return properties;
     }
 }

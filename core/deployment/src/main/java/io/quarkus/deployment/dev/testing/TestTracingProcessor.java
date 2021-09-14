@@ -2,6 +2,7 @@ package io.quarkus.deployment.dev.testing;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
 
 import org.jboss.jandex.ClassInfo;
@@ -11,6 +12,9 @@ import org.objectweb.asm.Opcodes;
 
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.ConsoleConfig;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.IsTest;
@@ -23,6 +27,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.dev.BrowserOpenerBuildItem;
 import io.quarkus.deployment.dev.console.ConsoleHelper;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.dev.spi.DevModeType;
@@ -44,7 +49,10 @@ public class TestTracingProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    void setupConsole(TestConfig config, BuildProducer<TestListenerBuildItem> testListenerBuildItemBuildProducer) {
+    @Produce(TestSetupBuildItem.class)
+    void setupConsole(TestConfig config, BuildProducer<TestListenerBuildItem> testListenerBuildItemBuildProducer,
+            LaunchModeBuildItem launchModeBuildItem, Capabilities capabilities, ConsoleConfig consoleConfig,
+            Optional<BrowserOpenerBuildItem> browserOpener) {
         if (!TestSupport.instance().isPresent() || config.continuousTesting == TestConfig.Mode.DISABLED
                 || config.flatClassPath) {
             return;
@@ -53,9 +61,11 @@ public class TestTracingProcessor {
             return;
         }
         consoleInstalled = true;
-        if (config.console) {
-            ConsoleHelper.installConsole(config);
-            TestConsoleHandler consoleHandler = new TestConsoleHandler();
+        if (config.console.orElse(consoleConfig.enabled)) {
+            ConsoleHelper.installConsole(config, consoleConfig);
+            TestConsoleHandler consoleHandler = new TestConsoleHandler(launchModeBuildItem.getDevModeType().get(),
+                    browserOpener.map(BrowserOpenerBuildItem::getBrowserOpener).orElse(null),
+                    capabilities.isPresent(Capability.VERTX_HTTP));
             consoleHandler.install();
             testListenerBuildItemBuildProducer.produce(new TestListenerBuildItem(consoleHandler));
         }
@@ -63,14 +73,17 @@ public class TestTracingProcessor {
 
     @BuildStep(onlyIfNot = IsNormal.class)
     @Produce(LogHandlerBuildItem.class)
-    ServiceStartBuildItem startTesting(TestConfig config, LiveReloadBuildItem liveReloadBuildItem,
+    @Produce(TestSetupBuildItem.class)
+    @Produce(ServiceStartBuildItem.class)
+    void startTesting(TestConfig config, LiveReloadBuildItem liveReloadBuildItem,
             LaunchModeBuildItem launchModeBuildItem, List<TestListenerBuildItem> testListenerBuildItems) {
         if (!TestSupport.instance().isPresent() || config.continuousTesting == TestConfig.Mode.DISABLED
                 || config.flatClassPath) {
-            return null;
+            return;
         }
-        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
-            return null;
+        DevModeType devModeType = launchModeBuildItem.getDevModeType().orElse(null);
+        if (devModeType == null || !devModeType.isContinuousTestingSupported()) {
+            return;
         }
         TestSupport testSupport = TestSupport.instance().get();
         for (TestListenerBuildItem i : testListenerBuildItems) {
@@ -97,7 +110,6 @@ public class TestTracingProcessor {
                 testSupport.stop();
             }
         });
-        return null;
     }
 
     @BuildStep(onlyIf = IsTest.class)

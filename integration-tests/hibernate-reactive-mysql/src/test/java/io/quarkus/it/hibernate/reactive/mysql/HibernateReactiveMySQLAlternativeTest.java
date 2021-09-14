@@ -14,14 +14,6 @@ import io.restassured.RestAssured;
 public class HibernateReactiveMySQLAlternativeTest {
 
     @Test
-    public void reactiveFind() {
-        RestAssured.when()
-                .get("/alternative-tests/reactiveFind")
-                .then()
-                .body(is("{\"id\":5,\"name\":\"Aloi\"}"));
-    }
-
-    @Test
     public void reactiveFindMutiny() {
         RestAssured.when()
                 .get("/alternative-tests/reactiveFindMutiny")

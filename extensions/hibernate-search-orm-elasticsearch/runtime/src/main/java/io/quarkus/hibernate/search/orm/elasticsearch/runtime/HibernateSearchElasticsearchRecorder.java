@@ -4,6 +4,7 @@ import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSea
 import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchConfigUtil.addBackendIndexConfig;
 import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchConfigUtil.addConfig;
 
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -49,7 +50,8 @@ public class HibernateSearchElasticsearchRecorder {
     }
 
     public HibernateOrmIntegrationRuntimeInitListener createRuntimeInitListener(
-            HibernateSearchElasticsearchRuntimeConfig runtimeConfig, String persistenceUnitName) {
+            HibernateSearchElasticsearchRuntimeConfig runtimeConfig, String persistenceUnitName,
+            List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners) {
         HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puConfig = PersistenceUnitUtil
                 .isDefaultPersistenceUnit(persistenceUnitName)
                         ? runtimeConfig.defaultPersistenceUnit
@@ -57,7 +59,7 @@ public class HibernateSearchElasticsearchRecorder {
         if (puConfig == null) {
             return null;
         }
-        return new HibernateSearchIntegrationRuntimeInitListener(puConfig);
+        return new HibernateSearchIntegrationRuntimeInitListener(puConfig, integrationRuntimeInitListeners);
     }
 
     public Supplier<SearchMapping> searchMappingSupplier(String persistenceUnitName, boolean isDefaultPersistenceUnit) {
@@ -148,8 +150,6 @@ public class HibernateSearchElasticsearchRecorder {
                     ElasticsearchBackendSettings.TYPE_NAME);
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION,
                     elasticsearchBackendConfig.version);
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION_CHECK_ENABLED,
-                    elasticsearchBackendConfig.versionCheck);
             addBackendConfig(propertyCollector, backendName,
                     ElasticsearchBackendSettings.LAYOUT_STRATEGY,
                     elasticsearchBackendConfig.layout.strategy);
@@ -179,10 +179,13 @@ public class HibernateSearchElasticsearchRecorder {
             implements HibernateOrmIntegrationRuntimeInitListener {
 
         private final HibernateSearchElasticsearchRuntimeConfigPersistenceUnit runtimeConfig;
+        private final List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners;
 
         private HibernateSearchIntegrationRuntimeInitListener(
-                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit runtimeConfig) {
+                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit runtimeConfig,
+                List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners) {
             this.runtimeConfig = runtimeConfig;
+            this.integrationRuntimeInitListeners = integrationRuntimeInitListeners;
         }
 
         @Override
@@ -234,6 +237,8 @@ public class HibernateSearchElasticsearchRecorder {
                     elasticsearchBackendConfig.maxConnectionsPerRoute);
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.THREAD_POOL_SIZE,
                     elasticsearchBackendConfig.threadPool.size);
+            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION_CHECK_ENABLED,
+                    elasticsearchBackendConfig.versionCheck);
 
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DISCOVERY_ENABLED,
                     elasticsearchBackendConfig.discovery.enabled);

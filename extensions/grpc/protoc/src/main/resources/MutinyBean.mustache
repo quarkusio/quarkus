@@ -1,0 +1,64 @@
+{{#packageName}}
+package {{packageName}};
+{{/packageName}}
+
+import io.grpc.BindableService;
+import io.quarkus.grpc.GrpcService;
+import io.quarkus.grpc.runtime.MutinyBean;
+
+@javax.annotation.Generated(
+value = "by {{classPrefix}} Grpc generator",
+comments = "Source: {{protoName}}")
+public class {{serviceName}}Bean extends {{className}}.{{serviceName}}ImplBase implements BindableService, MutinyBean {
+
+    private final {{serviceName}} delegate;
+
+    {{serviceName}}Bean(@GrpcService {{serviceName}} delegate) {
+       this.delegate = delegate;
+    }
+
+    {{#unaryUnaryMethods}}
+    @Override
+    public io.smallrye.mutiny.Uni<{{outputType}}> {{methodName}}({{inputType}} request) {
+       try {
+         return delegate.{{methodName}}(request);
+       } catch (UnsupportedOperationException e) {
+          throw new io.grpc.StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED);
+       }
+    }
+    {{/unaryUnaryMethods}}
+    {{#unaryManyMethods}}
+
+    @Override
+    public io.smallrye.mutiny.Multi<{{outputType}}> {{methodName}}({{inputType}} request) {
+       try {
+         return delegate.{{methodName}}(request);
+       } catch (UnsupportedOperationException e) {
+          throw new io.grpc.StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED);
+       }
+    }
+    {{/unaryManyMethods}}
+    {{#manyUnaryMethods}}
+
+    @Override
+    public io.smallrye.mutiny.Uni<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> request) {
+       try {
+         return delegate.{{methodName}}(request);
+       } catch (UnsupportedOperationException e) {
+          throw new io.grpc.StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED);
+       }
+    }
+    {{/manyUnaryMethods}}
+    {{#manyManyMethods}}
+
+    @Override
+    public io.smallrye.mutiny.Multi<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> request) {
+       try {
+         return delegate.{{methodName}}(request);
+       } catch (UnsupportedOperationException e) {
+          throw new io.grpc.StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED);
+       }
+    }
+    {{/manyManyMethods}}
+
+}

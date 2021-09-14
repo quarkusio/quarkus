@@ -6,13 +6,10 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Quarkus - Quarkus Extension for Spring Scheduling API
 
 include::./attributes.adoc[]
-:extension-status: preview
 
 While users are encouraged to use link:scheduler#standard-scheduling[regular Quarkus scheduler], Quarkus provides a compatibility layer for Spring Scheduled in the form of the `spring-scheduled` extension.
 
 This guide explains how a Quarkus application can leverage the well known Spring Scheduled annotation to configure and schedule tasks.
-
-include::./status-include.adoc[]
 
 == Prerequisites
 

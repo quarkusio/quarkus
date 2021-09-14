@@ -25,19 +25,16 @@ public final class Extensions {
     }
 
     public static Optional<Extension> findInList(Collection<Extension> list, final ArtifactKey key) {
-        return list.stream().filter(e -> Objects.equals(toCoords(e).getKey(), key)).findFirst();
+        return list.stream().filter(e -> Objects.equals(e.getArtifact().getKey(), key)).findFirst();
     }
 
     public static ArtifactCoords toCoords(final ArtifactKey k, final String version) {
         return new ArtifactCoords(k, version);
     }
 
+    @Deprecated
     public static ArtifactCoords toCoords(final Extension e) {
-        return new ArtifactCoords(e.getArtifact().getGroupId(),
-                e.getArtifact().getArtifactId(),
-                e.getArtifact().getClassifier(),
-                e.getArtifact().getType(),
-                e.getArtifact().getVersion());
+        return e.getArtifact();
     }
 
     public static ArtifactCoords toCoords(final Dependency d, final String overrideVersion) {

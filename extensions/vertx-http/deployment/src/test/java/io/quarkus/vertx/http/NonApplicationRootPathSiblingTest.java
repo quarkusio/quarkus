@@ -46,7 +46,6 @@ public class NonApplicationRootPathSiblingTest {
                                 .route("non-app-relative")
                                 .handler(new MyHandler())
                                 .blockingRoute()
-                                .requiresLegacyRedirect()
                                 .build());
                     }
                 }).produces(RouteBuildItem.class)

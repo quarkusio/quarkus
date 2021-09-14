@@ -16,6 +16,12 @@ public class ConsoleConfig {
     boolean enable;
 
     /**
+     * If console logging should go to {@link System#err} instead of {@link System#out}.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean stderr;
+
+    /**
      * The log format. Note that this value will be ignored if an extension is present that takes
      * control of console formatting (e.g. an XML or JSON-format extension).
      */

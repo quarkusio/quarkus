@@ -1,170 +1,98 @@
 package io.quarkus.cli;
 
-import static io.quarkus.devtools.commands.CreateExtension.extractQuarkiverseExtensionId;
-import static io.quarkus.devtools.commands.CreateExtension.isQuarkiverseGroupId;
-import static io.quarkus.devtools.commands.CreateExtension.resolveModel;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.isEmpty;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.concurrent.Callable;
-
-import org.apache.maven.model.Model;
-
-import io.quarkus.cli.core.BaseSubCommand;
-import io.quarkus.devtools.commands.data.QuarkusCommandException;
-import io.quarkus.devtools.utils.Prompter;
+import io.quarkus.cli.common.TargetQuarkusVersionGroup;
+import io.quarkus.cli.create.BaseCreateCommand;
+import io.quarkus.cli.create.CreateProjectMixin;
+import io.quarkus.cli.create.ExtensionNameGenerationGroup;
+import io.quarkus.cli.create.ExtensionTargetGVGroup;
+import io.quarkus.cli.create.ExtensionTestGenerationGroup;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.codegen.SourceType;
 import picocli.CommandLine;
+import picocli.CommandLine.Mixin;
 
-@CommandLine.Command(name = "create-extension", sortOptions = false, mixinStandardHelpOptions = false, description = "Creates the base of a Quarkus extension in different layout depending of the options and environment.")
-public class CreateExtension extends BaseSubCommand implements Callable<Integer> {
+@CommandLine.Command(name = "extension", sortOptions = false, mixinStandardHelpOptions = false, showDefaultValues = true, header = "Create a Quarkus extension project", description = "%n"
+        + "Quarkus extensions are built from multiple modules: runtime, deployment, and "
+        + "integration-test. This command will generate a Maven multi-module project in a directory called EXTENSION-ID "
+        + " by applying naming conventions to the specified EXTENSION-ID.%n", footer = { "%nDefault Naming conventions%n",
+                " EXTENSION-NAME: EXTENSION-ID converted to Capitalized Words",
+                " NAMESPACE-NAME: NAMESPACE-ID converted to Capitalized Words", "%nModule Naming Conventions%n",
+                " parent: ", "    artifactId:\t[NAMESPACE-ID][EXTENSION-ID]-parent",
+                "    name:\t[NAMESPACE-NAME][EXTENSION-NAME] - Parent", " runtime:",
+                "    artifactId:\t[NAMESPACE-ID][EXTENSION-ID]",
+                "    name:\t[NAMESPACE-NAME][EXTENSION-NAME] - Runtime", " deployment:",
+                "    artifactId:\t[NAMESPACE-ID][EXTENSION-ID]-deployment",
+                "    name:\t[NAMESPACE-NAME][EXTENSION-NAME] - Deployment", " integration-tests:",
+                "    artifactId:\t[NAMESPACE-ID][EXTENSION-ID]-integration-tests",
+                "    name:\t[NAMESPACE-NAME][EXTENSION-NAME] - Integration Tests",
+                "%nPackage and Class Naming Conventions%n",
+                " Package name: [GROUP-ID][EXTENSION-ID] with any dashes replaced by dots",
+                " Class name prefix: EXTENSION-ID converted to CamelCase",
+                "%nAs an example, specifying 'hello-world' as the EXTENSION-ID and "
+                        + "'org.acme' as the GROUP-ID will generate a project containing the following modules:%n",
+                "  hello-world: ", "    artifact:\torg.acme:hello-world-parent:1.0.0-SNAPSHOT",
+                "    name:\tHello World - Parent", "  hello-world/runtime:",
+                "    artifact:\torg.acme:hello-world:1.0.0-SNAPSHOT", "    name:\tHello World - Runtime",
+                "    package name: org.acme.hello.world.runtime", "  hello-world/deployment:",
+                "    artifact:\torg.acme:hello-world-deployment:1.0.0-SNAPSHOT", "    name:\tHello World - Deployment",
+                "    package names: org.acme.hello.world.deployment, org.acme.hello.world.test",
+                "  hello-world/integration-test:",
+                "    artifact:\torg.acme:hello-world-integration-tests:1.0.0-SNAPSHOT",
+                "    name:\tHello World - Integration Tests", "    package name: org.acme.hello.world.it",
+                "%nGenerated classes will use 'HelloWorld' as a class name prefix." }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
+public class CreateExtension extends BaseCreateCommand {
 
-    @CommandLine.Option(names = { "-g",
-            "--group-id" }, order = 1, paramLabel = "GROUP-ID", description = "The groupId for project.")
-    String groupId;
+    @Mixin
+    CreateProjectMixin createProject;
 
-    @CommandLine.Option(names = { "-i",
-            "--extension-id" }, order = 0, paramLabel = "EXTENSION-ID", description = "The extension id.")
+    @CommandLine.ArgGroup(order = 1, exclusive = false, heading = "%nExtension group and version%n", validate = false)
+    ExtensionTargetGVGroup gv = new ExtensionTargetGVGroup();
+
+    @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version%n")
+    TargetQuarkusVersionGroup quarkusVersion = new TargetQuarkusVersionGroup();
+
+    @CommandLine.ArgGroup(order = 3, exclusive = false, heading = "%nGenerated artifacts%n")
+    ExtensionNameGenerationGroup nameGeneration = new ExtensionNameGenerationGroup();
+
+    @CommandLine.ArgGroup(order = 5, exclusive = false, heading = "%nGenerated code (Optional)%n")
+    ExtensionTestGenerationGroup testGeneration = new ExtensionTestGenerationGroup();
+
+    @CommandLine.Parameters(paramLabel = "EXTENSION-ID", description = "Identifier used to generate module identifiers.")
     String extensionId;
-
-    @CommandLine.Option(names = { "-v",
-            "--version" }, order = 3, paramLabel = "VERSION", description = "The version for the extension.")
-    String version = "1.0.0-SNAPSHOT";
-
-    @CommandLine.Option(names = { "-q",
-            "--quarkus-version" }, order = 4, paramLabel = "QUARKUS-VERSION", description = "The quarkus version for the extension.")
-    String quarkusVersion;
-
-    @CommandLine.Option(names = { "-N",
-            "--namespace-id" }, order = 5, paramLabel = "NAMESPACE-ID", description = "A prefix common to all extension modules artifactIds.")
-    String namespaceId;
-
-    @CommandLine.Option(names = { "-p",
-            "--package-name" }, order = 6, paramLabel = "PACKAGE-NAME", description = "Base package under which classes should be created in Runtime and Deployment modules.. When specified, use a custom package name instead of auto generating it from other parameters.")
-    String packageName;
-
-    @CommandLine.Option(names = {
-            "--extension-name" }, order = 7, paramLabel = "EXTENSION-NAME", description = "When specified, use a custom extension name instead of generating it from the extension id.")
-    String extensionName;
-
-    @CommandLine.Option(names = {
-            "--namespace-name" }, order = 8, paramLabel = "NAMESPACE-NAME", description = "A prefix common to all extension modules names. When specified, use a custom namespace name instead of generating it from the namespace id.")
-    String namespaceName;
-
-    @CommandLine.Option(names = {
-            "--bom-group-id" }, order = 9, paramLabel = "BOM-GROUP-ID", description = "The group id of the Quarkus platform BOM.")
-    String quarkusBomGroupId;
-
-    @CommandLine.Option(names = {
-            "--bom-artifact-id" }, order = 10, paramLabel = "BOM-ARTIFACT-ID", description = "The artifact id of the Quarkus platform BOM.")
-    String quarkusBomArtifactId;
-
-    @CommandLine.Option(names = {
-            "--bom-version" }, order = 11, paramLabel = "BOM-VERSION", description = "The version id of the Quarkus platform BOM.")
-    String quarkusBomVersion;
-
-    @CommandLine.Option(names = {
-            "--without-unit-test" }, order = 12, description = "Indicates whether to generate a unit test class for the extension.")
-    boolean withoutUnitTest;
-
-    @CommandLine.Option(names = {
-            "--without-it-tests" }, order = 13, description = "Indicates whether to generate a integration tests for the extension.")
-    boolean withoutIntegrationTests;
-
-    @CommandLine.Option(names = {
-            "--without-devmode-test" }, order = 14, description = "Indicates whether to generate a dev mode test class for the extension.")
-    boolean withoutDevModeTest;
-
-    @CommandLine.Option(names = {
-            "--without-tests" }, order = 15, description = "Indicates whether to generate any test for the extension.")
-    boolean withoutTests;
-
-    @CommandLine.Spec
-    CommandLine.Model.CommandSpec spec; //
 
     @Override
     public Integer call() throws Exception {
         try {
-            Path dir = Paths.get(System.getProperty("user.dir"));
+            output.debug("Creating a new project with initial parameters: %s", this);
 
-            promptValues(dir);
-            autoComputeQuarkiverseExtensionId();
+            //createProject.setExtensionProjectGV(gv);
+            createProject.projectRoot(); // verify project directories early
 
-            final io.quarkus.devtools.commands.CreateExtension createExtension = new io.quarkus.devtools.commands.CreateExtension(
-                    dir)
-                            .extensionId(extensionId)
-                            .extensionName(extensionName)
-                            .groupId(groupId)
-                            .version(version)
-                            .packageName(packageName)
-                            .namespaceId(namespaceId)
-                            .namespaceName(namespaceName)
-                            .quarkusVersion(quarkusVersion)
-                            .quarkusBomGroupId(quarkusBomGroupId)
-                            .quarkusBomArtifactId(quarkusBomArtifactId)
-                            .quarkusBomGroupId(quarkusBomVersion)
-                            .withoutUnitTest(withoutTests || withoutUnitTest)
-                            .withoutDevModeTest(withoutTests || withoutDevModeTest)
-                            .withoutIntegrationTests(withoutTests || withoutIntegrationTests);
+            BuildTool buildTool = BuildTool.MAVEN;
+            SourceType sourceType = SourceType.JAVA;
 
-            try {
-                boolean success = createExtension.execute().isSuccess();
-                if (!success) {
-                    err().println("Failed to generate Extension");
-                    return CommandLine.ExitCode.SOFTWARE;
-                }
-            } catch (QuarkusCommandException e) {
-                err().println("Failed to generate Extension, " + e.getMessage());
-                if (parent.showErrors) {
-                    e.printStackTrace(err());
-                }
-                return CommandLine.ExitCode.SOFTWARE;
+            //QuarkusCommandInvocation invocation = createProject.build(buildTool, targetQuarkusVersion, output);
+            boolean success = true;
+
+            if (runMode.isDryRun()) {
+                //createProject.dryRun(buildTool, invocation, output);
+            } else {
+                //success = new CreateExtensionCommandHandler().execute(log, groupId, artifactId, input, newExtensionDir)
             }
-
+            return success ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
         } catch (Exception e) {
-            err().println("Failed to generate Extension, " + e.getMessage());
-            if (parent.showErrors) {
-                e.printStackTrace(err());
-            }
-            return CommandLine.ExitCode.SOFTWARE;
-        }
-
-        return CommandLine.ExitCode.OK;
-    }
-
-    private void autoComputeQuarkiverseExtensionId() {
-        if (isQuarkiverseGroupId(groupId) && isEmpty(extensionId)) {
-            extensionId = extractQuarkiverseExtensionId(groupId);
+            output.error("Project creation failed, " + e.getMessage());
+            return output.handleCommandException(e,
+                    "Unable to create project: " + e.getMessage());
         }
     }
 
-    private void promptValues(Path dir) throws QuarkusCommandException {
-        if (batchMode) {
-            if (isBlank(extensionId)) {
-                throw new CommandLine.MissingParameterException(spec.commandLine(), spec.optionsMap().get("-id"),
-                        "Missing required option: '--extension-id=EXTENSION-ID'");
-            }
-            return;
-        }
-        try {
-            final Prompter prompter = new Prompter();
-            final Model model = resolveModel(dir);
-            if (model == null || !model.getArtifactId().endsWith("quarkus-parent")) {
-                if (isBlank(quarkusVersion)) {
-                    quarkusVersion = prompter.prompt("Set the Quarkus version");
-                }
-                if (isBlank(groupId)) {
-                    groupId = prompter.promptWithDefaultValue("Set the extension groupId", "org.acme");
-                }
-            }
-            autoComputeQuarkiverseExtensionId();
-            if (isBlank(extensionId)) {
-                extensionId = prompter.prompt("Set the extension id");
-            }
-        } catch (IOException e) {
-            throw new QuarkusCommandException("Unable to get user input", e);
-        }
+    @Override
+    public String toString() {
+        return "CreateExtension{" + "gv=" + gv
+                + ", quarkusVersion=" + quarkusVersion
+                + ", nameGeneration=" + nameGeneration
+                + ", testGeneration=" + testGeneration
+                + ", extensionId='" + extensionId + '\'' + '}';
     }
 }

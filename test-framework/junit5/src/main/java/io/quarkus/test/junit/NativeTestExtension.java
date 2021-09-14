@@ -3,11 +3,11 @@ package io.quarkus.test.junit;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.doProcessTestInstance;
 import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
+import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResources;
 import static io.quarkus.test.junit.IntegrationTestUtil.getSysPropsToRestore;
 import static io.quarkus.test.junit.IntegrationTestUtil.handleDevDb;
 import static io.quarkus.test.junit.IntegrationTestUtil.startLauncher;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -113,7 +113,8 @@ public class NativeTestExtension
             TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
 
             testResourceManager = new TestResourceManager(requiredTestClass, quarkusTestProfile,
-                    Collections.emptyList(), testProfileAndProperties.testProfile != null
+                    getAdditionalTestResources(testProfileAndProperties.testProfile, currentJUnitTestClass.getClassLoader()),
+                    testProfileAndProperties.testProfile != null
                             && testProfileAndProperties.testProfile.disableGlobalTestResources());
             testResourceManager.init();
             hasPerTestResources = testResourceManager.hasPerTestResources();

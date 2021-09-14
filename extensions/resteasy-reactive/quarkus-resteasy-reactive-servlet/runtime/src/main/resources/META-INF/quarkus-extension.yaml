@@ -1,0 +1,20 @@
+name: "Quarkus RESTEasy Reactive Servlet"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  unlisted: true
+  short-name: "quarkus-resteasy-reactive-servlet"
+  keywords:
+  - "jaxrs"
+  - "web"
+  - "rest"
+  - "servlet"
+  categories:
+  - "web"
+  status: "experimental"
+  codestart:
+    name: "resteasy-reactive"
+    languages:
+      - "java"
+      - "kotlin"
+      - "scala"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

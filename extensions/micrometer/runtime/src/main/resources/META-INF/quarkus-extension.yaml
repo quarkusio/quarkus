@@ -1,0 +1,12 @@
+name: "Micrometer metrics"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "micrometer"
+  - "metrics"
+  - "metric"
+  - "monitoring"
+  guide: "https://quarkus.io/guides/micrometer"
+  categories:
+  - "observability"
+  status: "stable"

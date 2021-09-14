@@ -26,12 +26,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-core</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -52,16 +46,6 @@
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jprocesses</groupId>
-            <artifactId>jProcesses</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

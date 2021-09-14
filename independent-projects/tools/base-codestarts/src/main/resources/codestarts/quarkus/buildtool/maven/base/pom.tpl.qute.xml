@@ -15,7 +15,9 @@
         <quarkus.platform.group-id>{quarkus.platform.group-id}</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>{quarkus.platform.artifact-id}</quarkus.platform.artifact-id>
         <quarkus.platform.version>{quarkus.platform.version}</quarkus.platform.version>
+        {#if quarkus.maven-plugin.version != quarkus.platform.version || quarkus.maven-plugin.group-id != quarkus.platform.group-id}
         <quarkus-plugin.version>{quarkus.maven-plugin.version}</quarkus-plugin.version>
+        {/if}
         <compiler-plugin.version>{maven-compiler-plugin.version}</compiler-plugin.version>
         <surefire-plugin.version>{maven-surefire-plugin.version}</surefire-plugin.version>
         {#if uberjar}
@@ -25,13 +27,27 @@
 
     <dependencyManagement>
         <dependencies>
+            {#each boms}
             <dependency>
+            {#if it.groupId == quarkus.platform.group-id && it.version == quarkus.platform.version}
                 <groupId>$\{quarkus.platform.group-id}</groupId>
+            {#else}
+                <groupId>{it.groupId}</groupId>
+            {/if}
+            {#if it.artifactId == quarkus.platform.artifact-id}
                 <artifactId>$\{quarkus.platform.artifact-id}</artifactId>
+            {#else}
+                <artifactId>{it.artifactId}</artifactId>
+            {/if}
+            {#if it.groupId == quarkus.platform.group-id && it.version == quarkus.platform.version}
                 <version>$\{quarkus.platform.version}</version>
+            {#else}
+                <version>{it.version}</version>
+            {/if}
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            {/each}
         </dependencies>
     </dependencyManagement>
     {#if maven.repositories}
@@ -101,9 +117,17 @@
         <plugins>
             <!-- Quarkus build plugin - also provides the quarkus:dev live-reload feature -->
             <plugin>
+            {#if quarkus.maven-plugin.version != quarkus.platform.version || quarkus.maven-plugin.group-id != quarkus.platform.group-id}
                 <groupId>{quarkus.maven-plugin.group-id}</groupId>
+            {#else}
+                <groupId>$\{quarkus.platform.group-id}</groupId>
+            {/if}
                 <artifactId>{quarkus.maven-plugin.artifact-id}</artifactId>
+            {#if quarkus.maven-plugin.version != quarkus.platform.version || quarkus.maven-plugin.group-id != quarkus.platform.group-id}
                 <version>$\{quarkus-plugin.version}</version>
+            {#else}
+                <version>$\{quarkus.platform.version}</version>
+            {/if}
                 <extensions>true</extensions>
                 <executions>
                     <execution>
@@ -116,6 +140,7 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>     
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>$\{compiler-plugin.version}</version>
                 <!-- Workaround to support maven.compiler.parameters property (see https://youtrack.jetbrains.com/issue/IDEA-201496) -->

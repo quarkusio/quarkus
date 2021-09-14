@@ -1,0 +1,11 @@
+---
+name: "SmallRye GraphQL Client"
+metadata:
+  short-name: "graphql-client"
+  keywords:
+  - "smallrye-graphql"
+  - "graphql"
+  - "graphql-client"
+  - "microprofile-graphql"
+  guide: "https://quarkus.io/guides/smallrye-graphql-client"
+  status: "preview"

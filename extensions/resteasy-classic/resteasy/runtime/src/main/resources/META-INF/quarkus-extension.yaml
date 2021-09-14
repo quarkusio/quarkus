@@ -1,0 +1,20 @@
+name: "RESTEasy JAX-RS"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  short-name: "jax-rs"
+  keywords:
+  - "resteasy"
+  - "jaxrs"
+  - "web"
+  - "rest"
+  guide: "https://quarkus.io/guides/rest-json"
+  categories:
+  - "web"
+  status: "stable"
+  codestart:
+    name: "resteasy"
+    languages:
+      - "java"
+      - "kotlin"
+      - "scala"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

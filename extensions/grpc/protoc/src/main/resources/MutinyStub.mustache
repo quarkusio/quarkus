@@ -8,14 +8,13 @@ import static io.grpc.stub.ServerCalls.asyncServerStreamingCall;
 import static io.grpc.stub.ServerCalls.asyncClientStreamingCall;
 import static io.grpc.stub.ServerCalls.asyncBidiStreamingCall;
 
-
 {{#deprecated}}
 @java.lang.Deprecated
 {{/deprecated}}
 @javax.annotation.Generated(
 value = "by {{classPrefix}} Grpc generator",
 comments = "Source: {{protoName}}")
-public final class {{className}} {
+public final class {{className}} implements io.quarkus.grpc.runtime.MutinyGrpc {
     private {{className}}() {}
 
     public static {{classPrefix}}{{serviceName}}Stub new{{classPrefix}}Stub(io.grpc.Channel channel) {
@@ -57,15 +56,15 @@ public final class {{className}} {
         {{/unaryManyMethods}}
         {{#manyUnaryMethods}}
         {{{methodHeader}}}
-        public io.smallrye.mutiny.Uni<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> hdlr) {
-            return io.quarkus.grpc.runtime.ClientCalls.{{mutinyCallsMethodName}}(hdlr, delegateStub::{{methodName}});
+        public io.smallrye.mutiny.Uni<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> request) {
+            return io.quarkus.grpc.runtime.ClientCalls.{{mutinyCallsMethodName}}(request, delegateStub::{{methodName}});
         }
 
         {{/manyUnaryMethods}}
         {{#manyManyMethods}}
         {{{methodHeader}}}
-        public io.smallrye.mutiny.Multi<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> hdlr) {
-            return io.quarkus.grpc.runtime.ClientCalls.{{mutinyCallsMethodName}}(hdlr, delegateStub::{{methodName}});
+        public io.smallrye.mutiny.Multi<{{outputType}}> {{methodName}}(io.smallrye.mutiny.Multi<{{inputType}}> request) {
+            return io.quarkus.grpc.runtime.ClientCalls.{{mutinyCallsMethodName}}(request, delegateStub::{{methodName}});
         }
         {{/manyManyMethods}}
     }

@@ -19,7 +19,7 @@ public class AssertHelper {
 
     public static void assertRunOnWorker() {
         assertThat(Vertx.currentContext()).isNotNull();
-        assertThat(Thread.currentThread().getName()).contains("worker");
+        assertThat(Thread.currentThread().getName()).contains("executor");
     }
 
 }

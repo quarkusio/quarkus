@@ -4,9 +4,7 @@ import io.quarkus.amazon.common.runtime.AwsConfig;
 import io.quarkus.amazon.common.runtime.NettyHttpClientConfig;
 import io.quarkus.amazon.common.runtime.SdkConfig;
 import io.quarkus.amazon.common.runtime.SyncHttpClientConfig;
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
 import software.amazon.awssdk.http.SdkHttpClient.Builder;
@@ -52,23 +50,5 @@ public class SnsRecorder {
             builder.httpClientBuilder(transport.getValue());
         }
         return new RuntimeValue<>(builder);
-    }
-
-    public RuntimeValue<SnsClient> buildClient(RuntimeValue<? extends AwsClientBuilder> builder,
-            BeanContainer beanContainer,
-            ShutdownContext shutdown) {
-        SnsClientProducer producer = beanContainer.instance(SnsClientProducer.class);
-        producer.setSyncConfiguredBuilder((SnsClientBuilder) builder.getValue());
-        shutdown.addShutdownTask(producer::destroy);
-        return new RuntimeValue<>(producer.client());
-    }
-
-    public RuntimeValue<SnsAsyncClient> buildAsyncClient(RuntimeValue<? extends AwsClientBuilder> builder,
-            BeanContainer beanContainer,
-            ShutdownContext shutdown) {
-        SnsClientProducer producer = beanContainer.instance(SnsClientProducer.class);
-        producer.setAsyncConfiguredBuilder((SnsAsyncClientBuilder) builder.getValue());
-        shutdown.addShutdownTask(producer::destroy);
-        return new RuntimeValue<>(producer.asyncClient());
     }
 }

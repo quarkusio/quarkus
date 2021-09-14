@@ -125,6 +125,7 @@ public class VaultAuthManagerTest {
             config.authentication.userpass.passwordWrappingToken = Optional.empty();
             config.connectTimeout = Duration.ofSeconds(1);
             config.readTimeout = Duration.ofSeconds(1);
+            config.nonProxyHosts = Optional.empty();
             config.tls.skipVerify = Optional.of(true);
             config.logConfidentialityLevel = LogConfidentialityLevel.LOW;
             config.renewGracePeriod = Duration.ofSeconds(3);

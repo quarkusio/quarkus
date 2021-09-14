@@ -274,6 +274,9 @@ If you think some information is outdated, either provide a pull request or send
 |SmallRye GraphQL
 |https://github.com/phillip-kruger[Phillip Kruger], https://github.com/jmartisk[Jan Martiska]
 
+|SmallRye GraphQL Client
+|https://github.com/jmartisk[Jan Martiska], https://github.com/phillip-kruger[Phillip Kruger]
+
 |SmallRye OpenTracing
 |https://github.com/pavolloffay[Pavol Loffay], https://github.com/Ladicek[Ladislav Thon]
 

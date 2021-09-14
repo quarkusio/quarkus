@@ -107,6 +107,7 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
 
     @Override
     public List<String> getMappingFileNames() {
+        // Mapping files can safely be ignored, see verifyIgnoredFields().
         return Collections.emptyList();
     }
 
@@ -154,9 +155,11 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
         // throw new UnsupportedOperationException( "Value found for
         // #getPersistenceUnitRootUrl : not supported yet" );
         // }
-        if (toClone.getMappingFileNames() != null && !toClone.getMappingFileNames().isEmpty()) {
-            throw new UnsupportedOperationException("Value found for #getMappingFileNames : not supported yet");
-        }
+
+        // getMappingFiles() is ignored and replaced with an empty list,
+        // because we don't need Hibernate ORM to parse the mappings files:
+        // they are parsed at compile time and side-loaded during static init.
+
         if (toClone.getJarFileUrls() != null && !toClone.getJarFileUrls().isEmpty()) {
             throw new UnsupportedOperationException("Value found for #getJarFileUrls : not supported yet");
         }

@@ -80,7 +80,7 @@ public class quarkusapp {
 
 In this guide, we create a straightforward application serving a `hello` endpoint with a single source file, no additional build files like `pom.xml` or `build.gradle` needed. To demonstrate dependency injection, this endpoint uses a `greeting` bean.
 
-image::getting-started-architecture.png[alt=Architecture]
+image::getting-started-architecture.png[alt=Architecture, align=center]
 
 == Creating the initial file
 

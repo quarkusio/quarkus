@@ -15,12 +15,16 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ContextHandlerBuildItem;
+import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.IOThreadDetectorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.ThreadFactoryBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
@@ -62,13 +66,14 @@ class VertxCoreProcessor {
     }
 
     @BuildStep
+    @Produce(ServiceStartBuildItem.class)
     @Record(value = ExecutionTime.RUNTIME_INIT)
     CoreVertxBuildItem build(VertxCoreRecorder recorder,
             LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, VertxConfiguration config,
             List<VertxOptionsConsumerBuildItem> vertxOptionsConsumers,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<EventLoopSupplierBuildItem> eventLoops,
-            BuildProducer<ServiceStartBuildItem> serviceStartBuildItem) {
+            ExecutorBuildItem executorBuildItem) {
 
         Collections.sort(vertxOptionsConsumers);
         List<Consumer<VertxOptions>> consumers = new ArrayList<>(vertxOptionsConsumers.size());
@@ -77,7 +82,7 @@ class VertxCoreProcessor {
         }
 
         Supplier<Vertx> vertx = recorder.configureVertx(config,
-                launchMode.getLaunchMode(), shutdown, consumers);
+                launchMode.getLaunchMode(), shutdown, consumers, executorBuildItem.getExecutorProxy());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(Vertx.class)
                 .types(Vertx.class)
                 .scope(Singleton.class)
@@ -104,5 +109,17 @@ class VertxCoreProcessor {
                 .getAllKnownSubclasses(DotName.createSimple(AbstractVerticle.class.getName()))) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ci.toString()));
         }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    ThreadFactoryBuildItem createVertxThreadFactory(VertxCoreRecorder recorder) {
+        return new ThreadFactoryBuildItem(recorder.createThreadFactory());
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    ContextHandlerBuildItem createVertxContextHandlers(VertxCoreRecorder recorder) {
+        return new ContextHandlerBuildItem(recorder.executionContextHandler());
     }
 }

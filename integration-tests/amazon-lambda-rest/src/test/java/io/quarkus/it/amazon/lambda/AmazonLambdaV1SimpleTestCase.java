@@ -8,9 +8,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import io.quarkus.amazon.lambda.http.model.ApiGatewayAuthorizerContext;
+import io.quarkus.amazon.lambda.http.model.ApiGatewayRequestIdentity;
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequestContext;
 import io.quarkus.amazon.lambda.http.model.AwsProxyResponse;
+import io.quarkus.amazon.lambda.http.model.CognitoAuthorizerClaims;
 import io.quarkus.amazon.lambda.http.model.Headers;
 import io.quarkus.amazon.lambda.test.LambdaClient;
 import io.quarkus.test.junit.QuarkusTest;
@@ -25,6 +28,59 @@ public class AmazonLambdaV1SimpleTestCase {
         request.setPath("/hello/context");
         AwsProxyResponse out = LambdaClient.invoke(AwsProxyResponse.class, request);
         Assertions.assertEquals(out.getStatusCode(), 204);
+    }
+
+    @Test
+    public void testJaxrsSecurityIAM() throws Exception {
+        AwsProxyRequest request = new AwsProxyRequest();
+        request.setHttpMethod("GET");
+        request.setPath("/security/username");
+        request.setRequestContext(new AwsProxyRequestContext());
+        request.getRequestContext().setIdentity(new ApiGatewayRequestIdentity());
+        request.getRequestContext().getIdentity().setUser("Bill");
+        AwsProxyResponse out = LambdaClient.invoke(AwsProxyResponse.class, request);
+        Assertions.assertEquals(out.getStatusCode(), 200);
+        Assertions.assertTrue(body(out).contains("Bill"));
+    }
+
+    @Test
+    public void testServletSecurityIAM() throws Exception {
+        AwsProxyRequest request = new AwsProxyRequest();
+        request.setHttpMethod("GET");
+        request.setPath("/servlet/security");
+        request.setRequestContext(new AwsProxyRequestContext());
+        request.getRequestContext().setIdentity(new ApiGatewayRequestIdentity());
+        request.getRequestContext().getIdentity().setUser("Bill");
+        AwsProxyResponse out = LambdaClient.invoke(AwsProxyResponse.class, request);
+        Assertions.assertEquals(out.getStatusCode(), 200);
+        Assertions.assertTrue(body(out).contains("Bill"));
+    }
+
+    @Test
+    public void testJaxrsCognitoSecurityContext() throws Exception {
+        AwsProxyRequest request = new AwsProxyRequest();
+        request.setHttpMethod("GET");
+        request.setPath("/security/username");
+        request.setRequestContext(new AwsProxyRequestContext());
+        request.getRequestContext().setAuthorizer(new ApiGatewayAuthorizerContext());
+        request.getRequestContext().getAuthorizer().setClaims(new CognitoAuthorizerClaims());
+        request.getRequestContext().getAuthorizer().getClaims().setUsername("Bill");
+        AwsProxyResponse out = LambdaClient.invoke(AwsProxyResponse.class, request);
+        Assertions.assertEquals(out.getStatusCode(), 200);
+        Assertions.assertTrue(body(out).contains("Bill"));
+    }
+
+    @Test
+    public void testJaxrsCustomLambdaSecurityContext() throws Exception {
+        AwsProxyRequest request = new AwsProxyRequest();
+        request.setHttpMethod("GET");
+        request.setPath("/security/username");
+        request.setRequestContext(new AwsProxyRequestContext());
+        request.getRequestContext().setAuthorizer(new ApiGatewayAuthorizerContext());
+        request.getRequestContext().getAuthorizer().setPrincipalId("Bill");
+        AwsProxyResponse out = LambdaClient.invoke(AwsProxyResponse.class, request);
+        Assertions.assertEquals(out.getStatusCode(), 200);
+        Assertions.assertTrue(body(out).contains("Bill"));
     }
 
     @Test

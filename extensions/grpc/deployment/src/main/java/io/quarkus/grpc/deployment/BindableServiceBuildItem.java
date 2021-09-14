@@ -31,4 +31,8 @@ public final class BindableServiceBuildItem extends MultiBuildItem {
         return !blockingMethods.isEmpty();
     }
 
+    public DotName getServiceClass() {
+        return serviceClass;
+    }
+
 }

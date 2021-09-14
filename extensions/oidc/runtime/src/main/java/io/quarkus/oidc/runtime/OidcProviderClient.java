@@ -10,8 +10,10 @@ import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.common.runtime.OidcEndpointAccessException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
 import io.vertx.core.http.HttpHeaders;
@@ -47,9 +49,9 @@ public class OidcProviderClient {
         return metadata;
     }
 
-    public Uni<JsonWebKeyCache> getJsonWebKeySet() {
+    public Uni<JsonWebKeySet> getJsonWebKeySet() {
         return client.getAbs(metadata.getJsonWebKeySetUri()).send().onItem()
-                .transform(resp -> getJsonWebKeyCache(resp));
+                .transform(resp -> getJsonWebKeySet(resp));
     }
 
     public Uni<JsonObject> getUserInfo(String token) {
@@ -58,7 +60,7 @@ public class OidcProviderClient {
                 .send().onItem().transform(resp -> getUserInfo(resp));
     }
 
-    public Uni<JsonObject> introspectToken(String token) {
+    public Uni<TokenIntrospection> introspectToken(String token) {
         MultiMap introspectionParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
         introspectionParams.add(OidcConstants.INTROSPECTION_TOKEN, token);
         introspectionParams.add(OidcConstants.INTROSPECTION_TOKEN_TYPE_HINT, OidcConstants.ACCESS_TOKEN_VALUE);
@@ -66,11 +68,11 @@ public class OidcProviderClient {
                 .transform(resp -> getTokenIntrospection(resp));
     }
 
-    private JsonWebKeyCache getJsonWebKeyCache(HttpResponse<Buffer> resp) {
+    private JsonWebKeySet getJsonWebKeySet(HttpResponse<Buffer> resp) {
         if (resp.statusCode() == 200) {
-            return new JsonWebKeyCache(resp.bodyAsString(StandardCharsets.UTF_8.name()));
+            return new JsonWebKeySet(resp.bodyAsString(StandardCharsets.UTF_8.name()));
         } else {
-            throw new OIDCException();
+            throw new OidcEndpointAccessException(resp.statusCode());
         }
     }
 
@@ -127,17 +129,29 @@ public class OidcProviderClient {
         return getJsonObject(resp);
     }
 
-    private JsonObject getTokenIntrospection(HttpResponse<Buffer> resp) {
-        return getJsonObject(resp);
+    private TokenIntrospection getTokenIntrospection(HttpResponse<Buffer> resp) {
+        return new TokenIntrospection(getString(resp));
     }
 
-    private JsonObject getJsonObject(HttpResponse<Buffer> resp) {
+    private static JsonObject getJsonObject(HttpResponse<Buffer> resp) {
         if (resp.statusCode() == 200) {
             return resp.bodyAsJsonObject();
         } else {
-            String errorMessage = resp.bodyAsString();
-            LOG.debugf("Request has failed: status: %d, error message: %s", resp.statusCode(), errorMessage);
-            throw new OIDCException(errorMessage);
+            throw responseException(resp);
         }
+    }
+
+    private static String getString(HttpResponse<Buffer> resp) {
+        if (resp.statusCode() == 200) {
+            return resp.bodyAsString();
+        } else {
+            throw responseException(resp);
+        }
+    }
+
+    private static OIDCException responseException(HttpResponse<Buffer> resp) {
+        String errorMessage = resp.bodyAsString();
+        LOG.debugf("Request has failed: status: %d, error message: %s", resp.statusCode(), errorMessage);
+        throw new OIDCException(errorMessage);
     }
 }

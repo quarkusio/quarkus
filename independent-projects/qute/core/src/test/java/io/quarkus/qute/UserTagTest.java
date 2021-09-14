@@ -15,7 +15,7 @@ public class UserTagTest {
                 .addSectionHelper(new UserTagSectionHelper.Factory("myTag", "my-tag-id"))
                 .build();
 
-        Template tag = engine.parse("{#if showImage}{it.name}{#else}nope{/if}");
+        Template tag = engine.parse("{#if showImage.or(false)}{it.name}{#else}nope{/if}");
         engine.putTemplate("my-tag-id", tag);
 
         Map<String, Object> order = new HashMap<>();
@@ -36,7 +36,7 @@ public class UserTagTest {
                 .addSectionHelper(new UserTagSectionHelper.Factory("myTag", "my-tag-id"))
                 .build();
 
-        Template tag = engine.parse("{#if showImage}<b>{nested-content}</b>{#else}nope{/if}");
+        Template tag = engine.parse("{#if showImage.or(false)}<b>{nested-content}</b>{#else}nope{/if}");
         engine.putTemplate("my-tag-id", tag);
 
         Map<String, Object> order = new HashMap<>();

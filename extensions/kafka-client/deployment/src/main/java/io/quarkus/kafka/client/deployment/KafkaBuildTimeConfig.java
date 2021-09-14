@@ -22,4 +22,10 @@ public class KafkaBuildTimeConfig {
      */
     @ConfigItem(name = "snappy.enabled", defaultValue = "false")
     public boolean snappyEnabled;
+
+    /**
+     * Configuration for DevServices. DevServices allows Quarkus to automatically start Kafka in dev and test mode.
+     */
+    @ConfigItem
+    public KafkaDevServicesBuildTimeConfig devservices;
 }

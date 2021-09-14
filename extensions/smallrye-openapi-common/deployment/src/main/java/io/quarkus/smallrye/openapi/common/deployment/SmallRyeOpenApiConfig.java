@@ -22,6 +22,12 @@ public final class SmallRyeOpenApiConfig {
     public Optional<Path> storeSchemaDirectory;
 
     /**
+     * Do not run the filter only at startup, but every time the document is requested (dynamic).
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean alwaysRunFilter;
+
+    /**
      * Add a certain SecurityScheme with config
      */
     public Optional<SecurityScheme> securityScheme;

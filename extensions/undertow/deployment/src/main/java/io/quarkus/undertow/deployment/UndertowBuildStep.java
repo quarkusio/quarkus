@@ -194,8 +194,10 @@ public class UndertowBuildStep {
         if (servletContextPathBuildItem.getServletContextPath().equals("/")) {
             undertowProducer.accept(new DefaultRouteBuildItem(ut));
         } else {
-            routeProducer.produce(new RouteBuildItem(servletContextPathBuildItem.getServletContextPath() + "/*", ut, false));
-            routeProducer.produce(new RouteBuildItem(servletContextPathBuildItem.getServletContextPath(), ut, false));
+            routeProducer.produce(RouteBuildItem.builder().route(servletContextPathBuildItem.getServletContextPath() + "/*")
+                    .handler(ut).build());
+            routeProducer.produce(
+                    RouteBuildItem.builder().route(servletContextPathBuildItem.getServletContextPath()).handler(ut).build());
         }
         return new ServiceStartBuildItem("undertow");
     }
@@ -244,27 +246,33 @@ public class UndertowBuildStep {
         }
     }
 
+    @BuildStep
+    List<IgnoredServletContainerInitializerBuildItem> translateDeprecated(
+            List<BlacklistedServletContainerInitializerBuildItem> old) {
+        return old.stream().map(BlacklistedServletContainerInitializerBuildItem::getSciClass)
+                .map(IgnoredServletContainerInitializerBuildItem::new).collect(Collectors.toList());
+    }
+
     /*
      * look for Servlet container initializers
      *
      */
     @BuildStep
     public List<ServletContainerInitializerBuildItem> servletContainerInitializer(
-            ApplicationArchivesBuildItem archives,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            List<BlacklistedServletContainerInitializerBuildItem> blacklistedBuildItems,
+            List<IgnoredServletContainerInitializerBuildItem> ignoredScis,
             BuildProducer<AdditionalBeanBuildItem> beans) throws IOException {
 
-        Set<String> blacklistedClassNames = new HashSet<>();
-        for (BlacklistedServletContainerInitializerBuildItem bi : blacklistedBuildItems) {
-            blacklistedClassNames.add(bi.getSciClass());
+        Set<String> ignoredClassNames = new HashSet<>();
+        for (IgnoredServletContainerInitializerBuildItem bi : ignoredScis) {
+            ignoredClassNames.add(bi.getSciClass());
         }
         List<ServletContainerInitializerBuildItem> ret = new ArrayList<>();
         Set<String> initializers = ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
                 SERVLET_CONTAINER_INITIALIZER);
 
         for (String initializer : initializers) {
-            if (blacklistedClassNames.contains(initializer)) {
+            if (ignoredClassNames.contains(initializer)) {
                 continue;
             }
             beans.produce(AdditionalBeanBuildItem.unremovableOf(initializer));

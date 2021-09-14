@@ -791,6 +791,49 @@ See link:{hibernate-search-doc-prefix}#mapper-orm-schema-management-manager[this
 for more information.
 ====
 
+[[aws-request-signing]]
+== AWS request signing
+
+If you need to use https://docs.aws.amazon.com/elasticsearch-service/[Amazon’s managed Elasticsearch service],
+you will find it requires a proprietary authentication method involving request signing.
+
+To enable AWS request signing, an additional extension is required:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="hibernate-search-orm-elasticsearch-aws"
+----
+
+Once the extension is there, you will need some more configuration:
+
+* Configure the AWS region with
+link:#quarkus-hibernate-search-orm-elasticsearch-aws_quarkus.hibernate-search-orm.elasticsearch.aws.region[`quarkus.hibernate-search-orm.elasticsearch.aws.region`].
+* Enable request signing with
+link:#quarkus-hibernate-search-orm-elasticsearch-aws_quarkus.hibernate-search-orm.elasticsearch.aws.signing.enabled[`quarkus.hibernate-search-orm.elasticsearch.aws.signing.enabled`].
+* Optionally, configure how credentials are retrieved with
+link:#quarkus-hibernate-search-orm-elasticsearch-aws_quarkus.hibernate-search-orm.elasticsearch.aws.credentials.type[`quarkus.hibernate-search-orm.elasticsearch.aws.credentials.type`].
+The default gets the credentials from the application environment (AWS instance role, ...),
+but several more options are available.
+
+For example:
+
+[source,properties]
+----
+quarkus.hibernate-search-orm.elasticsearch.aws.region=us-east-1
+quarkus.hibernate-search-orm.elasticsearch.aws.signing.enabled=true
+----
+
+Or, if credentials are not available in the application environment (AWS instance role, ...):
+
+[source,properties]
+----
+quarkus.hibernate-search-orm.elasticsearch.aws.region=us-east-1
+quarkus.hibernate-search-orm.elasticsearch.aws.signing.enabled=true
+quarkus.hibernate-search-orm.elasticsearch.aws.credentials.type=static
+quarkus.hibernate-search-orm.elasticsearch.aws.credentials.static-provider.access-key-id=AKIDEXAMPLE
+quarkus.hibernate-search-orm.elasticsearch.aws.credentials.static-provider.secret-access-key=wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY
+----
+
 == Further reading
 
 If you are interested in learning more about Hibernate Search 6,
@@ -809,6 +852,9 @@ We don't have plans to support the Lucene backend in Quarkus for now.
 
 [[configuration-reference]]
 == Hibernate Search Configuration Reference
+
+[[configuration-reference-main]]
+=== Main Configuration
 
 include::{generated-dir}/config/quarkus-hibernate-search-orm-elasticsearch.adoc[leveloffset=+1, opts=optional]
 
@@ -834,3 +880,10 @@ Other formats are also accepted, but are only useful for advanced use cases.
 See link:{hibernate-search-doc-prefix}#configuration-bean-reference-parsing[this section of Hibernate Search's reference documentation]
 for more information.
 ====
+
+:no-duration-note: true
+
+[[configuration-reference-aws]]
+=== AWS Integration Configuration
+
+include::{generated-dir}/config/quarkus-hibernate-search-orm-elasticsearch-aws.adoc[leveloffset=+1, opts=optional]

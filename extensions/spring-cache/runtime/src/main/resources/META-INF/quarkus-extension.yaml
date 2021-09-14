@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Quarkus Extension for Spring Cache API"
+metadata:
+  keywords:
+  - "spring-cache"
+  - "spring"
+  - "cache"
+  guide: "https://quarkus.io/guides/spring-cache"
+  categories:
+  - "compatibility"
+  status: "stable"

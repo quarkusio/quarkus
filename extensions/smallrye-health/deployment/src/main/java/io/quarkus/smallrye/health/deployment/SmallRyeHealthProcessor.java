@@ -68,6 +68,7 @@ import io.quarkus.smallrye.health.runtime.SmallRyeHealthRuntimeConfig;
 import io.quarkus.smallrye.health.runtime.SmallRyeIndividualHealthGroupHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeLivenessHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeReadinessHandler;
+import io.quarkus.smallrye.health.runtime.SmallRyeStartupHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeWellnessHandler;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
@@ -201,7 +202,6 @@ class SmallRyeHealthProcessor {
                 .route(healthConfig.rootPath)
                 .routeConfigKey("quarkus.smallrye-health.root-path")
                 .handler(new SmallRyeHealthHandler())
-                .requiresLegacyRedirect()
                 .displayOnNotFoundPage()
                 .blockingRoute()
                 .build());
@@ -210,7 +210,6 @@ class SmallRyeHealthProcessor {
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .nestedRoute(healthConfig.rootPath, healthConfig.livenessPath)
                 .handler(new SmallRyeLivenessHandler())
-                .requiresLegacyRedirect()
                 .displayOnNotFoundPage()
                 .blockingRoute()
                 .build());
@@ -219,7 +218,6 @@ class SmallRyeHealthProcessor {
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .nestedRoute(healthConfig.rootPath, healthConfig.readinessPath)
                 .handler(new SmallRyeReadinessHandler())
-                .requiresLegacyRedirect()
                 .displayOnNotFoundPage()
                 .blockingRoute()
                 .build());
@@ -241,7 +239,6 @@ class SmallRyeHealthProcessor {
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .nestedRoute(healthConfig.rootPath, healthConfig.groupPath)
                 .handler(new SmallRyeHealthGroupHandler())
-                .requiresLegacyRedirect()
                 .displayOnNotFoundPage()
                 .blockingRoute()
                 .build());
@@ -251,7 +248,6 @@ class SmallRyeHealthProcessor {
             routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .nestedRoute(healthConfig.rootPath, healthConfig.groupPath + "/" + healthGroup)
                     .handler(handler)
-                    .requiresLegacyRedirect()
                     .displayOnNotFoundPage()
                     .blockingRoute()
                     .build());
@@ -261,7 +257,14 @@ class SmallRyeHealthProcessor {
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .nestedRoute(healthConfig.rootPath, healthConfig.wellnessPath)
                 .handler(new SmallRyeWellnessHandler())
-                .requiresLegacyRedirect()
+                .displayOnNotFoundPage()
+                .blockingRoute()
+                .build());
+
+        // Register the startup handler
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .nestedRoute(healthConfig.rootPath, healthConfig.startupPath)
+                .handler(new SmallRyeStartupHandler())
                 .displayOnNotFoundPage()
                 .blockingRoute()
                 .build());
@@ -470,13 +473,11 @@ class SmallRyeHealthProcessor {
                     .displayOnNotFoundPage("Health UI")
                     .routeConfigKey("quarkus.smallrye-health.ui.root-path")
                     .handler(handler)
-                    .requiresLegacyRedirect()
                     .build());
 
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .route(healthConfig.ui.rootPath + "*")
                     .handler(handler)
-                    .requiresLegacyRedirect()
                     .build());
 
         }

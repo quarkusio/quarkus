@@ -5,6 +5,11 @@ import java.time.Period;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
+
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -16,12 +21,13 @@ import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
 
-@ConfigMapping(prefix = "server")
-public interface Server {
+@ConfigMapping(prefix = "http.server")
+public interface Server extends Alias {
     @JsonProperty
     String host();
 
     @JsonProperty
+    @Min(8000)
     int port();
 
     @JsonProperty
@@ -48,6 +54,9 @@ public interface Server {
     @JsonProperty
     Log log();
 
+    @JsonProperty
+    Info info();
+
     interface Form {
         @JsonProperty
         String loginPage();
@@ -62,21 +71,13 @@ public interface Server {
         Optional<String> cookie();
     }
 
-    interface Ssl {
-        @JsonProperty
-        int port();
-
-        @JsonProperty
-        String certificate();
-
-        @JsonProperty
-        @WithDefault("TLSv1.3,TLSv1.2")
-        List<String> protocols();
-    }
-
     interface Proxy {
         @JsonProperty
         boolean enable();
+
+        @JsonProperty
+        @Max(10)
+        int timeout();
     }
 
     interface Log {
@@ -99,6 +100,10 @@ public interface Server {
         @JsonProperty
         Period period();
 
+        @JsonProperty
+        @Max(15)
+        int days();
+
         @RegisterForReflection
         enum Pattern {
             COMMON,
@@ -113,14 +118,37 @@ public interface Server {
         List<Origin> origins();
 
         @JsonProperty
-        List<String> methods();
+        List<@Size(min = 2) String> methods();
 
         interface Origin {
             @JsonProperty
+            @Size(min = 5)
             String host();
 
             @JsonProperty
+            @Min(8000)
             int port();
+        }
+    }
+
+    interface Info {
+        @JsonProperty
+        Optional<@Size(max = 3) String> name();
+
+        @JsonProperty
+        @Max(3)
+        OptionalInt code();
+
+        @JsonProperty
+        Optional<List<@Size(max = 3) String>> alias();
+
+        @JsonProperty
+        Map<String, Admin> admins();
+
+        interface Admin {
+            @JsonProperty
+            @Size(max = 3)
+            String username();
         }
     }
 }

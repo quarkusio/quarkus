@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>quarkus-integration-tests-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <version>999-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>quarkus-integration-test-jpa-mapping-xml</artifactId>
+    <name>Quarkus - Integration Tests - JPA - XML mapping</name>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>modern-library-a</module>
+        <module>modern-library-b</module>
+        <module>modern-app</module>
+        <module>legacy-library-a</module>
+        <module>legacy-library-b</module>
+        <module>legacy-app</module>
+    </modules>
+
+</project>

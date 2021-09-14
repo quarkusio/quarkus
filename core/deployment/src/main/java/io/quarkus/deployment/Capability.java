@@ -96,9 +96,14 @@ public interface Capability {
     String SMALLRYE_OPENTRACING = QUARKUS_PREFIX + "smallrye.opentracing";
     String SMALLRYE_HEALTH = QUARKUS_PREFIX + "smallrye.health";
     String SMALLRYE_OPENAPI = QUARKUS_PREFIX + "smallrye.openapi";
+    String SMALLRYE_FAULT_TOLERANCE = QUARKUS_PREFIX + "smallrye.faulttolerance";
 
     String SPRING_WEB = QUARKUS_PREFIX + "spring.web";
 
     String VERTX = QUARKUS_PREFIX + "vertx";
     String VERTX_CORE = VERTX + ".core";
+    String VERTX_HTTP = VERTX + ".http";
+
+    String APICURIO_REGISTRY = QUARKUS_PREFIX + "apicurio.registry";
+    String APICURIO_REGISTRY_AVRO = APICURIO_REGISTRY + ".avro";
 }

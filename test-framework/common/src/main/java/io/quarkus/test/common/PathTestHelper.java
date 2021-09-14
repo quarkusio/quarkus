@@ -53,6 +53,9 @@ public final class PathTestHelper {
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "java" + File.separator + "native-integration-test",
                 "classes" + File.separator + "java" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put( //synthetic tmp dirs when there are multiple outputs
+                "quarkus-app-classes-test",
+                "quarkus-app-classes");
         //endregion
         //region Kotlin
         TEST_TO_MAIN_DIR_FRAGMENTS.put(

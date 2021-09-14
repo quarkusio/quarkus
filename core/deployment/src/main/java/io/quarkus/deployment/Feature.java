@@ -19,6 +19,7 @@ public enum Feature {
     AMAZON_SES,
     AMAZON_KMS,
     AMAZON_SSM,
+    APICURIO_REGISTRY_AVRO,
     ARTEMIS_CORE,
     ARTEMIS_JMS,
     CACHE,
@@ -80,6 +81,7 @@ public enum Feature {
     OPENSHIFT_CLIENT,
     OPENTELEMETRY,
     OPENTELEMETRY_JAEGER_EXPORTER,
+    OPENTELEMETRY_OTLP_EXPORTER,
     PICOCLI,
     QUARTZ,
     QUTE,
@@ -129,6 +131,7 @@ public enum Feature {
     SMALLRYE_REACTIVE_STREAMS_OPERATORS,
     SMALLRYE_REACTIVE_TYPE_CONVERTERS,
     SMALLRYE_GRAPHQL,
+    SMALLRYE_GRAPHQL_CLIENT,
     SPRING_DI,
     SPRING_WEB,
     SPRING_DATA_JPA,
@@ -141,6 +144,7 @@ public enum Feature {
     SWAGGER_UI,
     TIKA,
     WEBSOCKETS,
+    WEBSOCKETS_CLIENT,
     VAULT,
     VERTX,
     VERTX_WEB,
@@ -148,7 +152,7 @@ public enum Feature {
     WEBJARS_LOCATOR;
 
     public String getName() {
-        return toString().toLowerCase().replace("_", "-");
+        return toString().toLowerCase().replace('_', '-');
     }
 
 }

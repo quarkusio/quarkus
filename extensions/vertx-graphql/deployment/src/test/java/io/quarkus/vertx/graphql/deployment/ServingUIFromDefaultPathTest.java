@@ -16,6 +16,6 @@ public class ServingUIFromDefaultPathTest {
 
     @Test
     public void shouldServeVertxGraphqlUiFromDefaultPath() {
-        RestAssured.when().get("/graphql-ui").then().statusCode(200);
+        RestAssured.when().get("/q/graphql-ui").then().statusCode(200);
     }
 }

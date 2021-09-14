@@ -60,7 +60,7 @@ public class SetSectionHelper implements SectionHelper {
         @Override
         public SetSectionHelper initialize(SectionInitContext context) {
             Map<String, Expression> params = context.getParameters().entrySet().stream()
-                    .collect(Collectors.toMap(e -> e.getKey(), e -> context.parseValue(e.getValue())));
+                    .collect(Collectors.toMap(e -> e.getKey(), e -> context.getExpression(e.getKey())));
             return new SetSectionHelper(params);
         }
 

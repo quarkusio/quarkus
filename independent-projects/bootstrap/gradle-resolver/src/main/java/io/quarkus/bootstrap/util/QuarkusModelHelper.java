@@ -8,11 +8,11 @@ import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.model.CapabilityContract;
 import io.quarkus.bootstrap.model.PathsCollection;
+import io.quarkus.bootstrap.model.gradle.ArtifactCoords;
+import io.quarkus.bootstrap.model.gradle.Dependency;
+import io.quarkus.bootstrap.model.gradle.QuarkusModel;
+import io.quarkus.bootstrap.model.gradle.WorkspaceModule;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.resolver.model.ArtifactCoords;
-import io.quarkus.bootstrap.resolver.model.Dependency;
-import io.quarkus.bootstrap.resolver.model.QuarkusModel;
-import io.quarkus.bootstrap.resolver.model.WorkspaceModule;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -88,8 +88,10 @@ public class QuarkusModelHelper {
 
     public static Path getClassPath(WorkspaceModule model) throws BootstrapGradleException {
         // TODO handle multiple class directory
-        final Optional<Path> classDir = model.getSourceSet().getSourceDirectories().stream().filter(File::exists)
-                .map(File::toPath).findFirst();
+        final Optional<Path> classDir = model.getSourceSet().getSourceDirectories().stream()
+                .filter(File::exists)
+                .map(File::toPath)
+                .findFirst();
         if (!classDir.isPresent()) {
             throw new BootstrapGradleException("Failed to locate class directory");
         }
@@ -143,12 +145,14 @@ public class QuarkusModelHelper {
         if (!appArtifact.isResolved()) {
             PathsCollection.Builder paths = PathsCollection.builder();
             WorkspaceModule module = model.getWorkspace().getMainModule();
-            module.getSourceSet().getSourceDirectories().stream().filter(File::exists).map(File::toPath)
+            module.getSourceSet().getSourceDirectories().stream()
+                    .filter(File::exists)
+                    .map(File::toPath)
                     .forEach(paths::add);
-            File resourceDirectory = module.getSourceSet().getResourceDirectory();
-            if (resourceDirectory != null && resourceDirectory.exists()) {
-                paths.add(resourceDirectory.toPath());
-            }
+            module.getSourceSet().getResourceDirectories().stream()
+                    .filter(File::exists)
+                    .map(File::toPath)
+                    .forEach(paths::add);
             appArtifact.setPaths(paths.build());
         }
 
@@ -158,14 +162,11 @@ public class QuarkusModelHelper {
                     new AppArtifactKey(coords.getGroupId(), coords.getArtifactId(), null, coords.getType()));
         }
 
-        if (!model.getPlatformProperties().isEmpty()) {
-            appBuilder.addPlatformProperties(model.getPlatformProperties());
-        }
-
         appBuilder.addRuntimeDeps(userDeps)
                 .addFullDeploymentDeps(fullDeploymentDeps)
                 .addDeploymentDeps(deploymentDeps)
-                .setAppArtifact(appArtifact);
+                .setAppArtifact(appArtifact)
+                .setPlatformImports(model.getPlatformImports());
         return appBuilder.build();
     }
 

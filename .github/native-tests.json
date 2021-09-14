@@ -33,13 +33,13 @@
         {
             "category": "Data5",
             "timeout": 65,
-            "test-modules": "jpa-postgresql, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql",
+            "test-modules": "jpa-postgresql, jpa-postgresql-withxml, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Data6",
             "timeout": 50,
-            "test-modules": "elasticsearch-rest-client, elasticsearch-rest-high-level-client, hibernate-search-orm-elasticsearch, hibernate-reactive-panache",
+            "test-modules": "elasticsearch-rest-client, elasticsearch-rest-high-level-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-aws, hibernate-reactive-panache",
             "os-name": "ubuntu-latest"
         },
         {
@@ -111,7 +111,7 @@
         {
             "category": "Misc3",
             "timeout": 65,
-            "test-modules": "kubernetes-client, openshift-client, smallrye-config, smallrye-graphql, smallrye-metrics",
+            "test-modules": "kubernetes-client, openshift-client, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-metrics",
             "os-name": "ubuntu-latest"
         },
         {

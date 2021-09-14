@@ -47,6 +47,12 @@ public class JarClassPathElement implements ClassPathElement {
             //version 8
         }
         JAVA_VERSION = version;
+        //force this class to be loaded
+        //if quarkus is recompiled it needs to have already
+        //been loaded
+        //this is just a convenience for quarkus devs that means exit
+        //should work properly if you recompile while quarkus is running
+        new ZipFileMayHaveChangedException(null);
     }
 
     private static final Logger log = Logger.getLogger(JarClassPathElement.class);
@@ -115,23 +121,44 @@ public class JarClassPathElement implements ClassPathElement {
 
                         @Override
                         public byte[] getData() {
-                            return withJarFile(new Function<JarFile, byte[]>() {
-                                @Override
-                                public byte[] apply(JarFile jarFile) {
-                                    try {
+                            try {
+                                return withJarFile(new Function<JarFile, byte[]>() {
+                                    @Override
+                                    public byte[] apply(JarFile jarFile) {
                                         try {
-                                            return readStreamContents(jarFile.getInputStream(res));
-                                        } catch (InterruptedIOException e) {
-                                            //if we are interrupted reading data we finish the op, then just re-interrupt the thread state
-                                            byte[] bytes = readStreamContents(jarFile.getInputStream(res));
-                                            Thread.currentThread().interrupt();
-                                            return bytes;
+                                            try {
+                                                return readStreamContents(jarFile.getInputStream(res));
+                                            } catch (InterruptedIOException e) {
+                                                //if we are interrupted reading data we finish the op, then just re-interrupt the thread state
+                                                byte[] bytes = readStreamContents(jarFile.getInputStream(res));
+                                                Thread.currentThread().interrupt();
+                                                return bytes;
+                                            }
+                                        } catch (IOException e) {
+                                            if (!closed) {
+                                                throw new ZipFileMayHaveChangedException(e);
+                                            }
+                                            throw new RuntimeException("Unable to read " + name, e);
                                         }
-                                    } catch (IOException e) {
-                                        throw new RuntimeException("Unable to read " + name, e);
                                     }
+                                });
+                            } catch (ZipFileMayHaveChangedException e) {
+                                //this is a weird corner case, that should not really affect end users, but is super annoying
+                                //if you are actually working on Quarkus. If you rebuild quarkus while you have an application
+                                //running reading from the rebuilt zip file will fail, but some of these classes are needed
+                                //for a clean shutdown, so the Java process hangs and needs to be forcibly killed
+                                //this effectively attempts to reopen the file, allowing shutdown to work.
+                                //we need to do this here as close needs a write lock while withJarFile takes a readLock
+                                try {
+                                    log.error("Failed to read " + name
+                                            + " attempting to re-open the zip file. It is likely a jar file changed on disk, you should shutdown your application",
+                                            e);
+                                    close();
+                                    return getData();
+                                } catch (IOException ignore) {
+                                    throw new RuntimeException("Unable to read " + name, e.getCause());
                                 }
-                            });
+                            }
                         }
 
                         @Override
@@ -182,8 +209,8 @@ public class JarClassPathElement implements ClassPathElement {
                 }
                 //multi release jars can add additional entries
                 if (JarFiles.isMultiRelease(jarFile)) {
-                    Set<String> copy = new HashSet<>(paths);
-                    for (String i : copy) {
+                    String[] copyToIterate = paths.toArray(new String[0]);
+                    for (String i : copyToIterate) {
                         if (i.startsWith(META_INF_VERSIONS)) {
                             String part = i.substring(META_INF_VERSIONS.length());
                             int slash = part.indexOf("/");
@@ -259,5 +286,11 @@ public class JarClassPathElement implements ClassPathElement {
     @Override
     public String toString() {
         return file.getName() + ": " + jarPath;
+    }
+
+    static class ZipFileMayHaveChangedException extends RuntimeException {
+        public ZipFileMayHaveChangedException(Throwable cause) {
+            super(cause);
+        }
     }
 }

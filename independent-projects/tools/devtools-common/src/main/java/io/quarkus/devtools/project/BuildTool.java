@@ -6,6 +6,7 @@ import io.quarkus.devtools.project.buildfile.MavenBuildFile;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.nio.file.Path;
+import java.util.Locale;
 
 /**
  * An enum of build tools, such as Maven and Gradle.
@@ -25,7 +26,12 @@ public enum BuildTool {
     /** Gradle build tool with Kotlin DSL */
     GRADLE_KOTLIN_DSL("\n# Gradle\n.gradle/\nbuild/",
             "build",
-            new String[] { "build.gradle.kts", "settings.gradle.kts", "gradle.properties" });
+            new String[] { "build.gradle.kts", "settings.gradle.kts", "gradle.properties" }),
+
+    /** JBang build tool */
+    JBANG("\n# JBang\n.target/\nbuild/",
+            "build",
+            new String[0]);
 
     private final String gitIgnoreEntries;
 
@@ -72,7 +78,7 @@ public enum BuildTool {
     }
 
     public String getKey() {
-        return toString().toLowerCase().replace("_", "-");
+        return toString().toLowerCase(Locale.ROOT).replace('_', '-');
     }
 
     public static BuildTool resolveExistingProject(Path path) {

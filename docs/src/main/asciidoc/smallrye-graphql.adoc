@@ -107,116 +107,31 @@ package org.acme.microprofile.graphql;
 
 public class Film {
 
-    private String title;
-    private Integer episodeID;
-    private String director;
-    private LocalDate releaseDate;
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public Integer getEpisodeID() {
-        return episodeID;
-    }
-
-    public void setEpisodeID(Integer episodeID) {
-        this.episodeID = episodeID;
-    }
-
-    public String getDirector() {
-        return director;
-    }
-
-    public void setDirector(String director) {
-        this.director = director;
-    }
-
-    public LocalDate getReleaseDate() {
-        return releaseDate;
-    }
-
-    public void setReleaseDate(LocalDate releaseDate) {
-        this.releaseDate = releaseDate;
-    }
+    public String title;
+    public Integer episodeID;
+    public String director;
+    public LocalDate releaseDate;
 
 }
 
 public class Hero {
 
-    private String name;
-    private String surname;
-    private Double height;
-    private Integer mass;
-    private Boolean darkSide;
-    private LightSaber lightSaber;
-    private List<Integer> episodeIds = new ArrayList<>();
+    public String name;
+    public String surname;
+    public Double height;
+    public Integer mass;
+    public Boolean darkSide;
+    public LightSaber lightSaber;
+    public List<Integer> episodeIds = new ArrayList<>();
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getSurname() {
-        return surname;
-    }
-
-    public void setSurname(String surname) {
-        this.surname = surname;
-    }
-
-    public Double getHeight() {
-        return height;
-    }
-
-    public void setHeight(Double height) {
-        this.height = height;
-    }
-
-    public Integer getMass() {
-        return mass;
-    }
-
-    public void setMass(Integer mass) {
-        this.mass = mass;
-    }
-
-    public Boolean getDarkSide() {
-        return darkSide;
-    }
-
-    public void setDarkSide(Boolean darkSide) {
-        this.darkSide = darkSide;
-    }
-
-    public LightSaber getLightSaber() {
-        return lightSaber;
-    }
-
-    public void setLightSaber(LightSaber lightSaber) {
-        this.lightSaber = lightSaber;
-    }
-
-    public List<Integer> getEpisodeIds() {
-        return episodeIds;
-    }
-
-    public void setEpisodeIds(List<Integer> episodeIds) {
-        this.episodeIds = episodeIds;
-    }
 }
 
 enum LightSaber {
     RED, BLUE, GREEN
 }
 ----
+
+NOTE: For readability we use classes with public fields, but classes with private fields with public getters and setters will also work.
 
 The classes we have just created describe the GraphQL schema which is a
 set of possible data (objects, fields, relationships) that a client can access.
@@ -235,53 +150,53 @@ public class GalaxyService {
     public GalaxyService() {
 
         Film aNewHope = new Film();
-        aNewHope.setTitle("A New Hope");
-        aNewHope.setReleaseDate(LocalDate.of(1977, Month.MAY, 25));
-        aNewHope.setEpisodeID(4);
-        aNewHope.setDirector("George Lucas");
+        aNewHope.title = "A New Hope";
+        aNewHope.releaseDate = LocalDate.of(1977, Month.MAY, 25);
+        aNewHope.episodeID = 4;
+        aNewHope.director = "George Lucas";
 
         Film theEmpireStrikesBack = new Film();
-        theEmpireStrikesBack.setTitle("The Empire Strikes Back");
-        theEmpireStrikesBack.setReleaseDate(LocalDate.of(1980, Month.MAY, 21));
-        theEmpireStrikesBack.setEpisodeID(5);
-        theEmpireStrikesBack.setDirector("George Lucas");
+        theEmpireStrikesBack.title = "The Empire Strikes Back";
+        theEmpireStrikesBack.releaseDate = LocalDate.of(1980, Month.MAY, 21);
+        theEmpireStrikesBack.episodeID = 5;
+        theEmpireStrikesBack.director = "George Lucas";
 
         Film returnOfTheJedi = new Film();
-        returnOfTheJedi.setTitle("Return Of The Jedi");
-        returnOfTheJedi.setReleaseDate(LocalDate.of(1983, Month.MAY, 25));
-        returnOfTheJedi.setEpisodeID(6);
-        returnOfTheJedi.setDirector("George Lucas");
+        returnOfTheJedi.title = "Return Of The Jedi";
+        returnOfTheJedi.releaseDate = LocalDate.of(1983, Month.MAY, 25);
+        returnOfTheJedi.episodeID = 6;
+        returnOfTheJedi.director = "George Lucas";
 
         films.add(aNewHope);
         films.add(theEmpireStrikesBack);
         films.add(returnOfTheJedi);
 
         Hero luke = new Hero();
-        luke.setName("Luke");
-        luke.setSurname("Skywalker");
-        luke.setHeight(1.7);
-        luke.setMass(73);
-        luke.setLightSaber(LightSaber.GREEN);
-        luke.setDarkSide(false);
-        luke.getEpisodeIds().addAll(Arrays.asList(4, 5, 6));
+        luke.name = "Luke";
+        luke.surname = "Skywalker";
+        luke.height = 1.7;
+        luke.mass = 73;
+        luke.lightSaber = LightSaber.GREEN;
+        luke.darkSide = false;
+        luke.episodeIds.addAll(Arrays.asList(4, 5, 6));
 
         Hero leia = new Hero();
-        leia.setName("Leia");
-        leia.setSurname("Organa");
-        leia.setHeight(1.5);
-        leia.setMass(51);
-        leia.setDarkSide(false);
-        leia.getEpisodeIds().addAll(Arrays.asList(4, 5, 6));
+        leia.name = "Leia";
+        leia.surname = "Organa";
+        leia.height = 1.5;
+        leia.mass = 51;
+        leia.darkSide = false;
+        leia.episodeIds.addAll(Arrays.asList(4, 5, 6));
 
 
         Hero vader = new Hero();
-        vader.setName("Darth");
-        vader.setSurname("Vader");
-        vader.setHeight(1.9);
-        vader.setMass(89);
-        vader.setDarkSide(true);
-        vader.setLightSaber(LightSaber.RED);
-        vader.getEpisodeIds().addAll(Arrays.asList(4, 5, 6));
+        vader.name = "Darth";
+        vader.surname = "Vader";
+        vader.height = 1.9;
+        vader.mass = 89;
+        vader.darkSide = true;
+        vader.lightSaber = LightSaber.RED;
+        vader.episodeIds.addAll(Arrays.asList(4, 5, 6));
 
         heroes.add(luke);
         heroes.add(leia);
@@ -299,7 +214,7 @@ public class GalaxyService {
 
     public List<Hero> getHeroesByFilm(Film film) {
         return heroes.stream()
-                .filter(hero -> hero.getEpisodeIds().contains(film.getEpisodeID()))
+                .filter(hero -> hero.episodeIds.contains(film.episodeID))
                 .collect(Collectors.toList());
     }
 
@@ -313,7 +228,7 @@ public class GalaxyService {
 
     public List<Hero> getHeroesBySurname(String surname) {
         return heroes.stream()
-                .filter(hero -> hero.getSurname().equals(surname))
+                .filter(hero -> hero.surname.equals(surname))
                 .collect(Collectors.toList());
     }
 }
@@ -441,7 +356,8 @@ WARNING: Notice how we have excluded the value in the `@Query` annotation.
 Therefore, the name of the query is implicitly set as the method name
 excluding the `get`.
 
-This query will allow the client to retrieve the film by id.
+This query will allow the client to retrieve the film by id, and the `@Name` annotation on the parameter 
+changes the parameter name to `filmId` rather than the default `id` that it would be if you omit the `@Name` annotation.
 
 Enter the following into `GraphiQL` and make a request.
 
@@ -554,7 +470,7 @@ Queries can be made reactive by using `Uni`, or `CompletionStage` as a return ty
 ----
     @Query
     @Description("Get a Films from a galaxy far far away")
-    public Uni<Film> getFilm(@Name("filmId") int id) {
+    public Uni<Film> getFilm(int filmId) {
         // ...
     }
 ----
@@ -567,7 +483,7 @@ Or you can use `CompletionStage`:
 ----
     @Query
     @Description("Get a Films from a galaxy far far away")
-    public CompletionStage<Film> getFilm(@Name("filmId") int id) {
+    public CompletionStage<Film> getFilm(int filmId) {
         // ...
     }
 ----
@@ -646,6 +562,7 @@ This can easily be a server side generated field that the client may require.
 
 Let's now try deleting an entry:
 
+[source,graphql]
 ----
 mutation DeleteHero {
   deleteHero(id :3){
@@ -657,6 +574,52 @@ mutation DeleteHero {
 
 Similar to the `createHero` mutation method we also retrieve the `name` and
 `surname` of the hero we have deleted which is defined in `{ }`.
+
+== Subscriptions
+
+Subscriptions allows you to subscribe to a query. It allows you to receive events.
+
+NOTE: Subscription is currently still considered experimental.
+
+Example: We want to know when new Heroes are being created:
+
+[source,java]
+----
+
+    BroadcastProcessor<Hero> processor = BroadcastProcessor.create(); // <1>
+
+    @Mutation
+    public Hero createHero(Hero hero) {
+        service.addHero(hero);
+        processor.onNext(hero); // <2>
+        return hero;
+    }
+
+    @Subscription
+    public Multi<Hero> heroCreated(){
+        return processor; // <3>
+    }
+
+----
+
+<1> The `Multi` processor that will broadcast any new Heros
+<2> When adding a new Hero, also broadcast it
+<3> Make the stream available in the schema and as a WebSocket during runtime
+
+
+Any client that now connect to the `/graphql` WebSocket connection will receive events on new Heroes being created:
+
+[source,graphql]
+----
+
+subscription ListenForNewHeroes {
+  heroCreated {
+    name
+    surname
+  }
+}
+
+----
 
 == Creating Queries by fields
 
@@ -706,6 +669,17 @@ You can get information about the GraphQL request anywhere in your code, using t
 Context context;
 ----
 
+or as a parameter in your method if you are in the `GraphQLApi` class, for instance:
+
+[source,java]
+----
+    @Query
+    @Description("Get a Films from a galaxy far far away")
+    public Film getFilm(Context context, int filmId) {
+        // ...
+    }
+----
+
 The context object allows you to get:
 
 - the original request (Query/Mutation)
@@ -745,6 +719,8 @@ public GraphQLSchema.Builder addMyOwnEnum(@Observes GraphQLSchema.Builder builde
 ----
 
 By using the `@Observer` you can add anything to the Schema builder. 
+
+NOTE: For the Observer to work, you need to enable events. In `application.properties`, add the following: `quarkus.smallrye-graphql.events.enabled=true`.
 
 == Map to Scalar
 

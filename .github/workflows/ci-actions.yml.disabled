@@ -30,6 +30,10 @@ on:
       - '.github/*.java'
       - '.github/*.conf'
 
+concurrency:
+  group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, pr = ${{ github.event.pull_request.id }}"
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.repository != 'quarkusio/quarkus' }}
+
 env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8

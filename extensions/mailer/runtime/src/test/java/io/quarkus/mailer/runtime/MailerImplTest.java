@@ -165,7 +165,7 @@ class MailerImplTest {
 
     @Test
     void testInlineAttachment() throws MessagingException, IOException {
-        String cid = UUID.randomUUID().toString() + "@acme";
+        String cid = UUID.randomUUID() + "@acme";
         mailer.send(Mail.withHtml(TO, "Test", "testInlineAttachment")
                 .addInlineAttachment("inline.txt", "my inlined text".getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE, cid))
                 .await().indefinitely();
@@ -208,6 +208,19 @@ class MailerImplTest {
         MimeMessage msg = actual.getMimeMessage();
         assertThat(msg.getHeader("Reply-To")).containsExactly("reply-to@quarkus.io");
         assertThat(msg.getReplyTo()).containsExactly(InternetAddress.parse("reply-to@quarkus.io"));
+    }
+
+    @Test
+    void testMultipleReplyToHeaderIsSet() throws MessagingException {
+        mailer.send(Mail.withText(TO, "Test", "testHeaders")
+                .setReplyTo("reply-to@quarkus.io", "another@quarkus.io"))
+                .await().indefinitely();
+        assertThat(wiser.getMessages()).hasSize(1);
+        WiserMessage actual = wiser.getMessages().get(0);
+        MimeMessage msg = actual.getMimeMessage();
+        assertThat(msg.getHeader("Reply-To")).containsExactly("reply-to@quarkus.io,another@quarkus.io");
+        assertThat(msg.getReplyTo()).hasSize(2).contains(InternetAddress.parse("reply-to@quarkus.io"))
+                .contains(InternetAddress.parse("another@quarkus.io"));
     }
 
     private String getContent(WiserMessage msg) {
@@ -277,26 +290,6 @@ class MailerImplTest {
             }
         }
         return result.toString();
-    }
-
-    private List<String> getContentTypesFromMimeMultipart(
-            MimeMultipart mimeMultipart) throws MessagingException, IOException {
-        List<String> types = new ArrayList<>();
-        int count = mimeMultipart.getCount();
-        for (int i = 0; i < count; i++) {
-            BodyPart bodyPart = mimeMultipart.getBodyPart(i);
-            if (bodyPart.getContent() instanceof MimeMultipart) {
-                types.addAll(getContentTypesFromMimeMultipart((MimeMultipart) bodyPart.getContent()));
-            } else {
-                types.add(bodyPart.getContentType());
-            }
-        }
-        return types;
-    }
-
-    private List<String> getContentTypesFromMimeMultipart(
-            String content) throws MessagingException, IOException {
-        return Collections.singletonList(content);
     }
 
 }

@@ -24,7 +24,8 @@ public class MultipartFormInputDevModeTest {
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(FormDataBase.class, OtherPackageFormDataBase.class, FormData.class, Status.class,
-                                    OtherFormData.class, OtherFormDataBase.class, MultipartResource.class);
+                                    FormDataSameFileName.class, OtherFormData.class, OtherFormDataBase.class,
+                                    MultipartResource.class);
                 }
 
             });

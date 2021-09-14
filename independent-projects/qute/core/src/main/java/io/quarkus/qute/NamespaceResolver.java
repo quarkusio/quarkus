@@ -1,7 +1,6 @@
 package io.quarkus.qute;
 
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -24,9 +23,10 @@ public interface NamespaceResolver extends Resolver, WithPriority {
     }
 
     /**
+     * A valid namespace consists of alphanumeric characters and underscores.
      * 
      * @return the namespace
-     * @see ExpressionImpl#namespace
+     * @see Expression#getNamespace()
      */
     String getNamespace();
 
@@ -40,11 +40,11 @@ public interface NamespaceResolver extends Resolver, WithPriority {
         private int priority = WithPriority.DEFAULT_PRIORITY;
 
         Builder(String namespace) {
-            this.namespace = namespace;
+            this.namespace = Namespaces.requireValid(namespace);
         }
 
         public Builder resolve(Function<EvalContext, Object> func) {
-            this.resolve = ctx -> CompletableFuture.completedFuture(func.apply(ctx));
+            this.resolve = ctx -> CompletedStage.of(func.apply(ctx));
             return this;
         }
 

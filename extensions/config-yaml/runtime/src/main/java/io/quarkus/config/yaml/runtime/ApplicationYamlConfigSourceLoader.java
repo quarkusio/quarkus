@@ -19,7 +19,6 @@ public class ApplicationYamlConfigSourceLoader extends AbstractLocationConfigSou
                 "yaml",
                 "yml"
         };
-
     }
 
     @Override
@@ -29,40 +28,30 @@ public class ApplicationYamlConfigSourceLoader extends AbstractLocationConfigSou
 
     public static class InClassPath extends ApplicationYamlConfigSourceLoader implements ConfigSourceProvider {
         @Override
-        protected ConfigSource loadConfigSource(final URL url, final int ordinal) throws IOException {
-            return super.loadConfigSource(url, 255);
-        }
-
-        @Override
         public List<ConfigSource> getConfigSources(final ClassLoader classLoader) {
             List<ConfigSource> configSources = new ArrayList<>();
-            configSources.addAll(loadConfigSources("application.yaml", classLoader));
-            configSources.addAll(loadConfigSources("application.yml", classLoader));
+            configSources.addAll(loadConfigSources("application.yaml", 255, classLoader));
+            configSources.addAll(loadConfigSources("application.yml", 255, classLoader));
             return configSources;
         }
 
         @Override
-        protected List<ConfigSource> tryFileSystem(final URI uri) {
+        protected List<ConfigSource> tryFileSystem(final URI uri, final int ordinal) {
             return new ArrayList<>();
         }
     }
 
     public static class InFileSystem extends ApplicationYamlConfigSourceLoader implements ConfigSourceProvider {
         @Override
-        protected ConfigSource loadConfigSource(final URL url, final int ordinal) throws IOException {
-            return super.loadConfigSource(url, 265);
-        }
-
-        @Override
         public List<ConfigSource> getConfigSources(final ClassLoader classLoader) {
             List<ConfigSource> configSources = new ArrayList<>();
-            configSources.addAll(loadConfigSources("config/application.yaml", classLoader));
-            configSources.addAll(loadConfigSources("config/application.yml", classLoader));
+            configSources.addAll(loadConfigSources("config/application.yaml", 265, classLoader));
+            configSources.addAll(loadConfigSources("config/application.yml", 265, classLoader));
             return configSources;
         }
 
         @Override
-        protected List<ConfigSource> tryClassPath(final URI uri, final ClassLoader classLoader) {
+        protected List<ConfigSource> tryClassPath(final URI uri, final int ordinal, final ClassLoader classLoader) {
             return new ArrayList<>();
         }
     }

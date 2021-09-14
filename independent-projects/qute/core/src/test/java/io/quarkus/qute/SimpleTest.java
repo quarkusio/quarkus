@@ -3,14 +3,13 @@ package io.quarkus.qute;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.quarkus.qute.Results.Result;
+import io.quarkus.qute.Results.NotFound;
 import io.quarkus.qute.TemplateNode.Origin;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +45,7 @@ public class SimpleTest {
             public CompletionStage<Object> resolve(EvalContext context) {
                 List<?> list = (List<?>) context.getBase();
                 return context.evaluate(context.getParams().get(0)).thenCompose(index -> {
-                    return CompletableFuture.completedFuture(list.get((Integer) index));
+                    return CompletedStage.of(list.get((Integer) index));
                 });
             }
 
@@ -145,8 +144,8 @@ public class SimpleTest {
 
     @Test
     public void testNotFound() {
-        assertEquals("foo.bar Collection size: 0",
-                Engine.builder().addDefaultValueResolvers()
+        assertEquals("Property \"foo\" not found in foo.bar Collection size: 0",
+                Engine.builder().strictRendering(false).addDefaultValueResolvers()
                         .addResultMapper(new ResultMapper() {
 
                             public int getPriority() {
@@ -154,17 +153,20 @@ public class SimpleTest {
                             }
 
                             public boolean appliesTo(Origin origin, Object val) {
-                                return val.equals(Result.NOT_FOUND);
+                                return Results.isNotFound(val);
                             }
 
                             @Override
                             public String map(Object result, Expression expression) {
+                                if (result instanceof NotFound) {
+                                    return ((NotFound) result).asMessage() + " in " + expression.toOriginalString();
+                                }
                                 return expression.toOriginalString();
                             }
                         }).addResultMapper(new ResultMapper() {
 
                             public boolean appliesTo(Origin origin, Object val) {
-                                return val.equals(Result.NOT_FOUND);
+                                return Results.isNotFound(val);
                             }
 
                             @Override
@@ -183,18 +185,19 @@ public class SimpleTest {
                                 return "Collection size: " + collection.size();
                             }
                         }).build()
-                        .parse("{foo.bar} {this}")
-                        .render(Collections.emptyList()));
+                        .parse("{foo.bar} {collection}")
+                        .data("collection", Collections.emptyList())
+                        .render());
     }
 
     @Test
     public void testNotFoundThrowException() {
         try {
-            Engine.builder().addDefaults()
+            Engine.builder().strictRendering(false).addDefaults()
                     .addResultMapper(new ResultMapper() {
 
                         public boolean appliesTo(Origin origin, Object val) {
-                            return val.equals(Result.NOT_FOUND);
+                            return Results.isNotFound(val);
                         }
 
                         @Override

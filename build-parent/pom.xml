@@ -20,7 +20,8 @@
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
-        <kotlin.version>1.4.32</kotlin.version>
+        <kotlin.version>1.5.20</kotlin.version>
+        <dokka.version>1.4.32</dokka.version>
         <scala.version>2.12.13</scala.version>
         <scala-maven-plugin.version>4.4.0</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
@@ -37,8 +38,9 @@
            what we work with by self downloading it: -->
         <graal-sdk.version-for-documentation>21.1.0</graal-sdk.version-for-documentation>
         <mandrel.version-for-documentation>21.0</mandrel.version-for-documentation>
-        <rest-assured.version>4.3.2</rest-assured.version>
-        <mutiny-client.version>1.1.0</mutiny-client.version>
+
+        <htmlunit.version>2.40.0</htmlunit.version>
+        <subethasmtp.version>3.1.7</subethasmtp.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.31</freemarker.version>
@@ -60,20 +62,20 @@
         <gradle-wrapper.version>6.9</gradle-wrapper.version>
 
         <!-- MicroProfile TCK versions -->
-        <microprofile-health-api.version>3.0</microprofile-health-api.version>
+        <microprofile-health-api.version>3.1</microprofile-health-api.version>
         <microprofile-config-api.version>2.0</microprofile-config-api.version>
         <microprofile-metrics-api.version>3.0</microprofile-metrics-api.version>
         <microprofile-fault-tolerance-api.version>3.0</microprofile-fault-tolerance-api.version>
-        <microprofile-reactive-messaging-api.version>1.0</microprofile-reactive-messaging-api.version>
+        <microprofile-reactive-messaging-api.version>2.0</microprofile-reactive-messaging-api.version>
         <microprofile-rest-client-api.version>2.0</microprofile-rest-client-api.version>
         <microprofile-open-api.version>2.0.1-RC1</microprofile-open-api.version>
         <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>
         <microprofile-context-propagation.version>1.0.1</microprofile-context-propagation.version>
         <microprofile-jwt-api.version>1.2</microprofile-jwt-api.version>
-        <microprofile-graphql-api.version>1.0.3</microprofile-graphql-api.version>
+        <microprofile-graphql-api.version>1.1.0</microprofile-graphql-api.version>
 
         <!-- Antlr is used by the PanacheQL parser-->
-        <antlr.version>4.7.2</antlr.version>
+        <antlr.version>4.8</antlr.version>
 
         <!-- Defaults for integration tests -->
         <elasticsearch-server.version>7.10.0</elasticsearch-server.version>
@@ -82,12 +84,12 @@
 
         <!-- Align various dependencies that are not really part of the bom-->
         <findbugs.version>3.0.2</findbugs.version>
-        <jsoup.version>1.11.3</jsoup.version>
+        <jsoup.version>1.12.1</jsoup.version>
         <wagon-provider-api.version>3.4.3</wagon-provider-api.version>
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml to match the version -->
-        <keycloak.docker.image>quay.io/keycloak/keycloak:13.0.0</keycloak.docker.image>
+        <keycloak.docker.image>quay.io/keycloak/keycloak:14.0.0</keycloak.docker.image>
 
         <unboundid-ldap.version>4.0.13</unboundid-ldap.version>
 
@@ -282,6 +284,22 @@
                 <scope>test</scope>
             </dependency>
 
+            <dependency>
+                <groupId>net.sourceforge.htmlunit</groupId>
+                <artifactId>htmlunit</artifactId>
+                <version>${htmlunit.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.httpcomponents</groupId>
+                        <artifactId>httpmime</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
             <!-- Webjars for UI related -->
             <dependency>
                 <groupId>org.webjars</groupId>
@@ -297,6 +315,13 @@
                 <groupId>org.webjars</groupId>
                 <artifactId>jquery</artifactId>
                 <version>${webjar.jquery.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.subethamail</groupId>
+                <artifactId>subethasmtp</artifactId>
+                <version>${subethasmtp.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -493,11 +518,13 @@
                                             <exclude>io.quarkus:quarkus-test-*</exclude>
                                             <exclude>io.rest-assured:*</exclude>
                                             <exclude>org.assertj:*</exclude>
+                                            <exclude>junit:junit</exclude>
                                         </excludes>
                                         <includes>
                                             <include>io.quarkus:quarkus-test-*:*:*:test</include>
                                             <include>io.rest-assured:*:*:*:test</include>
                                             <include>org.assertj:*:*:*:test</include>
+                                            <include>junit:junit:*:*:test</include>
                                         </includes>
                                         <message>Found test dependencies with wrong scope:</message>
                                     </bannedDependencies>
@@ -547,12 +574,12 @@
                 <plugin>
                     <groupId>org.jboss.jandex</groupId>
                     <artifactId>jandex-maven-plugin</artifactId>
-                    <version>1.0.8</version>
+                    <version>1.1.0</version>
                 </plugin>
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.15.0</version>
+                    <version>2.16.0</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
@@ -571,7 +598,7 @@
                 <plugin>
                     <groupId>net.revelc.code</groupId>
                     <artifactId>impsort-maven-plugin</artifactId>
-                    <version>1.6.0</version>
+                    <version>1.6.2</version>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
                         <cachedir>.cache</cachedir>
@@ -624,6 +651,7 @@
                     <artifactId>kotlin-maven-plugin</artifactId>
                     <version>${kotlin.version}</version>
                     <configuration>
+                        <javaParameters>true</javaParameters>
                         <jvmTarget>${maven.compiler.release}</jvmTarget>
                     </configuration>
                 </plugin>
@@ -787,6 +815,46 @@
             </build>
         </profile>
         <profile>
+            <id>dokka</id>
+            <activation>
+                <property>
+                    <name>dokka</name>
+                </property>
+                <jdk>[,16)</jdk>
+                <file>
+                    <exists>src/main/kotlin</exists>
+                </file>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jetbrains.dokka</groupId>
+                        <artifactId>dokka-maven-plugin</artifactId>
+                        <version>${dokka.version}</version>
+                        <executions>
+                            <execution>
+                                <id>dokka</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>javadocJar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <jdkVersion>11</jdkVersion>
+                            <outputFormat>html</outputFormat>
+                            <externalDocumentationLinks>
+                                <link>
+                                    <!-- Root URL of the generated documentation to link with. The trailing slash is required! -->
+                                    <url>https://docs.oracle.com/en/java/javase/11/docs/api/</url>
+                                </link>
+                            </externalDocumentationLinks>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>eclipse</id>
             <activation>
                 <property>
@@ -870,7 +938,7 @@
                                                     jandex-maven-plugin
                                                 </artifactId>
                                                 <versionRange>
-                                                    [1.0.5,)
+                                                    [1.1.0,)
                                                 </versionRange>
                                                 <goals>
                                                     <goal>jandex</goal>

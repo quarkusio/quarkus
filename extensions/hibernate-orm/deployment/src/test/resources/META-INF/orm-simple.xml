@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings
+        xmlns="http://java.sun.com/xml/ns/persistence/orm"
+        version="2.0">
+
+    <entity class="io.quarkus.hibernate.orm.xml.orm.NonAnnotatedEntity">
+        <attributes>
+            <id name="id">
+                <generated-value strategy="IDENTITY" />
+            </id>
+            <basic name="name">
+                <column name="thename" />
+            </basic>
+        </attributes>
+    </entity>
+</entity-mappings>

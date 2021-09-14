@@ -12,6 +12,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.context.spi.CreationalContext;
@@ -33,6 +35,9 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
 import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
+import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
+import io.quarkus.grpc.runtime.config.SslClientConfig;
+import io.quarkus.runtime.LaunchMode;
 
 @SuppressWarnings({ "OptionalIsPresent", "Convert2Lambda" })
 public class Channels {
@@ -50,7 +55,20 @@ public class Channels {
             throw new IllegalStateException("Unable to find the GrpcClientConfigProvider");
         }
 
-        GrpcClientConfiguration config = instance.get().getConfiguration(name);
+        GrpcClientConfigProvider configProvider = instance.get();
+        GrpcClientConfiguration config = configProvider.getConfiguration(name);
+
+        if (config == null && LaunchMode.current() == LaunchMode.TEST) {
+            LOGGER.infof(
+                    "gRPC client %s created without configuration. We are assuming that it's created to test your gRPC services.",
+                    name);
+            config = testConfig(configProvider.getServerConfiguration());
+        }
+
+        if (config == null) {
+            throw new IllegalStateException("gRPC client " + name + " is missing configuration.");
+        }
+
         String host = config.host;
         int port = config.port;
         boolean plainText = !config.ssl.trustStore.isPresent();
@@ -146,6 +164,39 @@ public class Channels {
         }
 
         return builder.build();
+    }
+
+    private static GrpcClientConfiguration testConfig(GrpcServerConfiguration serverConfiguration) {
+        GrpcClientConfiguration config = new GrpcClientConfiguration();
+        config.port = serverConfiguration.testPort;
+        config.host = serverConfiguration.host;
+        config.plainText = Optional.of(serverConfiguration.plainText);
+        config.compression = Optional.empty();
+        config.flowControlWindow = OptionalInt.empty();
+        config.idleTimeout = Optional.empty();
+        config.keepAliveTime = Optional.empty();
+        config.keepAliveTimeout = Optional.empty();
+        config.loadBalancingPolicy = "pick_first";
+        config.maxHedgedAttempts = 5;
+        config.maxInboundMessageSize = OptionalInt.empty();
+        config.maxInboundMetadataSize = OptionalInt.empty();
+        config.maxRetryAttempts = 0;
+        config.maxTraceEvents = OptionalInt.empty();
+        config.negotiationType = "PLAINTEXT";
+        config.overrideAuthority = Optional.empty();
+        config.perRpcBufferLimit = OptionalLong.empty();
+        config.retry = false;
+        config.retryBufferSize = OptionalLong.empty();
+        config.ssl = new SslClientConfig();
+        config.ssl.key = Optional.empty();
+        config.ssl.certificate = Optional.empty();
+        config.ssl.trustStore = Optional.empty();
+        config.userAgent = Optional.empty();
+        if (serverConfiguration.ssl.certificate.isPresent() || serverConfiguration.ssl.keyStore.isPresent()) {
+            LOGGER.warn("gRPC client created without configuration and the gRPC server is configured for SSL. " +
+                    "Configuring SSL for such clients is not supported.");
+        }
+        return config;
     }
 
     private static InputStream streamFor(Path path, String resourceName) {

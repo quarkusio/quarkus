@@ -1,9 +1,0 @@
-name: "Quarkus Extension for Spring Scheduled"
-metadata:
-  keywords:
-  - "spring-scheduled"
-  - "spring"
-  guide: "https://quarkus.io/guides/spring-scheduled"
-  categories:
-  - "compatibility"
-  status: "preview"

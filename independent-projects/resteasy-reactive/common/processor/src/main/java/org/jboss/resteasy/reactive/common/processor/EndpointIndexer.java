@@ -81,6 +81,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
+import org.jboss.jandex.WildcardType;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.InjectableBean;
@@ -91,6 +92,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.util.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.common.util.URLUtils;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
+import org.objectweb.asm.Opcodes;
 
 public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD>, PARAM extends IndexedParameter<PARAM>, METHOD extends ResourceMethod> {
 
@@ -118,6 +120,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private static final String[] PRODUCES_PLAIN_TEXT_NEGOTIATED = new String[] { MediaType.TEXT_PLAIN, MediaType.WILDCARD };
     private static final String[] PRODUCES_PLAIN_TEXT = new String[] { MediaType.TEXT_PLAIN };
     public static final String CDI_WRAPPER_SUFFIX = "$$CDIWrapper";
+
+    public static final String METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY = "METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY";
 
     static {
         Map<String, String> prims = new HashMap<>();
@@ -361,17 +365,26 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     private boolean hasProperModifiers(MethodInfo info) {
+        if (isSynthetic(info.flags())) {
+            log.debug("Method '" + info.name() + " of Resource class '" + info.declaringClass().name()
+                    + "' is a synthetic method and will therefore be ignored");
+            return false;
+        }
         if ((info.flags() & Modifier.PUBLIC) == 0) {
             log.warn("Method '" + info.name() + " of Resource class '" + info.declaringClass().name()
-                    + "' it not public and will therefore be ignored");
+                    + "' is not public and will therefore be ignored");
             return false;
         }
         if ((info.flags() & Modifier.STATIC) != 0) {
             log.warn("Method '" + info.name() + " of Resource class '" + info.declaringClass().name()
-                    + "' it static and will therefore be ignored");
+                    + "' is static and will therefore be ignored");
             return false;
         }
         return true;
+    }
+
+    private boolean isSynthetic(int mod) {
+        return (mod & Opcodes.ACC_SYNTHETIC) != 0;
     }
 
     private ResourceMethod createResourceMethod(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
@@ -467,7 +480,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
             }
 
-            Type nonAsyncReturnType = getNonAsyncReturnType(currentMethodInfo.returnType());
+            Type nonAsyncReturnType = getNonAsyncReturnType(methodContext.containsKey(METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)
+                    ? (Type) methodContext.get(METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)
+                    : currentMethodInfo.returnType());
             addWriterForType(additionalWriters, nonAsyncReturnType);
 
             String[] produces = extractProducesConsumesValues(currentMethodInfo.annotation(PRODUCES), classProduces);
@@ -718,6 +733,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 return indexType.asParameterizedType().name().toString();
             case ARRAY:
                 return indexType.asArrayType().name().toString();
+            case WILDCARD_TYPE:
+                WildcardType wildcardType = indexType.asWildcardType();
+                Type extendsBound = wildcardType.extendsBound();
+                if (extendsBound.name().equals(ResteasyReactiveDotNames.OBJECT)) {
+                    // this is a super bound type that we don't support
+                    throw new RuntimeException("Cannot handle wildcard type " + indexType);
+                }
+                // this is an extend bound type, so we just user the bound
+                return wildcardType.name().toString();
             case TYPE_VARIABLE:
                 TypeVariable typeVariable = indexType.asTypeVariable();
                 if (typeVariable.bounds().isEmpty()) {

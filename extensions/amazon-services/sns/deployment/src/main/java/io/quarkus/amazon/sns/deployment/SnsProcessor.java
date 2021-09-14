@@ -7,8 +7,6 @@ import org.jboss.jandex.DotName;
 import io.quarkus.amazon.common.deployment.AbstractAmazonServiceProcessor;
 import io.quarkus.amazon.common.deployment.AmazonClientAsyncTransportBuildItem;
 import io.quarkus.amazon.common.deployment.AmazonClientBuildItem;
-import io.quarkus.amazon.common.deployment.AmazonClientBuilderBuildItem;
-import io.quarkus.amazon.common.deployment.AmazonClientBuilderConfiguredBuildItem;
 import io.quarkus.amazon.common.deployment.AmazonClientInterceptorsPathBuildItem;
 import io.quarkus.amazon.common.deployment.AmazonClientSyncTransportBuildItem;
 import io.quarkus.amazon.common.deployment.AmazonHttpClients;
@@ -21,8 +19,8 @@ import io.quarkus.amazon.sns.runtime.SnsClientProducer;
 import io.quarkus.amazon.sns.runtime.SnsConfig;
 import io.quarkus.amazon.sns.runtime.SnsRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -30,9 +28,10 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import software.amazon.awssdk.services.sns.SnsAsyncClient;
+import software.amazon.awssdk.services.sns.SnsAsyncClientBuilder;
 import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.SnsClientBuilder;
 
 public class SnsProcessor extends AbstractAmazonServiceProcessor {
 
@@ -120,34 +119,23 @@ public class SnsProcessor extends AbstractAmazonServiceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void createClientBuilders(List<AmazonClientSyncTransportBuildItem> syncTransports,
-            List<AmazonClientAsyncTransportBuildItem> asyncTransports, SnsRecorder recorder,
-            SnsConfig runtimeConfig, BuildProducer<AmazonClientBuilderBuildItem> builderProducer) {
-
-        createClientBuilders(syncTransports, asyncTransports, builderProducer,
-                (syncTransport) -> recorder.createSyncBuilder(runtimeConfig, syncTransport),
-                (asyncTransport) -> recorder.createAsyncBuilder(runtimeConfig, asyncTransport));
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void configureClient(List<AmazonClientBuilderBuildItem> clients, SnsRecorder recorder,
+    void createClientBuilders(SnsRecorder recorder,
             AmazonClientRecorder commonRecorder,
             SnsConfig runtimeConfig,
-            BuildProducer<AmazonClientBuilderConfiguredBuildItem> producer) {
+            List<AmazonClientSyncTransportBuildItem> syncTransports,
+            List<AmazonClientAsyncTransportBuildItem> asyncTransports,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
 
-        initClientBuilders(clients, commonRecorder, recorder.getAwsConfig(runtimeConfig), recorder.getSdkConfig(runtimeConfig),
-                buildTimeConfig.sdk, producer);
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void buildClients(List<AmazonClientBuilderConfiguredBuildItem> configuredClients, SnsRecorder recorder,
-            BeanContainerBuildItem beanContainer,
-            ShutdownContextBuildItem shutdown) {
-
-        buildClients(configuredClients,
-                (syncBuilder) -> recorder.buildClient(syncBuilder, beanContainer.getValue(), shutdown),
-                (asyncBuilder) -> recorder.buildAsyncClient(asyncBuilder, beanContainer.getValue(), shutdown));
+        createClientBuilders(commonRecorder,
+                recorder.getAwsConfig(runtimeConfig),
+                recorder.getSdkConfig(runtimeConfig),
+                buildTimeConfig.sdk,
+                syncTransports,
+                asyncTransports,
+                SnsClientBuilder.class,
+                (syncTransport) -> recorder.createSyncBuilder(runtimeConfig, syncTransport),
+                SnsAsyncClientBuilder.class,
+                (asyncTransport) -> recorder.createAsyncBuilder(runtimeConfig, asyncTransport),
+                syntheticBeans);
     }
 }

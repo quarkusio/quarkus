@@ -390,6 +390,7 @@ class VertxWebProcessor {
                 Function<Router, io.vertx.ext.web.Route> routeFunction = recorder.createRouteFunction(matcher,
                         bodyHandler.getHandler());
 
+                //TODO This needs to be refactored to use routeFunction() taking a Consumer<Route> instead
                 RouteBuildItem.Builder builder = RouteBuildItem.builder()
                         .routeFunction(routeFunction)
                         .handlerType(handlerType)
@@ -784,7 +785,13 @@ class VertxWebProcessor {
             isSSE.close();
 
             BytecodeCreator isNotSSE = isItSSE.falseBranch();
-            BranchResult isItJson = isNotSSE.ifTrue(isNotSSE.invokeStaticMethod(Methods.IS_JSON_ARRAY, res));
+            BranchResult isItNdJson = isNotSSE.ifTrue(isNotSSE.invokeStaticMethod(Methods.IS_NDJSON, res));
+            BytecodeCreator isNdjson = isItNdJson.trueBranch();
+            handleNdjsonMulti(descriptor, isNdjson, routingContext, res);
+            isNdjson.close();
+
+            BytecodeCreator isNotNdjson = isItNdJson.falseBranch();
+            BranchResult isItJson = isNotNdjson.ifTrue(isNotNdjson.invokeStaticMethod(Methods.IS_JSON_ARRAY, res));
             BytecodeCreator isJson = isItJson.trueBranch();
             handleJsonArrayMulti(descriptor, isJson, routingContext, res);
             isJson.close();
@@ -914,6 +921,28 @@ class VertxWebProcessor {
             writer.invokeStaticMethod(Methods.MULTI_SSE_SUBSCRIBE_STRING, res, rc);
         } else { // Multi<Object> - encode to json.
             writer.invokeStaticMethod(Methods.MULTI_SSE_SUBSCRIBE_OBJECT, res, rc);
+        }
+    }
+
+    private void handleNdjsonMulti(HandlerDescriptor descriptor, BytecodeCreator writer, ResultHandle rc,
+            ResultHandle res) {
+        // The method returns a Multi that needs to be written as server-sent event.
+        // We subscribe to this Multi and write the provided items (one by one) in the HTTP response.
+        // On completion, we "end" the response
+        // If the method returned null, we fail
+        // If the provided item is null we fail
+        // If the multi is empty, and the method return a Multi<Void>, we reply with a 204 - NO CONTENT (as regular)
+        // If the produced item is a string or buffer, the response.write method is used to write the events in the response
+        // If the produced item is an object, the item is mapped to JSON and included in the `data` section of the event.
+
+        if (Methods.isNoContent(descriptor)) { // Multi<Void> - so return a 204.
+            writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_VOID, res, rc);
+        } else if (descriptor.isContentTypeString()) {
+            writer.invokeStaticMethod(Methods.MULTI_NDJSON_SUBSCRIBE_STRING, res, rc);
+        } else if (descriptor.isContentTypeBuffer() || descriptor.isContentTypeMutinyBuffer()) {
+            writer.invokeStaticMethod(Methods.MULTI_JSON_FAIL, rc);
+        } else { // Multi<Object> - encode to json.
+            writer.invokeStaticMethod(Methods.MULTI_NDJSON_SUBSCRIBE_OBJECT, res, rc);
         }
     }
 

@@ -3,15 +3,15 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Google Cloud Functions (Serverless) with RESTEasy, Undertow, or Vert.x Web
+= Google Cloud Functions (Serverless) with RESTEasy, Undertow, or Reactive Routes
 :extension-status: preview
 
 include::./attributes.adoc[]
 
 The `quarkus-google-cloud-functions-http` extension allows you to write microservices with RESTEasy (JAX-RS),
-Undertow (Servlet), Vert.x Web, or link:funqy-http[Funqy HTTP], and make these microservices deployable to the Google Cloud Functions runtime.
+Undertow (Servlet), Reactive Routes, or link:funqy-http[Funqy HTTP], and make these microservices deployable to the Google Cloud Functions runtime.
 
-One Google Cloud Functions deployment can represent any number of JAX-RS, Servlet, Vert.x Web, or link:funqy-http[Funqy HTTP] endpoints.
+One Google Cloud Functions deployment can represent any number of JAX-RS, Servlet, Reactive Routes, or link:funqy-http[Funqy HTTP] endpoints.
 
 include::./status-include.adoc[]
 
@@ -28,7 +28,7 @@ To complete this guide, you need:
 == Solution
 
 This guide walks you through generating a sample project followed by creating three HTTP endpoints
-written with JAX-RS APIs, Servlet APIs, Vert.x Web, or link:funqy-http[Funqy HTTP] APIs. Once built, you will be able to deploy
+written with JAX-RS APIs, Servlet APIs, Reactive Routes, or link:funqy-http[Funqy HTTP] APIs. Once built, you will be able to deploy
 the project to Google Cloud.
 
 If you don't want to follow all these steps, you can go right to the completed example.
@@ -49,7 +49,7 @@ mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=google-cloud-functions-http \
     -DclassName="org.acme.quickstart.GreetingResource" \
     -Dpath="/hello" \
-    -Dextensions="resteasy,google-cloud-functions-http,resteasy-json,undertow,vertx-web,funqy-http"
+    -Dextensions="resteasy,google-cloud-functions-http,resteasy-jackson,undertow,reactive-routes,funqy-http"
 ----
 
 == Login to Google Cloud
@@ -64,7 +64,7 @@ gcloud auth login
 == Creating the endpoints
 
 For this example project, we will create four endpoints, one for RESTEasy (JAX-RS), one for Undertow (Servlet),
-one for Vert.x Web (reactive routes) and one for link:funqy-http[Funqy HTTP].
+one for Reactive routes and one for link:funqy-http[Funqy HTTP].
 
 If you don't need endpoints of each type, you can remove the corresponding extensions from your `pom.xml`.
 
@@ -119,7 +119,7 @@ public class GreetingServlet extends HttpServlet {
 }
 ----
 
-=== The Vert.x Web endpoint
+=== The Reactive Routes endpoint
 
 [source,java]
 ----
@@ -189,7 +189,7 @@ You can then call your endpoints via:
 
 - For JAX-RS: {httpsTrigger.url}/hello
 - For servlet: {httpsTrigger.url}/servlet/hello
-- For Vert.x Web: {httpsTrigger.url}/vertx/hello
+- For Reactive Routes: {httpsTrigger.url}/vertx/hello
 - For Funqy: {httpsTrigger.url}/funqy
 
 == Testing locally

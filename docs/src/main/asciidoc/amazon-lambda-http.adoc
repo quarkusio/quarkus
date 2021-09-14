@@ -3,14 +3,14 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Amazon Lambda with RESTEasy, Undertow, or Vert.x Web
+= Amazon Lambda with RESTEasy, Undertow, or Reactive Routes
 :extension-status: preview
 
 include::./attributes.adoc[]
 
 With Quarkus you can deploy your favorite Java HTTP frameworks as Amazon Lambda's using either the https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api.html[AWS Gateway HTTP API]
 or https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-rest-api.html[AWS Gateway REST API].  This means that you can deploy your microservices written with RESTEasy (JAX-RS),
-Undertow (servlet), Vert.x Web, link:funqy-http[Funqy HTTP] or any other Quarkus HTTP framework as an AWS Lambda.
+Undertow (servlet), Reactive Routes, link:funqy-http[Funqy HTTP] or any other Quarkus HTTP framework as an AWS Lambda.
 
 You can deploy your Lambda as a pure Java jar, or you can compile your project to a native image and deploy that for a smaller
 memory footprint and startup time.  Our integration also generates SAM deployment files that can be consumed by https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html[Amazon's SAM framework].
@@ -253,7 +253,7 @@ There is nothing special about the POM other than the inclusion of the `quarkus-
 These extensions automatically generate everything you might need for your lambda deployment.
 
 Also, at least in the generated Maven archetype `pom.xml`, the `quarkus-resteasy`, `quarkus-reactive-routes`, and `quarkus-undertow`
-dependencies are all optional.  Pick which HTTP framework(s) you want to use (JAX-RS, Vertx Web, and/or Servlet) and
+dependencies are all optional.  Pick which HTTP framework(s) you want to use (JAX-RS, Reactive Routes, and/or Servlet) and
 remove the other dependencies to shrink your deployment.
 
 === Examine sam.yaml
@@ -362,12 +362,12 @@ library is not fully compatible with GraalVM so we had to do some integration wo
 
 When you invoke an HTTP request on the API Gateway, the Gateway turns that HTTP request into a JSON event document that is
 forwarded to a Quarkus Lambda.  The Quarkus Lambda parses this json and converts in into an internal representation of an HTTP
-request that can be consumed by any HTTP framework Quarkus supports (JAX-RS, servlet, Vert.x Web).
+request that can be consumed by any HTTP framework Quarkus supports (JAX-RS, servlet, Reactive Routes).
 
 API Gateway supports many different ways to securely invoke on your HTTP endpoints that are backed by Lambda and Quarkus.
 If you enable it, Quarkus will automatically parse relevant parts of the https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html[event json document]
 and look for security based metadata and register a `java.security.Principal` internally that can be looked up in JAX-RS
-by injecting a `javax.ws.rs.core.SecurityContext`, via `HttpServletRequest.getUserPrincipal()` in servlet, and `RouteContext.user()` in Vert.x Web.
+by injecting a `javax.ws.rs.core.SecurityContext`, via `HttpServletRequest.getUserPrincipal()` in servlet, and `RouteContext.user()` in Reactive Routes.
 If you want more security information, the `Principal` object can be typecast to
 a class that will give you more information.
 

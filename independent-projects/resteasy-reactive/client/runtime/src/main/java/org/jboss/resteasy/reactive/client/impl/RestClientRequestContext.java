@@ -6,7 +6,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
-import io.vertx.ext.web.multipart.MultipartForm;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -32,6 +31,7 @@ import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
@@ -156,8 +156,12 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
                 configuration);
     }
 
-    ReaderInterceptor[] getReaderInterceptors() {
+    public ReaderInterceptor[] getReaderInterceptors() {
         return configuration.getReaderInterceptors().toArray(Serialisers.NO_READER_INTERCEPTOR);
+    }
+
+    public Map<String, Object> getProperties() {
+        return properties;
     }
 
     public void initialiseResponse(HttpClientResponse vertxResponse) {
@@ -413,7 +417,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     }
 
     public boolean isMultipart() {
-        return entity != null && entity.getEntity() instanceof MultipartForm;
+        return entity != null && entity.getEntity() instanceof QuarkusMultipartForm;
     }
 
     public Map<String, Object> getClientFilterProperties() {

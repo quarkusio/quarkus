@@ -8,18 +8,23 @@ import java.io.IOException;
 import java.nio.file.Files;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.PartType;
+import org.jboss.resteasy.reactive.RestQuery;
 
+import io.quarkus.it.rest.client.multipart.MultipartClient.FileWithPojo;
+import io.quarkus.it.rest.client.multipart.MultipartClient.Pojo;
 import io.quarkus.it.rest.client.multipart.MultipartClient.WithBufferAsBinaryFile;
 import io.quarkus.it.rest.client.multipart.MultipartClient.WithBufferAsTextFile;
 import io.quarkus.it.rest.client.multipart.MultipartClient.WithByteArrayAsBinaryFile;
@@ -41,6 +46,28 @@ public class MultipartResource {
     public static final int NUMBER = 12342;
     @RestClient
     MultipartClient client;
+
+    @GET
+    @Path("/client/byte-array-as-binary-file-with-pojo")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Blocking
+    public String sendByteArrayWithPojo(@RestQuery @DefaultValue("true") Boolean withPojo) {
+        FileWithPojo data = new FileWithPojo();
+        data.file = HELLO_WORLD.getBytes(UTF_8);
+        data.fileName = GREETING_TXT;
+        if (withPojo) {
+            data.pojo = new Pojo();
+            data.pojo.setName("some-name");
+            data.pojo.setValue("some-value");
+        }
+        try {
+            return client.sendFileWithPojo(data);
+        } catch (WebApplicationException e) {
+            String responseAsString = e.getResponse().readEntity(String.class);
+            return String.format("Error: %s statusCode %s", responseAsString, e.getResponse().getStatus());
+        }
+    }
 
     @GET
     @Path("/client/byte-array-as-binary-file")
@@ -180,7 +207,18 @@ public class MultipartResource {
         return String.format("fileOk:%s,numberOk:%s", containsHelloWorld(body.file), NUMBER == Integer.parseInt(body.number));
     }
 
-    private Object containsHelloWorld(File file) {
+    @POST
+    @Path("/echo/with-pojo")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public String consumeBinaryWithPojo(@MultipartForm MultipartBodyWithBinaryFileAndPojo fileWithPojo) {
+        return String.format("fileOk:%s,nameOk:%s,pojoOk:%s",
+                containsHelloWorld(fileWithPojo.file),
+                GREETING_TXT.equals(fileWithPojo.fileName),
+                fileWithPojo.pojo == null ? "null"
+                        : "some-name".equals(fileWithPojo.pojo.getName()) && "some-value".equals(fileWithPojo.pojo.getValue()));
+    }
+
+    private boolean containsHelloWorld(File file) {
         try {
             String actual = new String(Files.readAllBytes(file.toPath()));
             return HELLO_WORLD.equals(actual);
@@ -210,6 +248,21 @@ public class MultipartResource {
         @FormParam("number")
         @PartType(MediaType.TEXT_PLAIN)
         public String number;
+    }
+
+    public static class MultipartBodyWithBinaryFileAndPojo {
+
+        @FormParam("file")
+        @PartType(MediaType.APPLICATION_OCTET_STREAM)
+        public File file;
+
+        @FormParam("fileName")
+        @PartType(MediaType.TEXT_PLAIN)
+        public String fileName;
+
+        @FormParam("pojo")
+        @PartType(MediaType.APPLICATION_JSON)
+        public Pojo pojo;
     }
 
 }

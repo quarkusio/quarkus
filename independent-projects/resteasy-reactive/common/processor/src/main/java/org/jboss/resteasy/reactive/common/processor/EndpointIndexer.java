@@ -483,7 +483,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 // TODO: does it make sense to default to MediaType.MULTIPART_FORM_DATA when no consumes is set?
                 if (!validConsumes) {
                     throw new RuntimeException(
-                            "'@MultipartForm' can only be used on methods that annotated with '@Consumes(MediaType.MULTIPART_FORM_DATA)'. Offending method is '"
+                            "'@MultipartForm' can only be used on methods annotated with '@Consumes(MediaType.MULTIPART_FORM_DATA)'. Offending method is '"
                                     + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
                 }
             }

@@ -60,14 +60,17 @@ import io.quarkus.extest.runtime.TestAnnotation;
 import io.quarkus.extest.runtime.TestRecorder;
 import io.quarkus.extest.runtime.beans.CommandServlet;
 import io.quarkus.extest.runtime.beans.PublicKeyProducer;
+import io.quarkus.extest.runtime.config.AnotherPrefixConfig;
 import io.quarkus.extest.runtime.config.FooRuntimeConfig;
 import io.quarkus.extest.runtime.config.ObjectOfValue;
 import io.quarkus.extest.runtime.config.ObjectValueOf;
+import io.quarkus.extest.runtime.config.PrefixConfig;
 import io.quarkus.extest.runtime.config.TestBuildAndRunTimeConfig;
 import io.quarkus.extest.runtime.config.TestBuildTimeConfig;
 import io.quarkus.extest.runtime.config.TestConfigRoot;
 import io.quarkus.extest.runtime.config.TestRunTimeConfig;
 import io.quarkus.extest.runtime.config.XmlConfig;
+import io.quarkus.extest.runtime.config.named.PrefixNamedConfig;
 import io.quarkus.extest.runtime.logging.AdditionalLogHandlerValueFactory;
 import io.quarkus.extest.runtime.runtimeinitializedpackage.RuntimeInitializedClass;
 import io.quarkus.extest.runtime.subst.DSAPublicKeyObjectSubstitution;
@@ -383,11 +386,13 @@ public final class TestProcessor {
     @Record(RUNTIME_INIT)
     void configureBeans(TestRecorder recorder, List<TestBeanBuildItem> testBeans,
             BeanContainerBuildItem beanContainer,
-            TestRunTimeConfig runTimeConfig, FooRuntimeConfig fooRuntimeConfig) {
+            TestRunTimeConfig runTimeConfig, FooRuntimeConfig fooRuntimeConfig, PrefixConfig prefixConfig,
+            PrefixNamedConfig prefixNamedConfig,
+            AnotherPrefixConfig anotherPrefixConfig) {
         for (TestBeanBuildItem testBeanBuildItem : testBeans) {
             Class<IConfigConsumer> beanClass = testBeanBuildItem.getConfigConsumer();
             recorder.configureBeans(beanContainer.getValue(), beanClass, buildAndRunTimeConfig, runTimeConfig,
-                    fooRuntimeConfig);
+                    fooRuntimeConfig, prefixConfig, prefixNamedConfig, anotherPrefixConfig);
         }
     }
 

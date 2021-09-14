@@ -250,8 +250,8 @@ public final class LauncherUtil {
         }
 
         private boolean ensureProcessOutputFileExists() {
-            int i = 0;
-            while (i++ < 50) {
+            long bailoutTime = System.currentTimeMillis() + waitTime.toMillis();
+            while (System.currentTimeMillis() < bailoutTime) {
                 if (Files.exists(processOutput)) {
                     return true;
                 } else {

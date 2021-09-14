@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -30,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import org.gradle.api.GradleException;
 
 public class QuarkusModelHelper {
 
@@ -187,7 +187,7 @@ public class QuarkusModelHelper {
         try (BufferedReader reader = Files.newBufferedReader(path)) {
             rtProps.load(reader);
         } catch (IOException e) {
-            throw new GradleException("Failed to load extension description " + path, e);
+            throw new UncheckedIOException("Failed to load extension description " + path, e);
         }
         return rtProps;
     }

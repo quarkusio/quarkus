@@ -50,4 +50,23 @@ public class BouncyCastleTestCase {
                 .body(equalTo("success"));
     }
 
+    @Test
+    public void readEcPrivatePemKey() {
+        RestAssured.given()
+                .when()
+                .get("/jca/readEcPrivatePemKey")
+                .then()
+                .statusCode(200)
+                .body(equalTo("success"));
+    }
+
+    @Test
+    public void readRsaPrivatePemKey() {
+        RestAssured.given()
+                .when()
+                .get("/jca/readRsaPrivatePemKey")
+                .then()
+                .statusCode(200)
+                .body(equalTo("success"));
+    }
 }

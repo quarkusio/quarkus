@@ -10,6 +10,7 @@ import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.restassured.response.ValidatableResponse;
 
 /**
  * Test various Bean Validation operations running in Quarkus
@@ -17,6 +18,17 @@ import io.restassured.http.ContentType;
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
 public class HibernateValidatorFunctionalityTest {
+
+    private boolean isInternalErrorExceptionLeakedInQuarkusErrorHandlerResponse() {
+        // True by default when running tests in the JVM, with the test/dev profile.
+        // When running in native mode, the application runs with the prod profile (sort of?):
+        // the stack trace isn't included in QuarkusErrorHandler responses.
+        return isTestsInJVM();
+    }
+
+    protected boolean isTestsInJVM() {
+        return true;
+    }
 
     @Test
     public void testBasicFeatures() throws Exception {
@@ -267,13 +279,15 @@ public class HibernateValidatorFunctionalityTest {
     @Test
     public void testRestEndPointValidationGroups_result() {
         // GET: deleted must be false
-        RestAssured.given()
+        ValidatableResponse response = RestAssured.given()
                 .param("simulateDeleted", true)
                 .when()
                 .get("/hibernate-validator/test/rest-end-point-validation-groups/1/")
                 .then()
-                .statusCode(500)
-                .body(containsString("must be false"));
+                .statusCode(500);
+        if (isInternalErrorExceptionLeakedInQuarkusErrorHandlerResponse()) {
+            response.body(containsString("must be false"));
+        }
         RestAssured.given()
                 .param("simulateDeleted", false)
                 .when()
@@ -283,13 +297,15 @@ public class HibernateValidatorFunctionalityTest {
                 .body(containsString("\"deleted\":false"));
 
         // DELETE: deleted must be true
-        RestAssured.given()
+        response = RestAssured.given()
                 .param("simulateDeleted", false)
                 .when()
                 .delete("/hibernate-validator/test/rest-end-point-validation-groups/1/")
                 .then()
-                .statusCode(500)
-                .body(containsString("must be true"));
+                .statusCode(500);
+        if (isInternalErrorExceptionLeakedInQuarkusErrorHandlerResponse()) {
+            response.body(containsString("must be true"));
+        }
         RestAssured.given()
                 .param("simulateDeleted", true)
                 .when()
@@ -299,21 +315,25 @@ public class HibernateValidatorFunctionalityTest {
                 .body(containsString("\"deleted\":true"));
 
         // Also check that constraints using the default group still work
-        RestAssured.given()
+        response = RestAssured.given()
                 .param("simulateDeleted", false)
                 .param("simulateNullName", true)
                 .when()
                 .get("/hibernate-validator/test/rest-end-point-validation-groups/1/")
                 .then()
-                .statusCode(500)
-                .body(containsString("must not be null"));
-        RestAssured.given()
+                .statusCode(500);
+        if (isInternalErrorExceptionLeakedInQuarkusErrorHandlerResponse()) {
+            response.body(containsString("must not be null"));
+        }
+        response = RestAssured.given()
                 .param("simulateDeleted", true)
                 .param("simulateNullName", true)
                 .when()
                 .delete("/hibernate-validator/test/rest-end-point-validation-groups/1/")
                 .then()
-                .statusCode(500)
-                .body(containsString("must not be null"));
+                .statusCode(500);
+        if (isInternalErrorExceptionLeakedInQuarkusErrorHandlerResponse()) {
+            response.body(containsString("must not be null"));
+        }
     }
 }

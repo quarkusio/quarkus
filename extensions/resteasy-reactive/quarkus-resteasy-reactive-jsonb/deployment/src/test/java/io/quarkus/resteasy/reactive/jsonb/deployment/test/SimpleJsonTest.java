@@ -141,6 +141,7 @@ public class SimpleJsonTest {
         RestAssured
                 .with()
                 .body(postBody)
+                .accept("application/json")
                 .contentType("application/json")
                 .post("/simple/person-validated")
                 .then()
@@ -151,6 +152,7 @@ public class SimpleJsonTest {
         RestAssured
                 .with()
                 .body(postBody)
+                .accept("application/json")
                 .contentType("application/json")
                 .post("/simple/person-invalid-result")
                 .then()
@@ -160,6 +162,7 @@ public class SimpleJsonTest {
         RestAssured
                 .with()
                 .body("{\"first\": \"Bob\"}")
+                .accept("application/json")
                 .contentType("application/json")
                 .post("/simple/person-validated")
                 .then()

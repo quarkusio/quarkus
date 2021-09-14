@@ -1,10 +1,14 @@
 package io.quarkus.hibernate.validator.runtime.jaxrs;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
+import javax.validation.ElementKind;
+import javax.validation.Path;
 import javax.validation.ValidationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -16,45 +20,52 @@ public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper
 
     @Override
     public Response toResponse(ValidationException exception) {
-        if (exception instanceof ConstraintViolationException) {
-            return buildConstrainViolationResponse((ConstraintViolationException) exception);
+        if (!(exception instanceof ResteasyReactiveViolationException)) {
+            // Not a violation in a REST endpoint call, but rather in an internal component.
+            // This is an internal error: handle through the QuarkusErrorHandler,
+            // which will return HTTP status 500 and log the exception.
+            throw exception;
         }
-        return buildResponse(unwrapException(exception), Status.INTERNAL_SERVER_ERROR);
+        ResteasyReactiveViolationException resteasyViolationException = (ResteasyReactiveViolationException) exception;
+        if (hasReturnValueViolation(resteasyViolationException.getConstraintViolations())) {
+            // This is an internal error: handle through the QuarkusErrorHandler,
+            // which will return HTTP status 500 and log the exception.
+            throw resteasyViolationException;
+        }
+        return buildViolationReportResponse(resteasyViolationException);
+    }
+
+    private boolean hasReturnValueViolation(Set<ConstraintViolation<?>> violations) {
+        for (ConstraintViolation<?> violation : violations) {
+            if (isReturnValueViolation(violation)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isReturnValueViolation(ConstraintViolation<?> violation) {
+        Iterator<Path.Node> nodes = violation.getPropertyPath().iterator();
+        Path.Node firstNode = nodes.next();
+
+        if (firstNode.getKind() != ElementKind.METHOD) {
+            return false;
+        }
+
+        Path.Node secondNode = nodes.next();
+        return secondNode.getKind() == ElementKind.RETURN_VALUE;
     }
 
     protected Response buildResponse(Object entity, Status status) {
         return Response.status(status).entity(entity).build();
     }
 
-    protected String unwrapException(Throwable t) {
-        StringBuffer sb = new StringBuffer();
-        doUnwrapException(sb, t);
-        return sb.toString();
-    }
-
-    private void doUnwrapException(StringBuffer sb, Throwable t) {
-        if (t == null) {
-            return;
-        }
-        sb.append(t.toString());
-        if (t.getCause() != null && t != t.getCause()) {
-            sb.append('[');
-            doUnwrapException(sb, t.getCause());
-            sb.append(']');
-        }
-    }
-
-    private Response buildConstrainViolationResponse(ConstraintViolationException cve) {
-        boolean hasReturnValueViolation = false;
+    private Response buildViolationReportResponse(ConstraintViolationException cve) {
         List<ViolationReport.Violation> violationsInReport = new ArrayList<>(cve.getConstraintViolations().size());
         for (ConstraintViolation<?> cv : cve.getConstraintViolations()) {
-            if (cv.getExecutableReturnValue() != null) {
-                hasReturnValueViolation = true;
-            }
             violationsInReport.add(new ViolationReport.Violation(cv.getPropertyPath().toString(), cv.getMessage()));
         }
-        // spec says that if there is a violation in the return value, the response status is 500, otherwise 400
-        Status status = hasReturnValueViolation ? Status.INTERNAL_SERVER_ERROR : Status.BAD_REQUEST;
+        Status status = Status.BAD_REQUEST;
         return buildResponse(new ViolationReport("Constraint Violation", status, violationsInReport), status);
     }
 

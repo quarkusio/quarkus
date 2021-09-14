@@ -5,6 +5,7 @@ import javax.interceptor.AroundConstruct;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
+import javax.validation.ConstraintViolationException;
 
 import io.quarkus.hibernate.validator.runtime.interceptor.AbstractMethodValidationInterceptor;
 
@@ -16,7 +17,11 @@ public class ResteasyReactiveEndPointValidationInterceptor extends AbstractMetho
     @AroundInvoke
     @Override
     public Object validateMethodInvocation(InvocationContext ctx) throws Exception {
-        return super.validateMethodInvocation(ctx);
+        try {
+            return super.validateMethodInvocation(ctx);
+        } catch (ConstraintViolationException e) {
+            throw new ResteasyReactiveViolationException(e.getConstraintViolations());
+        }
     }
 
     @AroundConstruct

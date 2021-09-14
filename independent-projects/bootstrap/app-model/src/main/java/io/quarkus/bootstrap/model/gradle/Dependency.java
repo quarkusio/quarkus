@@ -19,4 +19,5 @@ public interface Dependency {
 
     String getScope();
 
+    int getFlags();
 }

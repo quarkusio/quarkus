@@ -68,12 +68,16 @@ public class OptionalDepsTest extends ExecutableOutputOutcomeTestBase {
     @Override
     protected void assertDeploymentDeps(List<AppDependency> deploymentDeps) throws Exception {
         final Set<AppDependency> expected = new HashSet<>();
-        expected.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a-deployment", "1"), "compile", true));
+        expected.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a-deployment", "1"), "compile", true,
+                AppDependency.DEPLOYMENT_CP_FLAG));
         expected.add(
-                new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-b-deployment-dep", "1"), "compile", true));
-        expected.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-b-deployment", "1"), "compile", true));
+                new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-b-deployment-dep", "1"), "compile", true,
+                        AppDependency.DEPLOYMENT_CP_FLAG));
+        expected.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-b-deployment", "1"), "compile", true,
+                AppDependency.DEPLOYMENT_CP_FLAG));
         expected.add(
-                new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-d-deployment", "1"), "compile", false));
+                new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-d-deployment", "1"), "compile", false,
+                        AppDependency.DEPLOYMENT_CP_FLAG));
         assertEquals(expected, new HashSet<>(deploymentDeps));
     }
 }

@@ -47,14 +47,21 @@ public class CheckForLatestMajorUpdatesTest extends CreatorOutcomeTestBase {
 
         final AppModel effectiveModel = outcome.getAppModel();
         assertEquals(Arrays.asList(new AppDependency[] {
-                new AppDependency(TsArtifact.jar("ext1", "3.1.1").toAppArtifact(), "compile"),
-                new AppDependency(TsArtifact.jar("random").toAppArtifact(), "compile"),
-                new AppDependency(TsArtifact.jar("ext2", "1.0.0").toAppArtifact(), "compile")
+                new AppDependency(TsArtifact.jar("ext1", "3.1.1").toAppArtifact(), "compile", AppDependency.DIRECT_FLAG,
+                        AppDependency.RUNTIME_EXTENSION_ARTIFACT_FLAG, AppDependency.RUNTIME_CP_FLAG,
+                        AppDependency.DEPLOYMENT_CP_FLAG),
+                new AppDependency(TsArtifact.jar("random").toAppArtifact(), "compile", AppDependency.DIRECT_FLAG,
+                        AppDependency.RUNTIME_CP_FLAG, AppDependency.DEPLOYMENT_CP_FLAG),
+                new AppDependency(TsArtifact.jar("ext2", "1.0.0").toAppArtifact(), "compile", AppDependency.DIRECT_FLAG,
+                        AppDependency.RUNTIME_EXTENSION_ARTIFACT_FLAG, AppDependency.RUNTIME_CP_FLAG,
+                        AppDependency.DEPLOYMENT_CP_FLAG)
         }), effectiveModel.getUserDependencies());
 
         assertEquals(Arrays.asList(new AppDependency[] {
-                new AppDependency(TsArtifact.jar("ext1-deployment", "3.1.1").toAppArtifact(), "compile"),
-                new AppDependency(TsArtifact.jar("ext2-deployment", "1.0.0").toAppArtifact(), "compile")
+                new AppDependency(TsArtifact.jar("ext1-deployment", "3.1.1").toAppArtifact(), "compile",
+                        AppDependency.DEPLOYMENT_CP_FLAG),
+                new AppDependency(TsArtifact.jar("ext2-deployment", "1.0.0").toAppArtifact(), "compile",
+                        AppDependency.DEPLOYMENT_CP_FLAG)
         }), effectiveModel.getDeploymentDependencies());
 
     }

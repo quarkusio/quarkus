@@ -66,6 +66,7 @@ public class DeploymentInjectingDependencyVisitor {
     private final AppModel.Builder appBuilder;
 
     private boolean collectingTopRuntimeNodes = true;
+    private boolean collectingDirectExtensionDeps = true;
     private final List<ExtensionDependency> topExtensionDeps = new ArrayList<>();
     private ExtensionDependency lastVisitedRuntimeExtNode;
     private final Map<AppArtifactKey, ExtensionInfo> allExtensions = new HashMap<>();
@@ -164,17 +165,8 @@ public class DeploymentInjectingDependencyVisitor {
     }
 
     private void visitRuntimeDependency(DependencyNode node) {
-        Artifact artifact = node.getArtifact();
 
-        if (allRuntimeDeps.add(DependencyNodeUtils.toKey(artifact))) {
-            artifact = resolve(artifact);
-            final AppArtifact appArtifact = toAppArtifact(artifact);
-            final AppDependency appDep = new AppDependency(appArtifact, node.getDependency().getScope(),
-                    node.getDependency().isOptional());
-            appBuilder.addRuntimeDep(appDep);
-            appBuilder.addFullDeploymentDep(appDep);
-        }
-
+        final boolean prevCollectingDirectExtensionDeps = collectingDirectExtensionDeps;
         final boolean prevCollectingTopRtNodes = collectingTopRuntimeNodes;
         final ExtensionDependency prevLastVisitedRtExtNode = lastVisitedRuntimeExtNode;
 
@@ -183,8 +175,27 @@ public class DeploymentInjectingDependencyVisitor {
             exclusionStack.addLast(node.getDependency().getExclusions());
         }
 
+        Artifact artifact = node.getArtifact();
+        AppArtifact newRtArtifactDep = null;
+        if (allRuntimeDeps.add(DependencyNodeUtils.toKey(artifact))) {
+            artifact = resolve(artifact);
+            newRtArtifactDep = toAppArtifact(artifact);
+        }
+
         try {
             final ExtensionDependency extDep = getExtensionDependencyOrNull(node, artifact);
+
+            if (newRtArtifactDep != null) {
+                final AppDependency appDep = new AppDependency(newRtArtifactDep, node.getDependency().getScope(),
+                        node.getDependency().isOptional(),
+                        collectingDirectExtensionDeps ? AppDependency.DIRECT_FLAG : 0,
+                        extDep == null ? 0 : AppDependency.RUNTIME_EXTENSION_ARTIFACT_FLAG,
+                        AppDependency.RUNTIME_CP_FLAG, AppDependency.DEPLOYMENT_CP_FLAG);
+                appBuilder.addDependency(appDep);
+            }
+
+            collectingDirectExtensionDeps = false;
+
             if (extDep != null) {
                 extDep.info.ensureActivated();
                 visitExtensionDependency(extDep);
@@ -199,6 +210,7 @@ public class DeploymentInjectingDependencyVisitor {
         if (popExclusions) {
             exclusionStack.pollLast();
         }
+        collectingDirectExtensionDeps = prevCollectingDirectExtensionDeps;
         collectingTopRuntimeNodes = prevCollectingTopRtNodes;
         lastVisitedRuntimeExtNode = prevLastVisitedRtExtNode;
     }

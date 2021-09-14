@@ -43,8 +43,10 @@ public class ProvidedExtensionDepsTest extends ExecutableOutputOutcomeTestBase {
     @Override
     protected void assertDeploymentDeps(List<AppDependency> deploymentDeps) throws Exception {
         final Set<AppDependency> expected = new HashSet<>();
-        expected.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a-deployment", "1"), "compile"));
-        expected.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a-deployment-dep", "1"), "compile"));
+        expected.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a-deployment", "1"), "compile",
+                AppDependency.DEPLOYMENT_CP_FLAG));
+        expected.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a-deployment-dep", "1"), "compile",
+                AppDependency.DEPLOYMENT_CP_FLAG));
         assertEquals(expected, new HashSet<>(deploymentDeps));
     }
 }

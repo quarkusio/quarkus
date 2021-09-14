@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 :config-file: application.properties
+:orm-doc-url-prefix: https://docs.jboss.org/hibernate/orm/5.5/userguide/html_single/Hibernate_User_Guide.html
 
 Hibernate ORM is the de facto standard JPA implementation and offers you the full breadth of an Object Relational Mapper.
 It works beautifully in Quarkus.
@@ -410,7 +411,7 @@ difference is that you would specify your Hibernate ORM configuration in `META-I
 ----
 
 When using the `persistence.xml` configuration you are configuring Hibernate ORM directly,
-so in this case the appropriate reference is the link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#configurations[documentation on hibernate.org].
+so in this case the appropriate reference is the link:{orm-doc-url-prefix}#configurations[documentation on hibernate.org].
 
 Please remember these are not the same property names as the ones used in the Quarkus `{config-file}`, nor will
 the same defaults be applied.
@@ -779,9 +780,9 @@ Jump over to link:datasource[Quarkus - Datasources] for all details.
 [[multitenancy]]
 == Multitenancy
 
-"The term multitenancy, in general, is applied to software development to indicate an architecture in which a single running instance of an application simultaneously serves multiple clients (tenants). This is highly common in SaaS solutions. Isolating information (data, customizations, etc.) pertaining to the various tenants is a particular challenge in these systems. This includes the data owned by each tenant stored in the database" (link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#multitenacy[Hibernate User Guide]).
+"The term multitenancy, in general, is applied to software development to indicate an architecture in which a single running instance of an application simultaneously serves multiple clients (tenants). This is highly common in SaaS solutions. Isolating information (data, customizations, etc.) pertaining to the various tenants is a particular challenge in these systems. This includes the data owned by each tenant stored in the database" (link:{orm-doc-url-prefix}#multitenacy[Hibernate User Guide]).
 
-Quarkus currently supports the link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#multitenacy-separate-database[separate database] and the link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#multitenacy-separate-schema[separate schema] approach.
+Quarkus currently supports the link:{orm-doc-url-prefix}#multitenacy-separate-database[separate database] and the link:{orm-doc-url-prefix}#multitenacy-separate-schema[separate schema] approach.
 
 To see multitenancy in action, you can check out the {quickstarts-tree-url}/hibernate-orm-multi-tenancy-quickstart[hibernate-orm-multi-tenancy-quickstart] quickstart.
 

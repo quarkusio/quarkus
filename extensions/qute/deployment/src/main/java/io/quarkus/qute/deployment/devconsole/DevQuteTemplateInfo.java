@@ -1,16 +1,17 @@
 package io.quarkus.qute.deployment.devconsole;
 
-import java.util.List;
 import java.util.Map;
 
 public class DevQuteTemplateInfo implements Comparable<DevQuteTemplateInfo> {
 
     private final String path;
-    private final List<String> variants;
+    // variant -> source
+    private final Map<String, String> variants;
     private final String methodInfo;
     private final Map<String, String> parameters;
 
-    public DevQuteTemplateInfo(String path, List<String> variants, String methodInfo, Map<String, String> parameters) {
+    public DevQuteTemplateInfo(String path, Map<String, String> variants, String methodInfo,
+            Map<String, String> parameters) {
         this.path = path;
         this.variants = variants;
         this.methodInfo = methodInfo;
@@ -25,7 +26,7 @@ public class DevQuteTemplateInfo implements Comparable<DevQuteTemplateInfo> {
         return path;
     }
 
-    public List<String> getVariants() {
+    public Map<String, String> getVariants() {
         return variants;
     }
 
@@ -37,4 +38,5 @@ public class DevQuteTemplateInfo implements Comparable<DevQuteTemplateInfo> {
     public int compareTo(DevQuteTemplateInfo o) {
         return path.compareTo(o.path);
     }
+
 }

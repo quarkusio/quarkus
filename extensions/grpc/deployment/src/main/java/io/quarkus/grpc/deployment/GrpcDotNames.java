@@ -2,6 +2,7 @@ package io.quarkus.grpc.deployment;
 
 import java.util.function.BiFunction;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 
 import io.grpc.BindableService;
@@ -59,5 +60,9 @@ public class GrpcDotNames {
             "addBlockingClientInterceptor", AbstractStub.class, AbstractStub.class);
     static final MethodDescriptor GET_STUB_CONFIGURATOR = MethodDescriptor.ofMethod(GrpcClientConfigProvider.class,
             "getStubConfigurator", BiFunction.class);
+
+    static boolean isGrpcClient(AnnotationInstance instance) {
+        return instance.name().equals(GRPC_CLIENT);
+    }
 
 }

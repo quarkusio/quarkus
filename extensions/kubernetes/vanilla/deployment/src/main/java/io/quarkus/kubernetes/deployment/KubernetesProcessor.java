@@ -45,6 +45,7 @@ import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
+import io.quarkus.kubernetes.spi.GeneratedKubernetesResourceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.runtime.LaunchMode;
@@ -91,7 +92,8 @@ class KubernetesProcessor {
             List<ConfiguratorBuildItem> configurators,
             List<DecoratorBuildItem> decorators,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
-            BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer) {
+            BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer,
+            BuildProducer<GeneratedKubernetesResourceBuildItem> generatedKubernetesResourceProducer) {
 
         List<ConfiguratorBuildItem> allConfigurationRegistry = new ArrayList<>(configurators);
         List<DecoratorBuildItem> allDecorators = new ArrayList<>(decorators);
@@ -168,6 +170,9 @@ class KubernetesProcessor {
                     String fileName = path.toFile().getName();
                     Path targetPath = outputTarget.getOutputDirectory().resolve(KUBERNETES).resolve(fileName);
                     String relativePath = targetPath.toAbsolutePath().toString().replace(root.toAbsolutePath().toString(), "");
+
+                    generatedKubernetesResourceProducer.produce(new GeneratedKubernetesResourceBuildItem(fileName,
+                            resourceEntry.getValue().getBytes(StandardCharsets.UTF_8)));
 
                     if (fileName.endsWith(".yml") || fileName.endsWith(".json")) {
                         String target = fileName.substring(0, fileName.lastIndexOf("."));

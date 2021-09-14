@@ -13,6 +13,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Valid;
 import javax.validation.Validator;
 import javax.validation.constraints.DecimalMin;
+import javax.validation.constraints.Digits;
 import javax.validation.constraints.Email;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -20,6 +21,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.hibernate.validator.constraints.Length;
+import org.jboss.resteasy.reactive.RestPath;
 
 import io.quarkus.it.hibernate.validator.custom.MyOtherBean;
 import io.quarkus.runtime.StartupEvent;
@@ -29,6 +31,9 @@ public class HibernateValidatorTestResource {
 
     @Inject
     Validator validator;
+
+    @Inject
+    GreetingService greetingService;
 
     public void testValidationOutsideOfResteasyContext(@Observes StartupEvent startupEvent) {
         validator.validate(new MyOtherBean(null));
@@ -61,6 +66,28 @@ public class HibernateValidatorTestResource {
                 validCategorizedEmails))));
 
         return result.build();
+    }
+
+    @GET
+    @Path("/cdi-bean-method-validation-uncaught")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testCDIBeanMethodValidationUncaught() {
+        return greetingService.greeting(null);
+    }
+
+    @GET
+    @Path("/rest-end-point-validation/{id}/")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String testRestEndPointValidation(@Digits(integer = 5, fraction = 0) @RestPath("id") String id) {
+        return id;
+    }
+
+    @GET
+    @Path("/rest-end-point-return-value-validation/{returnValue}/")
+    @Produces(MediaType.TEXT_PLAIN)
+    @Digits(integer = 5, fraction = 0)
+    public String testRestEndPointReturnValueValidation(@RestPath("returnValue") String returnValue) {
+        return returnValue;
     }
 
     private String formatViolations(Set<? extends ConstraintViolation<?>> violations) {

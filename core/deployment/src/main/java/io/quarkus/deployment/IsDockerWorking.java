@@ -11,12 +11,14 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.util.ExecUtil;
 
 public class IsDockerWorking implements BooleanSupplier {
@@ -68,6 +70,7 @@ public class IsDockerWorking implements BooleanSupplier {
 
         @Override
         public Result get() {
+            StartupLogCompressor compressor = new StartupLogCompressor("Checking Docker Environment", Optional.empty(), null);
             try {
                 Class<?> dockerClientFactoryClass = Thread.currentThread().getContextClassLoader()
                         .loadClass("org.testcontainers.DockerClientFactory");
@@ -77,9 +80,12 @@ public class IsDockerWorking implements BooleanSupplier {
                 return isAvailable ? Result.AVAILABLE : Result.UNAVAILABLE;
             } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
                 if (!silent) {
+                    compressor.closeAndDumpCaptured();
                     LOGGER.debug("Unable to use testcontainers to determine if Docker is working", e);
                 }
                 return Result.UNKNOWN;
+            } finally {
+                compressor.close();
             }
         }
     }

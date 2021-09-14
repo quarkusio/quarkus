@@ -6,10 +6,10 @@ import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.DEFAULT_FAST_JA
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -75,6 +73,7 @@ public class OpenshiftProcessor {
     private static final String BUILD_CONFIG_NAME = "openshift.io/build-config.name";
     private static final String RUNNING = "Running";
 
+    private static final int LOG_TAIL_SIZE = 10;
     private static final Logger LOG = Logger.getLogger(OpenshiftProcessor.class);
 
     @BuildStep
@@ -430,51 +429,39 @@ public class OpenshiftProcessor {
         }
 
         while (isNew(build) || isPending(build) || isRunning(build)) {
-            Build updated = client.builds().withName(build.getMetadata().getName()).get();
+            final String buildName = build.getMetadata().getName();
+            Build updated = client.builds().withName(buildName).get();
             if (updated == null) {
                 throw new IllegalStateException("Build:" + build.getMetadata().getName() + " is no longer present!");
             } else if (updated.getStatus() == null) {
                 throw new IllegalStateException("Build:" + build.getMetadata().getName() + " has no status!");
             } else if (isNew(updated) || isPending(updated) || isRunning(updated)) {
                 build = updated;
-                final String buildName = build.getMetadata().getName();
-                try (LogWatch w = client.builds().withName(build.getMetadata().getName()).withPrettyOutput().watchLog();
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(w.getOutput()))) {
-                    watchBuild(client, openshiftConfig, buildName, w);
-                    for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-                        LOG.info(line);
-                    }
+                try (LogWatch w = client.builds().withName(buildName).withPrettyOutput().watchLog();
+                        Reader reader = new InputStreamReader(w.getOutput())) {
+                    display(reader);
                 } catch (IOException e) {
-                    throw openshiftException(e);
+                    // This may happen if the LogWatch is closed while we are still reading.
+                    // We shouldn't let the build fail, so let's log a warning and display last few lines of the log
+                    LOG.warn("Log stream closed, redisplaying last " + LOG_TAIL_SIZE + " entries:");
+                    try {
+                        display(client.builds().withName(buildName).tailingLines(LOG_TAIL_SIZE).getLogReader());
+                    } catch (IOException ex) {
+                        // Let's ignore this.
+                    }
                 }
             } else if (isComplete(updated)) {
                 return;
             } else if (isCancelled(updated)) {
-                throw new IllegalStateException("Build:" + build.getMetadata().getName() + " cancelled!");
+                throw new IllegalStateException("Build:" + buildName + " cancelled!");
             } else if (isFailed(updated)) {
                 throw new IllegalStateException(
-                        "Build:" + build.getMetadata().getName() + " failed! " + updated.getStatus().getMessage());
+                        "Build:" + buildName + " failed! " + updated.getStatus().getMessage());
             } else if (isError(updated)) {
                 throw new IllegalStateException(
-                        "Build:" + build.getMetadata().getName() + " encountered error! " + updated.getStatus().getMessage());
+                        "Build:" + buildName + " encountered error! " + updated.getStatus().getMessage());
             }
         }
-    }
-
-    private static void watchBuild(OpenShiftClient client, OpenshiftConfig openshiftConfig, String buildName, Closeable watch) {
-        Executor executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> {
-            try {
-                client.builds().withName(buildName).waitUntilCondition(b -> !RUNNING.equalsIgnoreCase(b.getStatus().getPhase()),
-                        openshiftConfig.buildTimeout.toMillis(), TimeUnit.MILLISECONDS);
-            } finally {
-                try {
-                    watch.close();
-                } catch (IOException e) {
-                    LOG.debug("Error closing log reader.");
-                }
-            }
-        });
     }
 
     public static Predicate<HasMetadata> distictByResourceKey() {
@@ -500,6 +487,13 @@ public class OpenshiftProcessor {
             KubernetesClientErrorHandler.handle((KubernetesClientException) t);
         }
         return new RuntimeException("Execution of openshift build failed. See build output for more details", t);
+    }
+
+    private static void display(Reader logReader) throws IOException {
+        BufferedReader reader = new BufferedReader(logReader);
+        for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+            LOG.info(line);
+        }
     }
 
     // visible for test

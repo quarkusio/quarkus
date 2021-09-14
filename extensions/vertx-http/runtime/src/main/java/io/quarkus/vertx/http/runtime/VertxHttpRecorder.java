@@ -775,6 +775,7 @@ public class VertxHttpRecorder {
         options.setTcpCork(httpConfiguration.tcpCork);
         options.setTcpFastOpen(httpConfiguration.tcpFastOpen);
         options.setCompressionSupported(httpConfiguration.enableCompression);
+        options.setDecompressionSupported(httpConfiguration.enableDecompression);
         options.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
         return options;
     }

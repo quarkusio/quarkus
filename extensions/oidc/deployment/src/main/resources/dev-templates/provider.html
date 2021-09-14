@@ -136,7 +136,7 @@ var port = {config:property('quarkus.http.port')};
     }
 
     function navigateToSwaggerUi(){
-        {#if info:swaggerIsAvailable}
+        {#if info:swaggerIsAvailable??}
         var url = "{config:http-path('quarkus.swagger-ui.path')}";
         
         var authorizedValue = {
@@ -160,6 +160,15 @@ var port = {config:property('quarkus.http.port')};
         
         localStorage.setItem('authorized', JSON.stringify(authorizedValue));
         window.open(url, '_blank').focus();
+        {/if}
+    }
+    
+    function navigateToGraphQLUi(){
+        {#if info:graphqlIsAvailable??}
+            var url = "{config:http-path('quarkus.smallrye-graphql.ui.root-path')}";
+            var headerJson = '{"authorization": "Bearer ' + accessToken + '"}';
+            url = url + '/?' + encodeURIComponent('headers') + '=' + encodeURIComponent(headerJson);
+            window.open(url, '_blank').focus();
         {/if}
     }
     
@@ -408,9 +417,14 @@ function signInToService(servicePath) {
                     Test your service
                 </div>
                 <div class="float-right">
-                    {#if info:swaggerIsAvailable}
+                    {#if info:swaggerIsAvailable??}
                     <a onclick="navigateToSwaggerUi();" class="btn btn-link" title="Test in Swagger UI">
                         <i class="fas fa-external-link-alt"></i> Swagger UI
+                    </a>
+                    {/if}
+                    {#if info:graphqlIsAvailable??}
+                    <a onclick="navigateToGraphQLUi();" class="btn btn-link" title="Test in GraphQL UI">
+                        <i class="fas fa-external-link-alt"></i> GraphQL UI
                     </a>
                     {/if}
                 </div>

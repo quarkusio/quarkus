@@ -39,4 +39,18 @@ public class BcryptUtilTest {
         String adminProducedBcrypt = BcryptUtil.bcryptHash("admin", 10, knownSalt);
         Assertions.assertEquals(adminKnownBcrypt, adminProducedBcrypt);
     }
+
+    @Test
+    public void testPasswordMatches() {
+        String testPassword = "fubar";
+        String testPasswordHash = BcryptUtil.bcryptHash(testPassword);
+        Assertions.assertTrue(BcryptUtil.matches(testPassword, testPasswordHash));
+    }
+
+    @Test
+    public void testPasswordNotMatches() {
+        String testPassword = "fubar";
+        String testPasswordHash = BcryptUtil.bcryptHash(testPassword);
+        Assertions.assertFalse(BcryptUtil.matches("fubar2", testPasswordHash));
+    }
 }

@@ -603,7 +603,7 @@ public class NativeImageBuildStep {
 
                 handleAdditionalProperties(nativeConfig, nativeImageArgs, isContainerBuild, outputDir);
                 nativeImageArgs
-                        .add("--initialize-at-run-time=java.awt,javax.imageio,sun.awt,sun.java2d,sun.font,com.sun.imageio");
+                        .add("--initialize-at-run-time=java.awt,javax.imageio,sun.awt,sun.java2d,sun.font,com.sun.imageio,org.apache.pdfbox,org.apache.poi.hssf.util,org.apache.poi.ss.format");
                 nativeImageArgs.add(
                         "-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
                 nativeImageArgs.add("-H:+JNI");

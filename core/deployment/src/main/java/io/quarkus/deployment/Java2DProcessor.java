@@ -30,6 +30,7 @@ public class Java2DProcessor {
                 "sun.awt.SunHints",
                 "sun.awt.image.BufImgSurfaceData$ICMColorData",
                 "sun.awt.image.ByteComponentRaster",
+                "sun.awt.image.BytePackedRaster",
                 "sun.awt.image.ImageRepresentation",
                 "sun.awt.image.IntegerComponentRaster",
                 "sun.java2d.Disposer",

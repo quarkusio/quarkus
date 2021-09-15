@@ -42,6 +42,7 @@ public final class OidcUtils {
      * ignoring those which are located inside a pair of the double quotes.
      */
     private static final Pattern CLAIM_PATH_PATTERN = Pattern.compile("\\/(?=(?:(?:[^\"]*\"){2})*[^\"]*$)");
+    public static final String QUARKUS_IDENTITY_EXPIRE_TIME = "quarkus.identity.expire-time";
 
     private OidcUtils() {
 
@@ -163,6 +164,7 @@ public final class OidcUtils {
         } catch (InvalidJwtException e) {
             throw new AuthenticationFailedException(e);
         }
+        builder.addAttribute(QUARKUS_IDENTITY_EXPIRE_TIME, jwtPrincipal.getExpirationTime());
         builder.setPrincipal(jwtPrincipal);
         setSecurityIdentityRoles(builder, config, rolesJson);
         setSecurityIdentityUserInfo(builder, userInfo);

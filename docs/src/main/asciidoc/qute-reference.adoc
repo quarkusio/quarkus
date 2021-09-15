@@ -413,8 +413,8 @@ NOTE: In Quarkus, a variant is set automatically for templates located in the `s
 
 If you need to render the unescaped value:
 
-1. Use the `raw` or `safe` properties implemented as extension methods of the `java.lang.Object`,
-2. Wrap the `String` value in a `io.quarkus.qute.RawString`.
+1. Either use the `raw` or `safe` properties implemented as extension methods of the `java.lang.Object`,
+2. Or wrap the `String` value in a `io.quarkus.qute.RawString`.
 
 [source,html]
 ----

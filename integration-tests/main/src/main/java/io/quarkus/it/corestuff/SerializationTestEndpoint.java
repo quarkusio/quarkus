@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -42,6 +44,7 @@ public class SerializationTestEndpoint extends HttpServlet {
             ExternalizablePerson ep = new ExternalizablePerson();
             ep.setName("Sheldon 2.0");
             instance.setExternalizablePerson(ep);
+            instance.setList(new ArrayList<>(List.of("Hello World!")));
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             ObjectOutputStream os = new ObjectOutputStream(out);
             os.writeObject(instance);
@@ -49,7 +52,8 @@ public class SerializationTestEndpoint extends HttpServlet {
             ObjectInputStream is = new ObjectInputStream(bais);
             SomeSerializationObject result = (SomeSerializationObject) is.readObject();
             if (result.getPerson().getName().equals("Sheldon")
-                    && result.getExternalizablePerson().getName().equals("Sheldon 2.0")) {
+                    && result.getExternalizablePerson().getName().equals("Sheldon 2.0")
+                    && result.getList().toString().equals("[Hello World!]")) {
                 resp.getWriter().write("OK");
             } else {
                 reportException("Serialized output differs from input", null, resp);

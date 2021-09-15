@@ -567,8 +567,6 @@ public class NativeImageAutoFeatureStep {
                 greaterThan21_3.loadNull(), registerArgs);
         greaterThan21_3.returnValue(null);
 
-        ResultHandle objectClass = tc.invokeStaticMethod(forNameMethodDescriptor, tc.load("java.lang.Object"),
-                tc.load(false), tccl);
         ResultHandle serializationRegistryClass = tc.invokeStaticMethod(forNameMethodDescriptor,
                 tc.load("com.oracle.svm.core.jdk.serialize.SerializationRegistry"),
                 tc.load(false), tccl);
@@ -670,7 +668,7 @@ public class NativeImageAutoFeatureStep {
                 serializationSupport, clazz, newSerializationConstructorClass, accessor);
         ResultHandle addReflectionsArgs2 = tc.newArray(Class.class, tc.load(2));
         tc.writeArrayValue(addReflectionsArgs2, 0, clazz);
-        tc.writeArrayValue(addReflectionsArgs2, 1, objectClass);
+        tc.writeArrayValue(addReflectionsArgs2, 1, newSerializationConstructorClass);
         tc.invokeVirtualMethod(invokeMethodDescriptor, addReflectionsLookupMethod, tc.loadNull(), addReflectionsArgs2);
 
         addSerializationForClass.returnValue(null);

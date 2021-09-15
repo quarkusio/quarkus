@@ -1,14 +1,12 @@
-package io.quarkus.it.spring.web;
+package io.quarkus.spring.web.test.basic;
 
-public class Error {
-
+public class SomeClass {
     private String message;
 
-    public Error() {
-
+    public SomeClass() {
     }
 
-    public Error(String message) {
+    public SomeClass(final String message) {
         this.message = message;
     }
 

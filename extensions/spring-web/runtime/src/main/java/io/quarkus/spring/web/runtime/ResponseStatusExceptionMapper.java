@@ -7,7 +7,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 
-import org.jboss.resteasy.specimpl.ResponseBuilderImpl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -15,7 +14,7 @@ public class ResponseStatusExceptionMapper implements ExceptionMapper<ResponseSt
 
     @Override
     public Response toResponse(ResponseStatusException exception) {
-        Response.ResponseBuilder responseBuilder = new ResponseBuilderImpl().status(exception.getStatus().value());
+        Response.ResponseBuilder responseBuilder = Response.status(exception.getStatus().value());
         addHeaders(responseBuilder, exception.getResponseHeaders());
         return responseBuilder.entity(exception.getMessage())
                 .type(MediaType.TEXT_PLAIN).build();

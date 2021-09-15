@@ -214,7 +214,8 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
         Index index = JandexUtil.createIndex(deploymentDir);
         ApplicationScanningResult applicationScanningResult = ResteasyReactiveScanner.scanForApplicationClass(index,
                 Collections.emptySet());
-        ResourceScanningResult resources = ResteasyReactiveScanner.scanResources(index);
+        ResourceScanningResult resources = ResteasyReactiveScanner.scanResources(index, Collections.emptyMap(),
+                Collections.emptyMap());
         if (resources == null) {
             throw new RuntimeException("no JAX-RS resources found");
         }

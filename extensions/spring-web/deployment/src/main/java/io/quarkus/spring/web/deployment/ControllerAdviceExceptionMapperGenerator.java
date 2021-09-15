@@ -1,18 +1,14 @@
 package io.quarkus.spring.web.deployment;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
@@ -22,26 +18,23 @@ import org.jboss.jandex.Type;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldCreator;
-import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.spring.web.runtime.ResponseContentTypeResolver;
 import io.quarkus.spring.web.runtime.ResponseEntityConverter;
 
-class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractExceptionMapperGenerator {
+class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGenerator {
 
     private static final DotName RESPONSE_ENTITY = DotName.createSimple("org.springframework.http.ResponseEntity");
 
     // Preferred content types order for String or primitive type responses
     private static final List<String> TEXT_MEDIA_TYPES = Arrays.asList(
-            MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_XML);
+            MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON);
     // Preferred content types order for object type responses
     private static final List<String> OBJECT_MEDIA_TYPES = Arrays.asList(
-            MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_XML, MediaType.TEXT_PLAIN);
+            MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN);
 
     private final MethodInfo controllerAdviceMethod;
     private final TypesUtil typesUtil;
@@ -49,11 +42,7 @@ class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractException
     private final List<Type> parameterTypes;
     private final String declaringClassName;
 
-    private final Map<Type, FieldDescriptor> parameterTypeToField = new HashMap<>();
-
-    private FieldDescriptor httpHeadersField;
-
-    ControllerAdviceAbstractExceptionMapperGenerator(MethodInfo controllerAdviceMethod, DotName exceptionDotName,
+    ControllerAdviceExceptionMapperGenerator(MethodInfo controllerAdviceMethod, DotName exceptionDotName,
             ClassOutput classOutput, TypesUtil typesUtil) {
         super(exceptionDotName, classOutput);
         this.controllerAdviceMethod = controllerAdviceMethod;
@@ -62,69 +51,6 @@ class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractException
         this.returnType = controllerAdviceMethod.returnType();
         this.parameterTypes = controllerAdviceMethod.parameters();
         this.declaringClassName = controllerAdviceMethod.declaringClass().name().toString();
-    }
-
-    /**
-     * We need to go through each parameter of the method of the ControllerAdvice
-     * and make sure it's supported
-     * The javax.ws.rs.ext.ExceptionMapper only has one parameter, the exception, however
-     * other parameters can be obtained using @Context and therefore injected into the target method
-     */
-    @Override
-    protected void preGenerateMethodBody(ClassCreator cc) {
-        int notAllowedParameterIndex = -1;
-        for (int i = 0; i < parameterTypes.size(); i++) {
-            Type parameterType = parameterTypes.get(i);
-            DotName parameterTypeDotName = parameterType.name();
-            if (typesUtil.isAssignable(Exception.class, parameterTypeDotName)) {
-                // do nothing since this will be handled during in generateMethodBody
-            } else if (typesUtil.isAssignable(HttpServletRequest.class, parameterTypeDotName)) {
-                if (parameterTypeToField.containsKey(parameterType)) {
-                    throw new IllegalArgumentException("Parameter type " + parameterTypes.get(notAllowedParameterIndex).name()
-                            + " is being used multiple times in method" + controllerAdviceMethod.name() + " of class"
-                            + controllerAdviceMethod.declaringClass().name());
-                }
-
-                // we need to generate a field that injects the HttpServletRequest into the class
-                FieldCreator httpRequestFieldCreator = cc.getFieldCreator("httpServletRequest", HttpServletRequest.class)
-                        .setModifiers(Modifier.PRIVATE);
-                httpRequestFieldCreator.addAnnotation(Context.class);
-
-                // stash the fieldCreator in a map indexed by the parameter type so we can retrieve it later
-                parameterTypeToField.put(parameterType, httpRequestFieldCreator.getFieldDescriptor());
-            } else if (typesUtil.isAssignable(HttpServletResponse.class, parameterTypeDotName)) {
-                if (parameterTypeToField.containsKey(parameterType)) {
-                    throw new IllegalArgumentException("Parameter type " + parameterTypes.get(notAllowedParameterIndex).name()
-                            + " is being used multiple times in method" + controllerAdviceMethod.name() + " of class"
-                            + controllerAdviceMethod.declaringClass().name());
-                }
-
-                // we need to generate a field that injects the HttpServletRequest into the class
-                FieldCreator httpRequestFieldCreator = cc.getFieldCreator("httpServletResponse", HttpServletResponse.class)
-                        .setModifiers(Modifier.PRIVATE);
-                httpRequestFieldCreator.addAnnotation(Context.class);
-
-                // stash the fieldCreator in a map indexed by the parameter type so we can retrieve it later
-                parameterTypeToField.put(parameterType, httpRequestFieldCreator.getFieldDescriptor());
-            } else {
-                notAllowedParameterIndex = i;
-            }
-        }
-        if (notAllowedParameterIndex >= 0) {
-            throw new IllegalArgumentException(
-                    "Parameter type " + parameterTypes.get(notAllowedParameterIndex).name() + " is not supported for method"
-                            + controllerAdviceMethod.name() + " of class" + controllerAdviceMethod.declaringClass().name());
-        }
-
-        createHttpHeadersField(cc);
-    }
-
-    private void createHttpHeadersField(ClassCreator classCreator) {
-        FieldCreator httpHeadersFieldCreator = classCreator
-                .getFieldCreator("httpHeaders", HttpHeaders.class)
-                .setModifiers(Modifier.PRIVATE);
-        httpHeadersFieldCreator.addAnnotation(Context.class);
-        httpHeadersField = httpHeadersFieldCreator.getFieldDescriptor();
     }
 
     @Override
@@ -190,7 +116,7 @@ class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractException
         return methodCreator.invokeStaticMethod(
                 MethodDescriptor.ofMethod(ResponseContentTypeResolver.class, "resolve", MediaType.class,
                         HttpHeaders.class, String[].class),
-                methodCreator.readInstanceField(httpHeadersField, methodCreator.getThis()),
+                getBeanFromArc(methodCreator, HttpHeaders.class.getName()),
                 methodCreator.marshalAsArray(String.class, supportedMediaTypes));
     }
 
@@ -210,9 +136,16 @@ class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractException
             parameterTypesStr[i] = parameterType.name().toString();
             if (typesUtil.isAssignable(Exception.class, parameterType.name())) {
                 parameterTypeHandles[i] = toResponse.getMethodParam(i);
+            } else if (typesUtil.isAssignable(UriInfo.class, parameterType.name())) {
+                parameterTypeHandles[i] = getBeanFromArc(toResponse, UriInfo.class.getName());
+            } else if (typesUtil.isAssignable(Request.class, parameterType.name())) {
+                parameterTypeHandles[i] = getBeanFromArc(toResponse, Request.class.getName());
             } else {
-                parameterTypeHandles[i] = toResponse.readInstanceField(parameterTypeToField.get(parameterType),
-                        toResponse.getThis());
+                throw new IllegalArgumentException(
+                        "Parameter type '" + parameterType.name() + "' is not supported for method '"
+                                + controllerAdviceMethod.name() + "' of class '"
+                                + controllerAdviceMethod.declaringClass().name()
+                                + "'");
             }
         }
 
@@ -223,18 +156,20 @@ class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractException
     }
 
     private ResultHandle controllerAdviceInstance(MethodCreator toResponse) {
-        ResultHandle controllerAdviceClass = toResponse.loadClass(declaringClassName);
+        return toResponse.checkCast(getBeanFromArc(toResponse, declaringClassName),
+                controllerAdviceMethod.declaringClass().name().toString());
+    }
 
-        ResultHandle container = toResponse
+    private ResultHandle getBeanFromArc(MethodCreator methodCreator, String beanClassName) {
+        ResultHandle container = methodCreator
                 .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
-        ResultHandle instance = toResponse.invokeInterfaceMethod(
+        ResultHandle instance = methodCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                         Annotation[].class),
-                container, controllerAdviceClass, toResponse.loadNull());
-        ResultHandle bean = toResponse.invokeInterfaceMethod(
+                container, methodCreator.loadClass(beanClassName), methodCreator.loadNull());
+        return methodCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
                 instance);
-        return toResponse.checkCast(bean, controllerAdviceMethod.declaringClass().name().toString());
     }
 
     private int getAnnotationStatusOrDefault(int defaultValue) {

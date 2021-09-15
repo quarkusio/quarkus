@@ -37,17 +37,27 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 public class ResteasyReactiveScanner {
 
     public static final Map<DotName, String> BUILTIN_HTTP_ANNOTATIONS_TO_METHOD;
+    public static final Map<String, DotName> METHOD_TO_BUILTIN_HTTP_ANNOTATIONS;
 
     static {
         Map<DotName, String> map = new HashMap<>();
+        Map<String, DotName> reverseMap = new HashMap<>();
         map.put(GET, "GET");
+        reverseMap.put("GET", GET);
         map.put(POST, "POST");
+        reverseMap.put("POST", POST);
         map.put(HEAD, "HEAD");
+        reverseMap.put("HEAD", HEAD);
         map.put(PUT, "PUT");
+        reverseMap.put("PUT", PUT);
         map.put(DELETE, "DELETE");
+        reverseMap.put("DELETE", DELETE);
         map.put(PATCH, "PATCH");
+        reverseMap.put("PATCH", PATCH);
         map.put(OPTIONS, "OPTIONS");
+        reverseMap.put("OPTIONS", OPTIONS);
         BUILTIN_HTTP_ANNOTATIONS_TO_METHOD = Collections.unmodifiableMap(map);
+        METHOD_TO_BUILTIN_HTTP_ANNOTATIONS = Collections.unmodifiableMap(reverseMap);
     }
 
     public static ApplicationScanningResult scanForApplicationClass(IndexView index, Set<String> excludedClasses) {
@@ -122,13 +132,13 @@ public class ResteasyReactiveScanner {
     }
 
     public static ResourceScanningResult scanResources(
-            IndexView index) {
+            IndexView index, Map<DotName, ClassInfo> additionalResources, Map<DotName, String> additionalResourcePaths) {
         Collection<AnnotationInstance> paths = index.getAnnotations(ResteasyReactiveDotNames.PATH);
 
         Collection<AnnotationInstance> allPaths = new ArrayList<>(paths);
 
-        Map<DotName, ClassInfo> scannedResources = new HashMap<>();
-        Map<DotName, String> scannedResourcePaths = new HashMap<>();
+        Map<DotName, ClassInfo> scannedResources = new HashMap<>(additionalResources);
+        Map<DotName, String> scannedResourcePaths = new HashMap<>(additionalResourcePaths);
         Map<DotName, ClassInfo> possibleSubResources = new HashMap<>();
         Map<DotName, String> pathInterfaces = new HashMap<>();
         Map<DotName, MethodInfo> resourcesThatNeedCustomProducer = new HashMap<>();

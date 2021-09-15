@@ -49,13 +49,4 @@ public class SpringControllerTest {
         RestAssured.when().get("/hello").then()
                 .body(containsString("hello"));
     }
-
-    @Test
-    public void testMethodReturningXmlContent() {
-        RestAssured.when().get("/book")
-                .then()
-                .statusCode(200)
-                .contentType("application/xml")
-                .body(containsString("steel"));
-    }
 }

@@ -14,24 +14,30 @@ import javax.ws.rs.core.Response;
  */
 @SuppressWarnings(value = "rawtypes")
 public class MediaTypeHelper {
-    public static final MediaTypeComparator COMPARATOR = new MediaTypeComparator();
+    public static final MediaTypeComparator Q_COMPARATOR = new MediaTypeComparator("q");
+    public static final MediaTypeComparator QS_COMPARATOR = new MediaTypeComparator("qs");
 
-    public static float getQWithParamInfo(MediaType type) {
+    private static float getQTypeWithParamInfo(MediaType type, String parameterName) {
         if (type.getParameters() != null) {
-            String val = type.getParameters().get("q");
+            String val = type.getParameters().get(parameterName);
             try {
                 if (val != null) {
-                    float rtn = Float.valueOf(val);
+                    float rtn = Float.parseFloat(val);
                     if (rtn > 1.0F)
-                        throw new WebApplicationException("Media type q greated than 1" + type.toString(),
+                        throw new WebApplicationException(
+                                String.format("Media type %s greater than 1: %s", parameterName, type),
                                 Response.Status.BAD_REQUEST);
                     return rtn;
                 }
             } catch (NumberFormatException e) {
-                throw new RuntimeException("Media type q value must be a float" + type, e);
+                throw new RuntimeException(String.format("Media type %s value must be a float: %s", parameterName, type), e);
             }
         }
         return 2.0f;
+    }
+
+    public static float getQWithParamInfo(MediaType type) {
+        return getQTypeWithParamInfo(type, "q");
     }
 
     /**
@@ -62,13 +68,19 @@ public class MediaTypeHelper {
 
         private static final long serialVersionUID = -5828700121582498092L;
 
+        private final String parameterName;
+
+        public MediaTypeComparator(String parameterName) {
+            this.parameterName = parameterName;
+        }
+
         public int compare(MediaType mediaType2, MediaType mediaType) {
-            float q = getQWithParamInfo(mediaType);
+            float q = getQTypeWithParamInfo(mediaType, parameterName);
             boolean wasQ = q != 2.0f;
             if (q == 2.0f)
                 q = 1.0f;
 
-            float q2 = getQWithParamInfo(mediaType2);
+            float q2 = getQTypeWithParamInfo(mediaType2, parameterName);
             boolean wasQ2 = q2 != 2.0f;
             if (q2 == 2.0f)
                 q2 = 1.0f;
@@ -123,14 +135,21 @@ public class MediaTypeHelper {
     }
 
     public static int compareWeight(MediaType one, MediaType two) {
-        return COMPARATOR.compare(one, two);
+        return Q_COMPARATOR.compare(one, two);
     }
 
     public static void sortByWeight(List<MediaType> types) {
         if (hasAtMostOneItem(types)) {
             return;
         }
-        types.sort(COMPARATOR);
+        types.sort(Q_COMPARATOR);
+    }
+
+    public static void sortByQSWeight(List<MediaType> types) {
+        if (hasAtMostOneItem(types)) {
+            return;
+        }
+        types.sort(QS_COMPARATOR);
     }
 
     private static boolean hasAtMostOneItem(List<MediaType> types) {

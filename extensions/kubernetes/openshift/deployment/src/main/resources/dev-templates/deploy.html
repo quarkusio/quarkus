@@ -20,6 +20,13 @@
             <option value="false">No</option>
         </select>
     </div>
+    <div class="form-group">
+        <label for="quarkus.openshift.expose">Allow untrusted SSL Certificates</label>
+        <select name="quarkus.kubernetes-client.trust-certs" class="form-control">
+            <option value="false" selected="selected">No</option>
+            <option value="true">Yes</option>
+        </select>
+    </div>
     <button type="submit" class="btn btn-primary">Deploy</button>
 </form>
 {/body}

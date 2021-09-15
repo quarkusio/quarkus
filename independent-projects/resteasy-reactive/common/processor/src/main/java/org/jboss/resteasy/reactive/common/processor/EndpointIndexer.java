@@ -58,6 +58,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -92,6 +93,8 @@ import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
 import org.jboss.resteasy.reactive.common.util.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.common.util.URLUtils;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
@@ -125,6 +128,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     public static final String CDI_WRAPPER_SUFFIX = "$$CDIWrapper";
 
     public static final String METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY = "METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY";
+    public static final String METHOD_CONTEXT_ANNOTATION_STORE = "ANNOTATION_STORE";
 
     static {
         Map<String, String> prims = new HashMap<>();
@@ -178,6 +182,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Map<DotName, Map<String, String>> classLevelExceptionMappers;
     private final Function<String, BeanFactory<Object>> factoryCreator;
     private final Consumer<ResourceMethodCallbackData> resourceMethodCallback;
+    private final AnnotationStore annotationStore;
 
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
         this.index = builder.index;
@@ -193,6 +198,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.classLevelExceptionMappers = builder.classLevelExceptionMappers;
         this.factoryCreator = builder.factoryCreator;
         this.resourceMethodCallback = builder.resourceMethodCallback;
+        this.annotationStore = new AnnotationStore(builder.annotationsTransformers);
     }
 
     public ResourceClass createEndpoints(ClassInfo classInfo) {
@@ -264,20 +270,21 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
 
         List<ResourceMethod> ret = new ArrayList<>();
-        String[] classProduces = extractProducesConsumesValues(currentClassInfo.classAnnotation(PRODUCES));
-        String[] classConsumes = extractProducesConsumesValues(currentClassInfo.classAnnotation(CONSUMES));
+        String[] classProduces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentClassInfo, PRODUCES));
+        String[] classConsumes = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentClassInfo, CONSUMES));
         String classSseElementType = null;
-        AnnotationInstance classSseElementTypeAnnotation = currentClassInfo.classAnnotation(REST_SSE_ELEMENT_TYPE);
+        AnnotationInstance classSseElementTypeAnnotation = getAnnotationStore().getAnnotation(currentClassInfo,
+                REST_SSE_ELEMENT_TYPE);
         if (classSseElementTypeAnnotation != null) {
             classSseElementType = classSseElementTypeAnnotation.value().asString();
         }
         Set<String> classNameBindings = NameBindingUtil.nameBindingNames(index, currentClassInfo);
 
         for (DotName httpMethod : httpAnnotationToMethod.keySet()) {
-            List<AnnotationInstance> foundMethods = currentClassInfo.annotations().get(httpMethod);
-            if (foundMethods != null) {
-                for (AnnotationInstance annotation : foundMethods) {
-                    MethodInfo info = annotation.target().asMethod();
+            List<MethodInfo> methods = currentClassInfo.methods();
+            for (MethodInfo info : methods) {
+                AnnotationInstance annotation = getAnnotationStore().getAnnotation(info, httpMethod);
+                if (annotation != null) {
                     if (!hasProperModifiers(info)) {
                         continue;
                     }
@@ -304,33 +311,31 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
         }
         //now resource locator methods
-        List<AnnotationInstance> foundMethods = currentClassInfo.annotations().get(PATH);
-        if (foundMethods != null) {
-            for (AnnotationInstance annotation : foundMethods) {
-                if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
-                    MethodInfo info = annotation.target().asMethod();
-                    if (!hasProperModifiers(info)) {
-                        continue;
-                    }
-                    String descriptor = methodDescriptor(info);
-                    if (seenMethods.contains(descriptor)) {
-                        continue;
-                    }
-                    seenMethods.add(descriptor);
-                    String methodPath = readStringValue(annotation);
-                    if (methodPath != null) {
-                        if (!methodPath.startsWith("/")) {
-                            methodPath = "/" + methodPath;
-                        }
-                        if (methodPath.endsWith("/")) {
-                            methodPath = methodPath.substring(0, methodPath.length() - 1);
-                        }
-                    }
-                    ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
-                            classProduces, classConsumes, classNameBindings, null, info, methodPath,
-                            pathParameters, classSseElementType);
-                    ret.add(method);
+        List<MethodInfo> methods = currentClassInfo.methods();
+        for (MethodInfo info : methods) {
+            AnnotationInstance annotation = getAnnotationStore().getAnnotation(info, PATH);
+            if (annotation != null) {
+                if (!hasProperModifiers(info)) {
+                    continue;
                 }
+                String descriptor = methodDescriptor(info);
+                if (seenMethods.contains(descriptor)) {
+                    continue;
+                }
+                seenMethods.add(descriptor);
+                String methodPath = readStringValue(annotation);
+                if (methodPath != null) {
+                    if (!methodPath.startsWith("/")) {
+                        methodPath = "/" + methodPath;
+                    }
+                    if (methodPath.endsWith("/")) {
+                        methodPath = methodPath.substring(0, methodPath.length() - 1);
+                    }
+                }
+                ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
+                        classProduces, classConsumes, classNameBindings, null, info, methodPath,
+                        pathParameters, classSseElementType);
+                ret.add(method);
             }
         }
 
@@ -400,6 +405,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             String methodPath, Set<String> classPathParameters, String classSseElementType) {
         try {
             Map<String, Object> methodContext = new HashMap<>();
+            methodContext.put(METHOD_CONTEXT_ANNOTATION_STORE, getAnnotationStore());
             Set<String> pathParameters = new HashSet<>(classPathParameters);
             URLUtils.parsePathParameters(methodPath, pathParameters);
             Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[currentMethodInfo.parameters().size()];
@@ -408,12 +414,13 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             for (int paramPos = 0; paramPos < currentMethodInfo.parameters().size(); ++paramPos) {
                 parameterAnnotations[paramPos] = new HashMap<>();
             }
-            for (AnnotationInstance i : currentMethodInfo.annotations()) {
+            for (AnnotationInstance i : getAnnotationStore().getAnnotations(currentMethodInfo)) {
                 if (i.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
                     parameterAnnotations[i.target().asMethodParameter().position()].put(i.name(), i);
                 }
             }
-            String[] consumes = extractProducesConsumesValues(currentMethodInfo.annotation(CONSUMES), classConsumes);
+            String[] consumes = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentMethodInfo, CONSUMES),
+                    classConsumes);
             boolean suspended = false;
             boolean sse = false;
             boolean formParamRequired = false;
@@ -493,12 +500,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     : currentMethodInfo.returnType());
             addWriterForType(additionalWriters, nonAsyncReturnType);
 
-            String[] produces = extractProducesConsumesValues(currentMethodInfo.annotation(PRODUCES), classProduces);
+            String[] produces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentMethodInfo, PRODUCES),
+                    classProduces);
             produces = applyDefaultProduces(produces, nonAsyncReturnType);
             produces = addDefaultCharsets(produces);
 
             String sseElementType = classSseElementType;
-            AnnotationInstance sseElementTypeAnnotation = currentMethodInfo.annotation(REST_SSE_ELEMENT_TYPE);
+            AnnotationInstance sseElementTypeAnnotation = getAnnotationStore().getAnnotation(currentMethodInfo,
+                    REST_SSE_ELEMENT_TYPE);
             if (sseElementTypeAnnotation != null) {
                 sseElementType = sseElementTypeAnnotation.value().asString();
             }
@@ -547,7 +556,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 handleClientSubResource(method, currentMethodInfo, index);
             }
 
-            handleAdditionalMethodProcessing((METHOD) method, currentClassInfo, currentMethodInfo);
+            handleAdditionalMethodProcessing((METHOD) method, currentClassInfo, currentMethodInfo, getAnnotationStore());
             if (resourceMethodCallback != null) {
                 resourceMethodCallback.accept(new ResourceMethodCallbackData(currentMethodInfo, actualEndpointInfo, method));
             }
@@ -620,7 +629,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     protected abstract boolean handleBeanParam(ClassInfo actualEndpointInfo, Type paramType, MethodParameter[] methodParameters,
             int i);
 
-    protected void handleAdditionalMethodProcessing(METHOD method, ClassInfo currentClassInfo, MethodInfo info) {
+    protected void handleAdditionalMethodProcessing(METHOD method, ClassInfo currentClassInfo, MethodInfo info,
+            AnnotationStore annotationStore) {
 
     }
 
@@ -699,12 +709,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return Objects.requireNonNull(result);
     }
 
-    private static Map.Entry<AnnotationTarget, AnnotationInstance> getInheritableAnnotation(MethodInfo info, DotName name) {
+    private Map.Entry<AnnotationTarget, AnnotationInstance> getInheritableAnnotation(MethodInfo info, DotName name) {
         // try method first, class second
-        AnnotationInstance annotation = info.annotation(name);
+        AnnotationInstance annotation = getAnnotationStore().getAnnotation(info, name);
         AnnotationTarget target = info;
         if (annotation == null) {
-            annotation = info.declaringClass().classAnnotation(name);
+            annotation = getAnnotationStore().getAnnotation(info.declaringClass(), name);
             target = info.declaringClass();
         }
         return annotation != null ? new AbstractMap.SimpleEntry<>(target, annotation) : null;
@@ -1150,6 +1160,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return NameBindingUtil.nameBindingNames(index, methodInfo, forClass);
     }
 
+    protected AnnotationStore getAnnotationStore() {
+        return annotationStore;
+    }
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static abstract class Builder<T extends EndpointIndexer<T, ?, METHOD>, B extends Builder<T, B, METHOD>, METHOD extends ResourceMethod> {
         private Function<String, BeanFactory<Object>> factoryCreator = new ReflectionBeanFactoryCreator();
@@ -1165,6 +1179,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private boolean hasRuntimeConverters;
         private Map<DotName, Map<String, String>> classLevelExceptionMappers;
         private Consumer<ResourceMethodCallbackData> resourceMethodCallback;
+        private Collection<AnnotationsTransformer> annotationsTransformers;
 
         public B setDefaultBlocking(BlockingDefault defaultBlocking) {
             this.defaultBlocking = defaultBlocking;
@@ -1228,6 +1243,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         public B setResourceMethodCallback(Consumer<ResourceMethodCallbackData> resourceMethodCallback) {
             this.resourceMethodCallback = resourceMethodCallback;
+            return (B) this;
+        }
+
+        public B setAnnotationsTransformers(Collection<AnnotationsTransformer> annotationsTransformers) {
+            this.annotationsTransformers = annotationsTransformers;
             return (B) this;
         }
 

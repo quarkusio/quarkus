@@ -115,9 +115,9 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
-class VertxWebProcessor {
+class ReactiveRoutesProcessor {
 
-    private static final Logger LOGGER = Logger.getLogger(VertxWebProcessor.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ReactiveRoutesProcessor.class.getName());
 
     private static final String HANDLER_SUFFIX = "_RouteHandler";
     private static final String VALUE_PATH = "path";
@@ -135,7 +135,7 @@ class VertxWebProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(Feature.VERTX_WEB);
+        return new FeatureBuildItem(Feature.REACTIVE_ROUTES);
     }
 
     @BuildStep
@@ -872,7 +872,7 @@ class VertxWebProcessor {
                 .type(contentType)
                 .ignoreTypePredicate(ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE
                         .or(TYPES_IGNORED_FOR_REFLECTION::contains))
-                .source(VertxWebProcessor.class.getSimpleName() + " > " + contentType)
+                .source(ReactiveRoutesProcessor.class.getSimpleName() + " > " + contentType)
                 .build());
     }
 

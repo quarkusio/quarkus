@@ -44,9 +44,12 @@ public class KeycloakDevConsoleProcessor {
                     new DevConsoleTemplateInfoBuildItem("authorizationUrl", realmUrl + "/protocol/openid-connect/auth"));
             console.produce(new DevConsoleTemplateInfoBuildItem("logoutUrl", realmUrl + "/protocol/openid-connect/logout"));
             console.produce(new DevConsoleTemplateInfoBuildItem("oidcGrantType", config.devservices.grant.type.getGrantType()));
-            console.produce(new DevConsoleTemplateInfoBuildItem("swaggerIsAvailable",
-                    capabilities.isPresent(Capability.SMALLRYE_OPENAPI)));
-
+            if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
+                console.produce(new DevConsoleTemplateInfoBuildItem("swaggerIsAvailable", true));
+            }
+            if (capabilities.isPresent(Capability.SMALLRYE_GRAPHQL)) {
+                console.produce(new DevConsoleTemplateInfoBuildItem("graphqlIsAvailable", true));
+            }
         }
     }
 

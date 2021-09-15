@@ -52,7 +52,7 @@ public class ContextResolvers {
                         bestMatch = match;
                         add = true;
                     } else {
-                        int cmp = MediaTypeHelper.COMPARATOR.compare(bestMatch, match);
+                        int cmp = MediaTypeHelper.Q_COMPARATOR.compare(bestMatch, match);
                         if (cmp == 0) {
                             // same fitness
                             add = true;

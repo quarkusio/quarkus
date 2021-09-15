@@ -13,3 +13,4 @@ metadata:
   - "quarkus.container-image."
   - "quarkus.kubernetes."
   - "quarkus.openshift."
+  - "quarkus.kubernetes-client."

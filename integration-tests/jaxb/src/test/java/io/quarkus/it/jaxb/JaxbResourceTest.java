@@ -8,7 +8,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-public class JaxbTest {
+public class JaxbResourceTest {
 
     @Test
     public void book() {
@@ -19,5 +19,18 @@ public class JaxbTest {
                 .statusCode(200)
                 .body(is(
                         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><book><title>Foundation</title></book>"));
+    }
+
+    @Test
+    public void shouldReturnCustomer() {
+        RestAssured.given().when()
+                .get("/jaxb/customer")
+                .then()
+                .statusCode(200)
+                .body(is("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
+                        "<customer id=\"1\">\n" +
+                        "    <age>18</age>\n" +
+                        "    <name>fake-name</name>\n" +
+                        "</customer>\n"));
     }
 }

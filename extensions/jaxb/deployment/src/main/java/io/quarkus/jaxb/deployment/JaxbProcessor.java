@@ -6,9 +6,11 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.xml.bind.JAXBContext;
@@ -64,6 +66,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.jaxb.runtime.JaxbConfig;
 
 class JaxbProcessor {
 
@@ -121,6 +124,7 @@ class JaxbProcessor {
             BuildProducer<ServiceProviderBuildItem> providerItem,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinitions,
             CombinedIndexBuildItem combinedIndexBuildItem,
+            JaxbConfig jaxbConfig,
             List<JaxbFileRootBuildItem> fileRoots,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBuildItem> resource,
@@ -275,7 +279,17 @@ class JaxbProcessor {
         proxyDefinitions
                 .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.txw2.TypedXmlWriter"));
 
-        for (JaxbFileRootBuildItem i : fileRoots) {
+        List<JaxbFileRootBuildItem> jaxbFileBuildItemFromConfig = new ArrayList<>();
+        if (jaxbConfig.indexPath.isPresent()) {
+            jaxbFileBuildItemFromConfig = jaxbConfig.indexPath.get().stream()
+                    .map(JaxbFileRootBuildItem::new).collect(Collectors.toList());
+        }
+
+        List<JaxbFileRootBuildItem> allJaxbFileBuildItens = Stream
+                .concat(jaxbFileBuildItemFromConfig.stream(), fileRoots.stream())
+                .collect(Collectors.toList());
+
+        for (JaxbFileRootBuildItem i : allJaxbFileBuildItens) {
             try (Stream<Path> stream = iterateResources(applicationArchivesBuildItem, i.getFileRoot())) {
                 stream.filter(p -> p.getFileName().toString().equals("jaxb.index"))
                         .forEach(p1 -> handleJaxbFile(p1, resource, reflectiveClass));
@@ -334,6 +348,7 @@ class JaxbProcessor {
     private void handleJaxbFile(Path p, BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         try {
+
             String path = p.toAbsolutePath().toString().substring(1);
             String pkg = p.toAbsolutePath().getParent().toString().substring(1)
                     .replace(File.separator, ".") + ".";
@@ -344,6 +359,11 @@ class JaxbProcessor {
                 line = line.trim();
                 if (!line.isEmpty() && !line.startsWith("#")) {
                     String clazz = pkg + line;
+
+                    if (clazz.contains("classes")) {
+                        clazz = clazz.split("classes")[1].substring(1);
+                    }
+
                     Class<?> cl = Class.forName(clazz, false, Thread.currentThread().getContextClassLoader());
 
                     while (cl != Object.class) {

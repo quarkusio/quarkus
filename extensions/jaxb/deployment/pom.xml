@@ -8,7 +8,6 @@
         <version>999-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-
     <artifactId>quarkus-jaxb-deployment</artifactId>
     <name>Quarkus - JAXB - Deployment</name>
 

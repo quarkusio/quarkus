@@ -513,6 +513,7 @@ public class CustomTracerConfiguration {
 `@DefaultBean` allows extensions (or any other code for that matter) to provide defaults while backing off if beans of that type are supplied in any
 way Quarkus supports.
 
+[[enable_build_profile]]
 === Enabling Beans for Quarkus Build Profile
 
 Quarkus adds a capability that CDI currently does not support which is to conditionally enable a bean when a Quarkus build time profile is enabled,
@@ -564,10 +565,11 @@ public class TracerConfiguration {
 
 NOTE: The runtime profile has absolutely no effect on the bean resolution using `@IfBuildProfile` and `@UnlessBuildProfile`.
 
+[[enable_build_properties]]
 === Enabling Beans for Quarkus Build Properties
 
-Quarkus adds a capability that CDI currently does not support which is to conditionally enable a bean when a Quarkus build time property has a specific value,
-via the `@io.quarkus.arc.properties.IfBuildProperty` and `@io.quarkus.arc.properties.UnlessBuildProperty` annotation.
+Quarkus adds a capability that CDI currently does not support which is to conditionally enable a bean when a Quarkus build time property has/has not a specific value,
+via the `@io.quarkus.arc.properties.IfBuildProperty` and `@io.quarkus.arc.properties.UnlessBuildProperty` annotations.
 When used in conjunction with `@io.quarkus.arc.DefaultBean`, this annotation allow for the creation of different bean configurations for different build properties.
 
 The scenario we mentioned above with `Tracer` could also be implemented in the following way:
@@ -590,6 +592,8 @@ public class TracerConfiguration {
     }
 }
 ----
+
+TIP: `@IfBuildProperty` and `@UnlessBuildProperty` are repeatable annotations, i.e. a bean will only be enabled if **all** of the conditions defined by these annotations are satisifed.
 
 If instead, it is required that the `RealTracer` bean is only used if the `some.tracer.enabled` property is not `false`, then `@UnlessBuildProperty` would be ideal. The code would look like:
 

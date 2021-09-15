@@ -40,8 +40,8 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BuildTimeConditionBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.PreAdditionalBeanBuildTimeConditionBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -104,11 +104,8 @@ public class ResteasyReactiveCommonProcessor {
     @BuildStep
     ApplicationResultBuildItem handleApplication(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            List<PreAdditionalBeanBuildTimeConditionBuildItem> buildTimeConditions,
+            List<BuildTimeConditionBuildItem> buildTimeConditions,
             ResteasyReactiveConfig config) {
-        // Use the "pre additional bean" build time conditions since we need to be able to filter the beans
-        // before actually adding them otherwise if we use normal build time conditions, we end up
-        // with a circular dependency
         ApplicationScanningResult result = ResteasyReactiveScanner
                 .scanForApplicationClass(combinedIndexBuildItem.getComputingIndex(),
                         config.buildTimeConditionAware ? getExcludedClasses(buildTimeConditions) : Collections.emptySet());
@@ -370,10 +367,10 @@ public class ResteasyReactiveCommonProcessor {
      * @param buildTimeConditions the build time conditions from which the excluded classes are extracted.
      * @return the set of classes that have been annotated with unsuccessful build time conditions.
      */
-    private static Set<String> getExcludedClasses(List<PreAdditionalBeanBuildTimeConditionBuildItem> buildTimeConditions) {
+    private static Set<String> getExcludedClasses(List<BuildTimeConditionBuildItem> buildTimeConditions) {
         return buildTimeConditions.stream()
                 .filter(item -> !item.isEnabled())
-                .map(PreAdditionalBeanBuildTimeConditionBuildItem::getTarget)
+                .map(BuildTimeConditionBuildItem::getTarget)
                 .filter(target -> target.kind() == AnnotationTarget.Kind.CLASS)
                 .map(target -> target.asClass().toString())
                 .collect(Collectors.toSet());

@@ -13,7 +13,6 @@ import io.quarkus.micrometer.deployment.MicrometerRegistryProviderBuildItem;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.PrometheusConfigGroup;
-import io.quarkus.micrometer.runtime.export.PrometheusMeterRegistryProvider;
 import io.quarkus.micrometer.runtime.export.PrometheusRecorder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -38,13 +37,17 @@ public class PrometheusRegistryProcessor {
     }
 
     @BuildStep(onlyIf = PrometheusEnabled.class)
-    MicrometerRegistryProviderBuildItem createPrometheusRegistry(
+    MicrometerRegistryProviderBuildItem createPrometheusRegistry(MicrometerConfig config,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
-        // Add the Prometheus Registry Producer
-        additionalBeans.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(PrometheusMeterRegistryProvider.class)
-                .setUnremovable().build());
+        // Add the Prometheus Registry beans
+        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder()
+                .addBeanClass("io.quarkus.micrometer.runtime.export.PrometheusMeterRegistryProvider")
+                .setUnremovable();
+        if (config.export.prometheus.defaultRegistry) {
+            builder.addBeanClass("io.quarkus.micrometer.runtime.export.PrometheusMeterRegistryProducer");
+        }
+        additionalBeans.produce(builder.build());
 
         // Include the PrometheusMeterRegistry in a possible CompositeMeterRegistry
         return new MicrometerRegistryProviderBuildItem(REGISTRY_CLASS);

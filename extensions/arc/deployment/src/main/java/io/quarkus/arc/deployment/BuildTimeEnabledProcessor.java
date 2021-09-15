@@ -1,5 +1,8 @@
 package io.quarkus.arc.deployment;
 
+import static java.util.function.Predicate.not;
+
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,7 +47,10 @@ public class BuildTimeEnabledProcessor {
     private static final DotName UNLESS_BUILD_PROFILE = DotName.createSimple(UnlessBuildProfile.class.getName());
 
     private static final DotName IF_BUILD_PROPERTY = DotName.createSimple(IfBuildProperty.class.getName());
+    private static final DotName IF_BUILD_PROPERTY_CONTAINER = DotName.createSimple(IfBuildProperty.List.class.getName());
     private static final DotName UNLESS_BUILD_PROPERTY = DotName.createSimple(UnlessBuildProperty.class.getName());
+    private static final DotName UNLESS_BUILD_PROPERTY_CONTAINER = DotName
+            .createSimple(UnlessBuildProperty.List.class.getName());
 
     @BuildStep
     void ifBuildProfile(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> producer,
@@ -81,8 +87,9 @@ public class BuildTimeEnabledProcessor {
     }
 
     @BuildStep
-    void ifBuildProperty(BeanArchiveIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> producer) {
-        buildProperty(IF_BUILD_PROPERTY, new BiFunction<String, String, Boolean>() {
+    void ifBuildProperty(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> conditions,
+            BuildProducer<PreAdditionalBeanBuildTimeConditionBuildItem> preAdditionalBeansConditions) {
+        buildProperty(IF_BUILD_PROPERTY, IF_BUILD_PROPERTY_CONTAINER, new BiFunction<String, String, Boolean>() {
             @Override
             public Boolean apply(String stringValue, String expectedStringValue) {
                 return stringValue.equals(expectedStringValue);
@@ -90,14 +97,16 @@ public class BuildTimeEnabledProcessor {
         }, index.getIndex(), new BiConsumer<AnnotationTarget, Boolean>() {
             @Override
             public void accept(AnnotationTarget target, Boolean enabled) {
-                producer.produce(new BuildTimeConditionBuildItem(target, enabled));
+                conditions.produce(new BuildTimeConditionBuildItem(target, enabled));
+                preAdditionalBeansConditions.produce(new PreAdditionalBeanBuildTimeConditionBuildItem(target, enabled));
             }
         });
     }
 
     @BuildStep
-    void unlessBuildProperty(BeanArchiveIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> producer) {
-        buildProperty(UNLESS_BUILD_PROPERTY, new BiFunction<String, String, Boolean>() {
+    void unlessBuildProperty(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> conditions,
+            BuildProducer<PreAdditionalBeanBuildTimeConditionBuildItem> preAdditionalBeansConditions) {
+        buildProperty(UNLESS_BUILD_PROPERTY, UNLESS_BUILD_PROPERTY_CONTAINER, new BiFunction<String, String, Boolean>() {
             @Override
             public Boolean apply(String stringValue, String expectedStringValue) {
                 return !stringValue.equals(expectedStringValue);
@@ -105,47 +114,26 @@ public class BuildTimeEnabledProcessor {
         }, index.getIndex(), new BiConsumer<AnnotationTarget, Boolean>() {
             @Override
             public void accept(AnnotationTarget target, Boolean enabled) {
-                producer.produce(new BuildTimeConditionBuildItem(target, enabled));
+                conditions.produce(new BuildTimeConditionBuildItem(target, enabled));
+                preAdditionalBeansConditions.produce(new PreAdditionalBeanBuildTimeConditionBuildItem(target, enabled));
             }
         });
     }
 
-    @BuildStep
-    void ifBuildPropertyPreAdditionalBean(CombinedIndexBuildItem index,
-            BuildProducer<PreAdditionalBeanBuildTimeConditionBuildItem> producer) {
-        buildProperty(IF_BUILD_PROPERTY, new BiFunction<String, String, Boolean>() {
-            @Override
-            public Boolean apply(String stringValue, String expectedStringValue) {
-                return stringValue.equals(expectedStringValue);
-            }
-        }, index.getIndex(), new BiConsumer<AnnotationTarget, Boolean>() {
-            @Override
-            public void accept(AnnotationTarget target, Boolean enabled) {
-                producer.produce(new PreAdditionalBeanBuildTimeConditionBuildItem(target, enabled));
-            }
-        });
-    }
-
-    @BuildStep
-    void unlessBuildPropertyPreAdditionalBean(CombinedIndexBuildItem index,
-            BuildProducer<PreAdditionalBeanBuildTimeConditionBuildItem> producer) {
-        buildProperty(UNLESS_BUILD_PROPERTY, new BiFunction<String, String, Boolean>() {
-            @Override
-            public Boolean apply(String stringValue, String expectedStringValue) {
-                return !stringValue.equals(expectedStringValue);
-            }
-        }, index.getIndex(), new BiConsumer<AnnotationTarget, Boolean>() {
-            @Override
-            public void accept(AnnotationTarget target, Boolean enabled) {
-                producer.produce(new PreAdditionalBeanBuildTimeConditionBuildItem(target, enabled));
-            }
-        });
-    }
-
-    void buildProperty(DotName annotationName, BiFunction<String, String, Boolean> testFun, IndexView index,
-            BiConsumer<AnnotationTarget, Boolean> producer) {
+    void buildProperty(DotName annotationName, DotName containingAnnotationName, BiFunction<String, String, Boolean> testFun,
+            IndexView index, BiConsumer<AnnotationTarget, Boolean> producer) {
         Config config = ConfigProviderResolver.instance().getConfig();
-        Collection<AnnotationInstance> annotationInstances = index.getAnnotations(annotationName);
+        List<AnnotationInstance> annotationInstances = new ArrayList<>();
+        annotationInstances.addAll(index.getAnnotations(annotationName));
+        // Collect containing annotation instances
+        // Note that we can't just use the IndexView.getAnnotationsWithRepeatable() method because the containing annotation is not part of the index
+        for (AnnotationInstance containingInstance : index.getAnnotations(containingAnnotationName)) {
+            for (AnnotationInstance nestedInstance : containingInstance.value().asNestedArray()) {
+                // We need to set the target of the containing instance
+                annotationInstances.add(
+                        AnnotationInstance.create(nestedInstance.name(), containingInstance.target(), nestedInstance.values()));
+            }
+        }
         for (AnnotationInstance instance : annotationInstances) {
             String propertyName = instance.value("name").asString();
             String expectedStringValue = instance.value("stringValue").asString();
@@ -156,21 +144,20 @@ public class BuildTimeEnabledProcessor {
             boolean enabled;
             if (optionalValue.isPresent()) {
                 if (testFun.apply(optionalValue.get(), expectedStringValue)) {
-                    LOGGER.debug("Enabling " + instance.target() + " since the property value matches the expected one.");
+                    LOGGER.debugf("Enabling %s since the property value matches the expected one.", instance.target());
                     enabled = true;
                 } else {
-                    LOGGER.debug("Disabling " + instance.target()
-                            + " since the property value matches the specified value one.");
+                    LOGGER.debugf("Disabling %s since the property value matches the specified value one.", instance.target());
                     enabled = false;
                 }
             } else {
                 if (enableIfMissing) {
-                    LOGGER.debug("Enabling " + instance.target()
-                            + " since the property has not been set and 'enableIfMissing' is set to 'true'.");
+                    LOGGER.debugf("Enabling %s since the property has not been set and 'enableIfMissing' is set to 'true'.",
+                            instance.target());
                     enabled = true;
                 } else {
-                    LOGGER.debug("Disabling " + instance.target()
-                            + " since the property has not been set and 'enableIfMissing' is set to 'false'.");
+                    LOGGER.debugf("Disabling %s  since the property has not been set and 'enableIfMissing' is set to 'false'.",
+                            instance.target());
                     enabled = false;
                 }
             }
@@ -244,14 +231,13 @@ public class BuildTimeEnabledProcessor {
      *         that have been annotated with unsuccessful build time conditions.
      */
     @BuildStep
-    BuildExclusionsBuildItem buildExclusions(List<PreAdditionalBeanBuildTimeConditionBuildItem> buildTimeConditions) {
+    BuildExclusionsBuildItem buildExclusions(List<BuildTimeConditionBuildItem> buildTimeConditions) {
         final Map<Kind, Set<String>> map = buildTimeConditions.stream()
-                .filter(item -> !item.isEnabled())
-                .map(PreAdditionalBeanBuildTimeConditionBuildItem::getTarget)
-                .collect(
-                        Collectors.groupingBy(
-                                AnnotationTarget::kind,
-                                Collectors.mapping(BuildExclusionsBuildItem::targetMapper, Collectors.toSet())));
+                .filter(not(BuildTimeConditionBuildItem::isEnabled))
+                .map(BuildTimeConditionBuildItem::getTarget)
+                .collect(Collectors.groupingBy(
+                        AnnotationTarget::kind,
+                        Collectors.mapping(BuildExclusionsBuildItem::targetMapper, Collectors.toSet())));
         return new BuildExclusionsBuildItem(
                 map.getOrDefault(AnnotationTarget.Kind.CLASS, Collections.emptySet()),
                 map.getOrDefault(AnnotationTarget.Kind.METHOD, Collections.emptySet()),

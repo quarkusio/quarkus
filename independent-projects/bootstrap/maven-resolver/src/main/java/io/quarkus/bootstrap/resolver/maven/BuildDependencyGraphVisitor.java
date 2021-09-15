@@ -3,8 +3,8 @@
  */
 package io.quarkus.bootstrap.resolver.maven;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.util.DependencyNodeUtils;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACT;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -16,7 +16,7 @@ import org.eclipse.aether.resolution.ArtifactRequest;
 
 public class BuildDependencyGraphVisitor {
 
-    private final Set<AppArtifactKey> allRuntimeDeps;
+    private final Set<ArtifactKey> allRuntimeDeps;
     private final StringBuilder buf;
     private final Consumer<String> buildTreeConsumer;
     private final List<Boolean> depth;
@@ -31,7 +31,7 @@ public class BuildDependencyGraphVisitor {
     private final List<DependencyNode> deploymentDepNodes = new ArrayList<>();
     private final List<ArtifactRequest> requests = new ArrayList<>();
 
-    public BuildDependencyGraphVisitor(Set<AppArtifactKey> allRuntimeDeps, Consumer<String> buildTreeConsumer) {
+    public BuildDependencyGraphVisitor(Set<ArtifactKey> allRuntimeDeps, Consumer<String> buildTreeConsumer) {
         this.allRuntimeDeps = allRuntimeDeps;
         this.buildTreeConsumer = buildTreeConsumer;
         if (buildTreeConsumer == null) {
@@ -143,7 +143,8 @@ public class BuildDependencyGraphVisitor {
             requests.add(new ArtifactRequest(node));
         }
         if (currentDeployment != null) {
-            if (currentRuntime == null && !allRuntimeDeps.contains(DependencyNodeUtils.toKey(artifact))) {
+            if (currentRuntime == null && !allRuntimeDeps.contains(new GACT(artifact.getGroupId(), artifact.getArtifactId(),
+                    artifact.getClassifier(), artifact.getExtension()))) {
                 deploymentDepNodes.add(node);
             } else if (currentRuntime == node) {
                 currentRuntime = null;

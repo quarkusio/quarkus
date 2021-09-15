@@ -1,8 +1,8 @@
 package io.quarkus.bootstrap.resolver.update;
 
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import java.util.List;
 
 /**
@@ -20,7 +20,7 @@ public class DefaultUpdateDiscovery implements UpdateDiscovery {
     }
 
     @Override
-    public List<String> listUpdates(AppArtifact artifact) {
+    public List<String> listUpdates(ResolvedDependency artifact) {
         try {
             return resolver.listLaterVersions(artifact, resolveUpToVersion(artifact), false);
         } catch (AppModelResolverException e) {
@@ -29,7 +29,7 @@ public class DefaultUpdateDiscovery implements UpdateDiscovery {
     }
 
     @Override
-    public String getNextVersion(AppArtifact artifact) {
+    public String getNextVersion(ResolvedDependency artifact) {
         try {
             return resolver.getNextVersion(artifact, getFromVersion(artifact), true, resolveUpToVersion(artifact), false);
         } catch (AppModelResolverException e) {
@@ -38,7 +38,7 @@ public class DefaultUpdateDiscovery implements UpdateDiscovery {
     }
 
     @Override
-    public String getLatestVersion(AppArtifact artifact) {
+    public String getLatestVersion(ResolvedDependency artifact) {
         /*
          * to control how the versions are compared
          * DefaultArtifactVersion latest = null;
@@ -59,7 +59,7 @@ public class DefaultUpdateDiscovery implements UpdateDiscovery {
         }
     }
 
-    private String resolveUpToVersion(AppArtifact artifact) {
+    private String resolveUpToVersion(ResolvedDependency artifact) {
         if (updateNumber == VersionUpdateNumber.MAJOR) {
             return null;
         }
@@ -98,7 +98,7 @@ public class DefaultUpdateDiscovery implements UpdateDiscovery {
         return majorStr + "." + String.valueOf(minor + 1) + ".alpha";
     }
 
-    private String getFromVersion(AppArtifact artifact) {
+    private String getFromVersion(ResolvedDependency artifact) {
         // here we are looking for the major version which is going to be used
         // as the base for the version range to look for the updates
         final String version = artifact.getVersion();

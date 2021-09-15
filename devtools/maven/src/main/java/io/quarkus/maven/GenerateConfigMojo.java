@@ -27,8 +27,8 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.maven.dependency.ResolvedArtifactDependency;
 import io.quarkus.runner.bootstrap.GenerateConfigTask;
 
 /**
@@ -125,10 +125,10 @@ public class GenerateConfigMojo extends AbstractMojo {
                     .build();
 
             final Artifact projectArtifact = project.getArtifact();
-            final AppArtifact appArtifact = new AppArtifact(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
+            final ResolvedArtifactDependency appArtifact = new ResolvedArtifactDependency(projectArtifact.getGroupId(),
+                    projectArtifact.getArtifactId(),
                     projectArtifact.getClassifier(), projectArtifact.getArtifactHandler().getExtension(),
-                    projectArtifact.getVersion());
-            appArtifact.setPath(classesDir);
+                    projectArtifact.getVersion(), classesDir);
 
             try (CuratedApplication curatedApplication = QuarkusBootstrap
                     .builder()

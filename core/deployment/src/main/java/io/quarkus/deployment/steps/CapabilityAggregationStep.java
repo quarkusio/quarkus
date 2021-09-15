@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 
-import io.quarkus.bootstrap.model.AppModel;
-import io.quarkus.bootstrap.model.CapabilityContract;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.CapabilityErrors;
+import io.quarkus.bootstrap.model.ExtensionCapabilities;
 import io.quarkus.deployment.BooleanSupplierFactoryBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -27,9 +27,9 @@ public class CapabilityAggregationStep {
     @BuildStep
     void provideCapabilities(BuildProducer<CapabilityBuildItem> producer, CurateOutcomeBuildItem curateOutcomeBuildItem,
             BooleanSupplierFactoryBuildItem supplierFactory) {
-        final AppModel appModel = curateOutcomeBuildItem.getEffectiveModel();
+        final ApplicationModel appModel = curateOutcomeBuildItem.getApplicationModel();
 
-        for (CapabilityContract contract : appModel.getCapabilityContracts().values()) {
+        for (ExtensionCapabilities contract : appModel.getExtensionCapabilities()) {
             final String provider = contract.getExtension();
             for (String capability : contract.getProvidesCapabilities()) {
                 int conditionIndex = capability.indexOf('?');

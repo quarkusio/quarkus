@@ -55,11 +55,10 @@ import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestResourceManager;
@@ -124,7 +123,7 @@ public class QuarkusProdModeTest
     private Optional<Field> prodModeTestResultsField = Optional.empty();
     private Path logfilePath;
     private Optional<Field> logfileField = Optional.empty();
-    private List<AppArtifact> forcedDependencies = Collections.emptyList();
+    private List<Dependency> forcedDependencies = Collections.emptyList();
     private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler((r) -> false);
     private boolean expectExit;
     private String startupConsoleOutput;
@@ -238,7 +237,7 @@ public class QuarkusProdModeTest
      * Provides a convenient way to either add additional dependencies to the application (if it doesn't already contain a
      * dependency), or override a version (if the dependency already exists)
      */
-    public QuarkusProdModeTest setForcedDependencies(List<AppArtifact> forcedDependencies) {
+    public QuarkusProdModeTest setForcedDependencies(List<Dependency> forcedDependencies) {
         this.forcedDependencies = forcedDependencies;
 
         return this;
@@ -396,8 +395,7 @@ public class QuarkusProdModeTest
                     .addExcludedPath(testLocation)
                     .setProjectRoot(testLocation)
                     .setTargetDirectory(buildDir)
-                    .setForcedDependencies(forcedDependencies.stream().map(d -> new AppDependency(d, "compile"))
-                            .collect(Collectors.toList()));
+                    .setForcedDependencies(forcedDependencies);
             if (applicationName != null) {
                 builder.setBaseName(applicationName);
             }

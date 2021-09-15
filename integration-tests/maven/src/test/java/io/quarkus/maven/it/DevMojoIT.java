@@ -488,13 +488,16 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .collect(Collectors.toList());
         assertTrue(extDepWarnings
                 .contains(
-                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:acme-quarkus-ext will not be hot-reloadable"));
+                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:acme-quarkus-ext:1.0-SNAPSHOT will not be hot-reloadable"));
         assertTrue(extDepWarnings
                 .contains(
-                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:acme-common will not be hot-reloadable"));
+                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:acme-quarkus-ext-deployment:1.0-SNAPSHOT will not be hot-reloadable"));
+        assertTrue(extDepWarnings
+                .contains(
+                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:acme-common:1.0-SNAPSHOT will not be hot-reloadable"));
         assertTrue(extDepWarnings.contains(
-                "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:acme-common-transitive will not be hot-reloadable"));
-        assertEquals(3, extDepWarnings.size());
+                "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:acme-common-transitive:1.0-SNAPSHOT will not be hot-reloadable"));
+        assertEquals(4, extDepWarnings.size());
     }
 
     @Test
@@ -510,7 +513,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .collect(Collectors.toList());
         assertTrue(extDepWarnings
                 .contains(
-                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:rest-client-custom-headers will not be hot-reloadable"));
+                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:rest-client-custom-headers:1.0-SNAPSHOT will not be hot-reloadable"));
 
         assertThat(DevModeTestUtils.getHttpResponse("/app/frontend")).isEqualTo("CustomValue1 CustomValue2");
     }

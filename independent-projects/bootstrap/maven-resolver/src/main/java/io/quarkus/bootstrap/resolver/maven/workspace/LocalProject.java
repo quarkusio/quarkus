@@ -5,6 +5,11 @@ import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.workspace.DefaultProcessedSources;
+import io.quarkus.bootstrap.workspace.DefaultWorkspaceModule;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.maven.dependency.GAV;
+import io.quarkus.paths.PathList;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -308,5 +313,46 @@ public class LocalProject {
             }
         }
         return dir;
+    }
+
+    public WorkspaceModule toWorkspaceModule() {
+        final DefaultWorkspaceModule module = new DefaultWorkspaceModule(
+                new GAV(key.getGroupId(), key.getArtifactId(), getVersion()), dir.toFile(), getOutputDir().toFile());
+        module.addMainSources(new DefaultProcessedSources(getSourcesSourcesDir().toFile(), getClassesDir().toFile()));
+        addMainResources(module);
+        module.addTestSources(new DefaultProcessedSources(getTestSourcesSourcesDir().toFile(), getTestClassesDir().toFile()));
+        addTestResources(module);
+        module.setBuildFiles(PathList.of(getRawModel().getPomFile().toPath()));
+        return module;
+    }
+
+    private void addMainResources(DefaultWorkspaceModule module) {
+        final List<Resource> resources = rawModel.getBuild() == null ? Collections.emptyList()
+                : rawModel.getBuild().getResources();
+        if (resources.isEmpty()) {
+            module.addMainResources(new DefaultProcessedSources(
+                    resolveRelativeToBaseDir(null, "src/main/resources").toFile(), getClassesDir().toFile()));
+        } else {
+            for (Resource r : resources) {
+                module.addMainResources(
+                        new DefaultProcessedSources(resolveRelativeToBaseDir(r.getDirectory(), "src/main/resources").toFile(),
+                                resolveRelativeToBuildDir(r.getTargetPath(), "classes").toFile()));
+            }
+        }
+    }
+
+    private void addTestResources(DefaultWorkspaceModule module) {
+        final List<Resource> resources = rawModel.getBuild() == null ? Collections.emptyList()
+                : rawModel.getBuild().getTestResources();
+        if (resources.isEmpty()) {
+            module.addTestResources(new DefaultProcessedSources(
+                    resolveRelativeToBaseDir(null, "src/test/resources").toFile(), getTestClassesDir().toFile()));
+        } else {
+            for (Resource r : resources) {
+                module.addTestResources(
+                        new DefaultProcessedSources(resolveRelativeToBaseDir(r.getDirectory(), "src/test/resources").toFile(),
+                                resolveRelativeToBuildDir(r.getTargetPath(), "test-classes").toFile()));
+            }
+        }
     }
 }

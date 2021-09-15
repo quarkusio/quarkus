@@ -6,6 +6,7 @@ import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
@@ -24,11 +25,13 @@ import com.google.common.cache.CacheBuilder;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.maven.dependency.GACT;
+import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.dependency.ResolvedArtifactDependency;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.smallrye.common.expression.Expression;
 
 @Component(role = QuarkusBootstrapProvider.class, instantiationStrategy = "singleton")
@@ -51,7 +54,7 @@ public class QuarkusBootstrapProvider implements Closeable {
         return remoteRepoManager;
     }
 
-    private QuarkusAppBootstrapProvider provider(AppArtifactKey projectId, String executionId) {
+    private QuarkusAppBootstrapProvider provider(GACT projectId, String executionId) {
         try {
             return appBootstrapProviders.get(String.format("%s-%s", projectId, executionId), QuarkusAppBootstrapProvider::new);
         } catch (ExecutionException e) {
@@ -63,13 +66,6 @@ public class QuarkusBootstrapProvider implements Closeable {
     public MavenArtifactResolver artifactResolver(QuarkusBootstrapMojo mojo)
             throws MojoExecutionException {
         return provider(mojo.projectId(), mojo.executionId()).artifactResolver(mojo);
-    }
-
-    // @deprecated in 1.14.0.Final
-    @Deprecated
-    public AppArtifact projectArtifact(QuarkusBootstrapMojo mojo)
-            throws MojoExecutionException {
-        return provider(mojo.projectId(), mojo.executionId()).appArtifact(mojo);
     }
 
     public QuarkusBootstrap bootstrapQuarkus(QuarkusBootstrapMojo mojo)
@@ -98,7 +94,7 @@ public class QuarkusBootstrapProvider implements Closeable {
 
     private class QuarkusAppBootstrapProvider implements Closeable {
 
-        private AppArtifact appArtifact;
+        private ResolvedDependency appArtifact;
         private MavenArtifactResolver artifactResolver;
         private QuarkusBootstrap quarkusBootstrap;
         private CuratedApplication curatedApp;
@@ -174,8 +170,7 @@ public class QuarkusBootstrapProvider implements Closeable {
                     .setTargetDirectory(mojo.buildDir().toPath());
 
             for (MavenProject project : mojo.mavenProject().getCollectedProjects()) {
-                builder.addLocalArtifact(new AppArtifactKey(project.getGroupId(), project.getArtifactId(), null,
-                        project.getArtifact().getArtifactHandler().getExtension()));
+                builder.addLocalArtifact(new AppArtifactKey(project.getGroupId(), project.getArtifactId()));
             }
 
             return quarkusBootstrap = builder.build();
@@ -194,27 +189,24 @@ public class QuarkusBootstrapProvider implements Closeable {
             }
         }
 
-        protected AppArtifact managingProject(QuarkusBootstrapMojo mojo) {
+        protected GACTV managingProject(QuarkusBootstrapMojo mojo) {
             if (mojo.appArtifactCoords() == null) {
                 return null;
             }
             final Artifact artifact = mojo.mavenProject().getArtifact();
-            return new AppArtifact(artifact.getGroupId(), artifact.getArtifactId(),
+            return new GACTV(artifact.getGroupId(), artifact.getArtifactId(),
                     artifact.getClassifier(), artifact.getArtifactHandler().getExtension(),
                     artifact.getVersion());
         }
 
-        private AppArtifact appArtifact(QuarkusBootstrapMojo mojo) throws MojoExecutionException {
+        private ResolvedDependency appArtifact(QuarkusBootstrapMojo mojo) throws MojoExecutionException {
             return appArtifact == null ? appArtifact = initAppArtifact(mojo) : appArtifact;
         }
 
-        private AppArtifact initAppArtifact(QuarkusBootstrapMojo mojo) throws MojoExecutionException {
+        private ResolvedDependency initAppArtifact(QuarkusBootstrapMojo mojo) throws MojoExecutionException {
             String appArtifactCoords = mojo.appArtifactCoords();
             if (appArtifactCoords == null) {
                 final Artifact projectArtifact = mojo.mavenProject().getArtifact();
-                final AppArtifact appArtifact = new AppArtifact(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
-                        projectArtifact.getClassifier(), projectArtifact.getArtifactHandler().getExtension(),
-                        projectArtifact.getVersion());
 
                 File projectFile = projectArtifact.getFile();
                 if (projectFile == null) {
@@ -231,8 +223,9 @@ public class QuarkusBootstrapProvider implements Closeable {
                         }
                     }
                 }
-                appArtifact.setPaths(PathsCollection.of(projectFile.toPath()));
-                return appArtifact;
+                return new ResolvedArtifactDependency(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
+                        projectArtifact.getClassifier(), projectArtifact.getArtifactHandler().getExtension(),
+                        projectArtifact.getVersion(), projectFile.toPath());
             }
 
             final String[] coordsArr = appArtifactCoords.split(":");
@@ -244,7 +237,7 @@ public class QuarkusBootstrapProvider implements Closeable {
             final String groupId = coordsArr[0];
             final String artifactId = coordsArr[1];
             String classifier = "";
-            String type = "jar";
+            String type = GACTV.TYPE_JAR;
             String version = null;
             if (coordsArr.length == 3) {
                 version = coordsArr[2];
@@ -255,33 +248,37 @@ public class QuarkusBootstrapProvider implements Closeable {
                     version = coordsArr[4];
                 }
             }
+            Path path = null;
             if (version == null) {
                 for (Artifact dep : mojo.mavenProject().getArtifacts()) {
                     if (dep.getArtifactId().equals(artifactId)
                             && dep.getGroupId().equals(groupId)
                             && dep.getClassifier().equals(classifier)
                             && dep.getType().equals(type)) {
-                        return new AppArtifact(dep.getGroupId(),
-                                dep.getArtifactId(),
-                                dep.getClassifier(),
-                                dep.getArtifactHandler().getExtension(),
-                                dep.getVersion());
+                        version = dep.getVersion();
+                        if (dep.getFile() != null) {
+                            path = dep.getFile().toPath();
+                        }
+                        break;
                     }
                 }
-                throw new IllegalStateException("Failed to locate " + appArtifactCoords + " among the project dependencies");
+                if (version == null) {
+                    throw new IllegalStateException(
+                            "Failed to locate " + appArtifactCoords + " among the project dependencies");
+                }
             }
 
-            final AppArtifact appArtifact = new AppArtifact(groupId, artifactId, classifier, type, version);
-            try {
-                appArtifact.setPath(
-                        artifactResolver(mojo).resolve(new DefaultArtifact(groupId, artifactId, classifier, type, version))
-                                .getArtifact().getFile().toPath());
-            } catch (MojoExecutionException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new MojoExecutionException("Failed to resolve " + appArtifact, e);
+            if (path == null) {
+                try {
+                    path = artifactResolver(mojo).resolve(new DefaultArtifact(groupId, artifactId, classifier, type, version))
+                            .getArtifact().getFile().toPath();
+                } catch (MojoExecutionException e) {
+                    throw e;
+                } catch (Exception e) {
+                    throw new MojoExecutionException("Failed to resolve " + appArtifact, e);
+                }
             }
-            return appArtifact;
+            return new ResolvedArtifactDependency(groupId, artifactId, classifier, type, version, path);
         }
 
         @Override
@@ -294,18 +291,4 @@ public class QuarkusBootstrapProvider implements Closeable {
             quarkusBootstrap = null;
         }
     }
-
-    /*
-     * private static boolean hasSources(MavenProject project) {
-     * if (new File(project.getBuild().getSourceDirectory()).exists()) {
-     * return true;
-     * }
-     * for (Resource r : project.getBuild().getResources()) {
-     * if (new File(r.getDirectory()).exists()) {
-     * return true;
-     * }
-     * }
-     * return false;
-     * }
-     */
 }

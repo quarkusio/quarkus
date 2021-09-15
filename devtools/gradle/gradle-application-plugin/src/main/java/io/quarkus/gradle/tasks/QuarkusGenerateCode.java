@@ -16,7 +16,6 @@ import java.util.function.Consumer;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.plugins.Convention;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.InputFiles;
@@ -28,10 +27,10 @@ import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
-import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.deployment.CodeGenerator;
+import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusGenerateCode extends QuarkusTask {
 
@@ -89,26 +88,22 @@ public class QuarkusGenerateCode extends QuarkusTask {
     public void prepareQuarkus() {
         getLogger().lifecycle("preparing quarkus application");
 
-        final AppArtifact appArtifact = extension().getAppArtifact();
-        appArtifact.setPaths(QuarkusGradleUtils.getOutputPaths(getProject()));
-
-        final AppModelResolver modelResolver = extension().getAppModelResolver();
-        final Properties realProperties = getBuildSystemProperties(appArtifact);
+        final ApplicationModel appModel = extension().getApplicationModel(test ? LaunchMode.TEST : LaunchMode.NORMAL);
+        final Properties realProperties = getBuildSystemProperties(appModel.getAppArtifact());
 
         Path buildDir = getProject().getBuildDir().toPath();
         try (CuratedApplication appCreationContext = QuarkusBootstrap.builder()
                 .setBaseClassLoader(getClass().getClassLoader())
-                .setAppModelResolver(modelResolver)
+                .setExistingModel(appModel)
                 .setTargetDirectory(buildDir)
                 .setBaseName(extension().finalName())
                 .setBuildSystemProperties(realProperties)
-                .setAppArtifact(appArtifact)
+                .setAppArtifact(appModel.getAppArtifact())
                 .setLocalProjectDiscovery(false)
                 .setIsolateDeployment(true)
                 .build().bootstrap()) {
 
-            final Convention convention = getProject().getConvention();
-            JavaPluginConvention javaConvention = convention.findPlugin(JavaPluginConvention.class);
+            final JavaPluginConvention javaConvention = getProject().getConvention().findPlugin(JavaPluginConvention.class);
             if (javaConvention != null) {
                 final String generateSourcesDir = test ? QUARKUS_TEST_GENERATED_SOURCES : QUARKUS_GENERATED_SOURCES;
                 final SourceSet generatedSources = javaConvention.getSourceSets().findByName(generateSourcesDir);
@@ -132,12 +127,13 @@ public class QuarkusGenerateCode extends QuarkusTask {
                 if (!initAndRun.isPresent()) {
                     throw new GradleException("Failed to find " + INIT_AND_RUN + " method in " + CodeGenerator.class.getName());
                 }
+
                 initAndRun.get().invoke(null, deploymentClassLoader,
                         PathsCollection.from(sourcesDirectories),
-                        paths.iterator().next(),
+                        paths.get(0),
                         buildDir,
                         sourceRegistrar,
-                        appCreationContext.getAppModel(),
+                        appCreationContext.getApplicationModel(),
                         realProperties);
 
             }

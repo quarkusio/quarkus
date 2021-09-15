@@ -23,18 +23,19 @@ import java.util.zip.ZipInputStream;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.AppDependency;
-import io.quarkus.bootstrap.model.AppModel;
-import io.quarkus.bootstrap.model.PersistentAppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.model.MutableJarApplicationModel;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.IsolatedDevModeMain;
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACT;
+import io.quarkus.maven.dependency.ResolvedArtifactDependency;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.PathList;
 
-@SuppressWarnings("Unused")
 public class DevModeTask {
 
     public static Closeable main(Path appRoot) throws Exception {
@@ -47,9 +48,9 @@ public class DevModeTask {
                 buildSystemProperties.load(buildIn);
             }
 
-            PersistentAppModel appModel = (PersistentAppModel) in.readObject();
+            final MutableJarApplicationModel appModel = (MutableJarApplicationModel) in.readObject();
 
-            AppModel existingModel = appModel.getAppModel(appRoot);
+            ApplicationModel existingModel = appModel.getAppModel(appRoot);
             DevModeContext context = createDevModeContext(appRoot, existingModel);
 
             CuratedApplication bootstrap = QuarkusBootstrap.builder()
@@ -59,7 +60,7 @@ public class DevModeTask {
                     .setMode(QuarkusBootstrap.Mode.REMOTE_DEV_SERVER)
                     .setBuildSystemProperties(buildSystemProperties)
                     .setBaseName(appModel.getBaseName())
-                    .setApplicationRoot(existingModel.getAppArtifact().getPath())
+                    .setApplicationRoot(existingModel.getAppArtifact().getResolvedPaths().getSinglePath())
                     .setTargetDirectory(appRoot.getParent())
                     .setBaseClassLoader(DevModeTask.class.getClassLoader())
                     .build().bootstrap();
@@ -73,14 +74,14 @@ public class DevModeTask {
         }
     }
 
-    private static DevModeContext createDevModeContext(Path appRoot, AppModel appModel) throws IOException {
+    private static DevModeContext createDevModeContext(Path appRoot, ApplicationModel appModel) throws IOException {
         DevModeContext context = new DevModeContext();
         extractDevModeClasses(appRoot, appModel, new PostExtractAction() {
             @Override
-            public void run(AppArtifact dep, Path moduleClasses, boolean appArtifact) {
+            public void run(ResolvedDependency dep, Path moduleClasses, boolean appArtifact) {
 
-                dep.setPath(moduleClasses);
-                DevModeContext.ModuleInfo module = new DevModeContext.ModuleInfo.Builder().setAppArtifactKey(dep.getKey())
+                ((ResolvedArtifactDependency) dep).setResolvedPaths(PathList.of(moduleClasses));
+                DevModeContext.ModuleInfo module = new DevModeContext.ModuleInfo.Builder().setArtifactKey(dep.getKey())
                         .setName(dep.getArtifactId())
                         .setClassesPath(moduleClasses.toAbsolutePath().toString())
                         .setResourcesOutputPath(moduleClasses.toAbsolutePath().toString())
@@ -99,23 +100,25 @@ public class DevModeTask {
 
     }
 
-    public static void extractDevModeClasses(Path appRoot, AppModel appModel, PostExtractAction postExtractAction)
+    public static void extractDevModeClasses(Path appRoot, ApplicationModel appModel, PostExtractAction postExtractAction)
             throws IOException {
         Path extracted = appRoot.resolve("dev");
         Files.createDirectories(extracted);
-        Map<AppArtifactKey, AppArtifact> userDependencies = new HashMap<>();
-        for (AppDependency i : appModel.getUserDependencies()) {
-            userDependencies.put(i.getArtifact().getKey(), i.getArtifact());
+        Map<ArtifactKey, ResolvedDependency> rtDependencies = new HashMap<>();
+        for (ResolvedDependency i : appModel.getRuntimeDependencies()) {
+            rtDependencies.put(new GACT(i.getGroupId(), i.getArtifactId()), i);
         }
 
         //setup the classes that can be hot reloaded
         //this code needs to be kept in sync with the code in IsolatedRemoteDevModeMain
         //todo: look at a better way of doing this
-        for (AppArtifactKey i : appModel.getLocalProjectArtifacts()) {
-            boolean appArtifact = i.equals(appModel.getAppArtifact().getKey());
-            AppArtifact dep = userDependencies.get(i);
+        for (ArtifactKey i : appModel.getReloadableWorkspaceDependencies()) {
+            boolean appArtifact = false;
+            ResolvedDependency dep = rtDependencies.get(i);
             Path moduleClasses = null;
             if (dep == null) {
+                appArtifact = i.getGroupId().equals(appModel.getAppArtifact().getGroupId())
+                        && i.getArtifactId().equals(appModel.getAppArtifact().getArtifactId());
                 //check if this is the application itself
                 if (appArtifact) {
                     dep = appModel.getAppArtifact();
@@ -129,7 +132,7 @@ public class DevModeTask {
                 continue;
             }
             IoUtils.createOrEmptyDir(moduleClasses);
-            for (Path p : dep.getPaths()) {
+            for (Path p : dep.getResolvedPaths()) {
                 if (Files.isDirectory(p)) {
                     Path moduleTarget = moduleClasses;
                     Files.walkFileTree(p, new FileVisitor<Path>() {
@@ -187,6 +190,6 @@ public class DevModeTask {
     }
 
     interface PostExtractAction {
-        void run(AppArtifact dep, Path moduleClasses, boolean appArtifact);
+        void run(ResolvedDependency dep, Path moduleClasses, boolean appArtifact);
     }
 }

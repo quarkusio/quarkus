@@ -2,11 +2,15 @@ package io.quarkus.bootstrap.jbang;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactDependency;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.DataInputStream;
@@ -81,8 +85,11 @@ public class JBangDevModeLauncherImpl implements Closeable {
             Files.createDirectories(srcDir);
             Files.createSymbolicLink(srcDir.resolve(sourceFile.getFileName().toString()), sourceFile);
             final LocalProject currentProject = LocalProject.loadWorkspace(projectRoot);
-            AppArtifact appArtifact = currentProject.getAppArtifact("jar");
-            appArtifact.setPath(targetClasses);
+            final ResolvedDependency appArtifact = ResolvedDependencyBuilder.newInstance()
+                    .setCoords(currentProject.getAppArtifact(ArtifactCoords.TYPE_JAR))
+                    .setResolvedPath(targetClasses)
+                    .setWorkspaceModule(currentProject.toWorkspaceModule())
+                    .build();
 
             //todo : proper support for everything
             final QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
@@ -91,21 +98,21 @@ public class JBangDevModeLauncherImpl implements Closeable {
                     .setMode(QuarkusBootstrap.Mode.DEV)
                     .setTargetDirectory(targetClasses)
                     .setAppArtifact(appArtifact)
-                    .setManagingProject(new AppArtifact("io.quarkus", "quarkus-bom", "", "pom", getQuarkusVersion()))
+                    .setManagingProject(new GACTV("io.quarkus", "quarkus-bom", "", "pom", getQuarkusVersion()))
                     .setForcedDependencies(deps.entrySet().stream().map(s -> {
                         String[] parts = s.getKey().split(":");
-                        AppArtifact artifact;
+                        Dependency artifact;
                         if (parts.length == 3) {
-                            artifact = new AppArtifact(parts[0], parts[1], parts[2]);
+                            artifact = new ArtifactDependency(parts[0], parts[1], null, ArtifactCoords.TYPE_JAR, parts[2]);
                         } else if (parts.length == 4) {
-                            artifact = new AppArtifact(parts[0], parts[1], null, parts[2], parts[3]);
+                            artifact = new ArtifactDependency(parts[0], parts[1], null, parts[2], parts[3]);
                         } else if (parts.length == 5) {
-                            artifact = new AppArtifact(parts[0], parts[1], parts[3], parts[2], parts[4]);
+                            artifact = new ArtifactDependency(parts[0], parts[1], parts[3], parts[2], parts[4]);
                         } else {
                             throw new RuntimeException("Invalid artifact " + s);
                         }
-                        artifact.setPath(s.getValue());
-                        return new AppDependency(artifact, "compile");
+                        //artifact.setPath(s.getValue());
+                        return artifact;
                     }).collect(Collectors.toList()))
                     .setApplicationRoot(targetClasses)
                     .setProjectRoot(projectRoot);

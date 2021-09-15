@@ -18,9 +18,9 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.yaml.snakeyaml.Yaml;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
-import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.builder.Version;
 import io.quarkus.devconsole.runtime.spi.FlashScopeUtil;
+import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
@@ -213,7 +213,7 @@ public class DevConsole implements Handler<RoutingContext> {
                         "Failed to locate 'artifact' or 'group-id' and 'artifact-id' among metadata keys " + metadata.keySet());
             }
         } else {
-            final AppArtifactCoords coords = AppArtifactCoords.fromString(artifact);
+            final GACTV coords = GACTV.fromString(artifact);
             groupId = coords.getGroupId();
             artifactId = coords.getArtifactId();
         }

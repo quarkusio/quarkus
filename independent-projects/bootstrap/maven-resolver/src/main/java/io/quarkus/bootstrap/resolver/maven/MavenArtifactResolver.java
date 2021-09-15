@@ -4,6 +4,7 @@
 package io.quarkus.bootstrap.resolver.maven;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.resolver.maven.workspace.ProjectModuleResolver;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -115,6 +116,10 @@ public class MavenArtifactResolver {
         localRepoManager = null;
         this.remoteRepos = mvnSettings.getRemoteRepositories();
         this.remoteRepoManager = mvnSettings.getRemoteRepositoryManager();
+    }
+
+    public ProjectModuleResolver getProjectModuleResolver() {
+        return context.getWorkspace() == null ? null : context.getWorkspace();
     }
 
     public BootstrapMavenContext getMavenContext() {

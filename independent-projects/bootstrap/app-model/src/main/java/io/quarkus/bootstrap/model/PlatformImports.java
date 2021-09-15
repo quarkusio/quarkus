@@ -1,5 +1,6 @@
 package io.quarkus.bootstrap.model;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
 import java.util.Collection;
 import java.util.Map;
 
@@ -24,7 +25,7 @@ public interface PlatformImports {
      *
      * @return all the Quarkus platform BOMs imported by an application
      */
-    Collection<AppArtifactCoords> getImportedPlatformBoms();
+    Collection<ArtifactCoords> getImportedPlatformBoms();
 
     /**
      * In case Quarkus platform member BOM imports were misaligned this method

@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.function.Consumer;
 
-import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.codegen.CodeGenData;
@@ -20,11 +20,10 @@ import io.quarkus.deployment.codegen.CodeGenData;
 public class CodeGenerator {
 
     // used by Gradle
-    @SuppressWarnings("unused")
     public static void initAndRun(ClassLoader classLoader,
             PathsCollection sourceParentDirs, Path generatedSourcesDir, Path buildDir,
             Consumer<Path> sourceRegistrar,
-            AppModel appModel, Map<String, String> properties) throws CodeGenException {
+            ApplicationModel appModel, Map<String, String> properties) throws CodeGenException {
         List<CodeGenData> generators = init(classLoader, sourceParentDirs, generatedSourcesDir, buildDir, sourceRegistrar);
         for (CodeGenData generator : generators) {
             generator.setRedirectIO(true);
@@ -82,7 +81,7 @@ public class CodeGenerator {
      */
     public static boolean trigger(ClassLoader deploymentClassLoader,
             CodeGenData data,
-            AppModel appModel,
+            ApplicationModel appModel,
             Map<String, String> properties) throws CodeGenException {
         return callWithClassloader(deploymentClassLoader, () -> {
             CodeGenProvider provider = data.provider;

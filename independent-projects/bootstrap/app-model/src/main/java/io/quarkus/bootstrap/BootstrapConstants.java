@@ -1,7 +1,5 @@
 package io.quarkus.bootstrap;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
-
 /**
  *
  * @author Alexey Loubyansky
@@ -38,8 +36,6 @@ public interface BootstrapConstants {
     String LESSER_PRIORITY_ARTIFACTS = "lesser-priority-artifacts";
 
     String EMPTY = "";
-    String JAR = AppArtifactCoords.TYPE_JAR;
-    String POM = AppArtifactCoords.TYPE_POM;
 
     String PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX = "-quarkus-platform-descriptor";
     String PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX = "-quarkus-platform-properties";

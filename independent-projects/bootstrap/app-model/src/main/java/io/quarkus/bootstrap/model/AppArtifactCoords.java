@@ -2,6 +2,7 @@ package io.quarkus.bootstrap.model;
 
 import static java.util.Objects.requireNonNull;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -10,7 +11,7 @@ import java.util.Objects;
  *
  * @author Alexey Loubyansky
  */
-public class AppArtifactCoords implements Serializable {
+public class AppArtifactCoords implements ArtifactCoords, Serializable {
 
     public static final String TYPE_JAR = "jar";
     public static final String TYPE_POM = "pom";

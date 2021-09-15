@@ -1,8 +1,8 @@
 package io.quarkus.bootstrap.resolver.test;
 
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.resolver.CollectDependenciesBase;
 import io.quarkus.bootstrap.resolver.TsArtifact;
+import io.quarkus.maven.dependency.DependencyFlags;
 
 /**
  *
@@ -21,6 +21,6 @@ public class VersionPropertyDependencyTestCase extends CollectDependenciesBase {
         setPomProperty("x.version", "2");
         addDep(new TsArtifact("x", "${x.version}"));
 
-        addCollectedDep(x12, AppDependency.DIRECT_FLAG);
+        addCollectedDep(x12, DependencyFlags.DIRECT);
     }
 }

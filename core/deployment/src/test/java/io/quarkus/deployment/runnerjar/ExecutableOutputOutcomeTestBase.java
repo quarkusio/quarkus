@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -20,6 +21,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.quarkus.bootstrap.BootstrapConstants;
@@ -27,13 +29,14 @@ import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppDependency;
-import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsArtifact.ContentProvider;
 import io.quarkus.bootstrap.resolver.TsDependency;
 import io.quarkus.bootstrap.resolver.update.CreatorOutcomeTestBase;
+import io.quarkus.maven.dependency.ArtifactDependency;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 public abstract class ExecutableOutputOutcomeTestBase extends CreatorOutcomeTestBase {
 
@@ -48,10 +51,10 @@ public abstract class ExecutableOutputOutcomeTestBase extends CreatorOutcomeTest
         expectedLib.add(entry.getGroupId() + '.' + entry.getArtifactId() + '-' + entry.getVersion() + '.' + entry.getType());
     }
 
-    protected void assertDeploymentDeps(List<AppDependency> deploymentDeps) throws Exception {
+    protected void assertDeploymentDeps(Set<Dependency> deploymentDeps) throws Exception {
     }
 
-    protected void assertAppModel(AppModel appModel) throws Exception {
+    protected void assertAppModel(ApplicationModel appModel) throws Exception {
     }
 
     protected String[] expectedExtensionDependencies() {
@@ -110,18 +113,19 @@ public abstract class ExecutableOutputOutcomeTestBase extends CreatorOutcomeTest
         return platformPropsDep;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     protected void testCreator(QuarkusBootstrap creator) throws Exception {
         System.setProperty("quarkus.package.type", "legacy-jar");
         try {
             CuratedApplication curated = creator.bootstrap();
-            assertAppModel(curated.getAppModel());
+            assertAppModel(curated.getApplicationModel());
             final String[] expectedExtensions = expectedExtensionDependencies();
             if (expectedExtensions != null) {
-                assertExtensionDependencies(curated.getAppModel(), expectedExtensions);
+                assertExtensionDependencies(curated.getApplicationModel(), expectedExtensions);
             }
-            assertDeploymentDeps(curated.getAppModel().getDeploymentDependencies());
+            assertDeploymentDeps(
+                    curated.getApplicationModel().getDependencies().stream().filter(d -> d.isDeploymentCp() && !d.isRuntimeCp())
+                            .map(d -> new ArtifactDependency(d)).collect(Collectors.toSet()));
             AugmentAction action = curated.createAugmentor();
             AugmentResult outcome = action.createProductionApplication();
 
@@ -194,24 +198,28 @@ public abstract class ExecutableOutputOutcomeTestBase extends CreatorOutcomeTest
         }
     }
 
-    @SuppressWarnings("deprecation")
-    private static void assertExtensionDependencies(AppModel appModel, String[] expectedExtensions) {
-        final Set<AppArtifact> expectedRuntime = new HashSet<>(expectedExtensions.length);
-        final Set<AppArtifact> expectedDeployment = new HashSet<>(expectedExtensions.length);
+    private static void assertExtensionDependencies(ApplicationModel appModel, String[] expectedExtensions) {
+        final Set<String> expectedRuntime = new HashSet<>(expectedExtensions.length);
+        final Set<String> expectedDeployment = new HashSet<>(expectedExtensions.length);
         for (String rtId : expectedExtensions) {
-            expectedRuntime.add(new AppArtifact(TsArtifact.DEFAULT_GROUP_ID, rtId, TsArtifact.DEFAULT_VERSION));
+            expectedRuntime.add(TsArtifact.DEFAULT_GROUP_ID + ":" + rtId + "::jar:" + TsArtifact.DEFAULT_VERSION);
             expectedDeployment
-                    .add(new AppArtifact(TsArtifact.DEFAULT_GROUP_ID, rtId + "-deployment", TsArtifact.DEFAULT_VERSION));
+                    .add(TsArtifact.DEFAULT_GROUP_ID + ":" + rtId + "-deployment" + "::jar:" + TsArtifact.DEFAULT_VERSION);
         }
 
-        for (AppDependency dep : appModel.getUserDependencies()) {
-            assertTrue(expectedRuntime.contains(dep.getArtifact()), dep.getArtifact().toString());
+        final Collection<ResolvedDependency> rtDeps = appModel.getRuntimeDependencies();
+        for (Dependency dep : rtDeps) {
+            final String coords = dep.toGACTVString();
+            assertTrue(expectedRuntime.contains(coords), coords);
         }
-        assertEquals(expectedExtensions.length, appModel.getUserDependencies().size());
+        assertEquals(expectedExtensions.length, rtDeps.size());
 
-        for (AppDependency dep : appModel.getDeploymentDependencies()) {
-            assertTrue(expectedDeployment.contains(dep.getArtifact()));
+        final List<Dependency> deploymentOnly = appModel.getDependencies().stream()
+                .filter(d -> d.isDeploymentCp() && !d.isRuntimeCp()).collect(Collectors.toList());
+        for (Dependency dep : deploymentOnly) {
+            final String coords = dep.toGACTVString();
+            assertTrue(expectedDeployment.contains(coords), coords);
         }
-        assertEquals(expectedExtensions.length, appModel.getDeploymentDependencies().size());
+        assertEquals(expectedExtensions.length, deploymentOnly.size());
     }
 }

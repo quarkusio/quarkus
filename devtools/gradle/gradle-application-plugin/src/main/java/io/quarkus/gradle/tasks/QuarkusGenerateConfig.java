@@ -15,8 +15,7 @@ import org.gradle.api.tasks.options.Option;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.resolver.AppModelResolver;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.runner.bootstrap.GenerateConfigTask;
 
 public class QuarkusGenerateConfig extends QuarkusTask {
@@ -52,9 +51,7 @@ public class QuarkusGenerateConfig extends QuarkusTask {
     public void buildQuarkus() {
         getLogger().lifecycle("generating example config");
 
-        final AppArtifact appArtifact = extension().getAppArtifact();
-        appArtifact.setPaths(QuarkusGradleUtils.getOutputPaths(getProject()));
-        final AppModelResolver modelResolver = extension().getAppModelResolver();
+        final ApplicationModel appModel = extension().getApplicationModel();
         if (extension().resourcesDir().isEmpty()) {
             throw new GradleException("No resources directory, cannot create application.properties");
         }
@@ -66,10 +63,10 @@ public class QuarkusGenerateConfig extends QuarkusTask {
         }
         try (CuratedApplication bootstrap = QuarkusBootstrap.builder()
                 .setBaseClassLoader(getClass().getClassLoader())
-                .setAppModelResolver(modelResolver)
+                .setExistingModel(appModel)
                 .setTargetDirectory(getProject().getBuildDir().toPath())
                 .setBaseName(extension().finalName())
-                .setAppArtifact(appArtifact)
+                .setAppArtifact(appModel.getAppArtifact())
                 .setLocalProjectDiscovery(false)
                 .setIsolateDeployment(true)
                 .build().bootstrap()) {

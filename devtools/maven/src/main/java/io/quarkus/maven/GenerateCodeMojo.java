@@ -15,7 +15,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
 
 @Mojo(name = "generate-code", defaultPhase = LifecyclePhase.GENERATE_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
@@ -63,13 +63,13 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
             final Method initAndRun = codeGenerator.getMethod("initAndRun", ClassLoader.class, PathsCollection.class,
                     Path.class,
                     Path.class,
-                    Consumer.class, AppModel.class, Map.class);
+                    Consumer.class, ApplicationModel.class, Map.class);
             initAndRun.invoke(null, deploymentClassLoader,
                     PathsCollection.of(sourcesDir),
                     generatedSourcesDir(test),
                     buildDir().toPath(),
                     sourceRegistrar,
-                    curatedApplication.getAppModel(),
+                    curatedApplication.getApplicationModel(),
                     mavenProject().getProperties());
         } catch (Exception any) {
             throw new MojoExecutionException("Quarkus code generation phase has failed", any);

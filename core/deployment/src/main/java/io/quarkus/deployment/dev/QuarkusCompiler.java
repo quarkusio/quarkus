@@ -26,8 +26,8 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.PathsCollection;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 /**
  * Class that handles compilation of source files
@@ -53,8 +53,8 @@ public class QuarkusCompiler implements Closeable {
         this.compilationProviders = compilationProviders;
 
         Set<URL> urls = new HashSet<>();
-        for (AppDependency i : application.getAppModel().getUserDependencies()) {
-            for (Path p : i.getArtifact().getPaths()) {
+        for (ResolvedDependency i : application.getApplicationModel().getRuntimeDependencies()) {
+            for (Path p : i.getResolvedPaths()) {
                 urls.add(p.toUri().toURL());
             }
         }

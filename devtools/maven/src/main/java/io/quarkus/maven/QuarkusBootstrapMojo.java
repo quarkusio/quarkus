@@ -21,9 +21,8 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.maven.dependency.GACT;
 
 public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
@@ -115,7 +114,7 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     @Parameter(defaultValue = "${mojoExecution}", readonly = true, required = true)
     private MojoExecution mojoExecution;
 
-    private AppArtifactKey projectId;
+    private GACT projectId;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -200,14 +199,8 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
         return mojoExecution.getExecutionId();
     }
 
-    protected AppArtifactKey projectId() {
-        return projectId == null ? projectId = new AppArtifactKey(project.getGroupId(), project.getArtifactId()) : projectId;
-    }
-
-    // @deprecated in 1.14.0.Final
-    @Deprecated
-    protected AppArtifact projectArtifact() throws MojoExecutionException {
-        return bootstrapProvider.projectArtifact(this);
+    protected GACT projectId() {
+        return projectId == null ? projectId = new GACT(project.getGroupId(), project.getArtifactId()) : projectId;
     }
 
     protected MavenArtifactResolver artifactResolver() throws MojoExecutionException {

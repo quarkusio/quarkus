@@ -54,4 +54,6 @@ public class ClassNames {
     public static final DotName ENTITY_MANAGER = createConstant("javax.persistence.EntityManager");
     public static final DotName SESSION = createConstant("org.hibernate.Session");
 
+    public static final DotName INTERCEPTOR = createConstant("org.hibernate.Interceptor");
+
 }

@@ -46,7 +46,7 @@
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-sdk-extension-autoconfigure</artifactId>
+            <artifactId>opentelemetry-sdk-extension-autoconfigure-spi</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>

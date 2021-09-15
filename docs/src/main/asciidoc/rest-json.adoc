@@ -48,7 +48,7 @@ mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=rest-json-quickstart \
     -DclassName="org.acme.rest.json.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy,resteasy-jackson"
+    -Dextensions="resteasy-jackson"
 cd rest-json-quickstart
 ----
 

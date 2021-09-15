@@ -451,7 +451,7 @@ Now you do not need to use the `@Operation` annotation. While generating the doc
 |Use the class name plus the method name.
 |===
 
-[[dev-mode]]]
+[[dev-mode]]
 == Use Swagger UI for development
 
 When building APIs, developers want to test them quickly. https://swagger.io/tools/swagger-ui/[Swagger UI] is a great tool

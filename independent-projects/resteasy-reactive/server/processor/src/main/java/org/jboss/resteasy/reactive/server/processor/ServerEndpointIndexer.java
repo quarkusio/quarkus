@@ -38,6 +38,7 @@ import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
 import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ListConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalDateParamConverter;
@@ -157,7 +158,8 @@ public class ServerEndpointIndexer
     }
 
     @Override
-    protected void handleAdditionalMethodProcessing(ServerResourceMethod method, ClassInfo currentClassInfo, MethodInfo info) {
+    protected void handleAdditionalMethodProcessing(ServerResourceMethod method, ClassInfo currentClassInfo, MethodInfo info,
+            AnnotationStore annotationStore) {
         Supplier<EndpointInvoker> invokerSupplier = null;
         for (HandlerChainCustomizer i : method.getHandlerChainCustomizers()) {
             invokerSupplier = i.alternateInvoker(method);
@@ -170,7 +172,7 @@ public class ServerEndpointIndexer
         }
         method.setInvoker(invokerSupplier);
         Set<String> methodAnnotationNames = new HashSet<>();
-        List<AnnotationInstance> instances = info.annotations();
+        Collection<AnnotationInstance> instances = annotationStore.getAnnotations(info);
         for (AnnotationInstance instance : instances) {
             methodAnnotationNames.add(instance.name().toString());
         }

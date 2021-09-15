@@ -11,6 +11,8 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.resteasy.reactive.Cache;
 import org.jboss.resteasy.reactive.NoCache;
+import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.common.util.ExtendedCacheControl;
 import org.jboss.resteasy.reactive.server.handlers.CacheControlHandler;
 import org.jboss.resteasy.reactive.server.model.FixedHandlerChainCustomizer;
@@ -24,7 +26,8 @@ public class CacheControlScanner implements MethodScanner {
     @Override
     public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
             Map<String, Object> methodContext) {
-        ExtendedCacheControl cacheControl = noCacheToCacheControl(method.annotation(NO_CACHE));
+        AnnotationStore annotationStore = (AnnotationStore) methodContext.get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
+        ExtendedCacheControl cacheControl = noCacheToCacheControl(annotationStore.getAnnotation(method, NO_CACHE));
         if (cacheControl != null) {
             if (method.annotation(CACHE) != null) {
                 throw new IllegalStateException(
@@ -33,7 +36,7 @@ public class CacheControlScanner implements MethodScanner {
             }
             return cacheControlToCustomizerList(cacheControl);
         } else {
-            cacheControl = noCacheToCacheControl(actualEndpointClass.classAnnotation(NO_CACHE));
+            cacheControl = noCacheToCacheControl(annotationStore.getAnnotation(actualEndpointClass, NO_CACHE));
             if (cacheControl != null) {
                 if (actualEndpointClass.classAnnotation(CACHE) != null) {
                     throw new IllegalStateException(

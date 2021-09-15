@@ -8,6 +8,8 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.server.model.FixedHandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
@@ -20,7 +22,8 @@ public class LinksMethodScanner implements MethodScanner {
     @Override
     public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
             Map<String, Object> methodContext) {
-        AnnotationInstance injectRestLinksInstance = getInjectRestLinksAnnotation(method, actualEndpointClass);
+        AnnotationStore annotationStore = (AnnotationStore) methodContext.get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
+        AnnotationInstance injectRestLinksInstance = getInjectRestLinksAnnotation(method, actualEndpointClass, annotationStore);
         if (injectRestLinksInstance == null) {
             return Collections.emptyList();
         }
@@ -31,7 +34,7 @@ public class LinksMethodScanner implements MethodScanner {
             restLinkType = RestLinkType.valueOf(injectRestLinksValue.asEnum());
         }
 
-        AnnotationInstance restLinkInstance = method.annotation(DotNames.REST_LINK_ANNOTATION);
+        AnnotationInstance restLinkInstance = annotationStore.getAnnotation(method, DotNames.REST_LINK_ANNOTATION);
         String entityType = null;
         if (restLinkInstance != null) {
             AnnotationValue restInstanceValue = restLinkInstance.value("entityType");
@@ -46,12 +49,13 @@ public class LinksMethodScanner implements MethodScanner {
                 HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED));
     }
 
-    private AnnotationInstance getInjectRestLinksAnnotation(MethodInfo method, ClassInfo actualEndpointClass) {
-        AnnotationInstance annotationInstance = method.annotation(DotNames.INJECT_REST_LINKS_ANNOTATION);
+    private AnnotationInstance getInjectRestLinksAnnotation(MethodInfo method, ClassInfo actualEndpointClass,
+            AnnotationStore annotationStore) {
+        AnnotationInstance annotationInstance = annotationStore.getAnnotation(method, DotNames.INJECT_REST_LINKS_ANNOTATION);
         if (annotationInstance == null) {
-            annotationInstance = method.declaringClass().classAnnotation(DotNames.INJECT_REST_LINKS_ANNOTATION);
+            annotationInstance = annotationStore.getAnnotation(method.declaringClass(), DotNames.INJECT_REST_LINKS_ANNOTATION);
             if ((annotationInstance == null) && !actualEndpointClass.equals(method.declaringClass())) {
-                annotationInstance = actualEndpointClass.classAnnotation(DotNames.INJECT_REST_LINKS_ANNOTATION);
+                annotationInstance = annotationStore.getAnnotation(actualEndpointClass, DotNames.INJECT_REST_LINKS_ANNOTATION);
             }
         }
         return annotationInstance;

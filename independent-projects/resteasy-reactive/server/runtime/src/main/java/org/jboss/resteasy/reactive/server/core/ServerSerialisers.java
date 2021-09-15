@@ -329,7 +329,7 @@ public class ServerSerialisers extends Serialisers {
                 selectedResourceWriters = new ArrayList<>(1);
                 selectedResourceWriters.add(resourceWriter);
             } else {
-                int compare = MediaTypeHelper.COMPARATOR.compare(current.getValue(), selectedMediaTypes.getValue());
+                int compare = MediaTypeHelper.Q_COMPARATOR.compare(current.getValue(), selectedMediaTypes.getValue());
                 if (compare == 0) {
                     selectedResourceWriters.add(resourceWriter);
                 } else if (compare < 0) {

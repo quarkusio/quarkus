@@ -294,7 +294,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                         continue;
                     }
                     seenMethods.add(descriptor);
-                    String methodPath = readStringValue(info.annotation(PATH));
+                    String methodPath = readStringValue(getAnnotationStore().getAnnotation(info, PATH));
                     if (methodPath != null) {
                         if (!methodPath.startsWith("/")) {
                             methodPath = "/" + methodPath;
@@ -772,12 +772,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     }
 
-    public static String readStringValue(AnnotationInstance annotationInstance) {
-        String classProduces = null;
+    private static String readStringValue(AnnotationInstance annotationInstance) {
         if (annotationInstance != null) {
-            classProduces = annotationInstance.value().asString();
+            return annotationInstance.value().asString();
         }
-        return classProduces;
+        return null;
     }
 
     protected static String toClassName(Type indexType, ClassInfo currentClass, ClassInfo actualEndpointClass,

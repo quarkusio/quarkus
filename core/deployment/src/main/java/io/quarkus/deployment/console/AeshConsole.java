@@ -320,10 +320,10 @@ public class AeshConsole extends QuarkusConsole {
         }
 
         StringBuilder buffer = new StringBuilder();
+        if (!shouldWrite(errorStream, s)) {
+            return;
+        }
         synchronized (this) {
-            if (!shouldWrite(errorStream, s)) {
-                return;
-            }
             if (totalStatusLines == 0) {
                 bottomBlankSpace = 0; //just to be safe, will only happen if status is added then removed, which is not really likely
                 writeQueue.add(s);

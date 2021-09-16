@@ -380,7 +380,7 @@ public class ResteasyServerCommonProcessor {
 
         ResteasyDeployment deployment = new QuarkusResteasyDeployment();
         registerProviders(deployment, resteasyInitParameters, reflectiveClass, unremovableBeans,
-                jaxrsProvidersToRegisterBuildItem);
+                jaxrsProvidersToRegisterBuildItem, index);
 
         if (!scannedResources.isEmpty()) {
             deployment.getScannedResourceClasses()
@@ -608,7 +608,7 @@ public class ResteasyServerCommonProcessor {
             Map<String, String> resteasyInitParameters,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem) {
+            JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem, IndexView index) {
 
         if (jaxrsProvidersToRegisterBuildItem.useBuiltIn()) {
             // if we find a wildcard media type, we just use the built-in providers
@@ -630,7 +630,12 @@ public class ResteasyServerCommonProcessor {
 
         // register the providers for reflection
         for (String providerToRegister : jaxrsProvidersToRegisterBuildItem.getProviders()) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerToRegister));
+            ClassInfo classInfo = index.getClassByName(DotName.createSimple(providerToRegister));
+            boolean includeFields = false;
+            if (classInfo != null) {
+                includeFields = classInfo.annotations().containsKey(ResteasyDotNames.CONTEXT);
+            }
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, includeFields, providerToRegister));
         }
 
         // special case: our config providers

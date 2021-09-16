@@ -4,7 +4,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.function.Function;
 
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.vertx.http.runtime.RouterProducer;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Router;
@@ -18,7 +17,7 @@ public class VertxWebRecorder {
         try {
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
             if (cl == null) {
-                cl = RouterProducer.class.getClassLoader();
+                cl = VertxWebRecorder.class.getClassLoader();
             }
             Class<? extends Handler<RoutingContext>> handlerClazz = (Class<? extends Handler<RoutingContext>>) cl
                     .loadClass(handlerClassName);

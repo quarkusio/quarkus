@@ -308,7 +308,6 @@ public class VertxHttpRecorder {
             defaultRouteHandler.accept(httpRouteRouter.route().order(DEFAULT_ROUTE_ORDER));
         }
 
-        container.instance(RouterProducer.class).initialize(httpRouteRouter, mutinyRouter.getValue());
         httpRouteRouter.route().last().failureHandler(new QuarkusErrorHandler(launchMode.isDevOrTest()));
 
         if (requireBodyHandler) {

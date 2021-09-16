@@ -609,6 +609,15 @@ Check the https://vertx.io/docs/vertx-web/java/#_basic_vert_x_web_concepts[Vert.
 If you use `quarkus-resteasy` or `quarkus-reactive-routes`, the extension will be added automatically.
 ====
 
+You can also receive the Mutiny variant of the Router (`io.vertx.mutiny.ext.web.Router`):
+
+[source,java]
+----
+public void init(@Observes io.vertx.mutiny.ext.web.Router router) {
+    router.get("/my-route").handler(rc -> rc.response().endAndForget("Hello from my route"));
+}
+----
+
 == Intercepting HTTP requests
 
 You can also register filters that would intercept incoming HTTP requests.

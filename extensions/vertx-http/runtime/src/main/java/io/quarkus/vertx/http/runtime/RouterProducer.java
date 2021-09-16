@@ -10,9 +10,11 @@ import io.vertx.ext.web.Router;
 public class RouterProducer {
 
     private volatile Router router;
+    private volatile io.vertx.mutiny.ext.web.Router mutinyRouter;
 
-    void initialize(Router router) {
+    void initialize(Router router, io.vertx.mutiny.ext.web.Router mutinyRouter) {
         this.router = router;
+        this.mutinyRouter = mutinyRouter;
     }
 
     // Note that we need a client proxy because if a bean also @Observes Router a null value would be injected 
@@ -20,6 +22,11 @@ public class RouterProducer {
     @Produces
     Router produceRouter() {
         return router;
+    }
+
+    @Produces
+    io.vertx.mutiny.ext.web.Router produceMutinyRouter() {
+        return mutinyRouter;
     }
 
 }

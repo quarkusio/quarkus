@@ -142,6 +142,7 @@ class VertxHttpProcessor {
             ShutdownContextBuildItem shutdown) {
 
         RuntimeValue<Router> httpRouteRouter = recorder.initializeRouter(vertx.getVertx());
+        RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter = recorder.createMutinyRouter(httpRouteRouter);
         RuntimeValue<Router> frameworkRouter = null;
         RuntimeValue<Router> mainRouter = null;
 
@@ -182,7 +183,7 @@ class VertxHttpProcessor {
             }
         }
 
-        return new VertxWebRouterBuildItem(httpRouteRouter, mainRouter, frameworkRouter);
+        return new VertxWebRouterBuildItem(httpRouteRouter, mainRouter, frameworkRouter, mutinyRouter);
     }
 
     @BuildStep
@@ -258,6 +259,7 @@ class VertxHttpProcessor {
         recorder.finalizeRouter(beanContainer.getValue(),
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
                 listOfFilters, vertx.getVertx(), lrc, mainRouter, httpRouteRouter.getHttpRouter(),
+                httpRouteRouter.getMutinyRouter(),
                 httpRootPathBuildItem.getRootPath(),
                 launchMode.getLaunchMode(),
                 !requireBodyHandlerBuildItems.isEmpty(), bodyHandler, httpConfiguration, gracefulShutdownFilter,

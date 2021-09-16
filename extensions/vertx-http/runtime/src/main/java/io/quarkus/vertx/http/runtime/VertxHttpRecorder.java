@@ -234,6 +234,10 @@ public class VertxHttpRecorder {
         return new RuntimeValue<>(router);
     }
 
+    public RuntimeValue<io.vertx.mutiny.ext.web.Router> createMutinyRouter(final RuntimeValue<Router> router) {
+        return new RuntimeValue<>(new io.vertx.mutiny.ext.web.Router(router.getValue()));
+    }
+
     public void startServer(Supplier<Vertx> vertx, ShutdownContext shutdown,
             HttpBuildTimeConfig httpBuildTimeConfig, HttpConfiguration httpConfiguration,
             LaunchMode launchMode,
@@ -271,7 +275,8 @@ public class VertxHttpRecorder {
     public void finalizeRouter(BeanContainer container, Consumer<Route> defaultRouteHandler,
             List<Filter> filterList, Supplier<Vertx> vertx,
             LiveReloadConfig liveReloadConfig, Optional<RuntimeValue<Router>> mainRouterRuntimeValue,
-            RuntimeValue<Router> httpRouterRuntimeValue, String rootPath, LaunchMode launchMode, boolean requireBodyHandler,
+            RuntimeValue<Router> httpRouterRuntimeValue, RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter,
+            String rootPath, LaunchMode launchMode, boolean requireBodyHandler,
             Handler<RoutingContext> bodyHandler, HttpConfiguration httpConfiguration,
             GracefulShutdownFilter gracefulShutdownFilter, ShutdownConfig shutdownConfig,
             Executor executor) {
@@ -289,6 +294,8 @@ public class VertxHttpRecorder {
 
         // Then, fire the resuming router
         event.select(Router.class).fire(httpRouteRouter);
+        // Also fires the Mutiny one
+        event.select(io.vertx.mutiny.ext.web.Router.class).fire(mutinyRouter.getValue());
 
         for (Filter filter : filterList) {
             if (filter.getHandler() != null) {
@@ -301,7 +308,7 @@ public class VertxHttpRecorder {
             defaultRouteHandler.accept(httpRouteRouter.route().order(DEFAULT_ROUTE_ORDER));
         }
 
-        container.instance(RouterProducer.class).initialize(httpRouteRouter);
+        container.instance(RouterProducer.class).initialize(httpRouteRouter, mutinyRouter.getValue());
         httpRouteRouter.route().last().failureHandler(new QuarkusErrorHandler(launchMode.isDevOrTest()));
 
         if (requireBodyHandler) {

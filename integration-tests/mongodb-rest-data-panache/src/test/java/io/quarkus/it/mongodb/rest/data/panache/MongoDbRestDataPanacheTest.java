@@ -20,6 +20,7 @@ import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.mongodb.MongoTestResource;
 import io.restassured.response.Response;
 
 @QuarkusTest

@@ -5402,6 +5402,18 @@
                 <artifactId>quarkus-apache-httpclient-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+            <!-- Relocations -->
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-vertx-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-vertx-web-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

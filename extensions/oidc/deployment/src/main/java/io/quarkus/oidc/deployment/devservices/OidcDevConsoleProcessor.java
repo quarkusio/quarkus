@@ -5,11 +5,11 @@ import java.time.Duration;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
@@ -37,6 +37,7 @@ public class OidcDevConsoleProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     void prepareOidcDevConsole(BuildProducer<DevConsoleTemplateInfoBuildItem> console,
+            CuratedApplicationShutdownBuildItem closeBuildItem,
             BuildProducer<DevConsoleRouteBuildItem> devConsoleRoute) {
         if (isOidcTenantEnabled() && isAuthServerUrlSet() && isClientIdSet() && isServiceAuthType()) {
 
@@ -56,16 +57,7 @@ public class OidcDevConsoleProcessor {
                         vertxInstance = null;
                     }
                 };
-                QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-                ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
-                Thread closeHookThread = new Thread(closeTask, "OIDC DevConsole Vertx close thread");
-                Runtime.getRuntime().addShutdownHook(closeHookThread);
-                ((QuarkusClassLoader) cl.parent()).addCloseTask(new Runnable() {
-                    @Override
-                    public void run() {
-                        Runtime.getRuntime().removeShutdownHook(closeHookThread);
-                    }
-                });
+                closeBuildItem.addCloseTask(closeTask, true);
             }
 
             String authServerUrl = getConfigProperty(AUTH_SERVER_URL_CONFIG_KEY);

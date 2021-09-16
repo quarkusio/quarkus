@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
@@ -25,6 +24,7 @@ import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
@@ -55,6 +55,7 @@ public class DevServicesDatasourceProcessor {
             List<DevServicesDatasourceConfigurationHandlerBuildItem> configurationHandlerBuildItems,
             BuildProducer<DevServicesConfigResultBuildItem> devServicesResultBuildItemBuildProducer,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+            CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem) {
         //figure out if we need to shut down and restart existing databases
         //if not and the DB's have already started we just return
@@ -164,8 +165,7 @@ public class DevServicesDatasourceProcessor {
                     cachedProperties = null;
                 }
             };
-            QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
+            closeBuildItem.addCloseTask(closeTask, true);
         }
         databases = closeableList;
         cachedProperties = propertiesMap;

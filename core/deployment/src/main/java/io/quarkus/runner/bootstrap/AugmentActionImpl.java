@@ -42,6 +42,7 @@ import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.ExtensionLoader;
 import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceHandledBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
@@ -320,6 +321,7 @@ public class AugmentActionImpl implements AugmentAction {
             chainBuilder
                     .addInitial(ShutdownContextBuildItem.class)
                     .addInitial(LaunchModeBuildItem.class)
+                    .addInitial(CuratedApplicationShutdownBuildItem.class)
                     .addInitial(LiveReloadBuildItem.class)
                     .addInitial(RawCommandLineArgumentsBuildItem.class);
             chainBuild.accept(chainBuilder);
@@ -336,6 +338,7 @@ public class AugmentActionImpl implements AugmentAction {
                                     : (auxiliaryApplication ? DevModeType.LOCAL : null)),
                             curatedApplication.getQuarkusBootstrap().isTest()))
                     .produce(new ShutdownContextBuildItem())
+                    .produce(new CuratedApplicationShutdownBuildItem(curatedApplication.getAugmentClassLoader(), true))
                     .produce(new RawCommandLineArgumentsBuildItem())
                     .produce(new LiveReloadBuildItem());
             executionBuild.accept(execBuilder);

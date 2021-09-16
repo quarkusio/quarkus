@@ -34,11 +34,11 @@ import org.testcontainers.utility.DockerImageName;
 
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -81,6 +81,7 @@ public class DevServicesKafkaProcessor {
             Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             BuildProducer<DevServicesConfigResultBuildItem> devServicePropertiesProducer,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+            CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem) {
 
         KafkaDevServiceCfg configuration = getConfiguration(kafkaClientBuildTimeConfig);
@@ -125,8 +126,7 @@ public class DevServicesKafkaProcessor {
                 closeable = null;
                 cfg = null;
             };
-            QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
+            closeBuildItem.addCloseTask(closeTask, true);
         }
         cfg = configuration;
 

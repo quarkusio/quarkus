@@ -20,11 +20,11 @@ import org.testcontainers.utility.DockerImageName;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.message.BasicNameValuePair;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URLEncodedUtils;
 
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -52,6 +52,7 @@ public class DevServicesMongoProcessor {
             Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             BuildProducer<DevServicesConfigResultBuildItem> devServices,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+            CuratedApplicationShutdownBuildItem closeBuildItem,
             LaunchModeBuildItem launchMode,
             LoggingSetupBuildItem loggingSetupBuildItem) {
 
@@ -132,8 +133,7 @@ public class DevServicesMongoProcessor {
                     capturedProperties = null;
                 }
             };
-            QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
+            closeBuildItem.addCloseTask(closeTask, true);
         }
         closeables = currentCloseables;
         capturedProperties = currentCapturedProperties;

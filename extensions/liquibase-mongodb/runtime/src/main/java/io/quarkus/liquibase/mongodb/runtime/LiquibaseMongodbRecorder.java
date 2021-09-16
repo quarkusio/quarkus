@@ -1,4 +1,4 @@
-package io.quarkus.liquibase.runtime;
+package io.quarkus.liquibase.mongodb.runtime;
 
 import java.util.function.Supplier;
 
@@ -8,7 +8,7 @@ import javax.enterprise.inject.UnsatisfiedResolutionException;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.liquibase.LiquibaseMongodbFactory;
+import io.quarkus.liquibase.mongodb.LiquibaseMongodbFactory;
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import liquibase.Liquibase;

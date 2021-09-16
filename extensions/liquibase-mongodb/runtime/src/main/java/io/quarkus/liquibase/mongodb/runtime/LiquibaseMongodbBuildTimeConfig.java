@@ -1,4 +1,4 @@
-package io.quarkus.liquibase.runtime;
+package io.quarkus.liquibase.mongodb.runtime;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;

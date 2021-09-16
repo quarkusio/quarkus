@@ -1,4 +1,4 @@
-package io.quarkus.liquibase.runtime.graal;
+package io.quarkus.liquibase.mongodb.runtime.graal;
 
 import java.security.SecureRandom;
 

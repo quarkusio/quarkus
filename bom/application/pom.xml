@@ -31,7 +31,7 @@
         <opentelemetry-alpha.version>1.6.0-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.6.0</jaeger.version>
         <quarkus-http.version>4.1.1</quarkus-http.version>
-        <micrometer.version>1.7.3</micrometer.version>
+        <micrometer.version>1.7.4</micrometer.version>
         <google-auth.version>0.22.0</google-auth.version>
         <microprofile-config-api.version>2.0</microprofile-config-api.version>
         <microprofile-metrics-api.version>3.0</microprofile-metrics-api.version>

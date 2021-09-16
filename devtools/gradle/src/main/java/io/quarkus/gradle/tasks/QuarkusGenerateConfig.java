@@ -4,8 +4,11 @@ import java.io.File;
 import java.util.Collections;
 
 import org.gradle.api.GradleException;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
@@ -28,6 +31,16 @@ public class QuarkusGenerateConfig extends QuarkusTask {
     @Input
     public String getFile() {
         return file;
+    }
+
+    /**
+     * Create a dependency on classpath resolution. This makes sure included build are build this task runs.
+     *
+     * @return resolved compile classpath
+     */
+    @CompileClasspath
+    public FileCollection getClasspath() {
+        return QuarkusGradleUtils.getSourceSet(getProject(), SourceSet.MAIN_SOURCE_SET_NAME).getCompileClasspath();
     }
 
     @Option(description = "The name of the file to generate", option = "file")

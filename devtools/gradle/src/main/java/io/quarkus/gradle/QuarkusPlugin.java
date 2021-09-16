@@ -33,6 +33,7 @@ import org.gradle.util.GradleVersion;
 import io.quarkus.gradle.builder.QuarkusModelBuilder;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.dependency.ConditionalDependenciesEnabler;
+import io.quarkus.gradle.dependency.ExtensionDependency;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.quarkus.gradle.extension.SourceSetExtension;
 import io.quarkus.gradle.tasks.QuarkusAddExtension;
@@ -81,11 +82,6 @@ public class QuarkusPlugin implements Plugin<Project> {
 
     public static final String NATIVE_TEST_IMPLEMENTATION_CONFIGURATION_NAME = "nativeTestImplementation";
     public static final String NATIVE_TEST_RUNTIME_ONLY_CONFIGURATION_NAME = "nativeTestRuntimeOnly";
-
-    private static final String[] CONDITIONAL_DEPENDENCY_LOOKUP = new String[] {
-            JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME,
-            DEV_MODE_CONFIGURATION_NAME
-    };
 
     private final ToolingModelBuilderRegistry registry;
 
@@ -193,9 +189,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                                     .plus(testSourceSet.getOutput()));
 
                     // create a custom configuration for devmode
-                    configurations.create(DEV_MODE_CONFIGURATION_NAME).extendsFrom(
-                            configurations.getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME),
-                            configurations.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
+                    configurations.create(DEV_MODE_CONFIGURATION_NAME);
 
                     // create a custom configuration to be used for the dependencies of the testNative task
                     configurations.maybeCreate(NATIVE_TEST_IMPLEMENTATION_CONFIGURATION_NAME)
@@ -239,6 +233,31 @@ public class QuarkusPlugin implements Plugin<Project> {
         });
     }
 
+    private void registerConditionalDependencies(Project project) {
+        ConditionalDependenciesEnabler conditionalDependenciesEnabler = new ConditionalDependenciesEnabler(project);
+        ApplicationDeploymentClasspathBuilder deploymentClasspathBuilder = new ApplicationDeploymentClasspathBuilder(
+                project);
+        project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME).getIncoming()
+                .beforeResolve((dependencies) -> {
+                    Set<ExtensionDependency> implementationExtensions = conditionalDependenciesEnabler
+                            .declareConditionalDependencies(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
+                    deploymentClasspathBuilder.createBuildClasspath(implementationExtensions,
+                            JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true);
+                });
+        project.getConfigurations().getByName(DEV_MODE_CONFIGURATION_NAME).getIncoming().beforeResolve((devDependencies) -> {
+            Set<ExtensionDependency> devModeExtensions = conditionalDependenciesEnabler
+                    .declareConditionalDependencies(DEV_MODE_CONFIGURATION_NAME);
+            deploymentClasspathBuilder.createBuildClasspath(devModeExtensions, DEV_MODE_CONFIGURATION_NAME, false);
+        });
+        project.getConfigurations().getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME).getIncoming()
+                .beforeResolve((testDependencies) -> {
+                    Set<ExtensionDependency> testExtensions = conditionalDependenciesEnabler
+                            .declareConditionalDependencies(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME);
+                    deploymentClasspathBuilder.createBuildClasspath(testExtensions,
+                            JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME, false);
+                });
+    }
+
     private Set<Path> getSourcesParents(SourceSet mainSourceSet) {
         Set<File> srcDirs = mainSourceSet.getJava().getSrcDirs();
         return srcDirs.stream()
@@ -270,18 +289,7 @@ public class QuarkusPlugin implements Plugin<Project> {
 
     private void afterEvaluate(Project project) {
 
-        ConditionalDependenciesEnabler conditionalDependenciesEnabler = new ConditionalDependenciesEnabler(project);
-        ApplicationDeploymentClasspathBuilder deploymentClasspathBuilder = new ApplicationDeploymentClasspathBuilder(project);
-
-        conditionalDependenciesEnabler
-                .declareConditionalDependencies(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
-        deploymentClasspathBuilder.createBuildClasspath(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true);
-
-        for (String baseConfiguration : CONDITIONAL_DEPENDENCY_LOOKUP) {
-            conditionalDependenciesEnabler
-                    .declareConditionalDependencies(baseConfiguration);
-            deploymentClasspathBuilder.createBuildClasspath(baseConfiguration, false);
-        }
+        registerConditionalDependencies(project);
 
         final HashSet<String> visited = new HashSet<>();
         ConfigurationContainer configurations = project.getConfigurations();
@@ -297,7 +305,6 @@ public class QuarkusPlugin implements Plugin<Project> {
                 .sourceSetExtension();
 
         if (sourceSetExtension.extraNativeTest() != null) {
-
             SourceSetContainer sourceSets = project.getConvention().getPlugin(JavaPluginConvention.class)
                     .getSourceSets();
             SourceSet nativeTestSourceSets = sourceSets.getByName(NATIVE_TEST_SOURCE_SET_NAME);

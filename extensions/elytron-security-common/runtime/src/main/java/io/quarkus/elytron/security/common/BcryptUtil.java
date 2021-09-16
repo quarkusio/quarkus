@@ -1,10 +1,12 @@
 package io.quarkus.elytron.security.common;
 
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Objects;
 
+import org.wildfly.security.password.Password;
 import org.wildfly.security.password.PasswordFactory;
 import org.wildfly.security.password.WildFlyElytronPasswordProvider;
 import org.wildfly.security.password.interfaces.BCryptPassword;
@@ -85,6 +87,28 @@ public class BcryptUtil {
             BCryptPassword original = (BCryptPassword) passwordFactory.generatePassword(encryptableSpec);
             return ModularCrypt.encodeAsString(original);
         } catch (InvalidKeySpecException e) {
+            // can't really happen
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Matches a plain text string against an existing Modular Crypt Format bcrypt hash
+     *
+     * @param plainText the plain text string to check
+     * @param passwordHash the Modular Crypt Format bcrypt hash to compare against
+     * @return the boolean result of whether or not the plain text matches the decoded Modular Crypt Format bcrypt hash
+     * @throws NullPointerException if the plainText password or passwordHash is null
+     */
+    public static boolean matches(String plainText, String passwordHash) {
+        Objects.requireNonNull(plainText, "plainText password is required");
+        Objects.requireNonNull(passwordHash, "passwordHash is required");
+        try {
+            PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT, provider);
+            Password userPasswordDecoded = ModularCrypt.decode(passwordHash);
+            Password userPasswordRestored = passwordFactory.translate(userPasswordDecoded);
+            return passwordFactory.verify(userPasswordRestored, plainText.toCharArray());
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException e) {
             // can't really happen
             throw new RuntimeException(e);
         }

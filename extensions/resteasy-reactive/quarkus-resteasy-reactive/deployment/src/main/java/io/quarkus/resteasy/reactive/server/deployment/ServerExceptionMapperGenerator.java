@@ -2,7 +2,6 @@ package io.quarkus.resteasy.reactive.server.deployment;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofConstructor;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
-import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.*;
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_REQUEST;
 import static io.quarkus.resteasy.reactive.server.deployment.GeneratorUtils.paramHandleFromReqContextMethod;
 import static io.quarkus.resteasy.reactive.server.deployment.GeneratorUtils.routingContextHandler;
@@ -18,6 +17,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI_INFO;
 
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +63,7 @@ import io.vertx.ext.web.RoutingContext;
 final class ServerExceptionMapperGenerator {
 
     private static final DotName THROWABLE = DotName.createSimple(Throwable.class.getName());
+    private static final DotName EXCEPTION = DotName.createSimple(Exception.class.getName());
 
     private ServerExceptionMapperGenerator() {
     }
@@ -117,6 +118,10 @@ final class ServerExceptionMapperGenerator {
         ClassInfo targetClass = targetMethod.declaringClass();
         Type[] handledExceptionTypes = getHandledExceptionTypes(targetMethod);
         Map<String, String> result = new HashMap<>();
+
+        boolean handlesMultipleExceptions = handledExceptionTypes.length > 1;
+        boolean handledContainsThrowable = Arrays.stream(handledExceptionTypes).anyMatch(t -> t.name().equals(THROWABLE));
+
         for (Type handledExceptionType : handledExceptionTypes) {
             String generatedClassName = getGeneratedClassName(targetMethod, handledExceptionType);
             try (ClassCreator cc = ClassCreator.builder().className(generatedClassName)
@@ -145,7 +150,7 @@ final class ServerExceptionMapperGenerator {
 
                     // RESTEasy Reactive toResponse(...) method
                     generateRRResponse(targetMethod, targetClass, handledExceptionType, cc, rrToResponseDescriptor,
-                            returnType,
+                            returnType, handlesMultipleExceptions, handledContainsThrowable,
                             (method, contextHandle) -> {
                                 ResultHandle endpointInstanceHandle = method.invokeVirtualMethod(
                                         ofMethod(ResteasyReactiveRequestContext.class, "getEndpointInstance", Object.class),
@@ -163,7 +168,7 @@ final class ServerExceptionMapperGenerator {
 
                     // RESTEasy Reactive asyncResponse(...) method
                     generateRRUniResponse(targetMethod, targetClass, handledExceptionType, cc, rrAsyncResponseDescriptor,
-                            returnType,
+                            returnType, handlesMultipleExceptions, handledContainsThrowable,
                             (method, contextHandle) -> {
                                 ResultHandle endpointInstanceHandle = method.invokeVirtualMethod(
                                         ofMethod(ResteasyReactiveRequestContext.class, "getEndpointInstance", Object.class),
@@ -238,6 +243,10 @@ final class ServerExceptionMapperGenerator {
         ClassInfo targetClass = targetMethod.declaringClass();
         Type[] handledExceptionTypes = getHandledExceptionTypes(targetMethod);
         Map<String, String> result = new HashMap<>();
+
+        boolean handlesMultipleExceptions = handledExceptionTypes.length > 1;
+        boolean handledContainsThrowable = Arrays.stream(handledExceptionTypes).anyMatch(t -> t.name().equals(THROWABLE));
+
         for (Type handledExceptionType : handledExceptionTypes) {
             String generatedClassName = getGeneratedClassName(targetMethod, handledExceptionType);
             try (ClassCreator cc = ClassCreator.builder().className(generatedClassName)
@@ -276,7 +285,7 @@ final class ServerExceptionMapperGenerator {
 
                     // RESTEasy Reactive toResponse(...) method
                     generateRRResponse(targetMethod, targetClass, handledExceptionType, cc, rrToResponseDescriptor,
-                            returnType,
+                            returnType, handlesMultipleExceptions, handledContainsThrowable,
                             (method, contextHandle) -> method.readInstanceField(delegateField, method.getThis()));
                 } else if (returnType == ReturnType.UNI_RESPONSE || returnType == ReturnType.UNI_REST_RESPONSE) {
                     MethodDescriptor rrAsyncResponseDescriptor = asyncResponseDescriptor(handledExceptionType,
@@ -289,7 +298,7 @@ final class ServerExceptionMapperGenerator {
 
                     // RESTEasy Reactive asyncResponse(...) method
                     generateRRUniResponse(targetMethod, targetClass, handledExceptionType, cc, rrAsyncResponseDescriptor,
-                            returnType,
+                            returnType, handlesMultipleExceptions, handledContainsThrowable,
                             (method, contextHandle) -> method.readInstanceField(delegateField, method.getThis()));
                 } else {
                     throw new IllegalStateException("ReturnType: '" + returnType + "' is not supported");
@@ -395,7 +404,7 @@ final class ServerExceptionMapperGenerator {
 
     private static void generateRRResponse(MethodInfo targetMethod, ClassInfo targetClass, Type handledExceptionType,
             ClassCreator cc, MethodDescriptor rrToResponseDescriptor,
-            ReturnType returnType,
+            ReturnType returnType, boolean handlesMultipleExceptions, boolean handledContainsThrowable,
             BiFunction<MethodCreator, ResultHandle, ResultHandle> targetInstanceHandleCreator) {
         MethodCreator mc = cc.getMethodCreator(rrToResponseDescriptor);
         ResultHandle exceptionHandle = mc.getMethodParam(0);
@@ -414,7 +423,8 @@ final class ServerExceptionMapperGenerator {
             mc.returnValue(resultHandle);
         } else {
             TargetMethodParamsInfo targetMethodParamsInfo = getTargetMethodParamsInfo(targetMethod, targetClass,
-                    handledExceptionType, mc, exceptionHandle, contextHandle);
+                    handledExceptionType, mc, exceptionHandle, contextHandle, handlesMultipleExceptions,
+                    handledContainsThrowable);
             ResultHandle resultHandle = mc.invokeVirtualMethod(
                     ofMethod(targetClass.name().toString(), targetMethod.name(),
                             targetMethod.returnType().name().toString(), targetMethodParamsInfo.getTypes()),
@@ -441,7 +451,7 @@ final class ServerExceptionMapperGenerator {
 
     private static void generateRRUniResponse(MethodInfo targetMethod, ClassInfo targetClass, Type handledExceptionType,
             ClassCreator cc, MethodDescriptor rrAsyncResponseDescriptor,
-            ReturnType returnType,
+            ReturnType returnType, boolean handlesMultipleExceptions, boolean handledContainsThrowable,
             BiFunction<MethodCreator, ResultHandle, ResultHandle> targetInstanceHandleCreator) {
         MethodCreator mc = cc.getMethodCreator(rrAsyncResponseDescriptor);
         ResultHandle exceptionHandle = mc.getMethodParam(0);
@@ -459,7 +469,8 @@ final class ServerExceptionMapperGenerator {
                     targetInstanceHandle);
         } else {
             TargetMethodParamsInfo targetMethodParamsInfo = getTargetMethodParamsInfo(targetMethod, targetClass,
-                    handledExceptionType, mc, exceptionHandle, contextHandle);
+                    handledExceptionType, mc, exceptionHandle, contextHandle, handlesMultipleExceptions,
+                    handledContainsThrowable);
             uniHandle = mc.invokeVirtualMethod(
                     ofMethod(targetClass.name().toString(), targetMethod.name(),
                             Uni.class.getName(), targetMethodParamsInfo.getTypes()),
@@ -472,7 +483,8 @@ final class ServerExceptionMapperGenerator {
     }
 
     private static TargetMethodParamsInfo getTargetMethodParamsInfo(MethodInfo targetMethod, ClassInfo targetClass,
-            Type handledExceptionType, MethodCreator mc, ResultHandle exceptionHandle, ResultHandle contextHandle) {
+            Type handledExceptionType, MethodCreator mc, ResultHandle exceptionHandle, ResultHandle contextHandle,
+            boolean handlesMultipleExceptions, boolean handledContainsThrowable) {
         List<Type> parameters = targetMethod.parameters();
         ResultHandle[] targetMethodParamHandles = new ResultHandle[parameters.size()];
         String[] parameterTypes = new String[parameters.size()];
@@ -481,7 +493,41 @@ final class ServerExceptionMapperGenerator {
             Type parameter = parameters.get(i);
             DotName paramDotName = parameter.name();
             parameterTypes[i] = paramDotName.toString();
+            String parameterName = targetMethod.parameterName(i);
             if (paramDotName.equals(handledExceptionType.name())) {
+                if (handlesMultipleExceptions) {
+                    throw new RuntimeException("Parameter '" + parameterName + "' of method '" + targetMethod.name()
+                            + " of class '" + targetClass.name() + "' cannot be of type '" + handledExceptionType.name()
+                            + "' because the method handles multiple exceptions. You can use '"
+                            + (handledContainsThrowable ? Throwable.class.getName() : Exception.class.getName())
+                            + "' instead.");
+                } else {
+                    targetMethodParamHandles[i] = exceptionHandle;
+                }
+            } else if (paramDotName.equals(THROWABLE)) {
+                targetMethodParamHandles[i] = exceptionHandle;
+            } else if (paramDotName.equals(EXCEPTION)) {
+                if (handlesMultipleExceptions) {
+                    if (handledContainsThrowable) {
+                        throw new RuntimeException("Parameter '" + parameterName + "' of method '" + targetMethod.name()
+                                + " of class '" + targetClass.name()
+                                + "' cannot be of type '" + handledExceptionType.name()
+                                + "' because the method handles multiple exceptions. You can use '" + Exception.class.getName()
+                                + "' instead.");
+                    } else {
+                        targetMethodParamHandles[i] = exceptionHandle;
+                    }
+                } else {
+                    if (handledContainsThrowable) {
+                        throw new RuntimeException("Parameter '" + parameterName + "' of method '" + targetMethod.name()
+                                + " of class '" + targetClass.name()
+                                + "' cannot be of type '" + handledExceptionType.name() + "'. You can use '"
+                                + Throwable.class.getName() + "' instead.");
+                    } else {
+                        targetMethodParamHandles[i] = exceptionHandle;
+                    }
+                }
+            } else if (paramDotName.equals(handledExceptionType.name())) {
                 targetMethodParamHandles[i] = exceptionHandle;
             } else if (CONTAINER_REQUEST_CONTEXT.equals(paramDotName)
                     || QUARKUS_REST_CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
@@ -528,7 +574,6 @@ final class ServerExceptionMapperGenerator {
             } else if (ROUTING_CONTEXT.equals(paramDotName)) {
                 targetMethodParamHandles[i] = routingContextHandler(mc, contextHandle);
             } else {
-                String parameterName = targetMethod.parameterName(i);
                 throw new RuntimeException("Parameter '" + parameterName + "' of method '" + targetMethod.name()
                         + " of class '" + targetClass.name()
                         + "' is not allowed");

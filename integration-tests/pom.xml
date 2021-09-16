@@ -114,6 +114,7 @@
             </activation>
             <modules>
                 <module>avro-reload</module>
+                <module>awt</module>
                 <module>bouncycastle</module>
                 <module>bouncycastle-fips</module>
                 <module>bouncycastle-fips-jsse</module>

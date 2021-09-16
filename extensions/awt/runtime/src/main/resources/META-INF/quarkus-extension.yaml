@@ -1,0 +1,12 @@
+name: AWT
+metadata:
+  keywords:
+    - awt
+    - font
+    - java2d
+    - image
+    - imageio
+#  guide: ...
+  categories:
+    - "miscellaneous"
+  status: "preview"

@@ -143,6 +143,12 @@
             "timeout": 70,
             "test-modules": "devtools-registry-client",
             "os-name": "ubuntu-latest"
-        }
+        },
+        {
+            "category": "AWT, ImageIO and Java2D",
+            "timeout": 20,
+            "test-modules": "awt",
+            "os-name": "ubuntu-latest"
+        }	
     ]
 }

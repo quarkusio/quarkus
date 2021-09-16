@@ -58,8 +58,8 @@ public class FirstResource {
     }
 
     @ServerExceptionMapper({ IllegalStateException.class, IllegalArgumentException.class })
-    public Response handleIllegal() {
-        return Response.status(409).build();
+    public Response handleIllegal(Exception e) {
+        return Response.status(409).entity(e.getMessage()).build();
     }
 
     @ServerExceptionMapper

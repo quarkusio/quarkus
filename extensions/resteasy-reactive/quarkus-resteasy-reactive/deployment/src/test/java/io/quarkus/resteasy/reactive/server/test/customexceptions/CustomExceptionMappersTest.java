@@ -21,7 +21,8 @@ public class CustomExceptionMappersTest {
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(FirstResource.class, SecondResource.class,
-                                    MyException.class, MyOtherException.class, UniException.class, ExtendsUniException.class,
+                                    MyException.class, MyOtherException.class, UniException.class,
+                                    OtherUniException.class, ExtendsUniException.class,
                                     MyOtherExceptionMapper.class, UniExceptionMapper.class,
                                     SomeBean.class, ExceptionUtil.class);
                 }

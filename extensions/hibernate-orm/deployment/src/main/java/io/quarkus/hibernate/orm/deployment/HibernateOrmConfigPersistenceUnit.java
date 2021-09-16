@@ -113,6 +113,28 @@ public class HibernateOrmConfigPersistenceUnit {
     public Optional<String> implicitNamingStrategy;
 
     /**
+     * This setting identifies an Interceptor which is effectively a singleton across all the Sessions
+     * opened from the SessionFactory to which it is applied; the same instance will be passed to each Session.
+     *
+     * Class name of a custom
+     * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/Interceptor.html[`org.hibernate.Interceptor`]
+     * implementation.
+     */
+    @ConfigItem
+    public Optional<String> interceptor;
+
+    /**
+     * This setting identifies an Interceptor implementation that is to be applied to every Session opened
+     * from the SessionFactory, but unlike Interceptor a unique instance of the Interceptor is used for each Session.
+     *
+     * Class name of a custom
+     * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/Interceptor.html[`org.hibernate.Interceptor`]
+     * implementation.
+     */
+    @ConfigItem
+    public Optional<String> sessionScopedInterceptor;
+
+    /**
      * Class name of a custom
      * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/boot/spi/MetadataBuilderContributor.html[`org.hibernate.boot.spi.MetadataBuilderContributor`]
      * implementation.
@@ -218,6 +240,8 @@ public class HibernateOrmConfigPersistenceUnit {
                 maxFetchDepth.isPresent() ||
                 physicalNamingStrategy.isPresent() ||
                 implicitNamingStrategy.isPresent() ||
+                interceptor.isPresent() ||
+                sessionScopedInterceptor.isPresent() ||
                 metadataBuilderContributor.isPresent() ||
                 query.isAnyPropertySet() ||
                 database.isAnyPropertySet() ||

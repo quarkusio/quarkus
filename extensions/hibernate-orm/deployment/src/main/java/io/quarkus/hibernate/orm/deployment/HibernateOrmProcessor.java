@@ -958,6 +958,16 @@ public final class HibernateOrmProcessor {
                 namingStrategy -> descriptor.getProperties()
                         .setProperty(AvailableSettings.IMPLICIT_NAMING_STRATEGY, namingStrategy));
 
+        // Interceptor
+        persistenceUnitConfig.interceptor.ifPresent(
+                className -> descriptor.getProperties()
+                        .setProperty(AvailableSettings.INTERCEPTOR, className));
+
+        // Session Scoped Interceptor
+        persistenceUnitConfig.sessionScopedInterceptor.ifPresent(
+                className -> descriptor.getProperties()
+                        .setProperty(AvailableSettings.SESSION_SCOPED_INTERCEPTOR, className));
+
         // Metadata builder contributor
         persistenceUnitConfig.metadataBuilderContributor.ifPresent(
                 className -> descriptor.getProperties()

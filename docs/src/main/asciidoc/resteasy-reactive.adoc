@@ -511,9 +511,11 @@ that resolve to one of the mentioned return types.
 
 === Setting other response properties
 
+==== Manually setting the response
+
 If you need to set more properties on the HTTP response than just the body, such as the status code
-or headers, you can make your method return the link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse`]
-type:
+or headers, you can make your method return `org.jboss.resteasy.reactive.RestResponse` from a resource method.
+An example of this could look like:
 
 [source,java]
 ----
@@ -552,6 +554,34 @@ public class Endpoint {
 
 NOTE: You can also use the JAX-RS type link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`] but it is
 not strongly typed to your entity.
+
+==== Using annotations
+
+Alternatively, if you only need to set the status code and / or HTTP headers with static values, you can use `@org.jboss.resteasy.reactive.ResponseStatus` and /or `ResponseHeader` respectively.
+An example of this could look like:
+
+[source,java]
+----
+package org.acme.rest;
+
+import org.jboss.resteasy.reactive.Header;
+import org.jboss.resteasy.reactive.ResponseHeaders;
+import org.jboss.resteasy.reactive.ResponseStatus;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+@Path("")
+public class Endpoint {
+
+    @ResponseStatus(201)
+    @ResponseHeader(name = "X-FroMage", value = "Camembert")
+    @GET
+    public String hello() {
+        return "Hello, World!";
+    }
+}
+----
 
 === Async/reactive support
 

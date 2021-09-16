@@ -68,6 +68,7 @@ import org.jboss.resteasy.reactive.server.handlers.InvocationHandler;
 import org.jboss.resteasy.reactive.server.handlers.NonBlockingHandler;
 import org.jboss.resteasy.reactive.server.handlers.ParameterHandler;
 import org.jboss.resteasy.reactive.server.handlers.PerRequestInstanceHandler;
+import org.jboss.resteasy.reactive.server.handlers.PublisherResponseHandler;
 import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceLocatorHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
@@ -323,7 +324,11 @@ public class RuntimeResourceDeployment {
         } else {
             handlers.add(new InvocationHandler(invoker));
         }
-        addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE);
+        boolean afterMethodInvokeHandlersAdded = addHandlers(handlers, clazz, method, info,
+                HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE);
+        if (afterMethodInvokeHandlersAdded) {
+            addStreamingResponseCustomizers(method, handlers);
+        }
 
         Type returnType = TypeSignatureParser.parse(method.getReturnType());
         Type nonAsyncReturnType = getNonAsyncReturnType(returnType);
@@ -410,7 +415,7 @@ public class RuntimeResourceDeployment {
             handlers.add(SseResponseWriterHandler.INSTANCE);
             responseFilterHandlers = Collections.emptyList();
         } else {
-            handlers.add(new ResponseHandler());
+            addResponseHandler(method, handlers);
             addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED);
             responseFilterHandlers = new ArrayList<>(interceptorDeployment.setupResponseFilterHandler());
             handlers.addAll(responseFilterHandlers);
@@ -422,7 +427,7 @@ public class RuntimeResourceDeployment {
             abortHandlingChain.add(instanceHandler);
         }
         abortHandlingChain.add(ExceptionHandler.INSTANCE);
-        abortHandlingChain.add(ResponseHandler.INSTANCE);
+        abortHandlingChain.add(ResponseHandler.NO_CUSTOMIZER_INSTANCE);
         abortHandlingChain.addAll(responseFilterHandlers);
 
         abortHandlingChain.add(responseWriterHandler);
@@ -438,6 +443,45 @@ public class RuntimeResourceDeployment {
                 pathParameterIndexes, info.isDevelopmentMode() ? score : null, sseElementType, clazz.resourceExceptionMapper());
     }
 
+    private void addResponseHandler(ServerResourceMethod method, List<ServerRestHandler> handlers) {
+        if (method.getHandlerChainCustomizers().isEmpty()) {
+            handlers.add(ResponseHandler.NO_CUSTOMIZER_INSTANCE);
+        } else {
+            List<ResponseHandler.ResponseBuilderCustomizer> customizers = new ArrayList<>(
+                    method.getHandlerChainCustomizers().size());
+            for (int i = 0; i < method.getHandlerChainCustomizers().size(); i++) {
+                ResponseHandler.ResponseBuilderCustomizer customizer = method.getHandlerChainCustomizers().get(i)
+                        .successfulInvocationResponseBuilderCustomizer(method);
+                if (customizer != null) {
+                    customizers.add(customizer);
+                }
+            }
+            handlers.add(new ResponseHandler(customizers));
+        }
+    }
+
+    private void addStreamingResponseCustomizers(ServerResourceMethod method, List<ServerRestHandler> handlers) {
+        List<PublisherResponseHandler.StreamingResponseCustomizer> customizers = new ArrayList<>(
+                method.getHandlerChainCustomizers().size());
+        for (int i = 0; i < method.getHandlerChainCustomizers().size(); i++) {
+            PublisherResponseHandler.StreamingResponseCustomizer streamingResponseCustomizer = method
+                    .getHandlerChainCustomizers().get(i)
+                    .streamingResponseCustomizer(method);
+            if (streamingResponseCustomizer != null) {
+                customizers.add(streamingResponseCustomizer);
+            }
+        }
+        if (!customizers.isEmpty()) {
+            for (int i = 0; i < handlers.size(); i++) {
+                ServerRestHandler serverRestHandler = handlers.get(i);
+                if (serverRestHandler instanceof PublisherResponseHandler) {
+                    ((PublisherResponseHandler) serverRestHandler).setStreamingResponseCustomizers(customizers);
+                    return;
+                }
+            }
+        }
+    }
+
     private boolean isSingleEffectiveWriter(List<MessageBodyWriter<?>> buildTimeWriters) {
         if (buildTimeWriters.size() == 1) { // common case of single writer
             return true;
@@ -448,15 +492,17 @@ public class RuntimeResourceDeployment {
         return buildTimeWriters.get(0) instanceof ServerMessageBodyWriter.AllWriteableMessageBodyWriter;
     }
 
-    private void addHandlers(List<ServerRestHandler> handlers, ResourceClass clazz, ServerResourceMethod method,
+    private boolean addHandlers(List<ServerRestHandler> handlers, ResourceClass clazz, ServerResourceMethod method,
             DeploymentInfo info,
             HandlerChainCustomizer.Phase phase) {
+        int originalHandlersSize = handlers.size();
         for (int i = 0; i < info.getGlobalHandlerCustomizers().size(); i++) {
             handlers.addAll(info.getGlobalHandlerCustomizers().get(i).handlers(phase, clazz, method));
         }
         for (int i = 0; i < method.getHandlerChainCustomizers().size(); i++) {
             handlers.addAll(method.getHandlerChainCustomizers().get(i).handlers(phase, clazz, method));
         }
+        return originalHandlersSize != handlers.size();
     }
 
     private ServerRestHandler alternateInvoker(ServerResourceMethod method, EndpointInvoker invoker) {

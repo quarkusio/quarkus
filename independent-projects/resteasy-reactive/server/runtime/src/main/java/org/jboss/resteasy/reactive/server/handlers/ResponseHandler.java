@@ -1,7 +1,9 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
 import java.io.ByteArrayInputStream;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -19,7 +21,17 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
  */
 public class ResponseHandler implements ServerRestHandler {
 
-    public static final ResponseHandler INSTANCE = new ResponseHandler();
+    public static final ResponseHandler NO_CUSTOMIZER_INSTANCE = new ResponseHandler();
+
+    private final List<ResponseBuilderCustomizer> responseBuilderCustomizers;
+
+    public ResponseHandler(List<ResponseBuilderCustomizer> responseBuilderCustomizers) {
+        this.responseBuilderCustomizers = responseBuilderCustomizers;
+    }
+
+    private ResponseHandler() {
+        this.responseBuilderCustomizers = Collections.emptyList();
+    }
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
@@ -146,6 +158,11 @@ public class ResponseHandler implements ServerRestHandler {
                         if (produces != null) {
                             responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
                         }
+                        if (!responseBuilderCustomizers.isEmpty()) {
+                            for (int i = 0; i < responseBuilderCustomizers.size(); i++) {
+                                responseBuilderCustomizers.get(i).customize(responseBuilder);
+                            }
+                        }
                         if ((responseBuilder instanceof ResponseBuilderImpl)) {
                             // avoid unnecessary copying of HTTP headers from the Builder to the Response
                             response = ((ResponseBuilderImpl) responseBuilder).build(false);
@@ -159,6 +176,11 @@ public class ResponseHandler implements ServerRestHandler {
                 @Override
                 public boolean isCreated() {
                     return response != null;
+                }
+
+                @Override
+                public boolean isPredetermined() {
+                    return responseBuilderCustomizers.isEmpty();
                 }
             });
 
@@ -194,4 +216,70 @@ public class ResponseHandler implements ServerRestHandler {
         }
         return (ResponseBuilderImpl) b;
     }
+
+    public interface ResponseBuilderCustomizer {
+
+        void customize(Response.ResponseBuilder responseBuilder);
+
+        class StatusCustomizer implements ResponseBuilderCustomizer {
+
+            private int status;
+
+            public StatusCustomizer(int status) {
+                this.status = status;
+            }
+
+            public StatusCustomizer() {
+            }
+
+            public int getStatus() {
+                return status;
+            }
+
+            public void setStatus(int status) {
+                this.status = status;
+            }
+
+            @Override
+            public void customize(Response.ResponseBuilder responseBuilder) {
+                responseBuilder.status(status);
+            }
+        }
+
+        class AddHeadersCustomizer implements ResponseBuilderCustomizer {
+
+            private Map<String, List<String>> headers;
+
+            public AddHeadersCustomizer(Map<String, List<String>> headers) {
+                this.headers = headers;
+            }
+
+            public AddHeadersCustomizer() {
+            }
+
+            public Map<String, List<String>> getHeaders() {
+                return headers;
+            }
+
+            public void setHeaders(Map<String, List<String>> headers) {
+                this.headers = headers;
+            }
+
+            @Override
+            public void customize(Response.ResponseBuilder responseBuilder) {
+                for (Map.Entry<String, List<String>> header : headers.entrySet()) {
+                    List<String> values = header.getValue();
+                    String headerName = header.getKey();
+                    if (values.size() == 1) {
+                        responseBuilder.header(headerName, values.get(0));
+                    } else {
+                        for (int i = 0; i < values.size(); i++) {
+                            responseBuilder.header(headerName, values.get(i));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 }

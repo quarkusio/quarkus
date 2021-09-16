@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -34,6 +35,8 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.ResponseHeader;
+import org.jboss.resteasy.reactive.ResponseStatus;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.model.InjectableBean;
@@ -51,15 +54,19 @@ import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
+import org.jboss.resteasy.reactive.server.handlers.PublisherResponseHandler;
+import org.jboss.resteasy.reactive.server.handlers.ResponseHandler;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.DynamicFeatures;
 import org.jboss.resteasy.reactive.server.model.Features;
+import org.jboss.resteasy.reactive.server.model.FixedResponseBuilderAndStreamingResponseCustomizer;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
@@ -148,6 +155,10 @@ public class ResteasyReactiveProcessor {
 
     private static final String QUARKUS_INIT_CLASS = "io.quarkus.rest.runtime.__QuarkusInit";
 
+    private static final DotName RESPONSE_HEADER = DotName.createSimple(ResponseHeader.class.getName());
+    private static final DotName RESPONSE_HEADER_LIST = DotName.createSimple(ResponseHeader.List.class.getName());
+    private static final DotName RESPONSE_STATUS = DotName.createSimple(ResponseStatus.class.getName());
+
     @BuildStep
     public FeatureBuildItem buildSetup() {
         return new FeatureBuildItem(Feature.RESTEASY_REACTIVE);
@@ -164,6 +175,7 @@ public class ResteasyReactiveProcessor {
      * at io.netty.buffer.PoolArena.tcacheAllocateSmall(PoolArena.java:174)
      * at io.netty.buffer.PoolArena.allocate(PoolArena.java:136)
      * at io.netty.buffer.PoolArena.allocate(PoolArena.java:128)
+     *
      * at io.netty.buffer.PooledByteBufAllocator.newDirectBuffer(PooledByteBufAllocator.java:378)
      * at io.netty.buffer.AbstractByteBufAllocator.directBuffer(AbstractByteBufAllocator.java:187)
      * at io.netty.buffer.AbstractByteBufAllocator.directBuffer(AbstractByteBufAllocator.java:178)
@@ -178,6 +190,71 @@ public class ResteasyReactiveProcessor {
     void recordableConstructor(BuildProducer<RecordableConstructorBuildItem> ctors) {
         ctors.produce(new RecordableConstructorBuildItem(ServerResourceMethod.class));
         ctors.produce(new RecordableConstructorBuildItem(ServerMethodParameter.class));
+    }
+
+    @BuildStep
+    MethodScannerBuildItem responseStatusSupport() {
+        return new MethodScannerBuildItem(new MethodScanner() {
+            @Override
+            public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
+                    Map<String, Object> methodContext) {
+                AnnotationStore annotationStore = (AnnotationStore) methodContext
+                        .get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
+                AnnotationInstance annotationInstance = annotationStore.getAnnotation(method, RESPONSE_STATUS);
+                if (annotationInstance == null) {
+                    return Collections.emptyList();
+                }
+                AnnotationValue responseStatusValue = annotationInstance.value();
+                if (responseStatusValue == null) {
+                    return Collections.emptyList();
+                }
+                int statusCode = responseStatusValue.asInt();
+                ResponseHandler.ResponseBuilderCustomizer.StatusCustomizer responseBuilderCustomizer = new ResponseHandler.ResponseBuilderCustomizer.StatusCustomizer();
+                responseBuilderCustomizer.setStatus(statusCode);
+                PublisherResponseHandler.StreamingResponseCustomizer.StatusCustomizer streamingResponseCustomizer = new PublisherResponseHandler.StreamingResponseCustomizer.StatusCustomizer();
+                streamingResponseCustomizer.setStatus(statusCode);
+                return Collections.singletonList(new FixedResponseBuilderAndStreamingResponseCustomizer(
+                        responseBuilderCustomizer, streamingResponseCustomizer));
+            }
+        });
+    }
+
+    @BuildStep
+    MethodScannerBuildItem responseHeaderSupport() {
+        return new MethodScannerBuildItem(new MethodScanner() {
+            @Override
+            public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
+                    Map<String, Object> methodContext) {
+                AnnotationStore annotationStore = (AnnotationStore) methodContext
+                        .get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
+                AnnotationInstance responseHeaderInstance = annotationStore.getAnnotation(method, RESPONSE_HEADER);
+                AnnotationInstance responseHeadersInstance = annotationStore.getAnnotation(method, RESPONSE_HEADER_LIST);
+                if ((responseHeaderInstance == null) && (responseHeadersInstance == null)) {
+                    return Collections.emptyList();
+                }
+                List<AnnotationInstance> instances = new ArrayList<>();
+                if (responseHeaderInstance != null) {
+                    instances.add(responseHeaderInstance);
+                }
+                if (responseHeadersInstance != null) {
+                    AnnotationValue value = responseHeadersInstance.value();
+                    if (value != null) {
+                        instances.addAll(Arrays.asList(value.asNestedArray()));
+                    }
+                }
+                Map<String, List<String>> headers = new HashMap<>();
+                for (AnnotationInstance headerInstance : instances) {
+                    headers.put(headerInstance.value("name").asString(),
+                            Arrays.asList(headerInstance.value("value").asStringArray()));
+                }
+                ResponseHandler.ResponseBuilderCustomizer.AddHeadersCustomizer responseBuilderCustomizer = new ResponseHandler.ResponseBuilderCustomizer.AddHeadersCustomizer();
+                responseBuilderCustomizer.setHeaders(headers);
+                PublisherResponseHandler.StreamingResponseCustomizer.AddHeadersCustomizer streamingResponseCustomizer = new PublisherResponseHandler.StreamingResponseCustomizer.AddHeadersCustomizer();
+                streamingResponseCustomizer.setHeaders(headers);
+                return Collections.singletonList(new FixedResponseBuilderAndStreamingResponseCustomizer(
+                        responseBuilderCustomizer, streamingResponseCustomizer));
+            }
+        });
     }
 
     @BuildStep

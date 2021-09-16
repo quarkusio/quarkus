@@ -1,25 +1,27 @@
-package io.quarkus.smallrye.openapi.test.spring;
+package io.quarkus.it.spring.web.openapi;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusProdModeTest;
 import io.restassured.RestAssured;
 
-public class OpenApiWithConfigTestCase {
+public class OpenApiWithConfigPMT {
     private static final String OPEN_API_PATH = "/q/openapi";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusProdModeTest runner = new QuarkusProdModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(OpenApiController.class)
-                    .addAsManifestResource("test-openapi.yaml", "openapi.yaml")
-                    .addAsResource(new StringAsset("mp.openapi.scan.disable=true\nmp.openapi.servers=https://api.acme.org/"),
-                            "application.properties"));
+                    .addAsResource("test-roles.properties")
+                    .addAsResource("test-users.properties")
+                    .addAsManifestResource("test-openapi.yaml", "openapi.yaml"))
+            .overrideConfigKey("mp.openapi.scan.disable", "true")
+            .overrideConfigKey("mp.openapi.servers", "https://api.acme.org/")
+            .setRun(true);
 
     @Test
     public void testOpenAPI() {

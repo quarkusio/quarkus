@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.openapi.test.spring;
+package io.quarkus.it.spring.web.openapi;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

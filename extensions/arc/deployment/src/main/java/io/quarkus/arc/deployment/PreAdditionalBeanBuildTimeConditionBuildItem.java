@@ -11,7 +11,10 @@ import io.quarkus.builder.item.MultiBuildItem;
  *
  * @see io.quarkus.arc.deployment.BuildTimeConditionBuildItem
  * @see io.quarkus.arc.deployment.AdditionalBeanBuildItem
+ * @deprecated This build item is no longer needed and will be removed at some point post Quarkus 2.3. The
+ *             {@link BuildTimeConditionBuildItem} can be used instead.
  */
+@Deprecated
 public final class PreAdditionalBeanBuildTimeConditionBuildItem extends MultiBuildItem {
 
     private final AnnotationTarget target;

@@ -119,6 +119,7 @@ public class CombinedBuildProfileAndBuildPropertiesTest {
 
     // this will be enabled since the profile condition does not pass
     @IfBuildProperty(name = "some.prop1", stringValue = "v1")
+    @IfBuildProperty(name = "some.prop2", stringValue = "v2")
     @UnlessBuildProfile("test")
     static class BarBean {
 
@@ -185,8 +186,9 @@ public class CombinedBuildProfileAndBuildPropertiesTest {
 
     }
 
-    // this will match since both conditions pass
+    // this will match since all conditions pass
     @IfBuildProperty(name = "some.other.prop1", stringValue = "v1", enableIfMissing = true)
+    @IfBuildProperty(name = "some.prop2", stringValue = "v2")
     @UnlessBuildProfile("dev")
     static class AnotherProducer {
 

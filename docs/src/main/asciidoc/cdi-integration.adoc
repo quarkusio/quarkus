@@ -66,6 +66,8 @@ _Solution_: Use the `AdditionalBeanBuildItem`.
 This build item can be used to specify one or more additional classes to be analyzed during the discovery. 
 Additional bean classes are transparently added to the application index processed by the container.
 
+IMPORTANT: It is not possible to conditionally enable/disable additional beans via the `@IfBuildProfile`, `@UnlessBuildProfile`, `@IfBuildProperty` and `@UnlessBuildProperty` annotations as described in <<cdi-reference.adoc#enable_build_profile>> and <<cdi-reference.adoc#enable_build_properties>>. Extensions should inspect the configuration or the current profile and only produce an `AdditionalBeanBuildItem` if really needed.
+
 .`AdditionalBeanBuildItem` Example
 [source,java]
 ----

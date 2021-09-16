@@ -51,6 +51,7 @@ import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.server.core.Deployment;
@@ -60,6 +61,7 @@ import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.DynamicFeatures;
 import org.jboss.resteasy.reactive.server.model.Features;
+import org.jboss.resteasy.reactive.server.model.FixedHandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
@@ -112,6 +114,8 @@ import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.Authenticati
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationRedirectExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.ForbiddenExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.UnauthorizedExceptionMapper;
+import io.quarkus.resteasy.reactive.server.runtime.responseheader.ResponseHeaderHandler;
+import io.quarkus.resteasy.reactive.server.runtime.responsestatus.ResponseStatusHandler;
 import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler;
 import io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler;
 import io.quarkus.resteasy.reactive.server.spi.AnnotationsTransformerBuildItem;
@@ -167,6 +171,61 @@ public class ResteasyReactiveProcessor {
     @BuildStep
     MinNettyAllocatorMaxOrderBuildItem setMinimalNettyMaxOrderSize() {
         return new MinNettyAllocatorMaxOrderBuildItem(3);
+    }
+
+    @BuildStep
+    MethodScannerBuildItem responseStatusSupport() {
+        return new MethodScannerBuildItem(new MethodScanner() {
+            @Override
+            public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
+                    Map<String, Object> methodContext) {
+                AnnotationStore annotationStore = (AnnotationStore) methodContext
+                        .get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
+                AnnotationInstance annotationInstance = annotationStore.getAnnotation(method,
+                        DotNames.RESPONSE_STATUS_ANNOTATION);
+                if (annotationInstance == null) {
+                    return Collections.emptyList();
+                }
+                AnnotationValue responseStatusValue = annotationInstance.value();
+                if (responseStatusValue == null) {
+                    return Collections.emptyList();
+                }
+                ResponseStatusHandler handler = new ResponseStatusHandler();
+                handler.setStatus(responseStatusValue.asInt());
+                return Collections.singletonList(new FixedHandlerChainCustomizer(handler,
+                        HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED));
+            }
+        });
+    }
+
+    @BuildStep
+    MethodScannerBuildItem responseHeaderSupport() {
+        return new MethodScannerBuildItem(new MethodScanner() {
+            @Override
+            public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
+                    Map<String, Object> methodContext) {
+                AnnotationStore annotationStore = (AnnotationStore) methodContext
+                        .get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
+                AnnotationInstance annotationInstance = annotationStore.getAnnotation(method,
+                        DotNames.RESPONSE_HEADER_ANNOTATION);
+                if (annotationInstance == null) {
+                    return Collections.emptyList();
+                }
+                AnnotationValue responseHeaderValue = annotationInstance.value("headers");
+                if (responseHeaderValue == null) {
+                    return Collections.emptyList();
+                }
+                AnnotationInstance[] headersValue = responseHeaderValue.asNestedArray();
+                Map<String, String> headers = new HashMap<>();
+                for (AnnotationInstance headerInstance : headersValue) {
+                    headers.put(headerInstance.value("name").asString(), headerInstance.value("value").asString());
+                }
+                ResponseHeaderHandler handler = new ResponseHeaderHandler();
+                handler.setHeaders(headers);
+                return Collections.singletonList(new FixedHandlerChainCustomizer(handler,
+                        HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED));
+            }
+        });
     }
 
     @BuildStep

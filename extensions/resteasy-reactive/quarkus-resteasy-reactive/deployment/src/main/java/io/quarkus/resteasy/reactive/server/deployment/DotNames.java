@@ -8,6 +8,9 @@ import java.nio.file.Path;
 import org.jboss.jandex.DotName;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
+import io.quarkus.resteasy.reactive.server.common.ResponseHeader;
+import io.quarkus.resteasy.reactive.server.common.Status;
+
 final class DotNames {
 
     static final String POPULATE_METHOD_NAME = "populate";
@@ -19,6 +22,8 @@ final class DotNames {
     static final DotName FIELD_UPLOAD_NAME = DotName.createSimple(FileUpload.class.getName());
     static final DotName PATH_NAME = DotName.createSimple(Path.class.getName());
     static final DotName FILE_NAME = DotName.createSimple(File.class.getName());
+    static final DotName RESPONSE_HEADER_ANNOTATION = DotName.createSimple(ResponseHeader.class.getName());
+    static final DotName RESPONSE_STATUS_ANNOTATION = DotName.createSimple(Status.class.getName());
 
     private DotNames() {
     }

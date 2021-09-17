@@ -14,6 +14,7 @@ public class StaticInitConfigBuilder implements ConfigBuilder {
 
     @Override
     public SmallRyeConfigBuilder configBuilder(final SmallRyeConfigBuilder builder) {
+        builder.withDefaultValue("skip.build.sources", "true");
         return builder;
     }
 }

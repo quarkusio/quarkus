@@ -412,6 +412,37 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 default:
             }
         }
+        writeJavadocProperties(clazz, javadocProps);
+    }
+
+    private void recordMappingJavadoc(TypeElement clazz) {
+        String className = clazz.getQualifiedName().toString();
+        if (!generatedJavaDocs.add(className))
+            return;
+        final Properties javadocProps = new Properties();
+        recordMappingJavadoc(clazz, javadocProps);
+        writeJavadocProperties(clazz, javadocProps);
+    }
+
+    private void recordMappingJavadoc(final TypeElement clazz, final Properties javadocProps) {
+        String className = clazz.getQualifiedName().toString();
+        for (Element e : clazz.getEnclosedElements()) {
+            switch (e.getKind()) {
+                case INTERFACE: {
+                    recordMappingJavadoc(((TypeElement) e), javadocProps);
+                    break;
+                }
+
+                case METHOD: {
+                    processMethodConfigMapping((ExecutableElement) e, javadocProps, className);
+                    break;
+                }
+                default:
+            }
+        }
+    }
+
+    private void writeJavadocProperties(final TypeElement clazz, final Properties javadocProps) {
         if (javadocProps.isEmpty())
             return;
         final PackageElement pkg = processingEnv.getElementUtils().getPackageOf(clazz);
@@ -449,6 +480,11 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         javadocProps.put(className + Constants.DOT + buf.toString(), docComment);
     }
 
+    private void processMethodConfigMapping(ExecutableElement method, Properties javadocProps, String className) {
+        final String docComment = getRequiredJavadoc(method);
+        javadocProps.put(className + Constants.DOT + method.getSimpleName().toString(), docComment);
+    }
+
     private void processConfigGroup(RoundEnvironment roundEnv, TypeElement annotation) {
         final Set<String> groupClassNames = new HashSet<>();
         for (TypeElement i : typesIn(roundEnv.getElementsAnnotatedWith(annotation))) {
@@ -480,8 +516,12 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             final String binaryName = processingEnv.getElementUtils().getBinaryName(clazz).toString();
             if (rootClassNames.add(binaryName)) {
                 // new class
-                recordConfigJavadoc(clazz);
-                generateAccessor(clazz);
+                if (isAnnotationPresent(clazz, Constants.ANNOTATION_CONFIG_MAPPING)) {
+                    recordMappingJavadoc(clazz);
+                } else if (isAnnotationPresent(clazz, Constants.ANNOTATION_CONFIG_ROOT)) {
+                    recordConfigJavadoc(clazz);
+                    generateAccessor(clazz);
+                }
                 final StringBuilder rbn = getRelativeBinaryName(clazz, new StringBuilder());
                 try {
                     final FileObject itemResource = processingEnv.getFiler().createResource(
@@ -666,7 +706,8 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         String docComment = processingEnv.getElementUtils().getDocComment(e);
 
         if (docComment == null) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Unable to find javadoc for config item " + e, e);
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                    "Unable to find javadoc for config item " + e.getEnclosingElement() + " " + e, e);
             return "";
         }
 

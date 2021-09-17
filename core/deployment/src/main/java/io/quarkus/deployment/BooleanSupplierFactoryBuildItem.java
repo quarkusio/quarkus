@@ -49,7 +49,7 @@ public final class BooleanSupplierFactoryBuildItem extends SimpleBuildItem {
                     final ConfigRoot annotation = parameterClass.getAnnotation(ConfigRoot.class);
                     final ConfigPhase phase = annotation.phase();
                     if (phase.isAvailableAtBuild()) {
-                        paramSuppList.add(() -> readResult.requireRootObjectForClass(parameterClass));
+                        paramSuppList.add(() -> readResult.requireObjectForClass(parameterClass));
                     } else if (phase.isReadAtMain()) {
                         throw reportError(parameter, phase + " configuration cannot be consumed here");
                     } else {
@@ -82,7 +82,7 @@ public final class BooleanSupplierFactoryBuildItem extends SimpleBuildItem {
                     final ConfigPhase phase = annotation.phase();
                     if (phase.isAvailableAtBuild()) {
                         setup = setup.andThen(o -> ReflectUtil.setFieldVal(field, o,
-                                readResult.requireRootObjectForClass(fieldClass)));
+                                readResult.requireObjectForClass(fieldClass)));
                     } else if (phase.isReadAtMain()) {
                         throw reportError(field, phase + " configuration cannot be consumed here");
                     } else {

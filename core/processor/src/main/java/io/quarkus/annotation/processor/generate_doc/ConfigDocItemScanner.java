@@ -66,6 +66,7 @@ final public class ConfigDocItemScanner {
 
         String prefix = Constants.QUARKUS;
         ConfigPhase configPhase = ConfigPhase.BUILD_TIME;
+        boolean isMapping = false;
 
         for (AnnotationMirror annotationMirror : clazz.getAnnotationMirrors()) {
             String annotationName = annotationMirror.getAnnotationType().toString();
@@ -85,6 +86,17 @@ final public class ConfigDocItemScanner {
                     }
                 }
 
+                for (AnnotationMirror mirror : clazz.getAnnotationMirrors()) {
+                    if (mirror.getAnnotationType().toString().equals(Constants.ANNOTATION_CONFIG_MAPPING)) {
+                        for (Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : mirror.getElementValues()
+                                .entrySet()) {
+                            if ("prefix()".equals(entry.getKey().toString())) {
+                                prefix = entry.getValue().getValue().toString();
+                            }
+                        }
+                    }
+                }
+
                 name = getName(prefix, name, clazz.getSimpleName().toString(), configPhase);
                 if (name.endsWith(Constants.DOT + Constants.PARENT)) {
                     // take into account the root case which would contain characters that can't be used to create the final file
@@ -99,7 +111,7 @@ final public class ConfigDocItemScanner {
                     fileName = name.replace(Constants.DOT, Constants.DASH.charAt(0)) + Constants.ADOC_EXTENSION;
                 }
 
-                ConfigRootInfo configRootInfo = new ConfigRootInfo(name, clazz, configPhase, fileName);
+                ConfigRootInfo configRootInfo = new ConfigRootInfo(name, clazz, configPhase, isMapping, fileName);
                 configRoots.add(configRootInfo);
                 break;
             }

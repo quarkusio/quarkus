@@ -67,7 +67,6 @@ public class ConfiguredBeanTest {
      */
     @Test
     public void validateConfiguredBean() {
-        System.out.printf("validateConfiguredBean, %s%n", configuredBean);
         Assertions.assertNotNull(configuredBean);
         Assertions.assertNotNull(configuredBean.getBuildTimeConfig());
         Assertions.assertNotNull(configuredBean.getRunTimeConfig());

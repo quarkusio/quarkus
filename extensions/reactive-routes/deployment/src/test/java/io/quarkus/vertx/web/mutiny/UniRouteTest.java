@@ -43,7 +43,7 @@ public class UniRouteTest {
         when().get("/failure").then().statusCode(500).body(containsString("boom"));
         when().get("/sync-failure").then().statusCode(500).body(containsString("boom"));
 
-        when().get("/null").then().statusCode(500).body(containsString("null"));
+        when().get("/null").then().statusCode(500).body(containsString(NullPointerException.class.getName()));
         when().get("/uni-null").then().statusCode(500);
         when().get("/void").then().statusCode(204).body(hasLength(0));
     }

@@ -80,8 +80,8 @@ public class NdjsonMultiRouteTest {
                 .header(HttpHeaders.CONTENT_TYPE.toString(), CONTENT_TYPE_STREAM_JSON);
 
         when().get("/failure").then().statusCode(500).body(containsString("boom"));
-        when().get("/null").then().statusCode(500).body(containsString("null"));
-        when().get("/sync-failure").then().statusCode(500).body(containsString("null"));
+        when().get("/null").then().statusCode(500).body(containsString(NullPointerException.class.getName()));
+        when().get("/sync-failure").then().statusCode(500).body(containsString("boom"));
     }
 
     static class SimpleBean {

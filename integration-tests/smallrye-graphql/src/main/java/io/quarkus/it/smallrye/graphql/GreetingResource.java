@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import javax.inject.Inject;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Mutation;
@@ -51,5 +53,14 @@ public class GreetingResource {
     @Query
     public Farewell farewell() {
         return new Farewell();
+    }
+
+    @Inject
+    FaultTolerantService service;
+
+    @Query
+    public String faultTolerance() {
+        service.causeTimeout();
+        return "PASSED";
     }
 }

@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 :config-file: application.properties
-:orm-doc-url-prefix: https://docs.jboss.org/hibernate/orm/5.5/userguide/html_single/Hibernate_User_Guide.html
+:orm-doc-url-prefix: https://docs.jboss.org/hibernate/orm/5.6/userguide/html_single/Hibernate_User_Guide.html
 
 Hibernate ORM is the de facto standard JPA implementation and offers you the full breadth of an Object Relational Mapper.
 It works beautifully in Quarkus.

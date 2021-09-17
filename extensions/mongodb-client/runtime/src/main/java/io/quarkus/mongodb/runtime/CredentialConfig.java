@@ -28,7 +28,7 @@ public class CredentialConfig {
      * Configures the authentication mechanism to use if a credential was supplied.
      * The default is unspecified, in which case the client will pick the most secure mechanism available based on the
      * sever version. For the GSSAPI and MONGODB-X509 mechanisms, no password is accepted, only the username.
-     * Supported values: {@code MONGO-CR|GSSAPI|PLAIN|MONGODB-X509}
+     * Supported values: null or {@code GSSAPI|PLAIN|MONGODB-X509|SCRAM_SHA_1|SCRAM_SHA_256|MONGODB_AWS}
      */
     @ConfigItem
     public Optional<String> authMechanism;

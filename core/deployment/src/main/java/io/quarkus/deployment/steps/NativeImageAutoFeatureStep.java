@@ -78,6 +78,13 @@ public class NativeImageAutoFeatureStep {
     private static final MethodDescriptor RESOURCES_REGISTRY_IGNORE_RESOURCES = ofMethod(
             "com.oracle.svm.core.configure.ResourcesRegistry",
             "ignoreResources", void.class, String.class);
+    private static final MethodDescriptor LOOKUP_METHOD = ofMethod(
+            "com.oracle.svm.util.ReflectionUtil",
+            "lookupMethod", Method.class, Class.class, String.class, Class[].class);
+    private static final MethodDescriptor FOR_NAME = ofMethod(
+            Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class);
+    private static final MethodDescriptor INVOKE = ofMethod(
+            Method.class, "invoke", Object.class, Object.class, Object[].class);
     static final String RUNTIME_REFLECTION = RuntimeReflection.class.getName();
     static final String JNI_RUNTIME_ACCESS = "com.oracle.svm.core.jni.JNIRuntimeAccess";
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
@@ -538,39 +545,30 @@ public class NativeImageAutoFeatureStep {
                 ofMethod(Thread.class, "getContextClassLoader", ClassLoader.class),
                 currentThread);
 
-        MethodDescriptor forNameMethodDescriptor = ofMethod(Class.class, "forName", Class.class, String.class, boolean.class,
-                ClassLoader.class);
-
-        MethodDescriptor lookupMethod = ofMethod("com.oracle.svm.util.ReflectionUtil", "lookupMethod", Method.class,
-                Class.class, String.class,
-                Class[].class);
-        MethodDescriptor invokeMethodDescriptor = ofMethod(Method.class, "invoke", Object.class, Object.class,
-                Object[].class);
-
         BranchResult graalVm21_3Test = tc.ifGreaterEqualZero(
                 tc.invokeVirtualMethod(VERSION_COMPARE_TO, tc.invokeStaticMethod(VERSION_CURRENT),
                         tc.marshalAsArray(int.class, tc.load(21), tc.load(3))));
 
         BytecodeCreator greaterThan21_3 = graalVm21_3Test.trueBranch();
-        ResultHandle runtimeSerializationClass = greaterThan21_3.invokeStaticMethod(forNameMethodDescriptor,
+        ResultHandle runtimeSerializationClass = greaterThan21_3.invokeStaticMethod(FOR_NAME,
                 greaterThan21_3.load("org.graalvm.nativeimage.hosted.RuntimeSerialization"),
                 greaterThan21_3.load(false), tccl);
         ResultHandle registerArgTypes = greaterThan21_3.newArray(Class.class, greaterThan21_3.load(1));
         greaterThan21_3.writeArrayValue(registerArgTypes, 0, greaterThan21_3.loadClass(Class[].class));
-        ResultHandle registerLookupMethod = greaterThan21_3.invokeStaticMethod(lookupMethod, runtimeSerializationClass,
+        ResultHandle registerLookupMethod = greaterThan21_3.invokeStaticMethod(LOOKUP_METHOD, runtimeSerializationClass,
                 greaterThan21_3.load("register"), registerArgTypes);
         ResultHandle registerArgs = greaterThan21_3.newArray(Object.class, greaterThan21_3.load(1));
         ResultHandle classesToRegister = greaterThan21_3.newArray(Class.class, greaterThan21_3.load(1));
         greaterThan21_3.writeArrayValue(classesToRegister, 0, clazz);
         greaterThan21_3.writeArrayValue(registerArgs, 0, classesToRegister);
-        greaterThan21_3.invokeVirtualMethod(invokeMethodDescriptor, registerLookupMethod,
+        greaterThan21_3.invokeVirtualMethod(INVOKE, registerLookupMethod,
                 greaterThan21_3.loadNull(), registerArgs);
         greaterThan21_3.returnValue(null);
 
-        ResultHandle serializationRegistryClass = tc.invokeStaticMethod(forNameMethodDescriptor,
+        ResultHandle serializationRegistryClass = tc.invokeStaticMethod(FOR_NAME,
                 tc.load("com.oracle.svm.core.jdk.serialize.SerializationRegistry"),
                 tc.load(false), tccl);
-        ResultHandle addReflectionsClass = tc.invokeStaticMethod(forNameMethodDescriptor,
+        ResultHandle addReflectionsClass = tc.invokeStaticMethod(FOR_NAME,
                 tc.load("com.oracle.svm.reflect.serialize.hosted.SerializationFeature"),
                 tc.load(false), tccl);
 
@@ -581,7 +579,7 @@ public class NativeImageAutoFeatureStep {
         ResultHandle addReflectionsLookupArgs = tc.newArray(Class.class, tc.load(2));
         tc.writeArrayValue(addReflectionsLookupArgs, 0, tc.loadClass(Class.class));
         tc.writeArrayValue(addReflectionsLookupArgs, 1, tc.loadClass(Class.class));
-        ResultHandle addReflectionsLookupMethod = tc.invokeStaticMethod(lookupMethod, addReflectionsClass,
+        ResultHandle addReflectionsLookupMethod = tc.invokeStaticMethod(LOOKUP_METHOD, addReflectionsClass,
                 tc.load("addReflections"), addReflectionsLookupArgs);
 
         ResultHandle reflectionFactory = tc.invokeStaticMethod(
@@ -589,9 +587,8 @@ public class NativeImageAutoFeatureStep {
 
         AssignableResultHandle newSerializationConstructor = tc.createVariable(Constructor.class);
 
-        ResultHandle externalizableClass = tc.invokeStaticMethod(
-                forNameMethodDescriptor,
-                tc.load("java.io.Externalizable"), tc.load(false), tccl);
+        ResultHandle externalizableClass = tc.invokeStaticMethod(FOR_NAME, tc.load("java.io.Externalizable"), tc.load(false),
+                tccl);
 
         BranchResult isExternalizable = tc
                 .ifTrue(tc.invokeVirtualMethod(ofMethod(Class.class, "isAssignableFrom", boolean.class, Class.class),
@@ -599,13 +596,11 @@ public class NativeImageAutoFeatureStep {
         BytecodeCreator ifIsExternalizable = isExternalizable.trueBranch();
 
         ResultHandle array1 = ifIsExternalizable.newArray(Class.class, tc.load(1));
-        ResultHandle classClass = ifIsExternalizable.invokeStaticMethod(
-                forNameMethodDescriptor,
+        ResultHandle classClass = ifIsExternalizable.invokeStaticMethod(FOR_NAME,
                 ifIsExternalizable.load("java.lang.Class"), ifIsExternalizable.load(false), tccl);
         ifIsExternalizable.writeArrayValue(array1, 0, classClass);
 
-        ResultHandle externalizableLookupMethod = ifIsExternalizable.invokeStaticMethod(
-                lookupMethod,
+        ResultHandle externalizableLookupMethod = ifIsExternalizable.invokeStaticMethod(LOOKUP_METHOD,
                 ifIsExternalizable.loadClass(ObjectStreamClass.class), ifIsExternalizable.load("getExternalizableConstructor"),
                 array1);
 
@@ -613,7 +608,7 @@ public class NativeImageAutoFeatureStep {
         ifIsExternalizable.writeArrayValue(array2, 0, clazz);
 
         ResultHandle externalizableConstructor = ifIsExternalizable.invokeVirtualMethod(
-                invokeMethodDescriptor, externalizableLookupMethod, ifIsExternalizable.loadNull(), array2);
+                INVOKE, externalizableLookupMethod, ifIsExternalizable.loadNull(), array2);
 
         ResultHandle externalizableConstructorClass = ifIsExternalizable.invokeVirtualMethod(
                 ofMethod(Constructor.class, "getDeclaringClass", Class.class),
@@ -622,7 +617,7 @@ public class NativeImageAutoFeatureStep {
         ResultHandle addReflectionsArgs1 = ifIsExternalizable.newArray(Class.class, tc.load(2));
         ifIsExternalizable.writeArrayValue(addReflectionsArgs1, 0, clazz);
         ifIsExternalizable.writeArrayValue(addReflectionsArgs1, 1, externalizableConstructorClass);
-        ifIsExternalizable.invokeVirtualMethod(invokeMethodDescriptor, addReflectionsLookupMethod,
+        ifIsExternalizable.invokeVirtualMethod(INVOKE, addReflectionsLookupMethod,
                 ifIsExternalizable.loadNull(), addReflectionsArgs1);
 
         ifIsExternalizable.returnValue(null);
@@ -655,11 +650,11 @@ public class NativeImageAutoFeatureStep {
                 newSerializationConstructor);
 
         ResultHandle getConstructorAccessor = tc.invokeStaticMethod(
-                lookupMethod, tc.loadClass(Constructor.class), tc.load("getConstructorAccessor"),
+                LOOKUP_METHOD, tc.loadClass(Constructor.class), tc.load("getConstructorAccessor"),
                 tc.newArray(Class.class, tc.load(0)));
 
         ResultHandle accessor = tc.invokeVirtualMethod(
-                invokeMethodDescriptor, getConstructorAccessor, newSerializationConstructor,
+                INVOKE, getConstructorAccessor, newSerializationConstructor,
                 tc.newArray(Object.class, tc.load(0)));
 
         tc.invokeVirtualMethod(
@@ -669,7 +664,7 @@ public class NativeImageAutoFeatureStep {
         ResultHandle addReflectionsArgs2 = tc.newArray(Class.class, tc.load(2));
         tc.writeArrayValue(addReflectionsArgs2, 0, clazz);
         tc.writeArrayValue(addReflectionsArgs2, 1, newSerializationConstructorClass);
-        tc.invokeVirtualMethod(invokeMethodDescriptor, addReflectionsLookupMethod, tc.loadNull(), addReflectionsArgs2);
+        tc.invokeVirtualMethod(INVOKE, addReflectionsLookupMethod, tc.loadNull(), addReflectionsArgs2);
 
         addSerializationForClass.returnValue(null);
 

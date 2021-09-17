@@ -72,12 +72,6 @@ public class NativeImageAutoFeatureStep {
     private static final MethodDescriptor RERUN_INITIALIZATION = ofMethod(
             "org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport",
             "rerunInitialization", void.class, Class.class, String.class);
-    private static final MethodDescriptor RESOURCES_REGISTRY_ADD_RESOURCES = ofMethod(
-            "com.oracle.svm.core.configure.ResourcesRegistry",
-            "addResources", void.class, String.class);
-    private static final MethodDescriptor RESOURCES_REGISTRY_IGNORE_RESOURCES = ofMethod(
-            "com.oracle.svm.core.configure.ResourcesRegistry",
-            "ignoreResources", void.class, String.class);
     private static final MethodDescriptor LOOKUP_METHOD = ofMethod(
             "com.oracle.svm.util.ReflectionUtil",
             "lookupMethod", Method.class, Class.class, String.class, Class[].class);
@@ -237,16 +231,63 @@ public class NativeImageAutoFeatureStep {
             ResultHandle resourcesRegistrySingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
                     overallCatch.loadClass("com.oracle.svm.core.configure.ResourcesRegistry"));
             TryBlock tc = overallCatch.tryBlock();
+
+            ResultHandle currentThread = tc.invokeStaticMethod(ofMethod(Thread.class, "currentThread", Thread.class));
+            ResultHandle tccl = tc.invokeVirtualMethod(ofMethod(Thread.class, "getContextClassLoader", ClassLoader.class),
+                    currentThread);
+            AssignableResultHandle resourcesArgTypes = tc.createVariable(Class[].class);
+            AssignableResultHandle resourcesArgs = tc.createVariable(Object[].class);
+            AssignableResultHandle argsIndex = tc.createVariable(int.class);
+
+            BranchResult graalVm21_3Test = tc.ifGreaterEqualZero(
+                    tc.invokeVirtualMethod(VERSION_COMPARE_TO,
+                            tc.invokeStaticMethod(VERSION_CURRENT),
+                            tc.marshalAsArray(int.class, tc.load(21), tc.load(3))));
+            /* GraalVM >= 21.3 */
+            BytecodeCreator greaterThan21_2 = graalVm21_3Test.trueBranch();
+            ResultHandle argTypes = greaterThan21_2.newArray(Class.class, greaterThan21_2.load(2));
+            ResultHandle configurationConditionClass = greaterThan21_2.invokeStaticMethod(FOR_NAME,
+                    greaterThan21_2.load("org.graalvm.nativeimage.impl.ConfigurationCondition"),
+                    greaterThan21_2.load(false), tccl);
+            greaterThan21_2.writeArrayValue(argTypes, 0, configurationConditionClass);
+            greaterThan21_2.writeArrayValue(argTypes, 1, greaterThan21_2.loadClass(String.class));
+            greaterThan21_2.assign(resourcesArgTypes, argTypes);
+            ResultHandle args = greaterThan21_2.newArray(Object.class, greaterThan21_2.load(2));
+            ResultHandle alwaysTrueMethod = greaterThan21_2.invokeStaticMethod(LOOKUP_METHOD,
+                    configurationConditionClass,
+                    greaterThan21_2.load("alwaysTrue"),
+                    greaterThan21_2.newArray(Class.class, greaterThan21_2.load(0)));
+            ResultHandle alwaysTrueResult = greaterThan21_2.invokeVirtualMethod(INVOKE,
+                    alwaysTrueMethod, greaterThan21_2.loadNull(),
+                    greaterThan21_2.newArray(Object.class, greaterThan21_2.load(0)));
+            greaterThan21_2.writeArrayValue(args, 0, alwaysTrueResult);
+            greaterThan21_2.assign(resourcesArgs, args);
+            greaterThan21_2.assign(argsIndex, greaterThan21_2.load(1));
+
+            /* GraalVM < 21.3 */
+            BytecodeCreator smallerThan21_3 = graalVm21_3Test.falseBranch();
+            argTypes = smallerThan21_3.newArray(Class.class, smallerThan21_3.load(1));
+            smallerThan21_3.writeArrayValue(argTypes, 0, smallerThan21_3.loadClass(String.class));
+            smallerThan21_3.assign(resourcesArgTypes, argTypes);
+            args = smallerThan21_3.newArray(Object.class, smallerThan21_3.load(1));
+            smallerThan21_3.assign(resourcesArgs, args);
+            smallerThan21_3.assign(argsIndex, smallerThan21_3.load(0));
+
+            ResultHandle ignoreResourcesMethod = tc.invokeStaticMethod(LOOKUP_METHOD,
+                    tc.loadClass("com.oracle.svm.core.configure.ResourcesRegistry"),
+                    tc.load("ignoreResources"), resourcesArgTypes);
+            ResultHandle addResourcesMethod = tc.invokeStaticMethod(LOOKUP_METHOD,
+                    tc.loadClass("com.oracle.svm.core.configure.ResourcesRegistry"),
+                    tc.load("addResources"), resourcesArgTypes);
+
             for (NativeImageResourcePatternsBuildItem resourcePatternsItem : resourcePatterns) {
                 for (String pattern : resourcePatternsItem.getExcludePatterns()) {
-                    tc.invokeInterfaceMethod(RESOURCES_REGISTRY_IGNORE_RESOURCES, resourcesRegistrySingleton,
-                            overallCatch.load(pattern));
+                    tc.writeArrayValue(resourcesArgs, argsIndex, tc.load(pattern));
+                    tc.invokeVirtualMethod(INVOKE, ignoreResourcesMethod, resourcesRegistrySingleton, resourcesArgs);
                 }
                 for (String pattern : resourcePatternsItem.getIncludePatterns()) {
-                    tc.invokeInterfaceMethod(
-                            RESOURCES_REGISTRY_ADD_RESOURCES,
-                            resourcesRegistrySingleton,
-                            tc.load(pattern));
+                    tc.writeArrayValue(resourcesArgs, argsIndex, tc.load(pattern));
+                    tc.invokeVirtualMethod(INVOKE, addResourcesMethod, resourcesRegistrySingleton, resourcesArgs);
                 }
             }
             CatchBlockCreator cc = tc.addCatch(Throwable.class);

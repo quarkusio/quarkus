@@ -5,6 +5,7 @@ import static org.jboss.logging.Logger.getLogger;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -19,6 +20,7 @@ import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
 public class QuarkusErrorHandler implements Handler<RoutingContext> {
@@ -34,9 +36,11 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
     private static final AtomicLong ERROR_COUNT = new AtomicLong();
 
     private final boolean showStack;
+    private final Optional<HttpConfiguration.PayloadHint> contentTypeHint;
 
-    public QuarkusErrorHandler(boolean showStack) {
+    public QuarkusErrorHandler(boolean showStack, Optional<HttpConfiguration.PayloadHint> contentTypeHint) {
         this.showStack = showStack;
+        this.contentTypeHint = contentTypeHint;
     }
 
     @Override
@@ -118,8 +122,7 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
             event.response().end();
             return;
         }
-        String accept = event.request().getHeader("Accept");
-        if (accept != null && accept.contains("application/json")) {
+        if (produceJson(event.request())) {
             event.response().headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=utf-8");
             String escapedDetails = escapeJsonString(details);
             String escapedStack = escapeJsonString(stack);
@@ -138,6 +141,14 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
             }
             writeResponse(event, htmlBuilder.toString());
         }
+    }
+
+    private boolean produceJson(HttpServerRequest request) {
+        return contentTypeHint.map(h -> h == HttpConfiguration.PayloadHint.JSON)
+                .orElseGet(() -> {
+                    String accept = request.getHeader("Accept");
+                    return accept != null && accept.contains("application/json");
+                });
     }
 
     private void writeResponse(RoutingContext event, String output) {

@@ -73,4 +73,9 @@ public class PrimeResource {
     public Long highestPrimeNumberSoFar() {
         return highestPrimeSoFar.get();
     }
+
+    @Gauge(unit = MetricUnits.NONE, description = "Highest prime number so far.")
+    public Long highestPrimeNumberSoFar2() {
+        return highestPrimeSoFar.get();
+    }
 }

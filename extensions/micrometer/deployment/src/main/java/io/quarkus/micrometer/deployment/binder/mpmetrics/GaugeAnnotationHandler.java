@@ -47,7 +47,8 @@ public class GaugeAnnotationHandler {
             verifyGaugeScope(target, classInfo);
 
             // Create a GaugeAdapter bean that uses the instance of the bean and invokes the callback
-            final String generatedClassName = classInfo.name().toString() + "_GaugeAdapter";
+            final String generatedClassName = String.format("%s_%s_GaugeAdapter",
+                    classInfo.name().toString(), methodInfo.name().toString());
             if (createdClasses.add(generatedClassName)) {
                 createClass(index, classOutput, generatedClassName, annotation, target, classInfo, methodInfo);
             }

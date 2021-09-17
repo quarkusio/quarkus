@@ -66,6 +66,8 @@ class MPMetricsTest {
                         "io_quarkus_it_micrometer_mpmetrics_CountedInstance_countPrimes_total{scope=\"application\",} 2.0"))
                 .body(containsString(
                         "highestPrimeNumberSoFar 887.0"))
+                .body(containsString(
+                        "io_quarkus_it_micrometer_mpmetrics_PrimeResource_highestPrimeNumberSoFar2{scope=\"application\",} 887.0"))
 
                 // the counter associated with a timed method should have been removed
                 .body(not(containsString("io_quarkus_it_micrometer_mpmetrics_PrimeResource_checkPrime")));

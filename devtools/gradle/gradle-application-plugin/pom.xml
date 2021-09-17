@@ -10,6 +10,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
+
     <artifactId>io.quarkus.gradle.plugin</artifactId>
     <packaging>pom</packaging>
     <name>Quarkus - Gradle Plugin</name>
@@ -93,16 +94,16 @@
                         <configuration>
                             <artifacts>
                                 <artifact>
-                                    <file>build/libs/application-plugin-${project.version}.jar</file>
+                                    <file>build/libs/gradle-application-plugin-${project.version}.jar</file>
                                     <type>jar</type>
                                 </artifact>
                                 <artifact>
-                                    <file>build/libs/application-plugin-${project.version}-javadoc.jar</file>
+                                    <file>build/libs/gradle-application-plugin-${project.version}-javadoc.jar</file>
                                     <type>jar</type>
                                     <classifier>javadoc</classifier>
                                 </artifact>
                                 <artifact>
-                                    <file>build/libs/application-plugin-${project.version}-sources.jar</file>
+                                    <file>build/libs/gradle-application-plugin-${project.version}-sources.jar</file>
                                     <type>jar</type>
                                     <classifier>sources</classifier>
                                 </artifact>

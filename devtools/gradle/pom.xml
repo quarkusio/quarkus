@@ -22,8 +22,8 @@
     </properties>
 
     <modules>
-        <module>application-plugin</module>
-        <module>extension-plugin</module>
+        <module>gradle-application-plugin</module>
+        <module>gradle-extension-plugin</module>
     </modules>
 
     <build>

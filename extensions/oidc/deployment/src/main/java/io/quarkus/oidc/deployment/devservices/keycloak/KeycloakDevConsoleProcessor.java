@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -12,10 +11,11 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
+import io.quarkus.oidc.deployment.devservices.AbstractDevConsoleProcessor;
 import io.quarkus.oidc.deployment.devservices.OidcAuthorizationCodePostHandler;
 import io.quarkus.oidc.deployment.devservices.OidcTestServiceHandler;
 
-public class KeycloakDevConsoleProcessor {
+public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
 
     KeycloakBuildTimeConfig config;
 
@@ -28,28 +28,21 @@ public class KeycloakDevConsoleProcessor {
             String keycloakUrl = (String) configProps.get().getProperties().get("keycloak.url");
             String realmUrl = keycloakUrl + "/realms/" + configProps.get().getProperties().get("keycloak.realm");
 
-            console.produce(new DevConsoleTemplateInfoBuildItem("keycloakUrl", keycloakUrl));
             console.produce(new DevConsoleTemplateInfoBuildItem("keycloakAdminUrl", keycloakUrl));
-            console.produce(new DevConsoleTemplateInfoBuildItem("oidcApplicationType",
-                    configProps.get().getProperties().get("quarkus.oidc.application-type")));
-            console.produce(new DevConsoleTemplateInfoBuildItem("clientId",
-                    configProps.get().getProperties().get("quarkus.oidc.client-id")));
-            console.produce(new DevConsoleTemplateInfoBuildItem("clientSecret",
-                    configProps.get().getProperties().get("quarkus.oidc.credentials.secret")));
-
             console.produce(
                     new DevConsoleTemplateInfoBuildItem("keycloakUsers", configProps.get().getProperties().get("oidc.users")));
-            console.produce(new DevConsoleTemplateInfoBuildItem("tokenUrl", realmUrl + "/protocol/openid-connect/token"));
-            console.produce(
-                    new DevConsoleTemplateInfoBuildItem("authorizationUrl", realmUrl + "/protocol/openid-connect/auth"));
-            console.produce(new DevConsoleTemplateInfoBuildItem("logoutUrl", realmUrl + "/protocol/openid-connect/logout"));
-            console.produce(new DevConsoleTemplateInfoBuildItem("oidcGrantType", config.devservices.grant.type.getGrantType()));
-            if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
-                console.produce(new DevConsoleTemplateInfoBuildItem("swaggerIsAvailable", true));
-            }
-            if (capabilities.isPresent(Capability.SMALLRYE_GRAPHQL)) {
-                console.produce(new DevConsoleTemplateInfoBuildItem("graphqlIsAvailable", true));
-            }
+
+            produceDevConsoleTemplateItems(capabilities,
+                    console,
+                    "Keycloak",
+                    (String) configProps.get().getProperties().get("quarkus.oidc.application-type"),
+                    config.devservices.grant.type.getGrantType(),
+                    (String) configProps.get().getProperties().get("quarkus.oidc.client-id"),
+                    (String) configProps.get().getProperties().get("quarkus.oidc.credentials.secret"),
+                    realmUrl + "/protocol/openid-connect/auth",
+                    realmUrl + "/protocol/openid-connect/token",
+                    realmUrl + "/protocol/openid-connect/logout");
+
         }
     }
 
@@ -61,14 +54,11 @@ public class KeycloakDevConsoleProcessor {
             Map<String, String> users = (Map<String, String>) configProps.get().getProperties().get("oidc.users");
             devConsoleRoute.produce(
                     new DevConsoleRouteBuildItem("testService", "POST", new KeycloakDevConsolePostHandler(users)));
-            devConsoleRoute.produce(
-                    new DevConsoleRouteBuildItem("testServiceWithToken", "POST",
-                            new OidcTestServiceHandler(KeycloakDevServicesProcessor.vertxInstance,
-                                    KeycloakDevServicesProcessor.capturedDevServicesConfiguration.webClienTimeout)));
-            devConsoleRoute.produce(
-                    new DevConsoleRouteBuildItem("exchangeCodeForTokens", "POST",
-                            new OidcAuthorizationCodePostHandler(KeycloakDevServicesProcessor.vertxInstance,
-                                    KeycloakDevServicesProcessor.capturedDevServicesConfiguration.webClienTimeout)));
+            produceDevConsoleRouteItems(devConsoleRoute,
+                    new OidcTestServiceHandler(KeycloakDevServicesProcessor.vertxInstance,
+                            KeycloakDevServicesProcessor.capturedDevServicesConfiguration.webClienTimeout),
+                    new OidcAuthorizationCodePostHandler(KeycloakDevServicesProcessor.vertxInstance,
+                            KeycloakDevServicesProcessor.capturedDevServicesConfiguration.webClienTimeout));
         }
     }
 }

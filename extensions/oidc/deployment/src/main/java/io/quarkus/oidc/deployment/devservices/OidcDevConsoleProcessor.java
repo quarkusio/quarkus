@@ -5,6 +5,7 @@ import java.time.Duration;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -22,7 +23,7 @@ import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
-public class OidcDevConsoleProcessor {
+public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
     static volatile Vertx vertxInstance;
     private static final Logger LOG = Logger.getLogger(OidcDevConsoleProcessor.class);
 
@@ -38,7 +39,8 @@ public class OidcDevConsoleProcessor {
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     void prepareOidcDevConsole(BuildProducer<DevConsoleTemplateInfoBuildItem> console,
             CuratedApplicationShutdownBuildItem closeBuildItem,
-            BuildProducer<DevConsoleRouteBuildItem> devConsoleRoute) {
+            BuildProducer<DevConsoleRouteBuildItem> devConsoleRoute,
+            Capabilities capabilities) {
         if (isOidcTenantEnabled() && isAuthServerUrlSet() && isClientIdSet() && isServiceAuthType()) {
 
             if (vertxInstance == null) {
@@ -65,27 +67,37 @@ public class OidcDevConsoleProcessor {
             if (metadata == null) {
                 return;
             }
-            if (authServerUrl.contains("/realms/")) {
+            String providerName = tryToGetProviderName(authServerUrl);
+            if ("Keycloak".equals(providerName)) {
                 console.produce(new DevConsoleTemplateInfoBuildItem("keycloakAdminUrl",
                         authServerUrl.substring(0, authServerUrl.indexOf("/realms/"))));
             }
-            console.produce(new DevConsoleTemplateInfoBuildItem("oidcApplicationType", SERVICE_APP_TYPE));
-            console.produce(new DevConsoleTemplateInfoBuildItem("clientId", getConfigProperty(CLIENT_ID_CONFIG_KEY)));
-            console.produce(new DevConsoleTemplateInfoBuildItem("clientSecret", getClientSecret()));
+            produceDevConsoleTemplateItems(capabilities,
+                    console,
+                    providerName,
+                    SERVICE_APP_TYPE,
+                    "code",
+                    getConfigProperty(CLIENT_ID_CONFIG_KEY),
+                    getClientSecret(),
+                    metadata.getString("authorization_endpoint"),
+                    metadata.getString("token_endpoint"),
+                    metadata.getString("end_session_endpoint"));
 
-            console.produce(new DevConsoleTemplateInfoBuildItem("tokenUrl", metadata.getString("token_endpoint")));
-            console.produce(
-                    new DevConsoleTemplateInfoBuildItem("authorizationUrl", metadata.getString("authorization_endpoint")));
-            if (metadata.containsKey("end_session_endpoint")) {
-                console.produce(new DevConsoleTemplateInfoBuildItem("logoutUrl", metadata.getString("end_session_endpoint")));
-            }
-            console.produce(new DevConsoleTemplateInfoBuildItem("oidcGrantType", "code"));
-
-            devConsoleRoute.produce(new DevConsoleRouteBuildItem("testServiceWithToken", "POST",
-                    new OidcTestServiceHandler(vertxInstance, Duration.ofSeconds(3))));
-            devConsoleRoute.produce(new DevConsoleRouteBuildItem("exchangeCodeForTokens", "POST",
-                    new OidcAuthorizationCodePostHandler(vertxInstance, Duration.ofSeconds(3))));
+            produceDevConsoleRouteItems(devConsoleRoute,
+                    new OidcTestServiceHandler(vertxInstance, Duration.ofSeconds(3)),
+                    new OidcAuthorizationCodePostHandler(vertxInstance, Duration.ofSeconds(3)));
         }
+    }
+
+    private String tryToGetProviderName(String authServerUrl) {
+        if (authServerUrl.contains("/realms/")) {
+            return "Keycloak";
+        }
+        if (authServerUrl.contains("auth0")) {
+            return "Auth0";
+        }
+        // etc
+        return null;
     }
 
     private JsonObject discoverMetadata(String authServerUrl) {

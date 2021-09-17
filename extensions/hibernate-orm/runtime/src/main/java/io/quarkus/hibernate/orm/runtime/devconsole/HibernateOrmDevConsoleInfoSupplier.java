@@ -27,7 +27,7 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
 
     private static final String DEFAULT = "<default>";
 
-    private static final PersistenceUnitsInfo INSTANCE = new PersistenceUnitsInfo();
+    public static final PersistenceUnitsInfo INSTANCE = new PersistenceUnitsInfo();
 
     public static void pushPersistenceUnit(String persistenceUnitName,
             Metadata metadata, ServiceRegistry serviceRegistry, String importFile) {

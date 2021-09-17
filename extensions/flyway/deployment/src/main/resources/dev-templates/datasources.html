@@ -16,6 +16,7 @@
         </td>
         <td>
             <div class="btn-group">
+                {#if container.hasMigrations}
                 <form method="post"  enctype="application/x-www-form-urlencoded">
                     <input type="hidden" name="datasource" value="{container.dataSourceName}">
                     <input type="hidden" name="operation" value="clean">
@@ -27,6 +28,13 @@
                     <input type="hidden" name="operation" value="migrate">
                     <input id="migrate" type="submit" class="btn btn-primary btn-sm" value="Migrate" >
                 </form>
+                {/if}
+                {#if container.createPossible}
+                <form method="post"  enctype="application/x-www-form-urlencoded" action="create-initial-migration">
+                    <input type="hidden" name="datasource" value="{container.dataSourceName}">
+                    <input id="create" type="submit" class="btn btn-primary btn-sm" value="Create Initial Migration File" >
+                </form>
+                {/if}
             </div>
         </td>
     {/for}

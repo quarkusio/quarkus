@@ -1,9 +1,5 @@
 package io.quarkus.it.rest.client.main;
 
-import io.quarkus.runtime.annotations.RegisterForReflection;
-
-// TODO get rid of need for this
-@RegisterForReflection
 public class Apple {
     private String cultivar;
 

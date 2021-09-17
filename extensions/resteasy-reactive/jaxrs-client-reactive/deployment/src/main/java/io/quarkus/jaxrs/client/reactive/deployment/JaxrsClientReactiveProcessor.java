@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -84,6 +85,7 @@ import org.jboss.resteasy.reactive.common.model.RestClientInterface;
 import org.jboss.resteasy.reactive.common.processor.AdditionalReaderWriter;
 import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
 import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
+import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.HashUtil;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
@@ -106,6 +108,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
@@ -125,6 +128,7 @@ import io.quarkus.jaxrs.client.reactive.runtime.JaxrsClientReactiveRecorder;
 import io.quarkus.jaxrs.client.reactive.runtime.ToObjectArray;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
+import io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
@@ -188,6 +192,7 @@ public class JaxrsClientReactiveProcessor {
             BeanContainerBuildItem beanContainerBuildItem,
             ApplicationResultBuildItem applicationResultBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyBuildItemBuildProducer,
             List<MessageBodyReaderBuildItem> messageBodyReaderBuildItems,
             List<MessageBodyWriterBuildItem> messageBodyWriterBuildItems,
             List<MessageBodyReaderOverrideBuildItem> messageBodyReaderOverrideBuildItems,
@@ -238,6 +243,24 @@ public class JaxrsClientReactiveProcessor {
                 .setHasRuntimeConverters(false)
                 .setDefaultProduces(defaultProducesType)
                 .setSmartDefaultProduces(disableSmartDefaultProduces.isEmpty())
+                .setResourceMethodCallback(new Consumer<EndpointIndexer.ResourceMethodCallbackData>() {
+                    @Override
+                    public void accept(EndpointIndexer.ResourceMethodCallbackData entry) {
+                        MethodInfo method = entry.getMethodInfo();
+                        String source = JaxrsClientReactiveProcessor.class.getSimpleName() + " > " + method.declaringClass()
+                                + "[" + method + "]";
+
+                        reflectiveHierarchyBuildItemBuildProducer.produce(new ReflectiveHierarchyBuildItem.Builder()
+                                .type(method.returnType())
+                                .index(index)
+                                .ignoreTypePredicate(QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                                .ignoreFieldPredicate(QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                                .ignoreMethodPredicate(
+                                        QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                                .source(source)
+                                .build());
+                    }
+                })
                 .build();
 
         boolean observabilityIntegrationNeeded = (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER) ||

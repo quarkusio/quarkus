@@ -96,6 +96,7 @@ import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.FactoryUtils;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
+import io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceInterceptorsBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
@@ -373,10 +374,10 @@ public class ResteasyReactiveProcessor {
                             reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
                                     .type(method.returnType())
                                     .index(index)
-                                    .ignoreTypePredicate(ResteasyReactiveServerDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
-                                    .ignoreFieldPredicate(ResteasyReactiveServerDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                                    .ignoreTypePredicate(QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                                    .ignoreFieldPredicate(QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
                                     .ignoreMethodPredicate(
-                                            ResteasyReactiveServerDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                                            QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
                                     .source(source)
                                     .build());
 
@@ -387,11 +388,11 @@ public class ResteasyReactiveProcessor {
                                             .type(parameterType)
                                             .index(index)
                                             .ignoreTypePredicate(
-                                                    ResteasyReactiveServerDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                                                    QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
                                             .ignoreFieldPredicate(
-                                                    ResteasyReactiveServerDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                                                    QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
                                             .ignoreMethodPredicate(
-                                                    ResteasyReactiveServerDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                                                    QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
                                             .source(source)
                                             .build());
                                 }

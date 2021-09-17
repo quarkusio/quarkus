@@ -131,10 +131,25 @@ public class HibernateValidatorTestResource
     }
 
     @GET
+    @Path("/cdi-bean-method-validation-uncaught")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testCDIBeanMethodValidationUncaught() {
+        return greetingService.greeting(null);
+    }
+
+    @GET
     @Path("/rest-end-point-validation/{id}/")
     @Produces(MediaType.TEXT_PLAIN)
     public String testRestEndPointValidation(@Digits(integer = 5, fraction = 0) @PathParam("id") String id) {
         return id;
+    }
+
+    @GET
+    @Path("/rest-end-point-return-value-validation/{returnValue}/")
+    @Produces(MediaType.TEXT_PLAIN)
+    @Digits(integer = 5, fraction = 0)
+    public String testRestEndPointReturnValueValidation(@PathParam("returnValue") String returnValue) {
+        return returnValue;
     }
 
     // all JAX-RS annotations are defined in the interface

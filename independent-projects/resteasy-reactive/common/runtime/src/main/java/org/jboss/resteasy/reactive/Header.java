@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.server.common;
+package org.jboss.resteasy.reactive;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;

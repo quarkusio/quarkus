@@ -2,8 +2,6 @@ package io.quarkus.resteasy.reactive.server.runtime.responseheader;
 
 import java.util.Map;
 
-import javax.ws.rs.core.Response;
-
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
@@ -20,11 +18,8 @@ public class ResponseHeaderHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        Response response = requestContext.getResponse().get();
         if (headers != null) {
-            for (Map.Entry<String, String> header : headers.entrySet()) {
-                response.getHeaders().add(header.getKey(), header.getValue());
-            }
+            requestContext.setResponseHeaders(headers);
         }
     }
 

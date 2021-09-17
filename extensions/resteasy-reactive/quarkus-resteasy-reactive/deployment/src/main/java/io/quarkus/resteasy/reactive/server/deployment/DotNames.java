@@ -6,10 +6,9 @@ import java.io.InputStreamReader;
 import java.nio.file.Path;
 
 import org.jboss.jandex.DotName;
+import org.jboss.resteasy.reactive.ResponseHeader;
+import org.jboss.resteasy.reactive.Status;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
-
-import io.quarkus.resteasy.reactive.server.common.ResponseHeader;
-import io.quarkus.resteasy.reactive.server.common.Status;
 
 final class DotNames {
 

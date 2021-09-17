@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import javax.ws.rs.RuntimeType;
@@ -56,7 +57,7 @@ public class StreamingUtil {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         boolean wrote = false;
         for (MessageBodyWriter<Object> writer : writers) {
-            // Spec(API) says we should use class/type/mediaType but doesn't talk about annotations 
+            // Spec(API) says we should use class/type/mediaType but doesn't talk about annotations
             if (writer.isWriteable(entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType)) {
                 // FIXME: spec doesn't really say what headers we should use here
                 writer.writeTo(entity, entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType,
@@ -76,10 +77,15 @@ public class StreamingUtil {
         // FIXME: spec says we should flush the headers when first message is sent or when the resource method returns, whichever
         // happens first
         if (!response.headWritten()) {
-            response.setStatusCode(Response.Status.OK.getStatusCode());
+            response.setStatusCode(
+                    context.getResponseStatus() != null ? context.getResponseStatus() : Response.Status.OK.getStatusCode());
             response.setResponseHeader(HttpHeaders.CONTENT_TYPE, context.getResponseContentType().toString());
             response.setChunked(true);
-            // FIXME: other headers?
+            if (context.getResponseHeaders() != null) {
+                for (Map.Entry<String, String> header : context.getResponseHeaders().entrySet()) {
+                    response.addResponseHeader(header.getKey(), header.getValue());
+                }
+            }
         }
     }
 }

@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 import javax.ws.rs.core.Cookie;
@@ -132,6 +133,9 @@ public abstract class ResteasyReactiveRequestContext
      */
     private List<UriMatch> matchedURIs;
 
+    private Map<String, String> responseHeaders;
+    private Integer responseStatus;
+
     private AsyncResponseImpl asyncResponse;
     private SseEventSinkImpl sseEventSink;
     private List<PathSegment> pathSegments;
@@ -228,6 +232,22 @@ public abstract class ResteasyReactiveRequestContext
         } else {
             pathParamValues = null;
         }
+    }
+
+    public Map<String, String> getResponseHeaders() {
+        return responseHeaders;
+    }
+
+    public void setResponseHeaders(Map<String, String> responseHeaders) {
+        this.responseHeaders = responseHeaders;
+    }
+
+    public Integer getResponseStatus() {
+        return responseStatus;
+    }
+
+    public void setResponseStatus(Integer responseStatus) {
+        this.responseStatus = responseStatus;
     }
 
     public String getPathParam(int index) {

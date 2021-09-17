@@ -231,6 +231,16 @@ public class HttpConfiguration {
     @ConfigItem
     public boolean enableDecompression;
 
+    /**
+     * Provides a hint (optional) for the contents type of responses generated for
+     * the errors not handled by the application.
+     * <p>
+     * When unset, Quarkus will decide which contents type to use based on request headers.
+     * </p>
+     */
+    @ConfigItem
+    public Optional<PayloadHint> unhandledErrorContentsType;
+
     public ProxyConfig proxy;
 
     public int determinePort(LaunchMode launchMode) {
@@ -245,5 +255,10 @@ public class HttpConfiguration {
         ENABLED,
         REDIRECT,
         DISABLED;
+    }
+
+    public enum PayloadHint {
+        JSON,
+        HTML,
     }
 }

@@ -8,6 +8,7 @@ import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -39,9 +40,11 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
     private static final AtomicLong ERROR_COUNT = new AtomicLong();
 
     private final boolean showStack;
+    private final Optional<HttpConfiguration.PayloadHint> contentTypeHint;
 
-    public QuarkusErrorHandler(boolean showStack) {
+    public QuarkusErrorHandler(boolean showStack, Optional<HttpConfiguration.PayloadHint> contentTypeHint) {
         this.showStack = showStack;
+        this.contentTypeHint = contentTypeHint;
     }
 
     @Override
@@ -135,6 +138,17 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
 
         if (responseContentType == null) {
             responseContentType = "";
+        }
+        if (contentTypeHint.isPresent()) {
+            switch (contentTypeHint.get()) {
+                case JSON:
+                    jsonResponse(event, ContentTypes.APPLICATION_JSON, details, stack);
+                    break;
+                case HTML:
+                    htmlResponse(event, details, exception);
+                    break;
+            }
+            return;
         }
         switch (responseContentType) {
             case ContentTypes.TEXT_HTML:

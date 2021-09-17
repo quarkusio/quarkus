@@ -15,7 +15,7 @@
     <distributionManagement>
         <relocation>
             <artifactId>quarkus-reactive-routes</artifactId>
-            <message>The artifact ${artifactId} is now named quarkus-reactive-routes. Please update your dependency.</message>
+            <message>The artifact ${project.artifactId} is now named quarkus-reactive-routes. Please update your dependency.</message>
         </relocation>
     </distributionManagement>
 </project>

@@ -1,13 +1,14 @@
 package io.quarkus.it.hibernate.multitenancy;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Disposes;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import io.quarkus.arc.Unremovable;
-import io.quarkus.hibernate.orm.PersistenceUnitExtension;
+import io.quarkus.hibernate.orm.PersistenceUnit;
 
 @Singleton
 public class Producers {
@@ -18,25 +19,24 @@ public class Producers {
     @Produces
     @Unremovable
     @ApplicationScoped
-    @PersistenceUnitExtension
+    @Default
     CustomTenantConnectionResolver defaultConnectionResolver() {
         return new CustomTenantConnectionResolver(config, "default");
     }
 
-    void disposeDefaultConnectionResolver(@Disposes @PersistenceUnitExtension CustomTenantConnectionResolver resolver) {
+    void disposeDefaultConnectionResolver(@Disposes @Default CustomTenantConnectionResolver resolver) {
         resolver.close();
     }
 
     @Produces
     @Unremovable
     @ApplicationScoped
-    @PersistenceUnitExtension("inventory")
+    @PersistenceUnit("inventory")
     CustomTenantConnectionResolver inventoryConnectionResolver() {
         return new CustomTenantConnectionResolver(config, "inventory");
     }
 
-    void disposeInventoryConnectionResolver(
-            @Disposes @PersistenceUnitExtension("inventory") CustomTenantConnectionResolver resolver) {
+    void disposeInventoryConnectionResolver(@Disposes @PersistenceUnit("inventory") CustomTenantConnectionResolver resolver) {
         resolver.close();
     }
 

@@ -5,12 +5,12 @@ import javax.inject.Inject;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.hibernate.orm.PersistenceUnitExtension;
+import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
 
-@PersistenceUnitExtension("inventory")
 @RequestScoped
+@PersistenceUnit("inventory")
 public class InventoryTenantResolver implements TenantResolver {
 
     private static final Logger LOG = Logger.getLogger(InventoryTenantResolver.class);

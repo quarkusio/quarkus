@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 :config-file: application.properties
+:orm-doc-url-prefix: https://docs.jboss.org/hibernate/orm/5.5/userguide/html_single/Hibernate_User_Guide.html
 
 Hibernate ORM is the de facto standard JPA implementation and offers you the full breadth of an Object Relational Mapper.
 It works beautifully in Quarkus.
@@ -410,7 +411,7 @@ difference is that you would specify your Hibernate ORM configuration in `META-I
 ----
 
 When using the `persistence.xml` configuration you are configuring Hibernate ORM directly,
-so in this case the appropriate reference is the link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#configurations[documentation on hibernate.org].
+so in this case the appropriate reference is the link:{orm-doc-url-prefix}#configurations[documentation on hibernate.org].
 
 Please remember these are not the same property names as the ones used in the Quarkus `{config-file}`, nor will
 the same defaults be applied.
@@ -779,9 +780,9 @@ Jump over to link:datasource[Quarkus - Datasources] for all details.
 [[multitenancy]]
 == Multitenancy
 
-"The term multitenancy, in general, is applied to software development to indicate an architecture in which a single running instance of an application simultaneously serves multiple clients (tenants). This is highly common in SaaS solutions. Isolating information (data, customizations, etc.) pertaining to the various tenants is a particular challenge in these systems. This includes the data owned by each tenant stored in the database" (link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#multitenacy[Hibernate User Guide]).
+"The term multitenancy, in general, is applied to software development to indicate an architecture in which a single running instance of an application simultaneously serves multiple clients (tenants). This is highly common in SaaS solutions. Isolating information (data, customizations, etc.) pertaining to the various tenants is a particular challenge in these systems. This includes the data owned by each tenant stored in the database" (link:{orm-doc-url-prefix}#multitenacy[Hibernate User Guide]).
 
-Quarkus currently supports the link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#multitenacy-separate-database[separate database] and the link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#multitenacy-separate-schema[separate schema] approach.
+Quarkus currently supports the link:{orm-doc-url-prefix}#multitenacy-separate-database[separate database] and the link:{orm-doc-url-prefix}#multitenacy-separate-schema[separate schema] approach.
 
 To see multitenancy in action, you can check out the {quickstarts-tree-url}/hibernate-orm-multi-tenancy-quickstart[hibernate-orm-multi-tenancy-quickstart] quickstart.
 
@@ -823,7 +824,8 @@ import javax.enterprise.context.ApplicationScoped;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
 
-@RequestScoped <1>
+@PersistenceUnitExtension // <1>
+@RequestScoped // <2>
 public class CustomTenantResolver implements TenantResolver {
 
     @Inject
@@ -849,32 +851,13 @@ public class CustomTenantResolver implements TenantResolver {
     
 }
 ----
-<1> The bean is made `@RequestScoped` as the tenant resolution depends on the incoming request.
+<1> Annotate the TenantResolver implementation with the `@PersistenceUnitExtension` qualifier
+to tell Quarkus it should be used in the default persistence unit.
++
+For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`.
+<2> The bean is made `@RequestScoped` as the tenant resolution depends on the incoming request.
 
 From the implementation above, tenants are resolved from the request path so that in case no tenant could be inferred, the default tenant identifier is returned.
-
-[NOTE]
-====
-If <<multiple-persistence-units,named persistence units>> are used, you need to qualify the `TenantResolver` with the persistence unit name:
-
-[source,java]
-----
-import javax.enterprise.context.ApplicationScoped;
-
-import io.quarkus.hibernate.orm.PersistenceUnit;
-import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
-import io.vertx.ext.web.RoutingContext;
-
-@PersistenceUnit("name-of-persistence-unit") <1>
-@RequestScoped
-public class CustomTenantResolver implements TenantResolver {
-
-   // ...
-
-}
-----
-<1> Make sure to use the `@io.quarkus.hibernate.orm.PersistenceUnit` annotation, not the JPA one.
-====
 
 [NOTE]
 ====
@@ -885,6 +868,7 @@ If you also use link:security-openid-connect-multitenancy[OIDC multitenancy] and
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
 
+@PersistenceUnitExtension
 @RequestScoped
 public class CustomTenantResolver implements TenantResolver {
 
@@ -1031,4 +1015,52 @@ INSERT INTO known_fruits(id, name) VALUES (3, 'Blackberries');
 
 === Programmatically Resolving Tenants Connections
 
-If you need a more dynamic configuration for the different tenants you want to support and don't want to end up with multiple entries in your configuration file, you can use the `io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver` interface to implement your own logic for retrieving a connection. Creating an application scoped bean that implements this interface will replace the current Quarkus default implementation `io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver`. Your custom connection resolver would allow for example to read tenant information from a database and create a connection per tenant at runtime based on it.
+If you need a more dynamic configuration for the different tenants you want to support and don't want to end up with multiple entries in your configuration file,
+you can use the `io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver` interface to implement your own logic for retrieving a connection.
+Creating an application-scoped bean that implements this interface
+and annotating it with `@PersistenceUnitExtension` (or `@PersistenceUnitExtension("nameOfYourPU")` for a <<multiple-persistence-units,named persistence unit>>)
+will replace the current Quarkus default implementation `io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver`.
+Your custom connection resolver would allow for example to read tenant information from a database and create a connection per tenant at runtime based on it.
+
+[[interceptors]]
+== Interceptors
+
+You can assign an link:{orm-doc-url-prefix}#events-interceptors[`org.hibernate.Interceptor`]
+to your `SessionFactory` by simply defining a CDI bean with the appropriate qualifier:
+
+[source,java]
+----
+@PersistenceUnitExtension // <1>
+public static class MyInterceptor extends EmptyInterceptor { // <2>
+    @Override
+    public boolean onLoad(Object entity, Serializable id, Object[] state, // <3>
+            String[] propertyNames, Type[] types) {
+        // ...
+        return false;
+    }
+}
+----
+<1> Annotate the interceptor implementation with the `@PersistenceUnitExtension` qualifier
+to tell Quarkus it should be used in the default persistence unit.
++
+For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`
+<2> Either extend `org.hibernate.EmptyInterceptor` or implement `org.hibernate.Interceptor` directly.
+<3> Implement methods as necessary.
+
+[TIP]
+====
+By default, interceptor beans annotated with `@PersistenceUnitExtension` are application-scoped,
+which means only one interceptor instance will be created per application
+and reused across all entity managers.
+For this reason, the interceptor implementation must be thread-safe.
+
+In order to create one interceptor instance per entity manager instead,
+annotate your bean with `@Dependent`.
+In that case, the interceptor implementation doesn't need to be thread-safe.
+====
+
+[NOTE]
+====
+Due to a limitation in Hibernate ORM itself,
+`@PreDestroy` methods on `@Dependent`-scoped interceptors will never get called.
+====

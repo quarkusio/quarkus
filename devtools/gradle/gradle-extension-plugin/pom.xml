@@ -69,16 +69,16 @@
                         <configuration>
                             <artifacts>
                                 <artifact>
-                                    <file>build/libs/extension-plugin-${project.version}.jar</file>
+                                    <file>build/libs/gradle-extension-plugin-${project.version}.jar</file>
                                     <type>jar</type>
                                 </artifact>
                                 <artifact>
-                                    <file>build/libs/extension-plugin-${project.version}-javadoc.jar</file>
+                                    <file>build/libs/gradle-extension-plugin-${project.version}-javadoc.jar</file>
                                     <type>jar</type>
                                     <classifier>javadoc</classifier>
                                 </artifact>
                                 <artifact>
-                                    <file>build/libs/extension-plugin-${project.version}-sources.jar</file>
+                                    <file>build/libs/gradle-extension-plugin-${project.version}-sources.jar</file>
                                     <type>jar</type>
                                     <classifier>sources</classifier>
                                 </artifact>

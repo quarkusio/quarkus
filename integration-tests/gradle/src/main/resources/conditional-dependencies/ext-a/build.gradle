@@ -5,6 +5,7 @@ allprojects {
     apply plugin: 'java'
     apply plugin: 'maven-publish'
 
+
     repositories {
         mavenCentral()
         // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()

@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
+    id 'io.quarkus.extension'
 }
 
 dependencies {
@@ -9,6 +10,11 @@ dependencies {
         exclude module: "transitive-dependency"
     }
     api("io.quarkus:quarkus-hibernate-reactive-panache")
+}
+
+extensionDescriptor {
+    deployment = "org.acme:ext-a-deployment:1.0-SNAPSHOT"
+    conditionalDependencies = ["org.acme:ext-b::jar:1.0-SNAPSHOT"]
 }
 
 publishing {

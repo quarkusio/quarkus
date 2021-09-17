@@ -373,7 +373,7 @@ Pushing as much as possible into the `@Record(STATIC_INIT)` phase allows for two
 that method. If config is read at runtime, Substrate cannot reason about the contents of the config and so needs to keep all features in case they are required.
 
 
-=== Maven setup
+=== Project setup
 
 Your extension project should be setup as a multi-module project with two submodules:
 
@@ -381,12 +381,23 @@ Your extension project should be setup as a multi-module project with two submod
 
 2. A runtime submodule that contains the runtime behavior that will provide the extension behavior in the native executable or runtime JVM.
 
-TIP: You may want to use the `create-extension` mojo of `io.quarkus.platform:quarkus-maven-plugin` to create these Maven modules - see the next section.
-
 Your runtime artifact should depend on `io.quarkus:quarkus-core`, and possibly the runtime artifacts of other Quarkus
 modules if you want to use functionality provided by them.
-You will also need to include the `io.quarkus:quarkus-bootstrap-maven-plugin` to generate the Quarkus extension descriptor included into the runtime artifact, if you are using the Quarkus parent pom it will automatically inherit the correct configuration.
+Your deployment time module should depend on `io.quarkus:quarkus-core-deployment`, your runtime artifact,
+and possibly the deployment artifacts of other Quarkus modules if you want to use functionality provided by them.
+
+[WARNING]
+====
+Under no circumstances can the runtime module depend on a deployment artifact. This would result
+in pulling all the deployment time code into runtime scope, which defeats the purpose of having the split.
+====
+
+==== Using Maven
+
+You will need to include the `io.quarkus:quarkus-bootstrap-maven-plugin` to generate the Quarkus extension descriptor included into the runtime artifact, if you are using the Quarkus parent pom it will automatically inherit the correct configuration.
 Furthermore, you'll need to configure the `maven-compiler-plugin` to detect the `quarkus-extension-processor` annotation processor.
+
+TIP: You may want to use the `create-extension` mojo of `io.quarkus.platform:quarkus-maven-plugin` to create these Maven modules - see the next section.
 
 NOTE: By convention the deployment time artifact has the `-deployment` suffix, and the runtime artifact
 has no suffix (and is what the end user adds to their project).
@@ -436,15 +447,7 @@ has no suffix (and is what the end user adds to their project).
 
 NOTE: The above `maven-compiler-plugin` configuration requires version 3.5+.
 
-[WARNING]
-====
-Under no circumstances can the runtime module depend on a deployment artifact. This would result
-in pulling all the deployment time code into runtime scope, which defeats the purpose of having the split.
-====
-
-Your deployment time module should depend on `io.quarkus:quarkus-core-deployment`, your runtime artifact,
-and possibly the deployment artifacts of other Quarkus modules if you want to use functionality provided by them.
-You will also need to configure the `maven-compiler-plugin` to detect the `quarkus-extension-processor` annotation processor.
+You will also need to configure the `maven-compiler-plugin` of the deployment module to detect the `quarkus-extension-processor` annotation processor.
 
 [source%nowrap,xml]
 ----
@@ -473,7 +476,7 @@ You will also need to configure the `maven-compiler-plugin` to detect the `quark
 </build>
 ----
 
-==== Create new Quarkus Core extension modules using Maven
+===== Create new Quarkus Core extension modules using Maven
 
 Quarkus provides `create-extension` Maven Mojo to initialize your extension project.
 
@@ -537,6 +540,44 @@ So you may consider omitting explicit `name` in some cases.
 
 // The following link should point to the mojo page once https://github.com/quarkusio/quarkusio.github.io/issues/265 is fixed
 Please refer to https://github.com/quarkusio/quarkus/blob/{quarkus-version}/devtools/maven/src/main/java/io/quarkus/maven/CreateExtensionMojo.java[CreateExtensionMojo JavaDoc] for all the available options of the mojo.
+
+==== Using Gradle
+
+You will need to apply the `io.quarkus.extension` plugin and enable annotation processor `io.quarkus:quarkus-extension-processor` in the `runtime` module of your extension project.
+The plugin includes the `extensionDescriptor` task that will generate the `META-INF/quarkus-extension.properties` file.
+
+[source,groovy,subs=attributes+]
+----
+plugins {
+    id 'java'
+    id 'io.quarkus.extensions'
+}
+
+dependencies {
+    implementation platform('io.quarkus:quarkus-bom:{quarkus-version}')
+    annotationProcessor 'io.quarkus:quarkus-extension-processor'
+}
+----
+
+In your deployment module, you will need to enable only the annotation processor `io.quarkus:quarkus-extension-processor`:
+
+[source,groovy,subs=attributes+]
+----
+plugins {
+    id 'java'
+}
+
+dependencies {
+    implementation platform('io.quarkus:quarkus-bom:{quarkus-version}')
+    annotationProcessor 'io.quarkus:quarkus-extension-processor'
+}
+----
+
+[WARNING]
+====
+This plugin is still experimental. It will generate the `META-INF/quarkus-extension.properties` file but not the `META-INF/quarkus-extension.yml` file.
+Also, it does not validate the extension dependencies as the equivalent Maven plugin does. Unit tests are not supported by the plugin for the moment.
+====
 
 === Build Step Processors
 

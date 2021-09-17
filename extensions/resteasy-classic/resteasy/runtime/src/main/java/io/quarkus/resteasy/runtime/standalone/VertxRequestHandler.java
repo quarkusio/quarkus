@@ -19,8 +19,8 @@ import org.jboss.resteasy.specimpl.ResteasyUriInfo;
 import org.jboss.resteasy.spi.Failure;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.resteasy.runtime.ContextUtil;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
@@ -45,19 +45,16 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     protected final RequestDispatcher dispatcher;
     protected final String rootPath;
     protected final BufferAllocator allocator;
-    protected final BeanContainer beanContainer;
     protected final CurrentIdentityAssociation association;
     protected final CurrentVertxRequest currentVertxRequest;
     protected final Executor executor;
     protected final long readTimeout;
 
     public VertxRequestHandler(Vertx vertx,
-            BeanContainer beanContainer,
             ResteasyDeployment deployment,
             String rootPath,
             BufferAllocator allocator, Executor executor, long readTimeout) {
         this.vertx = vertx;
-        this.beanContainer = beanContainer;
         this.dispatcher = new RequestDispatcher((SynchronousDispatcher) deployment.getDispatcher(),
                 deployment.getProviderFactory(), null, Thread.currentThread().getContextClassLoader());
         this.rootPath = rootPath;
@@ -101,7 +98,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     }
 
     private void dispatch(RoutingContext routingContext, InputStream is, VertxOutput output) {
-        ManagedContext requestContext = beanContainer.requestContext();
+        ManagedContext requestContext = Arc.container().requestContext();
         requestContext.activate();
         routingContext.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
         if (association != null) {

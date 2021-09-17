@@ -6,19 +6,25 @@ import io.vertx.ext.web.Router;
 
 public final class VertxWebRouterBuildItem extends SimpleBuildItem {
 
-    private RuntimeValue<Router> httpRouter;
-    private RuntimeValue<Router> mainRouter;
-    private RuntimeValue<Router> frameworkRouter;
+    private final RuntimeValue<Router> httpRouter;
+    private final RuntimeValue<Router> mainRouter;
+    private final RuntimeValue<Router> frameworkRouter;
+    private final RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter;
 
     VertxWebRouterBuildItem(RuntimeValue<Router> httpRouter, RuntimeValue<Router> mainRouter,
-            RuntimeValue<Router> frameworkRouter) {
+            RuntimeValue<Router> frameworkRouter, RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter) {
         this.httpRouter = httpRouter;
         this.mainRouter = mainRouter;
         this.frameworkRouter = frameworkRouter;
+        this.mutinyRouter = mutinyRouter;
     }
 
     public RuntimeValue<Router> getHttpRouter() {
         return httpRouter;
+    }
+
+    public RuntimeValue<io.vertx.mutiny.ext.web.Router> getMutinyRouter() {
+        return mutinyRouter;
     }
 
     /**

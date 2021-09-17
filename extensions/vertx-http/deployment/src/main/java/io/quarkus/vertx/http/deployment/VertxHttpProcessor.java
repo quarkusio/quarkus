@@ -20,6 +20,8 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -53,7 +55,6 @@ import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.HttpHostConfigSource;
-import io.quarkus.vertx.http.runtime.RouterProducer;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder;
 import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
@@ -96,7 +97,6 @@ class VertxHttpProcessor {
     AdditionalBeanBuildItem additionalBeans() {
         return AdditionalBeanBuildItem.builder()
                 .setUnremovable()
-                .addBeanClass(RouterProducer.class)
                 .addBeanClass(CurrentVertxRequest.class)
                 .addBeanClass(CurrentRequestProducer.class)
                 .build();
@@ -134,14 +134,36 @@ class VertxHttpProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
+    void preinitializeRouter(CoreVertxBuildItem vertx, VertxHttpRecorder recorder,
+            BuildProducer<InitialRouterBuildItem> initialRouter, BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+        // We need to initialize the routers that are exposed as synthetic beans in a separate build step to avoid cycles in the build chain
+        RuntimeValue<Router> httpRouteRouter = recorder.initializeRouter(vertx.getVertx());
+        RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter = recorder.createMutinyRouter(httpRouteRouter);
+        initialRouter.produce(new InitialRouterBuildItem(httpRouteRouter, mutinyRouter));
+
+        // Also note that we need a client proxy to handle the use case where a bean also @Observes Router 
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(Router.class)
+                .scope(BuiltinScope.APPLICATION.getInfo())
+                .setRuntimeInit()
+                .runtimeValue(httpRouteRouter).done());
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(io.vertx.mutiny.ext.web.Router.class)
+                .scope(BuiltinScope.APPLICATION.getInfo())
+                .setRuntimeInit()
+                .runtimeValue(mutinyRouter).done());
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
     VertxWebRouterBuildItem initializeRouter(VertxHttpRecorder recorder,
+            InitialRouterBuildItem initialRouter,
             CoreVertxBuildItem vertx,
             List<RouteBuildItem> routes,
             HttpBuildTimeConfig httpBuildTimeConfig,
             NonApplicationRootPathBuildItem nonApplicationRootPath,
             ShutdownContextBuildItem shutdown) {
 
-        RuntimeValue<Router> httpRouteRouter = recorder.initializeRouter(vertx.getVertx());
+        RuntimeValue<Router> httpRouteRouter = initialRouter.getHttpRouter();
+        RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter = initialRouter.getMutinyRouter();
         RuntimeValue<Router> frameworkRouter = null;
         RuntimeValue<Router> mainRouter = null;
 
@@ -182,7 +204,7 @@ class VertxHttpProcessor {
             }
         }
 
-        return new VertxWebRouterBuildItem(httpRouteRouter, mainRouter, frameworkRouter);
+        return new VertxWebRouterBuildItem(httpRouteRouter, mainRouter, frameworkRouter, mutinyRouter);
     }
 
     @BuildStep
@@ -258,6 +280,7 @@ class VertxHttpProcessor {
         recorder.finalizeRouter(beanContainer.getValue(),
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
                 listOfFilters, vertx.getVertx(), lrc, mainRouter, httpRouteRouter.getHttpRouter(),
+                httpRouteRouter.getMutinyRouter(),
                 httpRootPathBuildItem.getRootPath(),
                 launchMode.getLaunchMode(),
                 !requireBodyHandlerBuildItems.isEmpty(), bodyHandler, httpConfiguration, gracefulShutdownFilter,

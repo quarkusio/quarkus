@@ -8,7 +8,6 @@ import org.jboss.resteasy.spi.ResteasyDeployment;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.resteasy.runtime.ResteasyVertxConfig;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -52,10 +51,10 @@ public class ResteasyStandaloneRecorder {
         useDirect = !isVirtual;
     }
 
-    public Handler<RoutingContext> vertxRequestHandler(Supplier<Vertx> vertx,
-            BeanContainer beanContainer, Executor executor, HttpConfiguration readTimeout, ResteasyVertxConfig config) {
+    public Handler<RoutingContext> vertxRequestHandler(Supplier<Vertx> vertx, Executor executor, HttpConfiguration readTimeout,
+            ResteasyVertxConfig config) {
         if (deployment != null) {
-            return new VertxRequestHandler(vertx.get(), beanContainer, deployment, contextPath,
+            return new VertxRequestHandler(vertx.get(), deployment, contextPath,
                     new ResteasyVertxAllocator(config.responseBufferSize), executor,
                     readTimeout.readTimeout.toMillis());
         }

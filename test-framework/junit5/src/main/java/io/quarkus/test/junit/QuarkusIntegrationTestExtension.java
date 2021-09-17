@@ -4,6 +4,7 @@ import static io.quarkus.test.junit.IntegrationTestUtil.determineBuildOutputDire
 import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.doProcessTestInstance;
 import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
+import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResources;
 import static io.quarkus.test.junit.IntegrationTestUtil.getSysPropsToRestore;
 import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
@@ -132,7 +133,9 @@ public class QuarkusIntegrationTestExtension
             TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
 
             testResourceManager = new TestResourceManager(requiredTestClass, quarkusTestProfile,
-                    Collections.emptyList(), testProfileAndProperties.testProfile != null
+                    getAdditionalTestResources(testProfileAndProperties.testProfile,
+                            context.getRequiredTestClass().getClassLoader()),
+                    testProfileAndProperties.testProfile != null
                             && testProfileAndProperties.testProfile.disableGlobalTestResources(),
                     devServicesProps);
             testResourceManager.init();

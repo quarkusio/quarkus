@@ -19,13 +19,13 @@ import org.eclipse.microprofile.lra.annotation.LRAStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
 import io.restassured.response.Response;
 
 @QuarkusTest
-@QuarkusTestResource(LRAParticipantTestResourceLifecycle.class)
+@TestProfile(AppTestProfile.class)
 @TestHTTPEndpoint(TransactionalResource.class)
 public class LRAParticipantTest {
     private String coordinatorEndpoint;

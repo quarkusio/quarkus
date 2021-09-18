@@ -130,9 +130,9 @@ Wait for a bit and you're done.
 
 ### Updating the version
 
-Be careful, when using the `main` branch, you need to use the `quarkus-bom` instead of the `quarkus-universe-bom`.
+When using the `main` branch, you need to use the group id `io.quarkus` instead of `io.quarkus.platform` for both the Quarkus BOM and the Quarkus Maven Plugin.
 
-Update both the versions of the `quarkus-bom` and the Quarkus Maven plugin to `999-SNAPSHOT`.
+In a standard Quarkus pom.xml set the `quarkus.platform.group-id`-property to `io.quarkus` and the `quarkus.platform.version`-property to `999-SNAPSHOT` to build your application against the locally installed main branch.
 
 You can now test your application.
 

@@ -307,6 +307,11 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     }
 
     @Override
+    public int getStatusCode() {
+        return response.getStatusCode();
+    }
+
+    @Override
     public ServerHttpResponse end() {
         if (!response.ended()) {
             response.end();
@@ -347,6 +352,11 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     public ServerHttpResponse setResponseHeader(CharSequence name, Iterable<CharSequence> values) {
         response.headers().set(name, values);
         return this;
+    }
+
+    @Override
+    public void clearResponseHeaders() {
+        response.headers().clear();
     }
 
     @Override

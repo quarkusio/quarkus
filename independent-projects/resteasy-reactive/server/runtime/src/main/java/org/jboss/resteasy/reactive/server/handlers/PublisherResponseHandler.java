@@ -147,6 +147,7 @@ public class PublisherResponseHandler implements ServerRestHandler {
         protected void handleException(ResteasyReactiveRequestContext requestContext, Throwable t) {
             // in truth we can only send an exception if we haven't sent the headers yet, otherwise
             // it will appear to be an SSE value, which is incorrect, so we should only log it and close the connection
+            requestContext.serverResponse().clearResponseHeaders();
             if (requestContext.serverResponse().headWritten()) {
                 log.error("Exception in SSE server handling, impossible to send it to client", t);
             } else {

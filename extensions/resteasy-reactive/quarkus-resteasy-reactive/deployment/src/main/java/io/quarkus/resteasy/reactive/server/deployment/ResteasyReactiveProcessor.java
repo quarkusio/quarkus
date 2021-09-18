@@ -193,7 +193,7 @@ public class ResteasyReactiveProcessor {
                 ResponseStatusHandler handler = new ResponseStatusHandler();
                 handler.setStatus(responseStatusValue.asInt());
                 return Collections.singletonList(new FixedHandlerChainCustomizer(handler,
-                        HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE));
+                        HandlerChainCustomizer.Phase.BEFORE_METHOD_INVOKE));
             }
         });
     }
@@ -223,7 +223,7 @@ public class ResteasyReactiveProcessor {
                 ResponseHeaderHandler handler = new ResponseHeaderHandler();
                 handler.setHeaders(headers);
                 return Collections.singletonList(new FixedHandlerChainCustomizer(handler,
-                        HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE));
+                        HandlerChainCustomizer.Phase.BEFORE_METHOD_INVOKE));
             }
         });
     }

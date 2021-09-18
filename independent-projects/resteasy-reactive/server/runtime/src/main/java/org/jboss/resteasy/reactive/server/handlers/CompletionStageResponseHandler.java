@@ -15,6 +15,7 @@ public class CompletionStageResponseHandler implements ServerRestHandler {
 
             result.handle((v, t) -> {
                 if (t != null) {
+                    requestContext.serverResponse().clearResponseHeaders();
                     requestContext.handleException(t);
                 } else {
                     requestContext.setResult(v);

@@ -19,7 +19,9 @@ public class ResponseHeaderHandler implements ServerRestHandler {
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         if (headers != null) {
-            requestContext.setResponseHeaders(headers);
+            for (Map.Entry<String, String> header : headers.entrySet()) {
+                requestContext.serverResponse().setResponseHeader(header.getKey(), header.getValue());
+            }
         }
     }
 

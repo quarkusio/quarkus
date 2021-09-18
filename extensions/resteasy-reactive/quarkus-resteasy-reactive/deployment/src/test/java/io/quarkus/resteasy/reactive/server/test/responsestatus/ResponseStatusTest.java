@@ -1,5 +1,8 @@
 package io.quarkus.resteasy.reactive.server.test.responsestatus;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
@@ -41,6 +44,26 @@ public class ResponseStatusTest {
     }
 
     @Test
+    public void should_return_changed_status_completion() {
+        int expectedStatus = 201;
+        RestAssured
+                .given()
+                .get("/test/completion")
+                .then()
+                .statusCode(expectedStatus);
+    }
+
+    @Test
+    public void should_return_changed_status_plain() {
+        int expectedStatus = 201;
+        RestAssured
+                .given()
+                .get("/test/plain")
+                .then()
+                .statusCode(expectedStatus);
+    }
+
+    @Test
     public void should_not_change_status_uni() {
         int expectedStatus = 500;
         RestAssured
@@ -56,6 +79,26 @@ public class ResponseStatusTest {
         RestAssured
                 .given()
                 .get("/test/exception_multi")
+                .then()
+                .statusCode(expectedStatus);
+    }
+
+    @Test
+    public void should_not_change_status_completion() {
+        int expectedStatus = 500;
+        RestAssured
+                .given()
+                .get("/test/exception_completion")
+                .then()
+                .statusCode(expectedStatus);
+    }
+
+    @Test
+    public void should_not_change_status_plain() {
+        int expectedStatus = 500;
+        RestAssured
+                .given()
+                .get("/test/exception_plain")
                 .then()
                 .statusCode(expectedStatus);
     }
@@ -79,6 +122,20 @@ public class ResponseStatusTest {
 
         @Status(201)
         @GET
+        @Path("/completion")
+        public CompletionStage<String> getTestCompletion() {
+            return CompletableFuture.supplyAsync(() -> "test");
+        }
+
+        @Status(201)
+        @GET
+        @Path("/plain")
+        public String getTestPlain() {
+            return "test";
+        }
+
+        @Status(201)
+        @GET
         @Path(("/exception_uni"))
         public Uni<String> throwExceptionUni() {
             return Uni.createFrom().failure(new IllegalArgumentException());
@@ -89,6 +146,20 @@ public class ResponseStatusTest {
         @Path("/exception_multi")
         public Multi<String> throwExceptionMulti() {
             return Multi.createFrom().failure(new IllegalArgumentException());
+        }
+
+        @Status(201)
+        @GET
+        @Path("/exception_completion")
+        public CompletionStage<String> throwExceptionCompletion() {
+            return CompletableFuture.failedFuture(new IllegalArgumentException());
+        }
+
+        @Status(201)
+        @GET
+        @Path("/exception_plain")
+        public String throwExceptionPlain() {
+            throw new IllegalArgumentException();
         }
 
     }

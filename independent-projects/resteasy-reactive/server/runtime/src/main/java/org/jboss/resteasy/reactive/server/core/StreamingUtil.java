@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import javax.ws.rs.RuntimeType;
@@ -77,15 +76,11 @@ public class StreamingUtil {
         // FIXME: spec says we should flush the headers when first message is sent or when the resource method returns, whichever
         // happens first
         if (!response.headWritten()) {
-            response.setStatusCode(
-                    context.getResponseStatus() != null ? context.getResponseStatus() : Response.Status.OK.getStatusCode());
+            if (response.getStatusCode() == 0) {
+                response.setStatusCode(Response.Status.OK.getStatusCode());
+            }
             response.setResponseHeader(HttpHeaders.CONTENT_TYPE, context.getResponseContentType().toString());
             response.setChunked(true);
-            if (context.getResponseHeaders() != null) {
-                for (Map.Entry<String, String> header : context.getResponseHeaders().entrySet()) {
-                    response.addResponseHeader(header.getKey(), header.getValue());
-                }
-            }
         }
     }
 }

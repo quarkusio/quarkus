@@ -324,6 +324,11 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     }
 
     @Override
+    public int getStatusCode() {
+        return response.getStatus();
+    }
+
+    @Override
     public ServerHttpResponse end() {
         try {
             response.getOutputStream().close();
@@ -386,6 +391,13 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
             response.addHeader(name.toString(), v.toString());
         }
         return this;
+    }
+
+    @Override
+    public void clearResponseHeaders() {
+        for (String header : response.getHeaderNames()) {
+            response.setHeader(header, null);
+        }
     }
 
     @Override

@@ -17,6 +17,6 @@ public class ResponseStatusHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        requestContext.setResponseStatus(status);
+        requestContext.serverResponse().setStatusCode(status);
     }
 }

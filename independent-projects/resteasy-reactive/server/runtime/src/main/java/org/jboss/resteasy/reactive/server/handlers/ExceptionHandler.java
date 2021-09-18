@@ -10,6 +10,7 @@ public class ExceptionHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
+        requestContext.serverResponse().clearResponseHeaders();
         requestContext.mapExceptionIfPresent();
     }
 }

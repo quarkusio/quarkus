@@ -3,6 +3,8 @@ package io.quarkus.resteasy.reactive.server.test.responseheader;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -53,6 +55,32 @@ public class ResponseHeaderTest {
     }
 
     @Test
+    public void should_return_added_headers_completion() {
+        Map<String, String> expectedHeaders = Map.of(
+                "Access-Control-Allow-Origin", "*",
+                "Keep-Alive", "timeout=5, max=997");
+        RestAssured
+                .given()
+                .get("/test/completion")
+                .then()
+                .statusCode(200)
+                .headers(expectedHeaders);
+    }
+
+    @Test
+    public void should_return_added_headers_plain() {
+        Map<String, String> expectedHeaders = Map.of(
+                "Access-Control-Allow-Origin", "*",
+                "Keep-Alive", "timeout=5, max=997");
+        RestAssured
+                .given()
+                .get("/test/plain")
+                .then()
+                .statusCode(200)
+                .headers(expectedHeaders);
+    }
+
+    @Test
     public void should_throw_exception_without_headers_uni() {
         Headers headers = RestAssured.given().get("/test/exception_uni")
                 .then().extract().headers();
@@ -63,6 +91,20 @@ public class ResponseHeaderTest {
     @Test
     public void should_throw_exception_without_headers_multi() {
         Headers headers = RestAssured.given().get("/test/exception_multi")
+                .then().extract().headers();
+        assertFalse(headers.hasHeaderWithName("Access-Control-Allow-Origin"));
+    }
+
+    @Test
+    public void should_throw_exception_without_headers_completion() {
+        Headers headers = RestAssured.given().get("/test/exception_completion")
+                .then().extract().headers();
+        assertFalse(headers.hasHeaderWithName("Access-Control-Allow-Origin"));
+    }
+
+    @Test
+    public void should_throw_exception_without_headers_plain() {
+        Headers headers = RestAssured.given().get("/test/exception_plain")
                 .then().extract().headers();
         assertFalse(headers.hasHeaderWithName("Access-Control-Allow-Origin"));
     }
@@ -91,6 +133,26 @@ public class ResponseHeaderTest {
         }
 
         @ResponseHeader(headers = {
+                @Header(name = "Access-Control-Allow-Origin", value = "*"),
+                @Header(name = "Keep-Alive", value = "timeout=5, max=997"),
+        })
+        @GET
+        @Path("/completion")
+        public CompletionStage<String> getTestCompletion() {
+            return CompletableFuture.supplyAsync(() -> "test");
+        }
+
+        @ResponseHeader(headers = {
+                @Header(name = "Access-Control-Allow-Origin", value = "*"),
+                @Header(name = "Keep-Alive", value = "timeout=5, max=997"),
+        })
+        @GET
+        @Path("/plain")
+        public String getTestPlain() {
+            return "test";
+        }
+
+        @ResponseHeader(headers = {
                 @Header(name = "Access-Control-Allow-Origin", value = "*")
         })
         @GET
@@ -106,6 +168,23 @@ public class ResponseHeaderTest {
         @Path("/exception_multi")
         public Multi<String> throwExceptionMulti() {
             return Multi.createFrom().failure(new IllegalArgumentException());
+        }
+
+        @ResponseHeader(headers = {
+                @Header(name = "Access-Control-Allow-Origin", value = "*")
+        })
+        @Path("/exception_completion")
+        public CompletionStage<String> throwExceptionCompletion() {
+            return CompletableFuture.failedFuture(new IllegalArgumentException());
+        }
+
+        @ResponseHeader(headers = {
+                @Header(name = "Access-Control-Allow-Origin", value = "*")
+        })
+        @GET
+        @Path("/exception_plain")
+        public String throwExceptionPlain() {
+            throw new IllegalArgumentException();
         }
     }
 }

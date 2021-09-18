@@ -10,6 +10,8 @@ public interface ServerHttpResponse {
 
     ServerHttpResponse setStatusCode(int code);
 
+    int getStatusCode();
+
     ServerHttpResponse end();
 
     boolean headWritten();
@@ -23,6 +25,8 @@ public interface ServerHttpResponse {
     ServerHttpResponse setResponseHeader(CharSequence name, CharSequence value);
 
     ServerHttpResponse setResponseHeader(CharSequence name, Iterable<CharSequence> values);
+
+    void clearResponseHeaders();
 
     Iterable<Map.Entry<String, String>> getAllResponseHeaders();
 

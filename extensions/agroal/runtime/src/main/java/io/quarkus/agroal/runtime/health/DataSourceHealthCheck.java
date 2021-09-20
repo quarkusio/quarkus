@@ -3,7 +3,6 @@ package io.quarkus.agroal.runtime.health;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,7 +31,7 @@ public class DataSourceHealthCheck implements HealthCheck {
         Set<Bean<?>> beans = Arc.container().beanManager().getBeans(DataSource.class);
         DataSourcesExcludedFromHealthChecks excluded = Arc.container().instance(DataSourcesExcludedFromHealthChecks.class)
                 .get();
-        List<String> excludedNames = excluded.getExcludedNames();
+        Set<String> excludedNames = excluded.getExcludedNames();
         for (Bean<?> bean : beans) {
             if (bean.getName() == null) {
                 if (!excludedNames.contains(DataSourceUtil.DEFAULT_DATASOURCE_NAME)) {

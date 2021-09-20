@@ -1,7 +1,5 @@
 package io.quarkus.agroal.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-
 import java.sql.Driver;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,7 +33,6 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
-import io.quarkus.datasource.runtime.DataSourcesExcludedFromHealthChecks;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -336,15 +333,8 @@ class AgroalProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    HealthBuildItem addHealthCheck(Capabilities capabilities, DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            AgroalRecorder recorder, BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+    HealthBuildItem addHealthCheck(Capabilities capabilities, DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
         if (capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
-            syntheticBeans.produce(SyntheticBeanBuildItem.configure(DataSourcesExcludedFromHealthChecks.class)
-                    .scope(Singleton.class)
-                    .unremovable()
-                    .supplier(recorder.dataSourcesExcludedFromHealthChecks(dataSourcesBuildTimeConfig))
-                    .done());
             return new HealthBuildItem("io.quarkus.agroal.runtime.health.DataSourceHealthCheck",
                     dataSourcesBuildTimeConfig.healthEnabled);
         } else {

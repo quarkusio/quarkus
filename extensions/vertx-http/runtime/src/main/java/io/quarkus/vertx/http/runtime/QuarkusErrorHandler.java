@@ -151,13 +151,14 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
                 jsonResponse(event, responseContentType, details, stack);
                 break;
             default:
-                // We default to HTML representation
-                switch (contentTypeDefault.orElse(HttpConfiguration.PayloadHint.HTML)) {
-                    case JSON:
-                        jsonResponse(event, ContentTypes.APPLICATION_JSON, details, stack);
-                        break;
+                // We default to JSON representation
+                switch (contentTypeDefault.orElse(HttpConfiguration.PayloadHint.JSON)) {
                     case HTML:
                         htmlResponse(event, details, exception);
+                        break;
+                    case JSON:
+                    default:
+                        jsonResponse(event, ContentTypes.APPLICATION_JSON, details, stack);
                         break;
                 }
                 break;

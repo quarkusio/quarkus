@@ -52,8 +52,8 @@ public class UnhandledExceptionTest {
                 .get("/unhandled-exception")
                 .then()
                 .statusCode(500)
-                .contentType(TEXT_HTML) // Default to HTML
-                .body(htmlBodyMatcher());
+                .contentType(APPLICATION_JSON) // Default to JSON
+                .body(jsonBodyMatcher());
     }
 
     @Test
@@ -179,8 +179,11 @@ public class UnhandledExceptionTest {
                 .get("/unhandled-exception")
                 .then()
                 .statusCode(500)
-                .contentType(TEXT_HTML)
-                .body(htmlBodyMatcher());
+                // Ideally we'd like TEXT_HTML here, but due to some strange behavior of
+                // io.vertx.ext.web.ParsedHeaderValues.findBestUserAcceptedIn,
+                // we get this.
+                .contentType(APPLICATION_JSON)
+                .body(jsonBodyMatcher());
 
         given()
                 .config(multipleAcceptHeadersConfig)
@@ -190,11 +193,8 @@ public class UnhandledExceptionTest {
                 .get("/unhandled-exception")
                 .then()
                 .statusCode(500)
-                // Ideally we'd like APPLICATION_JSON here, but due to some strange behavior of
-                // io.vertx.ext.web.ParsedHeaderValues.findBestUserAcceptedIn,
-                // we get this.
-                .contentType(TEXT_HTML)
-                .body(htmlBodyMatcher());
+                .contentType(APPLICATION_JSON)
+                .body(jsonBodyMatcher());
     }
 
     @Test

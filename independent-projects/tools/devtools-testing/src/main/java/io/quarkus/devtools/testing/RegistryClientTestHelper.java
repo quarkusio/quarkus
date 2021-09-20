@@ -11,6 +11,10 @@ import java.util.Properties;
 
 public class RegistryClientTestHelper {
 
+    public static void enableRegistryClientTestConfig(String quarkusBomGroupId, String quarkusBomVersion) {
+        enableRegistryClientTestConfig(getConfigBaseDir(), System.getProperties(), quarkusBomGroupId, quarkusBomVersion);
+    }
+
     public static void enableRegistryClientTestConfig() {
         enableRegistryClientTestConfig(System.getProperties());
     }
@@ -24,27 +28,32 @@ public class RegistryClientTestHelper {
     }
 
     public static void enableRegistryClientTestConfig(Path outputDir, Properties properties) {
-        final String projectVersion = System.getProperty("project.version");
-        if (projectVersion == null) {
-            throw new IllegalStateException("System property project.version isn't set");
+        final String quarkusBomVersion = System.getProperty("project.version");
+        final String quarkusBomGroupId = System.getProperty("project.groupId");
+        enableRegistryClientTestConfig(outputDir, properties, quarkusBomGroupId, quarkusBomVersion);
+    }
+
+    public static void enableRegistryClientTestConfig(Path outputDir, Properties properties, String quarkusBomGroupId,
+            String quarkusBomVersion) {
+        if (quarkusBomVersion == null) {
+            throw new IllegalStateException("quarkusBomVersion isn't set");
         }
-        final String projectGroupId = System.getProperty("project.groupId");
-        if (projectGroupId == null) {
-            throw new IllegalStateException("System property project.groupId isn't set");
+        if (quarkusBomGroupId == null) {
+            throw new IllegalStateException("quarkusBomGroupId isn't set");
         }
 
         final Path toolsConfigPath = outputDir.resolve(RegistriesConfigLocator.CONFIG_RELATIVE_PATH);
 
-        final ArtifactCoords bom = new ArtifactCoords(projectGroupId, "quarkus-bom", null, "pom", projectVersion);
+        final ArtifactCoords bom = new ArtifactCoords(quarkusBomGroupId, "quarkus-bom", null, "pom", quarkusBomVersion);
 
         TestRegistryClientBuilder.newInstance()
                 .baseDir(toolsConfigPath.getParent())
                 //.debug()
                 .newRegistry("test.quarkus.registry")
                 .newPlatform(bom.getGroupId())
-                .newStream(projectVersion)
-                .newRelease(projectVersion)
-                .quarkusVersion(projectVersion)
+                .newStream(quarkusBomVersion)
+                .newRelease(quarkusBomVersion)
+                .quarkusVersion(quarkusBomVersion)
                 .addMemberBom(bom)
                 .registry()
                 .clientBuilder()

@@ -52,7 +52,8 @@ public class Neo4jFunctionalityTest {
                 .body("status", is("UP"),
                         "checks.status", containsInAnyOrder("UP"),
                         "checks.name", containsInAnyOrder("Neo4j connection health check"),
-                        "checks.data.server", containsInAnyOrder(matchesRegex("Neo4j/.*@.*:\\d*")));
+                        "checks.data.server", containsInAnyOrder(matchesRegex("Neo4j/.*@.*:\\d*")),
+                        "checks.data.edition", containsInAnyOrder(is(notNullValue())));
     }
 
     @Test

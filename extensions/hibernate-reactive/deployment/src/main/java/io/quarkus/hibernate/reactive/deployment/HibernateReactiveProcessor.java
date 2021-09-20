@@ -24,6 +24,7 @@ import javax.persistence.spi.PersistenceUnitTransactionType;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.loader.BatchFetchStyle;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
@@ -65,6 +66,7 @@ import io.quarkus.runtime.LaunchMode;
 public final class HibernateReactiveProcessor {
 
     private static final String HIBERNATE_REACTIVE = "Hibernate Reactive";
+    private static final Logger LOG = Logger.getLogger(HibernateReactiveProcessor.class);
     static final String[] REFLECTIVE_CONSTRUCTORS_NEEDED = {
             "org.hibernate.reactive.persister.entity.impl.ReactiveSingleTableEntityPersister",
             "org.hibernate.reactive.persister.entity.impl.ReactiveJoinedSubclassEntityPersister",
@@ -82,14 +84,14 @@ public final class HibernateReactiveProcessor {
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans, CombinedIndexBuildItem combinedIndex,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaModelBuildItem jpaModel) {
-        if (!hasEntities(jpaModel)) {
-            return;
-        }
-
         if (descriptors.size() == 1) {
             // Only register those beans if their EMF dependency is also available, so use the same guard as the ORM extension
             additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveSessionFactoryProducer.class));
             additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveSessionProducer.class));
+        } else {
+            LOG.warnf(
+                    "Skipping registration of %s and %s because exactly one persistence unit is required for their registration",
+                    ReactiveSessionFactoryProducer.class.getSimpleName(), ReactiveSessionProducer.class.getSimpleName());
         }
     }
 
@@ -125,6 +127,7 @@ public final class HibernateReactiveProcessor {
         final boolean enableHR = hasEntities(jpaModel);
         if (!enableHR) {
             // we have to bail out early as we might not have a Vertx pool configuration
+            LOG.warn("Hibernate Reactive is disabled because no JPA entities were found");
             return;
         }
 

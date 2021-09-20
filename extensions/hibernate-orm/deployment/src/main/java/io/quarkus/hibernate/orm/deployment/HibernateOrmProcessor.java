@@ -323,6 +323,7 @@ public final class HibernateOrmProcessor {
 
         if (!hasEntities(jpaModel)) {
             // we can bail out early as there are no entities
+            LOG.warn("Hibernate ORM is disabled because no JPA entities were found");
             return;
         }
 

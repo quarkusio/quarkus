@@ -309,7 +309,7 @@ public class VertxHttpRecorder {
         }
 
         httpRouteRouter.route().last().failureHandler(
-                new QuarkusErrorHandler(launchMode.isDevOrTest(), httpConfiguration.unhandledErrorContentsType));
+                new QuarkusErrorHandler(launchMode.isDevOrTest(), httpConfiguration.unhandledErrorContentTypeDefault));
 
         if (requireBodyHandler) {
             //if this is set then everything needs the body handler installed

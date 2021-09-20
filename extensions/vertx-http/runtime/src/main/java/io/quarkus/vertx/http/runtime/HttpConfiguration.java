@@ -232,14 +232,18 @@ public class HttpConfiguration {
     public boolean enableDecompression;
 
     /**
-     * Provides a hint (optional) for the contents type of responses generated for
+     * Provides a hint (optional) for the default content type of responses generated for
      * the errors not handled by the application.
      * <p>
-     * When unset, Quarkus will decide which contents type to use based on request headers.
+     * If the client requested a supported content-type in request headers
+     * (e.g. "Accept: application/json", "Accept: text/html"),
+     * Quarkus will use that content type.
+     * <p>
+     * Otherwise, it will default to the content type configured here.
      * </p>
      */
     @ConfigItem
-    public Optional<PayloadHint> unhandledErrorContentsType;
+    public Optional<PayloadHint> unhandledErrorContentTypeDefault;
 
     public ProxyConfig proxy;
 

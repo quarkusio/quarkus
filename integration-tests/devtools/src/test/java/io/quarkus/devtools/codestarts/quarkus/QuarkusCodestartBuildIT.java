@@ -40,7 +40,8 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
     private static final Set<String> EXCLUDED = Sets.newHashSet(
             "azure-functions-http-example");
 
-    private static final Set<String> RUN_ALONE = Sets.newHashSet("resteasy-reactive-codestart", "picocli-codestart");
+    private static final Set<String> RUN_ALONE = Sets.newHashSet("spring-web-codestart", "resteasy-reactive-codestart",
+            "picocli-codestart");
 
     @BeforeAll
     static void setUp() throws IOException {

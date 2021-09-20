@@ -248,6 +248,7 @@ public class ConfigBuildStep {
     @BuildStep
     void generateConfigClasses(
             CombinedIndexBuildItem combinedIndex,
+            BuildExclusionsBuildItem exclusionsBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ConfigClassBuildItem> configClasses) {
@@ -258,6 +259,9 @@ public class ConfigBuildStep {
 
         for (AnnotationInstance instance : mappingAnnotations) {
             AnnotationTarget target = instance.target();
+            if (exclusionsBuildItem.isExcluded(target)) {
+                continue;
+            }
             AnnotationValue annotationPrefix = instance.value("prefix");
 
             if (target.kind().equals(FIELD)) {

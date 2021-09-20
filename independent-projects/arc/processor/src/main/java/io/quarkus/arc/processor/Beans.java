@@ -508,7 +508,7 @@ final class Beans {
 
     static boolean matches(BeanInfo bean, Type requiredType, Set<AnnotationInstance> requiredQualifiers) {
         // Bean has all the required qualifiers and a bean type that matches the required type
-        return hasQualifiers(bean, requiredQualifiers) && matchesType(bean, requiredType);
+        return matchesType(bean, requiredType) && hasQualifiers(bean, requiredQualifiers);
     }
 
     static boolean matchesType(BeanInfo bean, Type requiredType) {
@@ -682,18 +682,24 @@ final class Beans {
     static boolean hasQualifier(BeanDeployment beanDeployment, AnnotationInstance requiredQualifier,
             Collection<AnnotationInstance> qualifiers) {
         ClassInfo requiredClazz = beanDeployment.getQualifier(requiredQualifier.name());
-        List<AnnotationValue> values = new ArrayList<>();
-        Set<String> nonBindingFields = beanDeployment.getQualifierNonbindingMembers(requiredQualifier.name());
-        for (AnnotationValue val : requiredQualifier.valuesWithDefaults(beanDeployment.getBeanArchiveIndex())) {
-            if (!requiredClazz.method(val.name()).hasAnnotation(DotNames.NONBINDING)
-                    && !nonBindingFields.contains(val.name())) {
-                values.add(val);
-            }
-        }
+        List<AnnotationValue> values = null;
         for (AnnotationInstance qualifier : qualifiers) {
             if (requiredQualifier.name().equals(qualifier.name())) {
                 // Must have the same annotation member value for each member which is not annotated @Nonbinding
                 boolean matches = true;
+
+                if (values == null) {
+                    //this list is relatively expensive to initialize in some cases
+                    //as this is called in a tight loop we only do it if necessary
+                    values = new ArrayList<>();
+                    Set<String> nonBindingFields = beanDeployment.getQualifierNonbindingMembers(requiredQualifier.name());
+                    for (AnnotationValue val : requiredQualifier.valuesWithDefaults(beanDeployment.getBeanArchiveIndex())) {
+                        if (!requiredClazz.method(val.name()).hasAnnotation(DotNames.NONBINDING)
+                                && !nonBindingFields.contains(val.name())) {
+                            values.add(val);
+                        }
+                    }
+                }
                 for (AnnotationValue value : values) {
                     if (!value.equals(qualifier.valueWithDefault(beanDeployment.getBeanArchiveIndex(), value.name()))) {
                         matches = false;

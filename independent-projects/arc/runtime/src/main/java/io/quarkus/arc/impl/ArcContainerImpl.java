@@ -565,33 +565,38 @@ public class ArcContainerImpl implements ArcContainer {
         if (matching.isEmpty()) {
             return Collections.emptySet();
         } else if (matching.size() == 1) {
-            return Collections.singleton(matching.get(0));
+            return Set.of(matching.get(0));
         }
+        // Try to resolve the ambiguity and return the set of disambiguated beans
 
-        // Try to resolve the ambiguity
+        // First remove the default beans
         List<InjectableBean<?>> nonDefault = new ArrayList<>(matching);
-
         nonDefault.removeIf(InjectableBean::isDefaultBean);
-        if (nonDefault.size() == 1) {
-            return Collections.singleton(nonDefault.get(0));
+        if (nonDefault.isEmpty()) {
+            // All the matching beans were default
+            return Set.copyOf(matching);
+        } else if (nonDefault.size() == 1) {
+            return Set.of(nonDefault.get(0));
         }
 
-        List<InjectableBean<?>> resolved = new ArrayList<>(nonDefault);
-        resolved.removeIf(not(ArcContainerImpl::isAlternativeOrDeclaredOnAlternative));
-        if (resolved.size() == 1) {
-            return Collections.singleton(resolved.get(0));
-        } else if (resolved.size() > 1) {
-            resolved.sort(ArcContainerImpl::compareAlternativeBeans);
-            // Keep only the highest priorities
-            Integer highest = getAlternativePriority(resolved.get(0));
-            resolved.removeIf(injectableBean -> !highest.equals(getAlternativePriority(injectableBean)));
-            if (resolved.size() == 1) {
-                return Collections.singleton(resolved.get(0));
+        // More than one non-default bean remains - eliminate beans that don't have a priority
+        List<InjectableBean<?>> priorityBeans = new ArrayList<>(nonDefault);
+        priorityBeans.removeIf(not(ArcContainerImpl::isAlternativeOrDeclaredOnAlternative));
+        if (priorityBeans.isEmpty()) {
+            // No alternative/priority beans are present
+            return Set.copyOf(nonDefault);
+        } else if (priorityBeans.size() == 1) {
+            return Set.of(priorityBeans.get(0));
+        } else {
+            // Keep only the highest priorities 
+            priorityBeans.sort(ArcContainerImpl::compareAlternativeBeans);
+            Integer highest = getAlternativePriority(priorityBeans.get(0));
+            priorityBeans.removeIf(bean -> !highest.equals(getAlternativePriority(bean)));
+            if (priorityBeans.size() == 1) {
+                return Set.of(priorityBeans.get(0));
             }
-            return new HashSet<>(resolved);
+            return Set.copyOf(priorityBeans);
         }
-        //return all non-default beans
-        return new HashSet<>(nonDefault);
     }
 
     private static boolean isAlternativeOrDeclaredOnAlternative(InjectableBean<?> bean) {

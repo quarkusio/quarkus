@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.test.ArcTestContainer;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
@@ -34,6 +36,9 @@ public class DefaultClassBeanTest {
         Assertions.assertTrue(sb.toString().contains("SciFi"));
         Assertions.assertTrue(sb.toString().contains("Fantasy"));
         Assertions.assertFalse(sb.toString().contains("Detective"));
+        Set<Detective> detectives = Arc.container().beanManager().createInstance().select(Detective.class).stream()
+                .collect(Collectors.toSet());
+        Assertions.assertEquals(1, detectives.size());
     }
 
     @Test
@@ -61,7 +66,7 @@ public class DefaultClassBeanTest {
             return ping.ping();
         }
 
-        public Instance<Author> instance() {
+        Instance<Author> instance() {
             return instance;
         }
     }

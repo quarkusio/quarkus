@@ -1,11 +1,15 @@
 package io.quarkus.arc.test.defaultbean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.test.ArcTestContainer;
+import java.util.List;
+import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.CDI;
 import javax.inject.Inject;
@@ -17,7 +21,7 @@ public class DefaultProducerFieldTest {
 
     @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Producer.class,
-            GreetingBean.class, Hello.class);
+            GreetingBean.class, Hello.class, Fantasy.class);
 
     @Test
     public void testInjection() {
@@ -29,14 +33,30 @@ public class DefaultProducerFieldTest {
         assertEquals("hola", CDI.current().select(GreetingBean.class).get().greet());
     }
 
+    @Test
+    public void testInstanceIterator() {
+        List<Author> authors = Arc.container().instance(Hello.class).get().instance().stream().collect(Collectors.toList());
+        assertEquals(2, authors.size());
+        String result = authors.stream().map(Author::get).collect(Collectors.joining());
+        assertTrue(result.contains("SciFi"));
+        assertTrue(result.contains("Fantasy"));
+    }
+
     @ApplicationScoped
     static class Hello {
 
         @Inject
         GreetingBean bean;
 
+        @Inject
+        Instance<Author> instance;
+
         String hello() {
             return bean.greet();
+        }
+
+        Instance<Author> instance() {
+            return instance;
         }
 
     }
@@ -63,6 +83,31 @@ public class DefaultProducerFieldTest {
 
         };
 
+        @Produces
+        @Singleton
+        @DefaultBean
+        Author sciFi = new Author() {
+
+            @Override
+            public String get() {
+                return "SciFi";
+            }
+        };
+
+    }
+
+    interface Author {
+        String get();
+    }
+
+    @Singleton
+    @DefaultBean
+    static class Fantasy implements Author {
+
+        @Override
+        public String get() {
+            return "Fantasy";
+        }
     }
 
 }

@@ -569,13 +569,14 @@ public class ArcContainerImpl implements ArcContainer {
         }
 
         // Try to resolve the ambiguity
-        List<InjectableBean<?>> resolved = new ArrayList<>(matching);
+        List<InjectableBean<?>> nonDefault = new ArrayList<>(matching);
 
-        resolved.removeIf(InjectableBean::isDefaultBean);
-        if (resolved.size() == 1) {
-            return Collections.singleton(resolved.get(0));
+        nonDefault.removeIf(InjectableBean::isDefaultBean);
+        if (nonDefault.size() == 1) {
+            return Collections.singleton(nonDefault.get(0));
         }
 
+        List<InjectableBean<?>> resolved = new ArrayList<>(nonDefault);
         resolved.removeIf(not(ArcContainerImpl::isAlternativeOrDeclaredOnAlternative));
         if (resolved.size() == 1) {
             return Collections.singleton(resolved.get(0));
@@ -587,8 +588,10 @@ public class ArcContainerImpl implements ArcContainer {
             if (resolved.size() == 1) {
                 return Collections.singleton(resolved.get(0));
             }
+            return new HashSet<>(resolved);
         }
-        return new HashSet<>(matching);
+        //return all non-default beans
+        return new HashSet<>(nonDefault);
     }
 
     private static boolean isAlternativeOrDeclaredOnAlternative(InjectableBean<?> bean) {

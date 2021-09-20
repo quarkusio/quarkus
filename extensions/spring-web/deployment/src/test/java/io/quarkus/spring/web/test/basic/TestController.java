@@ -99,6 +99,11 @@ public class TestController {
         return new Greeting(someClass.getMessage() + suffix);
     }
 
+    @RequestMapping(path = "/defaultMethod")
+    public String getDefaultMethod() {
+        return "test";
+    }
+
     public void doNothing() {
 
     }

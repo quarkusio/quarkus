@@ -207,6 +207,14 @@ public class BasicMappingTest {
     }
 
     @Test
+    public void verifyRequestMappingDefaultMethodGet() {
+        when().get(TestController.CONTROLLER_PATH + "/defaultMethod")
+                .then()
+                .statusCode(200)
+                .body(is("test"));
+    }
+
+    @Test
     public void verifyControllerWithoutRequestMapping() {
         when().get("/hello")
                 .then()

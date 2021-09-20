@@ -69,6 +69,8 @@ public class SpringWebProcessor {
 
     private static final DotName REQUEST_MAPPING = DotName
             .createSimple("org.springframework.web.bind.annotation.RequestMapping");
+    private static final DotName REQUEST_METHOD = DotName
+            .createSimple("org.springframework.web.bind.annotation.RequestMethod");
     private static final DotName GET_MAPPING = DotName.createSimple("org.springframework.web.bind.annotation.GetMapping");
     private static final DotName POST_MAPPING = DotName.createSimple("org.springframework.web.bind.annotation.PostMapping");
     private static final DotName PUT_MAPPING = DotName.createSimple("org.springframework.web.bind.annotation.PutMapping");
@@ -169,9 +171,9 @@ public class SpringWebProcessor {
                 if (mappingAnnotationInstance != null) {
                     AnnotationValue methodValue = mappingAnnotationInstance.value("method");
                     if (methodValue == null) {
-                        throw new IllegalArgumentException(
-                                "Usage of '@RequestMapping' without an http method is not allowed. Offending method is '"
-                                        + methodInfo.declaringClass().name() + "#" + methodInfo.name() + "'");
+                        AnnotationValue[] getValue = new AnnotationValue[1];
+                        getValue[0] = AnnotationValue.createEnumValue("method", REQUEST_METHOD, "GET");
+                        methodValue = AnnotationValue.createArrayValue("method", getValue);
                     }
                     String[] methods = methodValue.asEnumArray();
                     if (methods.length > 1) {

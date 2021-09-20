@@ -1,6 +1,7 @@
 package io.quarkus.it.spring.web;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Request;
+import javax.ws.rs.core.UriInfo;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +25,7 @@ public class CustomAdvice {
 
     @ExceptionHandler(HandledResponseEntityException.class)
     public ResponseEntity<Error> handleResponseEntityException(HandledResponseEntityException e,
-            HttpServletRequest request) {
+            UriInfo uriInfo, Request request) {
 
         ResponseEntity.BodyBuilder bodyBuilder = ResponseEntity
                 .status(HttpStatus.PAYMENT_REQUIRED)
@@ -34,12 +35,12 @@ public class CustomAdvice {
             bodyBuilder.contentType(e.getContentType());
         }
 
-        return bodyBuilder.body(new Error(request.getRequestURI() + ":" + e.getMessage()));
+        return bodyBuilder.body(new Error(uriInfo.getPath() + ":" + request.getMethod() + ":" + e.getMessage()));
     }
 
     @ResponseStatus(HttpStatus.EXPECTATION_FAILED)
     @ExceptionHandler(HandledPojoException.class)
-    public Error handlePojoExcepton(HandledPojoException e) {
+    public Error handlePojoException(HandledPojoException e) {
         return new Error(e.getMessage());
     }
 

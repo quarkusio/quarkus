@@ -1,23 +1,24 @@
-package io.quarkus.smallrye.openapi.test.spring;
+package io.quarkus.it.spring.web.openapi;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusProdModeTest;
 import io.restassured.RestAssured;
 
-public class OpenApiHttpRootDefaultPathTestCase {
+public class OpenApiDefaultPathPMT {
     private static final String OPEN_API_PATH = "/q/openapi";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusProdModeTest runner = new QuarkusProdModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(OpenApiController.class)
-                    .addAsResource(new StringAsset("quarkus.http.root-path=/foo"), "application.properties"));
+                    .addAsResource("test-roles.properties")
+                    .addAsResource("test-users.properties"))
+            .setRun(true);
 
     @Test
     public void testOpenApiPathAccessResource() {
@@ -36,6 +37,6 @@ public class OpenApiHttpRootDefaultPathTestCase {
                 .header("Content-Type", "application/json;charset=UTF-8")
                 .body("openapi", Matchers.startsWith("3.0"))
                 .body("info.title", Matchers.equalTo("Generated API"))
-                .body("paths", Matchers.hasKey("/foo/resource"));
+                .body("paths", Matchers.hasKey("/resource"));
     }
 }

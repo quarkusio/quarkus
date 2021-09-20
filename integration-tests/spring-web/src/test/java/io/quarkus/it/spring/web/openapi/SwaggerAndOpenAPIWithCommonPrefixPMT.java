@@ -1,26 +1,29 @@
-package io.quarkus.smallrye.openapi.test.spring;
+package io.quarkus.it.spring.web.openapi;
 
 import static org.hamcrest.Matchers.containsString;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusProdModeTest;
 import io.restassured.RestAssured;
 
 /**
  * This test is a reproducer for https://github.com/quarkusio/quarkus/issues/4613.
  */
-public class SwaggerAndOpenAPIWithCommonPrefixTest {
+public class SwaggerAndOpenAPIWithCommonPrefixPMT {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(OpenApiController.class)
-                    .addAsResource(new StringAsset("quarkus.smallrye-openapi.path=swagger"), "application.properties"));
+                    .addAsResource("test-roles.properties")
+                    .addAsResource("test-users.properties"))
+            .overrideConfigKey("quarkus.smallrye-openapi.path", "swagger")
+            .overrideConfigKey("quarkus.swagger-ui.always-include", "true")
+            .setRun(true);
 
     @Test
     public void shouldWorkEvenWithCommonPrefix() {

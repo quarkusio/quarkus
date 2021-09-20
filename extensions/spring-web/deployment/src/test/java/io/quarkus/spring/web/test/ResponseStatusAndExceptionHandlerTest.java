@@ -10,7 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -25,18 +24,33 @@ public class ResponseStatusAndExceptionHandlerTest {
                     .addClasses(ExceptionController.class, RestExceptionHandler.class));
 
     @Test
-    public void testRootResource() {
+    public void testRestControllerAdvice() {
         when().get("/exception").then().statusCode(400);
     }
 
+    @Test
+    public void testResponseStatusOnException() {
+        when().get("/exception2").then().statusCode(202);
+    }
+
     @RestController
-    @RequestMapping("/exception")
     public static class ExceptionController {
 
-        @GetMapping
+        public static final StackTraceElement[] EMPTY_STACK_TRACE = new StackTraceElement[0];
+
+        @GetMapping("/exception")
         @ResponseStatus(HttpStatus.OK)
-        public String throwException() {
-            throw new RuntimeException();
+        public String throwRuntimeException() {
+            RuntimeException runtimeException = new RuntimeException();
+            runtimeException.setStackTrace(EMPTY_STACK_TRACE);
+            throw runtimeException;
+        }
+
+        @GetMapping("/exception2")
+        public String throwMyException() {
+            MyException myException = new MyException();
+            myException.setStackTrace(EMPTY_STACK_TRACE);
+            throw myException;
         }
     }
 
@@ -47,5 +61,10 @@ public class ResponseStatusAndExceptionHandlerTest {
         public ResponseEntity<Object> handleException(Exception ex) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
+    }
+
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public static class MyException extends RuntimeException {
+
     }
 }

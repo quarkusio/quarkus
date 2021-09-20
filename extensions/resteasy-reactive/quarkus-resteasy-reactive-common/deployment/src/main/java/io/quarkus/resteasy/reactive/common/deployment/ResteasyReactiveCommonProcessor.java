@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -51,6 +53,7 @@ import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.resteasy.reactive.common.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.spi.AbstractInterceptorBuildItem;
+import io.quarkus.resteasy.reactive.spi.AdditionalResourceClassBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.GeneratedJaxRsResourceBuildItem;
@@ -235,10 +238,18 @@ public class ResteasyReactiveCommonProcessor {
     @BuildStep
     void scanResources(
             JaxRsResourceIndexBuildItem jaxRsResourceIndexBuildItem,
+            List<AdditionalResourceClassBuildItem> additionalResourceClassBuildItems,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformerBuildItemBuildProducer,
             BuildProducer<ResourceScanningResultBuildItem> resourceScanningResultBuildItemBuildProducer) {
 
-        ResourceScanningResult res = ResteasyReactiveScanner.scanResources(jaxRsResourceIndexBuildItem.getIndexView());
+        Map<DotName, ClassInfo> additionalResources = new HashMap<>();
+        Map<DotName, String> additionalResourcePaths = new HashMap<>();
+        for (AdditionalResourceClassBuildItem bi : additionalResourceClassBuildItems) {
+            additionalResources.put(bi.getClassInfo().name(), bi.getClassInfo());
+            additionalResourcePaths.put(bi.getClassInfo().name(), bi.getPath());
+        }
+        ResourceScanningResult res = ResteasyReactiveScanner.scanResources(jaxRsResourceIndexBuildItem.getIndexView(),
+                additionalResources, additionalResourcePaths);
         if (res == null) {
             return;
         }

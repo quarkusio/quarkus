@@ -137,6 +137,15 @@ public class VertxVaultClient implements VaultClient {
         return exec(request, resultClass);
     }
 
+    public Buffer get(String path, String token) {
+        final HttpRequest<Buffer> request = builder(path, token).method(HttpMethod.GET);
+        final HttpResponse<Buffer> response = request.send().await().atMost(getRequestTimeout());
+        if (response.statusCode() != 200 && response.statusCode() != 204) {
+            throwVaultException(response);
+        }
+        return response.body();
+    }
+
     public int head(String path) {
         final HttpRequest<Buffer> request = builder(path).method(HttpMethod.HEAD);
         return exec(request);

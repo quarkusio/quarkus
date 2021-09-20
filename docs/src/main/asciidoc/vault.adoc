@@ -13,6 +13,7 @@ include::./attributes.adoc[]
 :extension-status: preview
 :vault-auth-guide: link:vault-auth[Vault Authentication guide]
 :vault-transit-guide: link:vault-transit[Vault Transit Secret Engine Guide]
+:vault-pki-guide: link:vault-pki[Vault PKI Secret Engine Guide]
 :vault-datasource-guide: link:vault-datasource[Vault Datasource Guide]
 
 https://www.vaultproject.io/[HashiCorp Vault] is a multi-purpose tool aiming at protecting sensitive data, such as
@@ -26,6 +27,8 @@ https://www.vaultproject.io/docs/secrets/kv/index.html[Vault kv secret engine] a
 * support for the https://www.vaultproject.io/docs/secrets/totp[TOTP Secret Engine]
 * support for the https://www.vaultproject.io/docs/secrets/transit[Transit Secret Engine] as documented
 in the {vault-transit-guide}
+* support for the https://www.vaultproject.io/docs/secrets/pki[PKI Secret Engine] as documented
+in the {vault-pki-guide}
 * support for several authentication methods as documented in the {vault-auth-guide}
 
 Under the hood, the Quarkus Vault extension takes care of authentication when negotiating a client Vault token plus

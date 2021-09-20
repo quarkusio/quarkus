@@ -84,6 +84,17 @@ Next test the service with either the current access or ID token. SPA usually se
 
 Finally you can select a `Log Out` image::dev-ui-keycloak-logout.png option if you'd like to log out and authenticate to Keycloak as a different user.
 
+===== Test with Swagger UI or GrapghQL UI
+
+You can avoid manually entering the service paths and test your service with `Swagger UI` or `GraphQL UI` if `quarkus-smallrye-openapi` and/or `quarkus-smallrye-graphql` are used in your project. For example, if you run `mvn quarkus-dev` with both `quarkus-smallrye-openapi` and `quarkus-smallrye-graphql` dependencies then you will see the following options after logging in into Keycloak:
+
+image::dev-ui-keycloak-test-service-swaggerui-graphql.png[alt=Test your service with Swagger UI or GraphQL UI,role="center"]
+
+For example, clicking on `Swagger UI` will open `Swagger UI` in a new browser tab where you can test the service using the token acquired by Dev UI for Keycloak.
+and `Swagger UI` will not try to re-authenticate again.
+
+Integration with `GraphQL UI` works in a similar way, the access token acquired by Dev UI for Keycloak will be used.
+
 [NOTE]
 ====
 You may need to register a redirect URI for the authorization code flow initiated by Dev UI for Keycloak to work because Keycloak may enforce that the authenticated users are redirected only to the configured redirect URI. It is recommended to do in production to avoid the users being redirected to the wrong endpoints which might happen if the correct `redirect_uri` parameter in the authentication request URI has been manipulated.

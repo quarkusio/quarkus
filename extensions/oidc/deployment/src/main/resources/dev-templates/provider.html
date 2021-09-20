@@ -1,7 +1,7 @@
 {#include main fluid=true}
 {#title}
-{#if info:keycloakUrl??}
-Keycloak
+{#if info:oidcProviderName??}
+{info:oidcProviderName}
 {#else}
 OpenId Connect Dev Console
 {/if}

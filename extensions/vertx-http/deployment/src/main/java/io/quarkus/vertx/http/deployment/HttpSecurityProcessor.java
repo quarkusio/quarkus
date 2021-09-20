@@ -90,8 +90,13 @@ public class HttpSecurityProcessor {
     SyntheticBeanBuildItem initBasicAuth(
             HttpSecurityRecorder recorder,
             HttpBuildTimeConfig buildTimeConfig) {
+        //basic auth explicitly disabled
+        if (buildTimeConfig.auth.basic.isPresent() && !buildTimeConfig.auth.basic.get()) {
+            return null;
+        }
+        boolean basicExplicitlyEnabled = buildTimeConfig.auth.basic.orElse(false);
         if ((buildTimeConfig.auth.form.enabled || isMtlsClientAuthenticationEnabled(buildTimeConfig))
-                && !buildTimeConfig.auth.basic) {
+                && !basicExplicitlyEnabled) {
             //if form auth is enabled and we are not then we don't install
             return null;
         }
@@ -102,7 +107,7 @@ public class HttpSecurityProcessor {
                 .scope(Singleton.class)
                 .supplier(recorder.setupBasicAuth(buildTimeConfig));
         if (!buildTimeConfig.auth.form.enabled && !isMtlsClientAuthenticationEnabled(buildTimeConfig)
-                && !buildTimeConfig.auth.basic) {
+                && !basicExplicitlyEnabled) {
             //if not explicitly enabled we make this a default bean, so it is the fallback if nothing else is defined
             configurator.defaultBean();
         }
@@ -128,8 +133,7 @@ public class HttpSecurityProcessor {
             policyMap.put(e.getName(), e.policySupplier);
         }
 
-        if (buildTimeConfig.auth.form.enabled) {
-        } else if (buildTimeConfig.auth.basic) {
+        if (!buildTimeConfig.auth.form.enabled && buildTimeConfig.auth.basic.orElse(false)) {
             beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(BasicAuthenticationMechanism.class));
         }
 

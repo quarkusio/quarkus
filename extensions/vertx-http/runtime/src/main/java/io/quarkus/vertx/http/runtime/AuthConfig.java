@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.util.Map;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -17,7 +18,7 @@ public class AuthConfig {
      * If no authentication mechanisms are configured basic auth is the default.
      */
     @ConfigItem
-    public boolean basic;
+    public Optional<Boolean> basic;
 
     /**
      * Form Auth config

@@ -52,6 +52,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-metrics-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-narayana-jta</artifactId>
+        </dependency>
 
         <!-- Project reactor makes it easier to deal with reactive streams -->
         <dependency>

@@ -505,6 +505,42 @@ It exposes its API based on http://www.reactive-streams.org[Reactive Streams], m
 Those can be used directly, but we found it easier and more expressive to wrap them in reactive types such as the one provided by Mutiny.
 Typically, in the previous code, the session is closed when the stream completes, fails or the subscriber cancels.
 
+== Participating in managed transactions
+
+The Neo4j database offers ACID transactions out of the box and exposes them through the driver. All examples above use
+transactions managed locally by the driver.
+
+However, if you follow <<transaction#using-transactions-in-quarkus,the guide about JTA transactions>>
+and put `io.quarkus:quarkus-narayana-jta` on the classpath, imperative methods using the Neo4j driver will participate
+in ongoing JTA transactions when annotated with `@Transactional`.
+
+In an ongoing JTA transaction only calls to the `Session` interface are allowed using one of the various `#run` overloads like this
+
+[source,java]
+----
+import javax.inject.Inject;
+import javax.transaction.Transactional;
+import org.neo4j.driver.Driver;
+
+public class AService {
+
+	@Inject Driver driver;
+
+	@Transactional
+    public void doThingsTransactional(String externalId) {
+		try (Session session = driver.session()) {
+			session.run(
+				"CREATE (f:Framework {name: $name, id: $id}) - [:CAN_USE {transactional: 'of course'}] -> (n:Database {name: 'Neo4j'})",
+                Values.parameters("name", "Quarkus", "id", externalId)
+            );
+		}
+	}
+}
+----
+
+What has been an autocommit-transaction before is now a fully managed JTA transaction and will commit or rollback with
+accordingly.
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-neo4j.adoc[opts=optional, leveloffset=+1]

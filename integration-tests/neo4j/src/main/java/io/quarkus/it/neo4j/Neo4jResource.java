@@ -1,6 +1,10 @@
 package io.quarkus.it.neo4j;
 
-import static javax.ws.rs.core.MediaType.*;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.SERVER_SENT_EVENTS;
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+
+import reactor.core.publisher.Flux;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -9,9 +13,15 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import javax.inject.Inject;
+import javax.transaction.Transactional;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.ExceptionMapper;
+import javax.ws.rs.ext.Provider;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Result;
@@ -23,8 +33,6 @@ import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.reactivestreams.Publisher;
 
-import reactor.core.publisher.Flux;
-
 @Path("/neo4j")
 public class Neo4jResource {
 
@@ -33,6 +41,7 @@ public class Neo4jResource {
 
     @GET
     @Path("/blocking")
+    @Produces(TEXT_PLAIN)
     public String doStuffWithNeo4j() {
         try {
             createNodes(driver);
@@ -47,6 +56,53 @@ public class Neo4jResource {
             return out.toString();
         }
         return "OK";
+    }
+
+    @GET
+    @Path("/transactional")
+    @Produces(TEXT_PLAIN)
+    @Transactional
+    public String doThingsTransactional(@QueryParam("externalId") String externalId, @QueryParam("causeAScene") @DefaultValue("false") boolean causeAScene) {
+        try (Session session = driver.session()) {
+            session.run("CREATE (f:Framework {name: $name, id: $id}) - [:CAN_USE {transactional: 'of course'}] -> (n:Database {name: 'Neo4j'})",
+                Values.parameters("name", "Quarkus", "id", externalId));
+        }
+        if(causeAScene) {
+            throw new SomeException("On purpose.");
+        }
+        return "OK";
+    }
+
+    @GET
+    @Path("/not-allowed-to-use-jta-and-local-tx")
+    @Produces(TEXT_PLAIN)
+    @Transactional
+    public String mixingUpTxConcepts() {
+        try {
+            // Will use an explicit tx
+            createNodes(driver);
+        } catch (Exception e) {
+           throw new SomeException(e.getMessage());
+        }
+        return "OK";
+    }
+
+    public static class SomeException extends RuntimeException {
+        public SomeException(String message) {
+            super(message);
+        }
+    }
+
+    @Provider
+    public static class IllegalArgumentExceptionMapper implements ExceptionMapper<SomeException> {
+
+        @Override
+        public Response toResponse(SomeException exception) {
+
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(exception.getMessage())
+                .build();
+        }
     }
 
     @GET

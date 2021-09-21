@@ -22,6 +22,16 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class Neo4jDriverProcessor {
 
+    boolean hasJTA() {
+        try {
+            Class.forName("javax.transaction.Transactional", false, Thread.currentThread().getContextClassLoader());
+            return true;
+        } catch (ClassNotFoundException e) {
+        }
+
+        return false;
+    }
+
     @BuildStep
     FeatureBuildItem createFeature(BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {
 
@@ -38,7 +48,7 @@ class Neo4jDriverProcessor {
             Neo4jConfiguration configuration,
             ShutdownContextBuildItem shutdownContext) {
 
-        RuntimeValue<Driver> driverHolder = recorder.initializeDriver(configuration, shutdownContext);
+        RuntimeValue<Driver> driverHolder = recorder.initializeDriver(configuration, shutdownContext, hasJTA());
         syntheticBeans
                 .produce(SyntheticBeanBuildItem.configure(Driver.class).runtimeValue(driverHolder).setRuntimeInit().done());
 

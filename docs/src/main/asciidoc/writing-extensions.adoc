@@ -543,8 +543,10 @@ Please refer to https://github.com/quarkusio/quarkus/blob/{quarkus-version}/devt
 
 ==== Using Gradle
 
-You will need to apply the `io.quarkus.extension` plugin and enable annotation processor `io.quarkus:quarkus-extension-processor` in the `runtime` module of your extension project.
+You will need to apply the `io.quarkus.extension` plugin in the `runtime` module of your extension project.
 The plugin includes the `extensionDescriptor` task that will generate the `META-INF/quarkus-extension.properties` file.
+The plugin also enables the `io.quarkus:quarkus-extension-processor` annotation processor in both `deployment` and `runtime` modules.
+The name of the deployment module can be configured in the plugin by setting the `deploymentModule` property. The property is set to `deployment` by default:
 
 [source,groovy,subs=attributes+]
 ----
@@ -553,23 +555,12 @@ plugins {
     id 'io.quarkus.extensions'
 }
 
-dependencies {
-    implementation platform('io.quarkus:quarkus-bom:{quarkus-version}')
-    annotationProcessor 'io.quarkus:quarkus-extension-processor'
-}
-----
-
-In your deployment module, you will need to enable only the annotation processor `io.quarkus:quarkus-extension-processor`:
-
-[source,groovy,subs=attributes+]
-----
-plugins {
-    id 'java'
+quarkusExtension {
+    deploymentModule = 'deployment'
 }
 
 dependencies {
     implementation platform('io.quarkus:quarkus-bom:{quarkus-version}')
-    annotationProcessor 'io.quarkus:quarkus-extension-processor'
 }
 ----
 

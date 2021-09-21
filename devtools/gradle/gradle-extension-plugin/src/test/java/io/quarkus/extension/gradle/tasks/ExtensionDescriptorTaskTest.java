@@ -13,7 +13,7 @@ import org.junit.jupiter.api.io.TempDir;
 import io.quarkus.extension.gradle.QuarkusExtensionPlugin;
 import io.quarkus.extension.gradle.TestUtils;
 
-public class ExtensionDescriptorTest {
+public class ExtensionDescriptorTaskTest {
 
     @TempDir
     File testProjectDir;
@@ -43,8 +43,8 @@ public class ExtensionDescriptorTest {
     @Test
     public void shouldUseCustomDeploymentArtifactName() throws IOException {
         String buildFileContent = TestUtils.DEFAULT_BUILD_GRADLE_CONTENT
-                + QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME + " { " +
-                "deployment = 'custom.group:custom-deployment-artifact:0.1.0'" +
+                + QuarkusExtensionPlugin.EXTENSION_CONFIGURATION_NAME + " { " +
+                "deploymentArtifact = 'custom.group:custom-deployment-artifact:0.1.0'" +
                 "}";
         TestUtils.writeFile(buildFile, buildFileContent);
         TestUtils.runExtensionDescriptorTask(testProjectDir);
@@ -59,7 +59,7 @@ public class ExtensionDescriptorTest {
     @Test
     public void shouldContainsConditionalDependencies() throws IOException {
         String buildFileContent = TestUtils.DEFAULT_BUILD_GRADLE_CONTENT
-                + QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME + " { " +
+                + QuarkusExtensionPlugin.EXTENSION_CONFIGURATION_NAME + " { " +
                 "conditionalDependencies= ['org.acme:ext-a:0.1.0', 'org.acme:ext-b:0.1.0']" +
                 "}";
         TestUtils.writeFile(buildFile, buildFileContent);
@@ -77,7 +77,7 @@ public class ExtensionDescriptorTest {
     @Test
     public void shouldContainsParentFirstArtifacts() throws IOException {
         String buildFileContent = TestUtils.DEFAULT_BUILD_GRADLE_CONTENT
-                + QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME + " { " +
+                + QuarkusExtensionPlugin.EXTENSION_CONFIGURATION_NAME + " { " +
                 "parentFirstArtifacts = ['org.acme:ext-a:0.1.0', 'org.acme:ext-b:0.1.0']" +
                 "}";
         TestUtils.writeFile(buildFile, buildFileContent);

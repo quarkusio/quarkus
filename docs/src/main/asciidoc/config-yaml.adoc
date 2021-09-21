@@ -57,7 +57,7 @@ quarkus:
 # REST Client configuration property
 quarkus:
   rest-client:
-    "org.acme.restclient.CountriesService":
+    org.acme.restclient.CountriesService:
       url: https://restcountries.eu/rest
 ----
 

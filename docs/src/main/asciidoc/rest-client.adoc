@@ -200,6 +200,20 @@ The default scope can also be defined on the interface.
 
 Note that `org.acme.rest.client.CountriesService` _must_ match the fully qualified name of the `CountriesService` interface we created in the previous section.
 
+[NOTE]
+====
+The standard MicroProfile Rest Client properties notation can also be used to configure the client:
+
+[source,properties]
+----
+org.acme.rest.client.CountriesService/mp-rest/url=https://restcountries.eu/rest
+org.acme.rest.client.CountriesService/mp-rest/scope=javax.inject.Singleton
+----
+
+If a property is specified via both the Quarkus notation and the MicroProfile notation, the Quarkus notation takes a precedence.
+====
+
+
 To facilitate the configuration, you can use the `@RegisterRestClient` `configKey` property that allows to use another configuration root than the fully qualified name of your interface.
 
 [source, java]

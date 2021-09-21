@@ -1,10 +1,10 @@
-package io.quarkus.liquibase;
+package io.quarkus.liquibase.mongodb;
 
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import io.quarkus.liquibase.runtime.LiquibaseMongodbBuildTimeConfig;
-import io.quarkus.liquibase.runtime.LiquibaseMongodbConfig;
+import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeConfig;
+import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbConfig;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
 import liquibase.Contexts;
 import liquibase.LabelExpression;

@@ -39,10 +39,10 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.util.ServiceUtil;
-import io.quarkus.liquibase.LiquibaseMongodbFactory;
-import io.quarkus.liquibase.runtime.LiquibaseMongodbBuildTimeConfig;
-import io.quarkus.liquibase.runtime.LiquibaseMongodbConfig;
-import io.quarkus.liquibase.runtime.LiquibaseMongodbRecorder;
+import io.quarkus.liquibase.mongodb.LiquibaseMongodbFactory;
+import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeConfig;
+import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbConfig;
+import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbRecorder;
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import liquibase.change.Change;
 import liquibase.change.DatabaseChangeProperty;

@@ -1,4 +1,4 @@
-package io.quarkus.liquibase.runtime;
+package io.quarkus.liquibase.mongodb.runtime;
 
 import java.util.HashMap;
 import java.util.List;

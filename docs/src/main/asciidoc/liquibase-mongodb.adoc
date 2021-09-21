@@ -1,0 +1,147 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Using Liquibase MongoDB
+
+include::./attributes.adoc[]
+:change-log: src/main/resources/db/changeLog.xml
+:config-file: application.properties
+
+https://www.liquibase.org/[Liquibase] is an open source tool for database schema change management,
+it allows managing MongoDB databases via it's https://github.com/liquibase/liquibase-mongodb[MongoDB Extension].
+
+Quarkus provides first class support for using Liquibase MongoDB Extension as will be explained in this guide.
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `liquibase-mongodb-quickstart` {quickstarts-tree-url}/liquibase-mongodb-quickstart[directory].
+
+== Setting up support for Liquibase
+
+To start using the Liquibase MongoDB Extension with your project, you just need to:
+
+* add your changeLog to the `{change-log}` file as you usually do with Liquibase
+* activate the `migrate-at-start` option to migrate the schema automatically or inject the `Liquibase` object and run
+your migration as you normally do.
+
+In your `pom.xml`, add the following dependencies:
+
+* the Liquibase MongoDB extension
+* the MongoDB client extension
+
+[source,xml]
+----
+<dependencies>
+    <!-- Liquibase specific dependencies -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-liquibase-mongodb</artifactId>
+    </dependency>
+
+    <!-- MongoDB driver dependencies -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-mongodb-client</artifactId>
+    </dependency>
+</dependencies>
+----
+
+Liquibase MongoDB extension support relies on the Quarkus MongoDB client config.
+For the time being, it does not support multiple clients.
+First, you need to add the MongoDB config to the `{config-file}` file
+in order to allow Liquibase to manage the schema.
+
+The following is an example for the `{config-file}` file:
+
+[source,properties]
+----
+# configure MongoDB
+quarkus.mongodb.connection-string = mongodb://localhost:27017
+
+# Liquibase MongoDB minimal config properties
+quarkus.liquibase-mongodb.migrate-at-start=true
+
+# Liquibase MongoDB optional config properties
+# quarkus.liquibase-mongodb.change-log=db/changeLog.xml
+# quarkus.liquibase-mongodb.validate-on-migrate=true
+# quarkus.liquibase-mongodb.clean-at-start=false
+# quarkus.liquibase-mongodb.contexts=Context1,Context2
+# quarkus.liquibase-mongodb.labels=Label1,Label2
+# quarkus.liquibase-mongodb.default-catalog-name=DefaultCatalog
+# quarkus.liquibase-mongodb.default-schema-name=DefaultSchema
+----
+
+Add a changeLog file to the default folder following the Liquibase naming conventions: `{change-log}`
+YAML, JSON and XML formats are supported for the changeLog.
+
+[source,xml]
+----
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd
+        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+
+    <changeSet id="1" author="loic">
+        <ext:createCollection collectionName="Fruit"/>
+
+        <ext:createIndex collectionName="Fruit">
+            <ext:keys>{color: 1}</ext:keys>
+            <ext:options>{name: "colorIdx"}</ext:options>
+        </ext:createIndex>
+
+        <ext:insertOne collectionName="Fruit">
+            <ext:document>{"name":"orange", "color": "orange"}</ext:document>
+        </ext:insertOne>
+    </changeSet>
+
+</databaseChangeLog>
+----
+
+Now you can start your application and Quarkus will run the Liquibase's update method according to your config.
+
+== Using the Liquibase object
+
+In case you are interested in using the `Liquibase` object directly, you can inject it as follows:
+
+NOTE: If you enabled the `quarkus.liquibase.migrate-at-start` property, by the time you use the Liquibase instance,
+Quarkus will already have run the migrate operation.
+
+[source,java]
+----
+import org.quarkus.liquibase.LiquibaseFactory;
+
+@ApplicationScoped
+public class MigrationService {
+    // You can Inject the object if you want to use it manually
+    @Inject
+    LiquibaseMongodbFactory liquibaseMongodbFactory; <1>
+
+    public void checkMigration() {
+        // Use the liquibase instance manually
+        try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+            liquibase.dropAll(); <2>
+            liquibase.validate();
+            liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
+            // Get the list of liquibase change set statuses
+            List<ChangeSetStatus> status = liquibase.getChangeSetStatuses(liquibaseFactory.createContexts(), liquibaseFactory.createLabels()); <3>
+        }
+    }
+}
+----
+<1> Inject the LiquibaseFactory object
+<2> Use the Liquibase instance directly
+<3> List of applied or not applied liquibase ChangeSets
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-liquibase-mongodb.adoc[opts=optional, leveloffset=+2]

@@ -35,7 +35,7 @@ public final class Dialects {
             return "org.hibernate.dialect.DerbyTenSevenDialect";
         }
         if (DatabaseKind.isMsSQL(resolvedDbKind)) {
-            return "org.hibernate.dialect.SQLServer2012Dialect";
+            return "org.hibernate.dialect.SQLServer2016Dialect";
         }
 
         String error = "Hibernate extension could not guess the dialect from the database kind '" + resolvedDbKind

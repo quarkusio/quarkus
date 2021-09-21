@@ -5,6 +5,10 @@ import static org.jboss.logging.Logger.getLogger;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -19,7 +23,9 @@ import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.vertx.core.Handler;
+import io.vertx.ext.web.MIMEHeader;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.impl.ParsableMIMEValue;
 
 public class QuarkusErrorHandler implements Handler<RoutingContext> {
 
@@ -34,9 +40,11 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
     private static final AtomicLong ERROR_COUNT = new AtomicLong();
 
     private final boolean showStack;
+    private final Optional<HttpConfiguration.PayloadHint> contentTypeDefault;
 
-    public QuarkusErrorHandler(boolean showStack) {
+    public QuarkusErrorHandler(boolean showStack, Optional<HttpConfiguration.PayloadHint> contentTypeDefault) {
         this.showStack = showStack;
+        this.contentTypeDefault = contentTypeDefault;
     }
 
     @Override
@@ -92,15 +100,24 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
         }
 
         String uuid = BASE_ID + ERROR_COUNT.incrementAndGet();
-        String details = "";
+        String details;
         String stack = "";
         Throwable exception = event.failure();
+        String responseContentType = null;
+        try {
+            responseContentType = ContentTypes.pickFirstSupportedAndAcceptedContentType(event);
+        } catch (RuntimeException e) {
+            // Let's shield ourselves from bugs in this parsing code:
+            // we're already handling an exception,
+            // so the priority is to return *something* to the user.
+            // If we can't pick the appropriate content-type, well, so be it.
+            exception.addSuppressed(e);
+        }
         if (showStack && exception != null) {
             details = generateHeaderMessage(exception, uuid);
             stack = generateStackTrace(exception);
-
         } else {
-            details += "Error id " + uuid;
+            details = generateHeaderMessage(uuid);
         }
         if (event.failure() instanceof IOException) {
             log.debugf(exception,
@@ -118,26 +135,55 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
             event.response().end();
             return;
         }
-        String accept = event.request().getHeader("Accept");
-        if (accept != null && accept.contains("application/json")) {
-            event.response().headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=utf-8");
-            String escapedDetails = escapeJsonString(details);
-            String escapedStack = escapeJsonString(stack);
-            StringBuilder jsonPayload = new StringBuilder("{\"details\":\"")
-                    .append(escapedDetails)
-                    .append("\",\"stack\":\"")
-                    .append(escapedStack)
-                    .append("\"}");
-            writeResponse(event, jsonPayload.toString());
-        } else {
-            //We default to HTML representation
-            event.response().headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=utf-8");
-            final TemplateHtmlBuilder htmlBuilder = new TemplateHtmlBuilder("Internal Server Error", details, details);
-            if (showStack && exception != null) {
-                htmlBuilder.stack(exception);
-            }
-            writeResponse(event, htmlBuilder.toString());
+
+        if (responseContentType == null) {
+            responseContentType = "";
         }
+        switch (responseContentType) {
+            case ContentTypes.TEXT_HTML:
+            case ContentTypes.APPLICATION_XHTML:
+            case ContentTypes.APPLICATION_XML:
+            case ContentTypes.TEXT_XML:
+                htmlResponse(event, details, exception);
+                break;
+            case ContentTypes.APPLICATION_JSON:
+            case ContentTypes.TEXT_JSON:
+                jsonResponse(event, responseContentType, details, stack);
+                break;
+            default:
+                // We default to JSON representation
+                switch (contentTypeDefault.orElse(HttpConfiguration.PayloadHint.JSON)) {
+                    case HTML:
+                        htmlResponse(event, details, exception);
+                        break;
+                    case JSON:
+                    default:
+                        jsonResponse(event, ContentTypes.APPLICATION_JSON, details, stack);
+                        break;
+                }
+                break;
+        }
+    }
+
+    private void jsonResponse(RoutingContext event, String contentType, String details, String stack) {
+        event.response().headers().set(HttpHeaderNames.CONTENT_TYPE, contentType + "; charset=utf-8");
+        String escapedDetails = escapeJsonString(details);
+        String escapedStack = escapeJsonString(stack);
+        StringBuilder jsonPayload = new StringBuilder("{\"details\":\"")
+                .append(escapedDetails)
+                .append("\",\"stack\":\"")
+                .append(escapedStack)
+                .append("\"}");
+        writeResponse(event, jsonPayload.toString());
+    }
+
+    private void htmlResponse(RoutingContext event, String details, Throwable exception) {
+        event.response().headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=utf-8");
+        final TemplateHtmlBuilder htmlBuilder = new TemplateHtmlBuilder("Internal Server Error", details, details);
+        if (showStack && exception != null) {
+            htmlBuilder.stack(exception);
+        }
+        writeResponse(event, htmlBuilder.toString());
     }
 
     private void writeResponse(RoutingContext event, String output) {
@@ -154,8 +200,12 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
     }
 
     private static String generateHeaderMessage(final Throwable exception, String uuid) {
-        return String.format("Error handling %s, %s: %s", uuid, exception.getClass().getName(),
+        return String.format("Error id %s, %s: %s", uuid, exception.getClass().getName(),
                 extractFirstLine(exception.getMessage()));
+    }
+
+    private static String generateHeaderMessage(String uuid) {
+        return String.format("Error id %s", uuid);
     }
 
     private static String extractFirstLine(final String message) {
@@ -200,4 +250,31 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
         return sb.toString();
     }
 
+    private static final class ContentTypes {
+
+        private ContentTypes() {
+        }
+
+        private static final String APPLICATION_JSON = "application/json";
+        private static final String TEXT_JSON = "text/json";
+        private static final String TEXT_HTML = "text/html";
+        private static final String APPLICATION_XHTML = "application/xhtml+xml";
+        private static final String APPLICATION_XML = "application/xml";
+        private static final String TEXT_XML = "text/xml";
+
+        // WARNING: The order matters for wildcards: if text/json is before text/html, then text/* will match text/json.
+        private static final Collection<MIMEHeader> SUPPORTED = Arrays.asList(
+                new ParsableMIMEValue(APPLICATION_JSON).forceParse(),
+                new ParsableMIMEValue(TEXT_JSON).forceParse(),
+                new ParsableMIMEValue(TEXT_HTML).forceParse(),
+                new ParsableMIMEValue(APPLICATION_XHTML).forceParse(),
+                new ParsableMIMEValue(APPLICATION_XML).forceParse(),
+                new ParsableMIMEValue(TEXT_XML).forceParse());
+
+        static String pickFirstSupportedAndAcceptedContentType(RoutingContext context) {
+            List<MIMEHeader> acceptableTypes = context.parsedHeaders().accept();
+            MIMEHeader result = context.parsedHeaders().findBestUserAcceptedIn(acceptableTypes, SUPPORTED);
+            return result == null ? null : result.value();
+        }
+    }
 }

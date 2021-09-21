@@ -52,8 +52,8 @@ public class MultiRouteTest {
                 .header("content-type", is(nullValue()));
 
         when().get("/failure").then().statusCode(500).body(containsString("boom"));
-        when().get("/null").then().statusCode(500).body(containsString("null"));
-        when().get("/sync-failure").then().statusCode(500).body(containsString("null"));
+        when().get("/null").then().statusCode(500).body(containsString(NullPointerException.class.getName()));
+        when().get("/sync-failure").then().statusCode(500).body(containsString("boom"));
 
     }
 

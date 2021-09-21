@@ -126,7 +126,7 @@ public class HibernateValidatorFunctionalityTest {
                 .then()
                 .body(containsString(ResteasyReactiveViolationException.class.getName())) // Exception type
                 .body(containsString("numeric value out of bounds")) // Exception message
-                .body(containsString("testRestEndPointReturnValueValidation.&lt;return value&gt;"))
+                .body(containsString("testRestEndPointReturnValueValidation.<return value>"))
                 .body(containsString(HibernateValidatorTestResource.class.getName())) // Stack trace
                 .statusCode(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 

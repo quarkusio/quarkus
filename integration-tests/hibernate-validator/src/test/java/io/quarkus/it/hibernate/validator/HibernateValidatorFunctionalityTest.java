@@ -119,7 +119,7 @@ public class HibernateValidatorFunctionalityTest {
         ValidatableResponse response = RestAssured.when()
                 .get("/hibernate-validator/test/cdi-bean-method-validation-uncaught")
                 .then()
-                .body(containsString("Internal Server Error"))
+                .body(containsString("Error id"))
                 .statusCode(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
         if (isInternalErrorExceptionLeakedInQuarkusErrorHandlerResponse()) {
             response
@@ -182,13 +182,13 @@ public class HibernateValidatorFunctionalityTest {
         ValidatableResponse response = RestAssured.when()
                 .get("/hibernate-validator/test/rest-end-point-return-value-validation/plop/")
                 .then()
-                .body(containsString("Internal Server Error"))
+                .body(containsString("Error id"))
                 .statusCode(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
         if (isInternalErrorExceptionLeakedInQuarkusErrorHandlerResponse()) {
             response
                     .body(containsString(ResteasyViolationExceptionImpl.class.getName())) // Exception type
                     .body(containsString("numeric value out of bounds")) // Exception message
-                    .body(containsString("testRestEndPointReturnValueValidation.&lt;return value&gt;"))
+                    .body(containsString("testRestEndPointReturnValueValidation.<return value>"))
                     .body(containsString(HibernateValidatorTestResource.class.getName())); // Stack trace
         }
 

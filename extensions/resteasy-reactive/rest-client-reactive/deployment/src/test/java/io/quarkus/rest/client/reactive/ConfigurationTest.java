@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.rest.client.reactive.configuration.EchoResource;
 import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.test.QuarkusUnitTest;
@@ -26,7 +27,7 @@ public class ConfigurationTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(HelloClientWithBaseUri.class, HelloResource.class))
+                    .addClasses(HelloClientWithBaseUri.class, EchoResource.class))
             .withConfigurationResource("configuration-test-application.properties");
 
     @RestClient

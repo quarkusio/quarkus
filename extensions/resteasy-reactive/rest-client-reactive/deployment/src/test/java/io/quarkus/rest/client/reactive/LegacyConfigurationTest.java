@@ -9,6 +9,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.rest.client.reactive.configuration.EchoResource;
 import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.test.QuarkusUnitTest;
@@ -18,7 +19,7 @@ public class LegacyConfigurationTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(HelloClientWithBaseUri.class, HelloResource.class))
+                    .addClasses(HelloClientWithBaseUri.class, EchoResource.class))
             .withConfigurationResource("legacy-configuration-test-application.properties");
 
     @Inject

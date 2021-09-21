@@ -15,13 +15,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.rest.client.reactive.configuration.EchoResource;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class ShortNameScopeOverrideTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(HelloResource.class, HelloClientWithBaseUri.class))
+                    .addClasses(EchoResource.class, HelloClientWithBaseUri.class))
             .withConfigurationResource("shortname-scope-test-application.properties");
 
     @RestClient

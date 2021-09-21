@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
@@ -16,8 +17,10 @@ import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Readiness;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.runtime.DataSourcesExcludedFromHealthChecks;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.vertx.mutiny.db2client.DB2Pool;
 
@@ -33,8 +36,14 @@ class ReactiveDB2DataSourcesHealthCheck implements HealthCheck {
 
     @PostConstruct
     protected void init() {
-        for (InstanceHandle<DB2Pool> handle : Arc.container().select(DB2Pool.class, Any.Literal.INSTANCE).handles()) {
-            db2Pools.put(getDB2PoolName(handle.getBean()), handle.get());
+        ArcContainer container = Arc.container();
+        DataSourcesExcludedFromHealthChecks excluded = container.instance(DataSourcesExcludedFromHealthChecks.class).get();
+        Set<String> excludedNames = excluded.getExcludedNames();
+        for (InstanceHandle<DB2Pool> handle : container.select(DB2Pool.class, Any.Literal.INSTANCE).handles()) {
+            String db2PoolName = getDB2PoolName(handle.getBean());
+            if (!excludedNames.contains(db2PoolName)) {
+                db2Pools.put(db2PoolName, handle.get());
+            }
         }
     }
 

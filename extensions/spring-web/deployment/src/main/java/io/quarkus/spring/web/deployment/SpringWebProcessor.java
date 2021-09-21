@@ -178,23 +178,22 @@ public class SpringWebProcessor {
                 if (mappingAnnotationInstance != null) {
                     AnnotationValue methodValue = mappingAnnotationInstance.value("method");
                     if (methodValue == null) {
-                        throw new IllegalArgumentException(
-                                "Usage of '@RequestMapping' without an http method is not allowed. Offending method is '"
-                                        + methodInfo.declaringClass().name() + "#" + methodInfo.name() + "'");
+                        jaxRSMethodAnnotation = ResteasyReactiveDotNames.GET;
+                    } else {
+                        String[] methods = methodValue.asEnumArray();
+                        if (methods.length > 1) {
+                            throw new IllegalArgumentException(
+                                    "Usage of multiple methods using '@RequestMapping' is not allowed. Offending method is '"
+                                            + methodInfo.declaringClass().name() + "#" + methodInfo.name() + "'");
+                        }
+                        DotName methodDotName = ResteasyReactiveScanner.METHOD_TO_BUILTIN_HTTP_ANNOTATIONS.get(methods[0]);
+                        if (methodDotName == null) {
+                            throw new IllegalArgumentException(
+                                    "Unsupported HTTP method '" + methods[0] + "' for @RequestMapping. Offending method is '"
+                                            + methodInfo.declaringClass().name() + "#" + methodInfo.name() + "'");
+                        }
+                        jaxRSMethodAnnotation = methodDotName;
                     }
-                    String[] methods = methodValue.asEnumArray();
-                    if (methods.length > 1) {
-                        throw new IllegalArgumentException(
-                                "Usage of multiple methods using '@RequestMapping' is not allowed. Offending method is '"
-                                        + methodInfo.declaringClass().name() + "#" + methodInfo.name() + "'");
-                    }
-                    DotName methodDotName = ResteasyReactiveScanner.METHOD_TO_BUILTIN_HTTP_ANNOTATIONS.get(methods[0]);
-                    if (methodDotName == null) {
-                        throw new IllegalArgumentException(
-                                "Unsupported HTTP method '" + methods[0] + "' for @RequestMapping. Offending method is '"
-                                        + methodInfo.declaringClass().name() + "#" + methodInfo.name() + "'");
-                    }
-                    jaxRSMethodAnnotation = methodDotName;
                 } else {
                     if (methodInfo.hasAnnotation(GET_MAPPING)) {
                         jaxRSMethodAnnotation = ResteasyReactiveDotNames.GET;

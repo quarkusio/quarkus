@@ -92,15 +92,14 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
         }
 
         String uuid = BASE_ID + ERROR_COUNT.incrementAndGet();
-        String details = "";
+        String details;
         String stack = "";
         Throwable exception = event.failure();
         if (showStack && exception != null) {
             details = generateHeaderMessage(exception, uuid);
             stack = generateStackTrace(exception);
-
         } else {
-            details += "Error id " + uuid;
+            details = generateHeaderMessage(uuid);
         }
         if (event.failure() instanceof IOException) {
             log.debugf(exception,
@@ -154,8 +153,12 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
     }
 
     private static String generateHeaderMessage(final Throwable exception, String uuid) {
-        return String.format("Error handling %s, %s: %s", uuid, exception.getClass().getName(),
+        return String.format("Error id %s, %s: %s", uuid, exception.getClass().getName(),
                 extractFirstLine(exception.getMessage()));
+    }
+
+    private static String generateHeaderMessage(String uuid) {
+        return String.format("Error id %s", uuid);
     }
 
     private static String extractFirstLine(final String message) {

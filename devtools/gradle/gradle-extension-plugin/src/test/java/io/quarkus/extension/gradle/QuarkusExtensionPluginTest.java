@@ -19,7 +19,7 @@ import org.junit.jupiter.api.io.TempDir;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.util.ZipUtils;
 
-public class QuarkusPluginTest {
+public class QuarkusExtensionPluginTest {
 
     @TempDir
     File testProjectDir;
@@ -61,5 +61,28 @@ public class QuarkusPluginTest {
                 Assertions.fail("Unable to read jar file");
             }
         });
+    }
+
+    @Test
+    public void pluginShouldAddAnnotationProcessor() throws IOException {
+        TestUtils.writeFile(buildFile, TestUtils.DEFAULT_BUILD_GRADLE_CONTENT);
+        BuildResult dependencies = GradleRunner.create()
+                .withPluginClasspath()
+                .withProjectDir(testProjectDir)
+                .withArguments("dependencies", "--configuration", "annotationProcessor")
+                .build();
+
+        assertThat(dependencies.getOutput()).contains(QuarkusExtensionPlugin.QUARKUS_ANNOTATION_PROCESSOR);
+    }
+
+    @Test
+    public void pluginShouldAddAnnotationProcessorToDeploymentModule() throws IOException {
+        TestUtils.createExtensionProject(testProjectDir);
+        BuildResult dependencies = GradleRunner.create()
+                .withPluginClasspath()
+                .withProjectDir(testProjectDir)
+                .withArguments(":deployment:dependencies", "--configuration", "annotationProcessor")
+                .build();
+        assertThat(dependencies.getOutput()).contains(QuarkusExtensionPlugin.QUARKUS_ANNOTATION_PROCESSOR);
     }
 }

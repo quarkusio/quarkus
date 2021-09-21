@@ -8,8 +8,8 @@ dependencies {
     implementation platform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
 }
 
-extensionDescriptor {
-    deployment = "org.acme:ext-m-deployment:1.0-SNAPSHOT"
+quarkusExtension {
+    deploymentArtifact = "org.acme:ext-m-deployment:1.0-SNAPSHOT"
     conditionalDependencies = ["org.acme:ext-n::jar:1.0-SNAPSHOT", "org.acme:ext-r::jar:1.0-SNAPSHOT"]
 }
 

@@ -38,6 +38,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
             + StandardCharsets.UTF_8.name();
     private static final String DEFAULT_REQUEST_CONTENT_TYPE = "application/json; charset="
             + StandardCharsets.UTF_8.name();
+    private static final String MISSING_OPERATION = "Missing operation body";
 
     public SmallRyeGraphQLExecutionHandler(boolean allowGet, boolean allowPostWithQueryParameters,
             CurrentIdentityAssociation currentIdentityAssociation,
@@ -90,10 +91,23 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
             String postResponse;
             if (hasQueryParameters(ctx) && allowPostWithQueryParameters) {
                 JsonObject jsonObjectFromQueryParameters = getJsonObjectFromQueryParameters(ctx);
-                JsonObject mergedJsonObject = Json.createMergePatch(jsonObjectFromQueryParameters).apply(jsonObjectFromBody)
-                        .asJsonObject();
+                JsonObject mergedJsonObject;
+                if (jsonObjectFromBody != null) {
+                    mergedJsonObject = Json.createMergePatch(jsonObjectFromQueryParameters).apply(jsonObjectFromBody)
+                            .asJsonObject();
+                } else {
+                    mergedJsonObject = jsonObjectFromQueryParameters;
+                }
+                if (!mergedJsonObject.containsKey(QUERY)) {
+                    response.setStatusCode(400).end(MISSING_OPERATION);
+                    return;
+                }
                 postResponse = doRequest(mergedJsonObject);
             } else {
+                if (jsonObjectFromBody == null) {
+                    response.setStatusCode(400).end(MISSING_OPERATION);
+                    return;
+                }
                 postResponse = doRequest(jsonObjectFromBody);
             }
             response.setStatusCode(200).setStatusMessage(OK).end(Buffer.buffer(postResponse, requestedCharset));
@@ -114,7 +128,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
                             .end(Buffer.buffer(getResponse, requestedCharset));
 
                 } else {
-                    response.setStatusCode(204).end();
+                    response.setStatusCode(400).end(MISSING_OPERATION);
                 }
             } catch (UnsupportedEncodingException uee) {
                 throw new RuntimeException(uee);
@@ -170,6 +184,9 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
             return input.build();
             // Else we expect a Json in the content    
         } else {
+            if (body == null || body.isEmpty()) {
+                return null;
+            }
             try (StringReader bodyReader = new StringReader(body);
                     JsonReader jsonReader = jsonReaderFactory.createReader(bodyReader)) {
                 return jsonReader.readObject();

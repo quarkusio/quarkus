@@ -29,6 +29,15 @@ public class BasicMappingTest {
     }
 
     @Test
+    public void verifyRequestMappingWithNoMethod() {
+        when().get(TestController.CONTROLLER_PATH + "/hello4?name=people")
+                .then()
+                .statusCode(200)
+                .contentType("text/plain")
+                .body(is("hello people"));
+    }
+
+    @Test
     public void verifyGetToMethodWithoutForwardSlash() {
         when().get(TestController.CONTROLLER_PATH + "/yolo")
                 .then()

@@ -23,6 +23,11 @@ public class TestController {
         return "hello " + name;
     }
 
+    @RequestMapping("/hello4")
+    public String requestMappingNoMethod(@RequestParam String name) {
+        return "hello " + name;
+    }
+
     @GetMapping("yolo")
     public String yolo() {
         return "yolo";

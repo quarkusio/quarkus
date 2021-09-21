@@ -68,6 +68,7 @@ public class BeanDeployment {
     private final Map<DotName, StereotypeInfo> stereotypes;
 
     private final List<BeanInfo> beans;
+    private volatile Map<Type, List<BeanInfo>> beansByType = null;
 
     private final List<InterceptorInfo> interceptors;
     private final List<DecoratorInfo> decorators;
@@ -248,6 +249,7 @@ public class BeanDeployment {
             List<Predicate<BeanInfo>> additionalUnusedBeanExclusions) {
         long start = System.nanoTime();
 
+        initBeanByTypeMap();
         // Collect dependency resolution errors
         List<Throwable> errors = new ArrayList<>();
         for (BeanInfo bean : beans) {
@@ -279,9 +281,23 @@ public class BeanDeployment {
             LOGGER.debugf("Removed %s beans, %s interceptors and %s decorators in %s ms", removedBeans.size(),
                     removedInterceptors.size(), removedDecorators.size(),
                     TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - removalStart));
+            //we need to re-initialize it, so it does not contain removed beans
+            initBeanByTypeMap();
         }
         buildContext.putInternal(BuildExtension.Key.REMOVED_BEANS.asString(), Collections.unmodifiableSet(removedBeans));
         LOGGER.debugf("Bean deployment initialized in %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
+    }
+
+    private void initBeanByTypeMap() {
+        beansByType = new HashMap<>();
+        for (var bean : beans) {
+            for (var beanType : bean.types) {
+                beansByType.computeIfAbsent(beanType, (s) -> new ArrayList<>()).add(bean);
+            }
+        }
+        for (var e : beansByType.entrySet()) {
+            e.setValue(Collections.unmodifiableList(e.getValue()));
+        }
     }
 
     private void removeUnusedComponents(Set<BeanInfo> declaresObserver,
@@ -405,6 +421,14 @@ public class BeanDeployment {
 
     public Collection<BeanInfo> getBeans() {
         return Collections.unmodifiableList(beans);
+    }
+
+    public Collection<BeanInfo> getBeansByType(Type type) {
+        var ret = beansByType.get(type);
+        if (ret == null) {
+            return Collections.emptyList();
+        }
+        return ret;
     }
 
     public Collection<BeanInfo> getRemovedBeans() {

@@ -9,6 +9,7 @@ import static org.jboss.jandex.Type.Kind.WILDCARD_TYPE;
 
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -81,7 +82,11 @@ class BeanResolverImpl implements BeanResolver {
 
     private List<BeanInfo> findMatching(TypeAndQualifiers typeAndQualifiers) {
         List<BeanInfo> resolved = new ArrayList<>();
-        for (BeanInfo b : beanDeployment.getBeans()) {
+        //optimisation for the simple class case
+        Collection<BeanInfo> potentialBeans = typeAndQualifiers.type.kind() == CLASS
+                ? beanDeployment.getBeansByType(typeAndQualifiers.type)
+                : beanDeployment.getBeans();
+        for (BeanInfo b : potentialBeans) {
             if (Beans.matches(b, typeAndQualifiers)) {
                 resolved.add(b);
             }
@@ -91,7 +96,10 @@ class BeanResolverImpl implements BeanResolver {
 
     List<BeanInfo> findTypeMatching(Type type) {
         List<BeanInfo> resolved = new ArrayList<>();
-        for (BeanInfo b : beanDeployment.getBeans()) {
+        //optimisation for the simple class case
+        Collection<BeanInfo> potentialBeans = type.kind() == CLASS ? beanDeployment.getBeansByType(type)
+                : beanDeployment.getBeans();
+        for (BeanInfo b : potentialBeans) {
             if (Beans.matchesType(b, type)) {
                 resolved.add(b);
             }

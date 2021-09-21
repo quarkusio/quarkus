@@ -1,5 +1,7 @@
 package io.quarkus.devtools.testing.codestarts;
 
+import static io.quarkus.devtools.testing.RegistryClientTestHelper.disableRegistryClientTestConfig;
+import static io.quarkus.devtools.testing.RegistryClientTestHelper.enableRegistryClientTestConfig;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getBuiltWithQuarkusCore;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -97,8 +99,12 @@ public class QuarkusCodestartTestBuilder {
     }
 
     public QuarkusCodestartTestBuilder standaloneExtensionCatalog() {
+        return this.standaloneExtensionCatalog(null, null);
+    }
+
+    public QuarkusCodestartTestBuilder standaloneExtensionCatalog(String quarkusBomGroupId, String quarkusBomVersion) {
         try {
-            String quarkusVersion = null;
+            String buildWithQuarkusCoreVersion = null;
             final ArrayList<Extension> extensions = new ArrayList<>();
             for (URL url : Collections
                     .list(Thread.currentThread().getContextClassLoader().getResources("META-INF/quarkus-extension.yaml"))) {
@@ -111,13 +117,16 @@ public class QuarkusCodestartTestBuilder {
                     }
                 });
                 extensions.add(extension);
-                if (quarkusVersion == null) {
-                    quarkusVersion = getBuiltWithQuarkusCore(extension);
+                if (buildWithQuarkusCoreVersion == null) {
+                    buildWithQuarkusCoreVersion = getBuiltWithQuarkusCore(extension);
                 }
             }
-            Objects.requireNonNull(quarkusVersion, "quarkus version not found in extensions");
+            Objects.requireNonNull(buildWithQuarkusCoreVersion, "quarkus version not found in extensions");
+            String quarkusVersion = quarkusBomVersion != null ? quarkusBomVersion : buildWithQuarkusCoreVersion;
+            enableRegistryClientTestConfig(quarkusBomGroupId != null ? quarkusBomGroupId : "io.quarkus", quarkusVersion);
             final ExtensionCatalog extensionCatalog = QuarkusProjectHelper
                     .getExtensionCatalog(quarkusVersion);
+            disableRegistryClientTestConfig();
             if (!(extensionCatalog instanceof JsonExtensionCatalog)) {
                 throw new IllegalStateException("Problem with the given ExtensionCatalog type");
             }

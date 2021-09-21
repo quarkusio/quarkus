@@ -3,16 +3,10 @@ package io.quarkus.it.neo4j;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.matchesRegex;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -25,6 +19,10 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Values;
 
+import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+
 /**
  * Test connecting via Neo4j Java-Driver to Neo4j.
  * Can quickly start a matching database with:
@@ -36,7 +34,8 @@ import org.neo4j.driver.Values;
 @QuarkusTest
 public class Neo4jFunctionalityTest {
 
-    @Inject Driver driver;
+    @Inject
+    Driver driver;
 
     // This creates nodes as well and uses an unmanaged tx. It is therefore also testing that the
     // JTA aware driver behaves just like the normal one when not managed
@@ -49,8 +48,8 @@ public class Neo4jFunctionalityTest {
     public void testTransactionalNeo4jFunctionalityCommiting() {
         var externalId = UUID.randomUUID().toString();
         RestAssured.given().when()
-            .queryParam("externalId", externalId)
-            .get("/neo4j/transactional").then().body(is("OK"));
+                .queryParam("externalId", externalId)
+                .get("/neo4j/transactional").then().body(is("OK"));
 
         assertEquals(1L, numberOfFrameworkNodesWithId(externalId));
     }
@@ -59,12 +58,12 @@ public class Neo4jFunctionalityTest {
     public void testTransactionalNeo4jFunctionalityRollback() {
         var externalId = UUID.randomUUID().toString();
         RestAssured.given().when()
-            .queryParam("externalId", externalId)
-            .queryParam("causeAScene", true)
-            .get("/neo4j/transactional")
-            .then().log().all()
-            .statusCode(500)
-            .body(is(equalTo("On purpose.")));
+                .queryParam("externalId", externalId)
+                .queryParam("causeAScene", true)
+                .get("/neo4j/transactional")
+                .then().log().all()
+                .statusCode(500)
+                .body(is(equalTo("On purpose.")));
 
         assertEquals(0L, numberOfFrameworkNodesWithId(externalId));
     }
@@ -72,16 +71,16 @@ public class Neo4jFunctionalityTest {
     @Test
     public void testItShouldNotBeAllowedToUseJTAAndLocalTX() {
         RestAssured.given().when()
-            .get("/neo4j/not-allowed-to-use-jta-and-local-tx")
-            .then().log().all()
-            .statusCode(500)
-            .body(is(equalTo("Unmanaged transactions are not supported in a managed (JTA) environment.")));
+                .get("/neo4j/not-allowed-to-use-jta-and-local-tx")
+                .then().log().all()
+                .statusCode(500)
+                .body(is(equalTo("Unmanaged transactions are not supported in a managed (JTA) environment.")));
     }
 
     private long numberOfFrameworkNodesWithId(String externalId) {
         try (var session = driver.session()) {
             return session.run("MATCH (n:Framework {id: $id}) RETURN count(n)", Values.parameters("id", externalId))
-                .single().get(0).asLong();
+                    .single().get(0).asLong();
         }
     }
 

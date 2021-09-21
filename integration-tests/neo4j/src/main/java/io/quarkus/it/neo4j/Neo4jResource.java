@@ -4,8 +4,6 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.SERVER_SENT_EVENTS;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 
-import reactor.core.publisher.Flux;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Collections;
@@ -32,6 +30,8 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.reactivestreams.Publisher;
+
+import reactor.core.publisher.Flux;
 
 @Path("/neo4j")
 public class Neo4jResource {
@@ -62,12 +62,14 @@ public class Neo4jResource {
     @Path("/transactional")
     @Produces(TEXT_PLAIN)
     @Transactional
-    public String doThingsTransactional(@QueryParam("externalId") String externalId, @QueryParam("causeAScene") @DefaultValue("false") boolean causeAScene) {
+    public String doThingsTransactional(@QueryParam("externalId") String externalId,
+            @QueryParam("causeAScene") @DefaultValue("false") boolean causeAScene) {
         try (Session session = driver.session()) {
-            session.run("CREATE (f:Framework {name: $name, id: $id}) - [:CAN_USE {transactional: 'of course'}] -> (n:Database {name: 'Neo4j'})",
-                Values.parameters("name", "Quarkus", "id", externalId));
+            session.run(
+                    "CREATE (f:Framework {name: $name, id: $id}) - [:CAN_USE {transactional: 'of course'}] -> (n:Database {name: 'Neo4j'})",
+                    Values.parameters("name", "Quarkus", "id", externalId));
         }
-        if(causeAScene) {
+        if (causeAScene) {
             throw new SomeException("On purpose.");
         }
         return "OK";
@@ -82,7 +84,7 @@ public class Neo4jResource {
             // Will use an explicit tx
             createNodes(driver);
         } catch (Exception e) {
-           throw new SomeException(e.getMessage());
+            throw new SomeException(e.getMessage());
         }
         return "OK";
     }
@@ -100,8 +102,8 @@ public class Neo4jResource {
         public Response toResponse(SomeException exception) {
 
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(exception.getMessage())
-                .build();
+                    .entity(exception.getMessage())
+                    .build();
         }
     }
 

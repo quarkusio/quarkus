@@ -30,9 +30,8 @@ import io.quarkus.restclient.config.RestClientsConfig;
 
 public class RestClientCDIDelegateBuilder<T> {
 
-    private static final String MP_REST = "mp-rest";
-    private static final String REST_URL_FORMAT = "%s/" + MP_REST + "/url";
-    private static final String REST_URI_FORMAT = "%s/" + MP_REST + "/uri";
+    private static final String REST_URL_FORMAT = "quarkus.rest-client.%s.url";
+    private static final String REST_URI_FORMAT = "quarkus.rest-client.%s.uri";
 
     private final Class<T> jaxrsInterface;
     private final String baseUriFromAnnotation;
@@ -305,7 +304,7 @@ public class RestClientCDIDelegateBuilder<T> {
         }
         if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty())
                 && propertyOptional.isEmpty()) {
-            String propertyPrefix = configKey != null ? configKey : jaxrsInterface.getName();
+            String propertyPrefix = configKey != null ? configKey : "\"" + jaxrsInterface.getName() + "\"";
             throw new IllegalArgumentException(
                     String.format(
                             "Unable to determine the proper baseUrl/baseUri. " +

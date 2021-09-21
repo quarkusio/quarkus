@@ -10,6 +10,7 @@ import javax.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Driver;
@@ -21,7 +22,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class Neo4jDevModeTests {
 
     @Testcontainers(disabledWithoutDocker = true)
-    static class DevServicesShouldStartNeo4j {
+    static class DevServicesShouldStartNeo4jTest {
 
         @RegisterExtension
         static QuarkusUnitTest test = new QuarkusUnitTest()
@@ -43,7 +44,7 @@ public class Neo4jDevModeTests {
     }
 
     @Testcontainers(disabledWithoutDocker = true)
-    static class WorkingWithDifferentImageAndAdditionalEnv {
+    static class WorkingWithDifferentImageAndAdditionalEnvTest {
 
         @RegisterExtension
         static QuarkusUnitTest test = new QuarkusUnitTest()
@@ -93,7 +94,7 @@ public class Neo4jDevModeTests {
     }
 
     @Testcontainers(disabledWithoutDocker = true)
-    static class WithExplicitProperty {
+    static class WithExplicitPropertyTest {
 
         @RegisterExtension
         static QuarkusUnitTest test = new QuarkusUnitTest()
@@ -115,11 +116,11 @@ public class Neo4jDevModeTests {
     }
 
     @Testcontainers(disabledWithoutDocker = true)
-    static class WithAlreadyReachableInstance {
+    static class WithAlreadyReachableInstanceTest {
 
         static {
-            // Make our check think that
-            System.setProperty("quarkus.neo4j.devservices.assumeBoltIsReachable", "true");
+            // Make our check think that bolt is locally reachable
+            System.setProperty("io.quarkus.neo4j.deployment.devservices.assumeBoltIsReachable", "true");
         }
 
         @RegisterExtension
@@ -128,7 +129,13 @@ public class Neo4jDevModeTests {
                 .setLogRecordPredicate(record -> true)
                 .withConfigurationResource("application.properties")
                 .assertLogRecords(records -> assertThat(records).extracting(LogRecord::getMessage)
-                        .contains("Not starting Dev Services for Neo4j, as the default config points to a reachable address."));
+                        .anyMatch(s -> s.startsWith(
+                                "Not starting Dev Services for Neo4j, as the default config points to a reachable address.")));
+
+        @AfterAll
+        static void deleteSystemPropertyAgain() {
+            System.setProperty("io.quarkus.neo4j.deployment.devservices.assumeBoltIsReachable", "");
+        }
 
         @Inject
         Driver driver;

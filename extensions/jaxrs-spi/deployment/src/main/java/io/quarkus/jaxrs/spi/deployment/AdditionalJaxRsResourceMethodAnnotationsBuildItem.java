@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.server.common.spi;
+package io.quarkus.jaxrs.spi.deployment;
 
 import java.util.List;
 

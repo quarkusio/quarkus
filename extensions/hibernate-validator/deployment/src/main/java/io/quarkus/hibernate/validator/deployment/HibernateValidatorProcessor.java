@@ -79,10 +79,10 @@ import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterc
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveViolationExceptionMapper;
 import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
+import io.quarkus.jaxrs.spi.deployment.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
-import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 
 class HibernateValidatorProcessor {
@@ -314,7 +314,9 @@ class HibernateValidatorProcessor {
         // JAX-RS methods are handled differently by the transformer so those need to be gathered here.
         // Note: The focus only on methods is basically an incomplete solution, since there could also be
         // class-level JAX-RS annotations but currently the transformer only looks at methods.
-        Map<DotName, Set<SimpleMethodSignatureKey>> jaxRsMethods = gatherJaxRsMethods(additionalJaxRsResourceMethodAnnotations,
+        Set<DotName> additional = new HashSet<>();
+        additionalJaxRsResourceMethodAnnotations.forEach((s) -> additional.addAll(s.getAnnotationClasses()));
+        Map<DotName, Set<SimpleMethodSignatureKey>> jaxRsMethods = gatherJaxRsMethods(additional,
                 indexView);
 
         // Add the annotations transformer to add @MethodValidated annotations on the methods requiring validation
@@ -432,16 +434,14 @@ class HibernateValidatorProcessor {
     }
 
     private static Map<DotName, Set<SimpleMethodSignatureKey>> gatherJaxRsMethods(
-            List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations,
+            Set<DotName> additionalJaxRsResourceMethodAnnotations,
             IndexView indexView) {
         Map<DotName, Set<SimpleMethodSignatureKey>> jaxRsMethods = new HashMap<>();
 
         Collection<DotName> jaxRsMethodDefiningAnnotations = new ArrayList<>(
                 ResteasyDotNames.JAXRS_METHOD_ANNOTATIONS.size() + additionalJaxRsResourceMethodAnnotations.size());
         jaxRsMethodDefiningAnnotations.addAll(ResteasyDotNames.JAXRS_METHOD_ANNOTATIONS);
-        for (AdditionalJaxRsResourceMethodAnnotationsBuildItem additionalJaxRsResourceMethodAnnotation : additionalJaxRsResourceMethodAnnotations) {
-            jaxRsMethodDefiningAnnotations.addAll(additionalJaxRsResourceMethodAnnotation.getAnnotationClasses());
-        }
+        jaxRsMethodDefiningAnnotations.addAll(additionalJaxRsResourceMethodAnnotations);
 
         for (DotName jaxRsAnnotation : jaxRsMethodDefiningAnnotations) {
             Collection<AnnotationInstance> annotationInstances = indexView.getAnnotations(jaxRsAnnotation);

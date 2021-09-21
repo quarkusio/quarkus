@@ -37,6 +37,7 @@
         <module>resteasy-reactive</module>
         <module>reactive-routes</module>
         <module>apache-httpclient</module>
+        <module>jaxrs-spi</module>
 
         <!-- Monitoring -->
         <module>smallrye-health</module>

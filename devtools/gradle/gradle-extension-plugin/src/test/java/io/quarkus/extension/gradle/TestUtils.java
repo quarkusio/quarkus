@@ -36,6 +36,19 @@ public class TestUtils {
         return extensionDescriptorResult;
     }
 
+    public static void createExtensionProject(File testProjectDir) throws IOException {
+        File runtimeModule = new File(testProjectDir, "runtime");
+        runtimeModule.mkdir();
+        writeFile(new File(runtimeModule, "build.gradle"), DEFAULT_BUILD_GRADLE_CONTENT);
+
+        File deploymentModule = new File(testProjectDir, "deployment");
+        deploymentModule.mkdir();
+        writeFile(new File(deploymentModule, "build.gradle"), "plugins { id 'java'}");
+
+        writeFile(new File(testProjectDir, "settings.gradle"), "include 'runtime', 'deployment'");
+
+    }
+
     public static void writeFile(File destination, String content) throws IOException {
         BufferedWriter output = null;
         try {

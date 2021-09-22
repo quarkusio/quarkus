@@ -12,12 +12,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
-
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Values;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -34,9 +30,6 @@ import io.restassured.http.ContentType;
 @QuarkusTest
 public class Neo4jFunctionalityTest {
 
-    @Inject
-    Driver driver;
-
     // This creates nodes as well and uses an unmanaged tx. It is therefore also testing that the
     // JTA aware driver behaves just like the normal one when not managed
     @Test
@@ -49,7 +42,7 @@ public class Neo4jFunctionalityTest {
         var externalId = UUID.randomUUID().toString();
         RestAssured.given().when()
                 .queryParam("externalId", externalId)
-                .get("/neo4j/transactional").then().body(is("OK"));
+                .get("/neo4j/blockingWithJTATransactional").then().body(is("OK"));
 
         assertEquals(1L, numberOfFrameworkNodesWithId(externalId));
     }
@@ -60,7 +53,7 @@ public class Neo4jFunctionalityTest {
         RestAssured.given().when()
                 .queryParam("externalId", externalId)
                 .queryParam("causeAScene", true)
-                .get("/neo4j/transactional")
+                .get("/neo4j/blockingWithJTATransactional")
                 .then().log().all()
                 .statusCode(500)
                 .body(is(equalTo("On purpose.")));
@@ -71,17 +64,19 @@ public class Neo4jFunctionalityTest {
     @Test
     public void testItShouldNotBeAllowedToUseJTAAndLocalTX() {
         RestAssured.given().when()
-                .get("/neo4j/not-allowed-to-use-jta-and-local-tx")
+                .get("/neo4j/mixingUpTxConcepts")
                 .then().log().all()
                 .statusCode(500)
                 .body(is(equalTo("Unmanaged transactions are not supported in a managed (JTA) environment.")));
     }
 
     private long numberOfFrameworkNodesWithId(String externalId) {
-        try (var session = driver.session()) {
-            return session.run("MATCH (n:Framework {id: $id}) RETURN count(n)", Values.parameters("id", externalId))
-                    .single().get(0).asLong();
-        }
+        return Long.parseLong(RestAssured.given().when()
+            .queryParam("externalId", externalId)
+            .get("/neo4j/countNodesWith")
+            .then()
+            .statusCode(200)
+            .extract().asString());
     }
 
     @Test

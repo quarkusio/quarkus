@@ -42,7 +42,7 @@ public class Neo4jResource {
     @GET
     @Path("/blocking")
     @Produces(TEXT_PLAIN)
-    public String doStuffWithNeo4j() {
+    public String blocking() {
         try {
             createNodes(driver);
 
@@ -59,10 +59,10 @@ public class Neo4jResource {
     }
 
     @GET
-    @Path("/transactional")
+    @Path("/blockingWithJTATransactional")
     @Produces(TEXT_PLAIN)
     @Transactional
-    public String doThingsTransactional(@QueryParam("externalId") String externalId,
+    public String blockingWithJTATransactional(@QueryParam("externalId") String externalId,
             @QueryParam("causeAScene") @DefaultValue("false") boolean causeAScene) {
         try (Session session = driver.session()) {
             session.run(
@@ -76,13 +76,15 @@ public class Neo4jResource {
     }
 
     @GET
-    @Path("/not-allowed-to-use-jta-and-local-tx")
+    @Path("/mixingUpTxConcepts")
     @Produces(TEXT_PLAIN)
     @Transactional
     public String mixingUpTxConcepts() {
-        try {
-            // Will use an explicit tx
-            createNodes(driver);
+        try (Session session = driver.session();
+            Transaction transaction = session.beginTransaction()) {
+            transaction.run("CREATE (f:Framework {name: $name}) - [:CAN_USE] -> (n:Database {name: 'Neo4j'})",
+                Values.parameters("name", "Quarkus"));
+            transaction.commit();
         } catch (Exception e) {
             throw new SomeException(e.getMessage());
         }
@@ -110,7 +112,7 @@ public class Neo4jResource {
     @GET
     @Path("/asynchronous")
     @Produces(APPLICATION_JSON)
-    public CompletionStage<List<Integer>> doStuffWithNeo4jAsynchronous() {
+    public CompletionStage<List<Integer>> asynchronous() {
         AsyncSession session = driver.asyncSession();
         return session
                 .runAsync("UNWIND range(1, 3) AS x RETURN x")
@@ -129,12 +131,23 @@ public class Neo4jResource {
     @GET
     @Path("/reactive")
     @Produces(SERVER_SENT_EVENTS)
-    public Publisher<Integer> doStuffWithNeo4jReactive() {
+    public Publisher<Integer> reactive() {
 
         return Flux.using(driver::rxSession, session -> session.readTransaction(tx -> {
             RxResult result = tx.run("UNWIND range(1, 3) AS x RETURN x", Collections.emptyMap());
             return Flux.from(result.records()).map(record -> record.get("x").asInt());
         }), RxSession::close).doOnNext(System.out::println);
+    }
+
+
+    @GET
+    @Path("/countNodesWith")
+    @Produces(TEXT_PLAIN)
+    public long countNodesWith(@QueryParam("externalId") String externalId) {
+        try (var session = driver.session()) {
+            return session.run("MATCH (n:Framework {id: $id}) RETURN count(n)", Values.parameters("id", externalId))
+                .single().get(0).asLong();
+        }
     }
 
     private static void createNodes(Driver driver) {

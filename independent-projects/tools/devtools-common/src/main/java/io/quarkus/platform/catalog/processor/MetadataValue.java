@@ -72,7 +72,11 @@ final class MetadataValue {
         if (name == null) {
             return defaultValue;
         }
-        return T.valueOf(clazz, name.toUpperCase(Locale.ROOT).replace('-', '_'));
+        try {
+            return T.valueOf(clazz, name.toUpperCase(Locale.ROOT).replace('-', '_'));
+        } catch (IllegalArgumentException e) {
+            return defaultValue;
+        }
     }
 
 }

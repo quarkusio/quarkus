@@ -436,7 +436,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             changedFilesForRestart.addAll(changedClassResults.getDeletedClasses());
 
             if (ClassChangeAgent.getInstrumentation() != null && lastStartIndex != null && !configFileRestartNeeded
-                    && devModeType != DevModeType.REMOTE_LOCAL_SIDE) {
+                    && devModeType != DevModeType.REMOTE_LOCAL_SIDE && instrumentationEnabled()) {
                 //attempt to do an instrumentation based reload
                 //if only code has changed and not the class structure, then we can do a reload
                 //using the JDK instrumentation API (assuming we were started with the javaagent)
@@ -455,8 +455,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                                     classTransformers.apply(name, bytes));
                         }
                         Index current = indexer.complete();
-                        boolean ok = instrumentationEnabled()
-                                && !disableInstrumentationForIndexPredicate.test(current);
+                        boolean ok = !disableInstrumentationForIndexPredicate.test(current);
                         if (ok) {
                             for (ClassInfo clazz : current.getKnownClasses()) {
                                 ClassInfo old = lastStartIndex.getClassByName(clazz.name());

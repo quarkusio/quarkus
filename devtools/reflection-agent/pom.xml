@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-devtools-all</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>2.3.0.CR1</version>
     </parent>
 
     <artifactId>quarkus-devtools-reflection-agent</artifactId>

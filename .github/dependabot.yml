@@ -123,6 +123,10 @@ updates:
       - dependency-name: io.grpc:*
       # jaeger
       - dependency-name: io.jaegertracing:*
+      # Kotlin
+      - dependency-name: org.jetbrains.kotlin:*
+      - dependency-name: org.jetbrains.kotlinx:*
+      - dependency-name: org.jetbrains.dokka:*
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/integration-tests/gradle"

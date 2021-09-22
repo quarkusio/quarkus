@@ -314,13 +314,13 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         ObjectMapper mapper = null;
         if (extensionFile.exists()) {
             mapper = getMapper(extensionFile.toString().endsWith(".yaml"));
-            extObject = readJsonNode(extensionFile.toPath(), mapper);
+            extObject = readExtensionDescriptorFile(extensionFile.toPath(), mapper);
         } else {
             mapper = getMapper(true);
             extObject = getMapper(true).createObjectNode();
         }
 
-        transformLegacyToNew(output, extObject, mapper);
+        transformLegacyToNew(extObject, mapper);
 
         ensureArtifactCoords(extObject);
 
@@ -418,11 +418,11 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         return s != null && !s.isBlank() && !s.equals(propertyExpr) ? s : null;
     }
 
-    private ObjectNode readJsonNode(Path extensionFile, ObjectMapper mapper) throws MojoExecutionException {
-        try {
-            return readExtensionYaml(extensionFile, mapper);
-        } catch (IOException e) {
-            throw new MojoExecutionException("Failed to parse " + extensionFile, e);
+    private ObjectNode readExtensionDescriptorFile(Path extensionFile, ObjectMapper mapper) throws MojoExecutionException {
+        try (InputStream is = Files.newInputStream(extensionFile)) {
+            return mapper.readValue(is, ObjectNode.class);
+        } catch (IOException io) {
+            throw new MojoExecutionException("Failed to parse " + extensionFile, io);
         }
     }
 
@@ -942,8 +942,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         return f != null && f.getName().endsWith(".jar") && f.exists() && !f.isDirectory();
     }
 
-    private void transformLegacyToNew(final Path output, ObjectNode extObject, ObjectMapper mapper)
-            throws MojoExecutionException {
+    private void transformLegacyToNew(ObjectNode extObject, ObjectMapper mapper) {
         ObjectNode metadata = null;
 
         // Note: groupId and artifactId shouldn't normally be in the source json but
@@ -983,18 +982,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         extObject.set(METADATA, metadata);
 
-    }
-
-    /**
-     * parse yaml or json and then return jackson JSonNode for furhter processing
-     ***/
-    private ObjectNode readExtensionYaml(Path descriptor, ObjectMapper mapper)
-            throws IOException {
-        try (InputStream is = Files.newInputStream(descriptor)) {
-            return mapper.readValue(is, ObjectNode.class);
-        } catch (IOException io) {
-            throw new IOException("Failed to parse " + descriptor, io);
-        }
     }
 
     private ObjectMapper getMapper(boolean yaml) {

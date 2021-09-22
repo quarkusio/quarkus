@@ -31,6 +31,7 @@ import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
+import io.quarkus.deployment.builditem.RuntimeApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
@@ -106,6 +107,14 @@ public class StartupActionImpl implements StartupAction {
                         if (ApplicationStateNotification.getState() == ApplicationStateNotification.State.INITIAL) {
                             ApplicationStateNotification.notifyStartupFailed(e);
                         }
+                    } finally {
+                        for (var i : buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class)) {
+                            try {
+                                i.getCloseTask().run();
+                            } catch (Throwable t) {
+                                log.error("Failed to run close task", t);
+                            }
+                        }
                     }
                 }
             }, "Quarkus Main Thread");
@@ -173,6 +182,13 @@ public class StartupActionImpl implements StartupAction {
         } finally {
             runtimeClassLoader.close();
             Thread.currentThread().setContextClassLoader(old);
+            for (var i : buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class)) {
+                try {
+                    i.getCloseTask().run();
+                } catch (Throwable t) {
+                    log.error("Failed to run close task", t);
+                }
+            }
         }
     }
 
@@ -230,6 +246,14 @@ public class StartupActionImpl implements StartupAction {
                         }
                     } finally {
                         ForkJoinClassLoading.setForkJoinClassLoader(ClassLoader.getSystemClassLoader());
+
+                        for (var i : buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class)) {
+                            try {
+                                i.getCloseTask().run();
+                            } catch (Throwable t) {
+                                log.error("Failed to run close task", t);
+                            }
+                        }
                         if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST &&
                                 !curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication()) {
                             //for tests we just always shut down the curated application, as it is only used once

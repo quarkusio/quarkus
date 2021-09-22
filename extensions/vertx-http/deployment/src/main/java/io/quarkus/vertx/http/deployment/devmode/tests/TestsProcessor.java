@@ -58,7 +58,7 @@ public class TestsProcessor {
             // Add continuous testing
             routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .route("dev/test")
-                    .handler(recorder.continousTestHandler(shutdownContextBuildItem))
+                    .handler(recorder.continuousTestHandler(shutdownContextBuildItem))
                     .build());
         }
 

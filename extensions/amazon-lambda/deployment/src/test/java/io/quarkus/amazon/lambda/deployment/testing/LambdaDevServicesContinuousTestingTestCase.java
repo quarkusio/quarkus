@@ -6,7 +6,7 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.ContinuousTestingTestUtils;
@@ -20,7 +20,9 @@ public class LambdaDevServicesContinuousTestingTestCase {
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(GreetingLambda.class, Person.class)
-                            .addAsResource(new StringAsset(ContinuousTestingTestUtils.appProperties("")),
+                            .addAsResource(
+                                    new StringAsset(ContinuousTestingTestUtils.appProperties(
+                                            "quarkus.log.category.\"io.quarkus.amazon.lambda.runtime\".level=DEBUG")),
                                     "application.properties");
                 }
             }).setTestArchiveProducer(new Supplier<JavaArchive>() {
@@ -30,7 +32,8 @@ public class LambdaDevServicesContinuousTestingTestCase {
                 }
             });
 
-    @Test
+    //run this twice, to make sure everything is cleaned up properly
+    @RepeatedTest(2)
     public void testLambda() throws Exception {
         ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
         var result = utils.waitForNextCompletion();

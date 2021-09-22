@@ -80,6 +80,7 @@ public class MockHttpEventServer extends MockEventServer {
         try {
             byte[] mEvent = eventWriter.writeValueAsBytes(event);
             ctx.put(APIGatewayV2HTTPEvent.class.getName(), mEvent);
+            log.debugf("Putting message %s into the queue", requestId);
             queue.put(ctx);
         } catch (Exception e) {
             log.error("Publish failure", e);

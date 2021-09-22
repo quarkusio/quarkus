@@ -104,6 +104,7 @@ public class MockRestEventServer extends MockEventServer {
         try {
             byte[] mEvent = eventWriter.writeValueAsBytes(event);
             ctx.put(AwsProxyRequest.class.getName(), mEvent);
+            log.debugf("Putting message %s into the queue", requestId);
             queue.put(ctx);
         } catch (Exception e) {
             log.error("Publish failure", e);

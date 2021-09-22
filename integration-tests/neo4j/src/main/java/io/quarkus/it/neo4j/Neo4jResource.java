@@ -81,9 +81,9 @@ public class Neo4jResource {
     @Transactional
     public String mixingUpTxConcepts() {
         try (Session session = driver.session();
-            Transaction transaction = session.beginTransaction()) {
+                Transaction transaction = session.beginTransaction()) {
             transaction.run("CREATE (f:Framework {name: $name}) - [:CAN_USE] -> (n:Database {name: 'Neo4j'})",
-                Values.parameters("name", "Quarkus"));
+                    Values.parameters("name", "Quarkus"));
             transaction.commit();
         } catch (Exception e) {
             throw new SomeException(e.getMessage());
@@ -139,14 +139,13 @@ public class Neo4jResource {
         }), RxSession::close).doOnNext(System.out::println);
     }
 
-
     @GET
     @Path("/countNodesWith")
     @Produces(TEXT_PLAIN)
     public long countNodesWith(@QueryParam("externalId") String externalId) {
         try (var session = driver.session()) {
             return session.run("MATCH (n:Framework {id: $id}) RETURN count(n)", Values.parameters("id", externalId))
-                .single().get(0).asLong();
+                    .single().get(0).asLong();
         }
     }
 

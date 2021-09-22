@@ -5,6 +5,8 @@ import java.util.function.Consumer;
 import org.neo4j.driver.Driver;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -16,21 +18,10 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 import io.quarkus.neo4j.runtime.Neo4jConfiguration;
 import io.quarkus.neo4j.runtime.Neo4jDriverRecorder;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class Neo4jDriverProcessor {
-
-    boolean hasJTA() {
-        try {
-            Class.forName("javax.transaction.Transactional", false, Thread.currentThread().getContextClassLoader());
-            return true;
-        } catch (ClassNotFoundException e) {
-        }
-
-        return false;
-    }
 
     @BuildStep
     FeatureBuildItem createFeature(BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {
@@ -43,12 +34,14 @@ class Neo4jDriverProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    Neo4jDriverBuildItem configureDriverProducer(Neo4jDriverRecorder recorder,
+    Neo4jDriverBuildItem configureDriverProducer(Capabilities capabilities,
+            Neo4jDriverRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             Neo4jConfiguration configuration,
             ShutdownContextBuildItem shutdownContext) {
 
-        RuntimeValue<Driver> driverHolder = recorder.initializeDriver(configuration, shutdownContext, hasJTA());
+        var transactionsPresent = capabilities.isPresent(Capability.TRANSACTIONS);
+        var driverHolder = recorder.initializeDriver(configuration, shutdownContext, transactionsPresent);
         syntheticBeans
                 .produce(SyntheticBeanBuildItem.configure(Driver.class).runtimeValue(driverHolder).setRuntimeInit().done());
 

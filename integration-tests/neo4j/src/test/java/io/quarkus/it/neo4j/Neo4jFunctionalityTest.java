@@ -72,11 +72,11 @@ public class Neo4jFunctionalityTest {
 
     private long numberOfFrameworkNodesWithId(String externalId) {
         return Long.parseLong(RestAssured.given().when()
-            .queryParam("externalId", externalId)
-            .get("/neo4j/countNodesWith")
-            .then()
-            .statusCode(200)
-            .extract().asString());
+                .queryParam("externalId", externalId)
+                .get("/neo4j/countNodesWith")
+                .then()
+                .statusCode(200)
+                .extract().asString());
     }
 
     @Test

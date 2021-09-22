@@ -29,7 +29,7 @@ public class Neo4jDriverRecorder {
     private static final Logger log = Logger.getLogger(Neo4jDriverRecorder.class);
 
     public RuntimeValue<Driver> initializeDriver(Neo4jConfiguration configuration, ShutdownContext shutdownContext,
-            boolean jtaPresent) {
+            boolean transactionsPresent) {
 
         String uri = configuration.uri;
         AuthToken authToken = AuthTokens.none();
@@ -42,7 +42,7 @@ public class Neo4jDriverRecorder {
         configurePoolSettings(configBuilder, configuration.pool);
 
         Driver driver = GraphDatabase.driver(uri, authToken, configBuilder.build());
-        if (jtaPresent) {
+        if (transactionsPresent) {
             driver = new JTAAwareDriver(driver);
         }
         shutdownContext.addShutdownTask(driver::close);

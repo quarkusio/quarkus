@@ -21,11 +21,9 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-mongodb-client-deployment</artifactId>
         </dependency>
-
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-internal</artifactId>
-            <scope>test</scope>
+            <artifactId>quarkus-jaxb-deployment</artifactId>
         </dependency>
     </dependencies>
 

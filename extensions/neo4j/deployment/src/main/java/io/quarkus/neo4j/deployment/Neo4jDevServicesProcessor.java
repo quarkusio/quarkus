@@ -46,25 +46,7 @@ class Neo4jDevServicesProcessor {
         }
     }
 
-    static final class BoldHandshakeOnDefaultAddressIsPossible implements BooleanSupplier {
-
-        private final BoltHandshaker boltHandshaker = new BoltHandshaker("localhost", 7687);
-
-        @Override
-        public boolean getAsBoolean() {
-
-            var boldIsReachable = Boolean.getBoolean("quarkus.neo4j.devservices.assumeBoltIsReachable")
-                    || boltHandshaker.isBoltPortReachable(Duration.ofSeconds(5));
-            if (boldIsReachable && log.isDebugEnabled()) {
-                log.info("Not starting Dev Services for Neo4j, as the default config points to a reachable address.");
-            }
-            return boldIsReachable;
-        }
-    }
-
-    @BuildStep(onlyIfNot = { IsNormal.class, BoldHandshakeOnDefaultAddressIsPossible.class }, onlyIf = {
-            IsDockerWorking.class,
-            GlobalDevServicesConfig.Enabled.class })
+    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = { IsDockerWorking.class, GlobalDevServicesConfig.Enabled.class })
     public Neo4jDevServiceBuildItem startNeo4jDevService(
             LaunchModeBuildItem launchMode,
             Neo4jBuildTimeConfig neo4jBuildTimeConfig,
@@ -134,6 +116,14 @@ class Neo4jDevServicesProcessor {
         if (ConfigUtils.isPropertyPresent(NEO4J_URI) || ConfigUtils.isPropertyPresent(NEO4J_USER_PROP)
                 || ConfigUtils.isPropertyPresent(NEO4J_PASSWORD_PROP)) {
             log.debug("Not starting Dev Services for Neo4j, as there is explicit configuration present.");
+            return null;
+        }
+
+        var boldIsReachable = Boolean.getBoolean("io.quarkus.neo4j.deployment.devservices.assumeBoltIsReachable")
+                || new BoltHandshaker("localhost", 7687).isBoltPortReachable(Duration.ofSeconds(5));
+        if (boldIsReachable) {
+            log.warn(
+                    "Not starting Dev Services for Neo4j, as the default config points to a reachable address. Be aware that your local database will be used.");
             return null;
         }
 

@@ -47,7 +47,9 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
                 .redirectError(logOutput)
                 .start();
 
-        boolean done = p.waitFor(5, TimeUnit.MINUTES);
+        //long timeout for native tests
+        //that may also need to download docker
+        boolean done = p.waitFor(10, TimeUnit.MINUTES);
         if (!done) {
             destroyProcess(p);
         }

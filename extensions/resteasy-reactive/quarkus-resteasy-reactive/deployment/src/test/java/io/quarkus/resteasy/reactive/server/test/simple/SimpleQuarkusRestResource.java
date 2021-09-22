@@ -247,6 +247,20 @@ public class SimpleQuarkusRestResource {
     }
 
     @GET
+    @Path("async/cf/ok")
+    public CompletableFuture<String> asyncCompletableFutureOK() {
+        return CompletableFuture.completedFuture("CF-OK");
+    }
+
+    @GET
+    @Path("async/cf/fail")
+    public CompletableFuture<String> asyncCompletableFutureFail() {
+        CompletableFuture<String> ret = new CompletableFuture<>();
+        ret.completeExceptionally(new TestException());
+        return ret;
+    }
+
+    @GET
     @Path("async/uni/ok")
     public Uni<String> asyncUniOK() {
         return Uni.createFrom().item("UNI-OK");

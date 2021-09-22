@@ -58,11 +58,9 @@ import liquibase.parser.ChangeLogParser;
 import liquibase.parser.ChangeLogParserFactory;
 import liquibase.resource.ClassLoaderResourceAccessor;
 
-class LiquibaseProcessor {
+class LiquibaseMongodbProcessor {
 
-    private static final Logger LOGGER = Logger.getLogger(LiquibaseProcessor.class);
-
-    private static final String LIQUIBASE_BEAN_NAME_PREFIX = "liquibase_";
+    private static final Logger LOGGER = Logger.getLogger(LiquibaseMongodbProcessor.class);
 
     private static final DotName DATABASE_CHANGE_PROPERTY = DotName.createSimple(DatabaseChangeProperty.class.getName());
 
@@ -114,7 +112,8 @@ class LiquibaseProcessor {
                 liquibase.sql.visitor.PrependSqlVisitor.class.getName(),
                 liquibase.sql.visitor.ReplaceSqlVisitor.class.getName(),
                 liquibase.sql.visitor.AppendSqlVisitor.class.getName(),
-                liquibase.sql.visitor.RegExpReplaceSqlVisitor.class.getName()));
+                liquibase.sql.visitor.RegExpReplaceSqlVisitor.class.getName(),
+                liquibase.ext.mongodb.database.MongoClientDriver.class.getName()));
 
         reflective.produce(new ReflectiveClassBuildItem(false, false, true,
                 liquibase.change.ConstraintsConfig.class.getName()));

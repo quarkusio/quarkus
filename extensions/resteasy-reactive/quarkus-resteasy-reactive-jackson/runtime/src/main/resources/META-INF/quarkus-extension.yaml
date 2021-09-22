@@ -17,6 +17,7 @@ metadata:
   status: "stable"
   codestart:
     name: "resteasy-reactive"
+    kind: "core"
     languages:
       - "java"
       - "kotlin"

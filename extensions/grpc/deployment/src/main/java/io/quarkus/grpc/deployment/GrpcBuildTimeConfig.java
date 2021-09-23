@@ -12,4 +12,10 @@ public class GrpcBuildTimeConfig {
     @ConfigItem(name = "metrics.enabled")
     public boolean metricsEnabled;
 
+    /**
+     * Configuration gRPC dev mode.
+     */
+    @ConfigItem
+    public GrpcDevModeConfig devMode;
+
 }

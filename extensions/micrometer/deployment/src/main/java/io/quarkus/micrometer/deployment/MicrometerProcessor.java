@@ -235,7 +235,7 @@ public class MicrometerProcessor {
         // RootMeterRegistryBuildItem is present to indicate we call this after the root registry has been initialized
 
         for (MetricsFactoryConsumerBuildItem item : metricsFactoryConsumerBuildItems) {
-            if (item.executionTime() == ExecutionTime.STATIC_INIT) {
+            if (item != null && item.executionTime() == ExecutionTime.STATIC_INIT) {
                 recorder.registerMetrics(item.getConsumer());
             }
         }
@@ -261,7 +261,7 @@ public class MicrometerProcessor {
         recorder.configureRegistries(config, typeClasses, shutdownContextBuildItem);
 
         for (MetricsFactoryConsumerBuildItem item : metricsFactoryConsumerBuildItems) {
-            if (item.executionTime() == ExecutionTime.RUNTIME_INIT) {
+            if (item != null && item.executionTime() == ExecutionTime.RUNTIME_INIT) {
                 recorder.registerMetrics(item.getConsumer());
             }
         }

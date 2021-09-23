@@ -1257,7 +1257,7 @@ This is described in a dedicated guide: link:kafka-schema-registry-avro[Using Ap
 [[serialization-autodetection]]
 == Serializer/deserializer autodetection
 
-When using SmallRye Reactive Messaging with Kafka, Quarkus can often automatically detect the correct serializer and deserializer class.
+When using SmallRye Reactive Messaging with Kafka (`io.quarkus:quarkus-smallrye-reactive-messaging-kafka`), Quarkus can often automatically detect the correct serializer and deserializer class.
 This autodetection is based on declarations of `@Incoming` and `@Outgoing` methods, as well as injected ``@Channel``s.
 
 For example, if you declare

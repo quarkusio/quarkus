@@ -201,6 +201,8 @@
 
         <!-- Relocations -->
         <module>vertx-web</module>
+
+        <module>awt</module>
     </modules>
 
     <build>

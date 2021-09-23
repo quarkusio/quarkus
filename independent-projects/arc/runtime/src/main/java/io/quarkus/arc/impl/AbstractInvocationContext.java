@@ -6,7 +6,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +35,7 @@ abstract class AbstractInvocationContext implements ArcInvocationContext, Suppli
         this.constructor = constructor;
         this.parameters = parameters != null ? parameters : EMPTY_PARAMS;
         this.contextData = contextData != null ? contextData : new LazyValue<>(this);
-        this.interceptorBindings = Collections.unmodifiableSet(interceptorBindings);
+        this.interceptorBindings = interceptorBindings;
         this.chain = chain;
     }
 

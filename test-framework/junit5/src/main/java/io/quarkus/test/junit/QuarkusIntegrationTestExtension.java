@@ -1,5 +1,6 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.test.junit.IntegrationTestUtil.*;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineBuildOutputDirectory;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.doProcessTestInstance;
@@ -84,7 +85,7 @@ public class QuarkusIntegrationTestExtension
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
         IntegrationTestExtensionState state = store.get(IntegrationTestExtensionState.class.getName(),
                 IntegrationTestExtensionState.class);
-        Class<? extends QuarkusTestProfile> selectedProfile = IntegrationTestUtil.findProfile(testClass);
+        Class<? extends QuarkusTestProfile> selectedProfile = findProfile(testClass);
         boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
         boolean reloadTestResources = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
@@ -184,6 +185,7 @@ public class QuarkusIntegrationTestExtension
                         "Artifact type + '" + artifactType + "' is not supported by @QuarkusIntegrationTest");
             }
 
+            activateLogging();
             startLauncher(launcher, additionalProperties, () -> ssl = true);
 
             IntegrationTestExtensionState state = new IntegrationTestExtensionState(testResourceManager, launcher,

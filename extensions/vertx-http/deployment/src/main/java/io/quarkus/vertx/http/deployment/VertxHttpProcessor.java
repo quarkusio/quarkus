@@ -50,6 +50,7 @@ import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.HttpRemoteDevClientProvider;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.deployment.spi.NonApplicationRootPathConfigurerBuildItem;
 import io.quarkus.vertx.http.runtime.CurrentRequestProducer;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
@@ -321,6 +322,17 @@ class VertxHttpProcessor {
                 websocketSubProtocols.stream().map(bi -> bi.getWebsocketSubProtocols())
                         .collect(Collectors.toList()),
                 launchMode.isAuxiliaryApplication());
+    }
+
+    @BuildStep
+    void configureNonApplicationRootPaths(List<NonApplicationRootPathConfigurerBuildItem> configurers,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            BuildProducer<RouteBuildItem> routes) {
+        for (NonApplicationRootPathConfigurerBuildItem configurer : configurers) {
+            NonApplicationRootPathBuildItem.Builder builder = nonApplicationRootPathBuildItem.routeBuilder();
+            configurer.getConfigurer().accept(builder);
+            routes.produce(builder.build());
+        }
     }
 
     @BuildStep

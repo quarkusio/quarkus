@@ -53,8 +53,7 @@ import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
 import io.quarkus.grpc.runtime.devmode.DelegatingGrpcBeansStorage;
 import io.quarkus.grpc.runtime.devmode.GrpcDevConsoleRecorder;
 import io.quarkus.grpc.runtime.devmode.GrpcServices;
-import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.spi.NonApplicationRootPathConfigurerBuildItem;
 
 public class GrpcDevConsoleProcessor {
 
@@ -133,11 +132,12 @@ public class GrpcDevConsoleProcessor {
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = IsDevelopment.class)
-    public RouteBuildItem createWebSocketEndpoint(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+    public void createWebSocketEndpoint(BuildProducer<NonApplicationRootPathConfigurerBuildItem> configurers,
             GrpcDevConsoleRecorder recorder) {
         recorder.setServerConfiguration();
-        return nonApplicationRootPathBuildItem.routeBuilder().route("dev/grpc-test")
-                .handler(recorder.handler()).build();
+
+        configurers.produce(new NonApplicationRootPathConfigurerBuildItem(
+                builder -> builder.route("dev/grpc-test").handler(recorder.handler())));
     }
 
     Collection<Class<?>> getGrpcServices(IndexView index) throws ClassNotFoundException {

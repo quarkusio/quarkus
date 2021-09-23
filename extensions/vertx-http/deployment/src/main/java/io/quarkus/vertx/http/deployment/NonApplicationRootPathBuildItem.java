@@ -8,6 +8,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.util.UriNormalizationUtil;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.console.ConfiguredPathInfo;
+import io.quarkus.vertx.http.deployment.spi.NonApplicationRootPathBuilder;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Route;
@@ -177,7 +178,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
     /**
      * Per non-application endpoint instance.
      */
-    public static class Builder extends RouteBuildItem.Builder {
+    public static class Builder extends RouteBuildItem.Builder implements NonApplicationRootPathBuilder {
         private final NonApplicationRootPathBuildItem buildItem;
         private RouteBuildItem.RouteType routeType = RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
         private String path;
@@ -187,6 +188,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
         }
 
         @Override
+        @Deprecated
         public Builder routeFunction(Function<Router, Route> routeFunction) {
             throw new RuntimeException(
                     "This method is not supported using this builder. Use #routeFunction(String, Consumer<Route>)");

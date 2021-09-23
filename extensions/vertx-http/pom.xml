@@ -15,6 +15,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>
+        <module>deployment-spi</module>
         <module>runtime</module>
         <module>dev-console-spi</module>
         <module>dev-console-runtime-spi</module>

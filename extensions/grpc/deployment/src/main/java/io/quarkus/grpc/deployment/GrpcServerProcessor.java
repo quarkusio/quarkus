@@ -466,8 +466,11 @@ public class GrpcServerProcessor {
     @BuildStep
     @Record(value = ExecutionTime.RUNTIME_INIT)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
-    ServiceStartBuildItem initializeServer(GrpcServerRecorder recorder, GrpcConfiguration config,
-            ShutdownContextBuildItem shutdown, List<BindableServiceBuildItem> bindables,
+    ServiceStartBuildItem initializeServer(GrpcServerRecorder recorder,
+            GrpcConfiguration config,
+            GrpcBuildTimeConfig buildTimeConfig,
+            ShutdownContextBuildItem shutdown,
+            List<BindableServiceBuildItem> bindables,
             LaunchModeBuildItem launchModeBuildItem,
             VertxBuildItem vertx) {
 
@@ -479,7 +482,8 @@ public class GrpcServerProcessor {
             }
         }
 
-        if (!bindables.isEmpty() || LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+        if (!bindables.isEmpty()
+                || (LaunchMode.current() == LaunchMode.DEVELOPMENT && buildTimeConfig.devMode.forceServerStart)) {
             recorder.initializeGrpcServer(vertx.getVertx(), config, shutdown, blocking, launchModeBuildItem.getLaunchMode());
             return new ServiceStartBuildItem(GRPC_SERVER);
         }
@@ -550,7 +554,7 @@ public class GrpcServerProcessor {
 
     @BuildStep
     BeanArchivePredicateBuildItem additionalBeanArchives() {
-        return new BeanArchivePredicateBuildItem(new Predicate<ApplicationArchive>() {
+        return new BeanArchivePredicateBuildItem(new Predicate<>() {
 
             @Override
             public boolean test(ApplicationArchive archive) {

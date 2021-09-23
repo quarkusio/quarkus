@@ -21,10 +21,14 @@ public class CliDriver {
     static final PrintStream stderr = System.err;
 
     private static final String localRepo = convertToProperty("maven.repo.local");
+    private static final String localSettings = convertToProperty("maven.settings");
 
     public static void preserveLocalRepoSettings(Collection<String> args) {
         if (localRepo != null) {
             args.add(localRepo);
+        }
+        if (localSettings != null) {
+            args.add(localSettings);
         }
     }
 

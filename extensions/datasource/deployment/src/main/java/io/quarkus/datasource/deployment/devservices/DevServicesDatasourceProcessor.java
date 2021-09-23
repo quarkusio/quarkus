@@ -40,7 +40,7 @@ public class DevServicesDatasourceProcessor {
 
     static volatile List<Closeable> databases;
 
-    static volatile Map<String, String> cachedProperties;
+    static volatile Map<String, Object> cachedProperties;
 
     static volatile boolean first = true;
 
@@ -62,9 +62,9 @@ public class DevServicesDatasourceProcessor {
         if (databases != null) {
             boolean restartRequired = false;
             if (!restartRequired) {
-                for (Map.Entry<String, String> i : cachedProperties.entrySet()) {
-                    if (!Objects.equals(i.getValue(),
-                            ConfigProvider.getConfig().getOptionalValue(i.getKey(), String.class).orElse(null))) {
+                for (Map.Entry<String, Object> entry : cachedProperties.entrySet()) {
+                    if (!Objects.equals(entry.getValue().toString(),
+                            ConfigProvider.getConfig().getOptionalValue(entry.getKey(), String.class).orElse(null))) {
                         restartRequired = true;
                         break;
                     }
@@ -102,7 +102,7 @@ public class DevServicesDatasourceProcessor {
         //to keep things simpler for now we are only going to support this for the default datasource
         //support for named datasources will come later
 
-        Map<String, String> propertiesMap = new HashMap<>();
+        Map<String, Object> propertiesMap = new HashMap<>();
         List<Closeable> closeableList = new ArrayList<>();
         Map<String, List<DevServicesDatasourceConfigurationHandlerBuildItem>> configHandlersByDbType = configurationHandlerBuildItems
                 .stream()
@@ -178,7 +178,7 @@ public class DevServicesDatasourceProcessor {
             boolean hasNamedDatasources,
             Map<String, DevServicesDatasourceProvider> devDBProviders, DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
             Map<String, List<DevServicesDatasourceConfigurationHandlerBuildItem>> configurationHandlerBuildItems,
-            Map<String, String> propertiesMap, List<Closeable> closeableList,
+            Map<String, Object> propertiesMap, List<Closeable> closeableList,
             LaunchMode launchMode, Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem) {
         boolean explicitlyDisabled = !(dataSourceBuildTimeConfig.devservices.enabled
@@ -262,8 +262,19 @@ public class DevServicesDatasourceProcessor {
                             dataSourceBuildTimeConfig.devservices.port, launchMode);
             closeableList.add(datasource.getCloseTask());
 
-            Map<String, String> devDebProperties = new HashMap<>();
             propertiesMap.put(prefix + "db-kind", dataSourceBuildTimeConfig.dbKind.orElse(null));
+            String devServicesPrefix = prefix + "devservices.";
+            if (dataSourceBuildTimeConfig.devservices.imageName.isPresent()) {
+                propertiesMap.put(devServicesPrefix + "image-name", dataSourceBuildTimeConfig.devservices.imageName.get());
+            }
+            if (dataSourceBuildTimeConfig.devservices.port.isPresent()) {
+                propertiesMap.put(devServicesPrefix + "port", dataSourceBuildTimeConfig.devservices.port.getAsInt());
+            }
+            if (!dataSourceBuildTimeConfig.devservices.properties.isEmpty()) {
+                propertiesMap.put(devServicesPrefix + "port", dataSourceBuildTimeConfig.devservices.properties);
+            }
+
+            Map<String, String> devDebProperties = new HashMap<>();
             for (DevServicesDatasourceConfigurationHandlerBuildItem devDbConfigurationHandlerBuildItem : configHandlers) {
                 devDebProperties.putAll(devDbConfigurationHandlerBuildItem.getConfigProviderFunction()
                         .apply(dbName, datasource));

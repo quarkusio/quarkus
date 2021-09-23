@@ -7,7 +7,6 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.enterprise.inject.Any;
@@ -17,7 +16,7 @@ import javax.inject.Qualifier;
 
 public final class Qualifiers {
 
-    public static final Set<Annotation> DEFAULT_QUALIFIERS = initDefaultQualifiers();
+    public static final Set<Annotation> DEFAULT_QUALIFIERS = Set.of(Default.Literal.INSTANCE, Any.Literal.INSTANCE);
 
     public static final Set<Annotation> IP_DEFAULT_QUALIFIERS = Collections.singleton(Default.Literal.INSTANCE);
 
@@ -113,13 +112,6 @@ public final class Qualifiers {
             }
         }
         return true;
-    }
-
-    private static Set<Annotation> initDefaultQualifiers() {
-        Set<Annotation> qualifiers = new HashSet<>();
-        qualifiers.add(Default.Literal.INSTANCE);
-        qualifiers.add(Any.Literal.INSTANCE);
-        return Collections.unmodifiableSet(qualifiers);
     }
 
     private static Object invoke(Method method, Object instance) {

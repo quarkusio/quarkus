@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -548,29 +547,28 @@ public class ObserverGenerator extends AbstractGenerator {
         Set<AnnotationInstance> qualifiers = observer.getQualifiers();
         if (!qualifiers.isEmpty()) {
 
-            ResultHandle qualifiersHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+            ResultHandle qualifiersArray = constructor.newArray(Object.class, qualifiers.size());
+            int qualifiersIndex = 0;
 
             for (AnnotationInstance qualifierAnnotation : qualifiers) {
                 BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
                 if (qualifier != null) {
-                    constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiersHandle,
+                    constructor.writeArrayValue(qualifiersArray, constructor.load(qualifiersIndex++),
                             qualifier.getLiteralInstance(constructor));
                 } else {
                     // Create annotation literal first
                     ClassInfo qualifierClass = observer.getBeanDeployment()
                             .getQualifier(qualifierAnnotation.name());
-                    constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiersHandle,
+                    constructor.writeArrayValue(qualifiersArray, constructor.load(qualifiersIndex++),
                             annotationLiterals.process(constructor, classOutput,
                                     qualifierClass, qualifierAnnotation, Types.getPackageName(observerCreator.getClassName())));
                 }
             }
-            ResultHandle unmodifiableQualifiersHandle = constructor
-                    .invokeStaticMethod(MethodDescriptor.ofMethod(Collections.class, "unmodifiableSet", Set.class, Set.class),
-                            qualifiersHandle);
             constructor.writeInstanceField(
                     FieldDescriptor.of(observerCreator.getClassName(), "qualifiers", Set.class.getName()),
                     constructor.getThis(),
-                    unmodifiableQualifiersHandle);
+                    constructor.invokeStaticInterfaceMethod(MethodDescriptors.SET_OF,
+                            qualifiersArray));
         }
 
         if (mockable) {

@@ -37,7 +37,7 @@ subprojects {
         implementation "io.quarkus:quarkus-bootstrap-core:${version}"
 
         testImplementation gradleTestKit()
-        testImplementation 'org.junit.jupiter:junit-jupiter:5.8.0'
+        testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
         testImplementation 'org.assertj:assertj-core:3.21.0'
     }
 

@@ -11,7 +11,13 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import javax.inject.Inject;
+import javax.transaction.HeuristicMixedException;
+import javax.transaction.HeuristicRollbackException;
+import javax.transaction.NotSupportedException;
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
 import javax.transaction.Transactional;
+import javax.transaction.UserTransaction;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -39,6 +45,9 @@ public class Neo4jResource {
     @Inject
     Driver driver;
 
+    @Inject
+    UserTransaction ut;
+
     @GET
     @Path("/blocking")
     @Produces(TEXT_PLAIN)
@@ -63,16 +72,49 @@ public class Neo4jResource {
     @Produces(TEXT_PLAIN)
     @Transactional
     public String blockingWithJTATransactional(@QueryParam("externalId") String externalId,
-            @QueryParam("causeAScene") @DefaultValue("false") boolean causeAScene) {
+            @QueryParam("causeRollback") @DefaultValue("false") boolean causeRollback) {
         try (Session session = driver.session()) {
             session.run(
                     "CREATE (f:Framework {name: $name, id: $id}) - [:CAN_USE {transactional: 'of course'}] -> (n:Database {name: 'Neo4j'})",
                     Values.parameters("name", "Quarkus", "id", externalId));
         }
-        if (causeAScene) {
+        if (causeRollback) {
             throw new SomeException("On purpose.");
         }
         return "OK";
+    }
+
+    @GET
+    @Path("/explicitTransactions")
+    @Produces(TEXT_PLAIN)
+    public Response explicitTransactions(
+            @QueryParam("externalId") String externalId,
+            @QueryParam("causeRollback") @DefaultValue("false") boolean causeRollback) {
+        try {
+            ut.begin();
+
+            try (Session session = driver.session()) {
+                session.run(
+                        "CREATE (f:Framework {name: $name, id: $id}) - [:CAN_USE {transactional: 'of course'}] -> (n:Database {name: 'Neo4j'})",
+                        Values.parameters("name", "Quarkus", "id", externalId));
+            }
+
+            if (causeRollback) {
+                ut.rollback();
+            } else {
+                ut.commit();
+            }
+
+        } catch (NotSupportedException | SystemException | HeuristicRollbackException | HeuristicMixedException
+                | RollbackException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (causeRollback) {
+            return Response.serverError().entity("On purpose.").build();
+        }
+
+        return Response.ok("OK").build();
     }
 
     @GET

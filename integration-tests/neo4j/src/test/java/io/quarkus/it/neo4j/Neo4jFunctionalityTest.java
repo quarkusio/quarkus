@@ -14,6 +14,8 @@ import java.util.stream.Stream;
 
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -37,23 +39,25 @@ public class Neo4jFunctionalityTest {
         RestAssured.given().when().get("/neo4j/blocking").then().body(is("OK"));
     }
 
-    @Test
-    public void testTransactionalNeo4jFunctionalityCommiting() {
+    @ParameterizedTest
+    @ValueSource(strings = { "blockingWithJTATransactional", "explicitTransactions" })
+    public void testTransactionalNeo4jFunctionalityCommiting(String path) {
         var externalId = UUID.randomUUID().toString();
         RestAssured.given().when()
                 .queryParam("externalId", externalId)
-                .get("/neo4j/blockingWithJTATransactional").then().body(is("OK"));
+                .get("/neo4j/" + path).then().body(is("OK"));
 
         assertEquals(1L, numberOfFrameworkNodesWithId(externalId));
     }
 
-    @Test
-    public void testTransactionalNeo4jFunctionalityRollback() {
+    @ParameterizedTest
+    @ValueSource(strings = { "blockingWithJTATransactional", "explicitTransactions" })
+    public void testTransactionalNeo4jFunctionalityRollback(String path) {
         var externalId = UUID.randomUUID().toString();
         RestAssured.given().when()
                 .queryParam("externalId", externalId)
-                .queryParam("causeAScene", true)
-                .get("/neo4j/blockingWithJTATransactional")
+                .queryParam("causeRollback", true)
+                .get("/neo4j/" + path)
                 .then().log().all()
                 .statusCode(500)
                 .body(is(equalTo("On purpose.")));

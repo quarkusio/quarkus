@@ -76,20 +76,14 @@ final class JTAAwareDriver implements Driver {
         synchronizationRegistry.registerInterposedSynchronization(new Synchronization() {
             @Override
             public void beforeCompletion() {
+                session.commitAndClose();
             }
 
             @Override
             public void afterCompletion(int status) {
 
-                switch (status) {
-                    case Status.STATUS_ROLLEDBACK:
-                        session.rollbackAndClose();
-                        break;
-                    case Status.STATUS_COMMITTED:
-                        session.commitAndClose();
-                        break;
-                    default:
-                        throw new RuntimeException("Don't know how to deal with transaction status " + status);
+                if (status == Status.STATUS_ROLLEDBACK || status == Status.STATUS_MARKED_ROLLBACK) {
+                    session.rollbackAndClose();
                 }
             }
         });

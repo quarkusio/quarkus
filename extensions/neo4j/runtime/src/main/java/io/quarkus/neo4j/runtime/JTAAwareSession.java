@@ -139,7 +139,9 @@ final class JTAAwareSession implements Session {
 
     void rollbackAndClose() {
         try {
-            this.currentTransaction.rollback();
+            if (this.currentTransaction.isOpen()) {
+                this.currentTransaction.rollback();
+            }
         } finally {
             this.delegate.close();
         }

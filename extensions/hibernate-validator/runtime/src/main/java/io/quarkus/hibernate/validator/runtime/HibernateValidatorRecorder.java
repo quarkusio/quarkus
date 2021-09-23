@@ -3,6 +3,7 @@ package io.quarkus.hibernate.validator.runtime;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import javax.enterprise.util.TypeLiteral;
 import javax.validation.ClockProvider;
 import javax.validation.ConstraintValidatorFactory;
 import javax.validation.MessageInterpolator;
@@ -31,6 +32,9 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class HibernateValidatorRecorder {
+
+    private static final TypeLiteral<ValueExtractor<?>> TYPE_LITERAL_VALUE_EXTRACTOR_WITH_WILDCARD = new TypeLiteral<ValueExtractor<?>>() {
+    };
 
     public BeanContainerListener initializeValidatorFactory(Set<Class<?>> classesToBeValidated,
             Set<String> detectedBuiltinConstraints,
@@ -132,7 +136,10 @@ public class HibernateValidatorRecorder {
 
                 // Automatically add all the values extractors declared as beans
                 for (ValueExtractor<?> valueExtractor : Arc.container().beanManager().createInstance()
-                        .select(ValueExtractor.class)) {
+                        // Apparently passing ValueExtractor.class
+                        // won't match beans implementing ValueExtractor<NotAWildcard>,
+                        // so we need a type literal here.
+                        .select(TYPE_LITERAL_VALUE_EXTRACTOR_WITH_WILDCARD)) {
                     configuration.addValueExtractor(valueExtractor);
                 }
 

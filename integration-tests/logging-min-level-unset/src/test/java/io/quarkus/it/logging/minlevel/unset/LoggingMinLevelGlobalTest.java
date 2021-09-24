@@ -9,20 +9,17 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 /**
- * This test verifies that log levels are promoted to min-level when set below the default min-level.
- * 
- * So given the default min-level is DEBUG,
- * so if log level is set to TRACE,
- * it will be automatically promoted to DEBUG.
+ * Tests that logging works as expected when min-level is default,
+ * and the global log level is below it.
  */
 @QuarkusTest
-@QuarkusTestResource(SetCategoryRuntimeLogLevels.class)
-public class LoggingMinLevelPromoteTest {
+@QuarkusTestResource(SetGlobalRuntimeLogLevel.class)
+public class LoggingMinLevelGlobalTest {
 
     @Test
     public void testInfo() {
         given()
-                .when().get("/log/promote/info")
+                .when().get("/log/bydefault/info")
                 .then()
                 .statusCode(200)
                 .body(is("true"));
@@ -31,7 +28,7 @@ public class LoggingMinLevelPromoteTest {
     @Test
     public void testWarn() {
         given()
-                .when().get("/log/promote/warn")
+                .when().get("/log/bydefault/warn")
                 .then()
                 .statusCode(200)
                 .body(is("true"));
@@ -40,7 +37,7 @@ public class LoggingMinLevelPromoteTest {
     @Test
     public void testNotTrace() {
         given()
-                .when().get("/log/promote/not-trace")
+                .when().get("/log/bydefault/not-trace")
                 .then()
                 .statusCode(200)
                 .body(is("true"));

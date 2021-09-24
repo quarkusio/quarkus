@@ -3,12 +3,15 @@ package org.jboss.resteasy.reactive.server.core;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 import java.io.IOException;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -36,6 +39,7 @@ public class ExceptionMapping {
      */
     private final List<Predicate<Throwable>> blockingProblemPredicates = new ArrayList<>();
     private final List<Predicate<Throwable>> nonBlockingProblemPredicate = new ArrayList<>();
+    private final Set<Class<? extends Throwable>> unwrappedExceptions = new HashSet<>();
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void mapException(Throwable throwable, ResteasyReactiveRequestContext context) {
@@ -54,23 +58,26 @@ public class ExceptionMapping {
         }
 
         // we match superclasses only if not a WebApplicationException according to spec 3.3.4 Exceptions
-        ExceptionMapper exceptionMapper = getExceptionMapper((Class<Throwable>) klass, context);
-        if (exceptionMapper != null) {
+        Map.Entry<Throwable, ExceptionMapper<? extends Throwable>> entry = getExceptionMapper((Class<Throwable>) klass, context,
+                throwable);
+        if (entry != null) {
+            ExceptionMapper exceptionMapper = entry.getValue();
+            Throwable mappedException = entry.getKey();
             context.requireCDIRequestScope();
             if (exceptionMapper instanceof ResteasyReactiveAsyncExceptionMapper) {
-                ((ResteasyReactiveAsyncExceptionMapper) exceptionMapper).asyncResponse(throwable,
+                ((ResteasyReactiveAsyncExceptionMapper) exceptionMapper).asyncResponse(mappedException,
                         new AsyncExceptionMapperContextImpl(context));
-                logBlockingErrorIfRequired(throwable, context);
-                logNonBlockingErrorIfRequired(throwable, context);
+                logBlockingErrorIfRequired(mappedException, context);
+                logNonBlockingErrorIfRequired(mappedException, context);
                 return;
             } else if (exceptionMapper instanceof ResteasyReactiveExceptionMapper) {
-                response = ((ResteasyReactiveExceptionMapper) exceptionMapper).toResponse(throwable, context);
+                response = ((ResteasyReactiveExceptionMapper) exceptionMapper).toResponse(mappedException, context);
             } else {
-                response = exceptionMapper.toResponse(throwable);
+                response = exceptionMapper.toResponse(mappedException);
             }
             context.setResult(response);
-            logBlockingErrorIfRequired(throwable, context);
-            logNonBlockingErrorIfRequired(throwable, context);
+            logBlockingErrorIfRequired(mappedException, context);
+            logNonBlockingErrorIfRequired(mappedException, context);
             return;
         }
         if (isWebApplicationException) {
@@ -142,20 +149,26 @@ public class ExceptionMapping {
     }
 
     /**
-     * Return the proper Exception that handles {@param throwable} or {@code null}
+     * Return the proper Exception that handles {@param clazz} or {@code null}
      * if none is found.
-     * First checks if the Resource class that contained the Resource method contained class-level exception mappers
+     * First checks if the Resource class that contained the Resource method contained class-level exception mappers.
+     * {@param throwable} is optional and is used to when no mapper has been found for the original exception type, but the
+     * application
+     * has been configured to unwrap certain exceptions.
      */
-    public <T extends Throwable> ExceptionMapper<T> getExceptionMapper(Class<T> clazz, ResteasyReactiveRequestContext context) {
+    public <T extends Throwable> Map.Entry<Throwable, ExceptionMapper<? extends Throwable>> getExceptionMapper(Class<T> clazz,
+            ResteasyReactiveRequestContext context,
+            T throwable) {
         Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> classExceptionMappers = getClassExceptionMappers(
                 context);
         if ((classExceptionMappers != null) && !classExceptionMappers.isEmpty()) {
-            ExceptionMapper<T> result = doGetExceptionMapper(clazz, classExceptionMappers);
+            Map.Entry<Throwable, ExceptionMapper<? extends Throwable>> result = doGetExceptionMapper(clazz,
+                    classExceptionMappers, throwable);
             if (result != null) {
                 return result;
             }
         }
-        return doGetExceptionMapper(clazz, mappers);
+        return doGetExceptionMapper(clazz, mappers, throwable);
     }
 
     private Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> getClassExceptionMappers(
@@ -166,19 +179,27 @@ public class ExceptionMapping {
         return context.getTarget() != null ? context.getTarget().getClassExceptionMappers() : null;
     }
 
-    @SuppressWarnings("unchecked")
-    private <T extends Throwable> ExceptionMapper<T> doGetExceptionMapper(Class<T> clazz,
-            Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers) {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private <T extends Throwable> Map.Entry<Throwable, ExceptionMapper<? extends Throwable>> doGetExceptionMapper(
+            Class<T> clazz,
+            Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers,
+            Throwable throwable) {
         Class<?> klass = clazz;
         do {
             ResourceExceptionMapper<? extends Throwable> mapper = mappers.get(klass);
             if (mapper != null) {
-                return (ExceptionMapper<T>) mapper.getFactory()
-                        .createInstance().getInstance();
+                return new AbstractMap.SimpleEntry(throwable, mapper.getFactory()
+                        .createInstance().getInstance());
             }
             klass = klass.getSuperclass();
         } while (klass != null);
 
+        if ((throwable != null) && unwrappedExceptions.contains(clazz)) {
+            Throwable cause = throwable.getCause();
+            if (cause != null) {
+                return doGetExceptionMapper(cause.getClass(), mappers, cause);
+            }
+        }
         return null;
     }
 
@@ -196,6 +217,10 @@ public class ExceptionMapping {
 
     public void addNonBlockingProblem(Predicate<Throwable> predicate) {
         nonBlockingProblemPredicate.add(predicate);
+    }
+
+    public void addUnwrappedException(Class<? extends Throwable> clazz) {
+        unwrappedExceptions.add(clazz);
     }
 
     public <T extends Throwable> void addExceptionMapper(Class<T> exceptionClass, ResourceExceptionMapper<T> mapper) {
@@ -219,6 +244,10 @@ public class ExceptionMapping {
 
     public List<Predicate<Throwable>> getNonBlockingProblemPredicate() {
         return nonBlockingProblemPredicate;
+    }
+
+    public Set<Class<? extends Throwable>> getUnwrappedExceptions() {
+        return unwrappedExceptions;
     }
 
     public void initializeDefaultFactories(Function<String, BeanFactory<?>> factoryCreator) {

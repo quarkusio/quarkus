@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.server.jaxrs;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Map;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.ContextResolver;
@@ -44,9 +45,15 @@ public class ProvidersImpl implements Providers {
         return null;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T extends Throwable> ExceptionMapper<T> getExceptionMapper(Class<T> type) {
-        return deployment.getExceptionMapping().getExceptionMapper(type, null);
+        Map.Entry<Throwable, ExceptionMapper<? extends Throwable>> entry = deployment.getExceptionMapping()
+                .getExceptionMapper(type, null, null);
+        if (entry != null) {
+            return (ExceptionMapper<T>) entry.getValue();
+        }
+        return null;
     }
 
     @Override

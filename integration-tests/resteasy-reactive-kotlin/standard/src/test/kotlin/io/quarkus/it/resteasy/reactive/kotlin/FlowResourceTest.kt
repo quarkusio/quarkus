@@ -18,8 +18,15 @@ class FlowResourceTest {
     var flowPath: String? = null
 
     @Test
-    fun testSeeStrings() {
+    fun testSseStrings() {
         testSse("str", 5) {
+            assertThat(it).containsExactly("HELLO", "FROM", "KOTLIN", "FLOW")
+        }
+    }
+
+    @Test
+    fun testSuspendSseStrings() {
+        testSse("suspendStr", 5) {
             assertThat(it).containsExactly("HELLO", "FROM", "KOTLIN", "FLOW")
         }
     }

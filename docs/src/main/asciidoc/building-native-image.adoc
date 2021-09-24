@@ -513,19 +513,17 @@ Sample Dockerfile for building with Maven:
 ----
 ## Stage 1 : build with maven builder image with native capabilities
 FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor} AS build
-COPY --chown=quarkus:quarkus mvnw /code/mvnw
-COPY --chown=quarkus:quarkus .mvn /code/.mvn
-COPY --chown=quarkus:quarkus pom.xml /code/
-USER quarkus
-WORKDIR /code
+COPY pom.xml pom.xml
+COPY mvnw mvnw
+COPY .mvn .mvn
 RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.1.2:go-offline
-COPY src /code/src
+COPY src src
 RUN ./mvnw package -Pnative
 
 ## Stage 2 : create the docker final image
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4
 WORKDIR /work/
-COPY --from=build /code/target/*-runner /work/application
+COPY --from=build /project/target/*-runner /work/application
 
 # set up permissions for user `1001`
 RUN chmod 775 /work /work/application \
@@ -551,20 +549,18 @@ Sample Dockerfile for building with Gradle:
 ----
 ## Stage 1 : build with maven builder image with native capabilities
 FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor} AS build
-COPY --chown=quarkus:quarkus gradlew /code/gradlew
-COPY --chown=quarkus:quarkus /code/gradle
-COPY --chown=quarkus:quarkus build.gradle /code/
-COPY --chown=quarkus:quarkus settings.gradle /code/
-COPY --chown=quarkus:quarkus gradle.properties /code/
-USER quarkus
-WORKDIR /code
-COPY src /code/src
-RUN gradle -b /code/build.gradle buildNative
+COPY gradlew gradlew
+COPY gradle gradle
+COPY build.gradle build.gradle
+COPY settings.gradle settings.gradle
+COPY gradle.properties gradle.properties
+COPY src src
+RUN ./gradlew -b /project/build.gradle buildNative
 
 ## Stage 2 : create the docker final image
 FROM registry.access.redhat.com/ubi8/ubi-minimal
 WORKDIR /work/
-COPY --from=build /code/build/*-runner /work/application
+COPY --from=build /project/build/*-runner /work/application
 RUN chmod 775 /work
 EXPOSE 8080
 CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]

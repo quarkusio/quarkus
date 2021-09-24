@@ -69,6 +69,14 @@ public class KotlinCoroutineIntegrationProcessor {
                             method.declaringClass(), method,
                             (BuildProducer<GeneratedClassBuildItem>) methodContext.get(GeneratedClassBuildItem.class.getName()),
                             recorder));
+                    if (methodContext.containsKey(EndpointIndexer.METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)) {
+                        Type methodReturnType = (Type) methodContext.get(EndpointIndexer.METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY);
+                        if (methodReturnType != null) {
+                            if (methodReturnType.name().equals(FLOW)) {
+                                return List.of(processor, flowCustomizer());
+                            }
+                        }
+                    }
                     return Collections.singletonList(processor);
                 }
                 return Collections.emptyList();
@@ -172,9 +180,7 @@ public class KotlinCoroutineIntegrationProcessor {
                     Map<String, Object> methodContext) {
                 DotName returnTypeName = method.returnType().name();
                 if (returnTypeName.equals(FLOW)) {
-                    return Collections.singletonList(new FixedHandlersChainCustomizer(
-                            List.of(new FlowToPublisherHandler(), new PublisherResponseHandler()),
-                            HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE));
+                    return Collections.singletonList(flowCustomizer());
                 }
                 return Collections.emptyList();
             }
@@ -184,5 +190,11 @@ public class KotlinCoroutineIntegrationProcessor {
                 return info.returnType().name().equals(FLOW);
             }
         });
+    }
+
+    private static HandlerChainCustomizer flowCustomizer() {
+        return new FixedHandlersChainCustomizer(
+                List.of(new FlowToPublisherHandler(), new PublisherResponseHandler()),
+                HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE);
     }
 }

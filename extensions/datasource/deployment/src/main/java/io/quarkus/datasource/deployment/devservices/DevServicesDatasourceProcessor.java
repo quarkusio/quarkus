@@ -271,7 +271,7 @@ public class DevServicesDatasourceProcessor {
                 propertiesMap.put(devServicesPrefix + "port", dataSourceBuildTimeConfig.devservices.port.getAsInt());
             }
             if (!dataSourceBuildTimeConfig.devservices.properties.isEmpty()) {
-                propertiesMap.put(devServicesPrefix + "port", dataSourceBuildTimeConfig.devservices.properties);
+                propertiesMap.put(devServicesPrefix + "properties", dataSourceBuildTimeConfig.devservices.properties);
             }
 
             Map<String, String> devDebProperties = new HashMap<>();

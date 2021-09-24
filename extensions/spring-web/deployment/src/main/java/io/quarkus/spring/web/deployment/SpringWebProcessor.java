@@ -52,11 +52,11 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.jaxrs.spi.deployment.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.AnnotationsTransformerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.spi.AdditionalResourceClassBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
-import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.spring.web.runtime.ResponseEntityHandler;
 import io.quarkus.spring.web.runtime.ResponseStatusExceptionMapper;
 import io.quarkus.spring.web.runtime.ResponseStatusHandler;
@@ -111,6 +111,17 @@ public class SpringWebProcessor {
     }
 
     @BuildStep
+    public AdditionalJaxRsResourceMethodAnnotationsBuildItem additionalJaxRsResourceMethodAnnotationsBuildItem() {
+
+        // This is useful mainly to let Hibernate Validator know that methods annotated with these annotations
+        // are to be validated differently,
+        // e.g. by yielding HTTP status 400 instead of 500 on constraint violation for a method parameter.
+        // The effect on RestEasy itself is negligible: it will only register the annotated methods for reflection,
+        // which we already do.
+        return new AdditionalJaxRsResourceMethodAnnotationsBuildItem(MAPPING_ANNOTATIONS);
+    }
+
+    @BuildStep
     public void ignoreReflectionHierarchy(BuildProducer<ReflectiveHierarchyIgnoreWarningBuildItem> ignore) {
         ignore.produce(new ReflectiveHierarchyIgnoreWarningBuildItem(
                 new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(RESPONSE_ENTITY)));
@@ -145,14 +156,7 @@ public class SpringWebProcessor {
     }
 
     @BuildStep
-    public void methodAnnotationsTransformer(BuildProducer<AnnotationsTransformerBuildItem> producer,
-            BuildProducer<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsMethodProducer) {
-        // This is useful mainly to let Hibernate Validator know that methods annotated with these annotations
-        // are to be validated differently,
-        // e.g. by yielding HTTP status 400 instead of 500 on constraint violation for a method parameter.
-        // The effect on RestEasy itself is negligible: it will only register the annotated methods for reflection,
-        // which we already do.
-        additionalJaxRsMethodProducer.produce(new AdditionalJaxRsResourceMethodAnnotationsBuildItem(MAPPING_ANNOTATIONS));
+    public void methodAnnotationsTransformer(BuildProducer<AnnotationsTransformerBuildItem> producer) {
 
         producer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
 

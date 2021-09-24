@@ -3276,6 +3276,11 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jaxrs-spi-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <!-- NOTE: this dependency is here to cause relocations to work; DO NOT MODIFY -->
                 <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-config</artifactId>

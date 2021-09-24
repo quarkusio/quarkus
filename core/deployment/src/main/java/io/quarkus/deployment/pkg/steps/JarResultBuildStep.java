@@ -87,14 +87,14 @@ import io.quarkus.deployment.util.FileUtil;
 
 /**
  * This build step builds both the thin jars and uber jars.
- * <p>
+ *
  * The way this is built is a bit convoluted. In general we only want a single one built,
  * as determined by the {@link PackageConfig} (unless the config explicitly asks for both of them)
- * <p>
+ *
  * However we still need an extension to be able to ask for a specify one of these despite the config,
  * e.g. if a serverless environment needs an uberjar to build its deployment package then we need
  * to be able to provide this.
- * <p>
+ *
  * To enable this we have two build steps that strongly produce the respective artifact type build
  * items, but not a {@link ArtifactResultBuildItem}. We then
  * have another two build steps that only run if they are configured too that consume these explicit
@@ -201,21 +201,21 @@ public class JarResultBuildStep {
 
     @BuildStep
     public JarBuildItem buildRunnerJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
-                                       OutputTargetBuildItem outputTargetBuildItem,
-                                       TransformedClassesBuildItem transformedClasses,
-                                       ApplicationArchivesBuildItem applicationArchivesBuildItem,
-                                       ApplicationInfoBuildItem applicationInfo,
-                                       PackageConfig packageConfig,
-                                       ClassLoadingConfig classLoadingConfig,
-                                       List<GeneratedClassBuildItem> generatedClasses,
-                                       List<GeneratedResourceBuildItem> generatedResources,
-                                       List<UberJarRequiredBuildItem> uberJarRequired,
-                                       List<UberJarMergedResourceBuildItem> uberJarMergedResourceBuildItems,
-                                       List<UberJarIgnoredResourceBuildItem> uberJarIgnoredResourceBuildItems,
-                                       List<LegacyJarRequiredBuildItem> legacyJarRequired,
-                                       QuarkusBuildCloseablesBuildItem closeablesBuildItem,
-                                       List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItems,
-                                       MainClassBuildItem mainClassBuildItem, Optional<AppCDSRequestedBuildItem> appCDS) throws Exception {
+            OutputTargetBuildItem outputTargetBuildItem,
+            TransformedClassesBuildItem transformedClasses,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            ApplicationInfoBuildItem applicationInfo,
+            PackageConfig packageConfig,
+            ClassLoadingConfig classLoadingConfig,
+            List<GeneratedClassBuildItem> generatedClasses,
+            List<GeneratedResourceBuildItem> generatedResources,
+            List<UberJarRequiredBuildItem> uberJarRequired,
+            List<UberJarMergedResourceBuildItem> uberJarMergedResourceBuildItems,
+            List<UberJarIgnoredResourceBuildItem> uberJarIgnoredResourceBuildItems,
+            List<LegacyJarRequiredBuildItem> legacyJarRequired,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem,
+            List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItems,
+            MainClassBuildItem mainClassBuildItem, Optional<AppCDSRequestedBuildItem> appCDS) throws Exception {
 
         if (appCDS.isPresent()) {
             handleAppCDSSupportFileGeneration(transformedClasses, generatedClasses, appCDS.get());
@@ -247,7 +247,7 @@ public class JarResultBuildStep {
     // the idea here is to just dump the class names of the generated and transformed classes into a file
     // that is read at runtime when AppCDS generation is requested
     private void handleAppCDSSupportFileGeneration(TransformedClassesBuildItem transformedClasses,
-                                                   List<GeneratedClassBuildItem> generatedClasses, AppCDSRequestedBuildItem appCDS) throws IOException {
+            List<GeneratedClassBuildItem> generatedClasses, AppCDSRequestedBuildItem appCDS) throws IOException {
         Path appCDsDir = appCDS.getAppCDSDir();
         Path generatedClassesFile = appCDsDir.resolve("generatedAndTransformed.lst");
         try (BufferedWriter writer = Files.newBufferedWriter(generatedClassesFile, StandardOpenOption.CREATE)) {
@@ -273,17 +273,17 @@ public class JarResultBuildStep {
     }
 
     private JarBuildItem buildUberJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
-                                      OutputTargetBuildItem outputTargetBuildItem,
-                                      TransformedClassesBuildItem transformedClasses,
-                                      ApplicationArchivesBuildItem applicationArchivesBuildItem,
-                                      PackageConfig packageConfig,
-                                      ApplicationInfoBuildItem applicationInfo,
-                                      List<GeneratedClassBuildItem> generatedClasses,
-                                      List<GeneratedResourceBuildItem> generatedResources,
-                                      List<UberJarMergedResourceBuildItem> mergeResources,
-                                      List<UberJarIgnoredResourceBuildItem> ignoredResources,
-                                      MainClassBuildItem mainClassBuildItem,
-                                      ClassLoadingConfig classLoadingConfig) throws Exception {
+            OutputTargetBuildItem outputTargetBuildItem,
+            TransformedClassesBuildItem transformedClasses,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            PackageConfig packageConfig,
+            ApplicationInfoBuildItem applicationInfo,
+            List<GeneratedClassBuildItem> generatedClasses,
+            List<GeneratedResourceBuildItem> generatedResources,
+            List<UberJarMergedResourceBuildItem> mergeResources,
+            List<UberJarIgnoredResourceBuildItem> ignoredResources,
+            MainClassBuildItem mainClassBuildItem,
+            ClassLoadingConfig classLoadingConfig) throws Exception {
 
         //we use the -runner jar name, unless we are building both types
         Path runnerJar = outputTargetBuildItem.getOutputDirectory()
@@ -319,18 +319,18 @@ public class JarResultBuildStep {
     }
 
     private void buildUberJar0(CurateOutcomeBuildItem curateOutcomeBuildItem,
-                               OutputTargetBuildItem outputTargetBuildItem,
-                               TransformedClassesBuildItem transformedClasses,
-                               ApplicationArchivesBuildItem applicationArchivesBuildItem,
-                               PackageConfig packageConfig,
-                               ApplicationInfoBuildItem applicationInfo,
-                               List<GeneratedClassBuildItem> generatedClasses,
-                               List<GeneratedResourceBuildItem> generatedResources,
-                               List<UberJarMergedResourceBuildItem> mergedResources,
-                               List<UberJarIgnoredResourceBuildItem> ignoredResources,
-                               MainClassBuildItem mainClassBuildItem,
-                               ClassLoadingConfig classLoadingConfig,
-                               Path runnerJar) throws Exception {
+            OutputTargetBuildItem outputTargetBuildItem,
+            TransformedClassesBuildItem transformedClasses,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            PackageConfig packageConfig,
+            ApplicationInfoBuildItem applicationInfo,
+            List<GeneratedClassBuildItem> generatedClasses,
+            List<GeneratedResourceBuildItem> generatedResources,
+            List<UberJarMergedResourceBuildItem> mergedResources,
+            List<UberJarIgnoredResourceBuildItem> ignoredResources,
+            MainClassBuildItem mainClassBuildItem,
+            ClassLoadingConfig classLoadingConfig,
+            Path runnerJar) throws Exception {
         try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {
 
             log.info("Building fat jar: " + runnerJar);
@@ -419,12 +419,12 @@ public class JarResultBuildStep {
      * <li>The optional dependencies to include are absent</li>
      * </ul>
      *
-     * @param appDep               the dependency to test.
+     * @param appDep the dependency to test.
      * @param optionalDependencies the optional dependencies to include into the final package.
      * @return {@code true} if the dependency should be included, {@code false} otherwise.
      */
     private static boolean includeAppDep(AppDependency appDep, Optional<Set<AppArtifactKey>> optionalDependencies,
-                                         Set<AppArtifactKey> removedArtifacts) {
+            Set<AppArtifactKey> removedArtifacts) {
         if (!"jar".equals(appDep.getArtifact().getType())) {
             return false;
         }
@@ -439,9 +439,9 @@ public class JarResultBuildStep {
     }
 
     private void walkFileDependencyForDependency(Path root, FileSystem runnerZipFs, Map<String, String> seen,
-                                                 Map<String, Set<AppDependency>> duplicateCatcher, Map<String, List<byte[]>> concatenatedEntries,
-                                                 Set<String> finalIgnoredEntries, AppDependency appDep, Set<String> existingEntries,
-                                                 Set<String> mergeResourcePaths) throws IOException {
+            Map<String, Set<AppDependency>> duplicateCatcher, Map<String, List<byte[]>> concatenatedEntries,
+            Set<String> finalIgnoredEntries, AppDependency appDep, Set<String> existingEntries,
+            Set<String> mergeResourcePaths) throws IOException {
         final Path metaInfDir = root.resolve("META-INF");
         Files.walkFileTree(root, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
                 new SimpleFileVisitor<Path>() {
@@ -492,15 +492,15 @@ public class JarResultBuildStep {
     }
 
     private JarBuildItem buildLegacyThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
-                                            OutputTargetBuildItem outputTargetBuildItem,
-                                            TransformedClassesBuildItem transformedClasses,
-                                            ApplicationArchivesBuildItem applicationArchivesBuildItem,
-                                            PackageConfig packageConfig,
-                                            ApplicationInfoBuildItem applicationInfo,
-                                            List<GeneratedClassBuildItem> generatedClasses,
-                                            List<GeneratedResourceBuildItem> generatedResources,
-                                            MainClassBuildItem mainClassBuildItem,
-                                            ClassLoadingConfig classLoadingConfig) throws Exception {
+            OutputTargetBuildItem outputTargetBuildItem,
+            TransformedClassesBuildItem transformedClasses,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            PackageConfig packageConfig,
+            ApplicationInfoBuildItem applicationInfo,
+            List<GeneratedClassBuildItem> generatedClasses,
+            List<GeneratedResourceBuildItem> generatedResources,
+            MainClassBuildItem mainClassBuildItem,
+            ClassLoadingConfig classLoadingConfig) throws Exception {
 
         Path runnerJar = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
@@ -524,16 +524,16 @@ public class JarResultBuildStep {
     }
 
     private JarBuildItem buildThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
-                                      OutputTargetBuildItem outputTargetBuildItem,
-                                      TransformedClassesBuildItem transformedClasses,
-                                      ApplicationArchivesBuildItem applicationArchivesBuildItem,
-                                      PackageConfig packageConfig,
-                                      ClassLoadingConfig classLoadingConfig,
-                                      ApplicationInfoBuildItem applicationInfo,
-                                      List<GeneratedClassBuildItem> generatedClasses,
-                                      List<GeneratedResourceBuildItem> generatedResources,
-                                      List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItems,
-                                      MainClassBuildItem mainClassBuildItem) throws Exception {
+            OutputTargetBuildItem outputTargetBuildItem,
+            TransformedClassesBuildItem transformedClasses,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            PackageConfig packageConfig,
+            ClassLoadingConfig classLoadingConfig,
+            ApplicationInfoBuildItem applicationInfo,
+            List<GeneratedClassBuildItem> generatedClasses,
+            List<GeneratedResourceBuildItem> generatedResources,
+            List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItems,
+            MainClassBuildItem mainClassBuildItem) throws Exception {
 
         boolean rebuild = outputTargetBuildItem.isRebuild();
 
@@ -812,7 +812,7 @@ public class JarResultBuildStep {
      * @return a {@code Set} containing the key of the artifacts to load from the parent ClassLoader first.
      */
     private Set<AppArtifactKey> getParentFirstKeys(CurateOutcomeBuildItem curateOutcomeBuildItem,
-                                                   ClassLoadingConfig classLoadingConfig) {
+            ClassLoadingConfig classLoadingConfig) {
         final Set<AppArtifactKey> parentFirstKeys = new HashSet<>(
                 curateOutcomeBuildItem.getEffectiveModel().getRunnerParentFirstArtifacts());
         classLoadingConfig.parentFirstArtifacts.ifPresent(
@@ -842,7 +842,7 @@ public class JarResultBuildStep {
         String downloadURL = String.format("https://jitpack.io/com/github/fesh0r/fernflower/%s/fernflower-%s.jar",
                 packageConfig.fernflower.hash, packageConfig.fernflower.hash);
         try (BufferedInputStream in = new BufferedInputStream(new URL(downloadURL).openStream());
-             FileOutputStream fileOutputStream = new FileOutputStream(fernflowerJar.toFile())) {
+                FileOutputStream fileOutputStream = new FileOutputStream(fernflowerJar.toFile())) {
             byte[] dataBuffer = new byte[1024];
             int bytesRead;
             while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
@@ -891,9 +891,9 @@ public class JarResultBuildStep {
     }
 
     private void copyDependency(Set<AppArtifactKey> parentFirstArtifacts, OutputTargetBuildItem outputTargetBuildItem,
-                                Map<AppArtifactKey, List<Path>> runtimeArtifacts, Path libDir, Path baseLib, List<Path> jars,
-                                boolean allowParentFirst, StringBuilder classPath, AppDependency appDep,
-                                TransformedClassesBuildItem transformedClasses, Set<AppArtifactKey> removedDeps)
+            Map<AppArtifactKey, List<Path>> runtimeArtifacts, Path libDir, Path baseLib, List<Path> jars,
+            boolean allowParentFirst, StringBuilder classPath, AppDependency appDep,
+            TransformedClassesBuildItem transformedClasses, Set<AppArtifactKey> removedDeps)
             throws IOException {
         final AppArtifact depArtifact = appDep.getArtifact();
 
@@ -968,19 +968,19 @@ public class JarResultBuildStep {
      */
     @BuildStep
     public NativeImageSourceJarBuildItem buildNativeImageJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
-                                                             OutputTargetBuildItem outputTargetBuildItem,
-                                                             TransformedClassesBuildItem transformedClasses,
-                                                             ApplicationArchivesBuildItem applicationArchivesBuildItem,
-                                                             ApplicationInfoBuildItem applicationInfo,
-                                                             PackageConfig packageConfig,
-                                                             List<GeneratedClassBuildItem> generatedClasses,
-                                                             List<GeneratedNativeImageClassBuildItem> nativeImageResources,
-                                                             List<GeneratedResourceBuildItem> generatedResources,
-                                                             MainClassBuildItem mainClassBuildItem,
-                                                             List<UberJarRequiredBuildItem> uberJarRequired,
-                                                             List<UberJarMergedResourceBuildItem> mergeResources,
-                                                             ClassLoadingConfig classLoadingConfig,
-                                                             List<UberJarIgnoredResourceBuildItem> ignoreResources) throws Exception {
+            OutputTargetBuildItem outputTargetBuildItem,
+            TransformedClassesBuildItem transformedClasses,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            ApplicationInfoBuildItem applicationInfo,
+            PackageConfig packageConfig,
+            List<GeneratedClassBuildItem> generatedClasses,
+            List<GeneratedNativeImageClassBuildItem> nativeImageResources,
+            List<GeneratedResourceBuildItem> generatedResources,
+            MainClassBuildItem mainClassBuildItem,
+            List<UberJarRequiredBuildItem> uberJarRequired,
+            List<UberJarMergedResourceBuildItem> mergeResources,
+            ClassLoadingConfig classLoadingConfig,
+            List<UberJarIgnoredResourceBuildItem> ignoreResources) throws Exception {
         Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
         IoUtils.createOrEmptyDir(targetDirectory);
@@ -1015,16 +1015,16 @@ public class JarResultBuildStep {
     }
 
     private NativeImageSourceJarBuildItem buildNativeImageThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
-                                                                  OutputTargetBuildItem outputTargetBuildItem,
-                                                                  TransformedClassesBuildItem transformedClasses,
-                                                                  ApplicationArchivesBuildItem applicationArchivesBuildItem,
-                                                                  ApplicationInfoBuildItem applicationInfo,
-                                                                  PackageConfig packageConfig,
-                                                                  List<GeneratedClassBuildItem> allClasses,
-                                                                  List<GeneratedResourceBuildItem> generatedResources,
-                                                                  MainClassBuildItem mainClassBuildItem,
-                                                                  Path targetDirectory,
-                                                                  ClassLoadingConfig classLoadingConfig) throws Exception {
+            OutputTargetBuildItem outputTargetBuildItem,
+            TransformedClassesBuildItem transformedClasses,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            ApplicationInfoBuildItem applicationInfo,
+            PackageConfig packageConfig,
+            List<GeneratedClassBuildItem> allClasses,
+            List<GeneratedResourceBuildItem> generatedResources,
+            MainClassBuildItem mainClassBuildItem,
+            Path targetDirectory,
+            ClassLoadingConfig classLoadingConfig) throws Exception {
         copyJsonConfigFiles(applicationArchivesBuildItem, targetDirectory);
 
         Path runnerJar = targetDirectory
@@ -1045,18 +1045,18 @@ public class JarResultBuildStep {
     }
 
     private NativeImageSourceJarBuildItem buildNativeImageUberJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
-                                                                  OutputTargetBuildItem outputTargetBuildItem,
-                                                                  TransformedClassesBuildItem transformedClasses,
-                                                                  ApplicationArchivesBuildItem applicationArchivesBuildItem,
-                                                                  PackageConfig packageConfig,
-                                                                  ApplicationInfoBuildItem applicationInfo,
-                                                                  List<GeneratedClassBuildItem> generatedClasses,
-                                                                  List<GeneratedResourceBuildItem> generatedResources,
-                                                                  List<UberJarMergedResourceBuildItem> mergeResources,
-                                                                  List<UberJarIgnoredResourceBuildItem> ignoreResources,
-                                                                  MainClassBuildItem mainClassBuildItem,
-                                                                  Path targetDirectory,
-                                                                  ClassLoadingConfig classLoadingConfig) throws Exception {
+            OutputTargetBuildItem outputTargetBuildItem,
+            TransformedClassesBuildItem transformedClasses,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            PackageConfig packageConfig,
+            ApplicationInfoBuildItem applicationInfo,
+            List<GeneratedClassBuildItem> generatedClasses,
+            List<GeneratedResourceBuildItem> generatedResources,
+            List<UberJarMergedResourceBuildItem> mergeResources,
+            List<UberJarIgnoredResourceBuildItem> ignoreResources,
+            MainClassBuildItem mainClassBuildItem,
+            Path targetDirectory,
+            ClassLoadingConfig classLoadingConfig) throws Exception {
         //we use the -runner jar name, unless we are building both types
         Path runnerJar = targetDirectory
                 .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
@@ -1105,17 +1105,17 @@ public class JarResultBuildStep {
     }
 
     private void doLegacyThinJarGeneration(CurateOutcomeBuildItem curateOutcomeBuildItem,
-                                           OutputTargetBuildItem outputTargetBuildItem,
-                                           TransformedClassesBuildItem transformedClasses,
-                                           ApplicationArchivesBuildItem applicationArchivesBuildItem,
-                                           ApplicationInfoBuildItem applicationInfo,
-                                           PackageConfig packageConfig,
-                                           List<GeneratedResourceBuildItem> generatedResources,
-                                           Path libDir,
-                                           List<GeneratedClassBuildItem> allClasses,
-                                           FileSystem runnerZipFs,
-                                           MainClassBuildItem mainClassBuildItem,
-                                           ClassLoadingConfig classLoadingConfig)
+            OutputTargetBuildItem outputTargetBuildItem,
+            TransformedClassesBuildItem transformedClasses,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            ApplicationInfoBuildItem applicationInfo,
+            PackageConfig packageConfig,
+            List<GeneratedResourceBuildItem> generatedResources,
+            Path libDir,
+            List<GeneratedClassBuildItem> allClasses,
+            FileSystem runnerZipFs,
+            MainClassBuildItem mainClassBuildItem,
+            ClassLoadingConfig classLoadingConfig)
             throws IOException {
         final Map<String, String> seen = new HashMap<>();
         final StringBuilder classPath = new StringBuilder();
@@ -1140,9 +1140,9 @@ public class JarResultBuildStep {
     }
 
     private void copyLibraryJars(FileSystem runnerZipFs, OutputTargetBuildItem outputTargetBuildItem,
-                                 TransformedClassesBuildItem transformedClasses, Path libDir,
-                                 StringBuilder classPath, List<AppDependency> appDeps, Map<String, List<byte[]>> services,
-                                 Set<String> ignoredEntries, Set<AppArtifactKey> removedDependencies) throws IOException {
+            TransformedClassesBuildItem transformedClasses, Path libDir,
+            StringBuilder classPath, List<AppDependency> appDeps, Map<String, List<byte[]>> services,
+            Set<String> ignoredEntries, Set<AppArtifactKey> removedDependencies) throws IOException {
 
         for (AppDependency appDep : appDeps) {
             final AppArtifact depArtifact = appDep.getArtifact();
@@ -1201,10 +1201,10 @@ public class JarResultBuildStep {
     }
 
     private void copyCommonContent(FileSystem runnerZipFs, Map<String, List<byte[]>> concatenatedEntries,
-                                   ApplicationArchivesBuildItem appArchives, TransformedClassesBuildItem transformedClassesBuildItem,
-                                   List<GeneratedClassBuildItem> generatedClasses,
-                                   List<GeneratedResourceBuildItem> generatedResources, Map<String, String> seen,
-                                   Set<String> ignoredEntries)
+            ApplicationArchivesBuildItem appArchives, TransformedClassesBuildItem transformedClassesBuildItem,
+            List<GeneratedClassBuildItem> generatedClasses,
+            List<GeneratedResourceBuildItem> generatedResources, Map<String, String> seen,
+            Set<String> ignoredEntries)
             throws IOException {
 
         //TODO: this is probably broken in gradle
@@ -1319,8 +1319,8 @@ public class JarResultBuildStep {
      * Otherwise this manifest manipulation will be useless.
      */
     private void generateManifest(FileSystem runnerZipFs, final String classPath, PackageConfig config, AppArtifact appArtifact,
-                                  String mainClassName,
-                                  ApplicationInfoBuildItem applicationInfo)
+            String mainClassName,
+            ApplicationInfoBuildItem applicationInfo)
             throws IOException {
         final Path manifestPath = runnerZipFs.getPath("META-INF", "MANIFEST.MF");
         final Manifest manifest = new Manifest();
@@ -1374,8 +1374,8 @@ public class JarResultBuildStep {
     /**
      * Copy files from {@code dir} to {@code fs}, filtering out service providers into the given map.
      *
-     * @param dir      the source directory
-     * @param fs       the destination filesystem
+     * @param dir the source directory
+     * @param fs the destination filesystem
      * @param services the services map
      * @throws IOException if an error occurs
      */

@@ -76,7 +76,7 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         return project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
     }
 
-    private static Configuration deploymentClasspathConfig(Project project, LaunchMode mode,
+    private static synchronized Configuration deploymentClasspathConfig(Project project, LaunchMode mode,
             Collection<org.gradle.api.artifacts.Dependency> platforms) {
 
         Configuration deploymentConfiguration = project.getConfigurations().findByName(DEPLOYMENT_CONFIGURATION);

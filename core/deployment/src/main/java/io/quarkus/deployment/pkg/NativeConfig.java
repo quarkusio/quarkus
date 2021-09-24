@@ -42,7 +42,7 @@ public class NativeConfig {
     /**
      * If {@code -H:+InlineBeforeAnalysis} flag will be added to the native-image run
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "true")
     public boolean inlineBeforeAnalysis;
 
     /**

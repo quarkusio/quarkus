@@ -11,7 +11,7 @@ This document explains how the dev-mode in Quarkus differs from a production app
 
 == Intro
 
-Quarkus provides a dev-mode (explained in more detail link:maven-tooling.adoc#dev-mode[here] and link:gradle-tooling.adoc#dev-mode[here]) which greatly aids
+Quarkus provides a dev-mode (explained in more detail link:maven-tooling#dev-mode[here] and link:gradle-tooling#dev-mode[here]) which greatly aids
 during development but should *NEVER* be used in production.
 
 [[architectural-differences]]
@@ -50,28 +50,28 @@ In an effort to make development errors very easy to diagnose, Quarkus provides 
 
 === Database import scripts
 
-The `quarkus-hibernate-orm` extension will run the `import.sql` script in `src/main/resources` when Quarkus is running in dev-mode. More details can be found link:hibernate-orm.adoc#dev-mode[here].
+The `quarkus-hibernate-orm` extension will run the `import.sql` script in `src/main/resources` when Quarkus is running in dev-mode. More details can be found link:hibernate-orm#dev-mode[here].
 
 === Dev Services
 
 When testing or running in dev-mode Quarkus can even provide you with a zero config database out of the box, a feature we refer to as Dev Services.
-More information can be found link:datasource.adoc#dev-services[here].
+More information can be found link:datasource#dev-services[here].
 
 === Swagger UI
 
-The `quarkus-smallrye-openapi` extension will expose the Swagger UI when Quarkus is running in dev-mode. Additional information can be found link:openapi-swaggerui.adoc#dev-mode[here].
+The `quarkus-smallrye-openapi` extension will expose the Swagger UI when Quarkus is running in dev-mode. Additional information can be found link:openapi-swaggerui#dev-mode[here].
 
 === GraphQL UI
 
-The `quarkus-smallrye-graphql` extension will expose the GraphiQL UI when Quarkus is running in dev-mode. More details can be found link:smallrye-graphql.adoc#ui[here].
+The `quarkus-smallrye-graphql` extension will expose the GraphiQL UI when Quarkus is running in dev-mode. More details can be found link:smallrye-graphql#ui[here].
 
 === Health UI
 
-The `quarkus-smallrye-health` extension will expose the Health UI when Quarkus is running in dev-mode. link:smallrye-health.adoc#ui[This] section provides additional information.
+The `quarkus-smallrye-health` extension will expose the Health UI when Quarkus is running in dev-mode. link:smallrye-health#ui[This] section provides additional information.
 
 === Mock mailer
 
-The `quarkus-mailer` extension will enable an in-memory mock mail server when Quarkus is running in dev-mode. See link:mailer-reference.adoc#testing[this] for more details.
+The `quarkus-mailer` extension will enable an in-memory mock mail server when Quarkus is running in dev-mode. See link:mailer-reference#testing[this] for more details.
 
 
 === gRPC
@@ -93,7 +93,7 @@ Therefore, many more classes are loaded and build time operations also take plac
 
 In contrast, in a production application the main objective for Quarkus is to consume the least amount of memory and startup in the smallest amount of time.
 Thus, when running the production application, build time operations are not performed (by definition) and various infrastructure classes needed at build time are not present at all at runtime.
-Furthermore, the purpose built ClassLoader that comes with the link:maven-tooling.adoc#fast-jar[fast-jar] package type ensures that class lookup is done as fast as possible while also keeping
+Furthermore, the purpose built ClassLoader that comes with the link:maven-tooling#fast-jar[fast-jar] package type ensures that class lookup is done as fast as possible while also keeping
 the minimum amount of jars in memory.
 
 == Security implications

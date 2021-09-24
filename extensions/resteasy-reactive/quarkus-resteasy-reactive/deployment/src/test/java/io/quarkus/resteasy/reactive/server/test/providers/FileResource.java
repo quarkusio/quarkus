@@ -56,6 +56,12 @@ public class FileResource {
         });
     }
 
+    @Path("mutiny-async-file")
+    @GET
+    public Uni<io.vertx.mutiny.core.file.AsyncFile> getMutinyAsyncFile(RoutingContext vertxRequest) {
+        return new io.vertx.mutiny.core.Vertx(vertxRequest.vertx()).fileSystem().open(FILE, new OpenOptions());
+    }
+
     @Path("async-file-partial")
     @GET
     public Uni<AsyncFile> getAsyncFilePartial(RoutingContext vertxRequest) {

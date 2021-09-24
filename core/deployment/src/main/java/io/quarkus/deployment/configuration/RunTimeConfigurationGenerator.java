@@ -173,6 +173,8 @@ public final class RunTimeConfigurationGenerator {
             ConfigUtils.class,
             "configBuilder",
             SmallRyeConfigBuilder.class, boolean.class, boolean.class, boolean.class, LaunchMode.class);
+    static final MethodDescriptor CU_CONFIG_BUILDER_LIST = MethodDescriptor.ofMethod(ConfigUtils.class, "configBuilder",
+            SmallRyeConfigBuilder.class, SmallRyeConfigBuilder.class, List.class);
     static final MethodDescriptor CU_ADD_SOURCE_PROVIDER = MethodDescriptor.ofMethod(ConfigUtils.class, "addSourceProvider",
             void.class, SmallRyeConfigBuilder.class, ConfigSourceProvider.class);
     static final MethodDescriptor CU_ADD_SOURCE_PROVIDERS = MethodDescriptor.ofMethod(ConfigUtils.class, "addSourceProviders",
@@ -304,11 +306,13 @@ public final class RunTimeConfigurationGenerator {
         final Set<String> staticConfigSources;
         final Set<String> staticConfigSourceProviders;
         final Set<String> staticConfigSourceFactories;
+        final Set<String> staticConfigBuilders;
         final Set<String> runtimeConfigSources;
         final Set<String> runtimeConfigSourceProviders;
         final Set<String> runtimeConfigSourceFactories;
         final Set<ConfigClassWithPrefix> staticConfigMappings;
         final Set<ConfigClassWithPrefix> runtimeConfigMappings;
+        final Set<String> runtimeConfigBuilders;
         /**
          * Regular converters organized by type. Each converter is stored in a separate field. Some are used
          * only at build time, some only at run time, and some at both times.
@@ -342,11 +346,13 @@ public final class RunTimeConfigurationGenerator {
             staticConfigSources = builder.getStaticConfigSources();
             staticConfigSourceProviders = builder.getStaticConfigSourceProviders();
             staticConfigSourceFactories = builder.getStaticConfigSourceFactories();
+            staticConfigBuilders = builder.getStaticConfigBuilders();
             runtimeConfigSources = builder.getRuntimeConfigSources();
             runtimeConfigSourceProviders = builder.getRuntimeConfigSourceProviders();
             runtimeConfigSourceFactories = builder.getRuntimeConfigSourceFactories();
             staticConfigMappings = builder.getStaticConfigMappings();
             runtimeConfigMappings = builder.getRuntimeConfigMappings();
+            runtimeConfigBuilders = builder.getRuntimeConfigBuilders();
             cc = ClassCreator.builder().classOutput(classOutput).className(CONFIG_CLASS_NAME).setFinal(true).build();
             generateEmptyParsers(cc);
             // not instantiable
@@ -439,6 +445,14 @@ public final class RunTimeConfigurationGenerator {
                 clinit.invokeStaticMethod(CU_WITH_MAPPING, buildTimeBuilder,
                         clinit.load(configMapping.getKlass().getName()), clinit.load(configMapping.getPrefix()));
             }
+
+            // additional config builders
+            ResultHandle staticConfigBuilderInstances = clinit.newInstance(AL_NEW);
+            for (String configBuilder : staticConfigBuilders) {
+                ResultHandle staticConfigBuilderInstance = clinit.newInstance(MethodDescriptor.ofConstructor(configBuilder));
+                clinit.invokeVirtualMethod(AL_ADD, staticConfigBuilderInstances, staticConfigBuilderInstance);
+            }
+            clinit.invokeStaticMethod(CU_CONFIG_BUILDER_LIST, buildTimeBuilder, staticConfigBuilderInstances);
 
             clinitConfig = clinit.checkCast(clinit.invokeVirtualMethod(SRCB_BUILD, buildTimeBuilder),
                     SmallRyeConfig.class);
@@ -699,6 +713,15 @@ public final class RunTimeConfigurationGenerator {
                 readConfig.invokeStaticMethod(CU_WITH_MAPPING, runTimeBuilder,
                         readConfig.load(configMapping.getKlass().getName()), readConfig.load(configMapping.getPrefix()));
             }
+
+            // additional config builders
+            ResultHandle runtimeConfigBuilderInstances = readConfig.newInstance(AL_NEW);
+            for (String configBuilder : runtimeConfigBuilders) {
+                ResultHandle runtimeConfigBuilderInstance = readConfig
+                        .newInstance(MethodDescriptor.ofConstructor(configBuilder));
+                readConfig.invokeVirtualMethod(AL_ADD, runtimeConfigBuilderInstances, runtimeConfigBuilderInstance);
+            }
+            readConfig.invokeStaticMethod(CU_CONFIG_BUILDER_LIST, runTimeBuilder, runtimeConfigBuilderInstances);
 
             ResultHandle bootstrapConfig = null;
             if (bootstrapConfigSetupNeeded()) {
@@ -1712,9 +1735,11 @@ public final class RunTimeConfigurationGenerator {
             private Set<String> staticConfigSources;
             private Set<String> staticConfigSourceProviders;
             private Set<String> staticConfigSourceFactories;
+            private Set<String> staticConfigBuilders;
             private Set<String> runtimeConfigSources;
             private Set<String> runtimeConfigSourceProviders;
             private Set<String> runtimeConfigSourceFactories;
+            private Set<String> runtimeConfigBuilders;
 
             private Set<ConfigClassWithPrefix> staticConfigMappings;
             private Set<ConfigClassWithPrefix> runtimeConfigMappings;
@@ -1799,6 +1824,15 @@ public final class RunTimeConfigurationGenerator {
                 return this;
             }
 
+            Set<String> getStaticConfigBuilders() {
+                return staticConfigBuilders;
+            }
+
+            public Builder setStaticConfigBuilders(final Set<String> staticConfigBuilders) {
+                this.staticConfigBuilders = staticConfigBuilders;
+                return this;
+            }
+
             Set<String> getRuntimeConfigSources() {
                 return runtimeConfigSources;
             }
@@ -1841,6 +1875,15 @@ public final class RunTimeConfigurationGenerator {
 
             public Builder setRuntimeConfigMappings(final Set<ConfigClassWithPrefix> runtimeConfigMappings) {
                 this.runtimeConfigMappings = runtimeConfigMappings;
+                return this;
+            }
+
+            Set<String> getRuntimeConfigBuilders() {
+                return runtimeConfigBuilders;
+            }
+
+            public Builder setRuntimeConfigBuilders(final Set<String> runtimeConfigBuilders) {
+                this.runtimeConfigBuilders = runtimeConfigBuilders;
                 return this;
             }
 

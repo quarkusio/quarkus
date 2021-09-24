@@ -28,10 +28,11 @@ public class ApplicationDeploymentClasspathBuilder {
 
         DependencyHandler dependencies = project.getDependencies();
         for (ExtensionDependency extension : extensions) {
+            if (commonExtensions.contains(extension)) {
+                continue;
+            }
             if (common) {
                 commonExtensions.add(extension);
-            } else if (commonExtensions.contains(extension)) {
-                continue;
             }
             extension.createDeploymentVariant(dependencies);
             requireDeploymentDependency(deploymentConfigurationName, extension, dependencies);

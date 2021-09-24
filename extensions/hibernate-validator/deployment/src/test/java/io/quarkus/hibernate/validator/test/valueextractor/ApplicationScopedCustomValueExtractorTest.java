@@ -11,13 +11,11 @@ import javax.validation.valueextraction.ValueExtractor;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-@Disabled("Reproduces https://github.com/quarkusio/quarkus/issues/20375, not yet fixed")
 public class ApplicationScopedCustomValueExtractorTest {
 
     @Inject

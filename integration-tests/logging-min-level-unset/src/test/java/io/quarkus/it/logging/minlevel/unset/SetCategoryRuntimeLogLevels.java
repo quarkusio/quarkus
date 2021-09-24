@@ -5,7 +5,7 @@ import java.util.Map;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
-public final class SetRuntimeLogLevels implements QuarkusTestResourceLifecycleManager {
+public final class SetCategoryRuntimeLogLevels implements QuarkusTestResourceLifecycleManager {
 
     @Override
     public Map<String, String> start() {

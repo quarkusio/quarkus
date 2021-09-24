@@ -60,6 +60,7 @@ import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder;
 import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
+import io.quarkus.vertx.http.runtime.security.IdentityProviderManagerBuilderCustomizerProducer;
 import io.vertx.core.Handler;
 import io.vertx.core.http.impl.Http1xServerRequest;
 import io.vertx.core.impl.VertxImpl;
@@ -99,6 +100,7 @@ class VertxHttpProcessor {
                 .setUnremovable()
                 .addBeanClass(CurrentVertxRequest.class)
                 .addBeanClass(CurrentRequestProducer.class)
+                .addBeanClass(IdentityProviderManagerBuilderCustomizerProducer.class)
                 .build();
     }
 

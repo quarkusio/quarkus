@@ -12,6 +12,7 @@ import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
+import io.quarkus.security.spi.runtime.IdentityProviderManagerBuilder;
 
 /**
  * CDI bean than manages the lifecycle of the {@link io.quarkus.security.identity.IdentityProviderManager}
@@ -24,6 +25,9 @@ public class IdentityProviderManagerCreator {
 
     @Inject
     Instance<SecurityIdentityAugmentor> augmentors;
+
+    @Inject
+    Instance<IdentityProviderManagerBuilder.Customizer> customizers;
 
     @Produces
     @ApplicationScoped
@@ -49,6 +53,9 @@ public class IdentityProviderManagerCreator {
                 ExecutorRecorder.getCurrent().execute(command);
             }
         });
+        for (IdentityProviderManagerBuilder.Customizer customizer : customizers) {
+            customizer.customize(builder);
+        }
         return builder.build();
     }
 

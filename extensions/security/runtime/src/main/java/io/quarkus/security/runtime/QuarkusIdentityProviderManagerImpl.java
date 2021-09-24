@@ -21,6 +21,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.security.identity.request.AuthenticationRequest;
+import io.quarkus.security.spi.runtime.IdentityProviderManagerBuilder;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
 
@@ -33,11 +34,12 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
     private final Map<Class<? extends AuthenticationRequest>, List<IdentityProvider>> providers;
     private final List<SecurityIdentityAugmentor> augmenters;
     private final Executor blockingExecutor;
+    private final Supplier<Executor> eventLoopExecutorSupplier;
 
     private final AuthenticationRequestContext blockingRequestContext = new AuthenticationRequestContext() {
         @Override
         public Uni<SecurityIdentity> runBlocking(Supplier<SecurityIdentity> function) {
-            return Uni.createFrom().deferred(new Supplier<Uni<? extends SecurityIdentity>>() {
+            return Uni.createFrom().deferred(new Supplier<>() {
                 @Override
                 public Uni<SecurityIdentity> get() {
                     if (BlockingOperationControl.isBlockingAllowed()) {
@@ -48,21 +50,26 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
                             return Uni.createFrom().failure(t);
                         }
                     } else {
-                        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
-                            @Override
-                            public void accept(UniEmitter<? super SecurityIdentity> uniEmitter) {
-                                blockingExecutor.execute(new Runnable() {
+                        Uni<SecurityIdentity> uni = Uni.createFrom()
+                                .emitter(new Consumer<>() {
                                     @Override
-                                    public void run() {
-                                        try {
-                                            uniEmitter.complete(function.get());
-                                        } catch (Throwable t) {
-                                            uniEmitter.fail(t);
-                                        }
+                                    public void accept(UniEmitter<? super SecurityIdentity> uniEmitter) {
+                                        blockingExecutor.execute(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                try {
+                                                    uniEmitter.complete(function.get());
+                                                } catch (Throwable t) {
+                                                    uniEmitter.fail(t);
+                                                }
+                                            }
+                                        });
                                     }
                                 });
-                            }
-                        });
+                        if (eventLoopExecutorSupplier != null) {
+                            uni = uni.emitOn(eventLoopExecutorSupplier.get());
+                        }
+                        return uni;
                     }
                 }
             });
@@ -74,6 +81,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
         this.providers = builder.providers;
         this.augmenters = builder.augmentors;
         this.blockingExecutor = builder.blockingExecutor;
+        this.eventLoopExecutorSupplier = builder.eventLoopExecutorSupplier;
     }
 
     /**
@@ -184,7 +192,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
     /**
      * A builder for constructing instances of {@link QuarkusIdentityProviderManagerImpl}
      */
-    public static class Builder {
+    public static class Builder implements IdentityProviderManagerBuilder<Builder> {
 
         Builder() {
         }
@@ -192,6 +200,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
         private final Map<Class<? extends AuthenticationRequest>, List<IdentityProvider>> providers = new HashMap<>();
         private final List<SecurityIdentityAugmentor> augmentors = new ArrayList<>();
         private Executor blockingExecutor;
+        private Supplier<Executor> eventLoopExecutorSupplier;
         private boolean built = false;
 
         /**
@@ -225,6 +234,11 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
          */
         public Builder setBlockingExecutor(Executor blockingExecutor) {
             this.blockingExecutor = blockingExecutor;
+            return this;
+        }
+
+        public Builder setEventLoopExecutorSupplier(Supplier<Executor> eventLoopExecutorSupplier) {
+            this.eventLoopExecutorSupplier = eventLoopExecutorSupplier;
             return this;
         }
 

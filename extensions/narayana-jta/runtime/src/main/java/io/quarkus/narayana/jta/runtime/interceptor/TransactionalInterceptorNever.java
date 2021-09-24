@@ -10,8 +10,6 @@ import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 import javax.transaction.TransactionalException;
 
-import com.arjuna.ats.jta.logging.jtaLogger;
-
 /**
  * @author paul.robinson@redhat.com 25/05/2013
  */
@@ -33,7 +31,7 @@ public class TransactionalInterceptorNever extends TransactionalInterceptorBase 
     @Override
     protected Object doIntercept(TransactionManager tm, Transaction tx, InvocationContext ic) throws Exception {
         if (tx != null) {
-            throw new TransactionalException(jtaLogger.i18NLogger.get_tx_required(), new InvalidTransactionException());
+            throw new TransactionalException("Transaction is not allowed for invocation", new InvalidTransactionException());
         }
         return invokeInNoTx(ic);
     }

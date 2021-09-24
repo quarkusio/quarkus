@@ -111,8 +111,16 @@ public class ClientProxyGenerator extends AbstractGenerator {
         ClassCreator clientProxy = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .superClass(superClass)
                 .interfaces(interfaces.toArray(new String[0])).build();
-        if (AsmUtilCopy.needsSignature(providerClass)) {
-            clientProxy.setSignature(AsmUtilCopy.getSignature(providerClass));
+        // See https://docs.oracle.com/javase/specs/jvms/se14/html/jvms-4.html#jvms-4.7.9.1
+        // Essentially a signature is needed if a class has type parameters or extends/implements parameterized type.
+        // We're generating a subtype (subclass or subinterface) of "providerClass".
+        // The only way for that generated subtype to have type parameters or to extend/implement a parameterized type
+        // is if providerClass has type parameters.
+        // Whether supertypes or superinterfaces of providerClass have type parameters is irrelevant:
+        // as long as those type parameters are bound in providerClass,
+        // they won't affect the need for a signature in the generated subtype.
+        if (!providerClass.typeParameters().isEmpty()) {
+            clientProxy.setSignature(AsmUtilCopy.getGeneratedSubClassSignature(providerClass, bean.getProviderType()));
         }
         Map<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariables = Types.resolvedTypeVariables(providerClass,
                 bean.getDeployment());

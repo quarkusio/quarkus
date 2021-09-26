@@ -37,7 +37,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jsonb-deployment</artifactId>
+            <artifactId>quarkus-resteasy-jsonb-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

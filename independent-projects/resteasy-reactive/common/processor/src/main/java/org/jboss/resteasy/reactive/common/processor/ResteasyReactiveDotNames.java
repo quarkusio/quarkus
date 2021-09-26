@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
@@ -84,6 +85,7 @@ import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.RestSseElementType;
+import org.reactivestreams.Publisher;
 
 public final class ResteasyReactiveDotNames {
 
@@ -176,6 +178,8 @@ public final class ResteasyReactiveDotNames {
     public static final DotName UNI = DotName.createSimple(Uni.class.getName());
     public static final DotName MULTI = DotName.createSimple(Multi.class.getName());
     public static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
+    public static final DotName COMPLETABLE_FUTURE = DotName.createSimple(CompletableFuture.class.getName());
+    public static final DotName PUBLISHER = DotName.createSimple(Publisher.class.getName());
     public static final DotName REST_RESPONSE = DotName.createSimple(RestResponse.class.getName());
 
     public static final DotName INTEGER = DotName.createSimple(Integer.class.getName());

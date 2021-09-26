@@ -5,8 +5,6 @@ import static io.quarkus.deployment.Feature.MONGODB_REST_DATA_PANACHE;
 import java.lang.reflect.Modifier;
 import java.util.List;
 
-import javax.ws.rs.Priorities;
-
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -29,10 +27,9 @@ import io.quarkus.mongodb.rest.data.panache.PanacheMongoEntityResource;
 import io.quarkus.mongodb.rest.data.panache.PanacheMongoRepositoryResource;
 import io.quarkus.mongodb.rest.data.panache.runtime.NoopUpdateExecutor;
 import io.quarkus.mongodb.rest.data.panache.runtime.RestDataPanacheExceptionMapper;
-import io.quarkus.rest.data.panache.RestDataPanacheException;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.RestDataResourceBuildItem;
-import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
+import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 
 class MongoPanacheRestProcessor {
 
@@ -48,9 +45,8 @@ class MongoPanacheRestProcessor {
     }
 
     @BuildStep
-    ExceptionMapperBuildItem registerRestDataPanacheExceptionMapper() {
-        return new ExceptionMapperBuildItem(RestDataPanacheExceptionMapper.class.getName(),
-                RestDataPanacheException.class.getName(), Priorities.USER + 100, false);
+    ResteasyJaxrsProviderBuildItem registerRestDataPanacheExceptionMapper() {
+        return new ResteasyJaxrsProviderBuildItem(RestDataPanacheExceptionMapper.class.getName());
     }
 
     @BuildStep

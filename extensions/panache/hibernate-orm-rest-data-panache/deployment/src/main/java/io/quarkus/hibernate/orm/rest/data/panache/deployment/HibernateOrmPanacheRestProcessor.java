@@ -5,8 +5,6 @@ import static io.quarkus.deployment.Feature.HIBERNATE_ORM_REST_DATA_PANACHE;
 import java.lang.reflect.Modifier;
 import java.util.List;
 
-import javax.ws.rs.Priorities;
-
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -25,10 +23,9 @@ import io.quarkus.hibernate.orm.rest.data.panache.PanacheEntityResource;
 import io.quarkus.hibernate.orm.rest.data.panache.PanacheRepositoryResource;
 import io.quarkus.hibernate.orm.rest.data.panache.runtime.RestDataPanacheExceptionMapper;
 import io.quarkus.hibernate.orm.rest.data.panache.runtime.jta.TransactionalUpdateExecutor;
-import io.quarkus.rest.data.panache.RestDataPanacheException;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.RestDataResourceBuildItem;
-import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
+import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 
 class HibernateOrmPanacheRestProcessor {
 
@@ -44,9 +41,8 @@ class HibernateOrmPanacheRestProcessor {
     }
 
     @BuildStep
-    ExceptionMapperBuildItem registerRestDataPanacheExceptionMapper() {
-        return new ExceptionMapperBuildItem(RestDataPanacheExceptionMapper.class.getName(),
-                RestDataPanacheException.class.getName(), Priorities.USER + 100, false);
+    ResteasyJaxrsProviderBuildItem registerRestDataPanacheExceptionMapper() {
+        return new ResteasyJaxrsProviderBuildItem(RestDataPanacheExceptionMapper.class.getName());
     }
 
     @BuildStep

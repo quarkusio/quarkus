@@ -12,7 +12,7 @@ public class ApplicationDeploymentClasspathBuilder {
     private static final String DEPLOYMENT_CONFIGURATION_SUFFIX = "Deployment";
 
     private final Project project;
-    private final Set<ExtensionDependency> commonExtensions = new HashSet<>();
+    private final Set<ExtensionDependency> alreadyProcessed = new HashSet<>();
 
     public ApplicationDeploymentClasspathBuilder(Project project) {
         this.project = project;
@@ -22,19 +22,18 @@ public class ApplicationDeploymentClasspathBuilder {
         return baseConfigurationName + DEPLOYMENT_CONFIGURATION_SUFFIX;
     }
 
-    public void createBuildClasspath(Set<ExtensionDependency> extensions, String baseConfigurationName, boolean common) {
+    public synchronized void createBuildClasspath(Set<ExtensionDependency> extensions, String baseConfigurationName) {
         String deploymentConfigurationName = toDeploymentConfigurationName(baseConfigurationName);
         project.getConfigurations().create(deploymentConfigurationName);
 
         DependencyHandler dependencies = project.getDependencies();
         for (ExtensionDependency extension : extensions) {
-            if (common) {
-                commonExtensions.add(extension);
-            } else if (commonExtensions.contains(extension)) {
+            requireDeploymentDependency(deploymentConfigurationName, extension, dependencies);
+            if (alreadyProcessed.contains(extension)) {
                 continue;
             }
+            alreadyProcessed.add(extension);
             extension.createDeploymentVariant(dependencies);
-            requireDeploymentDependency(deploymentConfigurationName, extension, dependencies);
         }
     }
 

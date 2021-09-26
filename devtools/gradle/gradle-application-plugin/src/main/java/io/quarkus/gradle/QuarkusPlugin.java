@@ -242,19 +242,19 @@ public class QuarkusPlugin implements Plugin<Project> {
                     Set<ExtensionDependency> implementationExtensions = conditionalDependenciesEnabler
                             .declareConditionalDependencies(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
                     deploymentClasspathBuilder.createBuildClasspath(implementationExtensions,
-                            JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true);
+                            JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
                 });
         project.getConfigurations().getByName(DEV_MODE_CONFIGURATION_NAME).getIncoming().beforeResolve((devDependencies) -> {
             Set<ExtensionDependency> devModeExtensions = conditionalDependenciesEnabler
                     .declareConditionalDependencies(DEV_MODE_CONFIGURATION_NAME);
-            deploymentClasspathBuilder.createBuildClasspath(devModeExtensions, DEV_MODE_CONFIGURATION_NAME, false);
+            deploymentClasspathBuilder.createBuildClasspath(devModeExtensions, DEV_MODE_CONFIGURATION_NAME);
         });
         project.getConfigurations().getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME).getIncoming()
                 .beforeResolve((testDependencies) -> {
                     Set<ExtensionDependency> testExtensions = conditionalDependenciesEnabler
                             .declareConditionalDependencies(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME);
                     deploymentClasspathBuilder.createBuildClasspath(testExtensions,
-                            JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME, false);
+                            JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME);
                 });
     }
 

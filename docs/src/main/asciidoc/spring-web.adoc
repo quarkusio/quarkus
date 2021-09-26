@@ -429,6 +429,12 @@ The following method return types are supported:
 * POJO classes which will be serialized via JSON
 * `org.springframework.http.ResponseEntity`
 
+=== Controller method parameter types
+
+In addition to the method parameters that can be annotated with the appropriate Spring Web annotations from the previous table,
+`javax.servlet.http.HttpServletRequest` and `javax.servlet.http.HttpServletResponse` are also supported.
+For this to function however, users need to add the `quarkus-undertow` dependency.
+
 === Exception handler method return types
 
 The following method return types are supported:
@@ -443,7 +449,7 @@ Other return types mentioned in the Spring `https://docs.spring.io/spring-framew
 The following parameter types are supported, in arbitrary order:
 
 * An exception argument: declared as a general `Exception` or as a more specific exception. This also serves as a mapping hint if the annotation itself does not narrow the exception types through its `value()`.
-* The following JAX-RS Types: `javax.ws.rs.core.Request` and `javax.ws.rs.core.UriInfo`
+* Request and/or response objects (typically from the Servlet API). You may choose any specific request/response type, e.g. `ServletRequest` / `HttpServletRequest`. To use Servlet API, the `quarkus-undertow` dependency needs to be added.
 
 Other parameter types mentioned in the Spring `https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/ExceptionHandler.html[ExceptionHandler javadoc]` are not supported.
 

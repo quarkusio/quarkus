@@ -14,9 +14,9 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationRuntimeConfig.BuildTimeMismatchAtRuntime;
 
 @Recorder
-public class ConfigChangeRecorder {
+public class ConfigRecorder {
 
-    private static final Logger log = Logger.getLogger(ConfigChangeRecorder.class);
+    private static final Logger log = Logger.getLogger(ConfigRecorder.class);
 
     public void handleConfigChange(ConfigurationRuntimeConfig configurationConfig, Map<String, String> buildTimeConfig) {
         Config configProvider = ConfigProvider.getConfig();

@@ -4,6 +4,7 @@ import static io.quarkus.deployment.steps.ConfigBuildSteps.SERVICES_PREFIX;
 import static io.quarkus.deployment.util.ServiceUtil.classNamesNamedIn;
 import static java.util.stream.Collectors.toList;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -13,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -32,12 +34,14 @@ import io.quarkus.deployment.builditem.AdditionalStaticInitConfigSourceProviderB
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigSourceFactoryBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
@@ -46,15 +50,18 @@ import io.quarkus.deployment.configuration.definition.RootDefinition;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.StaticInitSafe;
-import io.quarkus.runtime.configuration.ConfigChangeRecorder;
+import io.quarkus.runtime.configuration.ConfigRecorder;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationRuntimeConfig;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.PropertiesLocationConfigSourceFactory;
 
 public class ConfigGenerationBuildStep {
+
     @BuildStep
     void deprecatedStaticInitBuildItem(
             List<AdditionalStaticInitConfigSourceProviderBuildItem> additionalStaticInitConfigSourceProviders,
@@ -74,13 +81,27 @@ public class ConfigGenerationBuildStep {
                 PropertiesLocationConfigSourceFactory.class.getName()));
     }
 
+    @BuildStep
+    GeneratedResourceBuildItem runtimeDefaultsConfig(List<RunTimeConfigurationDefaultBuildItem> runTimeDefaults,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResourceBuildItemBuildProducer)
+            throws IOException {
+        Properties p = new Properties();
+        for (var e : runTimeDefaults) {
+            p.setProperty(e.getKey(), e.getValue());
+        }
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        p.store(out, null);
+        nativeImageResourceBuildItemBuildProducer
+                .produce(new NativeImageResourceBuildItem(ConfigUtils.QUARKUS_RUNTIME_CONFIG_DEFAULTS_PROPERTIES));
+        return new GeneratedResourceBuildItem(ConfigUtils.QUARKUS_RUNTIME_CONFIG_DEFAULTS_PROPERTIES, out.toByteArray());
+    }
+
     /**
      * Generate the Config class that instantiates MP Config and holds all the config objects
      */
     @BuildStep
     void generateConfigClass(
             ConfigurationBuildItem configItem,
-            List<RunTimeConfigurationDefaultBuildItem> runTimeDefaults,
             List<ConfigurationTypeBuildItem> typeItems,
             LaunchModeBuildItem launchModeBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
@@ -93,13 +114,6 @@ public class ConfigGenerationBuildStep {
 
         if (liveReloadBuildItem.isLiveReload()) {
             return;
-        }
-
-        Map<String, String> defaults = new HashMap<>();
-        for (RunTimeConfigurationDefaultBuildItem item : runTimeDefaults) {
-            if (defaults.putIfAbsent(item.getKey(), item.getValue()) != null) {
-                throw new IllegalStateException("More than one default value for " + item.getKey() + " was produced");
-            }
         }
 
         Set<String> discoveredConfigSources = discoverService(ConfigSource.class, reflectiveClass);
@@ -120,7 +134,8 @@ public class ConfigGenerationBuildStep {
                 .setBuildTimeReadResult(configItem.getReadResult())
                 .setClassOutput(new GeneratedClassGizmoAdaptor(generatedClass, false))
                 .setLaunchMode(launchModeBuildItem.getLaunchMode())
-                .setRunTimeDefaults(defaults)
+                .setLiveReloadPossible(launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT
+                        || launchModeBuildItem.isAuxiliaryApplication())
                 .setAdditionalTypes(typeItems.stream().map(ConfigurationTypeBuildItem::getValueType).collect(toList()))
                 .setAdditionalBootstrapConfigSourceProviders(
                         getAdditionalBootstrapConfigSourceProviders(additionalBootstrapConfigSourceProviders))
@@ -161,7 +176,7 @@ public class ConfigGenerationBuildStep {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     public void checkForBuildTimeConfigChange(
-            ConfigChangeRecorder recorder, ConfigurationBuildItem configItem, LoggingSetupBuildItem loggingSetupBuildItem,
+            ConfigRecorder recorder, ConfigurationBuildItem configItem, LoggingSetupBuildItem loggingSetupBuildItem,
             ConfigurationRuntimeConfig configurationConfig,
             List<SuppressNonRuntimeConfigChangedWarningBuildItem> suppressNonRuntimeConfigChangedWarningItems) {
         BuildTimeConfigurationReader.ReadResult readResult = configItem.getReadResult();

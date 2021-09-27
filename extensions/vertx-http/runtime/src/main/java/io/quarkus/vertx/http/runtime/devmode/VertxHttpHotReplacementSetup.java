@@ -147,11 +147,18 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                     synchronized (this) {
                         if (nextUpdate < System.currentTimeMillis() || hotReplacementContext.isTest()) {
                             nextUpdate = System.currentTimeMillis() + HOT_REPLACEMENT_INTERVAL;
+                            Object currentState = VertxHttpRecorder.getCurrentApplicationState();
                             try {
                                 restart = hotReplacementContext.doScan(true);
                             } catch (Exception e) {
                                 event.fail(new IllegalStateException("Unable to perform live reload scanning", e));
                                 return;
+                            }
+                            if (currentState != VertxHttpRecorder.getCurrentApplicationState()) {
+                                //its possible a Kafka message or some other source triggered a reload
+                                //so we could wait for the restart (due to the scan lock)
+                                //but then fail to dispatch to the new application
+                                restart = true;
                             }
                         }
                     }

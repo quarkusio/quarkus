@@ -292,6 +292,13 @@ public class DevServicesDatasourceProcessor {
             compressor.close();
             log.info("Dev Services for " + prettyName
                     + " (" + defaultDbKind.get() + ") started.");
+
+            String devservices = prefix + "devservices.";
+            for (var name : ConfigProvider.getConfig().getPropertyNames()) {
+                if (name.startsWith(devservices)) {
+                    devDebProperties.put(name, ConfigProvider.getConfig().getValue(name, String.class));
+                }
+            }
             return new DevServicesDatasourceResultBuildItem.DbResult(defaultDbKind.get(), devDebProperties);
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();

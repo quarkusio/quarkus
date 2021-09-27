@@ -125,7 +125,7 @@
         <db2-jdbc.version>11.5.6.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>4.4.0</rest-assured.version>
-        <junit.jupiter.version>5.8.0</junit.jupiter.version>
+        <junit.jupiter.version>5.8.1</junit.jupiter.version>
         <testng.version>6.14.2</testng.version>
         <assertj.version>3.20.2</assertj.version>
         <infinispan.version>12.1.7.Final</infinispan.version>

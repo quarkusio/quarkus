@@ -33,23 +33,7 @@ public class StartWebSocket {
     }
 
     @OnMessage
-    public void onMessage(String message, @PathParam("username") String name) {
+    public void onMessage(String message, @PathParam("name") String name) {
         System.out.println("onMessage> " + name + ": " + message);
     }
-
-    /**
-     * Send a message to a remote websocket session
-     *
-     * @param session the websocket session
-     * @param message the message to send
-     * @throws IOException              if there is a communication error sending the message object.
-     * @throws EncodeException          if there was a problem encoding the message.
-     * @throws IllegalArgumentException if the message parameter is {@code null}
-     */
-    public void sendMessage(Session session, String message) throws EncodeException, IOException {
-        requireNonNull(session, "session is required");
-
-        session.getBasicRemote().sendObject(message);
-    }
-
 }

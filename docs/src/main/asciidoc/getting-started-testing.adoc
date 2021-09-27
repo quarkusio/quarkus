@@ -484,6 +484,9 @@ a bit slower, as it adds a shutdown/startup cycle to the test time, but gives a 
 
 NOTE: In order to reduce the amount of times Quarkus needs to restart it is recommended that you place all tests
 that need a specific profile into their own package, and then run tests alphabetically.
+Alternatively, you can register `io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer` as a global `ClassOrderer`
+in `junit-platform.properties` as described in the
+link:https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order-classes[JUnit 5 User Guide].
 
 === Writing a Profile
 

@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.testing.PlatformAwareTestBase;
+import io.quarkus.maven.ArtifactKey;
 import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -19,7 +20,7 @@ public class ExtensionProcessorTest extends PlatformAwareTestBase {
         final Extension resteasy = findExtension(catalog, "quarkus-resteasy");
         final ExtensionProcessor extensionProcessor = ExtensionProcessor.of(resteasy);
 
-        assertThat(extensionProcessor.getTags()).contains("provides-code");
+        assertThat(extensionProcessor.getTags()).contains("code");
         assertThat(extensionProcessor.getShortName()).contains("jax-rs");
         assertThat(extensionProcessor.getCategories()).contains("web");
         assertThat(extensionProcessor.getCodestartKind()).isEqualTo(ExtensionProcessor.CodestartKind.EXTENSION_CODESTART);
@@ -30,6 +31,21 @@ public class ExtensionProcessorTest extends PlatformAwareTestBase {
         assertThat(extensionProcessor.getKeywords()).contains("resteasy", "jaxrs", "web", "rest");
         assertThat(extensionProcessor.getExtendedKeywords()).contains("resteasy", "jaxrs", "web", "rest");
         assertThat(extensionProcessor.getGuide()).isEqualTo("https://quarkus.io/guides/rest-json");
+    }
+
+    @Test
+    void testGetBom() {
+        final ExtensionCatalog catalog = getExtensionsCatalog();
+        final Extension kotlin = findExtension(catalog, "quarkus-kotlin");
+        assertThat(ExtensionProcessor.getBom(kotlin).get().getKey())
+                .isEqualTo(ArtifactKey.fromString("io.quarkus:quarkus-bom::pom"));
+    }
+
+    @Test
+    void testGetNonQuarkusBomOnly() {
+        final ExtensionCatalog catalog = getExtensionsCatalog();
+        final Extension kotlin = findExtension(catalog, "quarkus-kotlin");
+        assertThat(ExtensionProcessor.getNonQuarkusBomOnly(kotlin)).isEmpty();
     }
 
     @Test

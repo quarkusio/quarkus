@@ -46,7 +46,7 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
 
         // compile the imports first
         for (String imprt : options.imports) {
-            Path importPath = Paths.get(input.toAbsolutePath().toString(), imprt).toAbsolutePath();
+            Path importPath = Paths.get(input.toAbsolutePath().toString(), imprt.trim()).toAbsolutePath();
             if (Files.isDirectory(importPath)) {
                 for (Path file : gatherAllFiles(importPath)) {
                     compileSingleFile(file, outputDir, options);

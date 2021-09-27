@@ -375,4 +375,5 @@ public final class JandexUtil {
             this.dotName = dotName;
         }
     }
+
 }

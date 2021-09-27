@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Reactive SQL Clients
+= Reactive SQL Clients
 
 include::./attributes.adoc[]
 :config-file: application.properties
@@ -14,6 +14,7 @@ Currently, the following database servers are supported:
 * DB2
 * PostgreSQL
 * MariaDB/MySQL
+* Microsoft SQL Server
 
 In this guide, you will learn how to implement a simple CRUD application exposing data stored in *PostgreSQL* over a RESTful API.
 
@@ -64,7 +65,7 @@ If you are creating a new project, set the `extensions` parameter as follows:
 
 [source,bash, subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=reactive-pg-client-quickstart \
     -DclassName="org.acme.vertx.FruitResource" \
@@ -491,29 +492,29 @@ Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits
 == Transactions
 
 The reactive SQL clients support transactions.
-A transaction is started with `client.begin()` and terminated with either `tx.commit()` or `tx.rollback()`.
+A transaction is started with `io.vertx.mutiny.sqlclient.SqlConnection#begin` and terminated with either `io.vertx.mutiny.sqlclient.Transaction#commit` or `io.vertx.mutiny.sqlclient.Transaction#rollback`.
 All these operations are asynchronous:
 
-* `client.begin()` returns a `Uni<Transaction>`
-* `client.commit()` and `client.rollback()` return `Uni<Void>`
+* `connection.begin()` returns a `Uni<Transaction>`
+* `transaction.commit()` and `transaction.rollback()` return `Uni<Void>`
 
 Managing transactions in the reactive programming world can be cumbersome.
-Instead of writing repetitive and complex (thus error-prone!) code, you can use the `io.vertx.mutiny.sqlclient.SqlClientHelper`.
+Instead of writing repetitive and complex (thus error-prone!) code, you can use the `io.vertx.mutiny.sqlclient.Pool#withTransaction` helper method.
 
 The following snippet shows how to run 2 insertions in the same transaction:
 
 [source, java]
 ----
 public static Uni<Void> insertTwoFruits(PgPool client, Fruit fruit1, Fruit fruit2) {
-    return SqlClientHelper.inTransactionUni(client, tx -> {
-        Uni<RowSet<Row>> insertOne = tx.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING id")
+    return client.withTransaction(conn -> {
+        Uni<RowSet<Row>> insertOne = conn.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING id")
                 .execute(Tuple.of(fruit1.name));
-        Uni<RowSet<Row>> insertTwo = tx.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING id")
+        Uni<RowSet<Row>> insertTwo = conn.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING id")
                 .execute(Tuple.of(fruit2.name));
 
-        return insertOne.and(insertTwo)
+        return Uni.combine().all().unis(insertOne, insertTwo)
                 // Ignore the results (the two ids)
-                .onItem().ignore().andContinueWithNull();
+                .discardItems();
     });
 }
 ----
@@ -524,12 +525,12 @@ You can also create dependent actions as follows:
 
 [source, java]
 ----
-return SqlClientHelper.inTransactionUni(client, tx -> tx
+return client.withTransaction(conn -> conn
 
         .preparedQuery("INSERT INTO person (firstname,lastname) VALUES ($1,$2) RETURNING id")
-                .execute(Tuple.of(person.getFirstName(), person.getLastName()))
+        .execute(Tuple.of(person.getFirstName(), person.getLastName()))
 
-        .onItem().transformToUni(id -> tx.preparedQuery("INSERT INTO addr (person_id,addrline1) VALUES ($1,$2)")
+        .onItem().transformToUni(id -> conn.preparedQuery("INSERT INTO addr (person_id,addrline1) VALUES ($1,$2)")
                 .execute(Tuple.of(id.iterator().next().getLong("id"), person.getLastName())))
 
         .onItem().ignore().andContinueWithNull());
@@ -642,7 +643,7 @@ MySQLPool additional2Client;
 
 The PostgreSQL and MariaDB/MySQL clients can be configured to connect to the server through a UNIX domain socket.
 
-First make sure that link:vertx#native-transport[native transport support] is enabled.
+First make sure that link:vertx-reference.adoc#native-transport[native transport support] is enabled.
 
 Then configure the database connection url.
 This step depends on the database type.

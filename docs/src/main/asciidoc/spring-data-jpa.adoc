@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Extension for Spring Data API
+= Extension for Spring Data API
 
 include::./attributes.adoc[]
 
@@ -34,7 +34,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=spring-data-jpa-quickstart \
     -DclassName="org.acme.spring.data.jpa.FruitResource" \
@@ -604,7 +604,7 @@ An extensive list of examples can be seen in the https://github.com/quarkusio/qu
 is not used at all (since all the necessary plumbing is done at build time). Similar support might be added to Quarkus in the future.
 * Using `java.util.concurrent.Future` and classes that extend it as return types of repository methods.
 * Native and named queries when using `@Query`
-* https://github.com/spring-projects/spring-data-jpa/blob/master/src/main/asciidoc/jpa.adoc#entity-state-detection-strategies[Entity State-detection Strategies]
+* https://github.com/spring-projects/spring-data-jpa/blob/main/src/main/asciidoc/jpa.adoc#entity-state-detection-strategies[Entity State-detection Strategies]
 via `EntityInformation`.
 ** As of Quarkus 1.6.0, only "Version-Property and Id-Property inspection" is implemented (which should cover most cases).
 ** As of Quarkus 1.7.0, `org.springframework.data.domain.Persistable` is also implemented.

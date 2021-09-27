@@ -8,6 +8,7 @@ import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,12 +32,14 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
+import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.processor.JandexUtil;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
@@ -46,6 +49,7 @@ import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveSca
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
+import org.jboss.resteasy.reactive.server.core.startup.CustomServerRestHandlers;
 import org.jboss.resteasy.reactive.server.core.startup.RuntimeDeploymentManager;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.processor.ServerEndpointIndexer;
@@ -53,6 +57,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveCon
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveExceptionMappingScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveFeatureScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveParamConverterScanner;
+import org.jboss.resteasy.reactive.server.providers.serialisers.ServerByteArrayMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerStringMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.vertx.ResteasyReactiveVertxHandler;
 import org.jboss.resteasy.reactive.server.vertx.VertxRequestContextFactory;
@@ -72,7 +77,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
 
     static {
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
-        rootLogger = (Logger) LogManager.getLogManager().getLogger("");
+        rootLogger = LogManager.getLogManager().getLogger("");
     }
 
     private Path deploymentDir;
@@ -196,7 +201,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
             vertx = Vertx.vertx();
             HttpServer server = vertx.createHttpServer();
             router = Router.router(vertx);
-            server.requestHandler(router).listen(8080);
+            server.requestHandler(router).listen(8080).toCompletionStage().toCompletableFuture().get();
             store.put(ResteasyReactiveUnitTest.class.getName(), new ExtensionContext.Store.CloseableResource() {
                 @Override
                 public void close() throws Throwable {
@@ -209,7 +214,8 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
         Index index = JandexUtil.createIndex(deploymentDir);
         ApplicationScanningResult applicationScanningResult = ResteasyReactiveScanner.scanForApplicationClass(index,
                 Collections.emptySet());
-        ResourceScanningResult resources = ResteasyReactiveScanner.scanResources(index);
+        ResourceScanningResult resources = ResteasyReactiveScanner.scanResources(index, Collections.emptyMap(),
+                Collections.emptyMap());
         if (resources == null) {
             throw new RuntimeException("no JAX-RS resources found");
         }
@@ -252,8 +258,27 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                         };
                     }
                 }));
+        serialisers.addReader(byte[].class, new ResourceReader()
+                .setMediaTypeStrings(Collections.singletonList(MediaType.WILDCARD))
+                .setFactory(new BeanFactory<MessageBodyReader<?>>() {
+                    @Override
+                    public BeanInstance<MessageBodyReader<?>> createInstance() {
+                        return new BeanInstance<MessageBodyReader<?>>() {
+                            @Override
+                            public MessageBodyReader<?> getInstance() {
+                                return new ServerByteArrayMessageBodyHandler();
+                            }
+
+                            @Override
+                            public void close() {
+
+                            }
+                        };
+                    }
+                }));
         DeploymentInfo info = new DeploymentInfo()
                 .setApplicationPath("/")
+                .setConfig(new ResteasyReactiveConfig())
                 .setFeatures(ResteasyReactiveFeatureScanner.createFeatures(index, applicationScanningResult))
                 .setInterceptors(
                         ResteasyReactiveInterceptorScanner.createResourceInterceptors(index, applicationScanningResult))
@@ -277,14 +302,17 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                                 return (Application) Class
                                         .forName(applicationScanningResult.getSelectedAppClass().name().toString(), false,
                                                 Thread.currentThread().getContextClassLoader())
+                                        .getDeclaredConstructor()
                                         .newInstance();
-                            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+                            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException
+                                    | NoSuchMethodException | InvocationTargetException e) {
                                 throw new RuntimeException(e);
                             }
                         }
                     }
                 });
-        RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, () -> executor, null,
+        RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, () -> executor,
+                new CustomServerRestHandlers(null),
                 closeable -> closeTasks.add(closeable), new VertxRequestContextFactory(), ThreadSetupAction.NOOP, "/");
         Deployment deployment = runtimeDeploymentManager.deploy();
         RestInitialHandler initialHandler = new RestInitialHandler(deployment);
@@ -307,6 +335,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
         if (deploymentDir != null) {
             deleteDirectory(deploymentDir);
         }
+        router.clear();
 
     }
 

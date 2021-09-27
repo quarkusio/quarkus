@@ -8,18 +8,20 @@ import java.util.Locale;
 public class RedirectPrintStream extends PrintStream {
 
     private Formatter formatter;
+    private final boolean errorStream;
 
-    public RedirectPrintStream() {
+    public RedirectPrintStream(boolean errorStream) {
         super(new ByteArrayOutputStream(0)); // never used
+        this.errorStream = errorStream;
     }
 
     @Override
     public void write(byte[] buf, int off, int len) {
-        QuarkusConsole.INSTANCE.write(buf, off, len);
+        QuarkusConsole.INSTANCE.write(errorStream, buf, off, len);
     }
 
     void write(String s) {
-        QuarkusConsole.INSTANCE.write(s);
+        QuarkusConsole.INSTANCE.write(errorStream, s);
     }
 
     @Override

@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Command Mode with Picocli
+= Command Mode with Picocli
 :extension-status: experimental
 
 include::./attributes.adoc[]
@@ -289,6 +289,10 @@ For Gradle, you need to add the following in `dependencies` section of the `buil
 annotationProcessor enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
 annotationProcessor 'info.picocli:picocli-codegen'
 ----
+
+== Development Mode
+
+In the development mode, i.e. when running `mvn quarkus:dev`, the application is executed and restarted every time the `Space bar` key is pressed. You can also pass arguments to your command line app via the `quarkus.args` system property, e.g. `mvn quarkus:dev -Dquarkus.args='--help'` and `mvn quarkus:dev -Dquarkus.args='-c -w --val 1'`.
 
 == Configuration Reference
 

@@ -14,6 +14,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
+import org.jboss.resteasy.reactive.ResteasyReactiveClientProblem;
 import org.jboss.resteasy.reactive.common.jaxrs.StatusTypeImpl;
 
 /**
@@ -23,7 +24,7 @@ import org.jboss.resteasy.reactive.common.jaxrs.StatusTypeImpl;
  * for client usage. Perhaps we can store it in an alternate field?
  */
 @SuppressWarnings("serial")
-public class WebClientApplicationException extends WebApplicationException {
+public class WebClientApplicationException extends WebApplicationException implements ResteasyReactiveClientProblem {
 
     public WebClientApplicationException(int responseStatus) {
         this(responseStatus, null);

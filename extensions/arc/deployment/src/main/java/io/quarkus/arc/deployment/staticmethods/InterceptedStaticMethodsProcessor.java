@@ -18,6 +18,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.inject.spi.InterceptionType;
@@ -41,6 +42,7 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.InterceptorResolverBuildItem;
 import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.InterceptedMethodMetadata;
 import io.quarkus.arc.impl.InterceptedStaticMethods;
@@ -85,7 +87,8 @@ public class InterceptedStaticMethodsProcessor {
     @BuildStep
     void collectInterceptedStaticMethods(BeanArchiveIndexBuildItem beanArchiveIndex,
             BuildProducer<InterceptedStaticMethodBuildItem> interceptedStaticMethods,
-            InterceptorResolverBuildItem interceptorResolver, TransformedAnnotationsBuildItem transformedAnnotations) {
+            InterceptorResolverBuildItem interceptorResolver, TransformedAnnotationsBuildItem transformedAnnotations,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
 
         // In this step we collect all intercepted static methods, ie. static methods annotated with interceptor bindings  
         Set<DotName> interceptorBindings = interceptorResolver.getInterceptorBindings();
@@ -127,6 +130,8 @@ public class InterceptedStaticMethodsProcessor {
                     if (!interceptors.isEmpty()) {
                         LOGGER.debugf("Intercepted static method found on %s: %s", method.declaringClass().name(),
                                 method);
+                        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(interceptors.stream()
+                                .map(InterceptorInfo::getBeanClass).map(Object::toString).collect(Collectors.toSet())));
                         interceptedStaticMethods.produce(
                                 new InterceptedStaticMethodBuildItem(method, methodLevelBindings, interceptors));
                     }

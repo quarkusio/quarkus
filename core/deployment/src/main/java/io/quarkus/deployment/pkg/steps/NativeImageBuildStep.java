@@ -26,6 +26,8 @@ import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathAggregateBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
@@ -81,7 +83,9 @@ public class NativeImageBuildStep {
             NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             PackageConfig packageConfig,
-            List<NativeImageSystemPropertyBuildItem> nativeImageProperties) {
+            List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
+            List<ExcludeConfigBuildItem> excludeConfigs,
+            NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed) {
 
         Path outputDir;
         try {
@@ -100,6 +104,8 @@ public class NativeImageBuildStep {
                 .setNativeConfig(nativeConfig)
                 .setOutputTargetBuildItem(outputTargetBuildItem)
                 .setNativeImageProperties(nativeImageProperties)
+                .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
+                .setExcludeConfigs(excludeConfigs)
                 .setOutputDir(outputDir)
                 .setRunnerJarName(runnerJar.getFileName().toString())
                 // the path to native-image is not known now, it is only known at the time the native-sources will be consumed
@@ -130,6 +136,8 @@ public class NativeImageBuildStep {
             PackageConfig packageConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
+            List<ExcludeConfigBuildItem> excludeConfigs,
+            NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed,
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
             Optional<ProcessInheritIODisabled> processInheritIODisabled) {
         if (nativeConfig.debug.enabled) {
@@ -187,6 +195,8 @@ public class NativeImageBuildStep {
                     .setNativeConfig(nativeConfig)
                     .setOutputTargetBuildItem(outputTargetBuildItem)
                     .setNativeImageProperties(nativeImageProperties)
+                    .setExcludeConfigs(excludeConfigs)
+                    .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
                     .setNativeImageSecurityProviders(nativeImageSecurityProviders)
                     .setOutputDir(outputDir)
                     .setRunnerJarName(runnerJarName)
@@ -198,24 +208,27 @@ public class NativeImageBuildStep {
 
             List<String> nativeImageArgs = commandAndExecutable.args;
 
-            int exitCode = buildRunner.build(nativeImageArgs, nativeImageName, resultingExecutableName, outputDir,
+            NativeImageBuildRunner.Result buildNativeResult = buildRunner.build(nativeImageArgs, nativeImageName,
+                    resultingExecutableName, outputDir,
                     nativeConfig.debug.enabled, processInheritIODisabled.isPresent());
-            if (exitCode != 0) {
-                throw imageGenerationFailed(exitCode, nativeImageArgs);
+            if (buildNativeResult.getExitCode() != 0) {
+                throw imageGenerationFailed(buildNativeResult.getExitCode(), nativeImageArgs);
             }
             IoUtils.copy(generatedExecutablePath, finalExecutablePath);
             Files.delete(generatedExecutablePath);
             if (nativeConfig.debug.enabled) {
-                final String symbolsName = String.format("%s.debug", nativeImageName);
-                Path generatedSymbols = outputDir.resolve(symbolsName);
-                Path finalSymbolsPath = outputTargetBuildItem.getOutputDirectory().resolve(symbolsName);
-                IoUtils.copy(generatedSymbols, finalSymbolsPath);
-                Files.delete(generatedSymbols);
-                final String sources = "sources";
-                final Path generatedSources = outputDir.resolve(sources);
-                final Path finalSources = outputTargetBuildItem.getOutputDirectory().resolve(sources);
-                IoUtils.copy(generatedSources, finalSources);
-                IoUtils.recursiveDelete(generatedSources);
+                if (buildNativeResult.isObjcopyExists()) {
+                    final String symbolsName = String.format("%s.debug", nativeImageName);
+                    Path generatedSymbols = outputDir.resolve(symbolsName);
+                    Path finalSymbolsPath = outputTargetBuildItem.getOutputDirectory().resolve(symbolsName);
+                    IoUtils.copy(generatedSymbols, finalSymbolsPath);
+                    Files.delete(generatedSymbols);
+                } else {
+                    log.warn(
+                            "objcopy executable not found in PATH. Debug symbols therefore cannot be placed into the dedicated directory.");
+                    log.warn("That also means that resulting native executable is larger as it embeds the debug symbols.");
+                }
+
             }
             System.setProperty("native.image.path", finalExecutablePath.toAbsolutePath().toString());
 
@@ -469,6 +482,7 @@ public class NativeImageBuildStep {
             private NativeConfig nativeConfig;
             private OutputTargetBuildItem outputTargetBuildItem;
             private List<NativeImageSystemPropertyBuildItem> nativeImageProperties;
+            private List<ExcludeConfigBuildItem> excludeConfigs;
             private List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders;
             private Path outputDir;
             private String runnerJarName;
@@ -476,6 +490,7 @@ public class NativeImageBuildStep {
             private boolean isContainerBuild = false;
             private GraalVM.Version graalVMVersion = GraalVM.Version.UNVERSIONED;
             private String nativeImageName;
+            private boolean classpathIsBroken;
 
             public Builder setNativeConfig(NativeConfig nativeConfig) {
                 this.nativeConfig = nativeConfig;
@@ -489,6 +504,16 @@ public class NativeImageBuildStep {
 
             public Builder setNativeImageProperties(List<NativeImageSystemPropertyBuildItem> nativeImageProperties) {
                 this.nativeImageProperties = nativeImageProperties;
+                return this;
+            }
+
+            public Builder setBrokenClasspath(boolean classpathIsBroken) {
+                this.classpathIsBroken = classpathIsBroken;
+                return this;
+            }
+
+            public Builder setExcludeConfigs(List<ExcludeConfigBuildItem> excludeConfigs) {
+                this.excludeConfigs = excludeConfigs;
                 return this;
             }
 
@@ -576,8 +601,6 @@ public class NativeImageBuildStep {
                         "-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
                 nativeImageArgs.add("-H:+JNI");
                 nativeImageArgs.add("-H:+AllowFoldMethods");
-                nativeImageArgs.add("-jar");
-                nativeImageArgs.add(runnerJarName);
 
                 if (nativeConfig.enableFallbackImages) {
                     nativeImageArgs.add("-H:FallbackThreshold=5");
@@ -585,6 +608,10 @@ public class NativeImageBuildStep {
                     //Default: be strict as those fallback images aren't very useful
                     //and tend to cover up real problems.
                     nativeImageArgs.add("-H:FallbackThreshold=0");
+                }
+
+                if (classpathIsBroken) {
+                    nativeImageArgs.add("--allow-incomplete-classpath");
                 }
 
                 if (nativeConfig.reportErrorsAtRuntime) {
@@ -692,9 +719,20 @@ public class NativeImageBuildStep {
                                 .collect(Collectors.joining(","));
                         nativeImageArgs.add("-H:AdditionalSecurityProviders=" + additionalSecurityProviders);
                     }
+
+                    // --exclude-config options
+                    for (ExcludeConfigBuildItem excludeConfig : excludeConfigs) {
+                        nativeImageArgs.add("--exclude-config");
+                        nativeImageArgs.add(excludeConfig.getJarFile());
+                        nativeImageArgs.add(excludeConfig.getResourceName());
+                    }
                 }
 
                 nativeImageArgs.add(nativeImageName);
+
+                //Make sure to have the -jar as last one, as it otherwise breaks "--exclude-config"
+                nativeImageArgs.add("-jar");
+                nativeImageArgs.add(runnerJarName);
 
                 return new NativeImageInvokerInfo(nativeImageArgs);
             }

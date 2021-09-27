@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Authorization of Web Endpoints
+= Authorization of Web Endpoints
 
 include::./attributes.adoc[]
 
@@ -11,7 +11,11 @@ Quarkus has an integrated pluggable web security layer. If security is enabled a
 check performed to make sure they are allowed to continue.
 
 NOTE: Configuration authorization checks are executed before any annotation-based authorization check is done, so both
-checks have to pass for a request to be allowed.
+checks have to pass for a request to be allowed. This means you cannot use `@PermitAll` to open up a path if the path has
+been blocked using `quarkus.http.auth.` configuration. If you are using JAX-RS you may want to consider using the
+`quarkus.security.jaxrs.deny-unannotated-endpoints` or `quarkus.security.jaxrs.default-roles-allowed` to set default security
+requirements instead of HTTP path level matching, as these properties can be overridden by annotations on an individual
+endpoint.
 
 == Authorization using Configuration
 
@@ -144,11 +148,18 @@ so would require both the `user` and `admin` roles.
 
 === Configuration Properties to Deny access
 
-There are two configuration settings that alter the RBAC Deny behavior:
+There are three configuration settings that alter the RBAC Deny behavior:
 
-- `quarkus.security.jaxrs.deny-unannotated-endpoints=true|false` - if set to true, the access will be denied for all JAX-RS endpoints by default.
-That is if the security annotations do not define the access control. Defaults to `false`.
-- `quarkus.security.deny-unannotated-members=true|false` - if set to true, the access will be denied to all CDI methods
+`quarkus.security.jaxrs.deny-unannotated-endpoints=true|false`::
+If set to true, the access will be denied for all JAX-RS endpoints by default, so if a JAX-RS endpoint does not have any security annotations
+then it will default to `@DenyAll` behaviour. This is useful to ensure you cannot accidentally expose an endpoint that is supposed to be secured. Defaults to `false`.
+
+`quarkus.security.jaxrs.default-roles-allowed=role1,role2`::
+Defines the default role requirements for unannotated endpoints. The role '**' is a special role that means any authenticated user. This cannot be combined with
+`deny-unannotated-endpoints`, as the deny will take effect instead.
+
+`quarkus.security.deny-unannotated-members=true|false`::
+- if set to true, the access will be denied to all CDI methods
 and JAX-RS endpoints that do not have security annotations but are defined in classes that contain methods with
 security annotations. Defaults to `false`.
 

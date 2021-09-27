@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -20,10 +21,14 @@ public class CliDriver {
     static final PrintStream stderr = System.err;
 
     private static final String localRepo = convertToProperty("maven.repo.local");
+    private static final String localSettings = convertToProperty("maven.settings");
 
     public static void preserveLocalRepoSettings(Collection<String> args) {
         if (localRepo != null) {
             args.add(localRepo);
+        }
+        if (localSettings != null) {
+            args.add(localSettings);
         }
     }
 
@@ -63,10 +68,18 @@ public class CliDriver {
         List<String> newArgs = new ArrayList<>();
         newArgs.addAll(Arrays.asList(args));
 
+        List<String> looseArgs = Collections.emptyList();
+        int index = newArgs.indexOf("--");
+        if (index >= 0) {
+            looseArgs = new ArrayList<>(newArgs.subList(index, newArgs.size()));
+            newArgs.subList(index, newArgs.size()).clear();
+        }
+
         preserveLocalRepoSettings(newArgs);
         newArgs.add("--cli-test");
         newArgs.add("--cli-test-dir");
         newArgs.add(startingDir.toString());
+        newArgs.addAll(looseArgs); // re-add arguments
 
         System.out.println("$ quarkus " + String.join(" ", newArgs));
 
@@ -128,7 +141,7 @@ public class CliDriver {
         Files.walk(path)
                 .sorted(Comparator.reverseOrder())
                 .map(Path::toFile)
-                .forEach(File::delete);
+                .forEach(f -> retryDelete(f));
 
         Assertions.assertFalse(path.toFile().exists());
     }
@@ -145,11 +158,23 @@ public class CliDriver {
                 "Package directory should be a directory: " + packagePath.toAbsolutePath().toString());
     }
 
+    public static void valdiateGeneratedTestPackage(Path projectRoot, String name) {
+        Path packagePath = projectRoot.resolve("src/test/java/" + name);
+        Assertions.assertTrue(packagePath.toFile().exists(),
+                "Package directory should exist: " + packagePath.toAbsolutePath().toString());
+        Assertions.assertTrue(packagePath.toFile().isDirectory(),
+                "Package directory should be a directory: " + packagePath.toAbsolutePath().toString());
+    }
+
     public static Result invokeValidateExtensionList(Path projectRoot) throws Exception {
         Result result = execute(projectRoot, "extension", "list", "-e", "-B", "--verbose");
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
+
+        Assertions.assertFalse(result.stdout.contains("camel-"),
+                "camel extensions should not appear in the list of installable extensions. Found:\n" + result);
+
         return result;
     }
 
@@ -247,9 +272,8 @@ public class CliDriver {
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("quarkus-hibernate-orm"),
                 "quarkus-hibernate-orm should be listed as an installable extension. Found:\n" + result);
-        Assertions.assertFalse(result.stdout.contains("quarkus-qute"),
+        Assertions.assertFalse(result.stdout.matches("quarkus-qute"),
                 "quarkus-qute should not be listed as an installable extension. Found:\n" + result);
-
         return result;
     }
 
@@ -258,8 +282,8 @@ public class CliDriver {
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
-        Assertions.assertTrue(result.stdout.contains("quarkus-vertx-web"),
-                "quarkus-vertx-web should be returned in search result. Found:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("quarkus-reactive-routes"),
+                "quarkus-reactive-routes should be returned in search result. Found:\n" + result);
         Assertions.assertFalse(result.stdout.contains("quarkus-vertx-http"),
                 "quarkus-vertx-http should not be returned in search result (already installed). Found:\n" + result);
 
@@ -270,8 +294,8 @@ public class CliDriver {
         Result result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--concise");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
-        Assertions.assertTrue(result.stdout.contains("quarkus-vertx-web"),
-                "quarkus-vertx-web should be returned in result. Found:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("quarkus-reactive-routes"),
+                "quarkus-reactive-routes should be returned in result. Found:\n" + result);
         Assertions.assertTrue(result.stdout.contains("Reactive Routes"),
                 "'Reactive Routes' descriptive name should be returned in results. Found:\n" + result);
 
@@ -306,11 +330,12 @@ public class CliDriver {
     }
 
     public static Result invokeValidateDryRunBuild(Path projectRoot) throws Exception {
-        Result result = execute(projectRoot, "build", "-e", "-B", "--clean", "--dryrun",
+        Result result = execute(projectRoot, "build", "-e", "-B", "--dryrun",
                 "-Dproperty=value1", "-Dproperty2=value2");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
-        System.out.println(result.stdout);
+        Assertions.assertTrue(result.stdout.contains("Command line"),
+                "--dry-run should echo command line");
         return result;
     }
 
@@ -337,5 +362,22 @@ public class CliDriver {
             return "-D" + name + "=" + value;
         }
         return null;
+    }
+
+    private static void retryDelete(File file) {
+        if (file.delete()) {
+            return;
+        }
+        int i = 0;
+        while (i++ < 10) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ignored) {
+
+            }
+            if (file.delete()) {
+                break;
+            }
+        }
     }
 }

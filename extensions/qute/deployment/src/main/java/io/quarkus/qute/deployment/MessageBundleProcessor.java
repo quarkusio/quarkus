@@ -194,8 +194,8 @@ public class MessageBundleProcessor {
 
         // Generate implementations
         // name -> impl class
-        Map<String, String> generatedImplementations = generateImplementations(bundles,
-                applicationArchivesBuildItem, generatedClasses, messageTemplateMethods);
+        Map<String, String> generatedImplementations = generateImplementations(bundles, generatedClasses,
+                messageTemplateMethods);
 
         // Register synthetic beans
         for (MessageBundleBuildItem bundle : bundles) {
@@ -523,14 +523,12 @@ public class MessageBundleProcessor {
     }
 
     private Map<String, String> generateImplementations(List<MessageBundleBuildItem> bundles,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods) throws IOException {
 
         Map<String, String> generatedTypes = new HashMap<>();
 
-        ClassOutput defaultClassOutput = new GeneratedClassGizmoAdaptor(generatedClasses,
-                new AppClassPredicate(applicationArchivesBuildItem));
+        ClassOutput defaultClassOutput = new GeneratedClassGizmoAdaptor(generatedClasses, new AppClassPredicate());
 
         for (MessageBundleBuildItem bundle : bundles) {
             ClassInfo bundleInterface = bundle.getDefaultBundleInterface();
@@ -577,17 +575,16 @@ public class MessageBundleProcessor {
 
                 String locale = entry.getKey();
                 ClassOutput localeAwareGizmoAdaptor = new GeneratedClassGizmoAdaptor(generatedClasses,
-                        new AppClassPredicate(applicationArchivesBuildItem,
-                                new Function<String, String>() {
-                                    @Override
-                                    public String apply(String className) {
-                                        String localeSuffix = "_" + locale;
-                                        if (className.endsWith(localeSuffix)) {
-                                            return className.replace(localeSuffix, "");
-                                        }
-                                        return className;
-                                    }
-                                }));
+                        new AppClassPredicate(new Function<String, String>() {
+                            @Override
+                            public String apply(String className) {
+                                String localeSuffix = "_" + locale;
+                                if (className.endsWith(localeSuffix)) {
+                                    return className.replace(localeSuffix, "");
+                                }
+                                return className;
+                            }
+                        }));
                 generatedTypes.put(localizedFile.toString(),
                         generateImplementation(bundle.getDefaultBundleInterface(), bundleImpl, bundleInterface,
                                 localeAwareGizmoAdaptor,
@@ -1018,16 +1015,13 @@ public class MessageBundleProcessor {
 
     private static class AppClassPredicate implements Predicate<String> {
 
-        private final ApplicationArchivesBuildItem applicationArchives;
         private final Function<String, String> additionalClassNameSanitizer;
 
-        public AppClassPredicate(ApplicationArchivesBuildItem applicationArchives) {
-            this(applicationArchives, Function.identity());
+        public AppClassPredicate() {
+            this(Function.identity());
         }
 
-        public AppClassPredicate(ApplicationArchivesBuildItem applicationArchives,
-                Function<String, String> additionalClassNameSanitizer) {
-            this.applicationArchives = applicationArchives;
+        public AppClassPredicate(Function<String, String> additionalClassNameSanitizer) {
             this.additionalClassNameSanitizer = additionalClassNameSanitizer;
         }
 
@@ -1041,8 +1035,7 @@ public class MessageBundleProcessor {
             }
             // E.g. to match the bundle class generated for a localized file; org.acme.Foo_en -> org.acme.Foo
             className = additionalClassNameSanitizer.apply(className);
-            return applicationArchives.containingArchive(className) != null
-                    || GeneratedClassGizmoAdaptor.isApplicationClass(name);
+            return GeneratedClassGizmoAdaptor.isApplicationClass(className);
         }
     }
 }

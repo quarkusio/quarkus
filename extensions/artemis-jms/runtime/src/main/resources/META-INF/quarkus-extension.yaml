@@ -9,3 +9,5 @@ metadata:
   categories:
   - "messaging"
   status: "preview"
+  config:
+  - "quarkus.artemis."

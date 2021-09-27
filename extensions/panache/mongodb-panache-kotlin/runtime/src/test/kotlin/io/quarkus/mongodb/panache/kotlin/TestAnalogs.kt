@@ -118,7 +118,7 @@ class TestAnalogs {
     private fun KClass<*>.bytes() =
             java.classLoader.getResourceAsStream(qualifiedName.toString().replace(".", "/") + ".class")
 
-    private fun compare(javaClass: AnalogVisitor, kotlinClass: AnalogVisitor, whiteList: List<String> = listOf()) {
+    private fun compare(javaClass: AnalogVisitor, kotlinClass: AnalogVisitor, allowList: List<String> = listOf()) {
         val javaMethods = javaClass.methods
         val kotlinMethods = kotlinClass.methods
         val implemented = mutableListOf<Method>()
@@ -132,7 +132,7 @@ class TestAnalogs {
                 }
 
         javaMethods.removeIf {
-            it.name in whiteList ||
+            it.name in allowList ||
                     it in implemented
         }
 

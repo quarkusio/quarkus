@@ -3,7 +3,6 @@ package io.quarkus.cli;
 import static picocli.CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIST;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
@@ -11,8 +10,8 @@ import javax.inject.Inject;
 
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
+import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.runtime.QuarkusApplication;
-import io.quarkus.runtime.annotations.QuarkusMain;
 import picocli.CommandLine;
 import picocli.CommandLine.Help;
 import picocli.CommandLine.IHelpSectionRenderer;
@@ -23,12 +22,10 @@ import picocli.CommandLine.Model.UsageMessageSpec;
 import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.UnmatchedArgumentException;
 
-@QuarkusMain
 @CommandLine.Command(name = "quarkus", versionProvider = Version.class, subcommandsRepeatable = false, mixinStandardHelpOptions = true, subcommands = {
-        Create.class, Build.class, Dev.class, ProjectExtensions.class, Completion.class,
-        Version.class }, commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
+        Create.class, Build.class, Dev.class, ProjectExtensions.class, Registry.class, Version.class,
+        Completion.class }, commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
 public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
-
     static {
         System.setProperty("picocli.endofoptions.description", "End of command line options.");
         // Change default short option to display version from "-V" to "-v":
@@ -46,6 +43,12 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
     @CommandLine.ArgGroup(exclusive = false, validate = false)
     protected PropertiesOptions propertiesOptions = new PropertiesOptions();
+
+    @CommandLine.Option(names = {
+            "--tools-config" }, description = "Quarkus Tools configuration file", hidden = true, scope = CommandLine.ScopeType.INHERIT)
+    void setToolsConfig(String toolsConfig) {
+        System.setProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY, toolsConfig);
+    }
 
     @Override
     public int run(String... args) throws Exception {
@@ -90,22 +93,28 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
             if (spec.subcommands().isEmpty()) {
                 return "";
             }
-            Map<String, String> tableElements = new LinkedHashMap<>();
-            addHierarchy(spec.subcommands().values(), tableElements, "");
-            return help.createTextTable(tableElements).toString();
+
+            Help.Column commands = new Help.Column(24, 2, CommandLine.Help.Column.Overflow.SPAN);
+            Help.Column descriptions = new Help.Column(spec.usageMessage().width() - 24, 2,
+                    CommandLine.Help.Column.Overflow.WRAP);
+            Help.TextTable textTable = Help.TextTable.forColumns(help.colorScheme(), commands, descriptions);
+            textTable.setAdjustLineBreaksForWideCJKCharacters(spec.usageMessage().adjustLineBreaksForWideCJKCharacters());
+
+            addHierarchy(spec.subcommands().values(), textTable, "");
+            return textTable.toString();
         }
 
-        private void addHierarchy(Collection<CommandLine> collection, Map<String, String> tableElements,
+        private void addHierarchy(Collection<CommandLine> collection, Help.TextTable textTable,
                 String indent) {
             collection.stream().distinct().forEach(subcommand -> {
                 // create comma-separated list of command name and aliases
                 String names = String.join(", ", subcommand.getCommandSpec().names());
                 String description = description(subcommand.getCommandSpec().usageMessage());
-                tableElements.put(indent + names, description);
+                textTable.addRowValues(indent + names, description);
 
                 Map<String, CommandLine> subcommands = subcommand.getSubcommands();
                 if (!subcommands.isEmpty()) {
-                    addHierarchy(subcommands.values(), tableElements, indent + "  ");
+                    addHierarchy(subcommands.values(), textTable, indent + "  ");
                 }
             });
         }

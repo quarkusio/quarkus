@@ -40,7 +40,8 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
     private static final Set<String> EXCLUDED = Sets.newHashSet(
             "azure-functions-http-example");
 
-    private static final Set<String> RUN_ALONE = Sets.newHashSet("resteasy-reactive-codestart", "picocli-codestart");
+    private static final Set<String> RUN_ALONE = Sets.newHashSet("spring-web-codestart", "resteasy-reactive-codestart",
+            "picocli-codestart");
 
     @BeforeAll
     static void setUp() throws IOException {
@@ -68,7 +69,6 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
 
     @ParameterizedTest
     @MethodSource("provideLanguages")
-    @org.junit.jupiter.api.Tag("failsOnJDK16")
     public void testGradle(String language) throws Exception {
         final List<String> codestarts = getExtensionCodestarts();
         generateProjectRunTests("gradle", language, codestarts);
@@ -76,7 +76,6 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
 
     @ParameterizedTest
     @MethodSource("provideLanguages")
-    @org.junit.jupiter.api.Tag("failsOnJDK16")
     public void testGradleKotlinDSL(String language) throws Exception {
         final List<String> codestarts = getExtensionCodestarts();
         generateProjectRunTests("gradle-kotlin-dsl", language, codestarts);

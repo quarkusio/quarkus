@@ -168,4 +168,13 @@ public class ArtifactKey implements Serializable {
         }
         return buf.toString();
     }
+
+    public String toGacString() {
+        final StringBuilder buf = new StringBuilder();
+        buf.append(groupId).append(':').append(artifactId);
+        if (!classifier.isEmpty()) {
+            buf.append(':').append(classifier);
+        }
+        return buf.toString();
+    }
 }

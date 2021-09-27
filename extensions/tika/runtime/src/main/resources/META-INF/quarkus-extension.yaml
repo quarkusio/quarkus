@@ -9,3 +9,5 @@ metadata:
   - "miscellaneous"
   guide: "https://quarkus.io/guides/tika"
   status: "stable"
+  config:
+  - "quarkus.tika."

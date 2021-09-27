@@ -29,6 +29,8 @@ public interface Capability {
      */
     String TRANSACTIONS = QUARKUS_PREFIX + "transactions";
 
+    String LRA_PARTICIPANT = QUARKUS_PREFIX + "lra.participant";
+
     String JACKSON = QUARKUS_PREFIX + "jackson";
 
     String JSONB = QUARKUS_PREFIX + "jsonb";
@@ -53,8 +55,11 @@ public interface Capability {
 
     String TIKA = QUARKUS_PREFIX + "tika";
 
+    String MONGODB_CLIENT = QUARKUS_PREFIX + "mongodb-client";
     String MONGODB_PANACHE = QUARKUS_PREFIX + "mongodb.panache";
     String MONGODB_PANACHE_KOTLIN = MONGODB_PANACHE + ".kotlin";
+
+    String ELASTICSEARCH_REST_HIGH_LEVEL_CLIENT = QUARKUS_PREFIX + "elasticsearch-rest-high-level-client";
 
     String FLYWAY = QUARKUS_PREFIX + "flyway";
     String LIQUIBASE = QUARKUS_PREFIX + "liquibase";
@@ -96,6 +101,7 @@ public interface Capability {
     String SMALLRYE_OPENTRACING = QUARKUS_PREFIX + "smallrye.opentracing";
     String SMALLRYE_HEALTH = QUARKUS_PREFIX + "smallrye.health";
     String SMALLRYE_OPENAPI = QUARKUS_PREFIX + "smallrye.openapi";
+    String SMALLRYE_GRAPHQL = QUARKUS_PREFIX + "smallrye.graphql";
     String SMALLRYE_FAULT_TOLERANCE = QUARKUS_PREFIX + "smallrye.faulttolerance";
 
     String SPRING_WEB = QUARKUS_PREFIX + "spring.web";

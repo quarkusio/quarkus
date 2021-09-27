@@ -33,6 +33,7 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Providers;
 
+import org.jboss.resteasy.reactive.RestHeader;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 
 import io.quarkus.runtime.BlockingOperationControl;
@@ -44,6 +45,8 @@ import io.vertx.core.http.HttpServerResponse;
 
 @Path("/simple")
 public class SimpleQuarkusRestResource {
+
+    private static final StackTraceElement[] EMPTY_STACK_TRACE = new StackTraceElement[0];
 
     @Inject
     HelloService service;
@@ -136,8 +139,8 @@ public class SimpleQuarkusRestResource {
 
     @GET
     @Path("filters")
-    public Response filters(@Context HttpHeaders headers) {
-        return Response.ok().header("filter-request", headers.getHeaderString("filter-request")).build();
+    public Response filters(@Context HttpHeaders headers, @RestHeader("filter-request") String header) {
+        return Response.ok().header("filter-request", header).build();
     }
 
     @GET
@@ -177,19 +180,25 @@ public class SimpleQuarkusRestResource {
     @GET
     @Path("mapped-exception")
     public String mappedException() {
-        throw new TestException();
+        TestException exception = new TestException();
+        exception.setStackTrace(EMPTY_STACK_TRACE);
+        throw exception;
     }
 
     @GET
     @Path("feature-mapped-exception")
     public String featureMappedException() {
-        throw new FeatureMappedException();
+        FeatureMappedException exception = new FeatureMappedException();
+        exception.setStackTrace(EMPTY_STACK_TRACE);
+        throw exception;
     }
 
     @GET
     @Path("unknown-exception")
     public String unknownException() {
-        throw new RuntimeException("OUCH");
+        RuntimeException exception = new RuntimeException("OUCH");
+        exception.setStackTrace(EMPTY_STACK_TRACE);
+        throw exception;
     }
 
     @GET
@@ -232,6 +241,20 @@ public class SimpleQuarkusRestResource {
     @GET
     @Path("async/cs/fail")
     public CompletionStage<String> asyncCompletionStageFail() {
+        CompletableFuture<String> ret = new CompletableFuture<>();
+        ret.completeExceptionally(new TestException());
+        return ret;
+    }
+
+    @GET
+    @Path("async/cf/ok")
+    public CompletableFuture<String> asyncCompletableFutureOK() {
+        return CompletableFuture.completedFuture("CF-OK");
+    }
+
+    @GET
+    @Path("async/cf/fail")
+    public CompletableFuture<String> asyncCompletableFutureFail() {
         CompletableFuture<String> ret = new CompletableFuture<>();
         ret.completeExceptionally(new TestException());
         return ret;

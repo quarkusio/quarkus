@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using OpenTelemetry
+= Using OpenTelemetry
 
 include::./attributes.adoc[]
 
@@ -41,7 +41,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=opentelemetry-quickstart \
     -DclassName="org.acme.opentelemetry.TracedResource" \
@@ -114,11 +114,14 @@ The first approach is by providing the properties within the `src/main/resources
 quarkus.application.name=myservice // <1>
 quarkus.opentelemetry.enabled=true // <2>
 quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://localhost:55680 // <3>
+
+quarkus.opentelemetry.tracer.exporter.otlp.headers=Authorization=Bearer my_secret // <4>
 ----
 
 <1> All spans created from the application will include an OpenTelemetry `Resource` indicating the span was created by the `myservice` application. If not set, it will default to the artifact id.
 <2> Whether OpenTelemetry is enabled or not. The default is `true`, but shown here to indicate how it can be disabled
-<3> gRPC endpoint for sending spans.
+<3> gRPC endpoint for sending spans
+<4> Optional gRPC headers commonly used for authentication
 
 == Run the application
 

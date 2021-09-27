@@ -41,7 +41,7 @@
                 <executions>
                     <execution>
                         <id>unpack-suite-files</id>
-                        <phase>process-test-classes</phase>
+                        <phase>generate-test-resources</phase>
                         <goals>
                             <goal>unpack</goal>
                         </goals>

@@ -2,7 +2,6 @@ package io.quarkus.elytron.security.ldap;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -26,7 +25,6 @@ public class SearchRecursiveTest {
                     .addAsResource("search-recursive/application.properties", "application.properties"));
 
     @Test()
-    @Tag("failsOnJDK16")
     public void testNotSearchingRecursiveFailure() {
         RestAssured.given().auth().preemptive().basic("subUser", "subUserPassword")
                 .when().get("/servlet-secured").then()

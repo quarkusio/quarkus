@@ -24,6 +24,7 @@ import javax.persistence.spi.PersistenceUnitTransactionType;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.loader.BatchFetchStyle;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
@@ -54,6 +55,7 @@ import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceXmlDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
 import io.quarkus.hibernate.reactive.runtime.ReactiveSessionFactoryProducer;
@@ -64,6 +66,7 @@ import io.quarkus.runtime.LaunchMode;
 public final class HibernateReactiveProcessor {
 
     private static final String HIBERNATE_REACTIVE = "Hibernate Reactive";
+    private static final Logger LOG = Logger.getLogger(HibernateReactiveProcessor.class);
     static final String[] REFLECTIVE_CONSTRUCTORS_NEEDED = {
             "org.hibernate.reactive.persister.entity.impl.ReactiveSingleTableEntityPersister",
             "org.hibernate.reactive.persister.entity.impl.ReactiveJoinedSubclassEntityPersister",
@@ -81,14 +84,14 @@ public final class HibernateReactiveProcessor {
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans, CombinedIndexBuildItem combinedIndex,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaModelBuildItem jpaModel) {
-        if (!hasEntities(jpaModel)) {
-            return;
-        }
-
         if (descriptors.size() == 1) {
             // Only register those beans if their EMF dependency is also available, so use the same guard as the ORM extension
             additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveSessionFactoryProducer.class));
             additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveSessionProducer.class));
+        } else {
+            LOG.warnf(
+                    "Skipping registration of %s and %s because exactly one persistence unit is required for their registration",
+                    ReactiveSessionFactoryProducer.class.getSimpleName(), ReactiveSessionProducer.class.getSimpleName());
         }
     }
 
@@ -124,6 +127,7 @@ public final class HibernateReactiveProcessor {
         final boolean enableHR = hasEntities(jpaModel);
         if (!enableHR) {
             // we have to bail out early as we might not have a Vertx pool configuration
+            LOG.warn("Hibernate Reactive is disabled because no JPA entities were found");
             return;
         }
 
@@ -206,17 +210,21 @@ public final class HibernateReactiveProcessor {
         HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.defaultPersistenceUnit;
 
         //we have no persistence.xml so we will create a default one
-        Optional<String> dialect = persistenceUnitConfig.dialect.dialect;
-        if (!dialect.isPresent()) {
-            dialect = Dialects.guessDialect(dbKind);
+        String persistenceUnitConfigName = PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+
+        Optional<String> explicitDialect = persistenceUnitConfig.dialect.dialect;
+        String dialect;
+        if (explicitDialect.isPresent()) {
+            dialect = explicitDialect.get();
+        } else {
+            dialect = Dialects.guessDialect(persistenceUnitConfigName, dbKind);
         }
 
-        String dialectClassName = dialect.get();
         // we found one
         ParsedPersistenceXmlDescriptor desc = new ParsedPersistenceXmlDescriptor(null); //todo URL
         desc.setName("default-reactive");
         desc.setTransactionType(PersistenceUnitTransactionType.RESOURCE_LOCAL);
-        desc.getProperties().setProperty(AvailableSettings.DIALECT, dialectClassName);
+        desc.getProperties().setProperty(AvailableSettings.DIALECT, dialect);
         desc.setExcludeUnlistedClasses(true);
         desc.addClasses(new ArrayList<>(jpaModel.getAllModelClassNames()));
 
@@ -297,8 +305,8 @@ public final class HibernateReactiveProcessor {
             } else if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
                 //raise exception if explicit file is not present (i.e. not the default)
                 throw new ConfigurationError(
-                        "Unable to find file referenced in '" + HibernateOrmProcessor.HIBERNATE_ORM_CONFIG_PREFIX
-                                + "sql-load-script="
+                        "Unable to find file referenced in '"
+                                + HibernateOrmConfig.puPropertyKey(persistenceUnitConfigName, "sql-load-script") + "="
                                 + persistenceUnitConfig.sqlLoadScript.get() + "'. Remove property or add file to your path.");
             }
         } else {

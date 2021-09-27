@@ -76,6 +76,12 @@ public class KeycloakPolicyEnforcerRecorder {
         if (trustAll) {
             adapterConfig.setDisableTrustManager(true);
             adapterConfig.setAllowAnyHostname(true);
+        } else if (oidcConfig.tls.trustStoreFile.isPresent()) {
+            adapterConfig.setTruststore(oidcConfig.tls.trustStoreFile.get().toString());
+            adapterConfig.setTruststorePassword(oidcConfig.tls.trustStorePassword.orElse("password"));
+            if (Verification.CERTIFICATE_VALIDATION == oidcConfig.tls.verification.orElse(Verification.REQUIRED)) {
+                adapterConfig.setAllowAnyHostname(true);
+            }
         }
         adapterConfig.setConnectionPoolSize(keycloakPolicyEnforcerConfig.connectionPoolSize);
 

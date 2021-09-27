@@ -22,7 +22,8 @@ public class SmallRyeGraphQLClientRecorder {
     }
 
     public void setTypesafeApiClasses(List<String> apiClassNames) {
-        GraphQLClientsConfiguration configBean = Arc.container().instance(GraphQLClientsConfiguration.class).get();
+        GraphQLClientsConfiguration.setSingleApplication(true);
+        GraphQLClientsConfiguration configBean = GraphQLClientsConfiguration.getInstance();
         List<Class<?>> classes = apiClassNames.stream().map(className -> {
             try {
                 return Class.forName(className, true, Thread.currentThread().getContextClassLoader());
@@ -30,7 +31,7 @@ public class SmallRyeGraphQLClientRecorder {
                 throw new RuntimeException(e);
             }
         }).collect(Collectors.toList());
-        configBean.apiClasses(classes);
+        configBean.addTypesafeClientApis(classes);
     }
 
     public RuntimeValue<GraphQLClientSupport> clientSupport(Map<String, String> shortNamesToQualifiedNames) {

@@ -15,3 +15,5 @@ metadata:
     kind: "example"
     languages: "java"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
+  config:
+  - "quarkus.google-cloud-functions."

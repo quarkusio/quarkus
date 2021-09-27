@@ -40,15 +40,15 @@ public class CodeFlowDevModeDefaultTenantTestCase {
 
             try {
                 webClient.getPage("http://localhost:8080/protected");
-                fail("Exception is expected because auth-server-url is not available and the authentication can not be completed");
+                fail("Exception is expected because by default the bearer token is required");
             } catch (FailingHttpStatusCodeException ex) {
                 // Reported by Quarkus
-                assertEquals(500, ex.getStatusCode());
+                assertEquals(401, ex.getStatusCode());
             }
 
-            // Enable auth-server-url
+            // Enable 'web-app' application type
             test.modifyResourceFile("application.properties",
-                    s -> s.replace("#quarkus.oidc.auth-server-url", "quarkus.oidc.auth-server-url"));
+                    s -> s.replace("#quarkus.oidc.application-type=web-app", "quarkus.oidc.application-type=web-app"));
 
             HtmlPage page = webClient.getPage("http://localhost:8080/protected");
 

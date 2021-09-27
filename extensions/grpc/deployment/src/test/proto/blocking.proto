@@ -11,6 +11,11 @@ service Blocking2 {
   rpc returnThread2(Empty) returns (ThreadName);
 }
 
+service Blocking3 {
+  rpc returnThread1(Empty) returns (ThreadName);
+  rpc returnThread2(Empty) returns (ThreadName);
+}
+
 message Empty {
 
 }

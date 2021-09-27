@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Set;
 import java.util.jar.JarEntry;
@@ -20,6 +21,7 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexReader;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
+import org.jboss.jandex.UnsupportedVersion;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.util.IoUtil;
@@ -37,35 +39,50 @@ public class IndexingUtil {
     private static final int REQUIRED_INDEX_VERSION = 8;
 
     public static Index indexJar(Path path) throws IOException {
-        return indexJar(path.toFile());
+        return indexJar(path.toFile(), Collections.emptySet());
     }
 
     public static Index indexJar(File file) throws IOException {
+        return indexJar(file, Collections.emptySet());
+    }
+
+    public static Index indexJar(Path path, Set<String> removed) throws IOException {
+        return indexJar(path.toFile(), removed);
+    }
+
+    public static Index indexJar(File file, Set<String> removed) throws IOException {
         try (JarFile jarFile = new JarFile(file)) {
             ZipEntry existing = jarFile.getEntry(JANDEX_INDEX);
-            if (existing != null) {
+            if (existing != null && removed == null) {
                 try (InputStream in = jarFile.getInputStream(existing)) {
                     IndexReader reader = new IndexReader(in);
                     if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
                         log.warnf(
                                 "Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency",
                                 file);
-                        return indexJar(jarFile);
+                        return indexJar(jarFile, removed);
                     } else {
-                        return reader.read();
+                        try {
+                            return reader.read();
+                        } catch (UnsupportedVersion e) {
+                            throw new UnsupportedVersion("Can't read Jandex index from " + file + ": " + e.getMessage());
+                        }
                     }
                 }
             }
-            return indexJar(jarFile);
+            return indexJar(jarFile, removed);
         }
     }
 
-    private static Index indexJar(JarFile file) throws IOException {
+    private static Index indexJar(JarFile file, Set<String> removed) throws IOException {
         Indexer indexer = new Indexer();
         Enumeration<JarEntry> e = file.entries();
         boolean multiRelease = JarFiles.isMultiRelease(file);
         while (e.hasMoreElements()) {
             JarEntry entry = e.nextElement();
+            if (removed != null && removed.contains(entry.getName())) {
+                continue;
+            }
             if (entry.getName().endsWith(".class")) {
                 if (multiRelease && entry.getName().startsWith(META_INF_VERSIONS)) {
                     String part = entry.getName().substring(META_INF_VERSIONS.length());

@@ -9,19 +9,19 @@
         {
             "category": "Data1",
             "timeout": 65,
-            "test-modules": "jpa-h2, jpa-mariadb, jpa-mssql, jpa-derby, jpa-without-entity, hibernate-tenancy",
+            "test-modules": "jpa-h2, jpa-mariadb, jpa-mssql, jpa-derby, jpa-without-entity, hibernate-orm-tenancy/datasource, hibernate-orm-tenancy/connection-resolver, hibernate-orm-tenancy/connection-resolver-legacy-qualifiers",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Data2",
             "timeout": 65,
-            "test-modules": "jpa, jpa-mysql, jpa-db2, jpa-oracle",
+            "test-modules": "jpa, jpa-mapping-xml/legacy-app, jpa-mapping-xml/modern-app, jpa-mysql, jpa-db2, jpa-oracle",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Data3",
             "timeout": 70,
-            "test-modules": "flyway, hibernate-orm-panache, hibernate-orm-panache-kotlin, hibernate-orm-envers, liquibase",
+            "test-modules": "flyway, hibernate-orm-panache, hibernate-orm-panache-kotlin, hibernate-orm-envers, liquibase, liquibase-mongodb",
             "os-name": "ubuntu-latest"
         },
         {
@@ -33,7 +33,7 @@
         {
             "category": "Data5",
             "timeout": 65,
-            "test-modules": "jpa-postgresql, jpa-postgresql-withxml, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql",
+            "test-modules": "jpa-postgresql, jpa-postgresql-withxml, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql, hibernate-orm-tenancy/schema",
             "os-name": "ubuntu-latest"
         },
         {
@@ -111,13 +111,13 @@
         {
             "category": "Misc3",
             "timeout": 65,
-            "test-modules": "kubernetes-client, openshift-client, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-metrics",
+            "test-modules": "kubernetes-client, openshift-client, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-metrics, smallrye-opentracing",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Misc4",
             "timeout": 65,
-            "test-modules": "picocli-native, gradle, micrometer-mp-metrics, micrometer-prometheus, logging-json, jaxp, opentelemetry",
+            "test-modules": "picocli-native, gradle, micrometer-mp-metrics, micrometer-prometheus, logging-json, jaxp, jaxb, opentelemetry",
             "os-name": "ubuntu-latest"
         },
         {
@@ -137,6 +137,18 @@
             "timeout": 20,
             "test-modules": "hibernate-validator",
             "os-name": "windows-latest"
-        }
+        },
+        {
+            "category": "DevTools Integration Tests",
+            "timeout": 70,
+            "test-modules": "devtools-registry-client",
+            "os-name": "ubuntu-latest"
+        },
+        {
+            "category": "AWT, ImageIO and Java2D",
+            "timeout": 20,
+            "test-modules": "awt",
+            "os-name": "ubuntu-latest"
+        }	
     ]
 }

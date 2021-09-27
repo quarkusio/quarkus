@@ -9,6 +9,7 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -19,16 +20,19 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.core.multipart.DefaultFileUpload;
 import org.jboss.resteasy.reactive.server.core.multipart.FormData;
+import org.jboss.resteasy.reactive.server.core.multipart.FormData.FormValue;
 import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 
 /**
  * This class isn't used directly, it is however used by generated code meant to deal with multipart forms.
  */
+@SuppressWarnings("unused")
 public final class MultipartSupport {
 
     private static final Logger log = Logger.getLogger(RequestDeserializeHandler.class);
@@ -40,8 +44,22 @@ public final class MultipartSupport {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static Object convertFormAttribute(String value, Class type, Type genericType, MediaType mediaType,
-            ResteasyReactiveRequestContext context) {
+            ResteasyReactiveRequestContext context, String attributeName) {
         if (value == null) {
+            FormData formData = context.getFormData();
+            if (formData != null) {
+                Collection<FormValue> fileUploadsForName = formData.get(attributeName);
+                if (fileUploadsForName != null) {
+                    for (FormData.FormValue fileUpload : fileUploadsForName) {
+                        if (fileUpload.isFileItem()) {
+                            log.debug("Attribute '" + attributeName
+                                    + "' of the multipart request is a file and therefore its value is not set. To obtain the contents of the file, use type '"
+                                    + FileUpload.class + "' as the field type.");
+                            break;
+                        }
+                    }
+                }
+            }
             return null;
         }
 
@@ -98,9 +116,12 @@ public final class MultipartSupport {
         List<DefaultFileUpload> result = new ArrayList<>();
         FormData fileUploads = context.getFormData();
         if (fileUploads != null) {
-            for (FormData.FormValue fileUpload : fileUploads.get(formName)) {
-                if (fileUpload.isFileItem()) {
-                    result.add(new DefaultFileUpload(formName, fileUpload));
+            Collection<FormValue> fileUploadsForName = fileUploads.get(formName);
+            if (fileUploadsForName != null) {
+                for (FormData.FormValue fileUpload : fileUploadsForName) {
+                    if (fileUpload.isFileItem()) {
+                        result.add(new DefaultFileUpload(formName, fileUpload));
+                    }
                 }
             }
         }

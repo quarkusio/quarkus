@@ -127,11 +127,6 @@ public class TestConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean flatClassPath;
-    /**
-     * Duration to wait for the native image to built during testing
-     */
-    @ConfigItem(defaultValue = "PT5M")
-    Duration nativeImageWaitTime;
 
     /**
      * The profile to use when testing the native image
@@ -146,10 +141,20 @@ public class TestConfig {
     Profile profile;
 
     /**
-     * JVM parameters that are used to launch jar based integration tests.
+     * Additional launch parameters to be used when Quarkus launches the produced artifact for {@code @QuarkusIntegrationTest}
+     * When the artifact is a {@code jar}, this string is passed right after the {@code java} command.
+     * When the artifact is a {@code container}, this string is passed right after the {@code docker run} command.
+     * When the artifact is a {@code native binary}, this string is passed right after the native binary name.
      */
-    @ConfigItem
-    Optional<String> integrationJvmArgLine;
+    @ConfigItem(defaultValue = "")
+    Optional<List<String>> argLine;
+
+    /**
+     * Used in {@code @QuarkusIntegrationTest} and {@code NativeImageTest} to determine how long the test will wait for the
+     * application to launch
+     */
+    @ConfigItem(defaultValue = "PT1M")
+    Duration waitTime;
 
     /**
      * Configures the hang detection in @QuarkusTest. If no activity happens (i.e. no test callbacks are called) over

@@ -1,0 +1,197 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Narayana LRA Participant Support
+
+include::./attributes.adoc[]
+
+== Introduction
+
+The LRA (short for Long Running Action) participant extension is useful in microservice based
+designs where different services can benefit from a relaxed notion of distributed consistency.
+
+The idea is for multiple services to perform different computations/actions in concert, whilst
+retaining the option to compensate for any actions performed during the computation.
+This kind of loose coupling of services bridges the gap between strong consistency models
+such as JTA/XA and "home grown" ad hoc consistency solutions.
+
+The model is based on the https://github.com/eclipse/microprofile-lra/blob/master/spec/src/main/asciidoc/microprofile-lra-spec.adoc#eclipse-microprofile-lra[Eclipse MicroProfile LRA specification].
+The approach is for the developer to annotate a business method with a Java annotation
+(https://download.eclipse.org/microprofile/microprofile-lra-1.0/apidocs/[`@LRA`]).
+When such a method is called, an LRA context is created (if one is not already present) which is passed
+along with subsequent JAX-RS invocations until a method is reached
+which also contains an `@LRA` annotation with an attribute that indicates that the LRA should be
+closed or cancelled. The default is for the LRA to be closed in the same method that started the
+LRA (which itself may have propagated the context during method execution).
+The JAX-RS resource indicates that it wishes to participate in the interaction by, minimally,
+marking one of the methods with an
+https://download.eclipse.org/microprofile/microprofile-lra-1.0/apidocs/[`@Compensate`]
+annotation. If the context is later cancelled then this compensate action is guaranteed to be
+called even in the presence of failures and is the trigger for the resource to compensate for any
+activities it performed in the context of the LRA. This guarantee enables services to operate
+reliably with the assurance of eventual consistency (when all compensation activities have
+ran to completion). The participant can ask to be reliably notified when the LRA it is participating
+in is closed by marking one of the methods with an
+https://download.eclipse.org/microprofile/microprofile-lra-1.0/apidocs/[`@Complete`]
+annotation. In this way cancelling an LRA causes all participants to be notified via their Compensate callback
+and closing an LRA causes all participants to be notified via their Complete callback (if they have one).
+Other annotations for controlling participants are documented in the
+https://download.eclipse.org/microprofile/microprofile-lra-1.0/apidocs/[MicroProfile LRA API v1.0 javadoc].
+
+== Configuration
+
+Once you have your Quarkus Maven project configured you can add the `narayana-lra` extension
+by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="narayana-lra"
+----
+
+This will add the following to your pom.xml:
+
+[source,xml]
+----
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-narayana-lra</artifactId>
+    </dependency>
+----
+
+If there is a running coordinator then this is all you need in order to create
+new LRAs and to enlist participants with them.
+
+The LRA extension can be configured by updating an `application.properties` file
+in the `src/main/resources` directory. The only LRA specific property is
+`quarkus.lra.coordinator-url=<url>` which specifies the HTTP endpoint of an external
+coordinator, for example:
+
+[source,bash]
+----
+quarkus.lra.coordinator-url=http://localhost:8080/lra-coordinator
+----
+
+For a Narayana coordinator the path component of the url is normally `lra-coordinator`.
+Coordinators can be obtained from `https://hub.docker.com/r/jbosstm/lra-coordinator`
+or you can build your own coordinator using a maven pom that includes the appropriate
+dependencies. A Quarkus quickstart will be provided to show how to do this or you can
+take a look at one of the https://github.com/jbosstm/quickstart/tree/master/rts/lra-examples/lra-coordinator[Narayana quickstarts].
+Another option would be to run it managed inside a WildFly application server.
+
+== Handling failures
+
+When an LRA is told to finish, i.e. when a method annotated with `@LRA(end = true, ...)`
+is invoked, the coordinator will instruct all services involved in the interaction to
+finish. If a service is unavailable (or still finishing) then the coordinator will retry
+periodically. It is the users responsibility to restart failed services on the same
+endpoint that they used when they first joined the LRA, or to tell the coordinator that
+they wish to be notified on new endpoints. An LRA is not deemed finished until *all*
+participants have acknowledged that they have finished.
+
+The coordinator is responsible for reliably creating and ending LRAs and for managing
+participant enlistment and it therefore must be available (for example if it or the
+network fail then something in the environment is responsible for restarting
+the coordinator or for repairing the network, respectively). To fulfill this task the
+coordinator must have access to durable storage for its logs (via a filesystem or in
+a database).  At the time of writing, managing coordinators is the responsibility of
+the user. An "out-of-the-box" solution will be forthcoming.
+
+== Examples
+
+The following is a simple example of how to start an LRA and how to receive a notification
+when the LRA is later cancelled (the `@Compensate` annotated method is called) or closed
+(`@Complete` is called):
+
+[source,java]
+----
+@Path("/")
+@ApplicationScoped
+public class SimpleLRAParticipant
+{
+    @LRA(LRA.Type.REQUIRES_NEW) // a new LRA is created on method entry
+    @Path("/work")
+    @PUT
+    public void doInNewLongRunningAction(@HeaderParam(LRA_HTTP_CONTEXT_HEADER) URI lraId)
+    {
+        /*
+         * Perform business actions in the context of the LRA identified by the
+         * value in the injected JAX-RS header. This LRA was started just before
+         * the method was entered (REQUIRES_NEW) and will be closed when the
+         * method finishes at which point the completeWork method below will be
+         * invoked.
+         */
+    }
+
+    @org.eclipse.microprofile.lra.annotation.Complete
+    @Path("/complete")
+    @PUT
+    public Response completeWork(@HeaderParam(LRA_HTTP_CONTEXT_HEADER) URI lraId,
+                                 String userData)
+    {
+        /*
+         * Free up resources allocated in the context of the LRA identified by the
+         * value in the injected JAX-RS header.
+         *
+         * Since there is no @Status method in this class, completeWork MUST be
+         * idempotent and MUST return the status.
+         */
+         return Response.ok(ParticipantStatus.Completed.name()).build();
+    }
+
+    @org.eclipse.microprofile.lra.annotation.Compensate
+    @Path("/compensate")
+    @PUT
+    public Response compensateWork(@HeaderParam(LRA_HTTP_CONTEXT_HEADER) URI lraId,
+                                   String userData)
+    {
+        /*
+         * The LRA identified by the value in the injected JAX-RS header was
+         * cancelled so the business logic should compensate for any actions
+         * that have been performed while running in its context.
+         *
+         * Since there is no @Status method in this class, compensateWork MUST be
+         * idempotent and MUST return the status
+         */
+         return Response.ok(ParticipantStatus.Compensated.name()).build();
+    }
+}
+----
+
+The example also shows that when an LRA is present its identifier can be obtained
+by reading the request headers via the `@HeaderParam` JAX-RS annotation type.
+
+And here's an example of how to start an LRA in one resource method and close it in
+a different resource method using the `end` element of the `LRA` annotation. It also
+shows how to configure the LRA to be automatically cancelled if the business method
+returns the particular HTTP status codes identified in the `cancelOn` and
+`cancelOnFamily` elements:
+
+[source,java]
+----
+  @LRA(value = LRA.Type.REQUIRED, // if there is no incoming context a new one is created
+       cancelOn = {
+           Response.Status.INTERNAL_SERVER_ERROR // cancel on a 500 code
+       },
+       cancelOnFamily = {
+           Response.Status.Family.CLIENT_ERROR // cancel on any 4xx code
+       },
+       end = false) // the LRA will continue to run when the method finishes
+  @Path("/book")
+  @POST
+  public Response bookTrip(...) { ... }
+
+  @LRA(LRA.Type.MANDATORY, // requires an active context before method can be executed
+       end = true) // end the LRA started by the bookTrip method
+  @Path("/confirm")
+  @PUT
+  public Booking confirmTrip(Booking booking) throws BookingException { ... }
+----
+
+The `end = false` element on the bookTrip method forces the LRA to continue running when
+the method finishes and the `end = true` element on the confirmTrip method forces the LRA
+(started by the bookTrip method) to be closed when the method finishes. Note that this
+end element can be placed on any JAX-RS resource (ie one service can start the LRA whilst
+a different service ends it). There are many more examples in the
+https://github.com/eclipse/microprofile-lra/blob/master/spec/src/main/asciidoc/microprofile-lra-spec.adoc#java-annotations[Microprofile LRA specification document] and in the https://github.com/eclipse/microprofile-lra/tree/master/tck/src/main/java/org/eclipse/microprofile/lra/tck[Microprofile LRA TCK].

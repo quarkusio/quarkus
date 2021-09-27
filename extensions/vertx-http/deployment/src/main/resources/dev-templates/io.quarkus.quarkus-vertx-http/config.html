@@ -11,7 +11,11 @@ td {
 }
 
 #tables{
-    padding-bottom: 40px;
+    margin-bottom: unset;
+}
+
+.mousePointer:hover {
+    cursor: pointer;
 }
 
 .formInputButton:hover {
@@ -24,13 +28,21 @@ td {
 }
 {/style}
 
+{#styleref}
+<link rel="stylesheet" href="{devRootAppend}/resources/codemirror/lib/codemirror.css">
+<link rel="stylesheet" href="{devRootAppend}/resources/codemirror/addon/hint/show-hint.css">
+{/styleref}
+
 {#script}
 $(document).ready(function(){    
   $("#filterInput").on("keyup", function() {
     var value = $(this).val().toLowerCase();
     $(".configTable tr").filter(function() {
-      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        if($(this).is(":visible")){
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        }
     });
+    hideEmptyTables();
   });
 
   $(".configInput").on("keyup", function(event) {
@@ -50,29 +62,56 @@ $(document).ready(function(){
 function clearFilterInput(){
     $("#filterInput").val("");
     $(".configTable tr").filter(function() {
-      $(this).toggle($(this).text().toLowerCase().indexOf("") > -1)
+        if($(this).is(":visible")){
+            $(this).toggle($(this).text().toLowerCase().indexOf("") > -1)
+        }
     });
+    hideEmptyTables();
+}
+
+function changeSelectValue(element, name){
+    var $el = $("select[id='" + name + "']");
+    var $tr = $("tr[id='tr-" + name + "']");
+    var value = element.options[element.selectedIndex].text;
+    
+    postChangeConfigValue(name, value, $el);
+}
+
+function changeCheckboxValue(element, name){
+    var $el = $("input[id='" + name + "']");
+    var $tr = $("tr[id='tr-" + name + "']");
+    var value = element.checked;
+    
+    postChangeConfigValue(name, value, $el);
 }
 
 function changeInputValue(name){
     var $el = $("input[id='" + name + "']");
     var $tr = $("tr[id='tr-" + name + "']");
-    
     var value = $el.val();
+    
+    postChangeConfigValue(name, value, $el);
+}
+
+function postChangeConfigValue(name, value, $el){
+    $el.prop('disabled', true);
     $.post("",
         {
+          action: "updateProperty",
           name: name,
           value: value
         },
         function(data, status){
             if(status === "success"){
+                showToastMessage("Update", "Configuration updated successful");
+                hideEmptyTables();
                 changeBackgroundColor("#76be6b", $el);
-                
-                $('#configTable1 tr:last').after($tr);
-                
             }else{
+                showToastMessage("Update", "Configuration updated failed");
+                hideEmptyTables();
                 changeBackgroundColor("#ff6366", $el);
             }
+            $el.prop('disabled', false);
         });
 
 }
@@ -87,24 +126,271 @@ function changeBackgroundColor(color, element){
     }, x);
 }
 
+function showApplicationPropertiesFile(){
+    $(".application-properties-form").hide();
+    $(".application-properties-file").show();
+    reloadApplicationPropertiesFile();
+}
+
+function showApplicationPropertiesForm(){
+    reloadApplicationPropertiesForm();
+    $(".application-properties-file").hide();
+    $(".application-properties-form").show();
+    
+}
+
+function saveApplicationPropertiesFile(){
+    var properties = editor.getDoc().getValue();
+    $.post("",
+        {
+          action: "updateProperties",
+          values: properties
+        },
+        function(data, status){
+            if(status === "success"){
+                showToastMessage("Update", "Configuration updated successful");
+            }else{
+                showToastMessage("Update", "Configuration updated failed");
+            }
+            hideEmptyTables();
+            reloadApplicationPropertiesFile();
+        });        
+}
+
+function reloadApplicationPropertiesFile(){
+    
+    $.get("config/all",
+        function(data, status){
+            if(status === "success"){
+                editor.getDoc().setValue(data);
+            }else{
+                showToastMessage("Properties file", "Failed to load properties");
+            }
+        });
+}
+
+function reloadApplicationPropertiesForm(){
+    $.get("config",
+        function(data, status){
+            if(status === "success"){
+                var formPart = $('#tables', data);
+                $('#tables').replaceWith(formPart);
+            }else{
+                showToastMessage("Properties file", "Failed to load properties");
+            }
+        });
+}
+
+function copyTestDevServices(){
+    copyDevServices("Test");
+}
+
+function copyProdDevServices(){
+    copyDevServices("Prod");
+}
+
+function copyDevServices(environment){
+    $.post("",
+        {
+          action: "copyDevServices",
+          environment: environment,
+          filter: configfilter
+        },
+        function(data, status){
+            if(status === "success"){
+                showToastMessage("DevServices", "All configuration automatically set by DevServices copied for " + environment);
+            }else{
+                showToastMessage("DevServices", "Failed to copied configuration for " + environment);
+            }
+            reloadApplicationPropertiesFile();
+        });
+}
+
+var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+    mode: "properties",
+    styleActiveLine: true,
+    lineNumbers: true,
+    lineWrapping: true,
+    extraKeys: {"Ctrl-Space": "autocomplete"}
+});
+
+editor.setSize(null, getEditorHeight());
+editor.on("blur", function(codeMirror) { codeMirror.save(); });
+editor.refresh();
+
+$('.application-properties-file').hide();
+$('#application-properties-form').css('height',getFormHeight());
+
+function getEditorHeight(){
+    let headerBar = document.querySelector('#stickyTopHeaderNavBar');
+    let headerBarHeight = headerBar.offsetHeight;
+    
+    let editorBar = document.querySelector('#editorNavBar');
+    let editorBarHeight = editorBar.offsetHeight;
+    
+    let footerBarHeight = 80;
+    
+    return window.innerHeight-headerBarHeight - editorBarHeight - footerBarHeight;
+}
+
+function getFormHeight(){
+    let headerBar = document.querySelector('#stickyTopHeaderNavBar');
+    let headerBarHeight = headerBar.offsetHeight;
+    
+    let filterInput = document.querySelector('#filterInputGroup');
+    let filterInputHeight = filterInput.offsetHeight;
+    
+    let tableHeader = document.querySelector('#formTableHeader');
+    let tableHeaderHeight = tableHeader.offsetHeight;
+    
+    let footerBarHeight = 95;
+    
+    return window.innerHeight-headerBarHeight - filterInputHeight - tableHeaderHeight - footerBarHeight;
+}
+
+
+var configfilter = "";
+$('#configCurrentFilter').hide();
+
+const queryParams = new URLSearchParams(window.location.search);
+
+var filterByExtensionName = "";
+if(queryParams.has("filterByExtension")){
+    filterByExtensionName = queryParams.get("filterByExtension");
+}
+var filterConfigKeys = "";
+if(queryParams.has("filterConfigKeys")){
+    filterConfigKeys = queryParams.get("filterConfigKeys");
+}
+
+if(filterConfigKeys!=="" && filterByExtensionName!==""){
+    filterByConfigExtension(filterByExtensionName,filterConfigKeys);
+}
+
+$('#configFilterModal').on('shown.bs.modal', function () {
+    $('#configFilterModalInput').trigger('focus');
+});
+
+configFilterModalInput.addEventListener("keyup", function(event) {
+    if (event.keyCode === 13) {
+        event.preventDefault();
+        configFilterModalInputButton.click();
+    }
+});
+
+configFilterModalInputButton.addEventListener("click", applyConfigFilter);
+
+function applyConfigFilter(){
+    filterByConfigExtension($('#configFilterModalInput').find(":selected").text(), $('#configFilterModalInput').find(":selected").val());
+}
+
+function filterByConfigExtension(configfilterText, configfilterKeys){
+    configfilter = configfilterKeys.split(",");
+    $('#configCurrentFilter').show();
+    configCurrentFilter.innerHTML = "<span style='border-bottom: 1px dotted;'>" + configfilterText + " <i class='fas fa-times-circle' onclick='clearConfigFilter();'></i></span>";
+
+    $(".filterableConfigKey").each(function() {
+        var ck = $(this).text().trim();
+        var hide = true;
+        configfilter.forEach(function (item, index) {
+            if(ck.startsWith(item)){
+                hide = false;
+            }
+        });
+        if(hide){
+            $(this).parent().hide();
+        }
+    });
+    
+    $('#configFilterModal').modal('hide');
+    
+    showHideDevServicesButton();
+    
+    hideEmptyTables();
+}
+
+function showHideDevServicesButton(){
+    // Check if there is any dev services visible on the page
+    var numberOfMagicConfig = $('.fa-magic:visible').length;
+    if(numberOfMagicConfig === 0){
+        $('.devservices').hide();
+    }else {
+        $('.devservices').show();
+    }
+}
+
+function hideEmptyTables(){
+    
+    $('.filterableTable').filter(function(index){
+        var tableTrNumber = $(this).find('tr').length;
+        var tableTrHiddenNumber = $(this).find('tr:hidden').length + 1;
+        if(tableTrNumber == tableTrHiddenNumber){
+            $(this).hide();
+        }else{
+            $(this).show();
+        }
+    });
+}
+
+function clearConfigFilter(){
+    configfilter = "";
+    $("#configFilterModalInput").val("");
+    configCurrentFilter.innerHTML = "";
+    $('#configCurrentFilter').hide();
+    
+    $(".filterableConfigKey").each(function() {
+        $(this).parent().show();
+    });
+    clearFilterInput();
+    showHideDevServicesButton();
+}
+
 {/script}
+
+{#scriptref}
+<script src="{devRootAppend}/resources/codemirror/lib/codemirror.js"></script>
+<script src="{devRootAppend}/resources/codemirror/mode/properties/properties.js"></script>
+<script src="{devRootAppend}/resources/codemirror/addon/hint/show-hint.js"></script>
+<script src="{devRootAppend}/resources/codemirror/addon/selection/active-line.js"></script>
+{/scriptref}
 
 {#title}Config Editor{/title}
 {#body}
 
 <!-- Filter input -->
-<div id="filterInputGroup" class="input-group">
+<div id="filterInputGroup" class="input-group application-properties-form">
     <div class="input-group-prepend">
-        <span class="input-group-text" id="filterInputPrepend"><i class="fas fa-filter"></i></span>
+        
+        <a id="filterInputPrepend" class="input-group-text mousePointer" data-toggle="modal" data-target="#configFilterModal">
+            <i class="fas fa-filter" data-toggle="tooltip" data-placement="bottom" title="Filter by extension"></i>
+        </a>
+        <a id="configCurrentFilter" class="btn text-right">
+        </a>
     </div>
     <input id="filterInput" type="text" class="form-control" aria-describedby="filterInputPrepend" placeholder="Search...">
     <div class="input-group-append">
         <span class="input-group-text formInputButton" onclick="clearFilterInput();"><i class="fas fa-times"></i></span> 
     </div>
+    <div class="btn-group ml-2" role="group" aria-label="Actions">
+        {#if info:hasDevServices}
+        <div class="btn-group devservices">
+            <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Dev Services
+            </button>
+            <div class="dropdown-menu">
+                <a class="dropdown-item" onclick="copyTestDevServices()" title="Copy all auto configured properties as test profile properties">Copy to <code>test</code> profile</a>
+                <a class="dropdown-item" onclick="copyProdDevServices()" title="Copy all auto configured properties as prod profile properties">Copy to <code>prod</code> profile</a>
+            </div>
+        </div>
+        {/if}
+        <button class="btn btn-light btn-sm float-right" onclick="showApplicationPropertiesFile()" title="show file">
+            <i class="fas fa-code"></i> Go to source
+        </button>
+    </div>
 </div>
 
-<div id="tables" class="table-responsive">
-    <table class="table">
+<div id="tables" class="table-responsive application-properties-form">
+    <table id="formTableHeader" class="table">
         <thead class="thead-dark">
             <tr>
                 <th scope="col">Property</th>
@@ -114,48 +400,164 @@ function changeBackgroundColor(color, element){
         </thead>
     </table>
     
-    {#for configsource in info:config}
+    <div id="application-properties-form" class="overflow-auto">
+        {#for configsource in info:config}
 
-    <div class="card">
-        <div class="card-header bg-primary text-light">
-            <h5>
-                {configsource.key}
-            </h5>
+        <div class="card">
+            <table id="configTable{count}" class="table filterableTable">
+                <thead class="thead-light">
+                    <tr>
+                        <th scope="col" colspan="3">{configsource.key}</th>
+                    </tr>
+                </thead>
+                <tbody class="configTable">
+
+                    {#for item in configsource.value}
+                    <tr id="tr-{item.configValue.name}">
+
+                        <td class="filterableConfigKey">
+                            {#if item.configPhase?? && (item.configPhase == "BUILD_AND_RUN_TIME_FIXED" || item.configPhase == "BUILD_TIME")}
+                            <i class="fas fa-lock data-toggle="tooltip" data-placement="top" title="Fixed at build time (not overridable at runtime)"></i>
+                            {#else}
+                            <i class="fas fa-lock-open text-white" data-placement="top" title="Overridable at runtime"></i>
+                            {/if}
+                            
+                            {item.configValue.name}
+                            
+                            {#if item.autoFromDevServices}
+                            <i class="fas fa-magic text-primary" data-toggle="tooltip" data-placement="top" title="Automatically set by Dev Services"></i>
+                            {/if}
+                            
+                        </td>
+                        <td>
+                            {#if configsource.key.editable}
+                            
+                                {#if item.typeName && item.typeName == "java.lang.Boolean"}
+                                <div class="input-group flex-row-reverse" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>
+                                    <div class="custom-control custom-switch">
+                                        <input id="{item.configValue.name}" type="checkbox" name="value" onclick="changeCheckboxValue(this, '{item.configValue.name}');" class="custom-control-input" {#if item.configValue.value == "true" || item.configValue.value == true}checked{/if}/>
+                                        <label class="custom-control-label" for="{item.configValue.name}"></label>
+                                    </div>
+                                </div>
+                                {#else if item.typeName && (item.typeName == "java.lang.Integer" || item.typeName == "java.lang.Long")}
+                                <div class="input-group" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>    
+                                    <input id="{item.configValue.name}" type="number" name="value" class="form-control configInput" value="{item.configValue.value}" onkeydown="javascript: return event.keyCode === 8 || event.keyCode === 46 || event.keyCode === 13 ? true : !isNaN(Number(event.key))"/>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}');"><i class="fas fa-check text-success"></i></span>
+                                    </div>
+                                </div>
+                                {#else if item.typeName && (item.typeName == "java.lang.Float" || item.typeName == "java.lang.Double")}
+                                <div class="input-group" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>    
+                                    <input id="{item.configValue.name}" type="text" name="value" step="any" class="form-control configInput" value="{item.configValue.value}" onkeydown="javascript: return event.keyCode === 8 || event.keyCode === 46  || event.keyCode === 190 || event.keyCode === 70 || event.keyCode === 13 ? true : !isNaN(Number(event.key))"/>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}');"><i class="fas fa-check text-success"></i></span>
+                                    </div>
+                                </div>    
+                                {#else if item.typeName && (item.typeName == "java.lang.Enum" || item.typeName == "java.util.logging.Level")}
+                                <div class="input-group" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>
+                                    <select id="{item.configValue.name}" class="form-control" onchange="changeSelectValue(this, '{item.configValue.name}');">
+                                        <option></option>
+                                        {#for e in item.allowedValues}
+                                        <option value="{e}" {#if e == item.configValue.value}selected="selected"{/if}>{e}</option>
+                                        {/for}
+                                    </select>
+                                </div>
+                                {#else}
+                                <div class="input-group" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>    
+                                    <input id="{item.configValue.name}" type="text" name="value" class="form-control configInput" value="{item.configValue.value}"/>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}');"><i class="fas fa-check text-success"></i></span>
+                                    </div>
+                                </div>    
+                                {/if}
+                            {#else}
+                                {item.configValue.value}
+                            {/if}
+                        </td>
+                        <td>
+                           {item.description.fmtJavadoc??}
+                        </td>
+                    </tr>
+                    {/for}
+                </tbody>
+            </table>
         </div>
-        
-        <table id="configTable{count}" class="table">
-
-            <tbody class="configTable">
-
-                {#for item in configsource.value}
-                <tr id="tr-{item.configValue.name}">
-
-                    <td>
-                        {item.configValue.name}
-                    </td>
-                    <td>
-                        {#if configsource.key.editable}
-                        <div class="input-group" {#if item.defaultValue}data-toggle="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>
-                            <input id="{item.configValue.name}" type="text" name="value" class="form-control configInput" value="{item.configValue.value}"/>
-                            <div class="input-group-append">
-                                <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}');"><i class="fas fa-check text-success"></i></span>
-                            </div>
-                        </div>
-                        {#else}
-                            {item.configValue.value}
-                        {/if}
-                    </td>
-                    <td>
-                        {#if item.description.fmtJavadoc && item.description.fmtJavadoc != 'NOT_FOUND'}
-                            {item.description.fmtJavadoc}
-                        {/if}    
-                    </td>
-                </tr>
-                {/for}
-            </tbody>
-        </table>
+        {/for}
     </div>
-    {/for}
+</div>
+
+<div class="application-properties-file">
+    <nav id="editorNavBar" class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand">application.properties</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="saveApplicationPropertiesFile()" title="save to disk">
+                        <i class="fas fa-save"></i> Save
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="reloadApplicationPropertiesFile()" title="reload from disk">
+                        <i class="fas fa-sync-alt"></i> Reload
+                    </a>
+                </li>
+                {#if info:hasDevServices}
+                <li class="nav-item dropdown devservices">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDevServicesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Dev Services
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDevServicesDropdown" title="Copy properties auto created by Dev Services">
+                        <a class="dropdown-item" onclick="copyTestDevServices()" title="Copy all auto configured properties as test profile properties">Copy to <code>test</code> profile</a>
+                        <a class="dropdown-item" onclick="copyProdDevServices()" title="Copy all auto configured properties as prod profile properties">Copy to <code>prod</code> profile</a>
+                    </div>
+                </li>
+                {/if}
+            </ul>
+            <span class="navbar-text">
+                <button class="btn btn-light btn-sm float-right" onclick="showApplicationPropertiesForm()" title="show form">
+                    <i class="fas fa-columns"></i> Go to form
+                </button>
+            </span>
+            
+        </div>
+    </nav>
+    
+    <form>
+        <textarea id="code" name="code"></textarea>
+    </form>
+    
+</div>
+
+<div class="modal fade" id="configFilterModal" tabindex="-1" aria-labelledby="configFilterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog modal-dialog-centered modal-sl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="configFilterModalLabel">Filter</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text" id="configFilterModalInputIcon"><i class="fas fa-filter"></i></span>
+                    </div>
+                    <select id="configFilterModalInput" class="form-control" title="Filter by extension" aria-label="Filter" aria-describedby="configFilterModalInputIcon">
+                        {#each configKeyMap}
+                            <option value='{it.value.toString().replace("[", "").replace("]", "").replace(" ", "")}'>{it.key}</option>
+                        {/each}
+                    </select>
+                    <div class="input-group-append">
+                        <button id="configFilterModalInputButton" type="button" class="btn btn-success">Apply</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 {/body}

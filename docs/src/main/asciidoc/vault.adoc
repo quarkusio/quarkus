@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using HashiCorp Vault
+= Using HashiCorp Vault
 
 include::./attributes.adoc[]
 :config-file: application.properties
@@ -13,6 +13,7 @@ include::./attributes.adoc[]
 :extension-status: preview
 :vault-auth-guide: link:vault-auth[Vault Authentication guide]
 :vault-transit-guide: link:vault-transit[Vault Transit Secret Engine Guide]
+:vault-pki-guide: link:vault-pki[Vault PKI Secret Engine Guide]
 :vault-datasource-guide: link:vault-datasource[Vault Datasource Guide]
 
 https://www.vaultproject.io/[HashiCorp Vault] is a multi-purpose tool aiming at protecting sensitive data, such as
@@ -26,6 +27,8 @@ https://www.vaultproject.io/docs/secrets/kv/index.html[Vault kv secret engine] a
 * support for the https://www.vaultproject.io/docs/secrets/totp[TOTP Secret Engine]
 * support for the https://www.vaultproject.io/docs/secrets/transit[Transit Secret Engine] as documented
 in the {vault-transit-guide}
+* support for the https://www.vaultproject.io/docs/secrets/pki[PKI Secret Engine] as documented
+in the {vault-pki-guide}
 * support for several authentication methods as documented in the {vault-auth-guide}
 
 Under the hood, the Quarkus Vault extension takes care of authentication when negotiating a client Vault token plus
@@ -47,7 +50,7 @@ To complete this guide, you need:
 
 [TIP]
 ====
-Using <<dev-services,DevServices>>, Quarkus will take care of starting Vault in dev and test mode.
+Using <<dev-services,Dev Services>>, Quarkus will take care of starting Vault in dev and test mode.
 ====
 
 Let's start Vault in development mode:
@@ -241,7 +244,7 @@ a-private-key    123456
 
 [source,bash, subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=vault-quickstart \
     -DclassName="org.acme.quickstart.GreetingResource" \
@@ -285,7 +288,7 @@ quarkus.vault.secret-config-kv-path=myapps/vault-quickstart/config
 
 [TIP]
 ====
-Using <<dev-services,DevServices>>, Quarkus will take care of configuring the Vault connection in dev and test mode.
+Using <<dev-services,Dev Services>>, Quarkus will take care of configuring the Vault connection in dev and test mode.
 ====
 
 This should mount whatever keys are stored in `secret/myapps/vault-quickstart` as Config properties.
@@ -519,15 +522,15 @@ path "auth/kubernetes/role/*" {
 You should adjust to the minimal set of access rights depending on your specific use case.
 
 [[dev-services]]
-== DevServices (Configuration Free Vault)
+== Dev Services (Configuration Free Vault)
 
-Quarkus supports a feature called DevServices that allows you to create various containers without any config.
+Quarkus supports a feature called Dev Services that allows you to create various containers without any config.
 What that means in practice is that if you have Docker running and have not configured `quarkus.vault.url`,
 Quarkus will automatically start a Vault container when running tests or in dev mode, and automatically
 configure the connection.
 
 When running the production version of the application, the Vault connection needs to be configured as normal,
-so if you want to include a production Vault config in your `application.properties` and continue to use DevServices
+so if you want to include a production Vault config in your `application.properties` and continue to use Dev Services
 we recommend that you use the `%prod.` profile to define your Vault connection settings.
 
 === Automatic Secret Engine Provisioning

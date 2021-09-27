@@ -1,0 +1,29 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'io.quarkus.extension'
+}
+
+dependencies {
+    implementation platform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    api("org.acme:simple-dependency:1.0-SNAPSHOT") {
+        exclude module: "transitive-dependency"
+    }
+    api("io.quarkus:quarkus-hibernate-reactive-panache")
+}
+
+quarkusExtension {
+    deploymentArtifact = "org.acme:ext-a-deployment:1.0-SNAPSHOT"
+    conditionalDependencies = ["org.acme:ext-b::jar:1.0-SNAPSHOT"]
+}
+
+publishing {
+    publications {
+        mavenJave(MavenPublication) {
+            groupId = 'org.acme'
+            artifactId = 'ext-a'
+            version = '1.0-SNAPSHOT'
+            from components.java
+        }
+    }
+}

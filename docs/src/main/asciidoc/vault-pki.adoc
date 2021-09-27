@@ -1,0 +1,250 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Using HashiCorp Vault's PKI Secret Engine
+
+include::./attributes.adoc[]
+:root-token: s.5VUS8pte13RqekCB2fmMT3u2
+:client-token: s.s93BVzJPzBiIGuYJHBTkG8Uw
+:config-file: application.properties
+:extension-status: preview
+:base-guide: link:vault[Vault guide]
+
+Vault's PKI Secret Engine generates dynamic X.509 certificates. It allows services to get certificates without
+manually generating a private key and CSR, submitting to a CA, and waiting for signed certificate. The PKI secret
+engine allows dynamically generating certificates, which has the following advantages over classic CA scenarios:
+
+* Generating certificates with short TTLs reduces the need for and/or size of CRLs.
+* Allows for ephemeral certificates that are generated upon application startup, stored in memory and discarded on shutdown.
+
+In this guide we cover the following:
+
+* setup: configuring the engine to generate certificates
+* generation: generating certificates using roles
+* revocation: revoking a previously generated certificate
+
+See https://www.vaultproject.io/docs/secrets/pki/index.html#pki-secrets-engine[Vault PKI Secrets Engine's official documentation]
+
+include::./status-include.adoc[]
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* to complete the "Starting Vault" section of the {base-guide}
+* roughly 15 minutes
+* an IDE
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
+* Docker installed
+
+== Setup
+
+We assume there is a Vault running from the {base-guide}, and the root token is known.
+The first step consists of activating the PKI Secret Engine, and configuring a CA certificate
+and private key:
+
+[source,bash, subs=attributes+]
+----
+docker exec -it dev-vault sh
+export VAULT_TOKEN={root-token}
+
+vault secrets enable pki
+# ==> Success! Enabled the pki secrets engine at: pki/
+
+vault secrets tune -max-lease-ttl=8760h pki
+# ==> Success! Tuned the secrets engine at: pki/
+
+vault write pki/root/generate/internal \
+    common_name=my-website.com \
+    ttl=8760h
+# ==> Success! Configured CA with self-signed root
+# ==> Key              Value
+# ==> ---              -----
+# ==> certificate      -----BEGIN CERTIFICATE-----...
+# ==> expiration       1536807433
+# ==> issuing_ca       -----BEGIN CERTIFICATE-----...
+# ==> serial_number    7c:f1:fb:2c:6e:4d:99:0e:82:1b:08:0a:81:ed:61:3e:1d:fa:f5:29
+----
+
+This example configures the CA with an internal self-signed root certificate and associated key pair that is
+managed by Vault. Alternatively, you can configure the CA with an existing key pair.
+
+NOTE: CA configuration can be done programmatically using `VaultPKISecretEngine.generateRoot(GenerateRootOptions)`
+
+With the CA configured we now require a role to be defined that determines what parameters are allowed when
+generating certificates.
+
+Here we create a role `example-dot-com` that allows certificates with the common name
+allowed to be any subdomain of `my-website.com`.
+
+[source,bash, subs=attributes+]
+----
+vault write pki/roles/example-dot-com \
+    allowed_domains=my-website.com \
+    allow_subdomains=true \
+    max_ttl=72h
+# ==> Success! Data written to: pki/roles/example-dot-com
+----
+
+NOTE: Role configuration can be done programmatically using
+`VaultPKISecretEngine.updateRole(String role, RoleOptions options)`
+
+== Generating Certificates
+
+First, let's create a simple Quarkus application with Vault and Jackson extensions:
+
+[source,bash, subs=attributes+]
+----
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=vault-pki-quickstart \
+    -DclassName="org.acme.quickstart.GreetingResource" \
+    -Dpath="/hello" \
+    -Dextensions="resteasy,vault,resteasy-jackson"
+cd vault-pki-quickstart
+----
+
+Now, configure access to Vault from the `{config-file}`:
+
+[source, properties]
+----
+# vault url
+quarkus.vault.url=http://localhost:8200
+
+# vault authentication
+quarkus.vault.authentication.userpass.username=bob
+quarkus.vault.authentication.userpass.password=sinclair
+----
+
+We can then add a new endpoint that will allow us to generate a certificate using the configured CA & role:
+
+[source, java, subs=attributes+]
+----
+@Path("/pki")
+@Produces(TEXT_PLAIN)
+@Consumes(TEXT_PLAIN)
+public class PKIResource {
+
+    @Inject
+    public VaultPKISecretEngine pkiSecretEngine;
+
+    @POST
+    @Path("/generate")
+    public String generate(String subdomain) {
+        GenerateCertificateOptions options = new GenerateCertificateOptions()
+            .setSubjectCommonName(subdomain + ".my-website.com");
+        GeneratedCertificate generated =  pkiSecretEngine.generateCertificate("example-dot-com",  options);
+        return generated.certificate.getData();
+    }
+}
+----
+
+After compiling and starting the Quarkus application, let's generate a new certificate with a generated key pair:
+[source,bash, subs=attributes+]
+----
+curl -X POST --data 'a-subdomain' --header "Content-Type: text/plain"  http://localhost:8080/pki/generate
+
+# ==> -----BEGIN CERTIFICATE-----
+# ==> ...
+# ==> -----END CERTIFICATE-----
+----
+
+Alternatively we can generate a key pair and CSR locally and generate a certificate by having vault sign our CSR.
+
+Let's add a new method that accepts a CSR:
+
+[source, java, subs=attributes+]
+----
+@POST
+@Path("/sign")
+public String sign(String csr) {
+    GenerateCertificateOptions options = new GenerateCertificateOptions();
+    SignedCertificate signed = pkiSecretEngine.signRequest("example-dot-com", csr, options);
+    return signed.certificate.getData();
+}
+----
+
+Now we can generate a CSR (e.g. using OpenSSL) and pass it to our `/sign` endpoint to sign and generate a
+certificate from the CSR:
+
+[source,bash, subs=attributes+]
+----
+openssl req -newkey rsa:2048 -keyout example.key -out example.csr
+
+curl -X POST --data @example.csr --header "Content-Type: text/plain"  http://localhost:8080/pki/sign
+
+# ==> -----BEGIN CERTIFICATE-----
+# ==> ...
+# ==> -----END CERTIFICATE-----
+----
+
+== Revoking Certificates
+
+Let's add another new method to our `PKIResource`:
+
+[source, java, subs=attributes+]
+----
+@POST
+@Path("/revoke")
+public void revoke(String serialNumber) {
+    pkiSecretEngine.revokeCertificate(serialNumber);
+}
+----
+
+And revoke a previously generated certificate:
+[source,bash, subs=attributes+]
+----
+curl -X POST --data '1d:2e:c6:06:45:18:60:0e:23:d6:c5:17:43:c0:fe:46:ed:d1:50:be' --header "Content-Type: text/plain"  http://localhost:8080/pki/revoke
+# ==> No Data
+----
+
+== Dynamically Mounting PKI Engines
+
+Quarkus's Vault PKI support includes that ability to mount & unmount PKI engines dynamically using
+the `VaultPKISecretEngineFactory` & `VaultSystemBackendEngine` interfaces.
+
+To enable, or mount, a new PKI engine at specific mount path you can use the
+`VaultSystemBackendEngine.enable` method:
+
+[source, java, subs=attributes+]
+----
+// Obtain interfaces via injection or other standard CDI method.
+VaultSystemBackendEngine systemBackendEngine = ...;
+VaultPKISecretEngineFactory pkiSecretEngineFactory = ...;
+
+// Mount a PKI engine at a specified path.
+EnableEngineOptions options = new EnableEngineOptions()
+  .setMaxLeaseTimeToLive("8760h");
+systemBackendEngine.enable(VaultSecretEngine.PKI, "pki-dyn", "A dynamic PKI engine", options);
+
+// Obtain an engine manager for the newly mounted PKI engine.
+VaultPKISecretEngine dynPkiSecretEngine = pkiSecretEngineFactory.engine("pki-dyn");
+
+// Use dynamically created engine as you please.
+dynPkiSecretEngine.generateRoot(new GenerateRootOptions());
+----
+
+To disable (aka unmount) a PKI engine at a specific path you simply use the `VaultSystemBackendEngine.disable` method:
+
+[source, java, subs=attributes+]
+----
+systemBackendEngine.disable("pki-dyn");
+----
+
+NOTE: If you want to test if a specific mount path is already in use you can use
+`VaultSystemBackendEngine.isEngineMounted(String)`.
+
+== Conclusion
+
+The PKI Secret Engine is a great tool for managing CAs and their provisioned certificates.
+We have seen the most obvious functions of the interface but all of the methods and modes of Vault's PKI secret
+engine are supported, including:
+
+ * Provisioning roles used to generate certificates.
+ * Storing the root CA externally and issuing certificates from intermediate CAs.
+ * Reading current CRLs for each provisioned engine instance.
+
+Feel free to look at the `VaultPKISecretEngine` & `VaultPKISecretEngineFactory` interfaces.

@@ -5,6 +5,8 @@ import java.time.Duration;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.NormalizeRootHttpPathConverter;
 import io.vertx.core.http.ClientAuth;
 
 @ConfigRoot(name = "http", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
@@ -14,6 +16,7 @@ public class HttpBuildTimeConfig {
      * The HTTP root path. All web content will be served relative to this root path.
      */
     @ConfigItem(defaultValue = "/")
+    @ConvertWith(NormalizeRootHttpPathConverter.class)
     public String rootPath;
 
     public AuthConfig auth;
@@ -43,7 +46,7 @@ public class HttpBuildTimeConfig {
      * Non-application endpoints will be served from the specified path.
      * * `${quarkus.http.root-path}` -> Setting this path to the same value as HTTP root path disables
      * this root path. All extension-provided endpoints will be served from `${quarkus.http.root-path}`.
-     * 
+     *
      * @asciidoclet
      */
     @ConfigItem(defaultValue = "q")

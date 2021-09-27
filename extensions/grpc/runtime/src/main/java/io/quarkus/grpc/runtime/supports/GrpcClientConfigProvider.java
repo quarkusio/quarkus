@@ -54,6 +54,10 @@ public class GrpcClientConfigProvider {
         return Arc.container().instance(GrpcClientConfigProvider.class).get().adjustCallOptions(serviceName, stub);
     }
 
+    public static AbstractStub<?> addBlockingClientInterceptor(AbstractStub<?> stub) {
+        return stub.withInterceptors(new EventLoopBlockingCheckInterceptor());
+    }
+
     public static BiFunction<String, AbstractStub<?>, AbstractStub<?>> getStubConfigurator() {
         return GrpcClientConfigProvider::configureStub;
     }

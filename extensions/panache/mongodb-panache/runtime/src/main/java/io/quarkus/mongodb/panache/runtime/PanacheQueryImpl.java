@@ -12,6 +12,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Collation;
 
 import io.quarkus.mongodb.panache.PanacheQuery;
+import io.quarkus.mongodb.panache.common.runtime.CommonPanacheQueryImpl;
 import io.quarkus.panache.common.Page;
 
 public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {

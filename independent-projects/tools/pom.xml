@@ -28,33 +28,33 @@
         <!-- These properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.8.1</proposed-maven-version>
         <maven-wrapper.version>0.7.7</maven-wrapper.version>
-        <gradle-wrapper.version>6.9</gradle-wrapper.version>
+        <gradle-wrapper.version>7.2</gradle-wrapper.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
-        <kotlin.version>1.3.72</kotlin.version>
+        <kotlin.version>1.5.30</kotlin.version>
         <scala.version>2.12.13</scala.version>
         <scala-plugin.version>4.4.0</scala-plugin.version>
 
         <!-- Versions -->
-        <jline.version>2.14.6</jline.version>
         <assertj.version>3.20.2</assertj.version>
-        <jackson.version>2.12.3</jackson.version>
+        <jackson.version>2.12.5</jackson.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <jakarta.servlet-api.version>4.0.3</jakarta.servlet-api.version>
         <jakarta.websocket-api.version>1.1.2</jakarta.websocket-api.version>
-        <junit.version>5.7.2</junit.version>
+        <junit.version>5.8.0</junit.version>
         <commons-compress.version>1.20</commons-compress.version>
         <jboss-logging.version>3.4.2.Final</jboss-logging.version>
         <maven-core.version>3.8.1</maven-core.version>
-        <mockito.version>3.11.2</mockito.version>
+        <mockito.version>3.12.4</mockito.version>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <quarkus.version>999-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>18</maven-model-helper.version>
-        <commons-io.version>2.10.0</commons-io.version>
+        <commons-io.version>2.11.0</commons-io.version>
         <smallrye-common.version>1.6.0</smallrye-common.version>
+        <jandex-maven-plugin.version>1.2.0</jandex-maven-plugin.version>
     </properties>
     <modules>
         <module>artifact-api</module>
@@ -128,11 +128,6 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devtools-common</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jline</groupId>
-                <artifactId>jline</artifactId>
-                <version>${jline.version}</version>
             </dependency>
             <dependency>
                 <groupId>commons-io</groupId>

@@ -1,6 +1,6 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
-name: "Datasource configuration"
+name: "Datasources"
 metadata:
   keywords:
   - "datasource"

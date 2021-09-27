@@ -24,7 +24,6 @@ import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaRecorder;
 import io.quarkus.amazon.lambda.runtime.FunctionError;
-import io.quarkus.amazon.lambda.runtime.LambdaBuildTimeConfig;
 import io.quarkus.amazon.lambda.runtime.LambdaConfig;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -241,21 +240,21 @@ public final class AmazonLambdaProcessor {
     @Record(value = ExecutionTime.RUNTIME_INIT)
     void startPoolLoop(AmazonLambdaRecorder recorder,
             ShutdownContextBuildItem shutdownContextBuildItem,
+            LaunchModeBuildItem launchModeBuildItem,
             List<ServiceStartBuildItem> orderServicesFirst // try to order this after service recorders
     ) {
-        recorder.startPollLoop(shutdownContextBuildItem);
+        recorder.startPollLoop(shutdownContextBuildItem, launchModeBuildItem.getLaunchMode());
     }
 
     @BuildStep
     @Record(value = ExecutionTime.RUNTIME_INIT)
-    void enableNativeEventLoop(LambdaBuildTimeConfig config,
-            AmazonLambdaRecorder recorder,
+    void startPoolLoopDevOrTest(AmazonLambdaRecorder recorder,
             List<ServiceStartBuildItem> orderServicesFirst, // force some ordering of recorders
             ShutdownContextBuildItem shutdownContextBuildItem,
             LaunchModeBuildItem launchModeBuildItem) {
         LaunchMode mode = launchModeBuildItem.getLaunchMode();
-        if (config.enablePollingJvmMode && mode.isDevOrTest()) {
-            recorder.startPollLoop(shutdownContextBuildItem);
+        if (mode.isDevOrTest()) {
+            recorder.startPollLoop(shutdownContextBuildItem, mode);
         }
     }
 

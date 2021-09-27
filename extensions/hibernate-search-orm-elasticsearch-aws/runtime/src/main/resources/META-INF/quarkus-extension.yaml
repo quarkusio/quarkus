@@ -21,3 +21,5 @@ metadata:
   - "data"
   - "cloud"
   status: "stable"
+  config:
+  - "quarkus.hibernate-search-orm."

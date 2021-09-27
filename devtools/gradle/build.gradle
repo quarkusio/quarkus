@@ -1,78 +1,70 @@
 plugins {
-    id 'com.gradle.plugin-publish' version '0.15.0'
-    id 'java-gradle-plugin'
-}
-if (JavaVersion.current().isJava9Compatible()) {
-    compileJava.options.compilerArgs.addAll(['--release', '11'])
-}
-compileJava {
-    options.encoding = 'UTF-8'
-    sourceCompatibility = '11'
-    targetCompatibility = '11'
+    id 'com.gradle.plugin-publish' version '0.16.0' apply false
 }
 
-compileTestJava {
-    options.encoding = 'UTF-8'
-}
+subprojects {
+    apply plugin: 'java-gradle-plugin'
+    apply plugin: 'com.gradle.plugin-publish'
+    apply plugin: 'maven-publish'
 
-repositories {
-    // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
-    if (System.properties.containsKey('maven.repo.local')) {
-        maven {
-            url System.properties.get('maven.repo.local')
+    if (JavaVersion.current().isJava9Compatible()) {
+        compileJava.options.compilerArgs.addAll(['--release', '11'])
+    }
+    compileJava {
+        options.encoding = 'UTF-8'
+        sourceCompatibility = '11'
+        targetCompatibility = '11'
+    }
+
+    compileTestJava {
+        options.encoding = 'UTF-8'
+    }
+
+    repositories {
+        // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
+        if (System.properties.containsKey('maven.repo.local')) {
+            maven {
+                url System.properties.get('maven.repo.local')
+            }
+        } else {
+            mavenLocal()
         }
-    } else {
-        mavenLocal()
+        mavenCentral()
     }
-    mavenCentral()
-}
 
-dependencies {
-    api gradleApi()
+    dependencies {
+        api gradleApi()
 
-    implementation "io.quarkus:quarkus-bootstrap-core:${version}"
-    implementation "io.quarkus:quarkus-devtools-common:${version}"
-    implementation "io.quarkus:quarkus-core-deployment:${version}"
+        implementation "io.quarkus:quarkus-bootstrap-core:${version}"
 
-    testImplementation "io.quarkus:quarkus-project-core-extension-codestarts:${version}"
-    testImplementation 'org.assertj:assertj-core:3.20.2'
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.2'
-    testImplementation "io.quarkus:quarkus-devmode-test-utils:${version}"
-    testImplementation gradleTestKit()
-}
-
-test {
-    // propagate the custom local maven repo, in case it's configured
-    if (System.properties.containsKey('maven.repo.local')) {
-        systemProperty 'maven.repo.local', System.properties.get('maven.repo.local')
+        testImplementation gradleTestKit()
+        testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+        testImplementation 'org.assertj:assertj-core:3.21.0'
     }
-    testLogging {
-        events "passed", "skipped", "failed"
-    }
-    useJUnitPlatform()
-}
 
-javadoc {
-    options.addStringOption('encoding', 'UTF-8')
-}
-
-pluginBundle {
-    website = 'https://quarkus.io/'
-    vcsUrl = 'https://github.com/quarkusio/quarkus'
-    tags = ['quarkus', 'quarkusio', 'graalvm']
-}
-
-gradlePlugin {
-    plugins {
-        quarkusPlugin {
-            id = 'io.quarkus'
-            implementationClass = 'io.quarkus.gradle.QuarkusPlugin'
-            displayName = 'Quarkus Plugin'
-            description = 'Builds a Quarkus application, and provides helpers to launch dev-mode, the Quarkus CLI, building of native images'
+    test {
+        // propagate the custom local maven repo, in case it's configured
+        if (System.properties.containsKey('maven.repo.local')) {
+            systemProperty 'maven.repo.local', System.properties.get('maven.repo.local')
         }
+        testLogging {
+            events "passed", "skipped", "failed"
+        }
+        useJUnitPlatform()
+    }
+
+    javadoc {
+        options.addStringOption('encoding', 'UTF-8')
+    }
+
+    pluginBundle {
+        website = 'https://quarkus.io/'
+        vcsUrl = 'https://github.com/quarkusio/quarkus'
+        tags = ['quarkus', 'quarkusio', 'graalvm']
     }
 }
 
 wrapper {
     distributionType = Wrapper.DistributionType.ALL
 }
+

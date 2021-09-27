@@ -120,6 +120,10 @@ public class QuarkusUnitTest
     private List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
 
     public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
+        return setExpectedException(expectedException, false);
+    }
+
+    public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException, boolean logMessage) {
         return assertException(t -> {
             Throwable i = t;
             boolean found = false;
@@ -130,8 +134,10 @@ public class QuarkusUnitTest
                 }
                 i = i.getCause();
             }
-
-            assertTrue(found, "Build failed with wrong exception, expected " + expectedException + " but got " + t);
+            if (found && logMessage) {
+                System.out.println("Build failed with the expected exception:" + i);
+            }
+            assertTrue(found, "Build failed with a wrong exception, expected " + expectedException + " but got " + t);
         });
     }
 
@@ -395,6 +401,9 @@ public class QuarkusUnitTest
             PropertyTestUtil.setLogFileProperty();
         }
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
+
+        ExclusivityChecker.checkTestType(extensionContext, QuarkusUnitTest.class);
+
         TestResourceManager testResourceManager = (TestResourceManager) store.get(TestResourceManager.class.getName());
         if (testResourceManager == null) {
             testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
@@ -563,11 +572,13 @@ public class QuarkusUnitTest
     public void afterAll(ExtensionContext extensionContext) throws Exception {
         actualTestClass = null;
         actualTestInstance = null;
+        List<LogRecord> records = null;
         if (assertLogRecords != null) {
-            assertLogRecords.accept(inMemoryLogHandler.records);
+            records = new ArrayList<>(inMemoryLogHandler.records);
         }
         rootLogger.setHandlers(originalHandlers);
         inMemoryLogHandler.clearRecords();
+        inMemoryLogHandler.setFilter(null);
 
         try {
             if (runningQuarkusApplication != null) {
@@ -587,6 +598,7 @@ public class QuarkusUnitTest
             originalClassLoader = null;
             timeoutTask.cancel();
             timeoutTask = null;
+            timeoutTimer.cancel();
             timeoutTimer = null;
             if (deploymentDir != null) {
                 FileUtil.deleteDirectory(deploymentDir);
@@ -595,9 +607,12 @@ public class QuarkusUnitTest
             if (afterAllCustomizer != null) {
                 afterAllCustomizer.run();
             }
+            ClearCache.clearAnnotationCache();
+            GroovyCacheCleaner.clearGroovyCache();
         }
-        ClearCache.clearAnnotationCache();
-        GroovyCacheCleaner.clearGroovyCache();
+        if (records != null) {
+            assertLogRecords.accept(records);
+        }
     }
 
     @Override

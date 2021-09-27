@@ -9,7 +9,8 @@ import picocli.CommandLine.Unmatched;
 
 @CommandLine.Command(name = "create", sortOptions = false, mixinStandardHelpOptions = false, header = "Create a new project.", subcommands = {
         CreateApp.class,
-        CreateCli.class /* , CreateExtension.class */ }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
+        CreateCli.class,
+        CreateExtension.class }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
 public class Create extends BaseCreateCommand {
 
     @Unmatched // avoids throwing errors for unmatched arguments

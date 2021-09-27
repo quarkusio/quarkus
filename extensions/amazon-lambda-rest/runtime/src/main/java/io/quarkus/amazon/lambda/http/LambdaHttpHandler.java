@@ -8,12 +8,12 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.jboss.logging.Logger;
 
-import com.amazonaws.serverless.proxy.internal.LambdaContainerHandler;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
@@ -124,7 +124,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                     if (baos != null) {
                         if (isBinary(responseBuilder.getMultiValueHeaders().getFirst("Content-Type"))) {
                             responseBuilder.setBase64Encoded(true);
-                            responseBuilder.setBody(Base64.getMimeEncoder().encodeToString(baos.toByteArray()));
+                            responseBuilder.setBody(Base64.getEncoder().encodeToString(baos.toByteArray()));
                         } else {
                             responseBuilder.setBody(new String(baos.toByteArray(), StandardCharsets.UTF_8));
                         }
@@ -193,7 +193,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         HttpContent requestContent = LastHttpContent.EMPTY_LAST_CONTENT;
         if (request.getBody() != null) {
             if (request.isBase64Encoded()) {
-                ByteBuf body = Unpooled.wrappedBuffer(Base64.getMimeDecoder().decode(request.getBody()));
+                ByteBuf body = Unpooled.wrappedBuffer(Base64.getDecoder().decode(request.getBody()));
                 requestContent = new DefaultLastHttpContent(body);
             } else {
                 ByteBuf body = Unpooled.copiedBuffer(request.getBody(), StandardCharsets.UTF_8); //TODO: do we need to look at the request encoding?
@@ -221,14 +221,9 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
 
     private boolean isBinary(String contentType) {
         if (contentType != null) {
-            int index = contentType.indexOf(';');
-            if (index >= 0) {
-                return LambdaContainerHandler.getContainerConfig().isBinaryContentType(contentType.substring(0, index));
-            } else {
-                return LambdaContainerHandler.getContainerConfig().isBinaryContentType(contentType);
-            }
+            String ct = contentType.toLowerCase(Locale.ROOT);
+            return !(ct.startsWith("text") || ct.contains("json") || ct.contains("xml") || ct.contains("yaml"));
         }
         return false;
     }
-
 }

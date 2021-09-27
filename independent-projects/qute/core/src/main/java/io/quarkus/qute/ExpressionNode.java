@@ -60,4 +60,12 @@ class ExpressionNode implements TemplateNode, Function<Object, CompletionStage<R
         return builder.toString();
     }
 
+    boolean hasEngineResultMappers() {
+        return !engine.getResultMappers().isEmpty();
+    }
+
+    String mapResult(Object result) {
+        return engine.mapResult(result, expression);
+    }
+
 }

@@ -1,0 +1,20 @@
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+        // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
+        if (System.properties.containsKey('maven.repo.local')) {
+            maven {
+                url System.properties.get('maven.repo.local')
+            }
+        } else {
+            mavenLocal()
+        }
+    }
+    plugins {
+        id 'io.quarkus' version "${quarkusPluginVersion}"
+        id 'org.jetbrains.kotlin.jvm' version "${kotlinVersion}"
+        id 'org.jetbrains.kotlin.plugin.allopen' version "${kotlinVersion}"
+    }
+}
+rootProject.name='code-with-quarkus'

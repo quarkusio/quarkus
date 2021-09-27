@@ -100,18 +100,7 @@
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <executions>
-                    <execution>
-                        <id>kapt</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>kapt</goal>
-                        </goals>
-                        <configuration>
-                            <annotationProcessors>
-                                <annotationProcessor>org.hibernate.jpamodelgen.JPAMetaModelEntityProcessor</annotationProcessor>
-                            </annotationProcessors>
-                        </configuration>
-                    </execution>
+                    <!-- see profile futher down for kapt execution -->
                     <execution>
                         <id>compile</id>
                         <phase>compile</phase>
@@ -184,4 +173,37 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <!-- Execute kapt, but not on Java 16 or higher due to
+            - https://youtrack.jetbrains.com/issue/KT-45545 (Java 16+)
+            - https://youtrack.jetbrains.com/issue/KT-47583 (Java 17+) -->
+        <profile>
+            <id>kapt-not-on-jdk16</id>
+            <activation>
+                <jdk>(,16)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jetbrains.kotlin</groupId>
+                        <artifactId>kotlin-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>kapt</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>kapt</goal>
+                                </goals>
+                                <configuration>
+                                    <annotationProcessors>
+                                        <annotationProcessor>org.hibernate.jpamodelgen.JPAMetaModelEntityProcessor</annotationProcessor>
+                                    </annotationProcessors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

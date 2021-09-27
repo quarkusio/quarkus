@@ -6,6 +6,7 @@ import static io.quarkus.deployment.util.ReflectUtil.reportError;
 import static io.quarkus.deployment.util.ReflectUtil.toError;
 import static io.quarkus.deployment.util.ReflectUtil.typeOfParameter;
 import static io.quarkus.deployment.util.ReflectUtil.unwrapInvocationTargetException;
+import static java.util.stream.Collectors.toSet;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -14,6 +15,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,13 +53,16 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
+import io.quarkus.runtime.configuration.PropertiesUtil;
 import io.smallrye.config.Converters;
 import io.smallrye.config.EnvConfigSource;
 import io.smallrye.config.Expressions;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.SysPropConfigSource;
 
 /**
  * A configuration reader.
@@ -89,14 +94,17 @@ public final class BuildTimeConfigurationReader {
         List<RootDefinition> buildTimeRoots = new ArrayList<>();
         Map<Class<?>, GroupDefinition> groups = new HashMap<>();
         for (Class<?> configRoot : configRoots) {
+            String prefix = "quarkus";
             String name = ConfigItem.HYPHENATED_ELEMENT_NAME;
             ConfigPhase phase = ConfigPhase.BUILD_TIME;
             ConfigRoot annotation = configRoot.getAnnotation(ConfigRoot.class);
             if (annotation != null) {
+                prefix = annotation.prefix();
                 name = annotation.name();
                 phase = annotation.phase();
             }
             RootDefinition.Builder defBuilder = new RootDefinition.Builder();
+            defBuilder.setPrefix(prefix);
             defBuilder.setConfigPhase(phase);
             defBuilder.setRootName(name);
             processClass(defBuilder, configRoot, groups);
@@ -270,9 +278,7 @@ public final class BuildTimeConfigurationReader {
 
         ReadResult run() {
             final StringBuilder nameBuilder;
-            nameBuilder = new StringBuilder().append("quarkus");
-            // eager init first
-            int len = nameBuilder.length();
+            nameBuilder = new StringBuilder();
             for (RootDefinition root : buildTimeVisibleRoots) {
                 Class<?> clazz = root.getConfigurationClass();
                 Object instance;
@@ -290,23 +296,21 @@ public final class BuildTimeConfigurationReader {
                     throw toError(e);
                 }
                 objectsByRootClass.put(clazz, instance);
-                String rootName = root.getRootName();
-                if (!rootName.isEmpty()) {
-                    nameBuilder.append('.').append(rootName);
-                }
+                nameBuilder.append(root.getName());
                 readConfigGroup(root, instance, nameBuilder);
-                nameBuilder.setLength(len);
+                nameBuilder.setLength(0);
             }
+
+            Set<String> registeredRoots = allRoots.stream().map(RootDefinition::getPrefix).collect(toSet());
             // sweep-up
             SmallRyeConfig runtimeDefaultsConfig = getConfigForRuntimeDefaults();
-            for (String propertyName : getAllProperties()) {
+            for (String propertyName : getAllProperties(registeredRoots)) {
                 if (propertyName.equals(ConfigSource.CONFIG_ORDINAL)) {
                     continue;
                 }
 
                 NameIterator ni = new NameIterator(propertyName);
-                if (ni.hasNext() && ni.nextSegmentEquals("quarkus")) {
-                    ni.next();
+                if (ni.hasNext() && PropertiesUtil.isPropertyInRoot(registeredRoots, ni)) {
                     // build time patterns
                     Container matched = buildTimePatternMap.match(ni);
                     if (matched instanceof FieldContainer) {
@@ -335,7 +339,6 @@ public final class BuildTimeConfigurationReader {
                     }
                     // build time (run time visible) patterns
                     ni.goToStart();
-                    ni.next();
                     matched = buildTimeRunTimePatternMap.match(ni);
                     if (matched instanceof FieldContainer) {
                         ni.goToEnd();
@@ -367,7 +370,6 @@ public final class BuildTimeConfigurationReader {
                     }
                     // run time patterns
                     ni.goToStart();
-                    ni.next();
                     matched = runTimePatternMap.match(ni);
                     if (matched != null) {
                         // it's a specified run-time default (record for later)
@@ -378,7 +380,6 @@ public final class BuildTimeConfigurationReader {
                     }
                     // also check for the bootstrap properties since those need to be added to specifiedRunTimeDefaultValues as well
                     ni.goToStart();
-                    ni.next();
                     matched = bootstrapPatternMap.match(ni);
                     if (matched != null) {
                         // it's a specified run-time default (record for later)
@@ -626,11 +627,15 @@ public final class BuildTimeConfigurationReader {
         private void readConfigValue(String fullName, ClassDefinition.ItemMember member, Object instance) {
             Field field = member.getField();
             Converter<?> converter = getConverter(config, field, ConverterType.of(field));
-            Object val = config.getValue(fullName, converter);
+
             try {
+                Object val = config.getValue(fullName, converter);
                 field.set(instance, val);
             } catch (IllegalAccessException e) {
                 throw toError(e);
+            } catch (Exception e) {
+                throw new ConfigurationException(e.getMessage(), e, Collections.singleton(fullName));
+
             }
         }
 
@@ -726,11 +731,23 @@ public final class BuildTimeConfigurationReader {
          * We collect all properties from ConfigSources, because Config#getPropertyNames exclude the active profiled
          * properties, meaning that the property is written in the default config source unprofiled. This may cause
          * issues if we run with a different profile and fallback to defaults.
+         *
+         * We also filter the properties coming from the System with the registered roots, because we don't want to
+         * record properties set by the compiling JVM (or other properties set that are only related to the build).
          */
-        private Set<String> getAllProperties() {
+        private Set<String> getAllProperties(final Set<String> registeredRoots) {
             Set<String> properties = new HashSet<>();
             for (ConfigSource configSource : config.getConfigSources()) {
-                properties.addAll(configSource.getPropertyNames());
+                if (configSource instanceof SysPropConfigSource) {
+                    for (String propertyName : configSource.getProperties().keySet()) {
+                        NameIterator ni = new NameIterator(propertyName);
+                        if (ni.hasNext() && PropertiesUtil.isPropertyInRoot(registeredRoots, ni)) {
+                            properties.add(propertyName);
+                        }
+                    }
+                } else {
+                    properties.addAll(configSource.getPropertyNames());
+                }
             }
             for (String propertyName : config.getPropertyNames()) {
                 properties.add(propertyName);

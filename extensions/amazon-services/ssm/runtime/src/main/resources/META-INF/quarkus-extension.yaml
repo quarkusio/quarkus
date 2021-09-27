@@ -9,4 +9,6 @@ metadata:
   guide: "https://quarkus.io/guides/amazon-ssm"
   categories:
     - "data"
-  status: "preview"
+  status: "stable"
+  config:
+  - "quarkus.ssm."

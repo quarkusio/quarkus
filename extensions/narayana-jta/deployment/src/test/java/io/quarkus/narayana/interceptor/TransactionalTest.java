@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.bootstrap.classloading.ClassLoaderLimiter;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class TransactionalTest {
@@ -24,7 +25,9 @@ public class TransactionalTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TransactionalTest.TransactionalBean.class, TestXAResource.class,
-                            TxAssertionData.class, TestException.class));
+                            TxAssertionData.class, TestException.class))
+            .addClassLoaderEventListener(ClassLoaderLimiter.builder()
+                    .neverLoadedRuntimeClassName("javax.xml.stream.XMLInputFactory").build());
 
     @Inject
     private TransactionManager tm;
@@ -180,31 +183,31 @@ public class TransactionalTest {
         @Transactional
         public void executeTransactionalThrowException(Class<? extends Throwable> throwable) throws Throwable {
             enlist();
-            throw throwable.newInstance();
+            throw throwable.getDeclaredConstructor().newInstance();
         }
 
         @Transactional(rollbackOn = Exception.class)
         public void executeTransactionalRollbackOnException(Class<? extends Throwable> throwable) throws Throwable {
             enlist();
-            throw throwable.newInstance();
+            throw throwable.getDeclaredConstructor().newInstance();
         }
 
         @Transactional(dontRollbackOn = RuntimeException.class)
         public void executeTransactionalDontRollbackOnRuntimeException(Class<? extends Throwable> throwable) throws Throwable {
             enlist();
-            throw throwable.newInstance();
+            throw throwable.getDeclaredConstructor().newInstance();
         }
 
         @Transactional(dontRollbackOn = Error.class)
         public void executeTransactionalDontRollbackOnError(Class<? extends Throwable> throwable) throws Throwable {
             enlist();
-            throw throwable.newInstance();
+            throw throwable.getDeclaredConstructor().newInstance();
         }
 
         @Transactional(dontRollbackOn = Exception.class, rollbackOn = Exception.class)
         public void executeTransactionalRollbackOnPriority(Class<? extends Throwable> throwable) throws Throwable {
             enlist();
-            throw throwable.newInstance();
+            throw throwable.getDeclaredConstructor().newInstance();
         }
     }
 }

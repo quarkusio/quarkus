@@ -31,6 +31,9 @@ public class GrpcServices extends AbstractMap<String, ServiceDefinitionAndStatus
     @Inject
     GrpcHealthStorage healthStorage;
 
+    @Inject
+    DelegatingGrpcBeansStorage delegatingBeansMapping;
+
     public List<ServiceDefinitionAndStatus> getInfos() {
         List<GrpcServiceDefinition> services = GrpcServerRecorder.getServices();
         List<ServiceDefinitionAndStatus> infos = new ArrayList<>(services.size());
@@ -70,7 +73,12 @@ public class GrpcServices extends AbstractMap<String, ServiceDefinitionAndStatus
             if (definition.service instanceof Subclass) {
                 instanceClass = instanceClass.getSuperclass();
             }
-            return instanceClass.getName();
+
+            String grpcBeanClassName = instanceClass.getName();
+
+            String userClass = delegatingBeansMapping.getUserClassName(grpcBeanClassName);
+
+            return userClass != null ? userClass : grpcBeanClassName;
         }
 
         public Collection<ServerMethodDefinition<?, ?>> getMethods() {
@@ -109,7 +117,7 @@ public class GrpcServices extends AbstractMap<String, ServiceDefinitionAndStatus
             }
             Map<String, String> prototypes = DevConsoleManager.getGlobal("io.quarkus.grpc.messagePrototypes");
             for (ServerMethodDefinition<?, ?> method : getMethods()) {
-                if (method.getMethodDescriptor().getType() == MethodType.UNARY
+                if (method.getMethodDescriptor().getType() != MethodType.UNKNOWN
                         && prototypes.containsKey(method.getMethodDescriptor().getFullMethodName() + "_REQUEST")) {
                     return true;
                 }
@@ -146,8 +154,8 @@ public class GrpcServices extends AbstractMap<String, ServiceDefinitionAndStatus
         }
 
         public boolean isTestable() {
-            return !configuration.server.ssl.certificate.isPresent()
-                    && !configuration.server.ssl.keyStore.isPresent();
+            return configuration.server.ssl.certificate.isEmpty()
+                    && configuration.server.ssl.keyStore.isEmpty();
         }
 
         public String getPrototype() {

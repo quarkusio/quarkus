@@ -53,6 +53,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricher;
 import io.quarkus.rest.client.reactive.HeaderFiller;
+import io.quarkus.rest.client.reactive.runtime.ConfigUtils;
 import io.quarkus.rest.client.reactive.runtime.MicroProfileRestClientRequestFilter;
 import io.quarkus.rest.client.reactive.runtime.NoOpHeaderFiller;
 import io.quarkus.runtime.util.HashUtil;
@@ -321,9 +322,19 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                 .trueBranch();
 
         if (values.length > 1 || !(values[0].startsWith("{") && values[0].endsWith("}"))) {
+            boolean required = annotation.valueWithDefault(index, "required").asBoolean();
             ResultHandle headerList = fillHeaders.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
             for (String value : values) {
-                fillHeaders.invokeInterfaceMethod(LIST_ADD_METHOD, headerList, fillHeaders.load(value));
+                if (value.startsWith("${") && value.endsWith("}")) {
+                    ResultHandle headerValueFromConfig = fillHeaders.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(ConfigUtils.class, "getConfigValue", String.class, String.class,
+                                    boolean.class),
+                            fillHeaders.load(value), fillHeaders.load(required));
+                    fillHeaders.ifNotNull(headerValueFromConfig)
+                            .trueBranch().invokeInterfaceMethod(LIST_ADD_METHOD, headerList, headerValueFromConfig);
+                } else {
+                    fillHeaders.invokeInterfaceMethod(LIST_ADD_METHOD, headerList, fillHeaders.load(value));
+                }
             }
 
             fillHeaders.invokeInterfaceMethod(MAP_PUT_METHOD, headerMap, fillHeaders.load(headerName), headerList);

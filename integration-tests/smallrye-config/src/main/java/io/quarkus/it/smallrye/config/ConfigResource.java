@@ -23,17 +23,20 @@ public class ConfigResource {
     @Path("/{name}")
     public Response configValue(@PathParam("name") final String name) {
         final io.smallrye.config.ConfigValue configValue = ((SmallRyeConfig) config).getConfigValue(name);
-        return Response.ok(new ConfigValue(configValue.getName(), configValue.getValue())).build();
+        return Response.ok(new ConfigValue(configValue.getName(), configValue.getValue(), configValue.getConfigSourceName()))
+                .build();
     }
 
     @RegisterForReflection
     public static class ConfigValue {
         final String name;
         final String value;
+        final String sourceName;
 
-        public ConfigValue(final String name, final String value) {
+        public ConfigValue(final String name, final String value, final String sourceName) {
             this.name = name;
             this.value = value;
+            this.sourceName = sourceName;
         }
 
         public String getName() {
@@ -42,6 +45,10 @@ public class ConfigResource {
 
         public String getValue() {
             return value;
+        }
+
+        public String getSourceName() {
+            return sourceName;
         }
     }
 }

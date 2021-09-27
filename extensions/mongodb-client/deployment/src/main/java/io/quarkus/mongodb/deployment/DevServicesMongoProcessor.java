@@ -3,29 +3,37 @@ package io.quarkus.mongodb.deployment;
 import static io.quarkus.mongodb.runtime.MongoClientBeanUtil.isDefault;
 
 import java.io.Closeable;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.utility.DockerImageName;
 
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.message.BasicNameValuePair;
+import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URLEncodedUtils;
+
 import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
+import io.quarkus.deployment.console.StartupLogCompressor;
+import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.mongodb.runtime.MongodbConfig;
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
 public class DevServicesMongoProcessor {
@@ -38,13 +46,15 @@ public class DevServicesMongoProcessor {
 
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
     public void startMongo(List<MongoConnectionNameBuildItem> mongoConnections,
             MongoClientBuildTimeConfig mongoClientBuildTimeConfig,
+            Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
+            BuildProducer<DevServicesConfigResultBuildItem> devServices,
+            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+            CuratedApplicationShutdownBuildItem closeBuildItem,
             LaunchModeBuildItem launchMode,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
-            BuildProducer<ServiceStartBuildItem> serviceStartBuildItemBuildProducer,
-            BuildProducer<DevServicesNativeConfigResultBuildItem> devServices) {
+            LoggingSetupBuildItem loggingSetupBuildItem) {
 
         List<String> connectionNames = new ArrayList<>(mongoConnections.size());
         for (MongoConnectionNameBuildItem mongoConnection : mongoConnections) {
@@ -65,10 +75,7 @@ public class DevServicesMongoProcessor {
         //figure out if we need to shut down and restart existing databases
         //if not and the DB's have already started we just return
         if (closeables != null) {
-            boolean restartRequired = launchMode.getLaunchMode() == LaunchMode.TEST;
-            if (!restartRequired) {
-                restartRequired = !currentCapturedProperties.equals(capturedProperties);
-            }
+            boolean restartRequired = !currentCapturedProperties.equals(capturedProperties);
             if (!restartRequired) {
                 return;
             }
@@ -87,15 +94,24 @@ public class DevServicesMongoProcessor {
 
         // TODO: we need to go through each connection
         String connectionName = connectionNames.get(0);
-        StartResult startResult = startMongo(connectionName, currentCapturedProperties.get(connectionName));
+        StartResult startResult;
+        StartupLogCompressor compressor = new StartupLogCompressor(
+                (launchMode.isTest() ? "(test) " : "") + "Mongo Dev Services Starting:", consoleInstalledBuildItem,
+                loggingSetupBuildItem);
+        try {
+            startResult = startMongo(connectionName, currentCapturedProperties.get(connectionName),
+                    devServicesSharedNetworkBuildItem.isPresent());
+            compressor.close();
+        } catch (Throwable t) {
+            compressor.closeAndDumpCaptured();
+            throw new RuntimeException(t);
+        }
         if (startResult != null) {
             currentCloseables.add(startResult.getCloseable());
             String connectionStringPropertyName = getConfigPrefix(connectionName) + "connection-string";
             String connectionStringPropertyValue = startResult.getUrl();
-            runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(
-                    connectionStringPropertyName, connectionStringPropertyValue));
             devServices.produce(
-                    new DevServicesNativeConfigResultBuildItem(connectionStringPropertyName, connectionStringPropertyValue));
+                    new DevServicesConfigResultBuildItem(connectionStringPropertyName, connectionStringPropertyValue));
         }
 
         if (first) {
@@ -117,23 +133,14 @@ public class DevServicesMongoProcessor {
                     capturedProperties = null;
                 }
             };
-            QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
-            Thread closeHookThread = new Thread(closeTask, "Mongo container shutdown thread");
-            Runtime.getRuntime().addShutdownHook(closeHookThread);
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(new Runnable() {
-                @Override
-                public void run() {
-                    Runtime.getRuntime().removeShutdownHook(closeHookThread);
-                }
-            });
+            closeBuildItem.addCloseTask(closeTask, true);
         }
         closeables = currentCloseables;
         capturedProperties = currentCapturedProperties;
 
     }
 
-    private StartResult startMongo(String connectionName, CapturedProperties capturedProperties) {
+    private StartResult startMongo(String connectionName, CapturedProperties capturedProperties, boolean useSharedNetwork) {
         if (!capturedProperties.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting devservices for " + (isDefault(connectionName) ? "default datasource" : connectionName)
@@ -161,16 +168,24 @@ public class DevServicesMongoProcessor {
 
         MongoDBContainer mongoDBContainer;
         if (capturedProperties.imageName != null) {
-            mongoDBContainer = new FixedExposedPortMongoDBContainer(
+            mongoDBContainer = new QuarkusMongoDBContainer(
                     DockerImageName.parse(capturedProperties.imageName).asCompatibleSubstituteFor("mongo"),
-                    capturedProperties.fixedExposedPort);
+                    capturedProperties.fixedExposedPort, useSharedNetwork);
         } else {
-            mongoDBContainer = new FixedExposedPortMongoDBContainer(capturedProperties.fixedExposedPort);
+            mongoDBContainer = new QuarkusMongoDBContainer(capturedProperties.fixedExposedPort, useSharedNetwork);
         }
         mongoDBContainer.start();
         Optional<String> databaseName = ConfigProvider.getConfig().getOptionalValue(configPrefix + "database", String.class);
+        String effectiveURL = databaseName.map(mongoDBContainer::getReplicaSetUrl).orElse(mongoDBContainer.getReplicaSetUrl());
+        if ((capturedProperties.connectionProperties != null) && !capturedProperties.connectionProperties.isEmpty()) {
+            effectiveURL = effectiveURL + "?"
+                    + URLEncodedUtils.format(
+                            capturedProperties.connectionProperties.entrySet().stream()
+                                    .map(e -> new BasicNameValuePair(e.getKey(), e.getValue())).collect(Collectors.toList()),
+                            StandardCharsets.UTF_8);
+        }
         return new StartResult(
-                databaseName.map(mongoDBContainer::getReplicaSetUrl).orElse(mongoDBContainer.getReplicaSetUrl()),
+                effectiveURL,
                 new Closeable() {
                     @Override
                     public void close() {
@@ -205,7 +220,7 @@ public class DevServicesMongoProcessor {
         DevServicesBuildTimeConfig devServicesConfig = mongoClientBuildTimeConfig.devservices;
         boolean devServicesEnabled = devServicesConfig.enabled.orElse(true);
         return new CapturedProperties(databaseName, connectionString, devServicesEnabled,
-                devServicesConfig.imageName.orElse(null), devServicesConfig.port.orElse(null));
+                devServicesConfig.imageName.orElse(null), devServicesConfig.port.orElse(null), devServicesConfig.properties);
     }
 
     private static class StartResult {
@@ -232,14 +247,16 @@ public class DevServicesMongoProcessor {
         private final boolean devServicesEnabled;
         private final String imageName;
         private final Integer fixedExposedPort;
+        private final Map<String, String> connectionProperties;
 
         public CapturedProperties(String database, String connectionString, boolean devServicesEnabled, String imageName,
-                Integer fixedExposedPort) {
+                Integer fixedExposedPort, Map<String, String> connectionProperties) {
             this.database = database;
             this.connectionString = connectionString;
             this.devServicesEnabled = devServicesEnabled;
             this.imageName = imageName;
             this.fixedExposedPort = fixedExposedPort;
+            this.connectionProperties = connectionProperties;
         }
 
         @Override
@@ -251,34 +268,65 @@ public class DevServicesMongoProcessor {
             CapturedProperties that = (CapturedProperties) o;
             return devServicesEnabled == that.devServicesEnabled && Objects.equals(database, that.database)
                     && Objects.equals(connectionString, that.connectionString) && Objects.equals(imageName, that.imageName)
-                    && Objects.equals(fixedExposedPort, that.fixedExposedPort);
+                    && Objects.equals(fixedExposedPort, that.fixedExposedPort)
+                    && Objects.equals(connectionProperties, that.connectionProperties);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(database, connectionString, devServicesEnabled, imageName, fixedExposedPort);
+            return Objects.hash(database, connectionString, devServicesEnabled, imageName, fixedExposedPort,
+                    connectionProperties);
         }
     }
 
-    private static final class FixedExposedPortMongoDBContainer extends MongoDBContainer {
+    private static final class QuarkusMongoDBContainer extends MongoDBContainer {
 
         private final Integer fixedExposedPort;
+        private final boolean useSharedNetwork;
+
+        private String hostName = null;
+
+        private static final int MONGODB_INTERNAL_PORT = 27017;
 
         @SuppressWarnings("deprecation")
-        private FixedExposedPortMongoDBContainer(Integer fixedExposedPort) {
+        private QuarkusMongoDBContainer(Integer fixedExposedPort, boolean useSharedNetwork) {
             this.fixedExposedPort = fixedExposedPort;
+            this.useSharedNetwork = useSharedNetwork;
         }
 
-        private FixedExposedPortMongoDBContainer(DockerImageName dockerImageName, Integer fixedExposedPort) {
+        private QuarkusMongoDBContainer(DockerImageName dockerImageName, Integer fixedExposedPort, boolean useSharedNetwork) {
             super(dockerImageName);
             this.fixedExposedPort = fixedExposedPort;
+            this.useSharedNetwork = useSharedNetwork;
         }
 
         @Override
         protected void configure() {
             super.configure();
+
+            if (useSharedNetwork) {
+                hostName = ConfigureUtil.configureSharedNetwork(this, "mongo");
+                return;
+            }
+
             if (fixedExposedPort != null) {
-                addFixedExposedPort(fixedExposedPort, 27017);
+                addFixedExposedPort(fixedExposedPort, MONGODB_INTERNAL_PORT);
+            }
+        }
+
+        @Override
+        public String getReplicaSetUrl(String databaseName) {
+            if (useSharedNetwork) {
+                if (!isRunning()) { // done by the super method
+                    throw new IllegalStateException("MongoDBContainer should be started first");
+                }
+                return String.format(
+                        "mongodb://%s:%d/%s",
+                        hostName,
+                        MONGODB_INTERNAL_PORT,
+                        databaseName);
+            } else {
+                return super.getReplicaSetUrl(databaseName);
             }
         }
     }

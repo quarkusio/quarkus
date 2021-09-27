@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.server.test.customexceptions;
 
+import static io.quarkus.resteasy.reactive.server.test.ExceptionUtil.removeStackTrace;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -23,17 +25,17 @@ public class FirstResource {
     @Produces("text/plain")
     public String throwsVariousExceptions(@RestQuery String name) {
         if (name.startsWith("IllegalArgument")) {
-            throw new IllegalArgumentException();
+            throw removeStackTrace(new IllegalArgumentException());
         } else if (name.startsWith("IllegalState")) {
-            throw new IllegalStateException("IllegalState");
+            throw removeStackTrace(new IllegalStateException("IllegalState"));
         } else if (name.startsWith("MyOther")) {
-            throw new MyOtherException();
+            throw removeStackTrace(new MyOtherException());
         } else if (name.startsWith("My")) {
-            throw new MyException();
+            throw removeStackTrace(new MyException());
         } else if (name.startsWith("Uni")) {
-            throw new UniException();
+            throw removeStackTrace(new UniException());
         }
-        throw new RuntimeException();
+        throw removeStackTrace(new RuntimeException());
     }
 
     @GET
@@ -52,12 +54,12 @@ public class FirstResource {
         } else if (name.startsWith("Uni")) {
             e = new UniException();
         }
-        return Uni.createFrom().failure(e);
+        return Uni.createFrom().failure(removeStackTrace(e));
     }
 
     @ServerExceptionMapper({ IllegalStateException.class, IllegalArgumentException.class })
-    public Response handleIllegal() {
-        return Response.status(409).build();
+    public Response handleIllegal(Exception e) {
+        return Response.status(409).entity(e.getMessage()).build();
     }
 
     @ServerExceptionMapper

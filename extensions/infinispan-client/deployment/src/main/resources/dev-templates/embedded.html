@@ -1,0 +1,15 @@
+{#if info:serverUrl != ""}
+<a target="_blank" href="http://{info:serverUrl}" class="badge badge-light">
+  <i class="fa fa-external-link-alt fa-fw"></i> Web Console</a>
+<br>
+{#else}
+<span class="badge badge-light">
+  <i class="fa fa-exclamation-triangle fa-fw"></i> Configuration is missing</span>
+<br>
+{/if}
+<a target="_blank" href="https://infinispan.org/documentation/" class="badge badge-light">
+  <i class="fas fa-info fa-fw"></i> Documentation</a>
+<br>
+<a  target="_blank" href="https://github.com/infinispan/infinispan-simple-tutorials" class="badge badge-light">
+  <i class="fa fa-hand-point-right fa-fw"></i> Code Tutorials</a>
+<br>

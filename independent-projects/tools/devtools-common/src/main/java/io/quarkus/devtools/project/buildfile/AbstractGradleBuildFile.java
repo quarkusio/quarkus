@@ -60,6 +60,11 @@ abstract class AbstractGradleBuildFile extends BuildFile {
         writeToProjectFile(getBuildGradlePath(), getModel().getBuildContent().getBytes());
     }
 
+    static boolean containsProperty(ArtifactCoords coords) {
+        return coords.getGroupId().charAt(0) == '$' || coords.getArtifactId().charAt(0) == '$'
+                || coords.getVersion() != null && coords.getVersion().charAt(0) == '$';
+    }
+
     static String createDependencyCoordinatesString(ArtifactCoords coords, boolean managed, char quoteChar) {
         StringBuilder newDependency = new StringBuilder().append(quoteChar)
                 .append(coords.getGroupId()).append(":").append(coords.getArtifactId());

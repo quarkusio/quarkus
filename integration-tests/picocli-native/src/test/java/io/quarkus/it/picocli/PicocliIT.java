@@ -1,7 +1,7 @@
 package io.quarkus.it.picocli;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.main.QuarkusMainIntegrationTest;
 
-@NativeImageTest
+@QuarkusMainIntegrationTest
 public class PicocliIT extends PicocliTest {
 }

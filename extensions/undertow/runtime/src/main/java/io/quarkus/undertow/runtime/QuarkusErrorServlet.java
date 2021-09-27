@@ -65,7 +65,7 @@ public class QuarkusErrorServlet extends HttpServlet {
     }
 
     private static String generateHeaderMessage(final Throwable exception, String uuid) {
-        return String.format("Error handling %s, %s: %s", uuid, exception.getClass().getName(),
+        return String.format("Error id %s, %s: %s", uuid, exception.getClass().getName(),
                 extractFirstLine(exception.getMessage()));
     }
 

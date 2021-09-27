@@ -8,3 +8,8 @@ metadata:
   categories:
   - "cloud"
   status: "stable"
+  config:
+  - "quarkus.container-image."
+  - "quarkus.kubernetes."
+  - "quarkus.openshift."
+  - "quarkus.knative."

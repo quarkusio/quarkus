@@ -67,7 +67,7 @@ public class RequestMapper<T> {
                 if (segment.type == URITemplate.Type.CUSTOM_REGEX) {
                     Matcher matcher = segment.pattern.matcher(path);
                     matched = matcher.find(matchPos);
-                    if (!matched) {
+                    if (!matched || matcher.start() != matchPos) {
                         break;
                     }
                     matchPos = matcher.end();

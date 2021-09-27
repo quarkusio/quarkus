@@ -24,8 +24,6 @@ import io.quarkus.resteasy.reactive.links.runtime.LinksContainer;
 
 final class LinksContainerFactory {
 
-    private static final DotName REST_LINK_ANNOTATION = DotName.createSimple(RestLink.class.getName());
-
     private final IndexView index;
 
     LinksContainerFactory(IndexView index) {
@@ -41,7 +39,7 @@ final class LinksContainerFactory {
         for (ResourceClass resourceClass : resourceClasses) {
             for (ResourceMethod resourceMethod : resourceClass.getMethods()) {
                 MethodInfo resourceMethodInfo = getResourceMethodInfo(resourceClass, resourceMethod);
-                AnnotationInstance restLinkAnnotation = resourceMethodInfo.annotation(REST_LINK_ANNOTATION);
+                AnnotationInstance restLinkAnnotation = resourceMethodInfo.annotation(DotNames.REST_LINK_ANNOTATION);
                 if (restLinkAnnotation != null) {
                     LinkInfo linkInfo = getLinkInfo(resourceClass, resourceMethod, resourceMethodInfo,
                             restLinkAnnotation);
@@ -120,7 +118,7 @@ final class LinksContainerFactory {
         List<Type> parameterTypes = resourceMethodInfo.parameters();
         MethodParameter[] parameters = resourceMethod.getParameters();
         for (int i = 0; i < parameters.length; i++) {
-            if (!parameterTypes.get(i).name().equals(DotName.createSimple(parameters[i].type))) {
+            if (!parameterTypes.get(i).name().equals(DotName.createSimple(parameters[i].declaredType))) {
                 return false;
             }
         }

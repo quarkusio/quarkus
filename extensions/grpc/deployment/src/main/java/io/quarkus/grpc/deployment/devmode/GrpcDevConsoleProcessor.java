@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Singleton;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -20,11 +22,16 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
 
+import grpc.health.v1.HealthGrpc;
 import io.grpc.MethodDescriptor;
 import io.grpc.MethodDescriptor.Marshaller;
 import io.grpc.MethodDescriptor.PrototypeMarshaller;
 import io.grpc.ServiceDescriptor;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.runtime.BeanLookupSupplier;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -38,8 +45,12 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.testing.GrpcWebSocketProxy;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.grpc.deployment.DelegatingGrpcBeanBuildItem;
 import io.quarkus.grpc.deployment.GrpcDotNames;
 import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
+import io.quarkus.grpc.runtime.devmode.DelegatingGrpcBeansStorage;
 import io.quarkus.grpc.runtime.devmode.GrpcDevConsoleRecorder;
 import io.quarkus.grpc.runtime.devmode.GrpcServices;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
@@ -54,6 +65,39 @@ public class GrpcDevConsoleProcessor {
         infos.produce(
                 new DevConsoleRuntimeTemplateInfoBuildItem("grpcServices",
                         new BeanLookupSupplier(GrpcServices.class)));
+    }
+
+    @IfBuildProfile("dev")
+    @BuildStep
+    void prepareDelegatingBeanStorage(
+            List<DelegatingGrpcBeanBuildItem> delegatingBeans,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            BuildProducer<GeneratedBeanBuildItem> generatedBeans) {
+        String className = "io.quarkus.grpc.internal.DelegatingGrpcBeansStorageImpl";
+        try (ClassCreator classCreator = ClassCreator.builder()
+                .className(className)
+                .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeans))
+                .superClass(DelegatingGrpcBeansStorage.class)
+                .build()) {
+            classCreator.addAnnotation(Singleton.class.getName());
+            MethodCreator constructor = classCreator
+                    .getMethodCreator(io.quarkus.gizmo.MethodDescriptor.ofConstructor(className));
+            constructor.invokeSpecialMethod(io.quarkus.gizmo.MethodDescriptor.ofConstructor(DelegatingGrpcBeansStorage.class),
+                    constructor.getThis());
+
+            for (DelegatingGrpcBeanBuildItem delegatingBean : delegatingBeans) {
+                constructor.invokeVirtualMethod(
+                        io.quarkus.gizmo.MethodDescriptor.ofMethod(DelegatingGrpcBeansStorage.class, "addDelegatingMapping",
+                                void.class,
+                                String.class, String.class),
+                        constructor.getThis(),
+                        constructor.load(delegatingBean.userDefinedBean.name().toString()),
+                        constructor.load(delegatingBean.generatedBean.name().toString()));
+            }
+            constructor.returnValue(null);
+        }
+
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(className));
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -120,6 +164,7 @@ public class GrpcDevConsoleProcessor {
         for (String className : serviceClassNames) {
             serviceClasses.add(tccl.loadClass(className));
         }
+        serviceClasses.add(HealthGrpc.class);
         return serviceClasses;
     }
 }

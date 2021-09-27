@@ -24,8 +24,6 @@ import org.junit.platform.launcher.PostDiscoveryFilter;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.deployment.dev.ClassScanResult;
 import io.quarkus.deployment.dev.DevModeContext;
-import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
-import io.quarkus.dev.testing.TestWatchedFiles;
 import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 
 public class TestRunner {
@@ -77,14 +75,20 @@ public class TestRunner {
     }
 
     public void runFailedTests() {
-        runTests(null, true);
+        runTests(null, true, false);
     }
 
     public void runTests(ClassScanResult classScanResult) {
-        runTests(classScanResult, false);
+        runTests(classScanResult, false, false);
     }
 
-    private void runTests(ClassScanResult classScanResult, boolean reRunFailures) {
+    /**
+     *
+     * @param classScanResult The changed classes
+     * @param reRunFailures If failures should be re-run
+     * @param runningQueued If this is running queued up changes, so we expect 'testsRunning' to be true
+     */
+    private void runTests(ClassScanResult classScanResult, boolean reRunFailures, boolean runningQueued) {
         if (compileProblem != null) {
             return;
         }
@@ -99,7 +103,7 @@ public class TestRunner {
             return;
         }
         synchronized (TestRunner.this) {
-            if (testsRunning) {
+            if (testsRunning && !runningQueued) {
                 if (reRunFailures) {
                     log.error("Not re-running failed tests, as tests are already in progress.");
                     return;
@@ -133,14 +137,15 @@ public class TestRunner {
                                 if (testsQueued) {
                                     testsQueued = false;
                                     run = true;
+                                } else {
+                                    testsRunning = false;
                                 }
                                 current = queuedChanges;
                                 queuedChanges = null;
                             }
-                            testsRunning = false;
                         }
                         if (run) {
-                            runTests(current);
+                            runTests(current, false, true);
                         }
                     }
                 } catch (Throwable t) {
@@ -246,10 +251,6 @@ public class TestRunner {
         runner.runTests();
         synchronized (this) {
             runner = null;
-        }
-        Map<String, Boolean> watched = TestWatchedFiles.retrieveWatchedFilePaths();
-        if (watched != null) {
-            RuntimeUpdatesProcessor.INSTANCE.setWatchedFilePaths(watched, true);
         }
         if (disabled) {
             return;

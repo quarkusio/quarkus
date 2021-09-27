@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.apache.commons.lang3.RandomStringUtils;
@@ -12,17 +13,17 @@ import org.jboss.logging.Logger;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.vault.VaultContainer;
 
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Produce;
-import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.runtime.LaunchMode;
+import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
+import io.quarkus.deployment.console.StartupLogCompressor;
+import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.vault.runtime.VaultVersions;
 import io.quarkus.vault.runtime.config.DevServicesConfig;
@@ -41,21 +42,19 @@ public class DevServicesVaultProcessor {
     private static volatile boolean first = true;
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
-    @Produce(ServiceStartBuildItem.class)
-    @BuildStep(onlyIfNot = IsNormal.class)
-    public void startVaultContainers(LaunchModeBuildItem launchMode,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfiguration,
-            BuildProducer<DevServicesNativeConfigResultBuildItem> devConfig, VaultBuildTimeConfig config) {
+    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
+    public void startVaultContainers(BuildProducer<DevServicesConfigResultBuildItem> devConfig, VaultBuildTimeConfig config,
+            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+            LaunchModeBuildItem launchMode,
+            CuratedApplicationShutdownBuildItem closeBuildItem,
+            LoggingSetupBuildItem loggingSetupBuildItem) {
 
         DevServicesConfig currentDevServicesConfiguration = config.devservices;
 
         // figure out if we need to shut down and restart any existing Vault container
         // if not and the Vault container have already started we just return
         if (closeables != null) {
-            boolean restartRequired = launchMode.getLaunchMode() == LaunchMode.TEST;
-            if (!restartRequired) {
-                restartRequired = !currentDevServicesConfiguration.equals(capturedDevServicesConfiguration);
-            }
+            boolean restartRequired = !currentDevServicesConfiguration.equals(capturedDevServicesConfiguration);
             if (!restartRequired) {
                 return;
             }
@@ -72,15 +71,21 @@ public class DevServicesVaultProcessor {
 
         capturedDevServicesConfiguration = currentDevServicesConfiguration;
 
-        StartResult startResult = startContainer(currentDevServicesConfiguration);
+        StartResult startResult;
+
+        StartupLogCompressor compressor = new StartupLogCompressor(
+                (launchMode.isTest() ? "(test) " : "") + "Vault Dev Services Starting:", consoleInstalledBuildItem,
+                loggingSetupBuildItem);
+        try {
+            startResult = startContainer(currentDevServicesConfiguration);
+            compressor.close();
+        } catch (Throwable t) {
+            compressor.closeAndDumpCaptured();
+            throw new RuntimeException(t);
+        }
         if (startResult == null) {
             return;
         }
-
-        runTimeConfiguration.produce(new RunTimeConfigurationDefaultBuildItem(URL_CONFIG_KEY, startResult.url));
-        runTimeConfiguration
-                .produce(new RunTimeConfigurationDefaultBuildItem(CLIENT_TOKEN_CONFIG_KEY, startResult.clientToken));
-
         Map<String, String> connectionProperties = new HashMap<>();
         connectionProperties.put(URL_CONFIG_KEY, startResult.url);
         connectionProperties.put(CLIENT_TOKEN_CONFIG_KEY, startResult.clientToken);
@@ -106,19 +111,10 @@ public class DevServicesVaultProcessor {
                     capturedDevServicesConfiguration = null;
                 }
             };
-            QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
-            Thread closeHookThread = new Thread(closeTask, "Vault container shutdown thread");
-            Runtime.getRuntime().addShutdownHook(closeHookThread);
-            ((QuarkusClassLoader) cl.parent()).addCloseTask(new Runnable() {
-                @Override
-                public void run() {
-                    Runtime.getRuntime().removeShutdownHook(closeHookThread);
-                }
-            });
+            closeBuildItem.addCloseTask(closeTask, true);
         }
         for (Map.Entry<String, String> entry : connectionProperties.entrySet()) {
-            devConfig.produce(new DevServicesNativeConfigResultBuildItem(entry.getKey(), entry.getValue()));
+            devConfig.produce(new DevServicesConfigResultBuildItem(entry.getKey(), entry.getValue()));
         }
     }
 

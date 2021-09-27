@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using HashiCorp Vault's Transit Secret Engine
+= Using HashiCorp Vault's Transit Secret Engine
 
 include::./attributes.adoc[]
 :root-token: s.5VUS8pte13RqekCB2fmMT3u2
@@ -146,7 +146,7 @@ First, let's create a simple Quarkus application with Vault and Jackson extensio
 
 [source,bash, subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=vault-transit-quickstart \
     -DclassName="org.acme.quickstart.GreetingResource" \

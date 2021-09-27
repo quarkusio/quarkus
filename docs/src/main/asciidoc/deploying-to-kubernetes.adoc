@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Kubernetes extension
+= Kubernetes extension
 
 include::./attributes.adoc[]
 
@@ -29,7 +29,7 @@ Let's create a new project that contains both the Kubernetes and Jib extensions:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kubernetes-quickstart \
     -DclassName="org.acme.rest.GreetingResource" \
@@ -283,6 +283,7 @@ quarkus.kubernetes.env.vars.my-env-var=foobar
 The command above will add `MY_ENV_VAR=foobar` as an environment variable.
 Please note that the key `my-env-var` will be converted to uppercase and dashes will be replaced by underscores resulting in `MY_ENV_VAR`.
 
+[[secret-mapping]]
 ===== Environment variables from Secret
 
 To add all key/value pairs of `Secret` as environment variables just apply the following configuration, separating each `Secret`
@@ -1107,7 +1108,7 @@ Each time deployment is requested, a container image build will be implicitly tr
 
 === Deploying
 
-When deployment is enabled, the Kubernetes extension will select the resources specified by `quarkus.kubernetes.deployment.target` and deploy them.
+When deployment is enabled, the Kubernetes extension will select the resources specified by `quarkus.kubernetes.deployment-target` and deploy them.
 This assumes that a `.kube/config` is available in your user directory that points to the target Kubernetes cluster.
 In other words the extension will use whatever cluster `kubectl` uses. The same applies to credentials.
 

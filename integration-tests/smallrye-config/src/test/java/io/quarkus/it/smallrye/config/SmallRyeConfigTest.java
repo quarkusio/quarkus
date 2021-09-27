@@ -81,4 +81,21 @@ public class SmallRyeConfigTest {
                 .statusCode(OK.getStatusCode())
                 .body("value", equalTo("1234"));
     }
+
+    @Test
+    void userConfig() {
+        given()
+                .get("/config/{name}", "user.config.prop")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body("value", equalTo("1234"))
+                .body("sourceName", equalTo("UserConfigSource"));
+
+        given()
+                .get("/config/{name}", "user.config.provider.prop")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body("value", equalTo("1234"))
+                .body("sourceName", equalTo("UserConfigSource"));
+    }
 }

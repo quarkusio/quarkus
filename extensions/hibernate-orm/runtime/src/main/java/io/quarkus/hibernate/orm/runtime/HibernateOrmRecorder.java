@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -20,6 +21,7 @@ import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
+import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
 import io.quarkus.hibernate.orm.runtime.session.ForwardingSession;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.runtime.annotations.Recorder;
@@ -54,6 +56,12 @@ public class HibernateOrmRecorder {
     public BeanContainerListener initMetadata(List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors,
             Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators,
             PreGeneratedProxies proxyDefinitions) {
+        SchemaManagementIntegrator.clearDsMap();
+        for (QuarkusPersistenceUnitDefinition i : parsedPersistenceXmlDescriptors) {
+            if (i.getDataSource().isPresent()) {
+                SchemaManagementIntegrator.mapDatasource(i.getDataSource().get(), i.getName());
+            }
+        }
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer beanContainer) {
@@ -73,7 +81,7 @@ public class HibernateOrmRecorder {
     }
 
     public Supplier<DataSourceTenantConnectionResolver> dataSourceTenantConnectionResolver(String persistenceUnitName,
-            String dataSourceName,
+            Optional<String> dataSourceName,
             MultiTenancyStrategy multiTenancyStrategy, String multiTenancySchemaDataSourceName) {
         return new Supplier<DataSourceTenantConnectionResolver>() {
             @Override
@@ -118,5 +126,4 @@ public class HibernateOrmRecorder {
             }
         };
     }
-
 }

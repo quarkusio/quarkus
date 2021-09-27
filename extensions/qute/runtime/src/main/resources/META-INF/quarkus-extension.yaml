@@ -5,7 +5,11 @@ metadata:
   keywords:
   - "templating"
   - "templates"
+  - "template"
+  - "html"
   guide: "https://quarkus.io/guides/qute"
   categories:
   - "miscellaneous"
   status: "stable"
+  config:
+  - "quarkus.qute."

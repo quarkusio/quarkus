@@ -35,7 +35,8 @@ import javax.enterprise.inject.spi.ObserverMethod;
 import javax.enterprise.util.TypeLiteral;
 import javax.transaction.RollbackException;
 import javax.transaction.Synchronization;
-import javax.transaction.TransactionSynchronizationRegistry;
+import javax.transaction.SystemException;
+import javax.transaction.TransactionManager;
 import org.jboss.logging.Logger;
 
 /**
@@ -55,6 +56,8 @@ class EventImpl<T> implements Event<T> {
     private final ConcurrentMap<Class<?>, Notifier<? super T>> notifiers;
 
     private transient volatile Notifier<? super T> lastNotifier;
+
+    private static final Logger LOGGER = Logger.getLogger(EventImpl.class);
 
     EventImpl(Type eventType, Set<Annotation> qualifiers) {
         this.eventType = initEventType(eventType);
@@ -115,6 +118,7 @@ class EventImpl<T> implements Event<T> {
 
     @Override
     public Event<T> select(Annotation... qualifiers) {
+        Qualifiers.verify(qualifiers);
         Set<Annotation> mergedQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergedQualifiers, qualifiers);
         return new EventImpl<T>(eventType, mergedQualifiers);
@@ -122,6 +126,7 @@ class EventImpl<T> implements Event<T> {
 
     @Override
     public <U extends T> Event<U> select(Class<U> subtype, Annotation... qualifiers) {
+        Qualifiers.verify(qualifiers);
         Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergerdQualifiers, qualifiers);
         return new EventImpl<U>(subtype, mergerdQualifiers);
@@ -129,6 +134,11 @@ class EventImpl<T> implements Event<T> {
 
     @Override
     public <U extends T> Event<U> select(TypeLiteral<U> subtype, Annotation... qualifiers) {
+        Qualifiers.verify(qualifiers);
+        if (Types.containsTypeVariable(subtype.getType())) {
+            throw new IllegalArgumentException(
+                    "Event#select(TypeLiteral, Annotation...) cannot be used with type variable parameter");
+        }
         Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergerdQualifiers, qualifiers);
         return new EventImpl<U>(subtype.getType(), mergerdQualifiers);
@@ -239,35 +249,47 @@ class EventImpl<T> implements Event<T> {
 
                 if (!async && hasTxObservers) {
                     // Note that tx observers are never async
-                    InstanceHandle<TransactionSynchronizationRegistry> registryInstance = Arc.container()
-                            .instance(TransactionSynchronizationRegistry.class);
+                    InstanceHandle<TransactionManager> transactionManagerInstance = Arc.container()
+                            .instance(TransactionManager.class);
 
-                    if (registryInstance.isAvailable() &&
-                            registryInstance.get().getTransactionStatus() == javax.transaction.Status.STATUS_ACTIVE) {
-                        // we have one or more transactional OM, and TransactionSynchronizationRegistry is available
-                        // we attempt to register a JTA synchronization
-                        List<DeferredEventNotification<?>> deferredEvents = new ArrayList<>();
-                        EventContext eventContext = new EventContextImpl<>(event, eventMetadata);
+                    try {
+                        if (transactionManagerInstance.isAvailable() &&
+                                transactionManagerInstance.get().getStatus() == javax.transaction.Status.STATUS_ACTIVE) {
+                            // we have one or more transactional OM, and TransactionManager is available
+                            // we attempt to register a JTA synchronization
+                            List<DeferredEventNotification<?>> deferredEvents = new ArrayList<>();
+                            EventContext eventContext = new EventContextImpl<>(event, eventMetadata);
 
-                        for (ObserverMethod<? super T> om : observerMethods) {
-                            if (isTxObserver(om)) {
-                                deferredEvents.add(new DeferredEventNotification<>(om, eventContext,
-                                        Status.valueOf(om.getTransactionPhase())));
+                            for (ObserverMethod<? super T> om : observerMethods) {
+                                if (isTxObserver(om)) {
+                                    deferredEvents.add(new DeferredEventNotification<>(om, eventContext,
+                                            Status.valueOf(om.getTransactionPhase())));
+                                }
+                            }
+
+                            Synchronization sync = new ArcSynchronization(deferredEvents);
+                            TransactionManager txManager = transactionManagerInstance.get();
+                            try {
+                                // NOTE - We are using standard synchronization on purpose as that seems more
+                                // fitting than interposed sync. Either way will have some use-cases that won't work.
+                                // See for instance discussions on https://github.com/eclipse-ee4j/cdi/issues/467
+                                txManager.getTransaction().registerSynchronization(sync);
+                                // registration succeeded, notify all non-tx observers synchronously
+                                predicate = predicate.and(this::isNotTxObserver);
+                            } catch (Exception e) {
+                                if (e.getCause() instanceof RollbackException
+                                        || e.getCause() instanceof IllegalStateException
+                                        || e.getCause() instanceof SystemException) {
+                                    // registration failed, AFTER_SUCCESS OMs are accordingly to CDI spec left out
+                                    predicate = predicate.and(this::isNotAfterSuccess);
+                                }
                             }
                         }
-
-                        Synchronization sync = new ArcSynchronization(deferredEvents);
-                        TransactionSynchronizationRegistry registry = registryInstance.get();
-                        try {
-                            registry.registerInterposedSynchronization(sync);
-                            // registration succeeded, notify all non-tx observers synchronously
-                            predicate = predicate.and(this::isNotTxObserver);
-                        } catch (Exception e) {
-                            if (e.getCause() instanceof RollbackException || e.getCause() instanceof IllegalStateException) {
-                                // registration failed, AFTER_SUCCESS OMs are accordingly to CDI spec left out
-                                predicate = predicate.and(this::isNotAfterSuccess);
-                            }
-                        }
+                    } catch (SystemException e) {
+                        // In theory, this can be thrown by TransactionManager#getStatus() at which point we cannot even
+                        // determine if we should register some synchronization, therefore, we only log this
+                        LOGGER.debugf("Failure when trying to invoke TransactionManager#getStatus(). Stacktrace: %s",
+                                e.getCause() != null ? e.getCause() : e);
                     }
                 }
 

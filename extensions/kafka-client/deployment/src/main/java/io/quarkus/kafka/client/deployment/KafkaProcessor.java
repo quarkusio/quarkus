@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import javax.security.auth.spi.LoginModule;
@@ -69,6 +70,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
+import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -123,6 +125,16 @@ public class KafkaProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.KAFKA_CLIENT);
+    }
+
+    @BuildStep
+    void logging(BuildProducer<LogCategoryBuildItem> log) {
+        // Reduce the log level of Kafka as it tends to log a bit too much.
+        // See - https://github.com/quarkusio/quarkus/issues/20170
+        log.produce(new LogCategoryBuildItem("org.apache.kafka.clients", Level.WARNING));
+        log.produce(new LogCategoryBuildItem("org.apache.kafka.common.utils", Level.WARNING));
+        log.produce(new LogCategoryBuildItem("org.apache.kafka.common.metrics", Level.WARNING));
+
     }
 
     @BuildStep

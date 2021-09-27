@@ -125,6 +125,12 @@ public class TestEndpoint {
                                 Assertions.assertEquals(1, persons.size());
                                 Assertions.assertEquals(person, persons.get(0));
 
+                                // full form
+                                return Person.find("FROM Person2 WHERE name = ?1", "stef").list();
+                            }).flatMap(persons -> {
+                                Assertions.assertEquals(1, persons.size());
+                                Assertions.assertEquals(person, persons.get(0));
+
                                 return Person.find("name = ?1", "stef").withLock(LockModeType.PESSIMISTIC_READ).list();
                             }).flatMap(persons -> {
                                 Assertions.assertEquals(1, persons.size());
@@ -290,6 +296,32 @@ public class TestEndpoint {
                                 Assertions.assertEquals(1, count);
 
                                 return Person.delete("name", "stef");
+                            }).flatMap(count -> {
+                                Assertions.assertEquals(1, count);
+
+                                return makeSavedPerson();
+                            });
+                }).flatMap(person -> {
+
+                    // full form
+                    return Dog.delete("FROM Dog WHERE owner = :owner", Parameters.with("owner", person))
+                            .flatMap(count -> {
+                                Assertions.assertEquals(1, count);
+
+                                return Person.delete("FROM Person2 WHERE name = ?1", "stef");
+                            }).flatMap(count -> {
+                                Assertions.assertEquals(1, count);
+
+                                return makeSavedPerson();
+                            });
+                }).flatMap(person -> {
+
+                    // full form
+                    return Dog.delete("DELETE FROM Dog WHERE owner = :owner", Parameters.with("owner", person))
+                            .flatMap(count -> {
+                                Assertions.assertEquals(1, count);
+
+                                return Person.delete("DELETE FROM Person2 WHERE name = ?1", "stef");
                             }).map(count -> {
                                 Assertions.assertEquals(1, count);
 
@@ -1006,6 +1038,31 @@ public class TestEndpoint {
                                 Assertions.assertEquals(1, count);
 
                                 return personDao.delete("name", "stef");
+                            }).flatMap(count -> {
+                                Assertions.assertEquals(1, count);
+
+                                return makeSavedPersonDao();
+                            });
+                }).flatMap(person -> {
+
+                    // full form
+                    return dogDao.delete("FROM Dog WHERE owner = :owner", Parameters.with("owner", person))
+                            .flatMap(count -> {
+                                Assertions.assertEquals(1, count);
+
+                                return personDao.delete("FROM Person2 WHERE name = ?1", "stef");
+                            }).flatMap(count -> {
+                                Assertions.assertEquals(1, count);
+
+                                return makeSavedPersonDao();
+                            });
+                }).flatMap(person -> {
+
+                    return dogDao.delete("DELETE FROM Dog WHERE owner = :owner", Parameters.with("owner", person))
+                            .flatMap(count -> {
+                                Assertions.assertEquals(1, count);
+
+                                return personDao.delete("DELETE FROM Person2 WHERE name = ?1", "stef");
                             }).map(count -> {
                                 Assertions.assertEquals(1, count);
 

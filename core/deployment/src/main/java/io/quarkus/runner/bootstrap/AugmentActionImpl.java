@@ -42,7 +42,7 @@ import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.ExtensionLoader;
 import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
-import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceHandledBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
@@ -54,6 +54,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.dev.spi.DevModeType;
@@ -199,7 +200,8 @@ public class AugmentActionImpl implements AugmentAction {
             throw new IllegalStateException("Can only create a production application when using NORMAL launch mode");
         }
         ClassLoader classLoader = curatedApplication.createDeploymentClassLoader();
-        BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, ArtifactResultBuildItem.class);
+        BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, ArtifactResultBuildItem.class,
+                DeploymentResultBuildItem.class);
 
         String debugSourcesDir = BootstrapDebug.DEBUG_SOURCES_DIR;
         if (debugSourcesDir != null) {
@@ -319,9 +321,9 @@ public class AugmentActionImpl implements AugmentAction {
             chainBuilder
                     .addInitial(ShutdownContextBuildItem.class)
                     .addInitial(LaunchModeBuildItem.class)
+                    .addInitial(CuratedApplicationShutdownBuildItem.class)
                     .addInitial(LiveReloadBuildItem.class)
-                    .addInitial(RawCommandLineArgumentsBuildItem.class)
-                    .addFinal(ConfigDescriptionBuildItem.class);
+                    .addInitial(RawCommandLineArgumentsBuildItem.class);
             chainBuild.accept(chainBuilder);
 
             BuildChain chain = chainBuilder
@@ -333,8 +335,10 @@ public class AugmentActionImpl implements AugmentAction {
                             auxiliaryApplication,
                             Optional.ofNullable(curatedApplication.getQuarkusBootstrap().isHostApplicationIsTestOnly()
                                     ? DevModeType.TEST_ONLY
-                                    : (auxiliaryApplication ? DevModeType.LOCAL : null))))
+                                    : (auxiliaryApplication ? DevModeType.LOCAL : null)),
+                            curatedApplication.getQuarkusBootstrap().isTest()))
                     .produce(new ShutdownContextBuildItem())
+                    .produce(new CuratedApplicationShutdownBuildItem(curatedApplication.getAugmentClassLoader(), true))
                     .produce(new RawCommandLineArgumentsBuildItem())
                     .produce(new LiveReloadBuildItem());
             executionBuild.accept(execBuilder);
@@ -368,7 +372,6 @@ public class AugmentActionImpl implements AugmentAction {
             QuarkusAugmentor.Builder builder = QuarkusAugmentor.builder()
                     .setRoot(quarkusBootstrap.getApplicationRoot())
                     .setClassLoader(classLoader)
-                    .addFinal(ApplicationClassNameBuildItem.class)
                     .setTargetDir(quarkusBootstrap.getTargetDirectory())
                     .setDeploymentClassLoader(deploymentClassLoader)
                     .setBuildSystemProperties(quarkusBootstrap.getBuildSystemProperties())
@@ -384,6 +387,7 @@ public class AugmentActionImpl implements AugmentAction {
                             : (auxiliaryApplication ? DevModeType.LOCAL : null));
             builder.setLaunchMode(launchMode);
             builder.setDevModeType(devModeType);
+            builder.setTest(curatedApplication.getQuarkusBootstrap().isTest());
             builder.setRebuild(quarkusBootstrap.isRebuild());
             if (firstRun) {
                 builder.setLiveReloadState(

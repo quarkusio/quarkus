@@ -9,6 +9,9 @@ public class BlockingOperationSupport {
     }
 
     public static boolean isBlockingAllowed() {
+        if (ioThreadDetector == null) {
+            return true;
+        }
         return ioThreadDetector.isBlockingAllowed();
     }
 

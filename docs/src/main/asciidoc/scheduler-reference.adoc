@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Scheduler Reference Guide
+= Scheduler Reference Guide
 
 include::./attributes.adoc[]
 
@@ -54,7 +54,7 @@ The syntax used in CRON expressions is controlled by the `quarkus.scheduler.cron
 The values can be `cron4j`, `quartz`, `unix` and `spring`.
 `quartz` is used by default.
 
-The `cron` attribute supports <<config-reference#using_property_expressions,Property Expressions>> including default values and nested
+The `cron` attribute supports <<config-reference#property-expressions,Property Expressions>> including default values and nested
 Property Expressions. (Note that "{property.path}" style expressions are still supported but don't offer the full functionality of Property Expressions.)
 
 
@@ -98,7 +98,7 @@ So for example, `15m` can be used instead of `PT15M` and is parsed as "15 minute
 void every15Mins() { }
 ----
 
-The `every` attribute supports <<config-reference#using_property_expressions,Property Expressions>> including default values and nested
+The `every` attribute supports <<config-reference#property-expressions,Property Expressions>> including default values and nested
 Property Expressions. (Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
 
 .Interval Config Property Example
@@ -132,7 +132,7 @@ Sometimes a possibility to specify an explicit id may come in handy.
 void myMethod() { }
 ----
 
-The `identity` attribute supports <<config-reference#using_property_expressions,Property Expressions>> including default values and nested
+The `identity` attribute supports <<config-reference#property-expressions,Property Expressions>> including default values and nested
 Property Expressions. (Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
 
 .Interval Config Property Example
@@ -171,7 +171,7 @@ void everyTwoSeconds() { }
 NOTE: If `@Scheduled#delay()` is set to a value greater than zero the value of `@Scheduled#delayed()` is ignored.
 
 The main advantage over `@Scheduled#delay()` is that the value is configurable.
-The `delay` attribute supports <<config-reference#using_property_expressions,Property Expressions>> including default values and nested
+The `delay` attribute supports <<config-reference#property-expressions,Property Expressions>> including default values and nested
 Property Expressions. (Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
 
 
@@ -200,6 +200,8 @@ void nonConcurrent() {
 <1> Concurrent executions are skipped.
 
 TIP: A CDI event of type `io.quarkus.scheduler.SkippedExecution` is fired when an execution of a scheduled method is skipped.
+
+NOTE: Note that only executions within the same application instance are considered. This feature is not intended to work across the cluster.
 
 [[conditional_execution]]
 === Conditional Execution
@@ -319,6 +321,14 @@ It is often desirable to disable the scheduler when running the tests.
 The scheduler can be disabled through the runtime config property `quarkus.scheduler.enabled`.
 If set to `false` the scheduler is not started even though the application contains scheduled methods.
 You can even disable the scheduler for particular <<getting-started-testing#testing_different_profiles,Test Profiles>>.
+
+== Metrics
+
+Some basic metrics are published out of the box if `quarkus.scheduler.metrics.enabled` is set to `true` and a metrics extension is present. 
+
+If the link:micrometer[Micrometer extension] is present, then a `@io.micrometer.core.annotation.Timed` interceptor binding is added to all `@Scheduled` methods automatically (unless it's already present) and a `io.micrometer.core.instrument.Timer` with name `scheduled.methods` and a `io.micrometer.core.instrument.LongTaskTimer` with name `scheduled.methods.running` are registered. The fully qualified name of the declaring class and the name of a `@Scheduled` method are used as tags.
+
+If the link:smallrye-metrics[SmallRye Metrics extension] is present, then a `@org.eclipse.microprofile.metrics.annotation.Timed`  interceptor binding is added to all `@Scheduled` methods automatically (unless it's already present) and a `org.eclipse.microprofile.metrics.Timer` is created for each `@Scheduled` method. The name consists of the fully qualified name of the declaring class and the name of a `@Scheduled` method. The timer has a tag `scheduled=true`.
 
 == Configuration Reference
 

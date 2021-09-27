@@ -1,16 +1,16 @@
 package io.quarkus.datasource.runtime;
 
-import java.util.List;
+import java.util.Set;
 
 public class DataSourcesExcludedFromHealthChecks {
 
-    private List<String> excludedNames;
+    private final Set<String> excludedNames;
 
-    public DataSourcesExcludedFromHealthChecks(List<String> names) {
-        this.excludedNames = names;
+    public DataSourcesExcludedFromHealthChecks(Set<String> excludedNames) {
+        this.excludedNames = excludedNames;
     }
 
-    public List<String> getExcludedNames() {
+    public Set<String> getExcludedNames() {
         return excludedNames;
     }
 }

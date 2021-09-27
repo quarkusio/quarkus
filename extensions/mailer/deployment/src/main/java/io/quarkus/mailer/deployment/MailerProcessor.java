@@ -36,17 +36,14 @@ public class MailerProcessor {
     private static final DotName MAIL_TEMPLATE = DotName.createSimple(MailTemplate.class.getName());
 
     @BuildStep
-    void unremoveableBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(MailClientProducer.class));
-        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(MailerSupportProducer.class));
-    }
-
-    @BuildStep
-    AdditionalBeanBuildItem registerMailers() {
-        return AdditionalBeanBuildItem.builder()
+    void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans) {
+        beans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
                 .addBeanClasses(MutinyMailerImpl.class, BlockingMailerImpl.class,
-                        MockMailboxImpl.class, MailTemplateProducer.class)
-                .build();
+                        MailClientProducer.class, MailerSupportProducer.class)
+                .build());
+        beans.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClasses(MockMailboxImpl.class, MailTemplateProducer.class)
+                .build());
     }
 
     @BuildStep

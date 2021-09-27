@@ -5,6 +5,7 @@ import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.OK;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
@@ -42,6 +43,7 @@ class ServerResourceTest {
                 .body("form.form.loginPage", equalTo("login.html"))
                 .body("form.form.errorPage", equalTo("error.html"))
                 .body("form.form.landingPage", equalTo("index.html"))
+                .body("form.form.positions.size()", equalTo(2))
                 .body("ssl.port", equalTo(8443))
                 .body("ssl.certificate", equalTo("certificate"))
                 .body("cors.methods[0]", equalTo("GET"))
@@ -65,6 +67,25 @@ class ServerResourceTest {
                 .statusCode(OK.getStatusCode())
                 .body("host", equalTo("localhost"))
                 .body("port", equalTo(8080));
+    }
+
+    @Test
+    void positions() {
+        given()
+                .get("/server/positions")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body(equalTo("[10,20]"));
+    }
+
+    @Test
+    void info() {
+        given()
+                .get("/server/info")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .header("X-VERSION", "1.2.3.4")
+                .body(containsString("My application info"));
     }
 
     @Test

@@ -7,13 +7,11 @@ import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.registry.PlatformStackIndex;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
 import io.quarkus.registry.catalog.json.JsonCatalogMerger;
 import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
-import io.quarkus.registry.union.ElementCatalogBuilder;
-import io.quarkus.registry.union.ElementCatalogBuilder.UnionBuilder;
+import io.quarkus.registry.catalog.selection.OriginPreference;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -95,8 +93,8 @@ public class ToolsUtils {
             throw new IllegalArgumentException("BOM version was not provided");
         }
         Artifact catalogCoords = new DefaultArtifact(
-                bomGroupId == null ? "io.quarkus" : bomGroupId,
-                (bomArtifactId == null ? "quarkus-universe-bom" : bomArtifactId)
+                bomGroupId == null ? ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID : bomGroupId,
+                (bomArtifactId == null ? ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID : bomArtifactId)
                         + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX,
                 bomVersion, "json", bomVersion);
         Path platformJson = null;
@@ -104,9 +102,9 @@ public class ToolsUtils {
             log.debug("Resolving platform descriptor %s", catalogCoords);
             platformJson = artifactResolver.resolve(catalogCoords).getArtifact().getFile().toPath();
         } catch (Exception e) {
-            if (bomArtifactId == null && catalogCoords.getArtifactId().startsWith("quarkus-universe-bom")) {
+            if (bomGroupId == null && catalogCoords.getArtifactId().startsWith("quarkus-bom")) {
                 catalogCoords = new DefaultArtifact(
-                        catalogCoords.getGroupId(),
+                        ToolsConstants.IO_QUARKUS,
                         "quarkus-bom" + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX,
                         catalogCoords.getClassifier(), catalogCoords.getExtension(), catalogCoords.getVersion());
                 try {
@@ -133,10 +131,8 @@ public class ToolsUtils {
                 if (members instanceof Collection) {
                     final Collection<?> memberList = (Collection<?>) members;
                     final List<ExtensionCatalog> catalogs = new ArrayList<>(memberList.size());
-                    final ElementCatalogBuilder<ExtensionCatalog> elementsBuilder = ElementCatalogBuilder.newInstance();
-                    final UnionBuilder<ExtensionCatalog> union = elementsBuilder
-                            .getOrCreateUnion(PlatformStackIndex.initial());
 
+                    int memberIndex = 0;
                     for (Object m : memberList) {
                         if (!(m instanceof String)) {
                             continue;
@@ -158,11 +154,14 @@ public class ToolsUtils {
                                 continue;
                             }
                         }
+
+                        final OriginPreference originPreference = new OriginPreference(1, 1, 1, ++memberIndex, 1);
+                        Map<String, Object> metadata = new HashMap<>(memberCatalog.getMetadata());
+                        metadata.put("origin-preference", originPreference);
+                        ((JsonExtensionCatalog) memberCatalog).setMetadata(metadata);
                         catalogs.add(memberCatalog);
-                        ElementCatalogBuilder.addUnionMember(union, memberCatalog);
                     }
                     catalog = JsonCatalogMerger.merge(catalogs);
-                    ElementCatalogBuilder.setElementCatalog(catalog, elementsBuilder.build());
                 }
             }
         }

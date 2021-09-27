@@ -4,9 +4,9 @@ import static io.quarkus.deployment.Feature.JAXRS_CLIENT_REACTIVE;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.extractProducesConsumesValues;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETION_STAGE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONSUMES;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.WEB_APPLICATION_EXCEPTION;
 
 import java.io.Closeable;
 import java.io.File;
@@ -17,17 +17,20 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.AsyncInvoker;
+import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.CompletionStageRxInvoker;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
@@ -52,15 +55,20 @@ import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.handlers.ClientObservabilityHandler;
+import org.jboss.resteasy.reactive.client.impl.AbstractRxInvoker;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
+import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
+import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
 import org.jboss.resteasy.reactive.client.impl.UniInvoker;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
+import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
 import org.jboss.resteasy.reactive.client.processor.beanparam.BeanParamItem;
 import org.jboss.resteasy.reactive.client.processor.beanparam.ClientBeanParamInfo;
 import org.jboss.resteasy.reactive.client.processor.beanparam.CookieParamItem;
 import org.jboss.resteasy.reactive.client.processor.beanparam.HeaderParamItem;
 import org.jboss.resteasy.reactive.client.processor.beanparam.Item;
+import org.jboss.resteasy.reactive.client.processor.beanparam.PathParamItem;
 import org.jboss.resteasy.reactive.client.processor.beanparam.QueryParamItem;
 import org.jboss.resteasy.reactive.client.processor.scanning.ClientEndpointIndexer;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
@@ -77,6 +85,7 @@ import org.jboss.resteasy.reactive.common.model.RestClientInterface;
 import org.jboss.resteasy.reactive.common.processor.AdditionalReaderWriter;
 import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
 import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
+import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.HashUtil;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
@@ -99,6 +108,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
@@ -115,10 +125,10 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.jaxrs.client.reactive.runtime.ClientResponseBuilderFactory;
 import io.quarkus.jaxrs.client.reactive.runtime.JaxrsClientReactiveRecorder;
-import io.quarkus.jaxrs.client.reactive.runtime.MultipartFormUtils;
 import io.quarkus.jaxrs.client.reactive.runtime.ToObjectArray;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
+import io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
@@ -128,13 +138,15 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterOverrideBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.metrics.MetricsFactory;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.ext.web.multipart.MultipartForm;
 
 public class JaxrsClientReactiveProcessor {
 
     private static final Logger log = Logger.getLogger(JaxrsClientReactiveProcessor.class);
+
+    private static final Pattern MULTIPLE_SLASH_PATTERN = Pattern.compile("//+");
 
     private static final MethodDescriptor WEB_TARGET_RESOLVE_TEMPLATE_METHOD = MethodDescriptor.ofMethod(WebTarget.class,
             "resolveTemplate",
@@ -142,12 +154,17 @@ public class JaxrsClientReactiveProcessor {
             String.class, Object.class);
     private static final MethodDescriptor MULTIVALUED_MAP_ADD = MethodDescriptor.ofMethod(MultivaluedMap.class, "add",
             void.class, Object.class, Object.class);
+    private static final MethodDescriptor PATH_GET_FILENAME = MethodDescriptor.ofMethod(Path.class, "getFileName",
+            Path.class);
+    private static final MethodDescriptor OBJECT_TO_STRING = MethodDescriptor.ofMethod(Object.class, "toString", String.class);
 
     static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
     private static final DotName UNI_KT = DotName.createSimple("io.smallrye.mutiny.coroutines.UniKt");
     private static final DotName FILE = DotName.createSimple(File.class.getName());
     private static final DotName PATH = DotName.createSimple(Path.class.getName());
     private static final DotName BUFFER = DotName.createSimple(Buffer.class.getName());
+
+    private static final Set<DotName> ASYNC_RETURN_TYPES = Set.of(COMPLETION_STAGE, UNI, MULTI);
 
     @BuildStep
     void addFeature(BuildProducer<FeatureBuildItem> features) {
@@ -158,6 +175,10 @@ public class JaxrsClientReactiveProcessor {
     void registerClientResponseBuilder(BuildProducer<ServiceProviderBuildItem> serviceProviders) {
         serviceProviders.produce(new ServiceProviderBuildItem(ResponseBuilderFactory.class.getName(),
                 ClientResponseBuilderFactory.class.getName()));
+
+        serviceProviders.produce(new ServiceProviderBuildItem(ClientBuilder.class.getName(),
+                ClientBuilderImpl.class.getName()));
+
     }
 
     @BuildStep
@@ -171,6 +192,7 @@ public class JaxrsClientReactiveProcessor {
             BeanContainerBuildItem beanContainerBuildItem,
             ApplicationResultBuildItem applicationResultBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyBuildItemBuildProducer,
             List<MessageBodyReaderBuildItem> messageBodyReaderBuildItems,
             List<MessageBodyWriterBuildItem> messageBodyWriterBuildItems,
             List<MessageBodyReaderOverrideBuildItem> messageBodyReaderOverrideBuildItems,
@@ -196,7 +218,7 @@ public class JaxrsClientReactiveProcessor {
                 beanContainerBuildItem, applicationResultBuildItem, serialisers,
                 RuntimeType.CLIENT);
 
-        if (!resourceScanningResultBuildItem.isPresent()
+        if (resourceScanningResultBuildItem.isEmpty()
                 || resourceScanningResultBuildItem.get().getResult().getClientInterfaces().isEmpty()) {
             recorder.setupClientProxies(new HashMap<>(), Collections.emptyMap());
             return;
@@ -217,10 +239,28 @@ public class JaxrsClientReactiveProcessor {
                 .setInjectableBeans(new HashMap<>())
                 .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                 .setAdditionalWriters(additionalWriters)
-                .setDefaultBlocking(applicationResultBuildItem.getResult().isBlocking())
+                .setDefaultBlocking(applicationResultBuildItem.getResult().getBlockingDefault())
                 .setHasRuntimeConverters(false)
                 .setDefaultProduces(defaultProducesType)
                 .setSmartDefaultProduces(disableSmartDefaultProduces.isEmpty())
+                .setResourceMethodCallback(new Consumer<EndpointIndexer.ResourceMethodCallbackData>() {
+                    @Override
+                    public void accept(EndpointIndexer.ResourceMethodCallbackData entry) {
+                        MethodInfo method = entry.getMethodInfo();
+                        String source = JaxrsClientReactiveProcessor.class.getSimpleName() + " > " + method.declaringClass()
+                                + "[" + method + "]";
+
+                        reflectiveHierarchyBuildItemBuildProducer.produce(new ReflectiveHierarchyBuildItem.Builder()
+                                .type(method.returnType())
+                                .index(index)
+                                .ignoreTypePredicate(QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                                .ignoreFieldPredicate(QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                                .ignoreMethodPredicate(
+                                        QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                                .source(source)
+                                .build());
+                    }
+                })
                 .build();
 
         boolean observabilityIntegrationNeeded = (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER) ||
@@ -469,7 +509,7 @@ public class JaxrsClientReactiveProcessor {
                 methodIndex++;
 
                 // finding corresponding jandex method, used by enricher (MicroProfile enricher stores it in a field
-                // to later fill in context with corresponding java.lang.reflect.Method
+                // to later fill in context with corresponding java.lang.reflect.Method)
                 String[] javaMethodParameters = new String[method.getParameters().length];
                 for (int i = 0; i < method.getParameters().length; i++) {
                     MethodParameter param = method.getParameters()[i];
@@ -494,7 +534,11 @@ public class JaxrsClientReactiveProcessor {
                     ClassInfo subResourceInterface = index.getClassByName(returnType.name());
                     if (!Modifier.isInterface(subResourceInterface.flags())) {
                         throw new IllegalArgumentException(
-                                "Sub resource type is not an interface: " + returnType.name().toString());
+                                "Client interface method: " + jandexMethod.declaringClass().name() + "#" + jandexMethod
+                                        + " has no HTTP method annotation  (@GET, @POST, etc) and it's return type: "
+                                        + returnType.name().toString() + " is not an interface. "
+                                        + "If it's a sub resource method, it has to return an interface. "
+                                        + "If it's not, it has to have one of the HTTP method annotations.");
                     }
                     // generate implementation for a method from the jaxrs interface:
                     MethodCreator methodCreator = c.getMethodCreator(method.getName(), method.getSimpleReturnType(),
@@ -783,7 +827,8 @@ public class JaxrsClientReactiveProcessor {
                     AssignableResultHandle constructorTarget = createWebTargetForMethod(constructor, baseTarget, method);
                     constructor.writeInstanceField(webTargetForMethod, constructor.getThis(), constructorTarget);
                     if (observabilityIntegrationNeeded) {
-                        String templatePath = restClientInterface.getPath() + method.getPath();
+                        String templatePath = MULTIPLE_SLASH_PATTERN.matcher(restClientInterface.getPath() + method.getPath())
+                                .replaceAll("/");
                         constructor.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(WebTargetImpl.class, "setPreClientSendHandler", void.class,
                                         ClientRestHandler.class),
@@ -940,11 +985,9 @@ public class JaxrsClientReactiveProcessor {
      */
     private ResultHandle createMultipartForm(MethodCreator methodCreator, ResultHandle methodParam, Type formClassType,
             IndexView index) {
-        AssignableResultHandle multipartForm = methodCreator.createVariable(MultipartForm.class);
+        AssignableResultHandle multipartForm = methodCreator.createVariable(QuarkusMultipartForm.class);
         methodCreator.assign(multipartForm,
-                methodCreator
-                        .invokeStaticMethod(
-                                MethodDescriptor.ofMethod(MultipartFormUtils.class, "create", MultipartForm.class)));
+                methodCreator.newInstance(MethodDescriptor.ofConstructor(QuarkusMultipartForm.class)));
 
         ClassInfo formClass = index.getClassByName(formClassType.name());
 
@@ -980,7 +1023,7 @@ public class JaxrsClientReactiveProcessor {
                                             formClass.name() + "." + field.name());
                         }
                         ResultHandle filePath = methodCreator.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(File.class, "getPath", String.class), fieldValue);
+                                MethodDescriptor.ofMethod(File.class, "toPath", Path.class), fieldValue);
                         addFile(methodCreator, multipartForm, formParamName, partType, filePath);
                     } else if (is(PATH, fieldClass, index)) {
                         // and so is path
@@ -989,16 +1032,12 @@ public class JaxrsClientReactiveProcessor {
                                     "No @PartType annotation found on multipart form field of type Path: " +
                                             formClass.name() + "." + field.name());
                         }
-                        ResultHandle filePath = methodCreator.invokeInterfaceMethod(
-                                MethodDescriptor.ofMethod(Path.class, "toString", String.class), fieldValue);
-                        addFile(methodCreator, multipartForm, formParamName, partType, filePath);
+                        addFile(methodCreator, multipartForm, formParamName, partType, fieldValue);
                     } else if (is(BUFFER, fieldClass, index)) {
                         // and buffer
                         addBuffer(methodCreator, multipartForm, formParamName, partType, fieldValue, field);
-                    } else {
-                        throw new IllegalArgumentException("Unsupported multipart form field on: " + formClassType.name()
-                                + "." + fieldType.name() +
-                                ". Supported types are: java.lang.String, java.io.File, java.nio.Path and io.vertx.core.Buffer");
+                    } else { // assume POJO:
+                        addPojo(methodCreator, multipartForm, formParamName, partType, fieldValue, field);
                     }
                     break;
                 case ARRAY:
@@ -1009,8 +1048,8 @@ public class JaxrsClientReactiveProcessor {
                         throw new IllegalArgumentException("Array of unsupported type: " + componentType.name()
                                 + " on " + formClassType.name() + "." + field.name());
                     }
-                    ResultHandle buffer = methodCreator.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(MultipartFormUtils.class, "buffer", Buffer.class, byte[].class),
+                    ResultHandle buffer = methodCreator.invokeStaticInterfaceMethod(
+                            MethodDescriptor.ofMethod(Buffer.class, "buffer", Buffer.class, byte[].class),
                             fieldValue);
                     addBuffer(methodCreator, multipartForm, formParamName, partType, buffer, field);
                     break;
@@ -1032,32 +1071,44 @@ public class JaxrsClientReactiveProcessor {
         return multipartForm;
     }
 
+    private void addPojo(MethodCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
+            String partType, ResultHandle fieldValue, FieldInfo field) {
+        methodCreator.assign(multipartForm,
+                methodCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "entity",
+                        QuarkusMultipartForm.class, String.class, Object.class, String.class, Class.class),
+                        multipartForm, methodCreator.load(field.name()), fieldValue, methodCreator.load(partType),
+                        methodCreator.loadClass(field.type().name().toString())));
+    }
+
     /**
-     * add file upload, see {@link MultipartForm#binaryFileUpload(String, String, String, String)} and
-     * {@link MultipartForm#textFileUpload(String, String, String, String)}
+     * add file upload, see {@link QuarkusMultipartForm#binaryFileUpload(String, String, String, String)} and
+     * {@link QuarkusMultipartForm#textFileUpload(String, String, String, String)}
      */
     private void addFile(MethodCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
             String partType, ResultHandle filePath) {
+        ResultHandle fileNamePath = methodCreator.invokeInterfaceMethod(PATH_GET_FILENAME, filePath);
+        ResultHandle fileName = methodCreator.invokeVirtualMethod(OBJECT_TO_STRING, fileNamePath);
+        ResultHandle pathString = methodCreator.invokeVirtualMethod(OBJECT_TO_STRING, filePath);
         if (partType.equalsIgnoreCase(MediaType.APPLICATION_OCTET_STREAM)) {
             methodCreator.assign(multipartForm,
                     // MultipartForm#binaryFileUpload(String name, String filename, String pathname, String mediaType);
                     // filename = name
-                    methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(MultipartForm.class, "binaryFileUpload",
-                                    MultipartForm.class, String.class, String.class, String.class,
+                    methodCreator.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "binaryFileUpload",
+                                    QuarkusMultipartForm.class, String.class, String.class, String.class,
                                     String.class),
-                            multipartForm, methodCreator.load(formParamName), methodCreator.load(formParamName),
-                            filePath, methodCreator.load(partType)));
+                            multipartForm, methodCreator.load(formParamName), fileName,
+                            pathString, methodCreator.load(partType)));
         } else {
             methodCreator.assign(multipartForm,
                     // MultipartForm#textFileUpload(String name, String filename, String pathname, String mediaType);;
                     // filename = name
-                    methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(MultipartForm.class, "textFileUpload",
-                                    MultipartForm.class, String.class, String.class, String.class,
+                    methodCreator.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "textFileUpload",
+                                    QuarkusMultipartForm.class, String.class, String.class, String.class,
                                     String.class),
-                            multipartForm, methodCreator.load(formParamName), methodCreator.load(formParamName),
-                            filePath, methodCreator.load(partType)));
+                            multipartForm, methodCreator.load(formParamName), fileName,
+                            pathString, methodCreator.load(partType)));
         }
     }
 
@@ -1091,8 +1142,8 @@ public class JaxrsClientReactiveProcessor {
     private void addString(MethodCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
             ResultHandle fieldValue) {
         methodCreator.assign(multipartForm,
-                methodCreator.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(MultipartForm.class, "attribute", MultipartForm.class,
+                methodCreator.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "attribute", QuarkusMultipartForm.class,
                                 String.class, String.class),
                         multipartForm, methodCreator.load(formParamName), fieldValue));
     }
@@ -1108,9 +1159,9 @@ public class JaxrsClientReactiveProcessor {
             methodCreator.assign(multipartForm,
                     // MultipartForm#binaryFileUpload(String name, String filename, String pathname, String mediaType);
                     // filename = name
-                    methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(MultipartForm.class, "binaryFileUpload",
-                                    MultipartForm.class, String.class, String.class, Buffer.class,
+                    methodCreator.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "binaryFileUpload",
+                                    QuarkusMultipartForm.class, String.class, String.class, Buffer.class,
                                     String.class),
                             multipartForm, methodCreator.load(formParamName), methodCreator.load(formParamName),
                             buffer, methodCreator.load(partType)));
@@ -1118,9 +1169,9 @@ public class JaxrsClientReactiveProcessor {
             methodCreator.assign(multipartForm,
                     // MultipartForm#textFileUpload(String name, String filename, io.vertx.mutiny.core.buffer.Buffer content, String mediaType)
                     // filename = name
-                    methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(MultipartForm.class, "textFileUpload",
-                                    MultipartForm.class, String.class, String.class, Buffer.class,
+                    methodCreator.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "textFileUpload",
+                                    QuarkusMultipartForm.class, String.class, String.class, Buffer.class,
                                     String.class),
                             multipartForm, methodCreator.load(formParamName), methodCreator.load(formParamName),
                             buffer, methodCreator.load(partType)));
@@ -1216,11 +1267,14 @@ public class JaxrsClientReactiveProcessor {
 
         if (returnType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
             ParameterizedType paramType = returnType.asParameterizedType();
-            if (paramType.name().equals(COMPLETION_STAGE) || paramType.name().equals(UNI)) {
-                returnCategory = paramType.name().equals(COMPLETION_STAGE) ? ReturnCategory.COMPLETION_STAGE
-                        : ReturnCategory.UNI;
+            if (ASYNC_RETURN_TYPES.contains(paramType.name())) {
+                returnCategory = paramType.name().equals(COMPLETION_STAGE)
+                        ? ReturnCategory.COMPLETION_STAGE
+                        : paramType.name().equals(MULTI)
+                                ? ReturnCategory.MULTI
+                                : ReturnCategory.UNI;
 
-                // CompletionStage has one type argument:
+                // the async types have one type argument:
                 if (paramType.arguments().isEmpty()) {
                     simpleReturnType = Object.class.getName();
                 } else {
@@ -1282,14 +1336,16 @@ public class JaxrsClientReactiveProcessor {
         String mediaTypeValue = defaultMediaType;
 
         // if a JAXRS method throws an exception, unwrap the ProcessingException and throw the exception instead
-        // Similarly with WebApplicationException
+        // Similarly with RuntimeException's
         TryBlock tryBlock = methodCreator.tryBlock();
 
         List<Type> exceptionTypes = jandexMethod.exceptions();
-        Set<DotName> exceptions = new HashSet<>();
-        exceptions.add(WEB_APPLICATION_EXCEPTION);
+        Set<String> exceptions = new LinkedHashSet<>();
         for (Type exceptionType : exceptionTypes) {
-            exceptions.add(exceptionType.name());
+            exceptions.add(exceptionType.name().toString());
+        }
+        if (!exceptions.contains(Exception.class.getName()) && !exceptions.contains(Throwable.class.getName())) {
+            exceptions.add(RuntimeException.class.getName());
         }
 
         CatchBlockCreator catchBlock = tryBlock.addCatch(ProcessingException.class);
@@ -1297,8 +1353,8 @@ public class JaxrsClientReactiveProcessor {
         ResultHandle cause = catchBlock.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(Throwable.class, "getCause", Throwable.class),
                 caughtException);
-        for (DotName exception : exceptions) {
-            catchBlock.ifTrue(catchBlock.instanceOf(cause, exception.toString()))
+        for (String exception : exceptions) {
+            catchBlock.ifTrue(catchBlock.instanceOf(cause, exception))
                     .trueBranch().throwException(cause);
         }
 
@@ -1377,6 +1433,27 @@ public class JaxrsClientReactiveProcessor {
                                     CONTINUATION.toString()),
                             result, tryBlock.getMethodParam(continuationIndex));
                 }
+            } else if (returnCategory == ReturnCategory.MULTI) {
+                ResultHandle rx = tryBlock.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(Invocation.Builder.class, "rx", RxInvoker.class, Class.class),
+                        builder, tryBlock.loadClass(MultiInvoker.class));
+                ResultHandle multiInvoker = tryBlock.checkCast(rx, MultiInvoker.class);
+                // with entity
+                if (genericReturnType != null) {
+                    result = tryBlock.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(MultiInvoker.class, "method",
+                                    Multi.class, String.class,
+                                    Entity.class, GenericType.class),
+                            multiInvoker, tryBlock.load(httpMethod), entity,
+                            genericReturnType);
+                } else {
+                    result = tryBlock.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(AbstractRxInvoker.class, "method",
+                                    Object.class, String.class,
+                                    Entity.class, Class.class),
+                            multiInvoker, tryBlock.load(httpMethod), entity,
+                            tryBlock.loadClass(simpleReturnType));
+                }
             } else {
                 if (genericReturnType != null) {
                     result = tryBlock.invokeInterfaceMethod(
@@ -1436,6 +1513,25 @@ public class JaxrsClientReactiveProcessor {
                             MethodDescriptor.ofMethod(UNI_KT.toString(), "awaitSuspending", Object.class, Uni.class,
                                     CONTINUATION.toString()),
                             result, tryBlock.getMethodParam(continuationIndex));
+                }
+            } else if (returnCategory == ReturnCategory.MULTI) {
+                ResultHandle rx = tryBlock.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(Invocation.Builder.class, "rx", RxInvoker.class, Class.class),
+                        builder, tryBlock.loadClass(MultiInvoker.class));
+                ResultHandle multiInvoker = tryBlock.checkCast(rx, MultiInvoker.class);
+                if (genericReturnType != null) {
+                    result = tryBlock.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(AbstractRxInvoker.class, "method",
+                                    Object.class, String.class,
+                                    GenericType.class),
+                            multiInvoker, tryBlock.load(httpMethod), genericReturnType);
+                } else {
+                    result = tryBlock.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(AbstractRxInvoker.class, "method",
+                                    Object.class, String.class,
+                                    Class.class),
+                            multiInvoker, tryBlock.load(httpMethod),
+                            tryBlock.loadClass(simpleReturnType));
                 }
             } else {
                 if (genericReturnType != null) {
@@ -1568,6 +1664,12 @@ public class JaxrsClientReactiveProcessor {
                             headerParam.getHeaderName(),
                             headerParam.extract(invoEnricher, invoEnricher.getMethodParam(1)));
                     break;
+                case PATH_PARAM:
+                    PathParamItem pathParam = (PathParamItem) item;
+                    addPathParam(creator, target,
+                            pathParam.getPathParamName(),
+                            pathParam.extract(creator, param));
+                    break;
                 default:
                     throw new IllegalStateException("Unimplemented"); // TODO form params, etc
             }
@@ -1620,6 +1722,14 @@ public class JaxrsClientReactiveProcessor {
                         invocationBuilder, invoBuilderEnricher.load(paramName), headerParamHandle));
     }
 
+    private void addPathParam(BytecodeCreator methodCreator, AssignableResultHandle methodTarget,
+            String paramName, ResultHandle pathParamHandle) {
+        methodCreator.assign(methodTarget,
+                methodCreator.invokeInterfaceMethod(WEB_TARGET_RESOLVE_TEMPLATE_METHOD,
+                        methodTarget,
+                        methodCreator.load(paramName), pathParamHandle));
+    }
+
     private void addCookieParam(BytecodeCreator invoBuilderEnricher, AssignableResultHandle invocationBuilder,
             String paramName, ResultHandle cookieParamHandle) {
         invoBuilderEnricher.assign(invocationBuilder,
@@ -1633,7 +1743,8 @@ public class JaxrsClientReactiveProcessor {
         BLOCKING,
         COMPLETION_STAGE,
         UNI,
-        COROUTINE,
+        MULTI,
+        COROUTINE
     }
 
 }

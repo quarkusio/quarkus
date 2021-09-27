@@ -2,7 +2,6 @@ package io.quarkus.deployment.dev.testing;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.BiFunction;
 
 import org.jboss.jandex.ClassInfo;
@@ -12,9 +11,6 @@ import org.objectweb.asm.Opcodes;
 
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
-import io.quarkus.deployment.ConsoleConfig;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.IsTest;
@@ -27,10 +23,9 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.deployment.dev.BrowserOpenerBuildItem;
-import io.quarkus.deployment.dev.console.ConsoleHelper;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.dev.testing.ContinuousTestingSharedStateManager;
 import io.quarkus.dev.testing.TracingHandler;
 import io.quarkus.gizmo.Gizmo;
 
@@ -41,37 +36,19 @@ import io.quarkus.gizmo.Gizmo;
  */
 public class TestTracingProcessor {
 
-    private static boolean consoleInstalled = false;
-
     @BuildStep(onlyIfNot = IsNormal.class)
     LogCleanupFilterBuildItem handle() {
         return new LogCleanupFilterBuildItem("org.junit.platform.launcher.core.EngineDiscoveryOrchestrator", "0 containers");
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
-    @Produce(TestSetupBuildItem.class)
-    void setupConsole(TestConfig config, BuildProducer<TestListenerBuildItem> testListenerBuildItemBuildProducer,
-            LaunchModeBuildItem launchModeBuildItem, Capabilities capabilities, ConsoleConfig consoleConfig,
-            Optional<BrowserOpenerBuildItem> browserOpener) {
-        if (!TestSupport.instance().isPresent() || config.continuousTesting == TestConfig.Mode.DISABLED
-                || config.flatClassPath) {
-            return;
-        }
-        if (consoleInstalled) {
-            return;
-        }
-        consoleInstalled = true;
-        if (config.console.orElse(consoleConfig.enabled)) {
-            ConsoleHelper.installConsole(config, consoleConfig);
-            TestConsoleHandler consoleHandler = new TestConsoleHandler(launchModeBuildItem.getDevModeType().get(),
-                    browserOpener.map(BrowserOpenerBuildItem::getBrowserOpener).orElse(null),
-                    capabilities.isPresent(Capability.VERTX_HTTP));
-            consoleHandler.install();
-            testListenerBuildItemBuildProducer.produce(new TestListenerBuildItem(consoleHandler));
-        }
+    static volatile boolean testingSetup;
+
+    @BuildStep
+    TestListenerBuildItem sharedStateListener() {
+        return new TestListenerBuildItem(new ContinuousTestingSharedStateListener());
     }
 
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIf = IsDevelopment.class)
     @Produce(LogHandlerBuildItem.class)
     @Produce(TestSetupBuildItem.class)
     @Produce(ServiceStartBuildItem.class)
@@ -85,6 +62,10 @@ public class TestTracingProcessor {
         if (devModeType == null || !devModeType.isContinuousTestingSupported()) {
             return;
         }
+        if (testingSetup) {
+            return;
+        }
+        testingSetup = true;
         TestSupport testSupport = TestSupport.instance().get();
         for (TestListenerBuildItem i : testListenerBuildItems) {
             testSupport.addListener(i.listener);
@@ -102,14 +83,8 @@ public class TestTracingProcessor {
                 testSupport.stop();
             }
         }
-
         QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-        ((QuarkusClassLoader) cl.parent()).addCloseTask(new Runnable() {
-            @Override
-            public void run() {
-                testSupport.stop();
-            }
-        });
+        ((QuarkusClassLoader) cl.parent()).addCloseTask(ContinuousTestingSharedStateManager::reset);
     }
 
     @BuildStep(onlyIf = IsTest.class)

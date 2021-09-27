@@ -1,0 +1,939 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Vert.x Reference Guide
+
+include::./attributes.adoc[]
+
+https://vertx.io[Vert.x] is a toolkit for building reactive applications.
+As described in the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture], Quarkus uses Vert.x underneath.
+
+This guide is the companion to the xref:vertx.adoc[Using Eclipse Vert.x API from a Quarkus Application] guide.
+It provides more advanced details about the usage and the configuration of the Vert.x instance used by Quarkus.
+
+
+[#vertx-access]
+== Accessing the Vert.x instance
+
+To access the managed Vert.x instance, add the `quarkus-vertx` extension to your project.
+Note that this dependency may already be installed (as a transitive dependency).
+
+With this extension, you can retrieve the managed instance of Vert.x using either field or constructor injection:
+
+[source, java]
+----
+@ApplicationScoped
+public class MyBean {
+// Field injection
+@Inject Vertx vertx;
+
+// Constructor injection
+MyBean(Vertx vertx) {
+    // ...
+}
+
+}
+----
+
+You can inject either the:
+
+* `io.vertx.core.Vertx` instance exposing the _bare_ Vert.x API
+* `io.vertx.mutiny.core.Vertx` instance exposing the _Mutiny_ API
+
+We recommend using the Mutiny variant as it integrates with the other reactive APIs provided by Quarkus.
+
+[TIP]
+.Mutiny
+====
+If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an intuitive reactive programming library].
+====
+
+Documentation about the Vert.x Mutiny variant is available on https://smallrye.io/smallrye-mutiny-vertx-bindings.
+
+[[vertx-config]]
+== Configuring the Vert.x instance
+
+You can configure the Vert.x instance from the `application.properties` file.
+The following table lists the supported properties:
+
+include::{generated-dir}/config/quarkus-vertx.adoc[opts=optional, leveloffset=+1]
+
+
+[[using-vertx-clients]]
+== Using Vert.x clients
+
+In addition to Vert.x core, you can use most Vert.x ecosystem libraries.
+Some Quarkus extension already wraps Vert.x libraries.
+
+=== Available APIs
+
+The following table lists the most used libraries from the Vert.x ecosystem.
+To access these APIs, add the indicated extension or dependency to your project.
+Refer to the associated documentation to learn how to use them.
+
+[cols="1,1,1",stripes=even,options=headers]
+|===
+|API
+|Extension or Dependency
+|Documentation
+
+|AMQP Client
+|`io.quarkus:quarkus-smallrye-reactive-messaging-amqp` (extension)
+|https://quarkus.io/guides/amqp
+
+|Circuit Breaker
+|`io.smallrye.reactive:smallrye-mutiny-vertx-circuit-breaker` (external dependency)
+|https://vertx.io/docs/vertx-circuit-breaker/java/
+
+|Consul Client
+|`io.smallrye.reactive:smallrye-mutiny-vertx-consul-client` (external dependency)
+|https://vertx.io/docs/vertx-consul-client/java/
+
+|DB2 Client
+|`io.quarkus:quarkus-reactive-db2-client` (extension)
+|https://quarkus.io/guides/reactive-sql-clients
+
+|Kafka Client
+|`io.quarkus:quarkus-smallrye-reactive-messaging-kafka` (extension)
+|https://quarkus.io/guides/kafka
+
+|Mail Client
+|`io.quarkus:quarkus-mailer` (extension)
+|https://quarkus.io/guides/mailer
+
+|MQTT Client
+|`io.quarkus:quarkus-smallrye-reactive-messaging-mqtt` (extension)
+|https://quarkus.io/guides/mqtt
+
+|MS SQL Client
+|`io.quarkus:quarkus-reactive-mssql-client` (extension)
+|https://quarkus.io/guides/reactive-sql-clients
+
+|MySQL Client
+|`io.quarkus:quarkus-reactive-mysql-client` (extension)
+|https://quarkus.io/guides/reactive-sql-clients
+
+|PostgreSQL Client
+|`io.quarkus:quarkus-reactive-pg-client` (extension)
+|https://quarkus.io/guides/reactive-sql-clients
+
+|RabbitMQ Client
+|`io.smallrye.reactive:smallrye-mutiny-vertx-rabbitmq-client` (external dependency)
+|https://vertx.io/docs/vertx-rabbitmq-client/java
+
+|Redis Client
+|`io.quarkus:quarkus-redis-client` (extension)
+|https://quarkus.io/guides/redis
+
+|Web Client
+|`io.smallrye.reactive:smallrye-mutiny-vertx-web-client` (external dependency)
+|https://vertx.io/docs/vertx-web-client/java/
+
+|===
+
+To learn more about the usage of the Vert.x Mutiny API, refer to https://smallrye.io/smallrye-mutiny-vertx-bindings.
+
+=== Example of usage
+
+This section gives an example using the Vert.x `WebClient`.
+As indicated in the table above, add the following dependency to your project:
+
+[source, xml, subs=attributes+]
+----
+<dependency>
+  <groupId>io.smallrye.reactive</groupId>
+  <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
+</dependency>
+----
+
+Now, in your code, you can create an instance of `WebClient`:
+
+[source, java]
+----
+package org.acme.vertx;
+
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import io.smallrye.mutiny.Uni;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
+
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.ext.web.client.WebClient;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.WebClientOptions;
+
+@Path("/fruit-data")
+public class ResourceUsingWebClient {
+
+    private final WebClient client;
+
+    @Inject
+    VertxResource(Vertx vertx) {
+        this.client = WebClient.create(vertx);
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/{name}")
+    public Uni<JsonObject> getFruitData(@PathParam("name") String name) {
+        return client.getAbs("https://.../api/fruit/" + name)
+                .send()
+                .onItem().transform(resp -> {
+                    if (resp.statusCode() == 200) {
+                        return resp.bodyAsJsonObject();
+                    } else {
+                        return new JsonObject()
+                                .put("code", resp.statusCode())
+                                .put("message", resp.bodyAsString());
+                    }
+                });
+    }
+
+}
+
+----
+
+This resource creates a `WebClient` and, upon request, uses this client to invoke a remote HTTP API.
+Depending on the result, the response is forwarded as received, or it creates a JSON object wrapping the error.
+The `WebClient` is asynchronous (and non-blocking), to the endpoint returns a `Uni`.
+
+The application can also run as a native executable.
+But, first, we need to instruct Quarkus to enable _ssl_ (if the remote API uses HTTPS).
+Open the `src/main/resources/application.properties` and add:
+
+[source,properties]
+----
+quarkus.ssl.native=true
+----
+
+Then, create the native executable with:
+
+[source,bash]
+----
+./mvnw package -Pnative
+----
+
+[#using-vert-x-json]
+== Using Vert.x JSON
+
+Vert.x APIs often rely on JSON.
+Vert.x provides two convenient classes to manipulate JSON document: `io.vertx.core.json.JsonObject` and `io.vertx.core.json.JsonArray`.
+
+`JsonObject` can be used to map an object into its JSON representation and build an object from a JSON document:
+
+[source, java]
+----
+// Map an object into JSON
+Person person = ...;
+JsonObject json = JsonObject.mapFrom(person);
+
+// Build an object from JSON
+json = new JsonObject();
+person = json.mapTo(Person.class);
+----
+
+Note that these features use the mapper managed by the `quarkus-jackson` extension.
+Refer to xref:rest-json.adoc#json[Jackson configuration] to customize the mapping.
+
+
+JSON Object and JSON Array are both supported as Quarkus HTTP endpoint requests and response bodies (using classic RESTEasy and RESTEasy Reactive).
+Consider these endpoints:
+
+
+[source,java]
+----
+@Path("/hello")
+@Produces(MediaType.APPLICATION_JSON)
+public class VertxJsonResource {
+
+    @GET
+    @Path("{name}/object")
+    public JsonObject jsonObject(@PathParam String name) {
+        return new JsonObject().put("Hello", name);
+    }
+
+    @GET
+    @Path("{name}/array")
+    public JsonArray jsonArray(@PathParam String name) {
+        return new JsonArray().add("Hello").add(name);
+    }
+}
+----
+
+http://localhost:8080/hello/Quarkus/object returns:
+
+[source, text]
+----
+{"Hello":"Quarkus"}
+----
+
+http://localhost:8080/hello/Quarkus/array returns:
+
+[source, text]
+----
+["Hello","Quarkus"]
+----
+
+This works equally well when the JSON content is a request body or is wrapped in a `Uni`, `Multi`, `CompletionStage` or `Publisher`.
+
+== Deploying verticles
+
+link:https://vertx.io/docs/vertx-core/java/#_verticles[Verticles] is "a simple, scalable, actor-like deployment and concurrency model" provided by _Vert.x_.
+This model does not claim to be a strict actor-model implementation, but it shares similarities, especially concerning concurrency, scaling, and deployment.
+To use this model, you write and _deploy_ verticles, communicating with each other by sending messages on the event bus.
+
+You can deploy _verticles_ in Quarkus.
+It supports:
+
+* _bare_ verticle - Java classes extending `io.vertx.core.AbstractVerticle`
+* _Mutiny_ verticle - Java classes extending `io.smallrye.mutiny.vertx.core.AbstractVerticle`
+
+To deploy verticles, use the regular Vert.x API:
+
+[source, java]
+----
+@Inject Vertx vertx;
+
+// ...
+vertx.deployVerticle(MyVerticle.class.getName(), ar -> { });
+vertx.deployVerticle(new MyVerticle(), ar -> { });
+----
+
+NOTE: An example explaining how to deploy verticles during the initialization of the application will follow.
+
+You can also pass deployment options to configure the verticle as well as set the number of instances.
+
+Verticles are not _beans_ by default.
+However, you can implement them as _ApplicationScoped_ beans and get injection support:
+
+[source, java]
+----
+package io.quarkus.vertx.verticles;
+
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.vertx.core.AbstractVerticle;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class MyBeanVerticle extends AbstractVerticle {
+
+    @ConfigProperty(name = "address") String address;
+
+    @Override
+    public Uni<Void> asyncStart() {
+        return vertx.eventBus().consumer(address)
+                .handler(m -> m.replyAndForget("hello"))
+                .completionHandler();
+    }
+}
+----
+
+You don't have to inject the `vertx` instance but instead, leverage the instance stored in the protected field of `AbstractVerticle`.
+
+Then, deploy the verticle instances with:
+
+[source, java]
+----
+package io.quarkus.vertx.verticles;
+
+import io.quarkus.runtime.StartupEvent;
+import io.vertx.mutiny.core.Vertx;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
+
+@ApplicationScoped
+public class VerticleDeployer {
+
+    public void init(@Observes StartupEvent e, Vertx vertx, MyBeanVerticle verticle) {
+         vertx.deployVerticle(verticle).await().indefinitely();
+    }
+}
+----
+
+If you want to deploy every exposed `AbstractVerticle`, you can use:
+
+[source,java]
+----
+public void init(@Observes StartupEvent e, Vertx vertx, Instance<AbstractVerticle> verticles) {
+    for (AbstractVerticle verticle : verticles) {
+        vertx.deployVerticle(verticle).await().indefinitely();
+    }
+}
+----
+
+[#eventbus]
+== Using the event bus
+
+Vert.x comes with a built-in https://vertx.io/docs/vertx-core/java/#event_bus[event bus] that you can use from your Quarkus application.
+So, your application components (CDI beans, resources...) can interact using asynchronous events, thus promoting loose-coupling.
+
+With the event bus, you send _messages_ to _virtual addresses_.
+The event bus offers three types of delivery mechanisms:
+
+- point-to-point - send the message, one consumer receives it. If several consumers listen to the address, a round-robin is applied;
+- publish/subscribe - publish a message; all the consumers listening to the address are receiving the message;
+- request/reply - send the message and expect a response. The receiver can respond to the message in an asynchronous fashion.
+
+All these delivery mechanisms are non-blocking and are providing one of the fundamental bricks to build reactive applications.
+
+=== Consuming events
+
+While you can use the Vert.x API to register consumers, Quarkus comes with declarative support.
+To consume events, use the `io.quarkus.vertx.ConsumeEvent` annotation:
+
+[source, java]
+----
+package org.acme.vertx;
+
+import io.quarkus.vertx.ConsumeEvent;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class GreetingService {
+
+    @ConsumeEvent                           // <1>
+    public String consume(String name) {    // <2>
+        return name.toUpperCase();
+    }
+}
+----
+<1> If not set, the address is the fully qualified name of the bean; for instance, in this snippet, it's `org.acme.vertx.GreetingService`.
+<2> The method parameter is the message body. If the method returns _something_, it's the message response.
+
+=== Configuring the address
+
+The `@ConsumeEvent` annotation can be configured to set the address:
+
+[source, java]
+----
+@ConsumeEvent("greeting")               // <1>
+public String consume(String name) {
+    return name.toUpperCase();
+}
+----
+<1> Receive the messages sent to the `greeting` address
+
+=== Asynchronous processing
+
+The previous examples use synchronous processing.
+Asynchronous processing is also possible by returning either an `io.smallrye.mutiny.Uni` or a `java.util.concurrent.CompletionStage`:
+
+[source,java]
+----
+package org.acme.vertx;
+
+import io.quarkus.vertx.ConsumeEvent;
+
+import javax.enterprise.context.ApplicationScoped;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import io.smallrye.mutiny.Uni;
+
+@ApplicationScoped
+public class GreetingService {
+
+    @ConsumeEvent
+    public CompletionStage<String> consume(String name) {
+        // return a CompletionStage completed when the processing is finished.
+        // You can also fail the CompletionStage explicitly
+    }
+
+    @ConsumeEvent
+    public Uni<String> process(String name) {
+        // return an Uni completed when the processing is finished.
+        // You can also fail the Uni explicitly
+    }
+}
+----
+
+[TIP]
+.Mutiny
+====
+The previous example uses Mutiny reactive types.
+If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an intuitive reactive programming library].
+====
+
+=== Blocking processing
+
+By default, the code consuming the event must be _non-blocking_, as it's called on an I/O thread.
+If your processing is blocking, use the `@io.smallrye.common.annotation.Blocking` annotation:
+
+[source, java]
+----
+@ConsumeEvent(value = "blocking-consumer")
+@Blocking
+void consumeBlocking(String message) {
+    // Something blocking
+}
+----
+
+Alternatively, you can use the `blocking` attribute from the `@ConsumeEvent` annotation:
+
+[source, java]
+----
+@ConsumeEvent(value = "blocking-consumer", blocking = true)
+void consumeBlocking(String message) {
+    // Something blocking
+}
+----
+
+When using `@Blocking`, it ignores the value of the `blocking` attribute of `@ConsumeEvent`.
+
+=== Replying to messages
+
+The _return_ value of a method annotated with `@ConsumeEvent` is used to respond to the incoming message.
+For instance, in the following snippet, the returned `String` is the response.
+
+[source, java]
+----
+@ConsumeEvent("greeting")
+public String consume(String name) {
+    return name.toUpperCase();
+}
+----
+
+You can also return a `Uni<T>` or a `CompletionStage<T>` to handle asynchronous reply:
+
+[source, java]
+----
+@ConsumeEvent("greeting")
+public Uni<String> consume2(String name) {
+    return Uni.createFrom().item(() -> name.toUpperCase()).emitOn(executor);
+}
+----
+
+[NOTE]
+====
+You can inject an `executor` if you use the Context Propagation extension:
+[source, code]
+----
+@Inject Executor executor;
+----
+====
+
+=== Implementing fire and forget interactions
+
+You don't have to reply to received messages.
+Typically, for a _fire and forget_ interaction, the messages are consumed, and the sender does not need to know about it.
+To implement this pattern, your consumer method returns `void`.
+
+[source,java]
+----
+@ConsumeEvent("greeting")
+public void consume(String event) {
+    // Do something with the event
+}
+----
+
+=== Dealing with messages
+
+Unlike the previous example using the _payloads_ directly, you can also use `Message` directly:
+
+[source, java]
+----
+@ConsumeEvent("greeting")
+public void consume(Message<String> msg) {
+    System.out.println(msg.address());
+    System.out.println(msg.body());
+}
+----
+
+=== Handling Failures
+
+If a method annotated with `@ConsumeEvent` throws an exception, then:
+
+* if a reply handler is set, then the failure is propagated back to the sender via an `io.vertx.core.eventbus.ReplyException` with code `ConsumeEvent#FAILURE_CODE` and the exception message,
+* if no reply handler is set, then the exception is rethrown (and wrapped in a `RuntimeException` if necessary) and can be handled by the default exception handler, i.e. `io.vertx.core.Vertx#exceptionHandler()`.
+
+=== Sending messages
+
+Sending and publishing messages use the Vert.x event bus:
+
+[source, java]
+----
+package org.acme.vertx;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.eventbus.EventBus;
+import io.vertx.mutiny.core.eventbus.Message;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/async")
+public class EventResource {
+
+    @Inject
+    EventBus bus;                                            // <1>
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("{name}")
+    public Uni<String> greeting(@PathParam String name) {
+        return bus.<String>request("greeting", name)        // <2>
+                .onItem().transform(Message::body);
+    }
+}
+----
+<1> Inject the Event bus
+<2> Send a message to the address `greeting`. Message payload is `name`
+
+The `EventBus` object provides methods to:
+
+1. `send` a message to a specific address - one single consumer receives the message.
+2. `publish` a message to a specific address - all consumers receive the messages.
+3. `request` a message and expect a reply
+
+[source, java]
+----
+// Case 1
+bus.sendAndForget("greeting", name)
+// Case 2
+bus.publish("greeting", name)
+// Case 3
+Uni<String> response = bus.<String>request("address", "hello, how are you?")
+        .onItem().transform(Message::body);
+----
+
+=== Using codecs
+
+The https://vertx.io/docs/vertx-core/java/#event_bus[Vert.x Event Bus] uses codecs to _serialize_ and _deserialize_ objects.
+Quarkus provides a default codec for local delivery.
+So you can exchange objects as follows:
+
+[source, java]
+----
+@GET
+@Produces(MediaType.TEXT_PLAIN)
+@Path("{name}")
+public Uni<String> greeting(@PathParam String name) {
+    return bus.<String>request("greeting", new MyName(name))
+        .onItem().transform(Message::body);
+}
+
+@ConsumeEvent(value = "greeting")
+Uni<String> greeting(MyName name) {
+    return Uni.createFrom().item(() -> "Hello " + name.getName());
+}
+----
+
+If you want to use a specific codec, you need to set it on both ends explicitly:
+
+[source, java]
+----
+@GET
+@Produces(MediaType.TEXT_PLAIN)
+@Path("{name}")
+public Uni<String> greeting(@PathParam String name) {
+    return bus.<String>request("greeting", name,
+        new DeliveryOptions().setCodecName(MyNameCodec.class.getName())) // <1>
+        .onItem().transform(Message::body);
+}
+
+@ConsumeEvent(value = "greeting", codec = MyNameCodec.class)            // <2>
+Uni<String> greeting(MyName name) {
+    return Uni.createFrom().item(() -> "Hello "+name.getName());
+}
+----
+1. Set the name of the codec to use to send the message
+2. Set the codec to use to receive the message
+
+=== Combining HTTP and the event bus
+
+Let's revisit a greeting HTTP endpoint and use asynchronous message passing to delegate the call to a separated bean.
+It uses the request/reply dispatching mechanism.
+Instead of implementing the business logic inside the JAX-RS endpoint, we are sending a message.
+Another bean consumes this message, and the response is sent using the _reply_ mechanism.
+
+In your HTTP endpoint class, inject the event bus and uses the `request` method to send a message to the event bus and expect a response:
+
+[source,java]
+----
+package org.acme.vertx;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.eventbus.EventBus;
+import io.vertx.mutiny.core.eventbus.Message;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/bus")
+public class EventResource {
+
+    @Inject
+    EventBus bus;
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("{name}")
+    public Uni<String> greeting(@PathParam String name) {
+        return bus.<String>request("greeting", name)            // <1>
+                .onItem().transform(Message::body);            // <2>
+    }
+}
+----
+<1> send the `name` to the `greeting` address and request a response
+<2> when we get the response, extract the body and send it to the user
+
+NOTE: the HTTP method returns a `Uni`.
+If you are using RESTEasy Reactive, `Uni` support is built-in.
+If you are using _classic_ RESTEasy, you need to add the `quarkus resteasy-mutiny` extension to your project.
+
+We need a consumer listening on the `greeting` address.
+This consumer can be in the same class or another bean such as:
+
+[source, java]
+----
+package org.acme.vertx;
+
+import io.quarkus.vertx.ConsumeEvent;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class GreetingService {
+
+    @ConsumeEvent("greeting")
+    public String greeting(String name) {
+        return "Hello " + name;
+    }
+
+}
+----
+
+This bean receives the name and returns the greeting message.
+
+With this in place, every HTTP request on `/bus/quarkus` sends a message to the event bus, waits for a reply, and when this one arrives, writes the HTTP response:
+
+[source,text]
+----
+Hello Quarkus
+----
+
+To better understand, let's detail how the HTTP request/response has been handled:
+
+1. The request is received by the `greeting` method
+2. a message containing the _name_ is sent to the event bus
+3. Another bean receives this message and computes the response
+4. This response is sent back using the reply mechanism
+5. Once the reply is received by the sender, the content is written to the HTTP response
+
+
+=== Bi-directional communication with browsers using SockJS
+
+The SockJS bridge provided by Vert.x allows browser applications and Quarkus applications to communicate using the event bus.
+It connects both sides.
+So, both sides can send messages received on the other side.
+It supports the three delivery mechanisms.
+
+SockJS negotiates the communication channel between the Quarkus application and the browser.
+If WebSockets are supported, it uses them; otherwise, it degrades to SSE, long polling, etc.
+
+So use SockJS, you need to configure the bridge, especially the addresses that will be used to communicate:
+
+[source, java]
+----
+package org.acme.vertx;
+
+import io.vertx.core.Vertx;
+import io.vertx.ext.bridge.PermittedOptions;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.sockjs.SockJSBridgeOptions;
+import io.vertx.ext.web.handler.sockjs.SockJSHandler;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
+import javax.inject.Inject;
+import java.util.concurrent.atomic.AtomicInteger;
+
+@ApplicationScoped
+public class SockJsExample {
+
+    @Inject
+    Vertx vertx;
+
+    public void init(@Observes Router router) {
+        SockJSHandler sockJSHandler = SockJSHandler.create(vertx);
+        sockJSHandler.bridge(new SockJSBridgeOptions()
+                .addOutboundPermitted(new PermittedOptions().setAddress("ticks")));
+        router.route("/eventbus/*").handler(sockJSHandler);
+    }
+
+}
+----
+
+This code configures the SockJS bridge to send all the messages targeting the `ticks` address to the connected browsers.
+More detailled explanations about the configuration can be found on https://vertx.io/docs/vertx-web/java/#_sockjs_event_bus_bridge[the Vert.x SockJS Bridge documentation].
+
+The browser must use the `vertx-eventbus` JavaScript library to consume the message:
+
+[source, html]
+----
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>SockJS example - Quarkus</title>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"
+            integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script type="application/javascript" src="https://cdn.jsdelivr.net/sockjs/0.3.4/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vertx3-eventbus-client@3.8.5/vertx-eventbus.min.js"></script>
+</head>
+<body>
+
+<h1>SockJS Examples</h1>
+
+<p><strong>Last Tick:</strong> <span id="tick"></span></p>
+
+</body>
+<script>
+    var eb = new EventBus('/eventbus');
+
+    eb.onopen = function () {
+
+        eb.registerHandler('ticks', function (error, message) {
+            $("#tick").html(message.body);
+        });
+    }
+
+</script>
+</html>
+----
+
+[#native-transport]
+== Native Transport
+
+IMPORTANT: Native transports are not supported in GraalVM produced binaries.
+
+Vert.x is capable of using https://netty.io/wiki/native-transports.html[Netty's native transports], which offers
+performance improvements on specific platforms.To enable them, you must include the appropriate dependency for your
+platform. It's usually a good idea to have both to keep your application platform agnostic. Netty is smart enough
+to use the correct one, that includes none at all on unsupported platforms:
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.netty</groupId>
+  <artifactId>netty-transport-native-epoll</artifactId>
+  <classifier>linux-x86_64</classifier>
+</dependency>
+
+<dependency>
+  <groupId>io.netty</groupId>
+  <artifactId>netty-transport-native-kqueue</artifactId>
+  <classifier>osx-x86_64</classifier>
+</dependency>
+----
+
+You will also have to explicitly configure Vert.x to use the native transport.
+In `application.properties` add:
+
+[source,properties]
+----
+quarkus.vertx.prefer-native-transport=true
+----
+
+Or in `application.yml`:
+
+[source,yml]
+----
+quarkus:
+  vertx:
+    prefer-native-transport: true
+----
+
+If all is well quarkus will log:
+
+----
+[io.qua.ver.cor.run.VertxCoreRecorder] (main) Vertx has Native Transport Enabled: true
+----
+
+=== Native Linux Transport
+
+On Linux you can enable the following socket options:
+
+* SO_REUSEPORT
+----
+quarkus.http.so-reuse-port=true
+----
+* TCP_QUICKACK
+----
+quarkus.http.tcp-quick-ack=true
+----
+* TCP_CORK
+----
+quarkus.http.tcp-cork=true
+----
+* TCP_FASTOPEN
+----
+quarkus.http.tcp-fast-open=true
+----
+
+=== Native MacOS Transport
+
+On MacOS Sierra and above you can enable the following socket options:
+
+* SO_REUSEPORT
+----
+quarkus.http.so-reuse-port=true
+----
+
+
+== Listening to a Unix Domain Socket
+
+Listening on a Unix domain socket allows us to dispense with the overhead of TCP
+if the connection to the quarkus service is established from the same host. This can happen
+if access to the service goes through a proxy which is often the case
+if you're setting up a service mesh with a proxy like Envoy.
+
+IMPORTANT: This will only work on platforms that support <<native-transport>>.
+
+Enable the appropriate <<native-transport>> and set the following
+environment property:
+
+----
+quarkus.http.domain-socket=/var/run/io.quarkus.app.socket
+quarkus.http.domain-socket-enabled=true
+----
+
+By itself this will not disable the tcp socket which by default will open on
+`0.0.0.0:8080`. It can be explicitly disabled:
+
+----
+quarkus.http.host-enabled=false
+----
+
+These properties can be set through Java's `-D` command line parameter or
+on `application.properties`.
+
+== Read only deployment environments
+
+In environments with read only file systems you may receive errors of the form:
+
+[source]
+----
+java.lang.IllegalStateException: Failed to create cache dir
+----
+
+Assuming `/tmp/` is writable this can be fixed by setting the `vertx.cacheDirBase` property to point to a directory in `/tmp/` for instance in OpenShift by creating an environment variable `JAVA_OPTS` with the value `-Dvertx.cacheDirBase=/tmp/vertx`.

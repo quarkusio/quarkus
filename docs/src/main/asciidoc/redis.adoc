@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using the Redis Client
+= Using the Redis Client
 :extension-status: preview
 include::./attributes.adoc[]
 
@@ -45,7 +45,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=redis-quickstart \
     -Dextensions="redis-client,resteasy-jackson,resteasy-mutiny" \
@@ -593,7 +593,7 @@ The client to be created are configured using the usual <<config-reference,Redis
 
 [NOTE]
 ====
-This is useful to create a client dynamically in a non-CDI bean e.g a link:hibernate-orm-panache.adoc[Panache entity].
+This is useful to create a client dynamically in a non-CDI bean e.g a link:hibernate-orm-panache[Panache entity].
 Or to create a different client when running in pub/sub mode. This mode requires two different connections
 because once a connection invokes a subscriber mode then it cannot be used for running other commands
 than the command to leave that mode.

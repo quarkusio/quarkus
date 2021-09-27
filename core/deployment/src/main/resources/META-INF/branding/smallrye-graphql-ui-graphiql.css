@@ -51,11 +51,11 @@ body {
     padding-top: 12px !important;   
 }
 
-#graphiql .title a::after {
+#graphQLUiTitleLink::after {
   content: "GraphQL UI";
 }
 
-#graphiql .title a {
+#graphQLUiTitleLink {
     display: flex;
     align-items:center;
     color: white;
@@ -64,9 +64,13 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
-#graphiql .title img {
+#graphQLUiLogoLink img {
     border-right: 1px solid darkgrey;
     padding-right: 10px;
     margin-right: 10px;
     height: 30px;
+}
+
+.graphiql-container .title {
+    display: flex;
 }

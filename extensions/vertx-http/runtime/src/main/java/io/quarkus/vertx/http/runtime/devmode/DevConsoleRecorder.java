@@ -15,6 +15,7 @@ import java.util.function.Supplier;
 import org.jboss.logging.Logger;
 
 import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.dev.testing.ContinuousTestingSharedStateManager;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
@@ -44,8 +45,18 @@ public class DevConsoleRecorder {
         return new DevConsoleStaticHandler(devConsoleFinalDestination);
     }
 
-    public Handler<RoutingContext> continousTestHandler() {
-        return new ContinuousTestWebSocketHandler();
+    public Handler<RoutingContext> continuousTestHandler(ShutdownContext context) {
+
+        ContinuousTestWebSocketHandler handler = new ContinuousTestWebSocketHandler();
+        ContinuousTestingSharedStateManager.addStateListener(handler);
+        context.addShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                ContinuousTestingSharedStateManager.removeStateListener(handler);
+
+            }
+        });
+        return handler;
     }
 
     private static final class CleanupDevConsoleTempDirectory implements Runnable {

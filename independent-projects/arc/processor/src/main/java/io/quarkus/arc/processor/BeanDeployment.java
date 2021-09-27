@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -150,15 +151,19 @@ public class BeanDeployment {
         interceptorNonbindingMembers = new HashMap<>();
         interceptorBindings = findInterceptorBindings(this.beanArchiveIndex);
         for (InterceptorBindingRegistrar registrar : builder.interceptorBindingRegistrars) {
-            for (Map.Entry<DotName, Set<String>> entry : registrar.registerAdditionalBindings().entrySet()) {
-                DotName dotName = entry.getKey();
-                ClassInfo classInfo = getClassByName(this.beanArchiveIndex, dotName);
-                if (classInfo != null) {
-                    if (entry.getValue() != null) {
-                        interceptorNonbindingMembers.put(dotName, entry.getValue());
+            for (InterceptorBindingRegistrar.InterceptorBinding binding : registrar.getAdditionalBindings()) {
+                DotName dotName = binding.getName();
+                ClassInfo annotationClass = getClassByName(this.beanArchiveIndex, dotName);
+                if (annotationClass != null) {
+                    Set<String> nonbinding = new HashSet<>();
+                    for (MethodInfo method : annotationClass.methods()) {
+                        if (binding.isNonbinding(method.name())) {
+                            nonbinding.add(method.name());
+                        }
                     }
-                    interceptorBindings.put(dotName, classInfo);
+                    interceptorNonbindingMembers.put(dotName, nonbinding);
                 }
+                interceptorBindings.put(dotName, annotationClass);
             }
         }
         repeatingInterceptorBindingAnnotations = findContainerAnnotations(interceptorBindings, this.beanArchiveIndex);
@@ -226,10 +231,12 @@ public class BeanDeployment {
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
         this.beans.addAll(findBeans(initBeanDefiningAnnotations(beanDefiningAnnotations, stereotypes.keySet()), observers,
                 injectionPoints, jtaCapabilities));
+        // Note that we need to use view of the collections to reflect further additions, e.g. synthetic beans and observers
         buildContextPut(Key.BEANS.asString(), Collections.unmodifiableList(beans));
         buildContextPut(Key.OBSERVERS.asString(), Collections.unmodifiableList(observers));
 
         this.interceptors.addAll(findInterceptors(injectionPoints));
+        buildContextPut(Key.INTERCEPTORS.asString(), Collections.unmodifiableList(interceptors));
         this.decorators.addAll(findDecorators(injectionPoints));
         this.injectionPoints.addAll(injectionPoints);
         buildContextPut(Key.INJECTION_POINTS.asString(), Collections.unmodifiableList(this.injectionPoints));
@@ -239,7 +246,7 @@ public class BeanDeployment {
 
     void init(Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             List<Predicate<BeanInfo>> additionalUnusedBeanExclusions) {
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
 
         // Collect dependency resolution errors
         List<Throwable> errors = new ArrayList<>();
@@ -263,85 +270,120 @@ public class BeanDeployment {
         }
 
         if (removeUnusedBeans) {
-            long removalStart = System.currentTimeMillis();
-            Set<BeanInfo> removable = new HashSet<>();
-            Set<BeanInfo> unusedProducers = new HashSet<>();
-            Set<BeanInfo> unusedButDeclaresProducer = new HashSet<>();
-            List<BeanInfo> producers = beans.stream().filter(b -> b.isProducerMethod() || b.isProducerField())
-                    .collect(Collectors.toList());
-            List<InjectionPointInfo> instanceInjectionPoints = injectionPoints.stream()
-                    .filter(BuiltinBean.INSTANCE::matches)
-                    .collect(Collectors.toList());
-            Set<BeanInfo> injected = injectionPoints.stream().map(InjectionPointInfo::getResolvedBean)
-                    .collect(Collectors.toSet());
-            Set<BeanInfo> declaresProducer = producers.stream().map(BeanInfo::getDeclaringBean).collect(Collectors.toSet());
+            long removalStart = System.nanoTime();
             Set<BeanInfo> declaresObserver = observers.stream().map(ObserverInfo::getDeclaringBean).collect(Collectors.toSet());
-            test: for (BeanInfo bean : beans) {
-                // Named beans can be used in templates and expressions
-                if (bean.getName() != null) {
-                    continue test;
-                }
-                // Unremovable synthetic beans
-                if (!bean.isRemovable()) {
-                    continue test;
-                }
-                // Custom exclusions
-                for (Predicate<BeanInfo> exclusion : allUnusedExclusions) {
-                    if (exclusion.test(bean)) {
-                        continue test;
-                    }
-                }
-                // Is injected
-                if (injected.contains(bean)) {
-                    continue test;
-                }
-                // Declares an observer method
-                if (declaresObserver.contains(bean)) {
-                    continue test;
-                }
-                // Instance<Foo>
-                for (InjectionPointInfo injectionPoint : instanceInjectionPoints) {
-                    if (Beans.hasQualifiers(bean, injectionPoint.getRequiredQualifiers()) && Beans.matchesType(bean,
-                            injectionPoint.getType().asParameterizedType().arguments().get(0))) {
-                        continue test;
-                    }
-                }
-                // Declares a producer - see also second pass
-                if (declaresProducer.contains(bean)) {
-                    unusedButDeclaresProducer.add(bean);
-                    continue test;
-                }
-                if (bean.isProducerField() || bean.isProducerMethod()) {
-                    // This bean is very likely an unused producer
-                    unusedProducers.add(bean);
-                }
-                removable.add(bean);
-            }
-            if (!unusedProducers.isEmpty()) {
-                // Second pass to find beans which themselves are unused and declare only unused producers
-                Map<BeanInfo, List<BeanInfo>> declaringMap = producers.stream()
-                        .collect(Collectors.groupingBy(BeanInfo::getDeclaringBean));
-                for (Entry<BeanInfo, List<BeanInfo>> entry : declaringMap.entrySet()) {
-                    BeanInfo declaringBean = entry.getKey();
-                    if (unusedButDeclaresProducer.contains(declaringBean) && unusedProducers.containsAll(entry.getValue())) {
-                        // All producers declared by this bean are unused
-                        removable.add(declaringBean);
-                    }
-                }
-            }
-            if (!removable.isEmpty()) {
-                beans.removeAll(removable);
-                removedBeans.addAll(removable);
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debugf(removedBeans.stream().map(b -> "Removed unused " + b).collect(Collectors.joining("\n")));
-                }
-            }
-            LOGGER.debugf("Removed %s unused beans in %s ms", removable.size(), System.currentTimeMillis() - removalStart);
+            Set<DecoratorInfo> removedDecorators = new HashSet<>();
+            Set<InterceptorInfo> removedInterceptors = new HashSet<>();
+            removeUnusedComponents(declaresObserver, allUnusedExclusions, removedDecorators, removedInterceptors);
+
+            LOGGER.debugf("Removed %s beans, %s interceptors and %s decorators in %s ms", removedBeans.size(),
+                    removedInterceptors.size(), removedDecorators.size(),
+                    TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - removalStart));
         }
-
         buildContext.putInternal(BuildExtension.Key.REMOVED_BEANS.asString(), Collections.unmodifiableSet(removedBeans));
+        LOGGER.debugf("Bean deployment initialized in %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
+    }
 
-        LOGGER.debugf("Bean deployment initialized in %s ms", System.currentTimeMillis() - start);
+    private void removeUnusedComponents(Set<BeanInfo> declaresObserver,
+            List<Predicate<BeanInfo>> allUnusedExclusions, Set<DecoratorInfo> removedDecorators,
+            Set<InterceptorInfo> removedInterceptors) {
+        int removed;
+        do {
+            removed = 0;
+            removed += removeUnusedBeans(declaresObserver, allUnusedExclusions).size();
+            removed += removeUnusedInterceptors(removedInterceptors, allUnusedExclusions).size();
+            removed += removeUnusedDecorators(removedDecorators, allUnusedExclusions).size();
+        } while (removed > 0);
+    }
+
+    private Set<InterceptorInfo> removeUnusedInterceptors(Set<InterceptorInfo> removedInterceptors,
+            List<Predicate<BeanInfo>> allUnusedExclusions) {
+        Set<InterceptorInfo> removableInterceptors = new HashSet<>();
+        for (InterceptorInfo interceptor : this.interceptors) {
+            boolean removable = true;
+            for (Predicate<BeanInfo> exclusion : allUnusedExclusions) {
+                if (exclusion.test(interceptor)) {
+                    removable = false;
+                    break;
+                }
+            }
+            if (removable) {
+                for (BeanInfo bean : this.beans) {
+                    if (bean.getBoundInterceptors().contains(interceptor)) {
+                        removable = false;
+                        break;
+                    }
+                }
+            }
+            if (removable) {
+                removableInterceptors.add(interceptor);
+            }
+        }
+        if (!removableInterceptors.isEmpty()) {
+            removedInterceptors.addAll(removableInterceptors);
+            this.interceptors.removeAll(removableInterceptors);
+            List<InjectionPointInfo> removableInjectionPoints = removableInterceptors.stream()
+                    .flatMap(d -> d.getAllInjectionPoints().stream()).collect(Collectors.toList());
+            injectionPoints.removeAll(removableInjectionPoints);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debugf(removableInterceptors.stream().map(i -> "Removed unused interceptor " + i)
+                        .collect(Collectors.joining("\n")));
+            }
+        }
+        return removableInterceptors;
+    }
+
+    private Set<DecoratorInfo> removeUnusedDecorators(Set<DecoratorInfo> removedDecorators,
+            List<Predicate<BeanInfo>> allUnusedExclusions) {
+        Set<DecoratorInfo> removableDecorators = new HashSet<>();
+        for (DecoratorInfo decorator : this.decorators) {
+            boolean removable = true;
+            for (Predicate<BeanInfo> exclusion : allUnusedExclusions) {
+                if (exclusion.test(decorator)) {
+                    removable = false;
+                    break;
+                }
+            }
+            if (removable) {
+                for (BeanInfo bean : this.beans) {
+                    if (bean.getBoundDecorators().contains(decorator)) {
+                        removable = false;
+                        break;
+                    }
+                }
+            }
+            if (removable) {
+                removableDecorators.add(decorator);
+            }
+        }
+        if (!removableDecorators.isEmpty()) {
+            removedDecorators.addAll(removableDecorators);
+            this.decorators.removeAll(removableDecorators);
+            List<InjectionPointInfo> removableInjectionPoints = removableDecorators.stream()
+                    .flatMap(d -> d.getAllInjectionPoints().stream()).collect(Collectors.toList());
+            injectionPoints.removeAll(removableInjectionPoints);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debugf(removableDecorators.stream().map(i -> "Removed unused decorator " + i)
+                        .collect(Collectors.joining("\n")));
+            }
+        }
+        return removableDecorators;
+    }
+
+    private Set<BeanInfo> removeUnusedBeans(Set<BeanInfo> declaresObserver, List<Predicate<BeanInfo>> allUnusedExclusions) {
+        Set<BeanInfo> removableBeans = UnusedBeans.findRemovableBeans(this.beans, this.injectionPoints, declaresObserver,
+                allUnusedExclusions);
+        if (!removableBeans.isEmpty()) {
+            this.beans.removeAll(removableBeans);
+            this.removedBeans.addAll(removableBeans);
+            List<InjectionPointInfo> removableInjectionPoints = removableBeans.stream()
+                    .flatMap(d -> d.getAllInjectionPoints().stream()).collect(Collectors.toList());
+            injectionPoints.removeAll(removableInjectionPoints);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debugf(removedBeans.stream().map(b -> "Removed unused " + b).collect(Collectors.joining("\n")));
+            }
+        }
+        return removableBeans;
     }
 
     ValidationContext validate(List<BeanDeploymentValidator> validators,
@@ -439,6 +481,10 @@ public class BeanDeployment {
 
     ClassInfo getQualifier(DotName name) {
         return qualifiers.get(name);
+    }
+
+    boolean isInheritedQualifier(DotName name) {
+        return (getQualifier(name).classAnnotation(DotNames.INHERITED) != null);
     }
 
     /**
@@ -631,6 +677,10 @@ public class BeanDeployment {
         for (final Collection<AnnotationInstance> annotations : additionalStereotypes.values()) {
             stereotypeAnnotations.addAll(annotations);
         }
+        Set<DotName> stereotypeNames = new HashSet<>();
+        for (AnnotationInstance stereotype : stereotypeAnnotations) {
+            stereotypeNames.add(stereotype.target().asClass().name());
+        }
         for (AnnotationInstance stereotype : stereotypeAnnotations) {
             final DotName stereotypeName = stereotype.target().asClass().name();
             ClassInfo stereotypeClass = getClassByName(index, stereotypeName);
@@ -640,6 +690,7 @@ public class BeanDeployment {
                 Integer alternativePriority = null;
                 List<ScopeInfo> scopes = new ArrayList<>();
                 List<AnnotationInstance> bindings = new ArrayList<>();
+                List<AnnotationInstance> parentStereotypes = new ArrayList<>();
                 boolean isNamed = false;
 
                 for (AnnotationInstance annotation : annotationStore.getAnnotations(stereotypeClass)) {
@@ -647,6 +698,8 @@ public class BeanDeployment {
                         isAlternative = true;
                     } else if (interceptorBindings.containsKey(annotation.name())) {
                         bindings.add(annotation);
+                    } else if (stereotypeNames.contains(annotation.name())) {
+                        parentStereotypes.add(annotation);
                     } else if (DotNames.NAMED.equals(annotation.name())) {
                         if (annotation.value() != null && !annotation.value()
                                 .asString()
@@ -666,8 +719,9 @@ public class BeanDeployment {
                 }
                 boolean isAdditionalStereotypeBuildItem = additionalStereotypes.containsKey(stereotypeName);
                 final ScopeInfo scope = getValidScope(scopes, stereotypeClass);
+                boolean isInherited = stereotypeClass.classAnnotation(DotNames.INHERITED) != null;
                 stereotypes.put(stereotypeName, new StereotypeInfo(scope, bindings, isAlternative, alternativePriority,
-                        isNamed, false, isAdditionalStereotypeBuildItem, stereotypeClass));
+                        isNamed, false, isAdditionalStereotypeBuildItem, stereotypeClass, isInherited, parentStereotypes));
             }
         }
         //if an additional bean defining annotation has a default scope we register it as a stereotype
@@ -676,10 +730,11 @@ public class BeanDeployment {
                 if (i.getDefaultScope() != null) {
                     ScopeInfo scope = getScope(i.getDefaultScope(), customContexts);
                     ClassInfo stereotypeClassInfo = getClassByName(index, i.getAnnotation());
+                    boolean isInherited = stereotypeClassInfo.classAnnotation(DotNames.INHERITED) != null;
                     if (stereotypeClassInfo != null) {
                         stereotypes.put(i.getAnnotation(), new StereotypeInfo(scope, Collections.emptyList(),
                                 false, null, false, true,
-                                false, stereotypeClassInfo));
+                                false, stereotypeClassInfo, isInherited, Collections.emptyList()));
                     }
                 }
             }

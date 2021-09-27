@@ -160,6 +160,10 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                     candidates = typeTriggers.get(ceType);
 
                     if (candidates == null || candidates.isEmpty()) {
+                        candidates = typeTriggers.get("*"); // Catch-all
+                    }
+
+                    if (candidates == null || candidates.isEmpty()) {
                         routingContext.fail(404);
                         log.error("Couldn't map CloudEvent type: '" + ceType + "' to a function.");
                         return;

@@ -1,5 +1,5 @@
 plugins {
-    id "com.gradle.enterprise" version "3.1"
+    id "com.gradle.enterprise" version "3.6.4"
 }
 
 gradleEnterprise {
@@ -12,4 +12,5 @@ gradleEnterprise {
     }
 }
 
-rootProject.name = 'quarkus-gradle-plugin'
+rootProject.name = 'quarkus-gradle-plugins'
+include 'gradle-application-plugin', 'gradle-extension-plugin'

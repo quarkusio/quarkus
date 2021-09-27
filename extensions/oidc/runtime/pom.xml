@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-oidc</artifactId>
     <name>Quarkus - OpenID Connect Adapter - Runtime</name>
-    <description>Secure your applications with OpenID Connect Adapter and IDP such as Keycloak</description>
+    <description>Verify Bearer access tokens and authenticate users with Authorization Code Flow</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -19,7 +19,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-core</artifactId>
+            <artifactId>quarkus-vertx</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -49,10 +49,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jackson</artifactId>
         </dependency>
     </dependencies>
 

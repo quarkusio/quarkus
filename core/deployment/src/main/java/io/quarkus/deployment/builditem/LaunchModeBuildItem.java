@@ -18,12 +18,15 @@ public final class LaunchModeBuildItem extends SimpleBuildItem {
     private final boolean auxiliaryApplication;
     private final Optional<DevModeType> auxiliaryDevModeType;
 
+    private final boolean test;
+
     public LaunchModeBuildItem(LaunchMode launchMode, Optional<DevModeType> devModeType, boolean auxiliaryApplication,
-            Optional<DevModeType> auxiliaryDevModeType) {
+            Optional<DevModeType> auxiliaryDevModeType, boolean test) {
         this.launchMode = launchMode;
         this.devModeType = devModeType;
         this.auxiliaryApplication = auxiliaryApplication;
         this.auxiliaryDevModeType = auxiliaryDevModeType;
+        this.test = test;
     }
 
     public LaunchMode getLaunchMode() {
@@ -56,5 +59,13 @@ public final class LaunchModeBuildItem extends SimpleBuildItem {
      */
     public Optional<DevModeType> getAuxiliaryDevModeType() {
         return auxiliaryDevModeType;
+    }
+
+    /**
+     * If this is a test. Dev mode tests don't launch with a launch mode TEST, so this
+     * can be used to determine if we are in a dev mode test.
+     */
+    public boolean isTest() {
+        return test;
     }
 }

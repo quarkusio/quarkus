@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Deploying on OpenShift
+= Deploying on OpenShift
 
 include::./attributes.adoc[]
 
@@ -27,7 +27,7 @@ First, we need a new project that contains the OpenShift extension. This can be 
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=openshift-quickstart \
     -DclassName="org.acme.rest.GreetingResource" \
@@ -74,6 +74,15 @@ Building is handled by the link:container-image#s2i[container-image-s2i] extensi
 ----
 
 The build that will be performed is an s2i binary build. The input of the build is the jar that has been built locally and the output of the build is an ImageStream that is configured to automatically trigger a deployment.
+
+[NOTE]
+====
+During the build you may find the `Caused by: javax.net.ssl.SSLHandshakeException: sun.security.validator.ValidatorException: PKIX path building failed` exception due to self-signed certificate. To solve this, just add the following line to your `application.properties`:
+```properties
+quarkus.kubernetes-client.trust-certs=true
+```
+For more information, see link:https://quarkus.io/guides/deploying-to-kubernetes#client-connection-configuration[deploying to kubernetes].
+====
 
 To deploy the container image created in the above step to OpenShift, follow these commands:
 [source,bash,subs=attributes+]
@@ -370,6 +379,13 @@ quarkus.openshift.secret-volumes.my-volume.secret-name=my-secret
 [source,properties]
 ----
 quarkus.openshift.config-map-volumes.my-volume.config-map-name=my-secret
+----
+
+===== Persistent Volume Claims
+
+[source,properties]
+----
+quarkus.openshift.pvc-volumes.my-pvc.claim-name=my-pvc
 ----
 
 === Knative - OpenShift Serverless

@@ -28,9 +28,8 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
@@ -46,18 +45,25 @@ public class JacocoProcessor {
     }
 
     @BuildStep(onlyIf = IsTest.class)
-    void transformerBuildItem(BuildProducer<BytecodeTransformerBuildItem> transformers, CombinedIndexBuildItem indexBuildItem,
+    void transformerBuildItem(BuildProducer<BytecodeTransformerBuildItem> transformers,
             OutputTargetBuildItem outputTargetBuildItem,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildSystemTargetBuildItem buildSystemTargetBuildItem,
-            ShutdownContextBuildItem shutdownContextBuildItem,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
+            LaunchModeBuildItem launchModeBuildItem,
             JacocoConfig config) throws Exception {
+        if (launchModeBuildItem.isAuxiliaryApplication()) {
+            //no code coverage for continuous testing, it does not really make sense
+            return;
+        }
+
         String dataFile = outputTargetBuildItem.getOutputDirectory().toAbsolutePath().toString() + File.separator
                 + config.dataFile;
         System.setProperty("jacoco-agent.destfile",
                 dataFile);
-        Files.deleteIfExists(Paths.get(dataFile));
+        if (!config.reuseDataFile) {
+            Files.deleteIfExists(Paths.get(dataFile));
+        }
 
         Instrumenter instrumenter = new Instrumenter(new OfflineInstrumentationAccessGenerator());
         Set<String> seen = new HashSet<>();

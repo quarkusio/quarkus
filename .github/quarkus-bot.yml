@@ -103,6 +103,12 @@ triage:
       notify: [kenfinnigan]
       directories:
         - extensions/jaeger/
+    - labels: [area/jackson]
+      title: "jackson"
+      notify: [geoand, gsmet]
+      directories:
+        - extensions/jackson/
+        - integration-tests/jackson/
     - labels: [area/kotlin]
       titleBody: "kotlin"
       notify: [evanchooly]
@@ -194,7 +200,7 @@ triage:
         - extensions/resteasy-qute/
     - labels: [area/reactive-messaging, area/smallrye]
       title: "reactive.messaging"
-      notify: [cescoffier, kenfinnigan, phillip-kruger, michalszynkiewicz]
+      notify: [cescoffier, kenfinnigan, phillip-kruger, michalszynkiewicz, ozangunalp]
       directories:
         - extensions/smallrye-reactive-messaging
     - labels: [area/rest-client]
@@ -217,7 +223,7 @@ triage:
       titleBody: "windows"
     - labels: [area/kubernetes]
       titleBody: "kubernetes"
-      notify: [geoand]
+      notify: [geoand, iocanel]
       directories:
         - extensions/kubernetes/
         - extensions/kubernetes-client/
@@ -228,15 +234,15 @@ triage:
       notify: [geoand]
     - labels: [area/kubernetes]
       titleBody: "openshift"
-      notify: [geoand]
+      notify: [geoand, iocanel]
     - labels: [area/kubernetes]
       titleBody: "knative"
-      notify: [geoand]
+      notify: [geoand, iocanel]
     - labels: [area/container-image]
       titleBody: "jib"
       notify: [geoand]
     - labels: [area/kafka]
-      notify: [cescoffier]
+      notify: [cescoffier, ozangunalp]
       title: "kafka"
       directories:
         - extensions/kafka-client/
@@ -305,10 +311,17 @@ triage:
         - extensions/cache/
         - integration-tests/cache/
     - labels: [area/cli]
-      title: "cli |qs "
+      title: "\\b(cli)\\b"
       directories:
         - devtools/cli/
-      notify: [maxandersen,ebullient,gsmet]
+      notify: [maxandersen,ebullient]
+    - labels: [area/picocli]
+      title: "picocli"
+      directories:
+        - extensions/picocli/
+        - integration-tests/picocli/
+        - integration-tests/picocli-native/
+      notify: [ebullient]
     - labels: [area/config]
       directories:
         - extensions/config-yaml/
@@ -365,6 +378,12 @@ triage:
         - extensions/oidc/
         - integration-tests/oidc/
         - integration-tests/oidc-code-flow/
+    - labels: [area/keycloak]
+      title: "keycloak"
+      notify: [sberyozkin, pedroigor]
+      directories:
+        - extensions/keycloak
+        - integration-tests/keycloak
     - labels: [area/platform]
       directories:
         - independent-projects/tools/
@@ -427,7 +446,6 @@ triage:
       directories:
         - extensions/security/
         - extensions/elytron
-        - extensions/vertx-keycloak/
         - integration-tests/elytron
     - labels: [area/flyway]
       title: "flyway"
@@ -476,9 +494,11 @@ triage:
       directories:
         - extensions/reactive-db2-client/
         - extensions/reactive-mysql-client/
+        - extensions/reactive-mssql-client/
         - extensions/reactive-pg-client/
         - integration-tests/reactive-db2-client/
         - integration-tests/reactive-mysql-client/
+        - integration-tests/reactive-mssql-client/
         - integration-tests/reactive-pg-client/
     - labels: [area/adr]
       title: "adr"

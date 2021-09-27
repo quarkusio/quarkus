@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.agroal.api.configuration.AgroalConnectionFactoryConfiguration;
+import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -47,6 +48,12 @@ public class DataSourceJdbcRuntimeConfig {
     public Optional<Duration> backgroundValidationInterval = Optional.of(Duration.ofMinutes(2));
 
     /**
+     * Perform foreground validation on connections that have been idle for longer than the specified interval.
+     */
+    @ConfigItem
+    public Optional<Duration> foregroundValidationInterval = Optional.empty();
+
+    /**
      * The timeout before cancelling the acquisition of a new connection
      */
     @ConfigItem(defaultValue = "5")
@@ -77,6 +84,12 @@ public class DataSourceJdbcRuntimeConfig {
     public Optional<AgroalConnectionFactoryConfiguration.TransactionIsolation> transactionIsolationLevel = Optional.empty();
 
     /**
+     * Collect and display extra troubleshooting info on leaked connections.
+     */
+    @ConfigItem
+    public boolean extendedLeakReport;
+
+    /**
      * When enabled Agroal will be able to produce a warning when a connection is returned
      * to the pool without the application having closed all open statements.
      * This is unrelated with tracking of open connections.
@@ -104,6 +117,14 @@ public class DataSourceJdbcRuntimeConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean poolingEnabled = true;
+
+    /**
+     * Require an active transaction when acquiring a connection. Recommended for production.
+     * WARNING: Some extensions acquire connections without holding a transaction for things like schema updates and schema
+     * validation. Setting this setting to STRICT may lead to failures in those cases.
+     */
+    @ConfigItem
+    public Optional<AgroalConnectionPoolConfiguration.TransactionRequirement> transactionRequirement;
 
     /**
      * Other unspecified properties to be passed to the JDBC driver when creating new connections.

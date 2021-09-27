@@ -28,6 +28,10 @@ public class QuarkusInjectorFactory extends InjectorFactoryImpl {
     @SuppressWarnings("rawtypes")
     @Override
     public ConstructorInjector createConstructor(Constructor constructor, ResteasyProviderFactory providerFactory) {
+        if (constructor == null) {
+            throw new IllegalStateException(
+                    "Unable to locate proper constructor for dynamically registered provider. Make sure the class has a no-args constructor and that it uses '@Context' for field injection if necessary.");
+        }
         log.debugf("Create constructor: %s", constructor);
         return new QuarkusConstructorInjector(constructor, super.createConstructor(constructor, providerFactory));
     }

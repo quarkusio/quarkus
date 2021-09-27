@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Built-In Authentication Support
+= Built-In Authentication Support
 
 include::./attributes.adoc[]
 
@@ -122,11 +122,36 @@ application this will fail (as you cannot do blocking operations on the IO threa
 `Uni<SecurityIdentity> getDeferredIdentity();` method. You can then subscribe to the resulting `Uni` and will be notified
 when authentication is complete and the identity is available.
 
-[NOTE]
-====
+=== How to customize authentication exception responses
+
 By default the authentication security constraints are enforced before the JAX-RS chain starts.
-Disabling the proactive authentication effectively shifts this process to the moment when the JAX-RS chain starts running thus making it possible to use JAX-RS `ExceptionMapper` to capture Quarkus Security authentication exceptions such as `io.quarkus.security.AuthenticationFailedException` if required.
-====
+Disabling the proactive authentication effectively shifts this process to the moment when the JAX-RS chain starts running thus making it possible to use JAX-RS `ExceptionMapper` to capture Quarkus Security authentication exceptions such as `io.quarkus.security.AuthenticationFailedException`, for example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import javax.annotation.Priority;
+import javax.ws.rs.Priorities;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.ExceptionMapper;
+import javax.ws.rs.ext.Provider;
+
+import io.quarkus.security.AuthenticationFailedException;
+
+@Provider
+@Priority(Priorities.AUTHENTICATION)
+public class AuthenticationFailedExceptionMapper implements ExceptionMapper<AuthenticationFailedException> {
+
+    @Context
+    UriInfo uriInfo;
+
+    @Override
+    public Response toResponse(AuthenticationFailedException exception) {
+        return Response.status(401).header("WWW-Authenticate", "Basic realm=\"Quarkus\"").build();
+    }
+}
+----
 
 == References
 

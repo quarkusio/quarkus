@@ -705,7 +705,8 @@ public class BeanGenerator extends AbstractGenerator {
         }
 
         // Bean types
-        ResultHandle typesHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+        ResultHandle typesArray = constructor.newArray(Object.class, bean.getTypes().size());
+        int typeIndex = 0;
         for (org.jboss.jandex.Type type : bean.getTypes()) {
             ResultHandle typeHandle;
             try {
@@ -713,54 +714,51 @@ public class BeanGenerator extends AbstractGenerator {
             } catch (IllegalArgumentException e) {
                 throw new IllegalStateException("Unable to construct the type handle for " + bean + ": " + e.getMessage());
             }
-            constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, typesHandle, typeHandle);
+            constructor.writeArrayValue(typesArray, constructor.load(typeIndex++), typeHandle);
         }
-        ResultHandle unmodifiableTypesHandle = constructor.invokeStaticMethod(MethodDescriptors.COLLECTIONS_UNMODIFIABLE_SET,
-                typesHandle);
         constructor.writeInstanceField(
                 FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_BEAN_TYPES, Set.class.getName()),
                 constructor.getThis(),
-                unmodifiableTypesHandle);
+                constructor.invokeStaticInterfaceMethod(MethodDescriptors.SET_OF,
+                        typesArray));
 
         // Qualifiers
         if (!bean.getQualifiers().isEmpty() && !bean.hasDefaultQualifiers()) {
-
-            ResultHandle qualifiersHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-
+            ResultHandle qualifiersArray = constructor.newArray(Object.class, bean.getQualifiers().size());
+            int qualifierIndex = 0;
             for (AnnotationInstance qualifierAnnotation : bean.getQualifiers()) {
                 BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
                 if (qualifier != null) {
-                    constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiersHandle,
+                    constructor.writeArrayValue(qualifiersArray, constructor.load(qualifierIndex++),
                             qualifier.getLiteralInstance(constructor));
                 } else {
-                    // Create annotation literal first
+                    // Create the annotation literal first
                     ClassInfo qualifierClass = bean.getDeployment().getQualifier(qualifierAnnotation.name());
-                    constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiersHandle,
+                    constructor.writeArrayValue(qualifiersArray, constructor.load(qualifierIndex++),
                             annotationLiterals.process(constructor, classOutput,
                                     qualifierClass, qualifierAnnotation, Types.getPackageName(beanCreator.getClassName())));
                 }
             }
-            ResultHandle unmodifiableQualifiersHandle = constructor
-                    .invokeStaticMethod(MethodDescriptors.COLLECTIONS_UNMODIFIABLE_SET, qualifiersHandle);
             constructor.writeInstanceField(
                     FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_QUALIFIERS, Set.class.getName()),
                     constructor.getThis(),
-                    unmodifiableQualifiersHandle);
+                    constructor.invokeStaticInterfaceMethod(MethodDescriptors.SET_OF,
+                            qualifiersArray));
         }
 
         // Stereotypes
         if (!bean.getStereotypes().isEmpty()) {
-            ResultHandle stereotypesHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+            ResultHandle stereotypesArray = constructor.newArray(Object.class, bean.getStereotypes().size());
+            int stereotypesIndex = 0;
             for (StereotypeInfo stereotype : bean.getStereotypes()) {
-                constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, stereotypesHandle,
+                constructor.writeArrayValue(stereotypesArray, constructor.load(stereotypesIndex++),
                         constructor.loadClass(stereotype.getTarget().name().toString()));
             }
-            ResultHandle unmodifiableStereotypesHandle = constructor
-                    .invokeStaticMethod(MethodDescriptors.COLLECTIONS_UNMODIFIABLE_SET, stereotypesHandle);
             constructor.writeInstanceField(
                     FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_STEREOTYPES, Set.class.getName()),
                     constructor.getThis(),
-                    unmodifiableStereotypesHandle);
+                    constructor.invokeStaticInterfaceMethod(MethodDescriptors.SET_OF,
+                            stereotypesArray));
         }
         return constructor;
     }
@@ -1391,18 +1389,20 @@ public class BeanGenerator extends AbstractGenerator {
             funcBytecode.returnValue(retHandle);
 
             // Interceptor bindings
-            ResultHandle bindingsHandle = create.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+            ResultHandle bindingsArray = create.newArray(Object.class, aroundConstructs.bindings.size());
+            int bindingsIndex = 0;
             for (AnnotationInstance binding : aroundConstructs.bindings) {
                 // Create annotation literals first
                 ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
-                create.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
+                create.writeArrayValue(bindingsArray, bindingsIndex++,
                         annotationLiterals.process(create, classOutput, bindingClass, binding,
                                 Types.getPackageName(beanCreator.getClassName())));
             }
 
             ResultHandle invocationContextHandle = create.invokeStaticMethod(
                     MethodDescriptors.INVOCATION_CONTEXTS_AROUND_CONSTRUCT, constructorHandle,
-                    aroundConstructsHandle, func.getInstance(), bindingsHandle);
+                    aroundConstructsHandle, func.getInstance(),
+                    create.invokeStaticInterfaceMethod(MethodDescriptors.SET_OF, bindingsArray));
             TryBlock tryCatch = create.tryBlock();
             CatchBlockCreator exceptionCatch = tryCatch.addCatch(Exception.class);
             // throw new RuntimeException(e)
@@ -1520,19 +1520,21 @@ public class BeanGenerator extends AbstractGenerator {
         if (!postConstructs.isEmpty()) {
 
             // Interceptor bindings
-            ResultHandle bindingsHandle = create.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+            ResultHandle bindingsArray = create.newArray(Object.class, postConstructs.bindings.size());
+            int bindingsIndex = 0;
             for (AnnotationInstance binding : postConstructs.bindings) {
                 // Create annotation literals first
                 ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
-                create.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
+                create.writeArrayValue(bindingsArray, bindingsIndex++,
                         annotationLiterals.process(create, classOutput, bindingClass, binding,
                                 Types.getPackageName(beanCreator.getClassName())));
+
             }
 
             // InvocationContextImpl.postConstruct(instance,postConstructs).proceed()
             ResultHandle invocationContextHandle = create.invokeStaticMethod(
                     MethodDescriptors.INVOCATION_CONTEXTS_POST_CONSTRUCT, instanceHandle,
-                    postConstructsHandle, bindingsHandle);
+                    postConstructsHandle, create.invokeStaticInterfaceMethod(MethodDescriptors.SET_OF, bindingsArray));
 
             TryBlock tryCatch = create.tryBlock();
             CatchBlockCreator exceptionCatch = tryCatch.addCatch(Exception.class);
@@ -1574,6 +1576,7 @@ public class BeanGenerator extends AbstractGenerator {
                 .setModifiers(ACC_PUBLIC);
 
         if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
+            // @Dependent pseudo-scope
             // Foo instance = create(ctx)
             ResultHandle instance = get.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(beanCreator.getClassName(), "create", providerType.descriptorName(),
@@ -1607,8 +1610,15 @@ public class BeanGenerator extends AbstractGenerator {
                     get.getMethodParam(0));
             // return instance
             get.returnValue(instance);
-        } else if (BuiltinScope.SINGLETON.is(bean.getScope())) {
-            // return Arc.container().getContext(getScope()).get(this, new CreationalContextImpl<>())
+        } else if (bean.getScope().isNormal()) {
+            // All normal scopes
+            // return proxy()
+            get.returnValue(get.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(beanCreator.getClassName(), FIELD_NAME_PROXY, getProxyTypeName(bean, baseName)),
+                    get.getThis()));
+        } else {
+            // All pseudo scopes other than @Dependent (incl. @Singleton)
+            // return Arc.container().getActiveContext(getScope()).get(this, new CreationalContextImpl<>())
             ResultHandle container = get.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
             ResultHandle creationalContext = get.newInstance(
                     MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
@@ -1618,18 +1628,6 @@ public class BeanGenerator extends AbstractGenerator {
                     scope);
             get.returnValue(
                     get.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET, context, get.getThis(), creationalContext));
-        } else if (bean.getScope().isNormal()) {
-            // return proxy()
-            get.returnValue(get.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(beanCreator.getClassName(), FIELD_NAME_PROXY, getProxyTypeName(bean, baseName)),
-                    get.getThis()));
-        } else {
-            ResultHandle instance = get.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(beanCreator.getClassName(), "create", providerType.descriptorName(),
-                            CreationalContext.class),
-                    get.getThis(),
-                    get.getMethodParam(0));
-            get.returnValue(instance);
         }
 
         // Bridge method needed

@@ -1,6 +1,5 @@
 package io.quarkus.arc.test.decorators.priority;
 
-import io.quarkus.arc.test.decorators.priority.MultipleDecoratorsTest.Converter;
 import javax.annotation.Priority;
 import javax.decorator.Decorator;
 import javax.decorator.Delegate;

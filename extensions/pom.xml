@@ -30,13 +30,14 @@
         <module>jsonb</module>
 
         <!-- HTTP -->
-        <module>vertx-core</module>
         <module>vertx-http</module>
         <module>undertow</module>
         <module>websockets</module>
         <module>webjars-locator</module>
         <module>resteasy-reactive</module>
+        <module>reactive-routes</module>
         <module>apache-httpclient</module>
+        <module>jaxrs-spi</module>
 
         <!-- Monitoring -->
         <module>smallrye-health</module>
@@ -57,7 +58,6 @@
         <!-- Reactive -->
         <module>mutiny</module>
         <module>vertx</module>
-        <module>vertx-web</module>
         <module>netty</module>
         <module>reactive-messaging-http</module>
         <module>reactive-streams-operators</module>
@@ -70,6 +70,7 @@
         <module>reactive-db2-client</module>
         <module>reactive-pg-client</module>
         <module>reactive-mysql-client</module>
+        <module>reactive-mssql-client</module>
         <module>mailer</module>
         <module>grpc</module>
         <module>redis-client</module>
@@ -77,6 +78,7 @@
         <!-- Data access and validation -->
         <module>narayana-jta</module>
         <module>narayana-stm</module>
+        <module>narayana-lra</module>
         <module>datasource</module>
         <module>agroal</module>
         <module>jdbc</module>
@@ -173,6 +175,7 @@
         <!-- Database migrations -->
         <module>flyway</module>
         <module>liquibase</module>
+        <module>liquibase-mongodb</module>
 
         <!-- Vault -->
         <module>vault</module>
@@ -196,6 +199,11 @@
         <module>google-cloud-functions-http</module>
         <module>google-cloud-functions</module>
         <module>grpc-common</module>
+
+        <!-- Relocations -->
+        <module>vertx-web</module>
+
+        <module>awt</module>
     </modules>
 
     <build>

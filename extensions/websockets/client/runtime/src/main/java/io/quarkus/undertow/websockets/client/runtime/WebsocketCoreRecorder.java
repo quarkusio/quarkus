@@ -19,6 +19,7 @@ import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.undertow.websockets.ServerWebSocketContainer;
 import io.undertow.websockets.UndertowContainerProvider;
 import io.undertow.websockets.WebSocketDeploymentInfo;
@@ -26,6 +27,7 @@ import io.undertow.websockets.util.ContextSetupHandler;
 import io.undertow.websockets.util.ObjectFactory;
 import io.undertow.websockets.util.ObjectHandle;
 import io.undertow.websockets.util.ObjectIntrospecter;
+import io.vertx.core.impl.VertxInternal;
 
 @Recorder
 public class WebsocketCoreRecorder {
@@ -67,7 +69,8 @@ public class WebsocketCoreRecorder {
         for (String clazzName : serverApplicationConfigClasses) {
             try {
                 configInstances.add((ServerApplicationConfig) Class
-                        .forName(clazzName, true, Thread.currentThread().getContextClassLoader()).newInstance());
+                        .forName(clazzName, true, Thread.currentThread().getContextClassLoader()).getDeclaredConstructor()
+                        .newInstance());
             } catch (Exception e) {
                 log.error("Could not initialize websocket config class " + clazzName, e);
             }
@@ -104,7 +107,6 @@ public class WebsocketCoreRecorder {
     }
 
     public RuntimeValue<ServerWebSocketContainer> createServerContainer(BeanContainer beanContainer,
-            Supplier<EventLoopGroup> eventLoopGroupSupplier,
             RuntimeValue<WebSocketDeploymentInfo> infoVal, ServerWebSocketContainerFactory serverContainerFactory)
             throws DeploymentException {
         WebSocketDeploymentInfo info = infoVal.getValue();
@@ -135,7 +137,12 @@ public class WebsocketCoreRecorder {
                     }
                 };
             }
-        }, Thread.currentThread().getContextClassLoader(), eventLoopGroupSupplier,
+        }, Thread.currentThread().getContextClassLoader(), new Supplier<EventLoopGroup>() {
+            @Override
+            public EventLoopGroup get() {
+                return ((VertxInternal) VertxCoreRecorder.getVertx().get()).getEventLoopGroup();
+            }
+        },
                 Collections.singletonList(new ContextSetupHandler() {
                     @Override
                     public <T, C> Action<T, C> create(Action<T, C> action) {

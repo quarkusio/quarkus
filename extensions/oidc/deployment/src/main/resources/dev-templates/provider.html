@@ -1,0 +1,539 @@
+{#include main fluid=true}
+{#title}
+{#if info:oidcProviderName??}
+{info:oidcProviderName}
+{#else}
+OpenId Connect Dev Console
+{/if}
+{/title}
+{#script}
+
+var port = {config:property('quarkus.http.port')};
+
+{#if info:oidcApplicationType is 'service'}
+    {#if info:oidcGrantType is 'implicit' || info:oidcGrantType is 'code'}
+    var accessToken;
+    var idToken;
+    var loggedIn = false;
+    var userName;
+
+    $( document ).ready(function() {
+
+        if(tokensInUrl()){
+            loggedIn === true;
+            $('.implicitLoggedOut').hide();
+            $('.implicitLoggedIn').show();
+            var hash = window.location.hash;
+            accessToken = hash.match(/access_token=([^&]+)/)[1];
+            idToken = hash.match(/id_token=([^&]+)/)[1];
+            $('#accessTokenEncodedArea').html(prettyToken(accessToken));
+            $('#accessTokenDecodedArea').html(decodeToken(accessToken));
+            $('#idTokenEncodedArea').html(prettyToken(idToken));
+            $('#idTokenDecodedArea').html(decodeToken(idToken));
+        }else if(codeInUrl()){
+            loggedIn === true;
+            $('.implicitLoggedOut').hide();
+            $('.implicitLoggedIn').show();
+            var search = window.location.search;
+            var code = search.match(/code=([^&]+)/)[1];
+            exchangeCodeForTokens(code);
+        }else{
+            loggedIn === false;
+            $('.implicitLoggedOut').show();
+            $('.implicitLoggedIn').hide();
+            accessToken = null;
+            idToken = null;
+            userName = null;
+            $('#accessTokenEncodedArea').text('');
+            $('#accessTokenDecodedArea').text('');
+            $('#idTokenEncodedArea').text('');
+            $('#idTokenDecodedArea').text('');
+
+        }
+    });
+
+    function tokensInUrl(){
+        return idTokenInUrl() && accessTokenInUrl();
+    }
+
+    function idTokenInUrl(){
+        return inUrl('id_token');
+    }
+
+    function accessTokenInUrl(){
+        return inUrl('access_token');
+    }
+    
+    function codeInUrl(){
+        return inUrl('code');
+    }
+
+    function inUrl(field){
+        var url = window.location.href;
+        if(url.indexOf('?' + field + '=') != -1)
+            return true;
+        else if(url.indexOf('&' + field + '=') != -1)
+            return true;
+        return false;
+    }
+
+    function signInToOidcProviderAndGetTokens() {
+      {#if info:oidcGrantType is 'implicit'}
+        window.location.href = '{info:authorizationUrl}'
+          + "?client_id=" + '{info:clientId}'
+          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + "%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider"
+          + "&scope=openid&response_type=token id_token&response_mode=query&prompt=login"
+          + "&nonce=" + makeid();
+      {#else}
+        window.location.href = '{info:authorizationUrl}'
+          + "?client_id=" + '{info:clientId}'
+          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + "%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider"
+          + "&scope=openid&response_type=code&response_mode=query&prompt=login"
+          + "&nonce=" + makeid();
+      {/if}    
+    }
+
+    function testServiceWithAccessToken(){
+        var servicePath = $('#servicePath').val();
+        $.post("testServiceWithToken",
+            {
+              serviceUrl: "http://localhost:" + port + servicePath,
+              token: accessToken
+            },
+            function(data, status){
+                printResponseData(data, "Access Token, " + "service path: " + servicePath);
+            });
+    }
+
+    function testServiceWithIdToken(){
+        var servicePath = $('#servicePath').val();
+        $.post("testServiceWithToken",
+            {
+              serviceUrl: "http://localhost:" + port + servicePath,
+              token: idToken
+            },
+            function(data, status){
+                printResponseData(data, "ID Token, " + "service path: " + servicePath);
+            });
+    }
+
+    function makeid() {
+        var result           = '';
+        var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        var charactersLength = characters.length;
+        for ( var i = 0; i < 7; i++ ) {
+          result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        }
+        return result;
+    }
+
+    function accessTokenToClipboard(){
+        copyToClipboard(accessToken,"dummyAccessTokenClipBoard");
+    }
+
+    function idTokenToClipboard(){
+        copyToClipboard(idToken,"dummyIdTokenClipBoard");
+    }
+
+    function navigateToSwaggerUi(){
+        {#if info:swaggerIsAvailable??}
+        var url = "{config:http-path('quarkus.swagger-ui.path')}";
+        
+        var authorizedValue = {
+            "SecurityScheme":{
+                "schema":{
+                    "flow":"implicit",
+                    "authorizationUrl":"{info:authorizationUrl}",
+                    "tokenUrl":"{info:tokenUrl}",
+                    "type":"oauth2",
+                    "description":"Authentication"
+                },
+                "clientId":"{info:clientId}",
+                "name":"SecurityScheme",
+                "token":{
+                    "access_token":accessToken,
+                    "token_type":"Bearer",
+                    "expires_in":"900"
+                }
+            }
+        };
+        
+        localStorage.setItem('authorized', JSON.stringify(authorizedValue));
+        window.open(url, '_blank').focus();
+        {/if}
+    }
+    
+    function navigateToGraphQLUi(){
+        {#if info:graphqlIsAvailable??}
+            var url = "{config:http-path('quarkus.smallrye-graphql.ui.root-path')}";
+            var headerJson = '{"authorization": "Bearer ' + accessToken + '"}';
+            url = url + '/?' + encodeURIComponent('headers') + '=' + encodeURIComponent(headerJson);
+            window.open(url, '_blank').focus();
+        {/if}
+    }
+    
+    function copyToClipboard(token, type){
+        var dummy = document.createElement("input");
+        document.body.appendChild(dummy);
+        dummy.setAttribute("id", type);
+        document.getElementById(type).value=token;
+        dummy.select();
+        document.execCommand("copy");
+        document.body.removeChild(dummy);
+    }
+
+    function logout() {
+        localStorage.removeItem('authorized');
+    
+        window.location.assign('{info:logoutUrl??}'
+          + "?post_logout_redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + "%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider");
+    }
+        
+    function exchangeCodeForTokens(code){
+        $.post("exchangeCodeForTokens",
+            {
+              tokenUrl: '{info:tokenUrl}',
+              client: '{info:clientId}',
+              clientSecret: '{info:clientSecret}',
+              authorizationCode: code,
+              redirectUri: "http://localhost:" + port + "/q/dev/io.quarkus.quarkus-oidc/provider"
+            },
+            function(data, status){
+                var tokens = JSON.parse(data);
+                accessToken = tokens.access_token
+                idToken = tokens.id_token
+                $('#accessTokenEncodedArea').html(prettyToken(accessToken));
+                $('#accessTokenDecodedArea').html(decodeToken(accessToken));
+                $('#idTokenEncodedArea').html(prettyToken(idToken));
+                $('#idTokenDecodedArea').html(decodeToken(idToken));
+            });
+    }
+    
+    function decodeToken(token) {
+        var parts = token.split(".");
+        if (parts.length == 3) {
+            var headers = window.atob(parts[0]);
+            var payload = window.atob(parts[1]);
+            var jsonPayload = JSON.parse(payload);
+            if (!userName) {
+                if (jsonPayload.upn) {
+                    userName = jsonPayload.upn;
+                } else if (jsonPayload.preferred_username) {
+                    userName = jsonPayload.preferred_username;
+                }
+                if (userName) {
+                    $('#loggedInUser').append("Logged in as " + userName + " ");
+                } else {
+                    $('#loggedInUser').append("Logged in ");
+                }
+            }
+            return "<pre class='text-danger' title='Header'>" + 
+                    JSON.stringify(JSON.parse(headers), null, 4) + 
+                    "</pre><pre class='text-success' title='Payload'>" + 
+                    JSON.stringify(jsonPayload,null,4) + "</pre><span class='text-primary' title='Signature'>" + 
+                    parts[2] + "</span>";
+        } else {
+          return token;
+        }
+    }
+    
+    function prettyToken(token){
+        var parts = token.split(".");
+        if (parts.length == 3) {
+          var headers = parts[0];
+          var payload = parts[1];
+          var signature = parts[2];
+          
+          return "<span class='text-danger' title='Header'>" + parts[0] + "</span>.<span class='text-success' title='Payload'>" + parts[1] + "</span>.<span class='text-primary' title='Signature'>" + parts[2] + "</span>";
+        } else {
+          return token;
+        }
+    }
+    
+    {/if}
+{/if}
+
+{#if info:oidcGrantType is 'password'}
+
+    function testServiceWithPassword(userName, servicePath){
+        $.post("testService",
+            {
+              tokenUrl: '{info:tokenUrl}',
+              serviceUrl: "http://localhost:" + port + servicePath,
+              client: '{info:clientId}',
+              clientSecret: '{info:clientSecret}',
+              user: userName,
+              grant: '{info:oidcGrantType}'
+            },
+            function(data, status){
+              printResponseData(data, "User: " + userName + ", " + "service path: " + servicePath);
+            });
+    }
+{/if}
+
+{#if info:oidcGrantType is 'client_credentials'}
+    function testServiceWithClientCredentials(servicePath) {
+        $.post("testService",
+            {
+              tokenUrl: '{info:tokenUrl}',
+              serviceUrl: "http://localhost:" + port + servicePath,
+              client: '{info:clientId}',
+              clientSecret: '{info:clientSecret}',
+              grant: '{info:oidcGrantType}'
+            },
+            function(data, status){
+              printResponseData(data, "Service path: " + servicePath);
+            });
+    }
+{/if}
+
+function printResponseData(data, message){
+    if(data.startsWith("2")){
+        $('#results').append("<i class='far fa-check-circle text-success px-2'></i>");
+    }else {
+        $('#results').append("<i class='far fa-times-circle text-danger px-2'></i>");
+    }
+    $('#results').append("<span class='text-muted px3'>" + new Date().toLocaleString() + "</span> :  ");
+    $('#results').append("<span class='text-primary px-1'>" + message + "</span>, result : ");
+    $('#results').append("<span class='text-primary px-1'>" + data + "</span>");
+    $('#results').append("<br/>");
+}
+
+function signInToService(servicePath) {
+    window.open("http://localhost:" + port + servicePath);
+}
+
+{/script}
+
+{#body}
+<p/>
+
+{#if info:keycloakAdminUrl??}
+<div class="float-right">
+    <a href="{info:keycloakAdminUrl??}" target="_blank" class="btn btn-link" title="Log into Keycloak to Configure Realms">
+       <i class="fas fa-key"></i> Keycloak Admin
+    </a>
+</div>
+{/if}
+
+<div class="container">
+{#if info:oidcApplicationType?? is 'service'}
+    {#if info:oidcGrantType is 'implicit' || info:oidcGrantType is 'code'}
+        
+        <div class="card implicitLoggedOut">
+            <div class="card-body">
+                <a class="btn btn-block btn-success" title="Log into Single Page Application to Get Access and ID Tokens" onclick="signInToOidcProviderAndGetTokens();">
+                    <i class="fas fa-user"></i> Log into Single Page Application
+                </a>
+            </div>
+        </div>
+        <div class="card implicitLoggedIn">
+            <div class="card-header">
+                <div class="float-left">
+                    Your tokens
+                </div>
+                <div class="float-right">
+                    <span id="loggedInUser"></span>
+                    {#if info:logoutUrl??}
+                    <a onclick="logout();" class="btn btn-link" title="Click to logout and start again">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                    {/if}
+                </div>
+            </div>
+            <div class="card-body mx-0 px-0">
+                <div class="clearfix">
+                    <a class="btn btn-link shadow-none float-left" data-toggle="collapse" href="#collapseAccessToken" role="button" aria-expanded="false" aria-controls="collapseAccessToken">
+                        View Access Token
+                    </a>
+                    <a class="btn btn-link shadow-none text-secondary float-right" title="Copy to clipboard" onclick="accessTokenToClipboard();">
+                        <i class="fas fa-clipboard"></i>
+                    </a>
+                </div>
+                
+                <div class="collapse" id="collapseAccessToken">
+                    <div class="card card-body bg-dark border-0 m-0 p-0">
+                        <div class="card-group border-0 m-0 p-0">
+                            <div class="card border-0 m-0">
+                                <div class="card-body bg-dark">
+                                    <h5 class="card-title text-light">Encoded</h5>
+                                    <p id="accessTokenEncodedArea" class="text-wrap text-break bg-dark text-light text-monospace user-select-all mp-0">
+
+                                    </p>
+                                  </div>
+                            </div>
+                            <div class="card border-0 m-0">
+                                <div class="card-body bg-dark">
+                                    <h5 class="card-title text-light">Decoded</h5>
+                                    <p id="accessTokenDecodedArea" class="text-wrap bg-dark text-light text-monospace user-select-auto mp-0">
+
+                                    </p>
+                                </div>
+                            </div>
+                        
+                        </div>
+                    </div>
+                </div>
+                <br/>
+
+                <div class="clearfix">
+                    <a class="btn btn-link shadow-none float-left" data-toggle="collapse" href="#collapseIdToken" role="button" aria-expanded="false" aria-controls="collapseIdToken">
+                        View ID Token
+                    </a>
+                    <a class="btn btn-link shadow-none text-secondary float-right" title="Copy to clipboard" onclick="idTokenToClipboard();">
+                        <i class="fas fa-clipboard"></i>
+                    </a>
+                </div>
+                
+                <div class="collapse" id="collapseIdToken">
+                    <div class="card card-body bg-dark border-0 m-0 p-0">
+                        <div class="card-group border-0 m-0 p-0">
+                            <div class="card border-0 m-0">
+                                <div class="card-body bg-dark">
+                                    <h5 class="card-title text-light">Encoded</h5>
+                                    <p id="idTokenEncodedArea" class="text-wrap text-break bg-dark text-light text-monospace user-select-all mp-0">
+
+                                    </p>
+                                  </div>
+                            </div>
+                            <div class="card border-0 m-0">
+                                <div class="card-body bg-dark">
+                                    <h5 class="card-title text-light">Decoded</h5>
+                                    <p id="idTokenDecodedArea" class="text-wrap bg-dark text-light text-monospace user-select-auto mp-0">
+
+                                    </p>
+                                </div>
+                            </div>
+                        
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br>
+        <div class="card implicitLoggedIn">
+            <div class="card-header">
+                <div class="float-left">
+                    Test your service
+                </div>
+                <div class="float-right">
+                    {#if info:swaggerIsAvailable??}
+                    <a onclick="navigateToSwaggerUi();" class="btn btn-link" title="Test in Swagger UI">
+                        <i class="fas fa-external-link-alt"></i> Swagger UI
+                    </a>
+                    {/if}
+                    {#if info:graphqlIsAvailable??}
+                    <a onclick="navigateToGraphQLUi();" class="btn btn-link" title="Test in GraphQL UI">
+                        <i class="fas fa-external-link-alt"></i> GraphQL UI
+                    </a>
+                    {/if}
+                </div>
+            </div>
+            <div class="card-body border-0">
+                <div class="row">
+                    <div class="col-2">
+                        <label for="servicePath">Service Path</label>
+                    </div>
+                    <div class="col-10">
+                        <input type="text" class="form-control" id="servicePath" value="/" title="Service Path">
+                    </div>
+                </div>
+                <div class="row my-2">
+                    <div class="col offset-md-2">
+                        <button onclick="testServiceWithAccessToken();" class="btn btn-primary btn-block" title="Test With Access Token">With Access Token</button>
+                    </div>
+                    <div class="col">
+                        <button onclick="testServiceWithIdToken();" class="btn btn-primary btn-block" title="Test With ID Token">With ID Token</button>
+                    </div>
+                </div>    
+
+                <br/>
+                <div class="bg-light" id="results">
+
+                </div>
+
+            </div>
+        </div>
+    {#else if info:oidcGrantType is 'password'}
+        <div class="card">
+            <div class="card-header">
+               Get access token and test your service
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-2">
+                        <label for="userName">User name</label>
+                    </div>
+                    <div class="col-10">
+                        <input type="text" class="form-control" id="userName" value="{info:keycloakUsers.keySet().iterator().next()}" title="User">
+                    </div>
+                </div>
+                <div class="row my-2">
+                    <div class="col-2">
+                        <label for="servicePath">Service Path</label>
+                    </div>
+                    <div class="col-10">
+                        <input type="text" class="form-control" id="servicePath" value="/" title="Service Path">
+                    </div>
+                </div>
+                <div class="row my-2">
+                    <div class="col offset-md-2">
+                        <button onclick="testServiceWithPassword($('#userName').val(), $('#servicePath').val());" class="btn btn-primary btn-block" title="Test service">Test service</button>
+                    </div>
+                </div>    
+
+                <br/>
+                <div class="bg-light" id="results">
+
+                </div>
+            </div>
+        </div>    
+    {#else if info:oidcGrantType is 'client_credentials'}
+        <div class="card">
+            <div class="card-header">
+                Get access token for {info:clientId} and test your service
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-2">
+                        <label for="servicePath">Service Path</label>
+                    </div>
+                    <div class="col-10">
+                        <input type="text" class="form-control" id="servicePath" value="/" title="Service Path">
+                    </div>
+                </div>
+                <div class="row my-2">
+                    <div class="col offset-md-2">
+                        <button onclick="testServiceWithClientCredentials($('#servicePath').val());" class="btn btn-primary btn-block" title="Test service">Test service</button>
+                    </div>
+                </div>    
+
+                <br/>
+                <div class="bg-light" id="results">
+
+                </div>
+            </div>
+        </div>    
+    {/if}    
+{#else}
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-2">
+                    <label for="servicePath">Service Path</label>
+                </div>
+                <div class="col-10">
+                    <input type="text" class="form-control" id="servicePath" value="/" title="Service Path">
+                </div>
+            </div>
+            <div class="row my-2">
+                <div class="col offset-md-2">
+                    <button onclick="signInToService($('#servicePath').val());" class="btn btn-success btn-block" title="Log into your Web Application">Log into your Web Application</button>
+                </div>
+            </div>
+        </div>
+    </div> 
+{/if}
+</div>
+{/body}
+{/include}

@@ -12,7 +12,6 @@ import java.io.IOException;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
@@ -193,9 +192,6 @@ public class CreateExtensionMojo extends AbstractMojo {
     @Parameter(property = "artifactId")
     String artifactId;
 
-    @Component
-    private Prompter prompter;
-
     @Parameter(defaultValue = "${project}")
     protected MavenProject project;
 
@@ -267,19 +263,20 @@ public class CreateExtensionMojo extends AbstractMojo {
             return;
         }
         try {
-
+            final Prompter prompter = new Prompter();
             if (project == null || !project.getArtifactId().endsWith("quarkus-parent")) {
                 if (isBlank(quarkusVersion)) {
                     quarkusVersion = getPluginVersion();
                 }
                 if (isBlank(groupId)) {
-                    groupId = prompter.promptWithDefaultValue("Set the extension groupId", "org.acme");
+                    prompter.addPrompt("Set the extension groupId: ", "org.acme", input -> groupId = input);
                 }
             }
             autoComputeQuarkiverseExtensionId();
             if (isBlank(extensionId)) {
-                extensionId = prompter.prompt("Set the extension id");
+                prompter.addPrompt("Set the extension id: ", input -> extensionId = input);
             }
+            prompter.collectInput();
         } catch (IOException e) {
             throw new MojoExecutionException("Unable to get user input", e);
         }

@@ -281,6 +281,16 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
+     * 
+     * @param predicate
+     * @return the new stream
+     */
+    public BeanStream filter(Predicate<BeanInfo> predicate) {
+        stream = stream.filter(predicate);
+        return this;
+    }
+
+    /**
      * Terminal operation.
      * 
      * @return the list of beans

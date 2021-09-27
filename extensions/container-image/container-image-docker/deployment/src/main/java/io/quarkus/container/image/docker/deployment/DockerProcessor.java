@@ -136,7 +136,7 @@ public class DockerProcessor {
             PackageConfig packageConfig) {
 
         DockerfilePaths dockerfilePaths = getDockerfilePaths(dockerConfig, forNative, packageConfig, out);
-        String[] dockerArgs = getDockerArgs(containerImageInfo.getImage(), dockerfilePaths, dockerConfig);
+        String[] dockerArgs = getDockerArgs(containerImageInfo.getImage(), dockerfilePaths, containerImageConfig, dockerConfig);
         log.infof("Executing the following command to build docker image: '%s %s'", dockerConfig.executableName,
                 String.join(" ", dockerArgs));
         boolean buildSuccessful = ExecUtil.exec(out.getOutputDirectory().toFile(), reader, dockerConfig.executableName,
@@ -178,11 +178,15 @@ public class DockerProcessor {
         return containerImageInfo.getImage();
     }
 
-    private String[] getDockerArgs(String image, DockerfilePaths dockerfilePaths, DockerConfig dockerConfig) {
+    private String[] getDockerArgs(String image, DockerfilePaths dockerfilePaths, ContainerImageConfig containerImageConfig,
+            DockerConfig dockerConfig) {
         List<String> dockerArgs = new ArrayList<>(6 + dockerConfig.buildArgs.size());
         dockerArgs.addAll(Arrays.asList("build", "-f", dockerfilePaths.getDockerfilePath().toAbsolutePath().toString()));
         for (Map.Entry<String, String> entry : dockerConfig.buildArgs.entrySet()) {
             dockerArgs.addAll(Arrays.asList("--build-arg", entry.getKey() + "=" + entry.getValue()));
+        }
+        for (Map.Entry<String, String> entry : containerImageConfig.labels.entrySet()) {
+            dockerArgs.addAll(Arrays.asList("--label", String.format("%s=%s", entry.getKey(), entry.getValue())));
         }
         if (dockerConfig.cacheFrom.isPresent()) {
             List<String> cacheFrom = dockerConfig.cacheFrom.get();

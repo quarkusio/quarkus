@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Simplified MongoDB with Panache and Kotlin
+= Simplified MongoDB with Panache and Kotlin
 
 include::./attributes.adoc[]
 :config-file: application.properties
@@ -35,7 +35,7 @@ https://kotlinlang.org/docs/tutorials/kotlin-for-py/objects-and-companion-object
 [source,kotlin]
 ----
 class Person : PanacheMongoEntity() {
-    companion object: PanacheCompanion<Person> {  // <1>
+    companion object: PanacheMongoCompanion<Person> {  // <1>
         fun findByName(name: String) = find("name", name).firstResult()
         fun findAlive() = list("status", Status.Alive)
         fun deleteStefs() = delete("name", "Stef")

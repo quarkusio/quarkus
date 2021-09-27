@@ -36,13 +36,4 @@ public class DataSourceRuntimeConfig {
      */
     @ConfigItem
     public Optional<String> credentialsProviderName = Optional.empty();
-
-    /**
-     * If this is true then when running in dev or test mode Quarkus will attempt to start a testcontainers based
-     * database with these provided settings.
-     *
-     * This is not supported for all databases, and will not work in production.
-     */
-    @ConfigItem(defaultValue = "false")
-    public boolean startContainer;
 }

@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Neo4j
+= Neo4j
 :neo4j_version: 4.0.0
 
 include::./attributes.adoc[]
@@ -124,7 +124,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=neo4j-quickstart \
     -DclassName="org.acme.datasource.GreetingResource" \
@@ -167,6 +167,7 @@ The Neo4j driver can be configured with standard Quarkus properties:
 [source,properties]
 .src/main/resources/application.properties
 ----
+# Those are the default values and are implicitly assumed
 quarkus.neo4j.uri = bolt://localhost:7687
 quarkus.neo4j.authentication.username = neo4j
 quarkus.neo4j.authentication.password = secret
@@ -175,6 +176,24 @@ quarkus.neo4j.authentication.password = secret
 You'll recognize the authentication here that you passed on to the docker command above.
 
 Having done that, the driver is ready to use, there are however other configuration options, detailed below.
+
+[[dev-services]]
+=== Dev Services (Configuration Free Databases)
+
+Quarkus supports a feature called Dev Services that allows you to create various datasources without any config.
+In the case of Neo4j this support applies to the single Neo4j driver instance.
+Dev Services will bring up a Neo4j container if you didn't explicit add the default values or configured custom values for
+any of `quarkus.neo4j.uri`, `quarkus.neo4j.authentication.username` or `quarkus.neo4j.authentication.password`.
+If Neo4j seems to be reachable via the default properties, Dev Services will also step back.
+
+Otherwise, Quarkus will automatically start a Neo4j container when running tests or dev-mode,
+and automatically configure the connection.
+
+When running the production version of the application, the Neo4j connection need to be configured as normal,
+so if you want to include a production database config in your `application.properties` and continue to use Dev Services
+we recommend that you use the `%prod.` profile to define your Neo4j settings.
+
+include::{generated-dir}/config/quarkus-neo4j-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
 
 == Using the driver
 

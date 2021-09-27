@@ -13,6 +13,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -40,6 +41,7 @@ import javax.persistence.ValidationMode;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 import javax.transaction.TransactionManager;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
@@ -86,12 +88,14 @@ import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -117,8 +121,10 @@ import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusArcBeanContainer;
+import io.quarkus.hibernate.orm.runtime.devconsole.HibernateOrmDevConsoleIntegrator;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
+import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
 import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildItem;
@@ -172,6 +178,55 @@ public final class HibernateOrmProcessor {
                 }
             }
         }
+    }
+
+    @BuildStep
+    void devServicesAutoGenerateByDefault(DevServicesLauncherConfigResultBuildItem devServicesResult,
+            List<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItems,
+            HibernateOrmConfig config,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfigurationDefaultBuildItemBuildProducer) {
+        if (!schemaReadyBuildItems.isEmpty()) {
+            //we don't want to enable auto generation if somebody else is managing the schema
+            return;
+        }
+        String dsName;
+        if (config.defaultPersistenceUnit.datasource.isEmpty()) {
+            dsName = "quarkus.datasource.username";
+        } else {
+            dsName = "quarkus.datasource." + config.defaultPersistenceUnit.datasource.get() + ".username";
+        }
+
+        if (ConfigProvider.getConfig().getOptionalValue(dsName, String.class).isEmpty()) {
+            if (devServicesResult.getConfig().containsKey(dsName)) {
+                if (ConfigProvider.getConfig().getOptionalValue("quarkus.hibernate-orm.database.generation", String.class)
+                        .isEmpty()) {
+                    LOG.info(
+                            "Setting quarkus.hibernate-orm.database.generation=drop-and-create to initialize Dev Services managed database");
+                    runTimeConfigurationDefaultBuildItemBuildProducer.produce(new RunTimeConfigurationDefaultBuildItem(
+                            "quarkus.hibernate-orm.database.generation", "drop-and-create"));
+                }
+            }
+        }
+
+        for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.persistenceUnits.entrySet()) {
+
+            if (entry.getValue().datasource.isEmpty()) {
+                dsName = "quarkus.datasource.jdbc.url";
+            } else {
+                dsName = "quarkus.datasource." + entry.getValue().datasource.get() + ".username";
+            }
+            if (ConfigProvider.getConfig().getOptionalValue(dsName, String.class).isEmpty()) {
+                if (devServicesResult.getConfig().containsKey(dsName)) {
+                    String propertyName = "quarkus.hibernate-orm." + entry.getKey() + ".database.generation";
+                    if (ConfigProvider.getConfig().getOptionalValue(propertyName, String.class).isEmpty()) {
+                        LOG.info("Setting " + propertyName + "=drop-and-create to initialize Dev Services managed database");
+                        runTimeConfigurationDefaultBuildItemBuildProducer
+                                .produce(new RunTimeConfigurationDefaultBuildItem(propertyName, "drop-and-create"));
+                    }
+                }
+            }
+        }
+
     }
 
     @BuildStep
@@ -268,6 +323,7 @@ public final class HibernateOrmProcessor {
 
         if (!hasEntities(jpaModel)) {
             // we can bail out early as there are no entities
+            LOG.warn("Hibernate ORM is disabled because no JPA entities were found");
             return;
         }
 
@@ -275,7 +331,7 @@ public final class HibernateOrmProcessor {
         for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptorBuildItem : persistenceXmlDescriptors) {
             persistenceUnitDescriptors
                     .produce(new PersistenceUnitDescriptorBuildItem(persistenceXmlDescriptorBuildItem.getDescriptor(),
-                            DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                            Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
                             getMultiTenancyStrategy(Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
                                     .getProperties().getProperty(AvailableSettings.MULTI_TENANT))),
                             null,
@@ -423,7 +479,8 @@ public final class HibernateOrmProcessor {
             List<HibernateOrmIntegrationStaticConfiguredBuildItem> integrationBuildItems,
             ProxyDefinitionsBuildItem proxyDefinitions,
             BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<BeanContainerListenerBuildItem> beanContainerListener) throws Exception {
+            BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
+            LaunchModeBuildItem launchMode) throws Exception {
 
         feature.produce(new FeatureBuildItem(Feature.HIBERNATE_ORM));
         validateHibernatePropertiesNotUsed();
@@ -453,6 +510,10 @@ public final class HibernateOrmProcessor {
         Collection<Class<? extends Integrator>> integratorClasses = new LinkedHashSet<>();
         for (String integratorClassName : ServiceUtil.classNamesNamedIn(classLoader, INTEGRATOR_SERVICE_FILE)) {
             integratorClasses.add((Class<? extends Integrator>) recorderContext.classProxy(integratorClassName));
+        }
+        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
+            integratorClasses.add(HibernateOrmDevConsoleIntegrator.class);
+            integratorClasses.add(SchemaManagementIntegrator.class);
         }
 
         Map<String, List<HibernateOrmIntegrationStaticDescriptor>> integrationStaticDescriptors = HibernateOrmIntegrationStaticConfiguredBuildItem
@@ -782,7 +843,9 @@ public final class HibernateOrmProcessor {
                     "Model classes are defined for the default persistence unit, but no default datasource was found."
                             + " The default EntityManagerFactory will not be created."
                             + " To solve this, configure the default datasource."
-                            + " Refer to https://quarkus.io/guides/datasource for guidance.");
+                            + " Refer to https://quarkus.io/guides/datasource for guidance.",
+                    new HashSet<>(Arrays.asList("quarkus.datasource.db-kind", "quarkus.datasource.username",
+                            "quarkus.datasource.password", "quarkus.datasource.jdbc.url")));
         }
 
         for (Entry<String, HibernateOrmConfigPersistenceUnit> persistenceUnitEntry : hibernateOrmConfig.persistenceUnits
@@ -818,47 +881,43 @@ public final class HibernateOrmProcessor {
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             Set<String> storageEngineCollector) {
-        // Find the associated datasource
-        JdbcDataSourceBuildItem jdbcDataSource;
-        String dataSource;
-        if (persistenceUnitConfig.datasource.isPresent()) {
-            jdbcDataSource = jdbcDataSources.stream()
-                    .filter(i -> persistenceUnitConfig.datasource.get().equals(i.getName()))
-                    .findFirst()
-                    .orElseThrow(() -> new ConfigurationException(
-                            String.format(Locale.ROOT,
-                                    "The datasource '%1$s' is not configured but the persistence unit '%2$s' uses it."
-                                            + " To solve this, configure datasource '%1$s'."
-                                            + " Refer to https://quarkus.io/guides/datasource for guidance.",
-                                    persistenceUnitConfig.datasource.get(), persistenceUnitName)));
-            dataSource = persistenceUnitConfig.datasource.get();
-        } else {
-            if (!PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
-                // if it's not the default persistence unit, we mandate a datasource to prevent common errors
-                throw new ConfigurationException(
-                        String.format(Locale.ROOT, "Datasource must be defined for persistence unit '%s'.",
-                                persistenceUnitName));
+        Optional<JdbcDataSourceBuildItem> jdbcDataSource = findJdbcDataSource(persistenceUnitName, persistenceUnitConfig,
+                jdbcDataSources);
+
+        Optional<String> explicitDialect = persistenceUnitConfig.dialect.dialect;
+        String dialect;
+        MultiTenancyStrategy multiTenancyStrategy = getMultiTenancyStrategy(persistenceUnitConfig.multitenant);
+        if (multiTenancyStrategy == MultiTenancyStrategy.DATABASE) {
+            // The datasource is optional for the DATABASE multi-tenancy strategy,
+            // since the datasource will be resolved separately for each tenant.
+            if (explicitDialect.isPresent()) {
+                dialect = explicitDialect.get();
+            } else if (jdbcDataSource.isPresent()) {
+                dialect = Dialects.guessDialect(persistenceUnitName, jdbcDataSource.get().getDbKind());
+            } else {
+                throw new ConfigurationException(String.format(Locale.ROOT,
+                        "The Hibernate ORM extension could not infer the dialect for persistence unit '%s'."
+                                + " When using database multi-tenancy, you must either configure a datasource for that persistence unit"
+                                + " (refer to https://quarkus.io/guides/datasource for guidance),"
+                                + " or set the dialect explicitly through property '"
+                                + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "dialect") + "'.",
+                        persistenceUnitName));
             }
 
-            jdbcDataSource = jdbcDataSources.stream()
-                    .filter(i -> i.isDefault())
-                    .findFirst()
-                    .orElseThrow(() -> new ConfigurationException(
-                            String.format(Locale.ROOT,
-                                    "The default datasource is not configured but the persistence unit '%s' uses it."
-                                            + " To solve this, configure the default datasource."
-                                            + " Refer to https://quarkus.io/guides/datasource for guidance.",
-                                    persistenceUnitName)));
-            dataSource = DataSourceUtil.DEFAULT_DATASOURCE_NAME;
-        }
-
-        Optional<String> dialect = persistenceUnitConfig.dialect.dialect;
-        if (!dialect.isPresent()) {
-            dialect = Dialects.guessDialect(jdbcDataSource.getDbKind());
-        }
-
-        if (!dialect.isPresent()) {
-            return;
+        } else {
+            if (!jdbcDataSource.isPresent()) {
+                throw new ConfigurationException(String.format(Locale.ROOT,
+                        "Datasource must be defined for persistence unit '%s'."
+                                + " Refer to https://quarkus.io/guides/datasource for guidance.",
+                        persistenceUnitName),
+                        new HashSet<>(Arrays.asList("quarkus.datasource.db-kind", "quarkus.datasource.username",
+                                "quarkus.datasource.password", "quarkus.datasource.jdbc.url")));
+            }
+            if (explicitDialect.isPresent()) {
+                dialect = explicitDialect.get();
+            } else {
+                dialect = Dialects.guessDialect(persistenceUnitName, jdbcDataSource.get().getDbKind());
+            }
         }
 
         // we found one
@@ -883,7 +942,7 @@ public final class HibernateOrmProcessor {
         }
 
         descriptor.setTransactionType(PersistenceUnitTransactionType.JTA);
-        descriptor.getProperties().setProperty(AvailableSettings.DIALECT, dialect.get());
+        descriptor.getProperties().setProperty(AvailableSettings.DIALECT, dialect);
 
         // The storage engine has to be set as a system property.
         if (persistenceUnitConfig.dialect.storageEngine.isPresent()) {
@@ -975,7 +1034,8 @@ public final class HibernateOrmProcessor {
             } else if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
                 //raise exception if explicit file is not present (i.e. not the default)
                 throw new ConfigurationError(
-                        "Unable to find file referenced in '" + HIBERNATE_ORM_CONFIG_PREFIX + "sql-load-script="
+                        "Unable to find file referenced in '"
+                                + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "sql-load-script") + "="
                                 + persistenceUnitConfig.sqlLoadScript.get() + "'. Remove property or add file to your path.");
             }
             // in dev mode we want to make sure that we watch for changes to file even if it doesn't currently exist
@@ -1014,7 +1074,7 @@ public final class HibernateOrmProcessor {
         }
 
         // Collect the storage engines if MySQL or MariaDB
-        if (isMySQLOrMariaDB(dialect.get()) && persistenceUnitConfig.dialect.storageEngine.isPresent()) {
+        if (isMySQLOrMariaDB(dialect) && persistenceUnitConfig.dialect.storageEngine.isPresent()) {
             storageEngineCollector.add(persistenceUnitConfig.dialect.storageEngine.get());
         }
 
@@ -1023,11 +1083,32 @@ public final class HibernateOrmProcessor {
                 String.valueOf(persistenceUnitConfig.discriminator.ignoreExplicitForJoined));
 
         persistenceUnitDescriptors.produce(
-                new PersistenceUnitDescriptorBuildItem(descriptor, dataSource,
-                        getMultiTenancyStrategy(persistenceUnitConfig.multitenant),
+                new PersistenceUnitDescriptorBuildItem(descriptor, jdbcDataSource.map(JdbcDataSourceBuildItem::getName),
+                        multiTenancyStrategy,
                         persistenceUnitConfig.multitenantSchemaDatasource.orElse(null),
                         xmlMappings,
                         false, false));
+    }
+
+    private static Optional<JdbcDataSourceBuildItem> findJdbcDataSource(String persistenceUnitName,
+            HibernateOrmConfigPersistenceUnit persistenceUnitConfig, List<JdbcDataSourceBuildItem> jdbcDataSources) {
+        if (persistenceUnitConfig.datasource.isPresent()) {
+            return Optional.of(jdbcDataSources.stream()
+                    .filter(i -> persistenceUnitConfig.datasource.get().equals(i.getName()))
+                    .findFirst()
+                    .orElseThrow(() -> new ConfigurationException(String.format(Locale.ROOT,
+                            "The datasource '%1$s' is not configured but the persistence unit '%2$s' uses it."
+                                    + " To solve this, configure datasource '%1$s'."
+                                    + " Refer to https://quarkus.io/guides/datasource for guidance.",
+                            persistenceUnitConfig.datasource.get(), persistenceUnitName))));
+        } else if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
+            return jdbcDataSources.stream()
+                    .filter(i -> i.isDefault())
+                    .findFirst();
+        } else {
+            // if it's not the default persistence unit, we mandate an explicit datasource to prevent common errors
+            return Optional.empty();
+        }
     }
 
     private static void setMaxFetchDepth(ParsedPersistenceXmlDescriptor descriptor, OptionalInt maxFetchDepth) {

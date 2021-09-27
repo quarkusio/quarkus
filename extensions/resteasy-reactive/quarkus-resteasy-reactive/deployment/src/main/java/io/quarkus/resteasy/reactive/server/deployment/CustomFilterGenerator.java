@@ -16,6 +16,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REQUEST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESOURCE_INFO;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESPONSE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_RESPONSE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.THROWABLE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI_INFO;
@@ -30,12 +31,14 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
+import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Response;
 
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
@@ -128,8 +131,11 @@ final class CustomFilterGenerator {
             ctor.writeInstanceField(delegateField, self, config);
             ctor.returnValue(null);
 
-            if ((returnType == ReturnType.VOID) || (returnType == ReturnType.OPTIONAL_RESPONSE)
-                    || (returnType == ReturnType.RESPONSE)) {
+            if (returnType == ReturnType.VOID
+                    || returnType == ReturnType.OPTIONAL_RESPONSE
+                    || returnType == ReturnType.OPTIONAL_REST_RESPONSE
+                    || returnType == ReturnType.RESPONSE
+                    || returnType == ReturnType.REST_RESPONSE) {
                 // generate the implementation of the filter method
                 MethodCreator filterMethod = cc.getMethodCreator("filter", void.class, ContainerRequestContext.class);
                 ResultHandle rrContainerReqCtxHandle = getRRContainerReqCtxHandle(filterMethod, 0);
@@ -143,13 +149,24 @@ final class CustomFilterGenerator {
                     filterMethod.invokeStaticMethod(ofMethod(FilterUtil.class, "handleOptional", void.class,
                             Optional.class, ResteasyReactiveContainerRequestContext.class), resultHandle,
                             rrContainerReqCtxHandle);
+                } else if (returnType == ReturnType.OPTIONAL_REST_RESPONSE) {
+                    // invoke utility class that deals with Optional
+                    filterMethod.invokeStaticMethod(ofMethod(FilterUtil.class, "handleOptionalRestResponse", void.class,
+                            Optional.class, ResteasyReactiveContainerRequestContext.class), resultHandle,
+                            rrContainerReqCtxHandle);
                 } else if (returnType == ReturnType.RESPONSE) {
                     filterMethod.invokeStaticMethod(ofMethod(FilterUtil.class, "handleResponse", void.class,
                             Response.class, ResteasyReactiveContainerRequestContext.class), resultHandle,
                             rrContainerReqCtxHandle);
+                } else if (returnType == ReturnType.REST_RESPONSE) {
+                    filterMethod.invokeStaticMethod(ofMethod(FilterUtil.class, "handleRestResponse", void.class,
+                            RestResponse.class, ResteasyReactiveContainerRequestContext.class), resultHandle,
+                            rrContainerReqCtxHandle);
                 }
                 filterMethod.returnValue(null);
-            } else if ((returnType == ReturnType.UNI_VOID) || (returnType == ReturnType.UNI_RESPONSE)) {
+            } else if (returnType == ReturnType.UNI_VOID
+                    || returnType == ReturnType.UNI_RESPONSE
+                    || returnType == ReturnType.UNI_REST_RESPONSE) {
                 // generate the implementation of the filter method
                 MethodCreator filterMethod = cc.getMethodCreator("filter", void.class,
                         ResteasyReactiveContainerRequestContext.class);
@@ -159,18 +176,33 @@ final class CustomFilterGenerator {
                         filterMethod.readInstanceField(delegateField, filterMethod.getThis()),
                         getRequestFilterResultHandles(targetMethod, declaringClassName, filterMethod,
                                 getRRReqCtxHandle(filterMethod, rrContainerReqCtxHandle)));
+                String methodName;
+                switch (returnType) {
+                    case UNI_VOID:
+                        methodName = "handleUniVoid";
+                        break;
+                    case UNI_RESPONSE:
+                        methodName = "handleUniResponse";
+                        break;
+                    case UNI_REST_RESPONSE:
+                        methodName = "handleUniRestResponse";
+                        break;
+                    default:
+                        throw new IllegalStateException("ReturnType: '" + returnType + "' is not supported, in method "
+                                + targetMethod.declaringClass() + "." + targetMethod.name());
+                }
                 // invoke utility class that deals with suspend / resume
                 filterMethod
                         .invokeStaticMethod(
                                 ofMethod(FilterUtil.class,
-                                        returnType == ReturnType.UNI_VOID ? "handleUniVoid"
-                                                : "handleUniResponse",
+                                        methodName,
                                         void.class,
                                         Uni.class, ResteasyReactiveContainerRequestContext.class),
                                 uniHandle, rrContainerReqCtxHandle);
                 filterMethod.returnValue(null);
             } else {
-                throw new IllegalStateException("ReturnType: '" + returnType + "' is not supported");
+                throw new IllegalStateException("ReturnType: '" + returnType + "' is not supported, in method "
+                        + targetMethod.declaringClass() + "." + targetMethod.name());
             }
         }
         return generatedClassName;
@@ -379,7 +411,7 @@ final class CustomFilterGenerator {
 
     private static AssignableResultHandle getResourceInfoHandle(MethodCreator filterMethod, ResultHandle rrReqCtxHandle) {
         ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, rrReqCtxHandle);
-        AssignableResultHandle resourceInfo = filterMethod.createVariable(ResteasyReactiveResourceInfo.class);
+        AssignableResultHandle resourceInfo = filterMethod.createVariable(ResourceInfo.class);
         BranchResult ifNullBranch = filterMethod.ifNull(runtimeResourceHandle);
         ifNullBranch.trueBranch().assign(resourceInfo, ifNullBranch.trueBranch().readStaticField(
                 FieldDescriptor.of(SimpleResourceInfo.NullValues.class, "INSTANCE", SimpleResourceInfo.NullValues.class)));
@@ -428,17 +460,23 @@ final class CustomFilterGenerator {
                     return ReturnType.UNI_VOID;
                 } else if (parameterizedType.arguments().get(0).name().equals(RESPONSE)) {
                     return ReturnType.UNI_RESPONSE;
+                } else if (parameterizedType.arguments().get(0).name().equals(REST_RESPONSE)) {
+                    return ReturnType.UNI_REST_RESPONSE;
                 }
             } else if (parameterizedType.name().equals(OPTIONAL) && (parameterizedType.arguments().size() == 1)) {
                 if (parameterizedType.arguments().get(0).name().equals(RESPONSE)) {
                     return ReturnType.OPTIONAL_RESPONSE;
+                } else if (parameterizedType.arguments().get(0).name().equals(REST_RESPONSE)) {
+                    return ReturnType.OPTIONAL_REST_RESPONSE;
                 }
+            } else if (parameterizedType.name().equals(REST_RESPONSE)) {
+                return ReturnType.REST_RESPONSE;
             }
         } else if (targetMethod.returnType().name().equals(RESPONSE)) {
             return ReturnType.RESPONSE;
         }
         throw new RuntimeException("Method '" + targetMethod.name() + " of class '" + targetMethod.declaringClass().name()
-                + "' cannot be used as a request filter as it does not declare 'void', Optional<Response>, 'Uni<Void>' or 'Uni<Response>' as its return type");
+                + "' cannot be used as a request filter as it does not declare 'void', Response, RestResponse, Optional<Response>, Optional<RestResponse>, 'Uni<Void>', 'Uni<RestResponse>' or 'Uni<Response>' as its return type");
     }
 
     private static ReturnType determineResponseFilterReturnType(MethodInfo targetMethod) {
@@ -457,13 +495,20 @@ final class CustomFilterGenerator {
     }
 
     private static Class<?> determineRequestInterfaceType(ReturnType returnType) {
-        if ((returnType == ReturnType.VOID) || (returnType == ReturnType.OPTIONAL_RESPONSE)
-                || (returnType == ReturnType.RESPONSE)) {
-            return ContainerRequestFilter.class;
-        } else if ((returnType == ReturnType.UNI_VOID) || (returnType == ReturnType.UNI_RESPONSE)) {
-            return ResteasyReactiveContainerRequestFilter.class;
+        switch (returnType) {
+            case VOID:
+            case OPTIONAL_RESPONSE:
+            case OPTIONAL_REST_RESPONSE:
+            case RESPONSE:
+            case REST_RESPONSE:
+                return ContainerRequestFilter.class;
+            case UNI_RESPONSE:
+            case UNI_REST_RESPONSE:
+            case UNI_VOID:
+                return ResteasyReactiveContainerRequestFilter.class;
+            default:
+                throw new IllegalStateException("ReturnType: '" + returnType + "' is not supported");
         }
-        throw new IllegalStateException("ReturnType: '" + returnType + "' is not supported");
     }
 
     private static Class<?> determineResponseInterfaceType(ReturnType returnType) {
@@ -478,8 +523,11 @@ final class CustomFilterGenerator {
     private enum ReturnType {
         VOID,
         RESPONSE,
+        REST_RESPONSE,
         OPTIONAL_RESPONSE,
+        OPTIONAL_REST_RESPONSE,
         UNI_VOID,
-        UNI_RESPONSE
+        UNI_RESPONSE,
+        UNI_REST_RESPONSE
     }
 }

@@ -1,30 +1,33 @@
-{#if it['metadata'] && it['metadata']['unlisted'] != true}
 <div class="col mb-4">
     <div class="card h-100">
         <div class="card-header guide-padding-right">
             <div class="row">
                 <div class="col-md-10">
-                    {it['name']}
+                    {it.name}
                 </div>
                 <div class="col-md-1">
-                    {#if it['metadata'] && it['metadata']['guide']}
-                    <a href="{it['metadata']['guide']}" class="text-muted float-right" title="Guide"><i class="fa fa-book"></i></a>
+                    {#if it.metadata.guide??}
+                    <a href="{it.metadata.guide}" class="text-muted float-right" title="Guide"><i class="fa fa-book"></i></a>
                     {/if}
                 </div>
             </div>
         </div>
         <div class="card-body">
             <p class="card-text">
-                {#if it['metadata'] && it['metadata']['status'] == 'experimental'}
+                {#if it.metadata.status?? == 'experimental'}
                 <span class="float-right badge badge-warning">EXPERIMENTAL</span>
                 {/if}
-                <span class="card-subtitle mb-2 text-muted">{it['description']}</span>
+                <span class="card-subtitle mb-2 text-muted">{it.description}</span>
                 <br/>
-                {#if it['_dev']}
-                {it['_dev'].raw}
+                {#if it._dev??}
+                {it._dev.raw}
                 {/if}
             </p>
         </div>
+        {#if it.metadata.config??}
+        <div class="card-footer border-0 bg-white">
+            <a href='io.quarkus.quarkus-vertx-http/config?filterByExtension={it.name}&filterConfigKeys={it.metadata.config.toString().replace("[", "").replace("]", "").replace(" ", "")}' class='float-right text-secondary' title='Config Editor'><i class='fas fa-edit'></i></a>
+        </div>
+        {/if}
     </div>
 </div>
-{/if}

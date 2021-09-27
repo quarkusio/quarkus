@@ -35,6 +35,7 @@ public class FailingUnitTest {
     public void testHealthServlet() {
         RestAssured.when().get("/q/health/live").then().statusCode(503);
         RestAssured.when().get("/q/health/ready").then().statusCode(503);
+        RestAssured.when().get("/q/health/started").then().statusCode(503);
         RestAssured.when().get("/q/health").then().statusCode(503);
     }
 

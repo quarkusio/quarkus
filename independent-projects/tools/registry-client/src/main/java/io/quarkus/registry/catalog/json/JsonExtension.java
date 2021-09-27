@@ -6,14 +6,27 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionOrigin;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonInclude(JsonInclude.Include.NON_DEFAULT)
 public class JsonExtension implements Extension {
+
+    public static JsonExtension copy(Extension e) {
+        final JsonExtension copy = new JsonExtension();
+        copy.setArtifact(e.getArtifact());
+        copy.setName(e.getName());
+        copy.setDescription(e.getDescription());
+        if (!e.getMetadata().isEmpty()) {
+            copy.setMetadata(new HashMap<>(e.getMetadata()));
+        }
+        copy.setOrigins(new ArrayList<>(e.getOrigins()));
+        return copy;
+    }
 
     private String name;
     private String description;

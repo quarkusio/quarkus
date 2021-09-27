@@ -11,3 +11,5 @@ metadata:
   categories:
   - "data"
   status: "preview"
+  config:
+  - "quarkus.neo4j."

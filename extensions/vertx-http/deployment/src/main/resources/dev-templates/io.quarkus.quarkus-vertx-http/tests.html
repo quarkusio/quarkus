@@ -38,6 +38,12 @@
     .btnToggleInstrumentationBasedReload i::after {
         content: " Toggle instrumentation based reload";
     }
+    .btnToggleLiveReload i::after {
+        content: " Toggle live reload enabled";
+    }
+    .btnForceRestart i::after {
+        content: " Force restart";
+    }
     .btnTestsResults{
         display: none;
     }
@@ -81,7 +87,7 @@
 
                         <div id="failedTests{parentCount}LogFailed{count}" class="collapse">
                             <br/>
-                            <div class="bg-dark p-2">
+                            <div class="bg-dark text-light p-2">
                                 <samp class="text-wrap text-info" style="font-size: 0.9em;">
                                     {#for throwable in r.problems}
                                         <pre class="text-danger">{throwable.message}</pre>
@@ -94,7 +100,7 @@
                             </div>
                             {#if !r.logOutput.empty}
                                 <br/>
-                                <div class="bg-dark p-2">
+                                <div class="bg-dark text-light p-2">
                                     <samp class="text-wrap " style="font-size: 0.9em;">
                                         {#for log in r.logOutput}
                                             {log.raw} <br/>
@@ -118,7 +124,7 @@
                         <div id="failedTests{parentCount}LogPassed{count}" class="collapse">
                             {#if !r.logOutput.empty}
                                 <br/>
-                                <div class="bg-dark p-2">
+                                <div class="bg-dark text-light p-2">
                                     <samp class="text-wrap " style="font-size: 0.9em;">
                                         {#for log in r.logOutput}
                                             {log.raw} <br/>
@@ -143,7 +149,7 @@
                         <div id="failedTests{parentCount}LogSkipped{count}" class="collapse">
                             {#if !r.logOutput.empty}
                                 <br/>
-                                <div class="bg-dark p-2">
+                                <div class="bg-dark text-light p-2">
                                     <samp class="text-wrap " style="font-size: 0.9em;">
                                         {#for log in r.logOutput}
                                             {log.raw} <br/>
@@ -185,7 +191,7 @@
                     
                         <div id="passedTests{parentCount}LogPassed{count}" class="collapse">
                             <br/>
-                            <div class="bg-dark p-2">
+                            <div class="bg-dark text-light p-2">
                                 <samp class="text-wrap " style="font-size: 0.9em;">
                                     {#for log in r.logOutput}
                                         {log.raw} <br/>
@@ -208,7 +214,7 @@
                     
                         <div id="passedTests{parentCount}LogSkipped{count}" class="collapse">
                             <br/>
-                            <div class="bg-dark p-2">
+                            <div class="bg-dark text-light p-2">
                                 <samp class="text-wrap " style="font-size: 0.9em;">
                                     {#for log in r.logOutput}
                                         {log.raw} <br/>
@@ -250,7 +256,7 @@
                     
                         <div id="skippedTests{parentCount}LogSkipped{count}" class="collapse">
                             <br/>
-                            <div class="bg-dark p-2">
+                            <div class="bg-dark text-light p-2">
                                 <samp class="text-wrap " style="font-size: 0.9em;">
                                     {#for log in r.logOutput}
                                         {log.raw} <br/>

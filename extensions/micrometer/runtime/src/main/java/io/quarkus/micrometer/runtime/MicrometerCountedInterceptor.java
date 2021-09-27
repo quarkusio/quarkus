@@ -6,12 +6,12 @@ import java.util.concurrent.CompletionStage;
 import javax.annotation.Priority;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
 
 import io.micrometer.core.annotation.Counted;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
+import io.quarkus.arc.ArcInvocationContext;
 
 /**
  * Quarkus declared interceptor responsible for intercepting all methods
@@ -51,13 +51,12 @@ public class MicrometerCountedInterceptor {
      * @throws Throwable When the intercepted method throws one.
      */
     @AroundInvoke
-    Object countedMethod(InvocationContext context) throws Exception {
-        Method method = context.getMethod();
-        Counted counted = method.getAnnotation(Counted.class);
+    Object countedMethod(ArcInvocationContext context) throws Exception {
+        MicrometerCounted counted = context.findIterceptorBinding(MicrometerCounted.class);
         if (counted == null) {
             return context.proceed();
         }
-
+        Method method = context.getMethod();
         Tags commonTags = getCommonTags(method.getDeclaringClass().getName(), method.getName());
 
         // If we're working with a CompletionStage
@@ -84,7 +83,7 @@ public class MicrometerCountedInterceptor {
         }
     }
 
-    private void recordCompletionResult(Counted counted, Tags commonTags, Throwable throwable) {
+    private void recordCompletionResult(MicrometerCounted counted, Tags commonTags, Throwable throwable) {
         if (throwable != null) {
             record(counted, commonTags, throwable);
         } else if (!counted.recordFailuresOnly()) {
@@ -92,7 +91,7 @@ public class MicrometerCountedInterceptor {
         }
     }
 
-    private void record(Counted counted, Tags commonTags, Throwable throwable) {
+    private void record(MicrometerCounted counted, Tags commonTags, Throwable throwable) {
         Counter.Builder builder = Counter.builder(counted.value())
                 .tags(commonTags)
                 .tags(counted.extraTags())
@@ -108,4 +107,5 @@ public class MicrometerCountedInterceptor {
     private Tags getCommonTags(String className, String methodName) {
         return Tags.of("class", className, "method", methodName);
     }
+
 }

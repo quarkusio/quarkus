@@ -9,3 +9,8 @@ metadata:
   - "messaging"
   guide: "https://quarkus.io/guides/kafka-streams"
   status: "stable"
+  config:
+  - "quarkus.kafka-streams."
+  - "kafka."
+  - "kafka-streams."
+  - "mp.messaging."

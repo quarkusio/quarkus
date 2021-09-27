@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Simplified MongoDB with Panache
+= Simplified MongoDB with Panache
 
 include::./attributes.adoc[]
 :config-file: application.properties
@@ -65,16 +65,16 @@ First, we need a new project. Create a new project with the following command:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=mongodb-panache-quickstart \
     -DclassName="org.acme.mongodb.panache.PersonResource" \
     -Dpath="/persons" \
-    -Dextensions="resteasy,resteasy-jackson,mongodb-panache"
+    -Dextensions="resteasy-reactive-jackson,mongodb-panache"
 cd mongodb-panache-quickstart
 ----
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS, Jackson and MongoDB with Panache extensions.
+This command generates a Maven structure importing the RESTEasy Reactive Jackson and MongoDB with Panache extensions.
 After this, the `quarkus-mongodb-panache` extension has been added to your `pom.xml`.
 
 If you don't want to generate a new project, add the dependency in your `pom.xml`:
@@ -416,7 +416,7 @@ The repository pattern examples have been omitted for brevity.
 
 == Writing a JAX-RS resource
 
-First, include one of the RESTEasy extensions to enable JAX-RS endpoints, for example, add the `io.quarkus:quarkus-resteasy-jackson` dependency for JAX-RS and JSON support.
+First, include one of the RESTEasy extensions to enable JAX-RS endpoints, for example, add the `io.quarkus:quarkus-resteasy-reactive-jackson` dependency for JAX-RS and JSON support.
 
 Then, you can create the following resource to create/read/update/delete your Person entity:
 
@@ -669,7 +669,7 @@ Projection can be done for both PanacheQL and native queries.
 
 [source,java]
 ----
-import io.quarkus.mongodb.panache.ProjectionFor;
+import io.quarkus.mongodb.panache.common.ProjectionFor;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 
 // using public fields

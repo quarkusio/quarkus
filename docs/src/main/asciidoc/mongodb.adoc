@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using the MongoDB Client
+= Using the MongoDB Client
 include::./attributes.adoc[]
 
 MongoDB is a well known NoSQL Database that is widely used.
@@ -43,17 +43,17 @@ First, we need a new project. Create a new project with the following command:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=mongodb-quickstart \
     -DclassName="org.acme.mongodb.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy,resteasy-jackson,mongodb-client,resteasy-mutiny,context-propagation"
+    -Dextensions="resteasy-reactive-jackson,mongodb-client"
 cd mongodb-quickstart
 ----
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS, Jackson, Mutiny, Context Propagation and MongoDB Client extensions.
-After this, the quarkus-mongodb-client extension has been added to your `pom.xml`.
+This command generates a Maven structure importing the RESTEasy Reactive Jackson and MongoDB Client extensions.
+After this, the `quarkus-mongodb-client` extension has been added to your `pom.xml`.
 
 If you already have your Quarkus project configured, you can add the `mongodb-client` extension
 to your project by running the following command in your project base directory:
@@ -241,14 +241,16 @@ quarkus.mongodb.connection-string = mongodb://localhost:27017
 If you need more configuration properties, there is a full list at the end of this guide.
 
 [[dev-services]]
-=== DevServices (Configuration Free Databases)
+=== Dev Services (Configuration Free Databases)
 
-Quarkus supports a feature called DevServices that allows you to create various datasources without any config. In the case of MongoDB this support extends to the default MongoDB connection.
+Quarkus supports a feature called Dev Services that allows you to create various datasources without any config. In the case of MongoDB this support extends to the default MongoDB connection.
 What that means practically, is that if you have not configured `quarkus.mongodb.connection-string` Quarkus will automatically start a MongoDB container when running tests or dev-mode,
 and automatically configure the connection.
 
 When running the production version of the application, the MongoDB connection need to be configured as normal, so if you want to include a production database config in your
-`application.properties` and continue to use DevServices we recommend that you use the `%prod.` profile to define your MongoDB settings.
+`application.properties` and continue to use Dev Services we recommend that you use the `%prod.` profile to define your MongoDB settings.
+
+include::{generated-dir}/config/quarkus-mongodb-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
 
 == Multiple MongoDB Clients
 
@@ -305,7 +307,7 @@ docker run -ti --rm -p 27017:27017 mongo:4.0
 
 [NOTE]
 ====
-If you use <<dev-services,DevServices>>, launching the container manually is not necessary!
+If you use <<dev-services,Dev Services>>, launching the container manually is not necessary!
 ====
 
 

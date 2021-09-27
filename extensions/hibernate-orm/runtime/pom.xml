@@ -42,6 +42,11 @@
             <artifactId>quarkus-narayana-jta</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-core</artifactId>
             <exclusions>
@@ -52,12 +57,6 @@
                 <exclusion>
                     <groupId>org.jboss.spec.javax.transaction</groupId>
                     <artifactId>jboss-transaction-api_1.2_spec</artifactId>
-                </exclusion>
-
-                <!-- Javassist is never used in Quarkus -->
-                <exclusion>
-                    <groupId>org.javassist</groupId>
-                    <artifactId>javassist</artifactId>
                 </exclusion>
 
                 <!-- These XML parsers are banned in the project as we use the new package -->

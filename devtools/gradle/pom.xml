@@ -10,113 +10,24 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>io.quarkus.gradle.plugin</artifactId>
+    <artifactId>io.quarkus.gradle.plugin.parent</artifactId>
     <packaging>pom</packaging>
-    <name>Quarkus - Gradle Plugin</name>
+    <name>Quarkus - Gradle Plugin - Parent</name>
     <description>Quarkus - Gradle Plugin</description>
 
     <properties>
-        <gradle.executable>./gradlew</gradle.executable>
+        <gradle.executable>./../gradlew</gradle.executable>
         <gradle.task>build</gradle.task>
         <skip.gradle.build>false</skip.gradle.build>
     </properties>
 
-    <dependencies>
-        <!-- Compile -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bootstrap-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-deployment</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devtools-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-project-core-extension-codestarts</artifactId>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devmode-test-utils</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+    <modules>
+        <module>gradle-application-plugin</module>
+        <module>gradle-extension-plugin</module>
+    </modules>
+
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>gradle</id>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <executable>${gradle.executable}</executable>
-                            <arguments>
-                                <argument>clean</argument>
-                                <argument>${gradle.task}</argument>
-                                <argument>-Pdescription=${project.description}</argument>
-                                <argument>-Dmaven.repo.local=${settings.localRepository}</argument>
-                                <argument>-S</argument>
-                                <argument>--stacktrace</argument>
-                                <argument>--no-daemon</argument>
-                            </arguments>
-                            <environmentVariables>
-                                <MAVEN_REPO_LOCAL>${settings.localRepository}</MAVEN_REPO_LOCAL>
-                                <GRADLE_OPTS>${env.MAVEN_OPTS}</GRADLE_OPTS>
-                            </environmentVariables>
-                            <skip>${skip.gradle.build}</skip>
-                        </configuration>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>attach-artifacts</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>attach-artifact</goal>
-                        </goals>
-                        <configuration>
-                            <artifacts>
-                                <artifact>
-                                    <file>build/libs/quarkus-gradle-plugin-${project.version}.jar</file>
-                                    <type>jar</type>
-                                </artifact>
-                                <artifact>
-                                    <file>build/libs/quarkus-gradle-plugin-${project.version}-javadoc.jar</file>
-                                    <type>jar</type>
-                                    <classifier>javadoc</classifier>
-                                </artifact>
-                                <artifact>
-                                    <file>build/libs/quarkus-gradle-plugin-${project.version}-sources.jar</file>
-                                    <type>jar</type>
-                                    <classifier>sources</classifier>
-                                </artifact>
-                            </artifacts>
-                            <skipAttach>${skip.gradle.build}</skipAttach>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <!-- Do not deploy this project-->
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
@@ -137,7 +48,7 @@
                 </os>
             </activation>
             <properties>
-                <gradle.executable>gradlew.bat</gradle.executable>
+                <gradle.executable>..\gradlew.bat</gradle.executable>
             </properties>
         </profile>
         <profile>

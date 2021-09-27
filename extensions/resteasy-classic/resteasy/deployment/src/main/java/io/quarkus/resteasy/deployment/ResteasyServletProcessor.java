@@ -12,9 +12,6 @@ import javax.ws.rs.core.Application;
 
 import org.jboss.logging.Logger;
 import org.jboss.metadata.web.spec.ServletMappingMetaData;
-import org.jboss.resteasy.microprofile.config.FilterConfigSourceImpl;
-import org.jboss.resteasy.microprofile.config.ServletConfigSourceImpl;
-import org.jboss.resteasy.microprofile.config.ServletContextConfigSourceImpl;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 
 import io.quarkus.deployment.Capabilities;
@@ -56,9 +53,8 @@ public class ResteasyServletProcessor {
             BuildProducer<io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
             HttpRootPathBuildItem httpRootPathBuildItem) {
         if (resteasyServerConfig.isPresent()) {
-            String rp = resteasyServerConfig.get().getRootPath();
-            String rootPath = httpRootPathBuildItem.resolvePath(rp.startsWith("/") ? rp.substring(1) : rp);
-            String defaultPath = httpRootPathBuildItem.resolvePath(resteasyServerConfig.get().getPath());
+            String rootPath = httpRootPathBuildItem.relativePath(resteasyServerConfig.get().getRootPath());
+            String defaultPath = resteasyServerConfig.get().getPath();
 
             deprecatedResteasyJaxrsConfig.produce(new ResteasyJaxrsConfigBuildItem(defaultPath));
             resteasyJaxrsConfig
@@ -93,17 +89,14 @@ public class ResteasyServletProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ServletInitParamBuildItem> servletInitParameters,
             Optional<ServletContextPathBuildItem> servletContextPathBuildItem,
-            ResteasyInjectionReadyBuildItem resteasyInjectionReady) throws Exception {
+            ResteasyInjectionReadyBuildItem resteasyInjectionReady) {
+
         if (!capabilities.isPresent(Capability.SERVLET)) {
             return;
         }
         feature.produce(new FeatureBuildItem(Feature.RESTEASY));
 
         if (resteasyServerConfig.isPresent()) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                    ServletConfigSourceImpl.class,
-                    ServletContextConfigSourceImpl.class,
-                    FilterConfigSourceImpl.class));
             String path = resteasyServerConfig.get().getPath();
 
             //if JAX-RS is installed at the root location we use a filter, otherwise we use a Servlet and take over the whole mapped path

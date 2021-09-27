@@ -12,3 +12,6 @@ metadata:
   categories:
   - "cloud"
   status: "stable"
+  config:
+  - "smallrye.faulttolerance."
+  - "mp.fault.tolerance."

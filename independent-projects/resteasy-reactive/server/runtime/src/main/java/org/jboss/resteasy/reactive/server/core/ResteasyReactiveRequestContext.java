@@ -10,6 +10,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
@@ -182,11 +183,12 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     /**
-     * Meant to be used when a error occurred early in processing chain
+     * Meant to be used when an error occurred early in processing chain
      */
     @Override
     public void abortWith(Response response) {
         setResult(response);
+        setAbortHandlerChainStarted(true);
         restart(getAbortHandlerChain());
         // this is a valid action after suspend, in which case we must resume
         if (isSuspended()) {
@@ -316,6 +318,10 @@ public abstract class ResteasyReactiveRequestContext
             setGenericReturnType(((GenericEntity<?>) result).getType());
         }
         return this;
+    }
+
+    public boolean handlesUnmappedException() {
+        return true;
     }
 
     public void handleUnmappedException(Throwable throwable) {
@@ -777,10 +783,22 @@ public abstract class ResteasyReactiveRequestContext
 
     @Override
     public Object getHeader(String name, boolean single) {
-        if (single)
-            return serverRequest().getRequestHeader(name);
-        // empty collections must not be turned to null
-        return serverRequest().getAllRequestHeaders(name);
+        if (httpHeaders == null) {
+            if (single)
+                return serverRequest().getRequestHeader(name);
+            // empty collections must not be turned to null
+            return serverRequest().getAllRequestHeaders(name);
+        } else {
+            if (single)
+                return httpHeaders.getMutableHeaders().getFirst(name);
+            // empty collections must not be turned to null
+            List<String> list = httpHeaders.getMutableHeaders().get(name);
+            if (list == null) {
+                return Collections.emptyList();
+            } else {
+                return list;
+            }
+        }
     }
 
     @Override

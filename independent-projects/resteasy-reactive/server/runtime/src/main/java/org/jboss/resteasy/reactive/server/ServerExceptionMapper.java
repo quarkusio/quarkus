@@ -39,7 +39,8 @@ import javax.ws.rs.core.UriInfo;
  * When {@code value} is not set, then the handled Exception type is deduced by the Exception type used in the method parameters
  * (there must be exactly one Exception type in this case).
  *
- * The return type of the method must be either be of type {@code Response} or {@code Uni<Response>}.
+ * The return type of the method must be either be of type {@code Response}, {@code Uni<Response>}, {@code RestResponse} or
+ * {@code Uni<RestResponse>}.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

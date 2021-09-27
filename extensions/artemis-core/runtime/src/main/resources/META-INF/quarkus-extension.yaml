@@ -10,3 +10,5 @@ metadata:
   guide: "https://quarkus.io/guides/jms"
   status: "preview"
   unlisted: true
+  config:
+  - "quarkus.artemis."

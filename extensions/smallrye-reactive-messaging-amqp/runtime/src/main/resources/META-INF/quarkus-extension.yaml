@@ -9,4 +9,8 @@ metadata:
   guide: "https://quarkus.io/guides/amqp"
   categories:
   - "messaging"
-  status: "preview"
+  status: "stable"
+  config:
+  - "mp.messaging."
+  - "quarkus.reactive-messaging."
+  - "quarkus.amqp."

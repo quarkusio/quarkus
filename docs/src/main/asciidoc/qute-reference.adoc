@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Qute Reference Guide
+= Qute Reference Guide
 
 include::./attributes.adoc[]
 
@@ -17,7 +17,11 @@ The usage of reflection is minimized to reduce the size of native images.
 The API combines both the imperative and the non-blocking reactive style of coding.
 In the development mode, all files located in the `src/main/resources/templates` folder are watched for changes and modifications are immediately visible in your application.
 Furthermore, Qute attempts to detect most of the template problems at build time and fail fast.
+
 In this guide, you will find an <<hello_world_example,introductory example>>, the description of the <<core_features,core features>> and <<quarkus_integration,Quarkus integration>> details.
+
+NOTE: Qute is primarily designed as a Quarkus extension. It is possible to use it as a "standalone" library too. However, in such case some of the features are not available. In general, any feature mentioned under the <<quarkus_integration>> section is missing. You can find more information about the limitations and possibilities in the <<standalone>> section.
+
 
 [[hello_world_example]]
 == Hello World Example
@@ -409,8 +413,8 @@ NOTE: In Quarkus, a variant is set automatically for templates located in the `s
 
 If you need to render the unescaped value:
 
-1. Use the `raw` or `safe` properties implemented as extension methods of the `java.lang.Object`,
-2. Wrap the `String` value in a `io.quarkus.qute.RawString`.
+1. Either use the `raw` or `safe` properties implemented as extension methods of the `java.lang.Object`,
+2. Or wrap the `String` value in a `io.quarkus.qute.RawString`.
 
 [source,html]
 ----
@@ -992,6 +996,7 @@ NOTE: The template rendering is divided in two phases. During the first phase, w
 
 === Engine Configuration
 
+[[value-resolvers]]
 ==== Value Resolvers
 
 Value resolvers are used when evaluating expressions.
@@ -1006,6 +1011,7 @@ engineBuilder.addValueResolver(ValueResolver.builder()
     .build());
 ----
 
+[[template-locator]]
 ==== Template Locator
 
 Manual registration is sometimes handy but it's also possible to register a template locator using `EngineBuilder.addLocator(Function<String, Optional<Reader>>)`.
@@ -1028,6 +1034,26 @@ engineBuilder.addParserHook(new ParserHook() {
 });
 ----
 <1> Escape all occurences of `${`.
+
+==== Strict Rendering
+
+The strict rendering enables the developers to catch insidious errors caused by typos and invalid expressions.
+If enabled then any expression that cannot be resolved, i.e. is evaluated to an instance of `io.quarkus.qute.Results.NotFound`, will always result in a `TemplateException` and the rendering is aborted.
+A `NotFound` value is considered an error because it basically means that no value resolver was able to resolve the expression correctly.
+
+NOTE: `null` is a valid value though. It is considered `falsy` as described in the <<if_section>> and does not produce any output.
+
+Strict rendering is enabled by default.
+However, you can disable this functionality via `io.quarkus.qute.EngineBuilder.strictRendering(boolean)`.
+
+TIP: In Quarkus, a dedicated config property can be used instead: `quarkus.qute.strict-rendering`.
+
+If you really need to use an expression which can potentially lead to a "not found" error, you can use _default values_ and _safe expressions_ in order to suppress the error.
+A default value is used if the previous part of an expression cannot be resolved or resolves to `null`. 
+You can use the elvis operator to output the default value: `{foo.bar ?: 'baz'}`, which is effectively the same as the following virtual method: `{foo.bar.or('baz')}`.
+A safe expression ends with the `??` suffix and results in `null` if the expression cannot be resolved.
+It can be very useful e.g. in `{#if}` sections: `{#if valueNotFound??}Only rendered if valueNotFound is truthy!{/if}`.
+In fact, `??` is just a shorthand notation for `.or(null)`, i.e. `{#if valueNotFound??}` becomes `{#if valueNotFound.or(null)}`.
 
 [[quarkus_integration]]
 == Quarkus Integration
@@ -1456,7 +1482,16 @@ TIP: A list element can be accessed directly: `{list.10}` or `{list[10]}`.
 ** `{config:foo}` or `{config:['property.with.dot.in.name']}`
 
 * `config:property(name)`: Returns the config value for the given property name; the name can be obtained dynamically by an expression 
-** `{config:property('quarkus.foo')}` or `{config:property(foo.getPropertyName())}`
+** `{config:property('quarkus.foo')}`
+** `{config:property(foo.getPropertyName())}`
+
+* `config:boolean(name)`: Returns the config value for the given property name as a boolean; the name can be obtained dynamically by an expression
+** `{config:boolean('quarkus.foo.boolean') ?: 'Not Found'}`
+** `{config:boolean(foo.getPropertyName()) ?: 'property is false'}`
+
+* `config:integer(name)`: Returns the config value for the given property name as an integer; the name can be obtained dynamically by an expression
+** `{config:integer('quarkus.foo')}`
+** `{config:integer(foo.getPropertyName())}`
 
 ===== Time
 
@@ -1644,6 +1679,7 @@ WARNING: Unlike with `@Inject` the templates obtained via `RestTemplate` are not
 
 In the development mode, all files located in `src/main/resources/templates` are watched for changes and modifications are immediately visible.
 
+[[type-safe-message-bundles]]
 === Type-safe Message Bundles
 
 ==== Basic Concepts
@@ -1809,3 +1845,33 @@ public class MyBean {
 === Configuration Reference
 
 include::{generated-dir}/config/quarkus-qute.adoc[leveloffset=+1, opts=optional]
+
+
+[[standalone]]
+== Qute Used as a Standalone Library
+
+Qute is primarily designed as a Quarkus extension. 
+However. it is possible to use it as a "standalone" library.
+In this case, some features are not available and some additional configuration is needed.
+
+Engine:: First of all, no managed `Engine` instance is available out of the box.
+You'll need to configure a new instance via `Engine.builder()`.
+
+Templates:: 
+* By default, no <<template-locator,template locators>> are registered, i.e. `Engine.getTemplate(String)` will not work. 
+* You can register a custom template locator or parse a template manually and put the reulst in the cache via `Engine.putTemplate(String, Template)`.
+
+Value resolvers:: 
+* No <<value-resolvers,``ValueResolver``s>> are generated automatically.
+** <<template_extension_methods,`@TemplateExtension` methods>> will not work. 
+** <<template_data,`@TemplateData`>> annotations are ignored.
+* It's recommended to register a `ReflectionValueResolver` instance via `Engine.addValueResolver(new ReflectionValueResolver())` so that Qute can access object properties and call public methods. 
++
+NOTE: Keep in mind that reflection may not work correctly in some restricted environments or may require additional configuration, e.g. registration in case of a GraalVM native image. 
+* A custom value resolver can be easily built via `ValueResolver.builder()`
+
+Type-safety::
+* <<typesafe_expressions>> are not validated.
+* <<type-safe-message-bundles,Type-safe message bundles>> are not supported.
+
+Injection:: It is not possible to inject a `Template` instance and vice versa - a template cannot inject a `@Named` CDI bean via the `inject:` namespace.

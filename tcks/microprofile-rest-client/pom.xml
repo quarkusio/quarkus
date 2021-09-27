@@ -185,18 +185,44 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <excludes>
-                                <!-- fails with " module java.base does not "opens java.lang.invoke" to unnamed module" -->
-                                <exclude>org.eclipse.microprofile.rest.client.tck.ClientHeaderParamTest</exclude>
-                                <!-- the following tests fail for yet unknown reasons (assertion failures) -->
-                                <exclude>org.eclipse.microprofile.rest.client.tck.InvalidInterfaceTest</exclude>
-                                <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutBuilderIndependentOfMPConfigTest</exclude>
-                                <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutTest</exclude>
-                                <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutViaMPConfigTest</exclude>
-                                <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutViaMPConfigWithConfigKeyTest</exclude>
-                            </excludes>
-                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>default-test</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <configuration>
+                                    <excludes>
+                                        <!-- the following tests are run in a separate surefire execution
+                                        by setting certain JDK system properties during launch -->
+                                        <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutBuilderIndependentOfMPConfigTest</exclude>
+                                        <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutTest</exclude>
+                                        <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutViaMPConfigTest</exclude>
+                                        <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutViaMPConfigWithConfigKeyTest</exclude>
+                                    </excludes>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>jdk16-plain-socket-workaround</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <configuration>
+                                    <systemPropertyVariables>
+                                        <!-- Temporary workaround to prevent org.eclipse.microprofile.rest.client.tck.timeout.Timeout* tests
+                                        from failing because of a different exception type being thrown in Java 13+
+                                        during socket connections -->
+                                        <jdk.net.usePlainSocketImpl>true</jdk.net.usePlainSocketImpl>
+                                    </systemPropertyVariables>
+                                    <includes>
+                                        <include>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutBuilderIndependentOfMPConfigTest</include>
+                                        <include>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutTest</include>
+                                        <include>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutViaMPConfigTest</include>
+                                        <include>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutViaMPConfigWithConfigKeyTest</include>
+                                    </includes>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>

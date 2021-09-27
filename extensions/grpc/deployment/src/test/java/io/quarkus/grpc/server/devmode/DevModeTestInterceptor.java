@@ -7,8 +7,10 @@ import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
+import io.quarkus.grpc.GlobalInterceptor;
 
 @ApplicationScoped
+@GlobalInterceptor
 public class DevModeTestInterceptor implements ServerInterceptor {
 
     private volatile String lastStatus = "initial";
@@ -17,7 +19,7 @@ public class DevModeTestInterceptor implements ServerInterceptor {
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall,
             Metadata metadata, ServerCallHandler<ReqT, RespT> serverCallHandler) {
         return serverCallHandler
-                .startCall(new ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(serverCall) {
+                .startCall(new ForwardingServerCall.SimpleForwardingServerCall<>(serverCall) {
                     @Override
                     protected ServerCall<ReqT, RespT> delegate() {
                         lastStatus = getStatus();

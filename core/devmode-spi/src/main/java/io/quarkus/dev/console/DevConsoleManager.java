@@ -13,6 +13,7 @@ public class DevConsoleManager {
     private static volatile Map<String, Map<String, Object>> templateInfo;
     private static volatile HotReplacementContext hotReplacementContext;
     private static volatile Object quarkusBootstrap;
+    private static volatile boolean doingHttpInitiatedReload;
     /**
      * Global map that can be used to share data betweeen the runtime and deployment side
      * to enable communication.
@@ -78,6 +79,14 @@ public class DevConsoleManager {
      */
     public static <T> T getGlobal(String name) {
         return (T) globals.get(name);
+    }
+
+    public static boolean isDoingHttpInitiatedReload() {
+        return doingHttpInitiatedReload;
+    }
+
+    public static void setDoingHttpInitiatedReload(boolean doingHttpInitiatedReload) {
+        DevConsoleManager.doingHttpInitiatedReload = doingHttpInitiatedReload;
     }
 
     public static void close() {

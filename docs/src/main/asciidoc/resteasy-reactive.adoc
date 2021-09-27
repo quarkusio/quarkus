@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Writing REST Services with RESTEasy Reactive
+= Writing REST Services with RESTEasy Reactive
 
 include::./attributes.adoc[]
 :jaxrsapi: https://javadoc.io/doc/javax.ws.rs/javax.ws.rs-api/2.1.1
@@ -12,7 +12,9 @@ include::./attributes.adoc[]
 :mutinyapi: https://smallrye.io/smallrye-mutiny/apidocs
 :httpspec: https://tools.ietf.org/html/rfc7231
 :jsonpapi: https://javadoc.io/doc/javax.json/javax.json-api/1.1.4
-:vertxapi: https://javadoc.io/static/io.vertx/vertx-core/3.9.4
+:vertxapi: https://javadoc.io/static/io.vertx/vertx-core/4.1.0
+:resteasy-reactive-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive/2.0.0.Final
+:resteasy-reactive-common-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-common/2.0.0.Final
 
 This guide explains how to write REST Services with RESTEasy Reactive in Quarkus.
 
@@ -222,28 +224,28 @@ The following HTTP request elements may be obtained by your endpoint method:
 |HTTP element|Annotation|Usage 
 
 |[[path-parameter]]Path parameter
-|`@RestPath` (or nothing)
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestPath.html[`@RestPath`] (or nothing)
 |URI template parameter (simplified version of the https://tools.ietf.org/html/rfc6570[URI Template specification]), 
 see <<uri-parameters,URI parameters>> for more information.
 
 |Query parameter
-|`@RestQuery`
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestQuery.html[`@RestQuery`]
 |The value of an https://tools.ietf.org/html/rfc3986#section-3.4[URI query parameter]
 
 |Header
-|`@RestHeader`
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestHeader.html[`@RestHeader`]
 |The value of an https://tools.ietf.org/html/rfc7230#section-3.2[HTTP header]
 
 |Cookie
-|`@RestCookie`
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestCookie.html[`@RestCookie`]
 |The value of an https://tools.ietf.org/html/rfc6265#section-4.2[HTTP cookie]
 
 |Form parameter
-|`@RestForm`
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestForm.html[`@RestForm`]
 |The value of an https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST[HTTP URL-encoded FORM]
 
 |Matrix parameter
-|`@RestMatrix`
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestMatrix.html[`@RestMatrix`]
 |The value of an https://tools.ietf.org/html/rfc3986#section-3.3[URI path segment parameter]
 
 |===
@@ -295,8 +297,9 @@ public class Endpoint {
 }
 ----
 
-NOTE: the `@RestPath` annotation is optional: any parameter whose name matches an existing URI
-template variable will be automatically assumed to have `@RestPath`.
+NOTE: the link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestPath.html[`@RestPath`]
+annotation is optional: any parameter whose name matches an existing URI
+template variable will be automatically assumed to have link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestPath.html[`@RestPath`].
 
 You can also use any of the JAX-RS annotations link:{jaxrsapi}/javax/ws/rs/PathParam.html[`@PathParam`],
 link:{jaxrsapi}/javax/ws/rs/QueryParam.html[`@QueryParam`],
@@ -394,7 +397,8 @@ NOTE: You can add support for more <<readers-writers,body parameter types>>.
 
 === Handling Multipart Form data
 
-To handle HTTP requests that have `multipart/form-data` as their content type, RESTEasy Reactive introduces the `@org.jboss.resteasy.reactive.MultipartForm` annotation.
+To handle HTTP requests that have `multipart/form-data` as their content type, RESTEasy Reactive introduces the 
+link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/MultipartForm.html[`@MultipartForm`] annotation.
 Let us look at an example of its use.
 
 Assuming an HTTP request containing a file upload and a form value containing a string description need to be handled, we could write a POJO
@@ -421,15 +425,18 @@ public class FormData {
 }
 ----
 
-The `name` field will contain the data contained in the part of HTTP request called `description` (because `@RestForm` does not define a value, the field name is used),
+The `name` field will contain the data contained in the part of HTTP request called `description` (because 
+link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestForm.html[`@RestForm`] does not define a value, the field name is used),
 while the `file` field will contain data about the uploaded file in the `image` part of HTTP request.
 
-NOTE: `FileUpload` provides access to various metadata of the uploaded file. If however all you need is a handle to the uploaded file, `java.nio.file.Path` or `java.io.File` could be used.
+NOTE: link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/multipart/FileUpload.html[`FileUpload`]
+provides access to various metadata of the uploaded file. If however all you need is a handle to the uploaded file, `java.nio.file.Path` or `java.io.File` could be used.
 
-NOTE: When access to all uploaded files without specifying the form names is needed, RESTEasy Reactive allows the use of `@RestForm List<FileUpload>`, where it is important to **not** set a name for the `@RestForm` annotation.
+NOTE: When access to all uploaded files without specifying the form names is needed, RESTEasy Reactive allows the use of `@RestForm List<FileUpload>`, where it is important to **not** set a name for the link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestForm.html[`@RestForm`] annotation.
 
-NOTE: `@PartType` is used to aid in deserialization of the corresponding part of the request into the desired Java type. It is very useful when for example the corresponding body part is JSON
-and needs to be converted to a POJO.
+NOTE: link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/PartType.html[`@PartType`] is used to aid
+in deserialization of the corresponding part of the request into the desired Java type. It is very useful when
+for example the corresponding body part is JSON and needs to be converted to a POJO.
 
 This POJO could be used in a Resource method like so:
 
@@ -456,7 +463,10 @@ public class Endpoint {
 }
 ----
 
-The use of `@MultipartForm` as method parameter makes RESTEasy Reactive handle the request as a multipart form request.
+The use of link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/MultipartForm.html[`@MultipartForm`] as
+method parameter makes RESTEasy Reactive handle the request as a multipart form request.
+
+TIP: The use of `@MultipartForm` is actually unnecessary as RESTEasy Reactive can infer this information from the use of `@Consumes(MediaType.MULTIPART_FORM_DATA)`
 
 WARNING: When handling file uploads, it is very important to move the file to permanent storage (like a database, a dedicated file system or a cloud storage) in your code that handles the POJO.
 Otherwise, the file will no longer be accessible when the request terminates.
@@ -483,13 +493,13 @@ In addition, the following return types are also supported:
 |link:{jdkapi}/java/nio/file/Path.html[`Path`]
 |The contents of the file specified by the given path
 
-|`PathPart`
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/PathPart.html[`PathPart`]
 |The partial contents of the file specified by the given path
 
-|`FilePart`
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/FilePart.html[`FilePart`]
 |The partial contents of a file
 
-|link:{vertxapi}io/vertx/core/file/AsyncFile.html[`AsyncFile`]
+|link:{vertxapi}/io/vertx/core/file/AsyncFile.html[`AsyncFile`]
 |Vert.x AsyncFile, which can be in full, or partial
 
 |===
@@ -502,7 +512,7 @@ that resolve to one of the mentioned return types.
 === Setting other response properties
 
 If you need to set more properties on the HTTP response than just the body, such as the status code
-or headers, you can make your method return the link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`]
+or headers, you can make your method return the link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse`]
 type:
 
 [source,java]
@@ -517,15 +527,17 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.core.Response;
+
+import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
 
 @Path("")
 public class Endpoint {
 
     @GET
-    public Response hello() {
+    public RestResponse<String> hello() {
         // HTTP OK status with text/plain content type
-        return Response.ok("Hello, World!", MediaType.TEXT_PLAIN_TYPE)
+        return ResponseBuilder.ok("Hello, World!", MediaType.TEXT_PLAIN_TYPE)
          // set a response header
          .header("X-FroMage", "Camembert")
          // set the Expires response header to two days from now
@@ -537,6 +549,9 @@ public class Endpoint {
     }
 }
 ----
+
+NOTE: You can also use the JAX-RS type link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`] but it is
+not strongly typed to your entity.
 
 === Async/reactive support
 
@@ -611,6 +626,10 @@ public class Endpoint {
 }
 ----
 
+NOTE: Response filters are not invoked on streamed responses, because they would give a false
+impression that you can set headers or HTTP status codes, which is not true after the initial
+response.
+
 === Server-Sent Event (SSE) support
 
 If you want to stream JSON objects in your response, you can use 
@@ -658,12 +677,16 @@ public class Endpoint {
 
 === Controlling HTTP Caching features
 
-RESTEasy Reactive provides the `@org.jboss.resteasy.reactive.Cache` and `@org.jboss.resteasy.reactive.NoCache` annotations to facilitate handling HTTP caching semantics, i.e. setting the 'Cache-Control' HTTP header.
+RESTEasy Reactive provides the link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/Cache.html[`@Cache`]
+and link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/NoCache.html[`@NoCache`] annotations to facilitate
+handling HTTP caching semantics, i.e. setting the 'Cache-Control' HTTP header.
 
 These annotations can be placed either on a Resource Method or a Resource Class (in which case it applies to all Resource Methods of the class that do *not* contain the same annotation) and allow users
 to return domain objects and not have to deal with building up the `Cache-Control` HTTP header explicitly.
 
-While `@Cache` builds a complex `Cache-Control` header, `@NoCache` is a simplified notation to say that you don't want anything cached; i.e. `Cache-Control: nocache`.
+While link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/Cache.html[`@Cache`]
+builds a complex `Cache-Control` header, link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/NoCache.html[`@NoCache`]
+is a simplified notation to say that you don't want anything cached; i.e. `Cache-Control: nocache`.
 
 NOTE: More information on the `Cache-Control` header and be found in link:https://datatracker.ietf.org/doc/html/rfc7234[RFC 7234]
 
@@ -687,7 +710,7 @@ method takes parameters of the following type:
 |link:{jaxrsapi}/javax/ws/rs/core/SecurityContext.html[`SecurityContext`]
 |Access to the current user and roles
 
-|`SimpleResourceInfo`
+|link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/SimpleResourceInfo.html[`SimpleResourceInfo`]
 |Information about the current endpoint method and class (no reflection required)
 
 |link:{jaxrsapi}/javax/ws/rs/core/UriInfo.html[`UriInfo`]
@@ -708,7 +731,7 @@ method takes parameters of the following type:
 |link:{jaxrsapi}/javax/ws/rs/core/ResourceContext.html[`ResourceContext`]
 |Advanced: access to instances of endpoints
 
-|`ServerRequestContext`
+|link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/spi/ServerRequestContext.html[`ServerRequestContext`]
 |Advanced: RESTEasy Reactive access to the current request/response
 
 |link:{jaxrsapi}/javax/ws/rs/sse/Sse.html[`Sse`]
@@ -940,16 +963,28 @@ The event-loop threads (also called IO threads) are responsible for actually per
 operations in an asynchronous way, and to trigger any listener interested in the completion of those
 IO operations.
 
-By default, RESTEasy Reactive will run endpoint methods on the event-loop threads, on the assumption that
-they are going to be fast and only invoke non-blocking operations.
+By default, the thread RESTEasy Reactive will run endpoint methods on depends on the signature of the method.
+If a method returns one of the following types then it is considered non-blocking, and will be run on the IO thread
+by default:
 
-This is the model of execution that leads to best performance if your endpoints do not do any blocking
-operation (such as blocking IO, blocking on an asynchronous operation, or sleeping).
+- `io.smallrye.mutiny.Uni`
+- `io.smallrye.mutiny.Multi`
+- `java.util.concurrent.CompletionStage`
+- `org.reactivestreams.Publisher`
+- Kotlin `suspended` methods
 
-If your endpoint method needs to do any of those blocking operations, you should add the 
+This 'best guess' approach means that the majority of operations will run on the correct thread by default. If you are
+writing reactive code then your method will generally return one of these types, and will be executed on the IO thread.
+If you are writing blocking code your methods will generally return the result directly, and these will be run on a worker
+thread.
+
+You can override this behaviour using the
 https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/1.5.0/io/smallrye/common/annotation/Blocking.html[`@Blocking`]
-annotation on your endpoint and it will instead be invoked on a worker thread. Your endpoint method
-code can remain exactly the same, and it will be allowed to block:
+and
+https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/1.5.0/io/smallrye/common/annotation/NonBlocking.html[`@NonBlocking`]
+annotations. This can be applied at the method, class or `javax.ws.rs.core.Application` level.
+
+The example below will override the default behaviour and always run on a worker thread, even though it returns a `Uni`.
 
 [source,java]
 ----
@@ -965,10 +1000,10 @@ public class Endpoint {
 
     @Blocking
     @GET
-    public String blockingHello() throws InterruptedException {
+    public Uni<String> blockingHello() throws InterruptedException {
         // do a blocking operation
         Thread.sleep(1000);
-        return "Yaaaawwwwnnnnnn…";
+        return Uni.createFrom().item("Yaaaawwwwnnnnnn…");
     }
 }
 ----
@@ -999,6 +1034,18 @@ public class Endpoint {
     }
 }
 ----
+
+If a method or class is annotated with `javax.transaction.Transactional` then it will also be treated as a blocking
+method. This is because JTA is a blocking technology, and is generally used with other blocking technology such as
+Hibernate and JDBC. An explicit `@Blocking` or `@NonBlocking` on the class will override this behaviour.
+
+==== Overriding the default behaviour
+
+If you want to override the default behaviour you can annotate a `javax.ws.rs.core.Application` subclass in your application
+with `@Blocking` or `@NonBlocking`, and this will set the default for every method that does not have an explicit annotation.
+
+Behaviour can still be overridden on a class or method level by annotating them directly, however all endpoints without
+an annotation will now follow the default, no matter their method signature.
 
 === Exception mapping
 
@@ -1033,10 +1080,11 @@ public class Endpoint {
 
 If your endpoint method is delegating calls to another service layer which
 does not know of JAX-RS, you need a way to turn service exceptions to an
-HTTP response, and you can do that using the `@ServerExceptionMapper` annotation
-on a method, with one parameter of the exception type you want to handle, and turning
-that exception into a link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`] (or a 
-link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<Response>`]):
+HTTP response, and you can do that using the 
+link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/ServerExceptionMapper.html[`@ServerExceptionMapper`]
+annotation on a method, with one parameter of the exception type you want to handle, and turning
+that exception into a link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse`] (or a 
+link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<RestResponse<?>>`]):
 
 [source,java]
 ----
@@ -1052,6 +1100,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
+import org.jboss.resteasy.reactive.RestResponse;
 
 class UnknownCheeseException extends RuntimeException {
     public final String name;
@@ -1082,10 +1131,8 @@ public class Endpoint {
     CheeseService cheeses;
     
     @ServerExceptionMapper
-    public Response mapException(UnknownCheeseException x) {
-        return Response.status(Response.Status.NOT_FOUND)
-                       .entity("Unknown cheese: " + x.name)
-                       .build();
+    public RestResponse<String> mapException(UnknownCheeseException x) {
+        return RestResponse.status(Response.Status.NOT_FOUND, "Unknown cheese: " + x.name);
     }
     
     @GET
@@ -1106,16 +1153,13 @@ simply define them outside a REST endpoint class:
 ----
 package org.acme.rest;
 
-import javax.ws.rs.core.Response;
-
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
+import org.jboss.resteasy.reactive.RestResponse;
 
 class ExceptionMappers {
     @ServerExceptionMapper
-    public Response mapException(UnknownCheeseException x) {
-        return Response.status(Response.Status.NOT_FOUND)
-                       .entity("Unknown cheese: " + x.name)
-                       .build();
+    public RestResponse<String> mapException(UnknownCheeseException x) {
+        return RestResponse.status(Response.Status.NOT_FOUND, "Unknown cheese: " + x.name);
     }
 }
 ----
@@ -1145,10 +1189,10 @@ It may declare any of the following return types:
 |===
 |Type|Usage
 
-|link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`]
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse`] or link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`]
 |The response to send to the client when the exception occurs
 
-|link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<Response>`]
+|link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<RestResponse>`] or link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<Response>`]
 |An asynchronous response to send to the client when the exception occurs
 
 |===
@@ -1165,7 +1209,9 @@ These filters allow you to do various things such as examine the request URI,
 HTTP method, influence routing, look or change request headers, abort the request,
 or modify the response.
 
-Request filters can be declared with the `@ServerRequestFilter` annotation:
+Request filters can be declared with the 
+link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/ServerRequestFilter.html[`@ServerRequestFilter`]
+annotation:
 
 [source,java]
 ----
@@ -1182,10 +1228,10 @@ class Filters {
     }
     
     @ServerRequestFilter
-    public Optional<Response> getFilter(ContainerRequestContext ctx) {
+    public Optional<RestResponse<Void>> getFilter(ContainerRequestContext ctx) {
         // only allow GET methods for now
         if(ctx.getMethod().equals(HttpMethod.GET)) {
-            return Optional.of(Response.status(Response.Status.METHOD_NOT_ALLOWED).build());
+            return Optional.of(RestResponse.status(Response.Status.METHOD_NOT_ALLOWED));
         }
         return Optional.empty();
     }
@@ -1205,7 +1251,9 @@ run on a worker thread, then `@ServerRequestFilter(nonBlocking=true)` can be use
 Note however, that these filters need to be run before **any** filter that does not use that setting and would run on a worker thread.
 ====
 
-Similarly, response filters can be declared with the `@ServerResponseFilter` annotation:
+Similarly, response filters can be declared with the 
+link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/ServerResponseFilter.html[`@ServerResponseFilter`]
+annotation:
 
 [source,java]
 ----
@@ -1249,13 +1297,13 @@ It may declare any of the following return types:
 |===
 |Type|Usage
 
-|link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`]
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse<?>`] or link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`]
 |The response to send to the client instead of continuing the filter chain, or `null` if the filter chain should proceed
 
-|link:{jdkapi}/java/util/Optional.html[`Optional<Response>`]
+|link:{jdkapi}/java/util/Optional.html[`Optional<RestResponse<?>>`] or link:{jdkapi}/java/util/Optional.html[`Optional<Response>`]
 |An optional response to send to the client instead of continuing the filter chain, or an empty value if the filter chain should proceed
 
-|link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<Response>`]
+|link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<RestResponse<?>>`] or link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<Response>`]
 |An asynchronous response to send to the client instead of continuing the filter chain, or `null` if the filter chain should proceed
 
 |===
@@ -1267,7 +1315,8 @@ NOTE: You can restrict the Resource methods for which a filter runs, by using li
 [[readers-writers]]
 
 Whenever your endpoint methods return a object (of when they return a 
-link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`] with
+link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse<?>`]
+or link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`] with
 an entity), RESTEasy Reactive will look for a way to map that into an HTTP response body.
 
 Similarly, whenever your endpoint method takes an object as parameter, we will look for
@@ -1373,8 +1422,9 @@ public class FroMageBodyHandler implements MessageBodyReader<FroMage>,
 }
 ----
 
-If you want to get the most performance our of your writer, you can extend `ServerMessageBodyWriter` instead
-of link:{jaxrsapi}/javax/ws/rs/ext/MessageBodyWriter.html[`MessageBodyWriter`]
+If you want to get the most performance our of your writer, you can extend the 
+link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/spi/ServerMessageBodyWriter.html[`ServerMessageBodyWriter`]
+instead of link:{jaxrsapi}/javax/ws/rs/ext/MessageBodyWriter.html[`MessageBodyWriter`]
 where you will be able to use less reflection and bypass the blocking IO layer:
 
 [source,java]
@@ -1874,4 +1924,4 @@ In addition to the Server side, RESTEasy Reactive comes with a new MicroProfile 
 
 Please note that the `quarkus-rest-client` extension may not work properly with RESTEasy Reactive.
 
-See link:rest-client-reactive.adoc[REST Client Reactive Guide] for more information about the reactive client.
+See link:rest-client-reactive[REST Client Reactive Guide] for more information about the reactive client.

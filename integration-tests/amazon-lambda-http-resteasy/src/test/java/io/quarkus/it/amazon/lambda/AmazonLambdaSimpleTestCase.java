@@ -17,6 +17,9 @@ import io.quarkus.test.junit.QuarkusTest;
 @QuarkusTest
 public class AmazonLambdaSimpleTestCase {
 
+    // TODO: This is using the old deprecated LambdaClient test API.  I am keeping it here to test backward compatibility
+    // these tests will need to be ported once LambdaClient is removed from Quarkus.
+
     @Test
     public void testCustomIDPSecurityContext() throws Exception {
         APIGatewayV2HTTPEvent request = request("/security/username");

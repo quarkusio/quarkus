@@ -15,6 +15,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem;
 import io.quarkus.resteasy.reactive.jackson.runtime.mappers.DefaultMismatchedInputException;
+import io.quarkus.resteasy.reactive.jackson.runtime.mappers.NativeInvalidDefinitionExceptionMapper;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.BasicServerJacksonMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.FullyFeaturedServerJacksonMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.ServerJacksonMessageBodyReader;
@@ -22,6 +23,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonA
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonObjectMessageBodyReader;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonObjectMessageBodyWriter;
+import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
@@ -50,7 +52,8 @@ public class ResteasyReactiveJacksonProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<MessageBodyReaderBuildItem> additionalReaders,
             BuildProducer<MessageBodyWriterBuildItem> additionalWriters,
-            BuildProducer<ExceptionMapperBuildItem> exceptionMappers) {
+            BuildProducer<ExceptionMapperBuildItem> exceptionMappers,
+            BuildProducer<CustomExceptionMapperBuildItem> customExceptionMapper) {
         boolean applicationNeedsSpecialJacksonFeatures = jacksonFeatureBuildItems.isEmpty();
         // make these beans to they can get instantiated with the Quarkus CDI configured ObjectMapper object
         additionalBean.produce(AdditionalBeanBuildItem.builder()
@@ -84,6 +87,9 @@ public class ResteasyReactiveJacksonProcessor {
 
         exceptionMappers.produce(new ExceptionMapperBuildItem(DefaultMismatchedInputException.class.getName(),
                 MismatchedInputException.class.getName(), Priorities.USER + 100, false));
+
+        customExceptionMapper
+                .produce(new CustomExceptionMapperBuildItem(NativeInvalidDefinitionExceptionMapper.class.getName()));
     }
 
     private String getJacksonMessageBodyWriter(boolean applicationNeedsSpecialJacksonFeatures) {

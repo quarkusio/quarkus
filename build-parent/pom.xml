@@ -20,8 +20,8 @@
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
-        <kotlin.version>1.5.20</kotlin.version>
-        <dokka.version>1.4.32</dokka.version>
+        <kotlin.version>1.5.30</kotlin.version>
+        <dokka.version>1.5.30</dokka.version>
         <scala.version>2.12.13</scala.version>
         <scala-maven-plugin.version>4.4.0</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
@@ -33,11 +33,14 @@
         <version.exec.plugin>3.0.0</version.exec.plugin>
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
+        <!-- jandex maven plugin version -->
+        <jandex-maven-plugin.version>1.2.0</jandex-maven-plugin.version>
+
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
            what we work with by self downloading it: -->
-        <graal-sdk.version-for-documentation>21.1.0</graal-sdk.version-for-documentation>
-        <mandrel.version-for-documentation>21.0</mandrel.version-for-documentation>
+        <graal-sdk.version-for-documentation>21.2.0</graal-sdk.version-for-documentation>
+        <mandrel.version-for-documentation>21.2</mandrel.version-for-documentation>
 
         <htmlunit.version>2.40.0</htmlunit.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
@@ -59,7 +62,9 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.8.1</proposed-maven-version>
         <maven-wrapper.version>0.7.7</maven-wrapper.version>
-        <gradle-wrapper.version>6.9</gradle-wrapper.version>
+        <gradle-wrapper.version>7.2</gradle-wrapper.version>
+        <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
+        <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
 
         <!-- MicroProfile TCK versions -->
         <microprofile-health-api.version>3.1</microprofile-health-api.version>
@@ -75,7 +80,7 @@
         <microprofile-graphql-api.version>1.1.0</microprofile-graphql-api.version>
 
         <!-- Antlr is used by the PanacheQL parser-->
-        <antlr.version>4.8</antlr.version>
+        <antlr.version>4.9.2</antlr.version>
 
         <!-- Defaults for integration tests -->
         <elasticsearch-server.version>7.10.0</elasticsearch-server.version>
@@ -84,12 +89,12 @@
 
         <!-- Align various dependencies that are not really part of the bom-->
         <findbugs.version>3.0.2</findbugs.version>
-        <jsoup.version>1.12.1</jsoup.version>
+        <jsoup.version>1.14.2</jsoup.version>
         <wagon-provider-api.version>3.4.3</wagon-provider-api.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml to match the version -->
-        <keycloak.docker.image>quay.io/keycloak/keycloak:14.0.0</keycloak.docker.image>
+        <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
+        <keycloak.docker.image>quay.io/keycloak/keycloak:15.0.2</keycloak.docker.image>
 
         <unboundid-ldap.version>4.0.13</unboundid-ldap.version>
 
@@ -111,6 +116,7 @@
         <webjar.bootstrap.version>4.6.0</webjar.bootstrap.version>
         <webjar.font-awesome.version>5.15.2</webjar.font-awesome.version>
         <webjar.jquery.version>3.5.1</webjar.jquery.version>
+        <webjar.codemirror.version>5.62.0</webjar.codemirror.version>
 
         <!-- revapi API check -->
         <revapi-maven-plugin.version>0.12.1</revapi-maven-plugin.version>
@@ -132,7 +138,7 @@
         <forbiddenapis-maven-plugin.version>3.1</forbiddenapis-maven-plugin.version>
 
         <!-- platform properties - this is a floating tag -->
-        <platform.quarkus.native.builder-image>quay.io/quarkus/ubi-quarkus-native-image:21.1-java11</platform.quarkus.native.builder-image>
+        <platform.quarkus.native.builder-image>quay.io/quarkus/ubi-quarkus-native-image:21.2-java11</platform.quarkus.native.builder-image>
 
         <script.extension>sh</script.extension>
         <docker-prune.location>${maven.multiModuleProjectDirectory}/.github/docker-prune.${script.extension}</docker-prune.location>
@@ -316,6 +322,11 @@
                 <artifactId>jquery</artifactId>
                 <version>${webjar.jquery.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.webjars</groupId>
+                <artifactId>codemirror</artifactId>
+                <version>${webjar.codemirror.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.subethamail</groupId>
@@ -339,7 +350,9 @@
                             <maven.home>${maven.home}</maven.home>
                             <maven.repo.local>${settings.localRepository}</maven.repo.local>
                             <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
-                            <project.version>${project.version}</project.version> <!-- some dev tools tests need this -->
+                            <!-- some dev tools tests need the following properties -->
+                            <project.version>${project.version}</project.version>
+                            <project.groupId>${project.groupId}</project.groupId>
                         </systemPropertyVariables>
                         <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
                         <!-- set tmpdir as early as possible because surefire sets it too late for JDK16 -->
@@ -358,7 +371,9 @@
                             <maven.home>${maven.home}</maven.home>
                             <maven.repo.local>${settings.localRepository}</maven.repo.local>
                             <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
-                            <project.version>${project.version}</project.version> <!-- some dev tools tests need this -->
+                            <!-- some dev tools tests need the following properties -->
+                            <project.version>${project.version}</project.version>
+                            <project.groupId>${project.groupId}</project.groupId>
                         </systemPropertyVariables>
                         <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
                         <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
@@ -449,6 +464,8 @@
                                             <exclude>javax.xml.bind:jaxb-api</exclude>
                                             <exclude>javax.websocket:javax.websocket-api</exclude>
                                             <exclude>javax.ws.rs:javax.ws.rs-api</exclude>
+                                            <!-- Exclude jakarta.activation-api as the implementation contains it -->
+                                            <exclude>jakarta.activation:jakarta.activation-api</exclude>
                                             <!-- use our jboss-logmanager -->
                                             <exclude>org.jboss.logging:jboss-logmanager</exclude>
                                             <exclude>org.jboss.logging:jboss-logging-jdk</exclude>
@@ -561,7 +578,7 @@
                 <plugin>
                     <groupId>io.fabric8</groupId>
                     <artifactId>docker-maven-plugin</artifactId>
-                    <version>0.31.0</version>
+                    <version>0.37.0</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-javadoc-plugin</artifactId>
@@ -574,7 +591,7 @@
                 <plugin>
                     <groupId>org.jboss.jandex</groupId>
                     <artifactId>jandex-maven-plugin</artifactId>
-                    <version>1.1.0</version>
+                    <version>${jandex-maven-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
@@ -616,6 +633,16 @@
                 <plugin>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>3.1.0</version>
+                    <configuration>
+                        <nonFilteredFileExtensions>
+                            <nonFilteredFileExtension>eot</nonFilteredFileExtension>
+                            <nonFilteredFileExtension>ttf</nonFilteredFileExtension>
+                            <nonFilteredFileExtension>woff</nonFilteredFileExtension>
+                            <nonFilteredFileExtension>woff2</nonFilteredFileExtension>
+                            <nonFilteredFileExtension>svg</nonFilteredFileExtension>
+                            <nonFilteredFileExtension>ico</nonFilteredFileExtension>
+                        </nonFilteredFileExtensions>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.antlr</groupId>
@@ -820,7 +847,7 @@
                 <property>
                     <name>dokka</name>
                 </property>
-                <jdk>[,16)</jdk>
+                <jdk>(,16)</jdk>
                 <file>
                     <exists>src/main/kotlin</exists>
                 </file>
@@ -1124,17 +1151,6 @@
             </activation>
             <properties>
                 <script.extension>bat</script.extension>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>jdk16-workarounds</id>
-            <activation>
-                <jdk>[16,)</jdk>
-            </activation>
-            <properties>
-                <!-- auto-exclude tests that are known to fail on JDK 16 (tagged via @Tag("failsOnJDK16")) -->
-                <excludedGroups>failsOnJDK16</excludedGroups>
             </properties>
         </profile>
 

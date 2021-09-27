@@ -249,9 +249,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         if (!dependencyCondition.isEmpty()) {
             final StringBuilder buf = new StringBuilder();
             int i = 0;
-            buf.append(AppArtifactKey.fromString(dependencyCondition.get(i++)).toString());
+            buf.append(AppArtifactKey.fromString(dependencyCondition.get(i++)).toGacString());
             while (i < dependencyCondition.size()) {
-                buf.append(' ').append(AppArtifactKey.fromString(dependencyCondition.get(i++)).toString());
+                buf.append(' ').append(AppArtifactKey.fromString(dependencyCondition.get(i++)).toGacString());
             }
             props.setProperty(BootstrapConstants.DEPENDENCY_CONDITION, buf.toString());
 
@@ -265,8 +265,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             }
             props.setProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES, buf.toString());
         }
-
-        final Path output = outputDirectory.toPath().resolve(BootstrapConstants.META_INF);
 
         if (parentFirstArtifacts != null && !parentFirstArtifacts.isEmpty()) {
             String val = String.join(",", parentFirstArtifacts);
@@ -288,6 +286,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             props.put(AppModel.LESSER_PRIORITY_ARTIFACTS, val);
         }
 
+        final Path output = outputDirectory.toPath().resolve(BootstrapConstants.META_INF);
         try {
             Files.createDirectories(output);
             try (BufferedWriter writer = Files
@@ -315,24 +314,15 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         ObjectMapper mapper = null;
         if (extensionFile.exists()) {
             mapper = getMapper(extensionFile.toString().endsWith(".yaml"));
-            extObject = readJsonNode(extensionFile.toPath(), mapper);
+            extObject = readExtensionDescriptorFile(extensionFile.toPath(), mapper);
         } else {
             mapper = getMapper(true);
             extObject = getMapper(true).createObjectNode();
         }
 
-        transformLegacyToNew(output, extObject, mapper);
+        transformLegacyToNew(extObject, mapper);
 
-        JsonNode artifactNode = extObject.get("artifact");
-        if (artifactNode == null) {
-            final AppArtifactCoords coords = new AppArtifactCoords(
-                    extObject.has("groupId") ? extObject.get("groupId").asText() : project.getGroupId(),
-                    extObject.has("artifactId") ? extObject.get("artifactId").asText() : project.getArtifactId(),
-                    null,
-                    "jar",
-                    extObject.has("version") ? extObject.get("version").asText() : project.getVersion());
-            extObject.put("artifact", coords.toString());
-        }
+        ensureArtifactCoords(extObject);
 
         if (extObject.get("name") == null) {
             if (project.getName() != null) {
@@ -389,11 +379,50 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
     }
 
-    private ObjectNode readJsonNode(Path extensionFile, ObjectMapper mapper) throws MojoExecutionException {
-        try {
-            return readExtensionYaml(extensionFile, mapper);
-        } catch (IOException e) {
-            throw new MojoExecutionException("Failed to parse " + extensionFile, e);
+    private void ensureArtifactCoords(ObjectNode extObject) {
+        String groupId = null;
+        String artifactId = null;
+        String version = null;
+        final JsonNode artifactNode = extObject.get("artifact");
+        if (artifactNode == null) {
+            groupId = getRealValueOrNull(extObject.has("groupId") ? extObject.get("groupId").asText() : null,
+                    "${project.groupId");
+            artifactId = getRealValueOrNull(extObject.has("artifactId") ? extObject.get("artifactId").asText() : null,
+                    "${project.artifactId");
+            version = getRealValueOrNull(extObject.has("version") ? extObject.get("version").asText() : null,
+                    "${project.version");
+        } else {
+            final String[] coordsArr = artifactNode.asText().split(":");
+            if (coordsArr.length > 0) {
+                groupId = getRealValueOrNull(coordsArr[0], "${project.groupId}");
+                if (coordsArr.length > 1) {
+                    artifactId = getRealValueOrNull(coordsArr[1], "${project.artifactId}");
+                    if (coordsArr.length > 2) {
+                        version = getRealValueOrNull(coordsArr[2], "${project.version}");
+                    }
+                }
+            }
+        }
+        if (artifactNode == null || groupId == null || artifactId == null || version == null) {
+            final AppArtifactCoords coords = new AppArtifactCoords(
+                    groupId == null ? project.getGroupId() : groupId,
+                    artifactId == null ? project.getArtifactId() : artifactId,
+                    null,
+                    "jar",
+                    version == null ? project.getVersion() : version);
+            extObject.put("artifact", coords.toString());
+        }
+    }
+
+    private static String getRealValueOrNull(String s, String propertyExpr) {
+        return s != null && !s.isBlank() && !s.equals(propertyExpr) ? s : null;
+    }
+
+    private ObjectNode readExtensionDescriptorFile(Path extensionFile, ObjectMapper mapper) throws MojoExecutionException {
+        try (InputStream is = Files.newInputStream(extensionFile)) {
+            return mapper.readValue(is, ObjectNode.class);
+        } catch (IOException io) {
+            throw new MojoExecutionException("Failed to parse " + extensionFile, io);
         }
     }
 
@@ -532,7 +561,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                             extensionDeps.set(deps);
                         }
                         deps.add(new AppArtifactKey(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getExtension())
-                                .toString());
+                                .toGacString());
                     }
                 }
                 return true;
@@ -913,8 +942,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         return f != null && f.getName().endsWith(".jar") && f.exists() && !f.isDirectory();
     }
 
-    private void transformLegacyToNew(final Path output, ObjectNode extObject, ObjectMapper mapper)
-            throws MojoExecutionException {
+    private void transformLegacyToNew(ObjectNode extObject, ObjectMapper mapper) {
         ObjectNode metadata = null;
 
         // Note: groupId and artifactId shouldn't normally be in the source json but
@@ -954,18 +982,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         extObject.set(METADATA, metadata);
 
-    }
-
-    /**
-     * parse yaml or json and then return jackson JSonNode for furhter processing
-     ***/
-    private ObjectNode readExtensionYaml(Path descriptor, ObjectMapper mapper)
-            throws IOException {
-        try (InputStream is = Files.newInputStream(descriptor)) {
-            return mapper.readValue(is, ObjectNode.class);
-        } catch (IOException io) {
-            throw new IOException("Failed to parse " + descriptor, io);
-        }
     }
 
     private ObjectMapper getMapper(boolean yaml) {

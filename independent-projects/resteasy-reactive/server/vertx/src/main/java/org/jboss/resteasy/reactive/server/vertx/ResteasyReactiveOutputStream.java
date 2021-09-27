@@ -6,7 +6,6 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpServerRequest;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -17,7 +16,7 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 public class ResteasyReactiveOutputStream extends OutputStream {
 
-    private static final Logger log = Logger.getLogger("io.quarkus.quarkus-rest");
+    private static final Logger log = Logger.getLogger("org.jboss.resteasy.reactive.server.vertx.ResteasyReactiveOutputStream");
     private final ResteasyReactiveRequestContext context;
     protected final HttpServerRequest request;
     private ByteBuf pooledBuffer;
@@ -45,7 +44,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                 request.connection().close();
                 synchronized (request.connection()) {
                     if (waitingForDrain) {
-                        request.connection().notify();
+                        request.connection().notifyAll();
                     }
                 }
             }
@@ -56,7 +55,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
             public void handle(Void event) {
                 synchronized (request.connection()) {
                     if (waitingForDrain) {
-                        request.connection().notify();
+                        request.connection().notifyAll();
                     }
                 }
                 terminateResponse();
@@ -95,6 +94,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                     if (last) {
                         closed = true;
                     }
+                    data.release();
                 } else {
                     if (last) {
                         request.response().end(createBuffer(data));
@@ -146,10 +146,9 @@ public class ResteasyReactiveOutputStream extends OutputStream {
             Handler<Void> handler = new Handler<Void>() {
                 @Override
                 public void handle(Void event) {
-                    HttpConnection connection = request.connection();
-                    synchronized (connection) {
+                    synchronized (request.connection()) {
                         if (waitingForDrain) {
-                            connection.notifyAll();
+                            request.connection().notifyAll();
                         }
                         if (overflow != null) {
                             if (overflow.size() > 0) {

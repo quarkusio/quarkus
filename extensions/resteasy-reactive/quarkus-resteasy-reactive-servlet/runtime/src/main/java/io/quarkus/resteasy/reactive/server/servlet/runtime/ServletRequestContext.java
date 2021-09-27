@@ -201,7 +201,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
 
     @Override
     public String getRequestNormalisedPath() {
-        return context.normalisedPath();
+        return context.normalizedPath();
     }
 
     @Override
@@ -300,6 +300,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         return this;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> T unwrap(Class<T> theType) {
         if (theType == RoutingContext.class) {

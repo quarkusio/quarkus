@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using the Cassandra Client
+= Using the Cassandra Client
 
 include::./attributes.adoc[]
 
@@ -52,7 +52,7 @@ We recommend that you follow the instructions in the next sections and create th
 by step. However, you can go right to the completed example.
 
 The solution is located in the
-link:https://github.com/datastax/cassandra-quarkus/tree/master/quickstart[quickstart directory] of
+link:https://github.com/datastax/cassandra-quarkus/tree/main/quickstart[quickstart directory] of
 the Cassandra Quarkus extension GitHub repository.
 
 == Creating a Blank Maven Project

@@ -1,15 +1,17 @@
 package io.quarkus.test.kubernetes.client;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.util.Collections;
 import java.util.function.Consumer;
 
 import io.fabric8.kubernetes.client.GenericKubernetesClient;
+import io.fabric8.kubernetes.client.NamespacedKubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
 import io.quarkus.test.common.QuarkusTestResourceConfigurableLifecycleManager;
 
-public class KubernetesServerTestResource extends AbstractKubernetesTestResource<KubernetesServer>
+public class KubernetesServerTestResource extends AbstractKubernetesTestResource<KubernetesServer, NamespacedKubernetesClient>
         implements QuarkusTestResourceConfigurableLifecycleManager<WithKubernetesTestServer> {
 
     private boolean https = false;
@@ -23,14 +25,14 @@ public class KubernetesServerTestResource extends AbstractKubernetesTestResource
         this.crud = annotation.crud();
         this.port = annotation.port();
         try {
-            this.setup = annotation.setup().newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
+            this.setup = annotation.setup().getDeclaredConstructor().newInstance();
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    protected GenericKubernetesClient<?> getClient() {
+    protected GenericKubernetesClient<NamespacedKubernetesClient> getClient() {
         return server.getClient();
     }
 

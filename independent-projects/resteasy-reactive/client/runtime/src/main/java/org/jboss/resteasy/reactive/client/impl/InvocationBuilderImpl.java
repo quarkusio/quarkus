@@ -10,8 +10,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.CompletionStageRxInvoker;
@@ -25,6 +23,7 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
@@ -193,13 +192,11 @@ public class InvocationBuilderImpl implements Invocation.Builder {
 
     private <T> T unwrap(CompletableFuture<T> c) {
         if (Context.isOnEventLoopThread()) {
-            throw new IllegalStateException("Blocking REST client call made from the event loop. " +
-                    "If the code is executed from a RESTEasy Reactive resource, either annotate the resource method " +
-                    "with `@Blocking` or use non-blocking client calls.");
+            throw new BlockingNotAllowedException();
         }
         try {
-            return c.get(readTimeoutMs, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException | TimeoutException e) {
+            return c.get();
+        } catch (InterruptedException e) {
             throw new ProcessingException(e);
         } catch (ExecutionException e) {
             if (e.getCause() instanceof ProcessingException) {

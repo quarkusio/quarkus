@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -76,7 +77,8 @@ public final class ValueResolvers {
     }
 
     /**
-     * Returns the default value if the base object is null or {@link Result#NOT_FOUND} and the base object otherwise.
+     * Returns the default value if the base object is {@code null}, empty {@link Optional} or not found and the base object
+     * otherwise.
      * 
      * {@code foo.or(bar)}, {@code foo or true}, {@code name ?: 'elvis'}
      */
@@ -93,17 +95,18 @@ public final class ValueResolvers {
 
             @Override
             public CompletionStage<Object> resolve(EvalContext context) {
-                if (context.getBase() == null || Results.isNotFound(context.getBase())) {
+                Object base = context.getBase();
+                if (base == null || Results.isNotFound(base) || (base instanceof Optional && ((Optional<?>) base).isEmpty())) {
                     return context.evaluate(context.getParams().get(0));
                 }
-                return CompletedStage.of(context.getBase());
+                return CompletedStage.of(base);
             }
 
         };
     }
 
     /**
-     * Return an empty list if the base object is null or {@link Result#NOT_FOUND}.
+     * Return an empty list if the base object is null or not found.
      */
     public static ValueResolver orEmpty() {
         CompletionStage<Object> empty = CompletedStage.of(Collections.emptyList());
@@ -124,7 +127,7 @@ public final class ValueResolvers {
     }
 
     /**
-     * Returns {@link Result#NOT_FOUND} if the base object is falsy and the base object otherwise.
+     * Returns {@link Results#NotFound} if the base object is falsy and the base object otherwise.
      * <p>
      * Can be used together with {@link #orResolver()} to form a ternary operator.
      * 

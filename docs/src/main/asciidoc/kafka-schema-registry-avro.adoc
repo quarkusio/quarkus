@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using Apache Kafka with Schema Registry and Avro
+= Using Apache Kafka with Schema Registry and Avro
 
 include::./attributes.adoc[]
 
@@ -11,7 +11,7 @@ This guide shows how your Quarkus application can use Apache Kafka, http://avro.
 records, and connect to a schema registry (such as the https://docs.confluent.io/platform/current/schema-registry/index.html[Confluent Schema Registry] or https://www.apicur.io/registry/[Apicurio Registry].
 
 If you are not familiar with Kafka and Kafka in Quarkus in particular, consider
-first going through the link:kafka.adoc[Using Apache Kafka with Reactive Messaging] guide.
+first going through the link:kafka[Using Apache Kafka with Reactive Messaging] guide.
 
 == Prerequisites
 
@@ -45,7 +45,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `kafka-avro-schema-quickstart` {quickstarts-tree-url}/kafka-quickstart-avro-schema[directory].
+The solution is located in the `kafka-avro-schema-quickstart` {quickstarts-tree-url}/kafka-avro-schema-quickstart[directory].
 
 == Creating the Maven Project
 
@@ -53,7 +53,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kafka-avro-schema-quickstart \
     -DclassName="org.acme.kafka.MovieResource" \
@@ -72,10 +72,16 @@ to your `pom.xml`:
 ----
 <dependencies>
     ...
+    <!-- Quarkus extension for generating Java code from Avro schemas -->
+    <!-- with this, you don't have to use avro-maven-plugin -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-avro</artifactId>
+    </dependency>
     <!-- Confluent registry libraries use JAX-RS client -->
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-rest-client</artifactId>
+        <artifactId>quarkus-rest-client-reactive</artifactId>
     </dependency>
     <dependency>
         <groupId>io.confluent</groupId>
@@ -132,7 +138,7 @@ placed in the `target/generated-sources/avsc` directory.
 Take a look at the https://avro.apache.org/docs/current/spec.html#schemas[Avro specification] to learn more about
 the Avro syntax and supported types.
 
-TIP: With Quarkus, there's no need to use a specific Maven plugin to process the Avro schema, this is all done for you!
+TIP: With Quarkus, there's no need to use a specific Maven plugin to process the Avro schema, this is all done for you by the `quarkus-avro` extension!
 
 If you run the project with `mvn quarkus:dev`, the changes you do to the schema file will be
 automatically applied to the generated Java files.
@@ -179,19 +185,28 @@ To achieve this, edit the `application.properties` file, and add the following c
 
 [source,properties]
 ----
-# set the connector to use for the `movies` channel to smallrye-kafka
+# set the connector for the outgoing channel to `smallrye-kafka`
 mp.messaging.outgoing.movies.connector=smallrye-kafka
 
-# the name of the corresponding Kafka topic to `movies`
+# set the topic name for the channel to `movies`
 mp.messaging.outgoing.movies.topic=movies
 
 # automatically register the schema with the registry, if not present
 mp.messaging.outgoing.movies.apicurio.registry.auto-register=true
 ----
 
-TIP: You might have noticed that we didn't define the `value.serializer`.
+[TIP]
+====
+You might have noticed that we didn't define the `value.serializer`.
 That's because Quarkus can xref:kafka.adoc#serialization-autodetection[autodetect] that `io.apicurio.registry.serde.avro.AvroKafkaSerializer` is appropriate here, based on the `@Channel` declaration, structure of the `Movie` type, and presence of the Apicurio Registry libraries.
 We still have to define the `apicurio.registry.auto-register` property.
+
+If you use Confluent Schema Registry, you don't have to configure `value.serializer` either.
+It is also detected automatically.
+The Confluent Schema Registry analogue of `apicurio.registry.auto-register` is called `auto.register.schemas`.
+It defaults to `true`, so it doesn't have to be configured in this example.
+It can be explicitly set to `false` if you want to disable automatic schema registration.
+====
 
 == The `Movie` consumer
 
@@ -249,12 +264,17 @@ mp.messaging.incoming.movies-from-kafka.topic=movies
 mp.messaging.incoming.movies-from-kafka.enable.auto.commit=false
 
 mp.messaging.incoming.movies-from-kafka.auto.offset.reset=earliest
-mp.messaging.incoming.movies-from-kafka.apicurio.registry.use-specific-avro-reader=true
 ----
 
-TIP: You might have noticed that we didn't define the `value.deserializer`.
+[TIP]
+====
+You might have noticed that we didn't define the `value.deserializer`.
 That's because Quarkus can xref:kafka.adoc#serialization-autodetection[autodetect] that `io.apicurio.registry.serde.avro.AvroKafkaDeserializer` is appropriate here, based on the `@Channel` declaration, structure of the `Movie` type, and presence of the Apicurio Registry libraries.
-We still have to define the `apicurio.registry.use-specific-avro-reader` property.
+We don't have to define the `apicurio.registry.use-specific-avro-reader` property either, that is also configured automatically.
+
+If you use Confluent Schema Registry, you don't have to configure `value.deserializer` or `specific.avro.reader` either.
+They are both detected automatically.
+====
 
 == Running the application
 
@@ -268,8 +288,20 @@ mvn quarkus:dev
 Kafka broker and Apicurio Registry instance are started automatically thanks to Dev Services.
 See xref:kafka-dev-services.adoc[Dev Services for Kafka] and xref:apicurio-registry-dev-services.adoc[Dev Services for Apicurio Registry] for more details.
 
-TIP: You might have noticed that we didn't configure the schema registry URL anywhere.
+[TIP]
+====
+You might have noticed that we didn't configure the schema registry URL anywhere.
 This is because Dev Services for Apicurio Registry configures all Kafka channels in SmallRye Reactive Messaging to use the automatically started registry instance.
+
+There's no Dev Services support for Confluent Schema Registry.
+If you want to use a running instance of Confluent Schema Registry, configure its URL, together with the URL of a Kafka broker:
+
+[source,properties]
+----
+kafka.bootstrap.servers=PLAINTEXT://localhost:9092
+mp.messaging.connector.smallrye-kafka.schema.registry.url=http://localhost:8081
+----
+====
 
 In the second terminal, query the `ConsumedMovieResource` resource with `curl`:
 
@@ -320,6 +352,9 @@ data:'12 Angry Men' from 1957
 
 When not running in dev or test mode, you will need to start your own Kafka broker and Apicurio Registry.
 The easiest way to get them running is to use `docker-compose` to start the appropriate containers.
+
+TIP: If you use Confluent Schema Registry, you already have a Kafka broker and Confluent Schema Registry instance running and configured.
+You can ignore the `docker-compose` instructions here, as well as the Apicurio Registry configuration.
 
 Create a `docker-compose.yaml` file at the root of the project with the following content:
 
@@ -385,7 +420,7 @@ java -Dmp.messaging.connector.smallrye-kafka.apicurio.registry.url=http://localh
 ----
 
 NOTE: By default, the application tries to connect to a Kafka broker listening at `localhost:9092`.
-You can configure the bootstrap server using: `java -Dkafka.bootstrap.servers=... -jar target/quarkus-app/quarkus-run.jar`
+You can configure the bootstrap server using: `java -Dkafka.bootstrap.servers=\... -jar target/quarkus-app/quarkus-run.jar`
 
 Specifying the registry URL on the command line is not very convenient, so you can add a configuration property only for the `prod` profile:
 
@@ -417,7 +452,7 @@ First, let's add test dependencies on REST Client and Awaitility to `pom.xml`:
     <!-- we'll use JAX-RS Client for talking to the SSE endpoint -->
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-rest-client</artifactId>
+        <artifactId>quarkus-rest-client-reactive</artifactId>
         <scope>test</scope>
     </dependency>
     <dependency>
@@ -480,7 +515,7 @@ public class MovieResourceTest {
 
         source.open();
 
-        // check if, after at most 5 seconds, we have at last 2 items collected, and they are what we expect:
+        // check if, after at most 5 seconds, we have at least 2 items collected, and they are what we expect
         await().atMost(5, SECONDS).until(() -> received.size() >= 2);
         assertThat(received, Matchers.hasItems("'The Shawshank Redemption' from 1994",
                 "'12 Angry Men' from 1957"));
@@ -530,7 +565,7 @@ To run it, execute `mvn verify -Dnative`, or `mvn clean install -Dnative`
 
 === Manual setup
 
-If we couldn't use Dev Services and wanted to start a Kafka broker and Apicurio Registry instance manually, we would define a link:getting-started-testing.adoc#quarkus-test-resource[QuarkusTestResourceLifecycleManager].
+If we couldn't use Dev Services and wanted to start a Kafka broker and Apicurio Registry instance manually, we would define a link:getting-started-testing#quarkus-test-resource[QuarkusTestResourceLifecycleManager].
 
 [source,xml]
 ----

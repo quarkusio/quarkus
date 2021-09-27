@@ -7,8 +7,8 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import io.quarkus.cli.common.OutputOptionMixin;
-import io.quarkus.cli.common.RegistryClientMixin;
 import io.quarkus.cli.common.TargetQuarkusVersionGroup;
+import io.quarkus.cli.registry.ToggleRegistryClientMixin;
 import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.project.BuildTool;
@@ -37,7 +37,7 @@ public class CreateProjectMixin {
     String targetDirectory;
 
     @Mixin
-    RegistryClientMixin registryClient;
+    ToggleRegistryClientMixin registryClient;
 
     public void setTestOutputDirectory(Path testOutputDirectory) {
         if (testOutputDirectory != null && targetDirectory == null) {
@@ -54,20 +54,26 @@ public class CreateProjectMixin {
 
     /**
      * Resolve and remember the configured project directory.
-     * 
+     *
      * @param log Output Mixin that will be used to emit error messages
+     * @param dryRun
      * @return true IFF configured project root directory already exists
      */
-    public boolean checkProjectRootAlreadyExists(OutputOptionMixin log) {
+    public boolean checkProjectRootAlreadyExists(OutputOptionMixin log, boolean dryRun) {
         if (projectRootPath == null) {
             try {
-                projectRootPath = CreateProjectHelper.checkProjectRootPath(outputDirectory(), projectDirName);
+                projectRootPath = CreateProjectHelper.checkProjectRootPath(outputDirectory(), projectDirName, dryRun);
                 return false;
             } catch (IllegalArgumentException iex) {
-                log.error(iex.getMessage());
-                log.out().printf("Use '-a' or '--artifactId' to choose a new artifactId and directory name.%n");
-                log.out().printf("See '%s --help' for more information.%n", mixee.qualifiedName());
-                return true;
+                if (dryRun) {
+                    log.warn("A directory named '" + projectDirName + "' already exists.");
+                    projectRootPath = outputDirectory().resolve(projectDirName);
+                } else {
+                    log.error(iex.getMessage());
+                    log.out().printf("Specify a different artifactId / directory name.%n");
+                    log.out().printf("See '%s --help' for more information.%n", mixee.qualifiedName());
+                    return true;
+                }
             }
         }
         return false;
@@ -75,7 +81,7 @@ public class CreateProjectMixin {
 
     public Path projectRoot() {
         if (projectRootPath == null) {
-            projectRootPath = CreateProjectHelper.checkProjectRootPath(outputDirectory(), projectDirName);
+            projectRootPath = CreateProjectHelper.checkProjectRootPath(outputDirectory(), projectDirName, false);
         }
         return projectRootPath;
     }
@@ -96,10 +102,15 @@ public class CreateProjectMixin {
         setValue(ProjectGenerator.PROJECT_VERSION, targetGav.getVersion());
     }
 
+    public void setExtensionId(String extensionId) {
+        projectDirName = extensionId;
+    }
+
     public void setCodegenOptions(CodeGenerationGroup codeGeneration) {
         setValue(ProjectGenerator.PACKAGE_NAME, codeGeneration.packageName);
         setValue(ProjectGenerator.APP_CONFIG, codeGeneration.getAppConfig());
 
+        setValue(CreateProject.NO_CODE, !codeGeneration.includeCode);
         setValue(CreateProject.NO_BUILDTOOL_WRAPPER, !codeGeneration.includeWrapper);
     }
 
@@ -132,6 +143,11 @@ public class CreateProjectMixin {
         return new QuarkusCommandInvocation(qp, values);
     }
 
+    public QuarkusProject getExtensionVersions(BuildTool buildTool, TargetQuarkusVersionGroup targetVersion,
+            OutputOptionMixin log) throws RegistryResolutionException {
+        return registryClient.createQuarkusProject(outputDirectory(), targetVersion, buildTool, log);
+    }
+
     @Override
     public String toString() {
         return "CreateProjectMixin ["
@@ -159,7 +175,7 @@ public class CreateProjectMixin {
         output.info(help.createTextTable(dryRunOutput).toString());
     }
 
-    String prettyName(String key) {
+    public String prettyName(String key) {
         if (CreateProject.NO_BUILDTOOL_WRAPPER.equals(key)) {
             return "Omit build tool wrapper";
         }

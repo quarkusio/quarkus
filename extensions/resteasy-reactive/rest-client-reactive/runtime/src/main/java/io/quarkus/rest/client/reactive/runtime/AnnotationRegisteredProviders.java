@@ -1,19 +1,26 @@
 package io.quarkus.rest.client.reactive.runtime;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 public abstract class AnnotationRegisteredProviders {
     private final Map<String, Map<Class<?>, Integer>> providers = new HashMap<>();
+    private final Map<Class<?>, Integer> globalProviders = new HashMap<>();
 
     public Map<Class<?>, Integer> getProviders(Class<?> clientClass) {
-        Map<Class<?>, Integer> providersForClass = providers.get(clientClass.getName());
-        return providersForClass == null ? Collections.emptyMap() : providersForClass;
+        return providers.getOrDefault(clientClass.getName(), globalProviders);
     }
 
     // used by generated code
+    // MUST be called after addGlobalProvider
     public void addProviders(String className, Map<Class<?>, Integer> providersForClass) {
-        this.providers.put(className, providersForClass);
+        Map<Class<?>, Integer> providers = new HashMap<>(providersForClass);
+        providers.putAll(globalProviders);
+        this.providers.put(className, providers);
+    }
+
+    // used by generated code
+    public void addGlobalProvider(Class<?> providerClass, int priority) {
+        globalProviders.put(providerClass, priority);
     }
 }

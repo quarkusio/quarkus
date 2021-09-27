@@ -32,4 +32,31 @@ public class ApicurioRegistryDevServicesBuildTimeConfig {
     @ConfigItem(defaultValue = "apicurio/apicurio-registry-mem:2.0.1.Final")
     public String imageName;
 
+    /**
+     * Indicates if the Apicurio Registry instance managed by Quarkus Dev Services is shared.
+     * When shared, Quarkus looks for running containers using label-based service discovery.
+     * If a matching container is found, it is used, and so a second one is not started.
+     * Otherwise, Dev Services for Apicurio Registry starts a new container.
+     * <p>
+     * The discovery uses the {@code quarkus-dev-service-apicurio-registry} label.
+     * The value is configured using the {@code service-name} property.
+     * <p>
+     * Container sharing is only used in dev mode.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean shared;
+
+    /**
+     * The value of the {@code quarkus-dev-service-apicurio-registry} label attached to the started container.
+     * This property is used when {@code shared} is set to {@code true}.
+     * In this case, before starting a container, Dev Services for Apicurio Registry looks for a container with the
+     * {@code quarkus-dev-service-apicurio-registry} label
+     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise it
+     * starts a new container with the {@code quarkus-dev-service-apicurio-registry} label set to the specified value.
+     * <p>
+     * This property is used when you need multiple shared Apicurio Registry instances.
+     */
+    @ConfigItem(defaultValue = "apicurio-registry")
+    public String serviceName;
+
 }

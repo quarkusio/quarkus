@@ -83,6 +83,24 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <!-- See io.quarkus.extest.runtime.classpath.RecordedClasspathEntries -->
+            <classpathEntriesRecordingFile>${project.build.directory}/recorded-classpath-entries-surefire.txt</classpathEntriesRecordingFile>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <!-- See io.quarkus.extest.runtime.classpath.RecordedClasspathEntries -->
+            <classpathEntriesRecordingFile>${project.build.directory}/recorded-classpath-entries-failsafe.txt</classpathEntriesRecordingFile>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 

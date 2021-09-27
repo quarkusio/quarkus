@@ -198,7 +198,8 @@ public class RuntimeDeploymentManager {
         }
         for (int i = 0; i < info.getGlobalHandlerCustomizers().size(); i++) {
             preMatchHandlers
-                    .addAll(info.getGlobalHandlerCustomizers().get(i).handlers(HandlerChainCustomizer.Phase.AFTER_PRE_MATCH));
+                    .addAll(info.getGlobalHandlerCustomizers().get(i).handlers(HandlerChainCustomizer.Phase.AFTER_PRE_MATCH,
+                            null, null));
         }
 
         return new Deployment(exceptionMapping, info.getCtxResolvers(), serialisers,

@@ -13,6 +13,8 @@ import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestCo
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerResponseFilter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
+import io.quarkus.resteasy.reactive.server.test.ExceptionUtil;
+
 public abstract class AsyncResponseFilter implements ResteasyReactiveContainerResponseFilter {
 
     private final String name;
@@ -58,7 +60,7 @@ public abstract class AsyncResponseFilter implements ResteasyReactiveContainerRe
             ExecutorService executor = Executors.newSingleThreadExecutor();
             executor.submit(() -> {
                 try {
-                    Thread.sleep(2000);
+                    Thread.sleep(300);
                 } catch (InterruptedException e) {
                     LOG.debug("Error:", e);
                 }
@@ -70,7 +72,7 @@ public abstract class AsyncResponseFilter implements ResteasyReactiveContainerRe
             ctx.setEntity(name);
             requestContext.resume();
         } else if ("sync-throw".equals(action)) {
-            throw new AsyncFilterException("ouch");
+            throw ExceptionUtil.removeStackTrace(new AsyncFilterException("ouch"));
         } else if ("async-throw-late".equals(action)) {
             requestContext.suspend();
             ServerRequestContext resteasyReactiveCallbackContext = requestContext.getServerRequestContext();
@@ -84,13 +86,13 @@ public abstract class AsyncResponseFilter implements ResteasyReactiveContainerRe
                 ctx.setEntity(name);
                 resteasyReactiveCallbackContext.registerCompletionCallback((t) -> {
                     if (callbackException != null)
-                        throw new RuntimeException("Callback called twice");
+                        throw ExceptionUtil.removeStackTrace(new RuntimeException("Callback called twice"));
                     callbackException = Objects.toString(t);
                 });
                 if ("true".equals(requestContext.getHeaderString("UseExceptionMapper")))
-                    requestContext.resume(new AsyncFilterException("ouch"));
+                    requestContext.resume(ExceptionUtil.removeStackTrace(new AsyncFilterException("ouch")));
                 else
-                    requestContext.resume(new Throwable("ouch"));
+                    requestContext.resume(ExceptionUtil.removeStackTrace(new Throwable("ouch")));
             });
         }
         LOG.debug("Filter response for " + name + " with action: " + action + " done");

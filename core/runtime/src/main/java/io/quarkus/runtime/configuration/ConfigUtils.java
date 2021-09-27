@@ -11,17 +11,16 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.function.BiConsumer;
+import java.util.UUID;
 import java.util.function.IntFunction;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -46,6 +45,12 @@ import io.smallrye.config.common.utils.ConfigSourceUtil;
  *
  */
 public final class ConfigUtils {
+
+    /**
+     * The name of the property associated with a random UUID generated at launch time.
+     */
+    static final String UUID_KEY = "quarkus.uuid";
+
     private ConfigUtils() {
     }
 
@@ -97,6 +102,7 @@ public final class ConfigUtils {
         }
         if (runTime) {
             builder.addDefaultSources();
+            builder.withDefaultValue(UUID_KEY, UUID.randomUUID().toString());
             builder.withSources(dotEnvSources(classLoader));
         } else {
             final List<ConfigSource> sources = new ArrayList<>();
@@ -179,6 +185,10 @@ public final class ConfigUtils {
         }
     }
 
+    public static void addSourceFactoryProvider(SmallRyeConfigBuilder builder, ConfigSourceFactoryProvider provider) {
+        builder.withSources(provider.getConfigSourceFactory(Thread.currentThread().getContextClassLoader()));
+    }
+
     /**
      * Checks if a property is present in the current Configuration.
      *
@@ -211,7 +221,7 @@ public final class ConfigUtils {
 
         @Override
         public Set<String> getPropertyNames() {
-            return new HashSet<>();
+            return Collections.emptySet();
         }
 
         @Override
@@ -245,28 +255,18 @@ public final class ConfigUtils {
 
     /**
      * We only want to include properties in the quarkus namespace.
+     *
+     * We removed the filter on the quarkus namespace due to the any prefix support for ConfigRoot. Filtering is now
+     * done in io.quarkus.deployment.configuration.BuildTimeConfigurationReader.ReadOperation#getAllProperties.
      */
     static class BuildTimeSysPropConfigSource extends SysPropConfigSource {
-        public Map<String, String> getProperties() {
-            BuildTimeSysPropMapProducer buildTimeSysPropMapProducer = new BuildTimeSysPropMapProducer();
-            System.getProperties().forEach(buildTimeSysPropMapProducer);
-            return buildTimeSysPropMapProducer.output;
-        }
-
         public String getName() {
             return "System properties";
         }
-    }
-
-    private static class BuildTimeSysPropMapProducer implements BiConsumer<Object, Object> {
-        final Map<String, String> output = new TreeMap<>();
 
         @Override
-        public void accept(Object k, Object v) {
-            String key = (String) k;
-            if (key.startsWith("quarkus.")) {
-                output.put(key, v.toString());
-            }
+        public Set<String> getPropertyNames() {
+            return Collections.emptySet();
         }
     }
 }

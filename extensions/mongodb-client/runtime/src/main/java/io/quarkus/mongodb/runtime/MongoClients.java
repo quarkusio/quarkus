@@ -1,9 +1,11 @@
 package io.quarkus.mongodb.runtime;
 
 import static com.mongodb.AuthenticationMechanism.GSSAPI;
+import static com.mongodb.AuthenticationMechanism.MONGODB_AWS;
 import static com.mongodb.AuthenticationMechanism.MONGODB_X509;
 import static com.mongodb.AuthenticationMechanism.PLAIN;
 import static com.mongodb.AuthenticationMechanism.SCRAM_SHA_1;
+import static com.mongodb.AuthenticationMechanism.SCRAM_SHA_256;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
@@ -391,6 +393,10 @@ public class MongoClients {
             credential = MongoCredential.createMongoX509Credential(username);
         } else if (mechanism == SCRAM_SHA_1) {
             credential = MongoCredential.createScramSha1Credential(username, authSource, password);
+        } else if (mechanism == SCRAM_SHA_256) {
+            credential = MongoCredential.createScramSha256Credential(username, authSource, password);
+        } else if (mechanism == MONGODB_AWS) {
+            credential = MongoCredential.createAwsCredential(username, password);
         } else if (mechanism == null) {
             credential = MongoCredential.createCredential(username, authSource, password);
         } else {

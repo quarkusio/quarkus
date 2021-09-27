@@ -66,17 +66,19 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.Gizmo;
+import io.quarkus.jaxrs.spi.deployment.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor.ResteasyCommonConfig;
 import io.quarkus.resteasy.common.runtime.QuarkusInjectorFactory;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.server.common.runtime.QuarkusResteasyDeployment;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnnotationBuildItem;
-import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
 import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildItem;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.NormalizeRootHttpPathConverter;
 
 /**
  * Processor that builds the RESTEasy server configuration.
@@ -135,9 +137,17 @@ public class ResteasyServerCommonProcessor {
 
         /**
          * Set this to override the default path for JAX-RS resources if there are no
-         * annotated application classes.
+         * annotated application classes. This path is specified with a leading {@literal /}, but is resolved relative
+         * to {@literal quarkus.http.root-path}.
+         * <ul>
+         * <li>If {@literal quarkus.http.root-path=/} and {@code quarkus.resteasy.path=/bar}, the JAX-RS resource path will be
+         * {@literal /bar}</li>
+         * <li>If {@literal quarkus.http.root-path=/foo} and {@code quarkus.resteasy.path=/bar}, the JAX-RS resource path will
+         * be {@literal /foo/bar}</li>
+         * </ul>
          */
         @ConfigItem(defaultValue = "/")
+        @ConvertWith(NormalizeRootHttpPathConverter.class)
         String path;
 
         /**
@@ -147,11 +157,12 @@ public class ResteasyServerCommonProcessor {
          * See <a href=
          * "https://github.com/eclipse/microprofile-metrics/blob/2.3.x/spec/src/main/asciidoc/required-metrics.adoc#optional-rest">MicroProfile
          * Metrics: Optional REST metrics</a>.
-         * <p>
-         * Deprecated. Use {@code quarkus.smallrye-metrics.jaxrs.enabled}.
+         *
+         * @deprecated Use {@code quarkus.smallrye-metrics.jaxrs.enabled} instead.
          */
-        @ConfigItem(name = "metrics.enabled", defaultValue = "false")
-        public boolean metricsEnabled;
+        @Deprecated(forRemoval = true)
+        @ConfigItem(name = "metrics.enabled")
+        public Optional<Boolean> metricsEnabled;
 
         /**
          * Ignore all explicit JAX-RS {@link Application} classes.
@@ -369,7 +380,7 @@ public class ResteasyServerCommonProcessor {
 
         ResteasyDeployment deployment = new QuarkusResteasyDeployment();
         registerProviders(deployment, resteasyInitParameters, reflectiveClass, unremovableBeans,
-                jaxrsProvidersToRegisterBuildItem);
+                jaxrsProvidersToRegisterBuildItem, index);
 
         if (!scannedResources.isEmpty()) {
             deployment.getScannedResourceClasses()
@@ -597,7 +608,7 @@ public class ResteasyServerCommonProcessor {
             Map<String, String> resteasyInitParameters,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem) {
+            JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem, IndexView index) {
 
         if (jaxrsProvidersToRegisterBuildItem.useBuiltIn()) {
             // if we find a wildcard media type, we just use the built-in providers
@@ -619,7 +630,12 @@ public class ResteasyServerCommonProcessor {
 
         // register the providers for reflection
         for (String providerToRegister : jaxrsProvidersToRegisterBuildItem.getProviders()) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerToRegister));
+            ClassInfo classInfo = index.getClassByName(DotName.createSimple(providerToRegister));
+            boolean includeFields = false;
+            if (classInfo != null) {
+                includeFields = classInfo.annotations().containsKey(ResteasyDotNames.CONTEXT);
+            }
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, includeFields, providerToRegister));
         }
 
         // special case: our config providers
@@ -682,7 +698,8 @@ public class ResteasyServerCommonProcessor {
                                 public void visit(int version, int access, String name, String signature, String superName,
                                         String[] interfaces) {
                                     super.visit(version, access, name, signature, superName, interfaces);
-                                    MethodVisitor ctor = visitMethod(Modifier.PUBLIC, "<init>", "()V", null,
+                                    MethodVisitor ctor = visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC, "<init>",
+                                            "()V", null,
                                             null);
                                     ctor.visitCode();
                                     ctor.visitVarInsn(Opcodes.ALOAD, 0);

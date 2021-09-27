@@ -67,6 +67,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
@@ -75,13 +76,13 @@ import io.quarkus.hibernate.validator.runtime.HibernateValidatorBuildTimeConfig;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
 import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
-import io.quarkus.hibernate.validator.runtime.jaxrs.QuarkusRestViolationExceptionMapper;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
+import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveViolationExceptionMapper;
 import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
+import io.quarkus.jaxrs.spi.deployment.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
-import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 
 class HibernateValidatorProcessor {
@@ -153,7 +154,9 @@ class HibernateValidatorProcessor {
         } else if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
             // The CDI interceptor which will validate the methods annotated with @JaxrsEndPointValidated
             additionalBeans.produce(new AdditionalBeanBuildItem(
-                    "io.quarkus.hibernate.validator.runtime.jaxrs.QuarkusRestEndPointValidationInterceptor"));
+                    "io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveEndPointValidationInterceptor"));
+            additionalBeans.produce(new AdditionalBeanBuildItem(
+                    "io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveContextLocaleResolver"));
         }
 
         // A constraint validator with an injection point but no scope is added as @Singleton
@@ -311,7 +314,9 @@ class HibernateValidatorProcessor {
         // JAX-RS methods are handled differently by the transformer so those need to be gathered here.
         // Note: The focus only on methods is basically an incomplete solution, since there could also be
         // class-level JAX-RS annotations but currently the transformer only looks at methods.
-        Map<DotName, Set<SimpleMethodSignatureKey>> jaxRsMethods = gatherJaxRsMethods(additionalJaxRsResourceMethodAnnotations,
+        Set<DotName> additional = new HashSet<>();
+        additionalJaxRsResourceMethodAnnotations.forEach((s) -> additional.addAll(s.getAnnotationClasses()));
+        Map<DotName, Set<SimpleMethodSignatureKey>> jaxRsMethods = gatherJaxRsMethods(additional,
                 indexView);
 
         // Add the annotations transformer to add @MethodValidated annotations on the methods requiring validation
@@ -347,9 +352,13 @@ class HibernateValidatorProcessor {
     }
 
     @BuildStep
-    ExceptionMapperBuildItem mapper() {
-        return new ExceptionMapperBuildItem(QuarkusRestViolationExceptionMapper.class.getName(),
-                ValidationException.class.getName(), Priorities.USER + 1, true);
+    void exceptionMapper(BuildProducer<ExceptionMapperBuildItem> exceptionMapperProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
+        exceptionMapperProducer.produce(new ExceptionMapperBuildItem(ResteasyReactiveViolationExceptionMapper.class.getName(),
+                ValidationException.class.getName(), Priorities.USER + 1, true));
+        reflectiveClassProducer.produce(
+                new ReflectiveClassBuildItem(true, true, ResteasyReactiveViolationExceptionMapper.ViolationReport.class,
+                        ResteasyReactiveViolationExceptionMapper.ViolationReport.Violation.class));
     }
 
     private static void contributeBuiltinConstraints(Set<String> builtinConstraints,
@@ -425,16 +434,14 @@ class HibernateValidatorProcessor {
     }
 
     private static Map<DotName, Set<SimpleMethodSignatureKey>> gatherJaxRsMethods(
-            List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations,
+            Set<DotName> additionalJaxRsResourceMethodAnnotations,
             IndexView indexView) {
         Map<DotName, Set<SimpleMethodSignatureKey>> jaxRsMethods = new HashMap<>();
 
         Collection<DotName> jaxRsMethodDefiningAnnotations = new ArrayList<>(
                 ResteasyDotNames.JAXRS_METHOD_ANNOTATIONS.size() + additionalJaxRsResourceMethodAnnotations.size());
         jaxRsMethodDefiningAnnotations.addAll(ResteasyDotNames.JAXRS_METHOD_ANNOTATIONS);
-        for (AdditionalJaxRsResourceMethodAnnotationsBuildItem additionalJaxRsResourceMethodAnnotation : additionalJaxRsResourceMethodAnnotations) {
-            jaxRsMethodDefiningAnnotations.addAll(additionalJaxRsResourceMethodAnnotation.getAnnotationClasses());
-        }
+        jaxRsMethodDefiningAnnotations.addAll(additionalJaxRsResourceMethodAnnotations);
 
         for (DotName jaxRsAnnotation : jaxRsMethodDefiningAnnotations) {
             Collection<AnnotationInstance> annotationInstances = indexView.getAnnotations(jaxRsAnnotation);

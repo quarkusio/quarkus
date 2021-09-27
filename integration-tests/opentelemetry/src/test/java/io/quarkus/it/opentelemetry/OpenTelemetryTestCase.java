@@ -708,6 +708,43 @@ public class OpenTelemetryTestCase {
         Assertions.assertTrue(clientServerFound);
     }
 
+    @Test
+    void testTemplatedPathOnClass() {
+        resetExporter();
+
+        given()
+                .contentType("application/json")
+                .when().get("/template/path/something")
+                .then()
+                .statusCode(200)
+                .body(containsString("Received: something"));
+
+        Awaitility.await().atMost(Duration.ofMinutes(2)).until(() -> getSpans().size() == 1);
+        Map<String, Object> spanData = getSpans().get(0);
+        Assertions.assertNotNull(spanData);
+        Assertions.assertNotNull(spanData.get("spanId"));
+
+        verifyResource(spanData);
+
+        Assertions.assertEquals("template/path/{value}", spanData.get("name"));
+        Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
+        Assertions.assertTrue((Boolean) spanData.get("ended"));
+
+        Assertions.assertEquals(SpanId.getInvalid(), spanData.get("parent_spanId"));
+        Assertions.assertEquals(TraceId.getInvalid(), spanData.get("parent_traceId"));
+        Assertions.assertFalse((Boolean) spanData.get("parent_valid"));
+        Assertions.assertFalse((Boolean) spanData.get("parent_remote"));
+
+        Assertions.assertEquals("GET", spanData.get("attr_http.method"));
+        Assertions.assertEquals("1.1", spanData.get("attr_http.flavor"));
+        Assertions.assertEquals("/template/path/something", spanData.get("attr_http.target"));
+        Assertions.assertEquals(directUrl.getAuthority(), spanData.get("attr_http.host"));
+        Assertions.assertEquals("http", spanData.get("attr_http.scheme"));
+        Assertions.assertEquals("200", spanData.get("attr_http.status_code"));
+        Assertions.assertNotNull(spanData.get("attr_http.client_ip"));
+        Assertions.assertNotNull(spanData.get("attr_http.user_agent"));
+    }
+
     private void verifyResource(Map<String, Object> spanData) {
         Assertions.assertEquals("opentelemetry-integration-test", spanData.get("resource_service.name"));
         Assertions.assertEquals("999-SNAPSHOT", spanData.get("resource_service.version"));

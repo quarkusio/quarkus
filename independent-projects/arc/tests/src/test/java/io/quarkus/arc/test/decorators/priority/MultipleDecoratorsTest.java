@@ -17,13 +17,7 @@ public class MultipleDecoratorsTest {
     @Test
     public void testDecoration() {
         ToUpperCaseConverter converter = Arc.container().instance(ToUpperCaseConverter.class).get();
-        assertEquals("je", converter.convert("hej"));
-    }
-
-    interface Converter<T> {
-
-        T convert(T value);
-
+        assertEquals("JE", converter.convert("hej"));
     }
 
     @ApplicationScoped

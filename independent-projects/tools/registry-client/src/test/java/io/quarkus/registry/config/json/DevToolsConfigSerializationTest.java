@@ -60,7 +60,7 @@ public class DevToolsConfigSerializationTest {
         final JsonRegistriesConfig config = new JsonRegistriesConfig();
         final JsonRegistryConfig registry = new JsonRegistryConfig("registry.acme.org");
         config.addRegistry(registry);
-        registry.setDisabled(true);
+        registry.setEnabled(false);
         config.addRegistry(new JsonRegistryConfig("registry.quarkus.io"));
 
         final String configName = "registry-disabled.yaml";

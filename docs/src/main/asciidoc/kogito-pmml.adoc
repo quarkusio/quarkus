@@ -1,0 +1,252 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Using Kogito to add prediction capabilities to an application
+
+include::./attributes.adoc[]
+
+This guide demonstrates how your Quarkus application can use Kogito to add business automation
+to power it up with predictions.
+
+Kogito is a next generation business automation toolkit that originates from the well known Open Source project
+Drools (for predictions). Kogito aims at providing another approach
+to business automation where the main message is to expose your business knowledge (processes, rules, decisions, predictions)
+in a domain specific way.
+
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
+* Docker
+
+== Architecture
+
+In this example, we build a very simple microservice which offers one REST endpoint:
+
+* `/LogisticRegressionIrisData`
+
+This endpoint will be automatically generated based on given PMML file, that in turn will
+make use of generated code to make certain predictions based on the data being processed.
+
+=== PMML file
+
+The PMML file describes the prediction logic of our microservice.
+It should provide the actual model (Regression, Tree, Scorecard, Clustering, etc) needed to make the prediction.
+
+=== Prediction endpoints
+
+Those are the entry points to the service that can be consumed by clients.
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the complete example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `kogito-pmml-quickstart` {quickstarts-tree-url}/kogito-pmml-quickstart[directory].
+
+== Creating the Maven Project
+
+First, we need a new project. Create a new project with the following command:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=kogito-pmml-quickstart \
+    -Dextensions="kogito" \
+    -DnoExamples
+cd kogito-pmml-quickstart
+----
+
+This command generates a Maven project, importing the `kogito` extension
+that comes with all needed dependencies and configuration to equip your application
+with business automation.
+
+If you already have your Quarkus project configured, you can add the `kogito` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="kogito"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.kie.kogito</groupId>
+    <artifactId>kogito-quarkus</artifactId>
+</dependency>
+----
+
+== Writing the application
+
+Predictions are evaluated based on a PMML model, whose standard and specifications may be read http://dmg.org/pmml/v4-4-1/GeneralStructure.html[here]. 
+Let's start by adding a simple PMML file: `LogisticRegressionIrisData.pmml`. It contains a _Regression_ model named `LogisticRegressionIrisData`, and it uses a regression function to predict plant species from sepal and petal dimensions:
+
+[source,xml]
+----
+<PMML xmlns="http://www.dmg.org/PMML-4_2" version="4.2">
+  <Header/>
+  <DataDictionary numberOfFields="5">
+    <DataField name="Sepal.Length" optype="continuous" dataType="double"/>
+    <DataField name="Sepal.Width" optype="continuous" dataType="double"/>
+    <DataField name="Petal.Length" optype="continuous" dataType="double"/>
+    <DataField name="Petal.Width" optype="continuous" dataType="double"/>
+    <DataField name="Species" optype="categorical" dataType="string">
+      <Value value="setosa"/>
+      <Value value="virginica"/>
+      <Value value="versicolor"/>
+    </DataField>
+  </DataDictionary>
+  <RegressionModel functionName="classification" modelName="LogisticRegressionIrisData" targetFieldName="Species">
+    <MiningSchema>
+      <MiningField name="Sepal.Length"/>
+      <MiningField name="Sepal.Width"/>
+      <MiningField name="Petal.Length"/>
+      <MiningField name="Petal.Width"/>
+      <MiningField name="Species" usageType="target"/>
+    </MiningSchema>
+    <Output>
+      <OutputField name="Probability_setosa" optype="continuous" dataType="double" feature="probability" value="setosa"/>
+      <OutputField name="Probability_versicolor" optype="continuous" dataType="double" feature="probability" value="versicolor"/>
+      <OutputField name="Probability_virginica" optype="continuous" dataType="double" feature="probability" value="virginica"/>
+    </Output>
+    <RegressionTable targetCategory="setosa" intercept="0.11822288946815">
+      <NumericPredictor name="Sepal.Length" exponent="1" coefficient="0.0660297693761902"/>
+      <NumericPredictor name="Sepal.Width" exponent="1" coefficient="0.242847872054487"/>
+      <NumericPredictor name="Petal.Length" exponent="1" coefficient="-0.224657116235727"/>
+      <NumericPredictor name="Petal.Width" exponent="1" coefficient="-0.0574727291860025"/>
+    </RegressionTable>
+    <RegressionTable targetCategory="versicolor" intercept="1.57705897385745">
+      <NumericPredictor name="Sepal.Length" exponent="1" coefficient="-0.0201536848255179"/>
+      <NumericPredictor name="Sepal.Width" exponent="1" coefficient="-0.44561625761404"/>
+      <NumericPredictor name="Petal.Length" exponent="1" coefficient="0.22066920522933"/>
+      <NumericPredictor name="Petal.Width" exponent="1" coefficient="-0.494306595747785"/>
+    </RegressionTable>
+    <RegressionTable targetCategory="virginica" intercept="-0.695281863325603">
+      <NumericPredictor name="Sepal.Length" exponent="1" coefficient="-0.0458760845506725"/>
+      <NumericPredictor name="Sepal.Width" exponent="1" coefficient="0.202768385559553"/>
+      <NumericPredictor name="Petal.Length" exponent="1" coefficient="0.00398791100639665"/>
+      <NumericPredictor name="Petal.Width" exponent="1" coefficient="0.551779324933787"/>
+    </RegressionTable>
+  </RegressionModel>
+</PMML>
+----
+
+During project compilation, Kogito will read the file and generate the classes needed for the evaluation, together with a couple of REST endpoints.
+
+To get started quickly copy the PMML file from the
+{quickstarts-tree-url}/kogito-pmml-quickstart/src/main/resources/LogisticRegressionIrisData.pmml[quickstart].
+
+== Running and Using the Application
+
+=== Running in Developer Mode
+
+To run the microservice in dev mode, use `./mvnw clean quarkus:dev`.
+
+=== Running in JVM Mode
+
+When you're done playing with dev mode you can run it as a standard Java application.
+
+First compile it:
+
+[source,bash]
+----
+./mvnw package
+----
+
+Then run it:
+
+[source,bash]
+----
+java -jar target/quarkus-app/quarkus-run.jar
+----
+
+=== Running in Native Mode
+
+This same demo can be compiled into native code: no modifications required.
+
+This implies that you no longer need to install a JVM on your
+production environment, as the runtime technology is included in
+the produced binary, and optimized to run with minimal resource overhead.
+
+Compilation will take a bit longer, so this step is disabled by default;
+let's build again by enabling the `native` profile:
+
+[source,bash]
+----
+./mvnw package -Dnative
+----
+
+After getting a cup of coffee, you'll be able to run this binary directly:
+
+[source,bash]
+----
+./target/kogito-pmml-quickstart-runner
+----
+
+== Testing the Application
+
+To test your application, just send a request to the service with giving the person as JSON
+payload.
+
+[source,bash]
+----
+curl -X POST http://localhost:8080/LogisticRegressionIrisData \
+    -H 'content-type: application/json' \
+    -H 'accept: application/json' \
+    -d '{ "Sepal.Length": 6.9, "Sepal.Width": 3.1, "Petal.Length": 5.1, "Petal.Width": 2.3 }'
+----
+
+In the response, you should see the prediction, that should be _virginica_:
+
+[source,JSON]
+----
+{
+  "Species": "virginica"
+}
+----
+
+You can also invoke the _descriptive_ endpoint, that will provide also the _OutputField_ evaluated:
+
+[source,bash]
+----
+curl -X POST http://localhost:8080/LogisticRegressionIrisData/descriptive \
+    -H 'content-type: application/json' \
+    -H 'accept: application/json' \
+    -d '{"person": {"name":"Jenny Quark", "age": 15}}'
+----
+
+[source,JSON]
+----
+{
+    "correlationId": null,
+    "segmentationId": null,
+    "segmentId": null,
+    "segmentIndex": 0,
+    "resultCode": "OK",
+    "resultObjectName": "Species",
+    "resultVariables": {
+        "Probability_setosa": 0.04871813160275851,
+        "Probability_versicolor": 0.04509592640753013,
+        "Probability_virginica": 0.9061859419897114,
+        "Species": "virginica"
+    }
+}
+----
+
+== References
+
+* https://kogito.kie.org[Kogito Website]
+* https://docs.jboss.org/kogito/release/latest/html_single[Kogito Documentation]

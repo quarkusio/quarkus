@@ -1,0 +1,178 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus Extension Registry
+
+include::./attributes.adoc[]
+
+The Quarkus dev tools, such as the https://quarkus.io/guides/cli-tooling[Quarkus CLI], the https://quarkus.io/guides/maven-tooling[Maven] and the https://quarkus.io/guides/gradle-tooling[Gradle] plugins, or https://code.quarkus.io[code.quarkus.io] can be used to list and search the Quarkus ecosystem for extensions that match a certain criteria. That includes the https://quarkus.io/guides/platform[Quarkus platform] extensions and various other extensions contributed by the community, many of which are hosted on the https://github.com/quarkiverse[Quarkiverse Hub].
+
+The information about all the available Quarkus extensions is provided to the dev tools by __Quarkus extension registries__.
+
+A Quarkus extension registry is a database providing information about:
+
+* available Quarkus platforms, indicating which of those are currently recommended for new projects and/or as updates;
+* available non-platform extensions, indicating which Quarkus versions they are compatible with.
+
+[[registry.quarkus.io]]
+== registry.quarkus.io
+
+The registry hosted at https://registry.quarkus.io[registry.quarkus.io] is the default Quarkus community extension registry. It is updated on every release of the https://github.com/quarkusio/quarkus-platform[Quarkus community platform] and includes extensions hosted on the https://github.com/quarkiverse[Quarkiverse Hub].
+
+=== Maven repository
+
+The registry hosted at https://registry.quarkus.io[registry.quarkus.io] is a Maven __snapshot__ repository that provides platform and extension catalogs to the dev tools as Maven JSON artifacts. Once downloaded the extension catalogs will be cached in the user's local Maven repository and will be available to the dev tools even if the Internet network (or the registry itself) isn't available.
+
+The extension catalog artifacts cached locally will be regularly checked for updates and updated if newer versions of those catalogs are available in the registry. The default interval to check for updates is *daily*, which matches the default Maven repository `updatePolicy` for SNAPSHOT artifacts.
+
+[[registry.quarkus.io.maven.repo]]
+==== Maven repository configuration
+
+IMPORTANT: The repository configuration below is shown only for illustrative purposes and does *NOT* have to be added to the user `settings.xml` or the application's `pom.xml`. The Quarkus dev tools come with this repository pre-configured.
+
+The complete https://maven.apache.org/settings.html#repositories[Maven repository configuration] of <<registry.quarkus.io,registry.quarkus.io>> is
+
+[source,xml]
+----
+<repository>
+  <id>registry.quarkus.io</id>
+  <name>Quarkus community extension registry</name>
+  <url>https://registry.quarkus.io/maven</url>
+  <snapshots>
+    <enabled>true</enabled>
+    <updatePolicy>daily</updatePolicy>
+    <checksumPolicy>warn</checksumPolicy>
+  </snapshots>
+</repository>
+----
+
+When the Quarkus dev tools are initialized, this repository configuration is automatically added to the Maven resolver which will be used to resolve the platform and extension catalogs from <<registry.quarkus.io,registry.quarkus.io>>.
+
+==== Maven repository mirrors and proxies
+
+When the Quarkus dev tools Maven resolver is initialized, the relevant Maven mirrors and proxies found in the user `settings.xml` are automatically applied to the <<registry.quarkus.io.maven.repo,registry.quarkus.io>> Maven repository configuration, as if the <<registry.quarkus.io.maven.repo,registry.quarkus.io>> Maven repository was configured in the user `settings.xml`.
+
+That means, if, for example, a matching Maven repository mirror was applied to the <<registry.quarkus.io.maven.repo,registry.quarkus.io>> Maven repository, the <<registry.quarkus.io.maven.repo,registry.quarkus.io>> Maven repository would have to be added to the mirror repository group in the corresponding Maven server instance (e.g. Nexus).
+
+==== Overriding the default registry Maven repository configuration
+
+The default registry Maven repository configuration can actually be overriden in the user `settings.xml` by simply adding the desired `<repository>` configuration with the `registry.quarkus.io` as its `<id>` value. If such a repository configuration is found in the user `settings.xml`, the dev tools will use it in place of the default <<registry.quarkus.io.maven.repo,registry.quarkus.io>> Maven repository configuration shown above.
+
+== Quarkus Extension Registry Client Configuration
+
+Typically, Quarkus community users will not need to have any registry-related configuration in their environment. The registry hosted at <<registry.quarkus.io,registry.quarkus.io>> is enabled in all the Quarkus dev tools by default. However, there could be a few situations where a custom registry client configuration could help. For example, to change the local registry cache update policy or to configure additional (non-default) Quarkus extension registries.
+
+=== Registry client configuration location
+
+When the Quarkus dev tools are launched, a search for the registry client configuration file is performed following these steps:
+
+. `quarkus.tools.config` system property is checked, if it exists, its value will be used as a path to the registry client configuration file;
+. the current directory is checked to contain the `.quarkus/config.yaml` file, if the file exists, it will be used to configure the registry client;
+. the user home directory is checked to contain the `~/.quarkus/config.yaml` file, if the file exists, it will be used to configure the registry client;
+. if none of the above steps located a configuration file, the default <<registry.quarkus.io.maven.repo,registry.quarkus.io>> configuration will be used.
+
+=== Configuring multiple registries
+
+The <<registry.quarkus.io,registry.quarkus.io>> is the default Quarkus community extension registry but it is not meant to be always the only registry. Other organizations may find it useful to create their own Quarkus extension registries to provide their own https://quarkus.io/guides/platform[Quarkus platforms] and/or individual (non-platform) Quarkus extensions. Users wishing to enable custom Quarkus extension registries in their environment would need to add them to the registry client configuration file.
+
+The registry client configuration file is a simple YAML file which contains a list of registries, for example:
+
+[source,yaml]
+----
+registries:
+- registry.acme.org
+- registry.quarkus.io
+----
+
+The configuration above enables two registries: `registry.acme.org` and `registry.quarkus.io`. The order of the registries is actually significant. When the Quarkus dev tools are looking for extensions on user's request, the registries will be searched in the order they are configured, i.e. from the top to the bottom of the list. Extensions and platforms found first will appear as the preferred ones to the user.
+
+IMPORTANT: <<registry.quarkus.io,registry.quarkus.io>> is the default registry which normally does not have to be configured explicitly, however if a user provides a custom registry list and `registry.quarkus.io` is not in it, <<registry.quarkus.io,registry.quarkus.io>> will *not* be enabled.
+
+For example, here is a registry client configuration that replaces the default <<registry.quarkus.io,registry.quarkus.io>> registry with a custom one:
+
+[source,yaml]
+----
+registries:
+- registry.acme.org
+----
+
+=== Adjusting the registry cache update policy
+
+Usually, a Quarkus extension registry will be implemented as a Maven snapshot repository. The platform and extension catalogs resolved from the registry as Maven artifacts will be cached in the user's local Maven repository. The platform and extension catalogs are actually `SNAPSHOT` artifacts that are periodically checked for updates by the registry client. The default registry interval to check for updates matches the default value of the Maven's `updatePolicy` for https://maven.apache.org/settings.html#repositories[snapshot repositories] and is `daily`. This default can be override in the registry configuration, for example:
+
+[source,yaml]
+----
+registries:
+- registry.acme.org:
+    update-policy: "always"
+- registry.quarkus.io
+----
+
+In the example above, the `registry.acme.org` registry will be checked for catalog updates on every catalog request, while the `registry.quarkus.io` registry will be checked for catalog updates once a day (on the first catalog request of the day).
+
+Here is a complete list of choices for a registry's `update-policy` value:
+
+* _always_ - check for the updates on every catalog request;
+* _daily_ (default) - check for the catalog updates once a day on the first catalog request;
+* _interval:X_ (where X is an integer in minutes) - custom interval in minutes;
+* _never_ - resolve the catalogs once and never check for updates.
+
+=== Disabling a registry in the configuration
+
+All the registries listed in the configuration file are enabled by default. A registry can be disabled though by adding `enabled: false` to its configuration. For example:
+
+[source,yaml]
+----
+registries:
+- registry.acme.org
+- registry.quarkus.io:
+    enabled: false
+----
+
+In the configuration above, only the `registry.acme.org` is enabled. The configuration above is equivalent to:
+
+[source,yaml]
+----
+registries:
+- registry.acme.org
+----
+
+=== Enabling the debug mode
+
+The registry client is not logging much information by default. However, it does resolve various artifacts from Maven repositories behind the scenes. If you would like to see artifact transfer and other debugging related messages in the logs, you can enable the debug mode in the configuration. For example:
+
+[source,yaml]
+----
+debug: true
+registries:
+- registry.acme.org
+- registry.quarkus.io
+----
+
+=== [[how-to-register-as-nexus-repository]] How to register as a Nexus Repository proxy
+
+You can register a Quarkus extension registry as a Nexus repository proxy.You need to be an administrator to perform these operations.
+
+==== [[how-to-register-as-nexus-2-repository]] Nexus 2.x
+Some options need to be set:
+
+- Set the `Repository Policy` to `Snapshot`;
+- Disable `Download Remote Indexes`;
+- Disable `Allow File Browsing`;
+- Disable `Include in Search`.
+
+Here is an example on how it should look like:
+
+[#img-nexus]
+.Nexus Repository Manager: Add Proxy Repository
+image:registry-nexus-repository.png[Nexus Repository Proxy]
+
+==== [[how-to-register-as-nexus-3-repository]] Nexus 3.x
+
+- Create a `maven2(proxy)` repository
+- Set the `Version Policy` to `Snapshot`
+- Set the `Remote Storage` URL to `https://registry.quarkus.io/maven`
+
+image:registry-nexus3-repository.png[Nexus Repository Proxy]

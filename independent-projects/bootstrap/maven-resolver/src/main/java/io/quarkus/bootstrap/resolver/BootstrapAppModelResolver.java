@@ -155,7 +155,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         }
         final Artifact mvnArtifact = toAetherArtifact(appArtifact);
 
-        AppModel.Builder appBuilder = new AppModel.Builder();
+        AppModel.Builder appBuilder = new AppModel.Builder().setAppArtifact(appArtifact);
         List<Dependency> managedDeps = Collections.emptyList();
         List<RemoteRepository> managedRepos = Collections.emptyList();
         if (managingProject != null) {
@@ -203,15 +203,13 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
         final DeploymentInjectingDependencyVisitor deploymentInjector;
         try {
-            deploymentInjector = new DeploymentInjectingDependencyVisitor(mvn,
-                    managedDeps, repos, appBuilder);
+            deploymentInjector = new DeploymentInjectingDependencyVisitor(mvn, managedDeps, repos, appBuilder);
             deploymentInjector.injectDeploymentDependencies(resolvedDeps);
         } catch (BootstrapDependencyProcessingException e) {
             throw new AppModelResolverException(
                     "Failed to inject extension deployment dependencies for " + resolvedDeps.getArtifact(), e);
         }
 
-        List<AppDependency> deploymentDeps = Collections.emptyList();
         if (deploymentInjector.isInjectedDeps()) {
             final DependencyGraphTransformationContext context = new SimpleDependencyGraphTransformationContext(
                     mvn.getSession());
@@ -239,10 +237,10 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                     }
                 }
                 final List<DependencyNode> deploymentDepNodes = buildDepsVisitor.getDeploymentNodes();
-                deploymentDeps = new ArrayList<>(deploymentDepNodes.size());
                 for (DependencyNode dep : deploymentDepNodes) {
-                    deploymentDeps.add(new AppDependency(BootstrapAppModelResolver.toAppArtifact(dep.getArtifact()),
-                            dep.getDependency().getScope(), dep.getDependency().isOptional()));
+                    appBuilder.addDependency(new AppDependency(BootstrapAppModelResolver.toAppArtifact(dep.getArtifact()),
+                            dep.getDependency().getScope(), dep.getDependency().isOptional(),
+                            AppDependency.DEPLOYMENT_CP_FLAG));
                 }
             }
         }
@@ -254,11 +252,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         for (AppArtifactKey i : localProjects) {
             appBuilder.addLocalProjectArtifact(new AppArtifactKey(i.getGroupId(), i.getArtifactId(), null, "jar"));
         }
-        return appBuilder
-                .addDeploymentDeps(deploymentDeps)
-                .setAppArtifact(appArtifact)
-                .addFullDeploymentDeps(deploymentDeps)
-                .build();
+        return appBuilder.build();
     }
 
     private void collectPlatformProperties(AppModel.Builder appBuilder, List<Dependency> managedDeps)

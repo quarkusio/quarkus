@@ -10,6 +10,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationSourceValueBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.runtime.ApplicationConfig;
+import io.quarkus.runtime.TlsConfig;
 import io.quarkus.spring.cloud.config.client.runtime.Response;
 import io.quarkus.spring.cloud.config.client.runtime.SpringCloudConfigClientConfig;
 import io.quarkus.spring.cloud.config.client.runtime.SpringCloudConfigClientRecorder;
@@ -36,9 +37,10 @@ public class SpringCloudConfigProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     public RunTimeConfigurationSourceValueBuildItem configure(SpringCloudConfigClientRecorder recorder,
             SpringCloudConfigClientConfig springCloudConfigClientConfig,
-            ApplicationConfig applicationConfig) {
+            ApplicationConfig applicationConfig,
+            TlsConfig tlsConfig) {
         return new RunTimeConfigurationSourceValueBuildItem(
-                recorder.create(springCloudConfigClientConfig, applicationConfig));
+                recorder.create(springCloudConfigClientConfig, applicationConfig, tlsConfig));
     }
 
 }

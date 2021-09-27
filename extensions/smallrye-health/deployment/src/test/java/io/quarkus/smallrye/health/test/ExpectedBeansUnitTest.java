@@ -7,6 +7,7 @@ import javax.inject.Inject;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.Readiness;
+import org.eclipse.microprofile.health.Startup;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -65,6 +66,9 @@ public class ExpectedBeansUnitTest {
         selects = checks.select(Readiness.Literal.INSTANCE);
         Assertions.assertTrue(isUnique(selects));
 
+        selects = checks.select(Startup.Literal.INSTANCE);
+        Assertions.assertTrue(isUnique(selects));
+
         selects = checks.select(HealthGroup.Literal.of("group1"));
         Assertions.assertTrue(isUnique(selects));
 
@@ -73,6 +77,7 @@ public class ExpectedBeansUnitTest {
 
         selects = checks.select(Liveness.Literal.INSTANCE,
                 Readiness.Literal.INSTANCE,
+                Startup.Literal.INSTANCE,
                 HealthGroup.Literal.of("group1"),
                 HealthGroup.Literal.of("group2"));
         Assertions.assertTrue(isUnique(selects));

@@ -19,7 +19,7 @@ The easiest way to scaffold a Gradle project, is currently to use the Quarkus Ma
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=my-groupId \
     -DprojectArtifactId=my-artifactId \
     -DprojectVersion=my-version \
@@ -28,7 +28,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DbuildTool=gradle
 ----
 
-NOTE: If you just launch `mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create` the Maven plugin asks
+NOTE: If you just launch `mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create` the Maven plugin asks
 for user inputs. You can disable (and use default values) this interactive mode by passing `-B` to the Maven command.
 
 [NOTE]
@@ -163,7 +163,7 @@ You can install all extensions which match a globbing pattern:
 [[dev-mode]]
 == Development mode
 
-Quarkus comes with a built-in development mode. The best way to run this is via the link:cli-tooling.adoc[Quarkus CLI]
+Quarkus comes with a built-in development mode. The best way to run this is via the link:cli-tooling[Quarkus CLI]
 Run your application with:
 
 [source,bash]
@@ -381,14 +381,14 @@ or if you are using the Gradle Kotlin DSL:
 tasks.quarkusBuild {
     nativeArgs {
         "container-build" to true <1>
-        "buildImage" to "quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor}" <2>
-        "quarkus.native.java-home" to "/opt/java-11/"
+        "build-image" to "quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor}" <2>
+        "java-home" to "/opt/java-11/"
     }
 }
 ----
 
-<1> Set `quarkus.native.containerBuild` property to `true`
-<2> Set `quarkus.native.buildImage` property to `quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor}`
+<1> Set `quarkus.native.container-build` property to `true`
+<2> Set `quarkus.native.build-image` property to `quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor}`
 
 [WARNING]
 ====
@@ -494,3 +494,16 @@ More information on this topic can be found on the link:cdi-reference#bean_disco
 == Building with `./gradlew build`
 
 Starting from 1.1.0.Final, `./gradlew build` will no longer build the native image. Add `-Dquarkus.package.type=native` build argument explicitly as explained above if needed.
+
+== Publishing your application
+
+In order to make sure the right dependency versions are being used by Gradle, the BOM is declared as an `enforcedPlatform` in your build file.
+By default, the `maven-publish` plugin will prevent you from publishing your application due to this `enforcedPlatform`.
+This validation can be skipped by adding the following configuration in your `build.gradle` file:
+
+[source,groovy]
+----
+tasks.withType(GenerateModuleMetadata).configureEach {
+    suppressedValidationErrors.add('enforced-platform')
+}
+----

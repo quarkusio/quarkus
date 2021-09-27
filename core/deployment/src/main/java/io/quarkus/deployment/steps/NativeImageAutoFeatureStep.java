@@ -2,6 +2,7 @@ package io.quarkus.deployment.steps;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
+import java.io.ObjectStreamClass;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
@@ -39,6 +41,8 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuil
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
+import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -48,10 +52,14 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.ResourceHelper;
 import io.quarkus.runtime.graal.ResourcesFeature;
+import io.quarkus.runtime.graal.WeakReflection;
 
 public class NativeImageAutoFeatureStep {
 
     private static final String GRAAL_AUTOFEATURE = "io/quarkus/runner/AutoFeature";
+    private static final MethodDescriptor VERSION_CURRENT = ofMethod(Version.class, "getCurrent", Version.class);
+    private static final MethodDescriptor VERSION_COMPARE_TO = ofMethod(Version.class, "compareTo", int.class, int[].class);
+
     private static final MethodDescriptor IMAGE_SINGLETONS_LOOKUP = ofMethod(ImageSingletons.class, "lookup", Object.class,
             Class.class);
     private static final MethodDescriptor BUILD_TIME_INITIALIZATION = ofMethod(
@@ -64,18 +72,22 @@ public class NativeImageAutoFeatureStep {
     private static final MethodDescriptor RERUN_INITIALIZATION = ofMethod(
             "org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport",
             "rerunInitialization", void.class, Class.class, String.class);
-    private static final MethodDescriptor RESOURCES_REGISTRY_ADD_RESOURCES = ofMethod(
-            "com.oracle.svm.core.configure.ResourcesRegistry",
-            "addResources", void.class, String.class);
-    private static final MethodDescriptor RESOURCES_REGISTRY_IGNORE_RESOURCES = ofMethod(
-            "com.oracle.svm.core.configure.ResourcesRegistry",
-            "ignoreResources", void.class, String.class);
+    private static final MethodDescriptor LOOKUP_METHOD = ofMethod(
+            "com.oracle.svm.util.ReflectionUtil",
+            "lookupMethod", Method.class, Class.class, String.class, Class[].class);
+    private static final MethodDescriptor FOR_NAME = ofMethod(
+            Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class);
+    private static final MethodDescriptor INVOKE = ofMethod(
+            Method.class, "invoke", Object.class, Object.class, Object[].class);
     static final String RUNTIME_REFLECTION = RuntimeReflection.class.getName();
     static final String JNI_RUNTIME_ACCESS = "com.oracle.svm.core.jni.JNIRuntimeAccess";
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
     static final String DYNAMIC_PROXY_REGISTRY = "com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry";
     static final String LEGACY_LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.LocalizationFeature";
     static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.localization.LocalizationFeature";
+    public static final MethodDescriptor WEAK_REFLECTION_REGISTRATION = MethodDescriptor.ofMethod(WeakReflection.class,
+            "register", void.class, Feature.BeforeAnalysisAccess.class, Class.class, boolean.class, boolean.class,
+            boolean.class);
 
     @BuildStep
     GeneratedResourceBuildItem generateNativeResourcesList(List<NativeImageResourceBuildItem> resources,
@@ -219,16 +231,63 @@ public class NativeImageAutoFeatureStep {
             ResultHandle resourcesRegistrySingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
                     overallCatch.loadClass("com.oracle.svm.core.configure.ResourcesRegistry"));
             TryBlock tc = overallCatch.tryBlock();
+
+            ResultHandle currentThread = tc.invokeStaticMethod(ofMethod(Thread.class, "currentThread", Thread.class));
+            ResultHandle tccl = tc.invokeVirtualMethod(ofMethod(Thread.class, "getContextClassLoader", ClassLoader.class),
+                    currentThread);
+            AssignableResultHandle resourcesArgTypes = tc.createVariable(Class[].class);
+            AssignableResultHandle resourcesArgs = tc.createVariable(Object[].class);
+            AssignableResultHandle argsIndex = tc.createVariable(int.class);
+
+            BranchResult graalVm21_3Test = tc.ifGreaterEqualZero(
+                    tc.invokeVirtualMethod(VERSION_COMPARE_TO,
+                            tc.invokeStaticMethod(VERSION_CURRENT),
+                            tc.marshalAsArray(int.class, tc.load(21), tc.load(3))));
+            /* GraalVM >= 21.3 */
+            BytecodeCreator greaterThan21_2 = graalVm21_3Test.trueBranch();
+            ResultHandle argTypes = greaterThan21_2.newArray(Class.class, greaterThan21_2.load(2));
+            ResultHandle configurationConditionClass = greaterThan21_2.invokeStaticMethod(FOR_NAME,
+                    greaterThan21_2.load("org.graalvm.nativeimage.impl.ConfigurationCondition"),
+                    greaterThan21_2.load(false), tccl);
+            greaterThan21_2.writeArrayValue(argTypes, 0, configurationConditionClass);
+            greaterThan21_2.writeArrayValue(argTypes, 1, greaterThan21_2.loadClass(String.class));
+            greaterThan21_2.assign(resourcesArgTypes, argTypes);
+            ResultHandle args = greaterThan21_2.newArray(Object.class, greaterThan21_2.load(2));
+            ResultHandle alwaysTrueMethod = greaterThan21_2.invokeStaticMethod(LOOKUP_METHOD,
+                    configurationConditionClass,
+                    greaterThan21_2.load("alwaysTrue"),
+                    greaterThan21_2.newArray(Class.class, greaterThan21_2.load(0)));
+            ResultHandle alwaysTrueResult = greaterThan21_2.invokeVirtualMethod(INVOKE,
+                    alwaysTrueMethod, greaterThan21_2.loadNull(),
+                    greaterThan21_2.newArray(Object.class, greaterThan21_2.load(0)));
+            greaterThan21_2.writeArrayValue(args, 0, alwaysTrueResult);
+            greaterThan21_2.assign(resourcesArgs, args);
+            greaterThan21_2.assign(argsIndex, greaterThan21_2.load(1));
+
+            /* GraalVM < 21.3 */
+            BytecodeCreator smallerThan21_3 = graalVm21_3Test.falseBranch();
+            argTypes = smallerThan21_3.newArray(Class.class, smallerThan21_3.load(1));
+            smallerThan21_3.writeArrayValue(argTypes, 0, smallerThan21_3.loadClass(String.class));
+            smallerThan21_3.assign(resourcesArgTypes, argTypes);
+            args = smallerThan21_3.newArray(Object.class, smallerThan21_3.load(1));
+            smallerThan21_3.assign(resourcesArgs, args);
+            smallerThan21_3.assign(argsIndex, smallerThan21_3.load(0));
+
+            ResultHandle ignoreResourcesMethod = tc.invokeStaticMethod(LOOKUP_METHOD,
+                    tc.loadClass("com.oracle.svm.core.configure.ResourcesRegistry"),
+                    tc.load("ignoreResources"), resourcesArgTypes);
+            ResultHandle addResourcesMethod = tc.invokeStaticMethod(LOOKUP_METHOD,
+                    tc.loadClass("com.oracle.svm.core.configure.ResourcesRegistry"),
+                    tc.load("addResources"), resourcesArgTypes);
+
             for (NativeImageResourcePatternsBuildItem resourcePatternsItem : resourcePatterns) {
                 for (String pattern : resourcePatternsItem.getExcludePatterns()) {
-                    tc.invokeInterfaceMethod(RESOURCES_REGISTRY_IGNORE_RESOURCES, resourcesRegistrySingleton,
-                            overallCatch.load(pattern));
+                    tc.writeArrayValue(resourcesArgs, argsIndex, tc.load(pattern));
+                    tc.invokeVirtualMethod(INVOKE, ignoreResourcesMethod, resourcesRegistrySingleton, resourcesArgs);
                 }
                 for (String pattern : resourcePatternsItem.getIncludePatterns()) {
-                    tc.invokeInterfaceMethod(
-                            RESOURCES_REGISTRY_ADD_RESOURCES,
-                            resourcesRegistrySingleton,
-                            tc.load(pattern));
+                    tc.writeArrayValue(resourcesArgs, argsIndex, tc.load(pattern));
+                    tc.invokeVirtualMethod(INVOKE, addResourcesMethod, resourcesRegistrySingleton, resourcesArgs);
                 }
             }
             CatchBlockCreator cc = tc.addCatch(Throwable.class);
@@ -289,6 +348,7 @@ public class NativeImageAutoFeatureStep {
             addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, i.isConstructors(), i.isMethods(), i.isFields(),
                     i.areFinalFieldsWritable(),
                     i.isWeak(),
+                    i.isSerialization(),
                     i.getClassNames().toArray(new String[0]));
         }
         for (ReflectiveFieldBuildItem i : reflectiveFields) {
@@ -299,15 +359,16 @@ public class NativeImageAutoFeatureStep {
         }
 
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
-            addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, true, false, false, false, false,
+            addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, true, false, false, false, false, false,
                     i.providers().toArray(new String[] {}));
         }
 
-        for (Map.Entry<String, ReflectionInfo> entry : reflectiveClasses.entrySet()) {
+        MethodDescriptor registerSerializationMethod = null;
 
-            MethodCreator mv = file.getMethodCreator("registerClass" + count++, "V");
+        for (Map.Entry<String, ReflectionInfo> entry : reflectiveClasses.entrySet()) {
+            MethodCreator mv = file.getMethodCreator("registerClass" + count++, void.class, Feature.BeforeAnalysisAccess.class);
             mv.setModifiers(Modifier.PRIVATE | Modifier.STATIC);
-            overallCatch.invokeStaticMethod(mv.getMethodDescriptor());
+            overallCatch.invokeStaticMethod(mv.getMethodDescriptor(), overallCatch.getMethodParam(0));
 
             TryBlock tc = mv.tryBlock();
 
@@ -330,66 +391,87 @@ public class NativeImageAutoFeatureStep {
                 tc.writeArrayValue(carray, 0, clazz);
                 tc.invokeStaticMethod(ofMethod(RUNTIME_REFLECTION, "register", void.class, Class[].class),
                         carray);
+
+                if (entry.getValue().constructors) {
+                    tc.invokeStaticMethod(
+                            ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
+                            constructors);
+                } else if (!entry.getValue().ctorSet.isEmpty()) {
+                    ResultHandle farray = tc.newArray(Constructor.class, tc.load(1));
+                    for (ReflectiveMethodBuildItem ctor : entry.getValue().ctorSet) {
+                        ResultHandle paramArray = tc.newArray(Class.class, tc.load(ctor.getParams().length));
+                        for (int i = 0; i < ctor.getParams().length; ++i) {
+                            String type = ctor.getParams()[i];
+                            tc.writeArrayValue(paramArray, i, tc.loadClass(type));
+                        }
+                        ResultHandle fhandle = tc.invokeVirtualMethod(
+                                ofMethod(Class.class, "getDeclaredConstructor", Constructor.class, Class[].class), clazz,
+                                paramArray);
+                        tc.writeArrayValue(farray, 0, fhandle);
+                        tc.invokeStaticMethod(
+                                ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
+                                farray);
+                    }
+                }
+                if (entry.getValue().methods) {
+                    tc.invokeStaticMethod(
+                            ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
+                            methods);
+                } else if (!entry.getValue().methodSet.isEmpty()) {
+                    ResultHandle farray = tc.newArray(Method.class, tc.load(1));
+                    for (ReflectiveMethodBuildItem method : entry.getValue().methodSet) {
+                        ResultHandle paramArray = tc.newArray(Class.class, tc.load(method.getParams().length));
+                        for (int i = 0; i < method.getParams().length; ++i) {
+                            String type = method.getParams()[i];
+                            tc.writeArrayValue(paramArray, i, tc.loadClass(type));
+                        }
+                        ResultHandle fhandle = tc.invokeVirtualMethod(
+                                ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), clazz,
+                                tc.load(method.getName()), paramArray);
+                        tc.writeArrayValue(farray, 0, fhandle);
+                        tc.invokeStaticMethod(
+                                ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
+                                farray);
+                    }
+                }
+                if (entry.getValue().fields) {
+                    BranchResult graalVm21Test = tc.ifGreaterEqualZero(
+                            tc.invokeVirtualMethod(VERSION_COMPARE_TO,
+                                    tc.invokeStaticMethod(VERSION_CURRENT),
+                                    tc.marshalAsArray(int.class, tc.load(21))));
+                    graalVm21Test.trueBranch().invokeStaticMethod(
+                            ofMethod(RUNTIME_REFLECTION, "register", void.class,
+                                    boolean.class, boolean.class, Field[].class),
+                            tc.load(entry.getValue().finalFieldsWritable), tc.load(entry.getValue().serialization), fields);
+                    graalVm21Test.falseBranch().invokeStaticMethod(
+                            ofMethod(RUNTIME_REFLECTION, "register", void.class,
+                                    boolean.class, Field[].class),
+                            tc.load(entry.getValue().finalFieldsWritable), fields);
+                } else if (!entry.getValue().fieldSet.isEmpty()) {
+                    ResultHandle farray = tc.newArray(Field.class, tc.load(1));
+                    for (String field : entry.getValue().fieldSet) {
+                        ResultHandle fhandle = tc.invokeVirtualMethod(
+                                ofMethod(Class.class, "getDeclaredField", Field.class, String.class), clazz, tc.load(field));
+                        tc.writeArrayValue(farray, 0, fhandle);
+                        tc.invokeStaticMethod(
+                                ofMethod(RUNTIME_REFLECTION, "register", void.class, Field[].class),
+                                farray);
+                    }
+                }
+            } else {
+                tc.invokeStaticMethod(WEAK_REFLECTION_REGISTRATION, tc.getMethodParam(0), clazz,
+                        tc.load(entry.getValue().constructors), tc.load(entry.getValue().methods),
+                        tc.load(entry.getValue().fields));
             }
 
-            if (entry.getValue().constructors) {
-                tc.invokeStaticMethod(
-                        ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
-                        constructors);
-            } else if (!entry.getValue().ctorSet.isEmpty()) {
-                ResultHandle farray = tc.newArray(Constructor.class, tc.load(1));
-                for (ReflectiveMethodBuildItem ctor : entry.getValue().ctorSet) {
-                    ResultHandle paramArray = tc.newArray(Class.class, tc.load(ctor.getParams().length));
-                    for (int i = 0; i < ctor.getParams().length; ++i) {
-                        String type = ctor.getParams()[i];
-                        tc.writeArrayValue(paramArray, i, tc.loadClass(type));
-                    }
-                    ResultHandle fhandle = tc.invokeVirtualMethod(
-                            ofMethod(Class.class, "getDeclaredConstructor", Constructor.class, Class[].class), clazz,
-                            paramArray);
-                    tc.writeArrayValue(farray, 0, fhandle);
-                    tc.invokeStaticMethod(
-                            ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
-                            farray);
+            if (entry.getValue().serialization) {
+                if (registerSerializationMethod == null) {
+                    registerSerializationMethod = createRegisterSerializationForClassMethod(file);
                 }
+
+                tc.invokeStaticMethod(registerSerializationMethod, clazz);
             }
-            if (entry.getValue().methods) {
-                tc.invokeStaticMethod(
-                        ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
-                        methods);
-            } else if (!entry.getValue().methodSet.isEmpty()) {
-                ResultHandle farray = tc.newArray(Method.class, tc.load(1));
-                for (ReflectiveMethodBuildItem method : entry.getValue().methodSet) {
-                    ResultHandle paramArray = tc.newArray(Class.class, tc.load(method.getParams().length));
-                    for (int i = 0; i < method.getParams().length; ++i) {
-                        String type = method.getParams()[i];
-                        tc.writeArrayValue(paramArray, i, tc.loadClass(type));
-                    }
-                    ResultHandle fhandle = tc.invokeVirtualMethod(
-                            ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), clazz,
-                            tc.load(method.getName()), paramArray);
-                    tc.writeArrayValue(farray, 0, fhandle);
-                    tc.invokeStaticMethod(
-                            ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
-                            farray);
-                }
-            }
-            if (entry.getValue().fields) {
-                tc.invokeStaticMethod(
-                        ofMethod(RUNTIME_REFLECTION, "register", void.class,
-                                boolean.class, Field[].class),
-                        tc.load(entry.getValue().finalFieldsWritable), fields);
-            } else if (!entry.getValue().fieldSet.isEmpty()) {
-                ResultHandle farray = tc.newArray(Field.class, tc.load(1));
-                for (String field : entry.getValue().fieldSet) {
-                    ResultHandle fhandle = tc.invokeVirtualMethod(
-                            ofMethod(Class.class, "getDeclaredField", Field.class, String.class), clazz, tc.load(field));
-                    tc.writeArrayValue(farray, 0, fhandle);
-                    tc.invokeStaticMethod(
-                            ofMethod(RUNTIME_REFLECTION, "register", void.class, Field[].class),
-                            farray);
-                }
-            }
+
             CatchBlockCreator cc = tc.addCatch(Throwable.class);
             //cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
             mv.returnValue(null);
@@ -459,11 +541,182 @@ public class NativeImageAutoFeatureStep {
         file.close();
     }
 
+    private MethodDescriptor createRegisterSerializationForClassMethod(ClassCreator file) {
+        //register serialization feature as requested
+        MethodCreator requiredFeatures = file.getMethodCreator("getRequiredFeatures", "java.util.List");
+
+        TryBlock requiredCatch = requiredFeatures.tryBlock();
+
+        // It's too early in the GraalVM build to use Version.getCurrent()
+        BranchResult featuresGraalVm20Test = requiredCatch.ifTrue(requiredCatch
+                .invokeVirtualMethod(ofMethod(String.class, "startsWith", boolean.class, String.class),
+                        requiredCatch.invokeStaticMethod(
+                                ofMethod(System.class, "getProperty", String.class, String.class),
+                                requiredCatch.load("org.graalvm.version")),
+                        requiredCatch.load("20.")));
+
+        BytecodeCreator featuresIfGraalVM21Plus = featuresGraalVm20Test.falseBranch();
+
+        ResultHandle serializationFeatureClass = featuresIfGraalVM21Plus
+                .loadClass("com.oracle.svm.reflect.serialize.hosted.SerializationFeature");
+        featuresIfGraalVM21Plus.returnValue(featuresIfGraalVM21Plus.invokeStaticMethod(
+                ofMethod("java.util.Collections", "singletonList", List.class, Object.class),
+                serializationFeatureClass));
+
+        BytecodeCreator featuresIfNotGraalVM21Plus = featuresGraalVm20Test.trueBranch();
+        featuresIfNotGraalVM21Plus
+                .returnValue(featuresIfNotGraalVM21Plus
+                        .invokeStaticMethod(ofMethod("java.util.Collections", "emptyList", List.class)));
+
+        // method to register class for registration
+        MethodCreator addSerializationForClass = file.getMethodCreator("registerSerializationForClass", "V", Class.class);
+        addSerializationForClass.setModifiers(Modifier.PRIVATE | Modifier.STATIC);
+        ResultHandle clazz = addSerializationForClass.getMethodParam(0);
+
+        BranchResult graalVm21Test = addSerializationForClass.ifGreaterEqualZero(
+                addSerializationForClass.invokeVirtualMethod(VERSION_COMPARE_TO,
+                        addSerializationForClass.invokeStaticMethod(VERSION_CURRENT),
+                        addSerializationForClass.marshalAsArray(int.class, addSerializationForClass.load(21))));
+
+        TryBlock tc = graalVm21Test.trueBranch().tryBlock();
+
+        ResultHandle currentThread = tc
+                .invokeStaticMethod(ofMethod(Thread.class, "currentThread", Thread.class));
+        ResultHandle tccl = tc.invokeVirtualMethod(
+                ofMethod(Thread.class, "getContextClassLoader", ClassLoader.class),
+                currentThread);
+
+        BranchResult graalVm21_3Test = tc.ifGreaterEqualZero(
+                tc.invokeVirtualMethod(VERSION_COMPARE_TO, tc.invokeStaticMethod(VERSION_CURRENT),
+                        tc.marshalAsArray(int.class, tc.load(21), tc.load(3))));
+
+        BytecodeCreator greaterThan21_3 = graalVm21_3Test.trueBranch();
+        ResultHandle runtimeSerializationClass = greaterThan21_3.invokeStaticMethod(FOR_NAME,
+                greaterThan21_3.load("org.graalvm.nativeimage.hosted.RuntimeSerialization"),
+                greaterThan21_3.load(false), tccl);
+        ResultHandle registerArgTypes = greaterThan21_3.newArray(Class.class, greaterThan21_3.load(1));
+        greaterThan21_3.writeArrayValue(registerArgTypes, 0, greaterThan21_3.loadClass(Class[].class));
+        ResultHandle registerLookupMethod = greaterThan21_3.invokeStaticMethod(LOOKUP_METHOD, runtimeSerializationClass,
+                greaterThan21_3.load("register"), registerArgTypes);
+        ResultHandle registerArgs = greaterThan21_3.newArray(Object.class, greaterThan21_3.load(1));
+        ResultHandle classesToRegister = greaterThan21_3.newArray(Class.class, greaterThan21_3.load(1));
+        greaterThan21_3.writeArrayValue(classesToRegister, 0, clazz);
+        greaterThan21_3.writeArrayValue(registerArgs, 0, classesToRegister);
+        greaterThan21_3.invokeVirtualMethod(INVOKE, registerLookupMethod,
+                greaterThan21_3.loadNull(), registerArgs);
+        greaterThan21_3.returnValue(null);
+
+        ResultHandle serializationRegistryClass = tc.invokeStaticMethod(FOR_NAME,
+                tc.load("com.oracle.svm.core.jdk.serialize.SerializationRegistry"),
+                tc.load(false), tccl);
+        ResultHandle addReflectionsClass = tc.invokeStaticMethod(FOR_NAME,
+                tc.load("com.oracle.svm.reflect.serialize.hosted.SerializationFeature"),
+                tc.load(false), tccl);
+
+        ResultHandle serializationSupport = tc.invokeStaticMethod(
+                IMAGE_SINGLETONS_LOOKUP,
+                serializationRegistryClass);
+
+        ResultHandle addReflectionsLookupArgs = tc.newArray(Class.class, tc.load(2));
+        tc.writeArrayValue(addReflectionsLookupArgs, 0, tc.loadClass(Class.class));
+        tc.writeArrayValue(addReflectionsLookupArgs, 1, tc.loadClass(Class.class));
+        ResultHandle addReflectionsLookupMethod = tc.invokeStaticMethod(LOOKUP_METHOD, addReflectionsClass,
+                tc.load("addReflections"), addReflectionsLookupArgs);
+
+        ResultHandle reflectionFactory = tc.invokeStaticMethod(
+                ofMethod("sun.reflect.ReflectionFactory", "getReflectionFactory", "sun.reflect.ReflectionFactory"));
+
+        AssignableResultHandle newSerializationConstructor = tc.createVariable(Constructor.class);
+
+        ResultHandle externalizableClass = tc.invokeStaticMethod(FOR_NAME, tc.load("java.io.Externalizable"), tc.load(false),
+                tccl);
+
+        BranchResult isExternalizable = tc
+                .ifTrue(tc.invokeVirtualMethod(ofMethod(Class.class, "isAssignableFrom", boolean.class, Class.class),
+                        externalizableClass, clazz));
+        BytecodeCreator ifIsExternalizable = isExternalizable.trueBranch();
+
+        ResultHandle array1 = ifIsExternalizable.newArray(Class.class, tc.load(1));
+        ResultHandle classClass = ifIsExternalizable.invokeStaticMethod(FOR_NAME,
+                ifIsExternalizable.load("java.lang.Class"), ifIsExternalizable.load(false), tccl);
+        ifIsExternalizable.writeArrayValue(array1, 0, classClass);
+
+        ResultHandle externalizableLookupMethod = ifIsExternalizable.invokeStaticMethod(LOOKUP_METHOD,
+                ifIsExternalizable.loadClass(ObjectStreamClass.class), ifIsExternalizable.load("getExternalizableConstructor"),
+                array1);
+
+        ResultHandle array2 = ifIsExternalizable.newArray(Object.class, tc.load(1));
+        ifIsExternalizable.writeArrayValue(array2, 0, clazz);
+
+        ResultHandle externalizableConstructor = ifIsExternalizable.invokeVirtualMethod(
+                INVOKE, externalizableLookupMethod, ifIsExternalizable.loadNull(), array2);
+
+        ResultHandle externalizableConstructorClass = ifIsExternalizable.invokeVirtualMethod(
+                ofMethod(Constructor.class, "getDeclaringClass", Class.class),
+                externalizableConstructor);
+
+        ResultHandle addReflectionsArgs1 = ifIsExternalizable.newArray(Class.class, tc.load(2));
+        ifIsExternalizable.writeArrayValue(addReflectionsArgs1, 0, clazz);
+        ifIsExternalizable.writeArrayValue(addReflectionsArgs1, 1, externalizableConstructorClass);
+        ifIsExternalizable.invokeVirtualMethod(INVOKE, addReflectionsLookupMethod,
+                ifIsExternalizable.loadNull(), addReflectionsArgs1);
+
+        ifIsExternalizable.returnValue(null);
+
+        ResultHandle clazzModifiers = tc
+                .invokeVirtualMethod(ofMethod(Class.class, "getModifiers", int.class), clazz);
+        BranchResult isAbstract = tc.ifTrue(tc
+                .invokeStaticMethod(ofMethod(Modifier.class, "isAbstract", boolean.class, int.class), clazzModifiers));
+
+        BytecodeCreator ifIsAbstract = isAbstract.trueBranch();
+        BytecodeCreator ifNotAbstract = isAbstract.falseBranch();
+
+        //abstract classes uses SerializationSupport$StubForAbstractClass for constructor
+        ResultHandle stubConstructor = ifIsAbstract.invokeVirtualMethod(
+                ofMethod("sun.reflect.ReflectionFactory", "newConstructorForSerialization", Constructor.class,
+                        Class.class),
+                reflectionFactory,
+                tc
+                        .loadClass("com.oracle.svm.reflect.serialize.SerializationSupport$StubForAbstractClass"));
+        ifIsAbstract.assign(newSerializationConstructor, stubConstructor);
+
+        ResultHandle classConstructor = ifNotAbstract.invokeVirtualMethod(
+                ofMethod("sun.reflect.ReflectionFactory", "newConstructorForSerialization", Constructor.class,
+                        Class.class),
+                reflectionFactory, clazz);
+        ifNotAbstract.assign(newSerializationConstructor, classConstructor);
+
+        ResultHandle newSerializationConstructorClass = tc.invokeVirtualMethod(
+                ofMethod(Constructor.class, "getDeclaringClass", Class.class),
+                newSerializationConstructor);
+
+        ResultHandle getConstructorAccessor = tc.invokeStaticMethod(
+                LOOKUP_METHOD, tc.loadClass(Constructor.class), tc.load("getConstructorAccessor"),
+                tc.newArray(Class.class, tc.load(0)));
+
+        ResultHandle accessor = tc.invokeVirtualMethod(
+                INVOKE, getConstructorAccessor, newSerializationConstructor,
+                tc.newArray(Object.class, tc.load(0)));
+
+        tc.invokeVirtualMethod(
+                ofMethod("com.oracle.svm.reflect.serialize.SerializationSupport", "addConstructorAccessor",
+                        Object.class, Class.class, Class.class, Object.class),
+                serializationSupport, clazz, newSerializationConstructorClass, accessor);
+        ResultHandle addReflectionsArgs2 = tc.newArray(Class.class, tc.load(2));
+        tc.writeArrayValue(addReflectionsArgs2, 0, clazz);
+        tc.writeArrayValue(addReflectionsArgs2, 1, newSerializationConstructorClass);
+        tc.invokeVirtualMethod(INVOKE, addReflectionsLookupMethod, tc.loadNull(), addReflectionsArgs2);
+
+        addSerializationForClass.returnValue(null);
+
+        return addSerializationForClass.getMethodDescriptor();
+    }
+
     public void addReflectiveMethod(Map<String, ReflectionInfo> reflectiveClasses, ReflectiveMethodBuildItem methodInfo) {
         String cl = methodInfo.getDeclaringClass();
         ReflectionInfo existing = reflectiveClasses.get(cl);
         if (existing == null) {
-            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false, false));
+            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false, false, false));
         }
         if (methodInfo.getName().equals("<init>")) {
             existing.ctorSet.add(methodInfo);
@@ -474,13 +727,13 @@ public class NativeImageAutoFeatureStep {
 
     public void addReflectiveClass(Map<String, ReflectionInfo> reflectiveClasses, Set<String> forcedNonWeakClasses,
             boolean constructors, boolean method,
-            boolean fields, boolean finalFieldsWritable, boolean weak,
+            boolean fields, boolean finalFieldsWritable, boolean weak, boolean serialization,
             String... className) {
         for (String cl : className) {
             ReflectionInfo existing = reflectiveClasses.get(cl);
             if (existing == null) {
                 reflectiveClasses.put(cl, new ReflectionInfo(constructors, method, fields, finalFieldsWritable,
-                        !forcedNonWeakClasses.contains(cl) && weak));
+                        !forcedNonWeakClasses.contains(cl) && weak, serialization));
             } else {
                 if (constructors) {
                     existing.constructors = true;
@@ -491,6 +744,9 @@ public class NativeImageAutoFeatureStep {
                 if (fields) {
                     existing.fields = true;
                 }
+                if (serialization) {
+                    existing.serialization = true;
+                }
             }
         }
     }
@@ -499,7 +755,7 @@ public class NativeImageAutoFeatureStep {
         String cl = fieldInfo.getDeclaringClass();
         ReflectionInfo existing = reflectiveClasses.get(cl);
         if (existing == null) {
-            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false, false));
+            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false, false, false));
         }
         existing.fieldSet.add(fieldInfo.getName());
     }
@@ -510,17 +766,20 @@ public class NativeImageAutoFeatureStep {
         boolean fields;
         boolean finalFieldsWritable;
         boolean weak;
+        boolean serialization;
         Set<String> fieldSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> methodSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> ctorSet = new HashSet<>();
 
         private ReflectionInfo(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
-                boolean weak) {
+                boolean weak, boolean serialization) {
             this.methods = methods;
             this.fields = fields;
             this.constructors = constructors;
             this.finalFieldsWritable = finalFieldsWritable;
             this.weak = weak;
+            this.serialization = serialization;
         }
     }
+
 }

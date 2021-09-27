@@ -38,9 +38,9 @@ public @interface WithKubernetesTestServer {
      */
     Class<? extends Consumer<KubernetesServer>> setup() default NO_SETUP.class;
 
-    static class NO_SETUP implements Consumer<KubernetesServer> {
+    class NO_SETUP implements Consumer<KubernetesServer> {
         @Override
         public void accept(KubernetesServer t) {
         }
-    };
+    }
 }

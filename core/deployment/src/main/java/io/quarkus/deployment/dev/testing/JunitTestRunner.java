@@ -1,12 +1,10 @@
 package io.quarkus.deployment.dev.testing;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,7 +24,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -73,8 +70,10 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.dev.ClassScanResult;
 import io.quarkus.deployment.dev.DevModeContext;
+import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.dev.console.QuarkusConsole;
+import io.quarkus.dev.testing.TestWatchedFiles;
 import io.quarkus.dev.testing.TracingHandler;
 
 /**
@@ -84,6 +83,7 @@ public class JunitTestRunner {
 
     private static final Logger log = Logger.getLogger(JunitTestRunner.class);
     public static final DotName QUARKUS_TEST = DotName.createSimple("io.quarkus.test.junit.QuarkusTest");
+    public static final DotName QUARKUS_MAIN_TEST = DotName.createSimple("io.quarkus.test.junit.main.QuarkusMainTest");
     public static final DotName QUARKUS_INTEGRATION_TEST = DotName.createSimple("io.quarkus.test.junit.QuarkusIntegrationTest");
     public static final DotName NATIVE_IMAGE_TEST = DotName.createSimple("io.quarkus.test.junit.NativeImageTest");
     public static final DotName TEST_PROFILE = DotName.createSimple("io.quarkus.test.junit.TestProfile");
@@ -132,9 +132,18 @@ public class JunitTestRunner {
     public void runTests() {
         long start = System.currentTimeMillis();
         ClassLoader old = Thread.currentThread().getContextClassLoader();
+        LogCapturingOutputFilter logHandler = new LogCapturingOutputFilter(testApplication, true, true,
+                TestSupport.instance().get()::isDisplayTestOutput);
         try (QuarkusClassLoader tcl = testApplication.createDeploymentClassLoader()) {
+            synchronized (this) {
+                if (aborted) {
+                    return;
+                }
+                testsRunning = true;
+            }
             Thread.currentThread().setContextClassLoader(tcl);
-            Consumer currentTestAppConsumer = (Consumer) tcl.loadClass(CurrentTestApplication.class.getName()).newInstance();
+            Consumer currentTestAppConsumer = (Consumer) tcl.loadClass(CurrentTestApplication.class.getName())
+                    .getDeclaredConstructor().newInstance();
             currentTestAppConsumer.accept(testApplication);
 
             Set<UniqueId> allDiscoveredIds = new HashSet<>();
@@ -189,8 +198,7 @@ public class JunitTestRunner {
                     listener.runStarted(toRun);
                 }
                 log.debug("Starting test run with " + testPlan.countTestIdentifiers((s) -> true) + " tests");
-                TestLogCapturingHandler logHandler = new TestLogCapturingHandler();
-                QuarkusConsole.INSTANCE.setOutputFilter(logHandler);
+                QuarkusConsole.addOutputFilter(logHandler);
 
                 final Deque<Set<String>> touchedClasses = new LinkedBlockingDeque<>();
                 Map<TestIdentifier, Long> startTimes = new HashMap<>();
@@ -327,39 +335,31 @@ public class JunitTestRunner {
                                 for (TestRunListener listener : listeners) {
                                     listener.testComplete(result);
                                 }
+                            } else if (testExecutionResult.getStatus() == TestExecutionResult.Status.FAILED) {
+                                //if a parent fails we fail the children
+                                Set<TestIdentifier> children = testPlan.getChildren(testIdentifier);
+                                for (TestIdentifier child : children) {
+                                    UniqueId childId = UniqueId.parse(child.getUniqueId());
+                                    result = new TestResult(child.getDisplayName(), testClass.getName(),
+                                            childId,
+                                            testExecutionResult,
+                                            logHandler.captureOutput(), child.isTest(), runId,
+                                            System.currentTimeMillis() - startTimes.get(testIdentifier));
+                                    results.put(childId, result);
+                                    if (child.isTest()) {
+                                        for (TestRunListener listener : listeners) {
+                                            listener.testStarted(child, testClass.getName());
+                                            listener.testComplete(result);
+                                        }
+                                    }
+                                }
                             }
                         }
                         if (testExecutionResult.getStatus() == TestExecutionResult.Status.FAILED) {
                             Throwable throwable = testExecutionResult.getThrowable().get();
-                            if (testClass != null) {
-                                //first we cut all the platform stuff out of the stack trace
-                                Throwable cause = throwable;
-                                while (cause != null) {
-                                    StackTraceElement[] st = cause.getStackTrace();
-                                    for (int i = st.length - 1; i >= 0; --i) {
-                                        StackTraceElement elem = st[i];
-                                        if (elem.getClassName().equals(testClass.getName())) {
-                                            StackTraceElement[] newst = new StackTraceElement[i + 1];
-                                            System.arraycopy(st, 0, newst, 0, i + 1);
-                                            st = newst;
-                                            break;
-                                        }
-                                    }
-
-                                    //now cut out all the restassured internals
-                                    //TODO: this should be pluggable
-                                    for (int i = st.length - 1; i >= 0; --i) {
-                                        StackTraceElement elem = st[i];
-                                        if (elem.getClassName().startsWith("io.restassured")) {
-                                            StackTraceElement[] newst = new StackTraceElement[st.length - i];
-                                            System.arraycopy(st, i, newst, 0, st.length - i);
-                                            st = newst;
-                                            break;
-                                        }
-                                    }
-                                    cause.setStackTrace(st);
-                                    cause = cause.getCause();
-                                }
+                            trimStackTrace(testClass, throwable);
+                            for (var i : throwable.getSuppressed()) {
+                                trimStackTrace(testClass, i);
                             }
                         }
                     }
@@ -378,8 +378,13 @@ public class JunitTestRunner {
                     testState.classesRemoved(classScanResult.getDeletedClassNames());
                 }
 
-                QuarkusConsole.INSTANCE.setOutputFilter(null);
+                QuarkusConsole.INSTANCE.removeOutputFilter(logHandler);
 
+                //this has to happen before notifying the listeners
+                Map<String, Boolean> watched = TestWatchedFiles.retrieveWatchedFilePaths();
+                if (watched != null) {
+                    RuntimeUpdatesProcessor.INSTANCE.setWatchedFilePaths(watched, true);
+                }
                 for (TestRunListener listener : listeners) {
                     listener.runComplete(new TestRunResults(runId, classScanResult, classScanResult == null, start,
                             System.currentTimeMillis(), toResultsMap(testState.getCurrentResults())));
@@ -390,9 +395,51 @@ public class JunitTestRunner {
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
-            TracingHandler.setTracingHandler(null);
-            QuarkusConsole.INSTANCE.setOutputFilter(null);
-            Thread.currentThread().setContextClassLoader(old);
+            try {
+                TracingHandler.setTracingHandler(null);
+                QuarkusConsole.INSTANCE.removeOutputFilter(logHandler);
+                Thread.currentThread().setContextClassLoader(old);
+            } finally {
+                synchronized (this) {
+                    testsRunning = false;
+                    if (aborted) {
+                        notifyAll();
+                    }
+                }
+            }
+        }
+    }
+
+    private void trimStackTrace(Class<?> testClass, Throwable throwable) {
+        if (testClass != null) {
+            //first we cut all the platform stuff out of the stack trace
+            Throwable cause = throwable;
+            while (cause != null) {
+                StackTraceElement[] st = cause.getStackTrace();
+                for (int i = st.length - 1; i >= 0; --i) {
+                    StackTraceElement elem = st[i];
+                    if (elem.getClassName().equals(testClass.getName())) {
+                        StackTraceElement[] newst = new StackTraceElement[i + 1];
+                        System.arraycopy(st, 0, newst, 0, i + 1);
+                        st = newst;
+                        break;
+                    }
+                }
+
+                //now cut out all the restassured internals
+                //TODO: this should be pluggable
+                for (int i = st.length - 1; i >= 0; --i) {
+                    StackTraceElement elem = st[i];
+                    if (elem.getClassName().startsWith("io.restassured")) {
+                        StackTraceElement[] newst = new StackTraceElement[st.length - i];
+                        System.arraycopy(st, i, newst, 0, st.length - i);
+                        st = newst;
+                        break;
+                    }
+                }
+                cause.setStackTrace(st);
+                cause = cause.getCause();
+            }
         }
     }
 
@@ -406,6 +453,13 @@ public class JunitTestRunner {
         }
         aborted = true;
         notifyAll();
+        while (testsRunning) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                //ignore
+            }
+        }
     }
 
     public synchronized void pause() {
@@ -492,12 +546,14 @@ public class JunitTestRunner {
             }
         }
         Set<String> quarkusTestClasses = new HashSet<>();
-        for (AnnotationInstance i : index.getAnnotations(QUARKUS_TEST)) {
-            DotName name = i.target().asClass().name();
-            quarkusTestClasses.add(name.toString());
-            for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
-                if (!integrationTestClasses.contains(clazz.name().toString())) {
-                    quarkusTestClasses.add(clazz.name().toString());
+        for (var a : Arrays.asList(QUARKUS_TEST, QUARKUS_MAIN_TEST)) {
+            for (AnnotationInstance i : index.getAnnotations(a)) {
+                DotName name = i.target().asClass().name();
+                quarkusTestClasses.add(name.toString());
+                for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
+                    if (!integrationTestClasses.contains(clazz.name().toString())) {
+                        quarkusTestClasses.add(clazz.name().toString());
+                    }
                 }
             }
         }
@@ -626,48 +682,6 @@ public class JunitTestRunner {
         return testsRunning;
     }
 
-    private class TestLogCapturingHandler implements Predicate<String> {
-
-        private final List<String> logOutput;
-
-        public TestLogCapturingHandler() {
-            this.logOutput = new ArrayList<>();
-        }
-
-        public List<String> captureOutput() {
-            List<String> ret = new ArrayList<>(logOutput);
-            logOutput.clear();
-            return ret;
-        }
-
-        @Override
-        public boolean test(String logRecord) {
-            Thread thread = Thread.currentThread();
-            ClassLoader cl = thread.getContextClassLoader();
-            while (cl.getParent() != null) {
-                if (cl == testApplication.getAugmentClassLoader()
-                        || cl == testApplication.getBaseRuntimeClassLoader()) {
-                    //TODO: for convenience we save the log records as HTML rather than ANSI here
-                    synchronized (logOutput) {
-                        ByteArrayOutputStream out = new ByteArrayOutputStream();
-                        HtmlAnsiOutputStream outputStream = new HtmlAnsiOutputStream(out) {
-                        };
-                        try {
-                            outputStream.write(logRecord.getBytes(StandardCharsets.UTF_8));
-                            logOutput.add(new String(out.toByteArray(), StandardCharsets.UTF_8));
-                        } catch (IOException e) {
-                            log.error("Failed to capture log record", e);
-                            logOutput.add(logRecord);
-                        }
-                    }
-                    return TestSupport.instance().get().isDisplayTestOutput();
-                }
-                cl = cl.getParent();
-            }
-            return true;
-        }
-    }
-
     static class Builder {
         private TestType testType = TestType.ALL;
         private TestState testState;
@@ -794,22 +808,37 @@ public class JunitTestRunner {
         }
 
         public FilterResult filterTags(AnnotatedElement clz) {
-            Tag tag = clz.getAnnotation(Tag.class);
-            Tags tagsAnn = clz.getAnnotation(Tags.class);
-            List<Tag> all = null;
-            if (tag != null) {
-                all = Collections.singletonList(tag);
-            } else if (tagsAnn != null) {
-                all = Arrays.asList(tagsAnn.value());
-            } else {
+            List<Tag> all = new ArrayList<>();
+            gatherTags(clz, all);
+            if (all.isEmpty())
                 return null;
-            }
             for (Tag i : all) {
                 if (tags.contains(i.value())) {
                     return FilterResult.includedIf(!exclude);
                 }
             }
             return FilterResult.includedIf(exclude);
+        }
+
+        private void gatherTags(AnnotatedElement clz, List<Tag> all) {
+            Tag tag = clz.getAnnotation(Tag.class);
+            Tags tagsAnn = clz.getAnnotation(Tags.class);
+            if (tag != null) {
+                all.add(tag);
+            } else if (tagsAnn != null) {
+                all.addAll(List.of(tagsAnn.value()));
+            }
+            if (clz instanceof Class) {
+                if (((Class<?>) clz).isAnnotation()) {
+                    //only scan meta annotations one level deep
+                    return;
+                }
+            }
+
+            //meta annotations can also provide tags
+            for (var a : clz.getAnnotations()) {
+                gatherTags(a.annotationType(), all);
+            }
         }
     }
 

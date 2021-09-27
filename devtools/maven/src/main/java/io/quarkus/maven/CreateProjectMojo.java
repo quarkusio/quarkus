@@ -8,17 +8,20 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -47,7 +50,8 @@ import io.quarkus.platform.tools.maven.MojoMessageWriter;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.catalog.PlatformCatalog;
+import io.quarkus.registry.config.RegistriesConfigLocator;
+import io.quarkus.registry.config.RegistryConfig;
 
 /**
  * This goal helps in setting up Quarkus Maven project with quarkus-maven-plugin, with sensible defaults
@@ -163,9 +167,6 @@ public class CreateProjectMojo extends AbstractMojo {
     private RepositorySystemSession repoSession;
 
     @Component
-    private Prompter prompter;
-
-    @Component
     private MavenVersionEnforcer mavenVersionEnforcer;
 
     @Component
@@ -199,7 +200,8 @@ public class CreateProjectMojo extends AbstractMojo {
         try {
             mvn = MavenArtifactResolver.builder()
                     .setRepositorySystem(repoSystem)
-                    .setRepositorySystemSession(repoSession)
+                    .setRepositorySystemSession(
+                            getLog().isDebugEnabled() ? repoSession : MojoUtils.muteTransferListener(repoSession))
                     .setRemoteRepositories(repos)
                     .setRemoteRepositoryManager(remoteRepoManager)
                     .build();
@@ -207,15 +209,18 @@ public class CreateProjectMojo extends AbstractMojo {
             throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
         }
         final MojoMessageWriter log = new MojoMessageWriter(getLog());
-        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
-                ? QuarkusProjectHelper.getCatalogResolver(mvn, log)
-                : ExtensionCatalogResolver.empty();
+        ExtensionCatalogResolver catalogResolver;
+        try {
+            catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
+                    ? QuarkusProjectHelper.getCatalogResolver(mvn, log)
+                    : ExtensionCatalogResolver.empty();
+        } catch (RegistryResolutionException e) {
+            // fall back to the default platform
+            catalogResolver = ExtensionCatalogResolver.empty();
+        }
 
-        final ExtensionCatalog catalog = resolveExtensionsCatalog(
-                StringUtils.defaultIfBlank(bomGroupId, null),
-                StringUtils.defaultIfBlank(bomArtifactId, null),
-                StringUtils.defaultIfBlank(bomVersion, null),
-                catalogResolver, mvn, log);
+        final ExtensionCatalog catalog = resolveExtensionsCatalog(this, bomGroupId, bomArtifactId, bomVersion, catalogResolver,
+                mvn, log);
 
         File projectRoot = outputDirectory;
         File pom = project != null ? project.getFile() : null;
@@ -246,7 +251,7 @@ public class CreateProjectMojo extends AbstractMojo {
                 }
             } else if (containsAtLeastOneGradleFile) {
                 throw new MojoExecutionException(
-                        "You are trying to create maven project in a directory that contains only gradle build files.");
+                        "You are trying to create a Maven project in a directory that contains only Gradle build files.");
             }
         } else if (BuildTool.GRADLE.equals(buildToolEnum) || BuildTool.GRADLE_KOTLIN_DSL.equals(buildToolEnum)) {
             if (containsAtLeastOneGradleFile) {
@@ -319,34 +324,63 @@ public class CreateProjectMojo extends AbstractMojo {
         }
     }
 
-    static ExtensionCatalog resolveExtensionsCatalog(String groupId, String artifactId, String version,
+    static ExtensionCatalog resolveExtensionsCatalog(AbstractMojo mojo, String groupId, String artifactId, String version,
             ExtensionCatalogResolver catalogResolver, MavenArtifactResolver artifactResolver, MessageWriter log)
             throws MojoExecutionException {
 
         if (!catalogResolver.hasRegistries()) {
-            // TODO: this should normally result in an error, however for the time being
-            // until we get the registry service up and running this will allow
-            // a fall back to the legacy way of resolving the default platform catalog directly
-            return ToolsUtils.resolvePlatformDescriptorDirectly(groupId, artifactId,
-                    version == null ? CreateUtils.resolvePluginInfo(CreateUtils.class).getVersion() : version, artifactResolver,
-                    log);
+            groupId = getPlatformGroupId(mojo, groupId);
+            artifactId = getPlatformArtifactId(artifactId);
+            version = getPlatformVersion(mojo, version);
+            final StringBuilder buf = new StringBuilder();
+            buf.append("The extension catalog will be narrowed to the ").append(groupId).append(":").append(artifactId)
+                    .append(":").append(version).append(" platform release.");
+            buf.append(
+                    " To enable the complete Quarkiverse extension catalog along with the latest recommended platform releases, please, make sure ");
+            if (QuarkusProjectHelper.isRegistryClientEnabled()) {
+                buf.append("the following registries are accessible from your environment: ");
+                final Iterator<RegistryConfig> iterator = RegistriesConfigLocator.resolveConfig().getRegistries().iterator();
+                int i = 0;
+                while (iterator.hasNext()) {
+                    final RegistryConfig r = iterator.next();
+                    if (r.isEnabled()) {
+                        if (i++ > 0) {
+                            buf.append(", ");
+                        }
+                        buf.append(r.getId());
+                    }
+                }
+
+            } else {
+                buf.append("the extension registry client is enabled.");
+            }
+            log.warn(buf.toString());
+            return ToolsUtils.resolvePlatformDescriptorDirectly(groupId, artifactId, version, artifactResolver, log);
         }
 
+        final ExtensionCatalog catalog;
         try {
-            if (groupId == null && artifactId == null && version == null) {
-                return catalogResolver.resolveExtensionCatalog();
-            }
-            final PlatformCatalog platformsCatalog = catalogResolver.resolvePlatformCatalog();
-            if (platformsCatalog == null) {
-                throw new MojoExecutionException(
-                        "No platforms are available. Please make sure your .quarkus/config.yaml configuration includes proper extensions registry configuration");
-            }
-            final ArtifactCoords matchedBom = QuarkusProjectMojoBase.getSingleMatchingBom(groupId, artifactId, version,
-                    platformsCatalog);
-            return catalogResolver.resolveExtensionCatalog(Arrays.asList(matchedBom));
+            catalog = isBlank(groupId) && isBlank(artifactId) && isBlank(version)
+                    ? catalogResolver.resolveExtensionCatalog()
+                    : catalogResolver.resolveExtensionCatalog(Collections.singletonList(
+                            new ArtifactCoords(getPlatformGroupId(mojo, groupId), getPlatformArtifactId(artifactId), "pom",
+                                    getPlatformVersion(mojo, version))));
         } catch (RegistryResolutionException e) {
-            throw new MojoExecutionException("Failed to resolve the extensions catalog", e);
+            throw new MojoExecutionException("Failed to resolve the extension catalog", e);
         }
+
+        if (catalog == null) {
+            final StringBuilder buf = new StringBuilder();
+            buf.append(
+                    "The Quarkus registry client failed to resolve the extension catalog. Please make sure the following registries are accessible from your environment: ");
+            final Iterator<RegistryConfig> r = catalogResolver.getConfig().getRegistries().iterator();
+            buf.append(r.next().getId());
+            while (r.hasNext()) {
+                buf.append(", ").append(r.next().getId());
+            }
+            throw new MojoExecutionException(buf.toString());
+        }
+        return catalog;
     }
 
     private void askTheUserForMissingValues() throws MojoExecutionException {
@@ -354,47 +388,44 @@ public class CreateProjectMojo extends AbstractMojo {
         // If the user has disabled the interactive mode or if the user has specified the artifactId, disable the
         // user interactions.
         if (!session.getRequest().isInteractiveMode() || shouldUseDefaults()) {
-            if (StringUtils.isBlank(projectArtifactId)) {
+            if (isBlank(projectArtifactId)) {
                 // we need to set it for the project directory
                 projectArtifactId = DEFAULT_ARTIFACT_ID;
             }
-            if (StringUtils.isBlank(projectGroupId)) {
+            if (isBlank(projectGroupId)) {
                 projectGroupId = DEFAULT_GROUP_ID;
             }
-            if (StringUtils.isBlank(projectVersion)) {
+            if (isBlank(projectVersion)) {
                 projectVersion = DEFAULT_VERSION;
             }
             return;
         }
 
         try {
-            if (StringUtils.isBlank(projectGroupId)) {
-                projectGroupId = prompter.promptWithDefaultValue("Set the project groupId",
-                        DEFAULT_GROUP_ID);
+            final Prompter prompter = new Prompter();
+            if (isBlank(projectGroupId)) {
+                prompter.addPrompt("Set the project groupId: ", DEFAULT_GROUP_ID, input -> projectGroupId = input);
             }
 
-            if (StringUtils.isBlank(projectArtifactId)) {
-                projectArtifactId = prompter.promptWithDefaultValue("Set the project artifactId",
-                        DEFAULT_ARTIFACT_ID);
+            if (isBlank(projectArtifactId)) {
+                prompter.addPrompt("Set the project artifactId: ", DEFAULT_ARTIFACT_ID, input -> projectArtifactId = input);
             }
 
-            if (StringUtils.isBlank(projectVersion)) {
-                projectVersion = prompter.promptWithDefaultValue("Set the project version",
-                        DEFAULT_VERSION);
+            if (isBlank(projectVersion)) {
+                prompter.addPrompt("Set the project version: ", DEFAULT_VERSION, input -> projectVersion = input);
             }
 
-            if (!noCode && StringUtils.isBlank(example)) {
+            if (!noCode && isBlank(example)) {
                 if (extensions.isEmpty()) {
-                    extensions = Arrays
-                            .stream(prompter
-                                    .promptWithDefaultValue("What extensions do you wish to add (comma separated list)",
-                                            DEFAULT_EXTENSIONS)
-                                    .split(","))
-                            .map(String::trim).filter(StringUtils::isNotEmpty).collect(Collectors.toSet());
+                    prompter.addPrompt("What extensions do you wish to add (comma separated list): ", DEFAULT_EXTENSIONS,
+                            input -> extensions = Arrays
+                                    .stream(input.split(","))
+                                    .map(String::trim).filter(Predicate.not(String::isEmpty)).collect(Collectors.toSet()));
                 }
-                String answer = prompter.promptWithDefaultValue(
-                        "Would you like some code to start (yes), or just an empty Quarkus project (no)", "yes");
-                noCode = answer.startsWith("n");
+                prompter.addPrompt("Would you like some code to start (yes), or just an empty Quarkus project (no): ", "yes",
+                        input -> noCode = input.startsWith("n"));
+
+                prompter.collectInput();
             }
         } catch (IOException e) {
             throw new MojoExecutionException("Unable to get user input", e);
@@ -412,7 +443,7 @@ public class CreateProjectMojo extends AbstractMojo {
             className = sourceType.stripExtensionFrom(className);
 
             int idx = className.lastIndexOf('.');
-            if (idx >= 0 && StringUtils.isBlank(packageName)) {
+            if (idx >= 0 && isBlank(packageName)) {
                 // if it's a full qualified class name, we use the package name part (only if the packageName wasn't already defined)
                 packageName = className.substring(0, idx);
 
@@ -420,7 +451,7 @@ public class CreateProjectMojo extends AbstractMojo {
                 className = className.substring(idx + 1);
             }
 
-            if (StringUtils.isBlank(path)) {
+            if (isBlank(path)) {
                 path = "/hello";
             } else if (!path.startsWith("/")) {
                 path = "/" + path;
@@ -445,5 +476,33 @@ public class CreateProjectMojo extends AbstractMojo {
                         .reset().toString());
         getLog().info("========================================================================================");
         getLog().info("");
+    }
+
+    public static String getPlatformVersion(AbstractMojo mojo, String version) {
+        return isBlank(version) ? getPluginVersion(mojo) : version;
+    }
+
+    public static String getPlatformArtifactId(String artifactId) {
+        return isBlank(artifactId) ? "quarkus-bom" : artifactId;
+    }
+
+    public static String getPlatformGroupId(AbstractMojo mojo, String groupId) {
+        return isBlank(groupId) ? getPluginGroupId(mojo) : groupId;
+    }
+
+    private static String getPluginGroupId(AbstractMojo mojo) {
+        return getPluginDescriptor(mojo).getGroupId();
+    }
+
+    private static String getPluginVersion(AbstractMojo mojo) {
+        return getPluginDescriptor(mojo).getVersion();
+    }
+
+    private static PluginDescriptor getPluginDescriptor(AbstractMojo mojo) {
+        return (PluginDescriptor) mojo.getPluginContext().get("pluginDescriptor");
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
     }
 }

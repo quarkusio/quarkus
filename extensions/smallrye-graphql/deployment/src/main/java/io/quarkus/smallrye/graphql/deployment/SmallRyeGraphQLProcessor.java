@@ -1,9 +1,11 @@
 package io.quarkus.smallrye.graphql.deployment;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +15,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -38,6 +40,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -48,7 +51,6 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRecorder;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRuntimeConfig;
 import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
@@ -57,7 +59,7 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.smallrye.graphql.cdi.config.ConfigKey;
-import io.smallrye.graphql.cdi.config.GraphQLConfig;
+import io.smallrye.graphql.cdi.config.MicroProfileConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
 import io.smallrye.graphql.cdi.producer.SmallRyeContextAccessorProxy;
 import io.smallrye.graphql.schema.Annotations;
@@ -98,6 +100,8 @@ public class SmallRyeGraphQLProcessor {
     private static final String LINE_FORMAT = LINE_TO_UPDATE + "%s';";
     private static final String UI_LINE_TO_UPDATE = "const ui = '";
     private static final String UI_LINE_FORMAT = UI_LINE_TO_UPDATE + "%s';";
+    private static final String LOGO_LINE_TO_UPDATE = "const logo = '";
+    private static final String LOGO_LINE_FORMAT = LOGO_LINE_TO_UPDATE + "%s';";
 
     // Branding files to monitor for changes
     private static final String BRANDING_DIR = "META-INF/branding/";
@@ -133,7 +137,6 @@ public class SmallRyeGraphQLProcessor {
     @BuildStep
     void additionalBean(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
         additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(GraphQLConfig.class)
                 .addBeanClass(GraphQLProducer.class)
                 .addBeanClass(SmallRyeContextAccessorProxy.class)
                 .setUnremovable().build());
@@ -151,6 +154,29 @@ public class SmallRyeGraphQLProcessor {
 
         // Eventing Service (We use the one from the CDI Module)
         serviceProvider.produce(ServiceProviderBuildItem.allProvidersFromClassPath(EventingService.class.getName()));
+
+        // Use MicroProfile Config (We use the one from the CDI Module)
+        serviceProvider.produce(ServiceProviderBuildItem.allProvidersFromClassPath(MicroProfileConfig.class.getName()));
+
+        // Config mapping between SmallRye / MP and Quarkus
+        serviceProvider
+                .produce(ServiceProviderBuildItem.allProvidersFromClassPath(SmallRyeGraphQLConfigMapping.class.getName()));
+    }
+
+    @BuildStep
+    SmallRyeGraphQLIndexBuildItem createIndex(TransformedClassesBuildItem transformedClassesBuildItem) {
+        Map<String, byte[]> modifiedClasses = new HashMap<>();
+        Map<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJar = transformedClassesBuildItem
+                .getTransformedClassesByJar();
+        for (Map.Entry<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJarEntrySet : transformedClassesByJar
+                .entrySet()) {
+
+            Set<TransformedClassesBuildItem.TransformedClass> transformedClasses = transformedClassesByJarEntrySet.getValue();
+            for (TransformedClassesBuildItem.TransformedClass transformedClass : transformedClasses) {
+                modifiedClasses.put(transformedClass.getClassName(), transformedClass.getData());
+            }
+        }
+        return new SmallRyeGraphQLIndexBuildItem(modifiedClasses);
     }
 
     @Record(ExecutionTime.STATIC_INIT)
@@ -160,13 +186,25 @@ public class SmallRyeGraphQLProcessor {
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyProducer,
             BuildProducer<SmallRyeGraphQLInitializedBuildItem> graphQLInitializedProducer,
             SmallRyeGraphQLRecorder recorder,
+            SmallRyeGraphQLIndexBuildItem graphQLIndexBuildItem,
             BeanContainerBuildItem beanContainer,
             CombinedIndexBuildItem combinedIndex,
             SmallRyeGraphQLConfig graphQLConfig) {
 
-        IndexView index = combinedIndex.getIndex();
+        Indexer indexer = new Indexer();
+        Map<String, byte[]> modifiedClases = graphQLIndexBuildItem.getModifiedClases();
 
-        Schema schema = SchemaBuilder.build(index, graphQLConfig.autoNameStrategy);
+        for (Map.Entry<String, byte[]> kv : modifiedClases.entrySet()) {
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(kv.getValue())) {
+                indexer.index(bais);
+            } catch (IOException ex) {
+                LOG.warn("Could not index [" + kv.getKey() + "] - " + ex.getMessage());
+            }
+        }
+
+        OverridableIndex overridableIndex = OverridableIndex.create(combinedIndex.getIndex(), indexer.complete());
+
+        Schema schema = SchemaBuilder.build(overridableIndex, graphQLConfig.autoNameStrategy);
 
         RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema);
         graphQLInitializedProducer.produce(new SmallRyeGraphQLInitializedBuildItem(initialized));
@@ -187,7 +225,8 @@ public class SmallRyeGraphQLProcessor {
             SmallRyeGraphQLRecorder recorder,
             SmallRyeGraphQLConfig graphQLConfig) {
 
-        Handler<RoutingContext> schemaHandler = recorder.schemaHandler(graphQLInitializedBuildItem.getInitialized());
+        Handler<RoutingContext> schemaHandler = recorder.schemaHandler(graphQLInitializedBuildItem.getInitialized(),
+                graphQLConfig.schemaAvailable);
 
         routeProducer.produce(httpRootPathBuildItem.routeBuilder()
                 .nestedRoute(graphQLConfig.rootPath, SCHEMA_PATH)
@@ -235,9 +274,8 @@ public class SmallRyeGraphQLProcessor {
                 .build());
 
         // Queries and Mutations
-        boolean allowGet = getBooleanConfigValue(graphQLConfig.httpGetEnabled, ConfigKey.ALLOW_GET, false);
-        boolean allowQueryParametersOnPost = getBooleanConfigValue(graphQLConfig.httpPostQueryParametersEnabled,
-                ConfigKey.ALLOW_POST_WITH_QUERY_PARAMETERS, false);
+        boolean allowGet = getBooleanConfigValue(ConfigKey.ALLOW_GET, false);
+        boolean allowQueryParametersOnPost = getBooleanConfigValue(ConfigKey.ALLOW_POST_WITH_QUERY_PARAMETERS, false);
         Handler<RoutingContext> executionHandler = recorder.executionHandler(graphQLInitializedBuildItem.getInitialized(),
                 allowGet, allowQueryParametersOnPost);
         routeProducer.produce(httpRootPathBuildItem.routeBuilder()
@@ -250,9 +288,8 @@ public class SmallRyeGraphQLProcessor {
 
     }
 
-    private boolean getBooleanConfigValue(Optional<Boolean> quarkusConfig, String smallryeKey, boolean defaultValue) {
-        return quarkusConfig
-                .orElse(ConfigProvider.getConfig().getOptionalValue(smallryeKey, boolean.class).orElse(defaultValue));
+    private boolean getBooleanConfigValue(String smallryeKey, boolean defaultValue) {
+        return ConfigProvider.getConfig().getOptionalValue(smallryeKey, boolean.class).orElse(defaultValue);
     }
 
     private String[] getSchemaJavaClasses(Schema schema) {
@@ -362,32 +399,20 @@ public class SmallRyeGraphQLProcessor {
         return classes;
     }
 
-    // Other Config Mappings
-
     @BuildStep
-    void configMapping(SmallRyeGraphQLConfig graphQLConfig,
+    void printDataFetcherExceptionInDevMode(SmallRyeGraphQLConfig graphQLConfig,
+            LaunchModeBuildItem launchMode,
             BuildProducer<SystemPropertyBuildItem> systemProperties) {
 
-        if (graphQLConfig.errorExtensionFields.isPresent()) {
-            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ERROR_EXTENSION_FIELDS,
-                    graphQLConfig.errorExtensionFields.get().stream().collect(Collectors.joining(", "))));
+        // User did not set this explisitly 
+        if (!graphQLConfig.printDataFetcherException.isPresent()) {
+            if (launchMode.getLaunchMode().isDevOrTest()) {
+                systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.PRINT_DATAFETCHER_EXCEPTION, TRUE));
+            }
+        } else {
+            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.PRINT_DATAFETCHER_EXCEPTION,
+                    String.valueOf(graphQLConfig.printDataFetcherException.get())));
         }
-
-        if (graphQLConfig.showRuntimeExceptionMessage.isPresent()) {
-            systemProperties.produce(new SystemPropertyBuildItem("mp.graphql.showErrorMessage",
-                    graphQLConfig.showRuntimeExceptionMessage.get().stream().collect(Collectors.joining(", "))));
-        }
-
-        if (graphQLConfig.hideCheckedExceptionMessage.isPresent()) {
-            systemProperties.produce(new SystemPropertyBuildItem("mp.graphql.hideErrorMessage",
-                    graphQLConfig.hideCheckedExceptionMessage.get().stream().collect(Collectors.joining(", "))));
-        }
-
-        if (graphQLConfig.defaultErrorMessage.isPresent()) {
-            systemProperties.produce(
-                    new SystemPropertyBuildItem(ConfigKey.DEFAULT_ERROR_MESSAGE, graphQLConfig.defaultErrorMessage.get()));
-        }
-
     }
 
     // Services Integrations
@@ -396,20 +421,15 @@ public class SmallRyeGraphQLProcessor {
     void activateMetrics(Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
             SmallRyeGraphQLConfig graphQLConfig,
-            BuildProducer<SystemPropertyBuildItem> systemProperties,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+            BuildProducer<SystemPropertyBuildItem> systemProperties) {
 
-        boolean activate = shouldActivateService(capabilities,
-                graphQLConfig.metricsEnabled,
+        boolean activate = shouldActivateService(graphQLConfig.metricsEnabled,
                 metricsCapability.isPresent(),
                 "quarkus-smallrye-metrics",
                 "metrics",
                 "quarkus.smallrye-graphql.metrics.enabled",
                 false);
         if (activate) {
-            if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
-                unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames("io.smallrye.metrics.MetricRegistries"));
-            }
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_METRICS, TRUE));
         } else {
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_METRICS, FALSE));
@@ -419,10 +439,11 @@ public class SmallRyeGraphQLProcessor {
     @BuildStep
     void activateTracing(Capabilities capabilities,
             SmallRyeGraphQLConfig graphQLConfig,
-            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+            BuildProducer<SystemPropertyBuildItem> systemProperties,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
 
-        boolean activate = shouldActivateService(capabilities,
-                graphQLConfig.tracingEnabled,
+        boolean activate = shouldActivateService(graphQLConfig.tracingEnabled,
+                capabilities.isPresent(Capability.OPENTRACING),
                 "quarkus-smallrye-opentracing",
                 Capability.OPENTRACING,
                 "quarkus.smallrye-graphql.tracing.enabled",
@@ -439,8 +460,8 @@ public class SmallRyeGraphQLProcessor {
             SmallRyeGraphQLConfig graphQLConfig,
             BuildProducer<SystemPropertyBuildItem> systemProperties) {
 
-        boolean activate = shouldActivateService(capabilities,
-                graphQLConfig.validationEnabled,
+        boolean activate = shouldActivateService(graphQLConfig.validationEnabled,
+                capabilities.isPresent(Capability.HIBERNATE_VALIDATOR),
                 "quarkus-hibernate-validator",
                 Capability.HIBERNATE_VALIDATOR,
                 "quarkus.smallrye-graphql.validation.enabled",
@@ -461,19 +482,7 @@ public class SmallRyeGraphQLProcessor {
         }
     }
 
-    private boolean shouldActivateService(Capabilities capabilities,
-            Optional<Boolean> serviceEnabled,
-            String linkedExtensionName,
-            String linkedCapability,
-            String configKey,
-            boolean activateByDefaultIfCapabilityIsPresent) {
-
-        return shouldActivateService(capabilities, serviceEnabled, capabilities.isPresent(linkedCapability),
-                linkedExtensionName, linkedCapability, configKey, activateByDefaultIfCapabilityIsPresent);
-    }
-
-    private boolean shouldActivateService(Capabilities capabilities,
-            Optional<Boolean> serviceEnabled,
+    private boolean shouldActivateService(Optional<Boolean> serviceEnabled,
             boolean linkedCapabilityIsPresent,
             String linkedExtensionName,
             String linkedCapabilityName,
@@ -528,6 +537,8 @@ public class SmallRyeGraphQLProcessor {
                 WebJarUtil.updateUrl(tempPath.resolve(FILE_TO_UPDATE), graphQLPath, LINE_TO_UPDATE, LINE_FORMAT);
                 WebJarUtil.updateUrl(tempPath.resolve(FILE_TO_UPDATE), graphQLUiPath,
                         UI_LINE_TO_UPDATE, UI_LINE_FORMAT);
+                WebJarUtil.updateUrl(tempPath.resolve(FILE_TO_UPDATE), nonApplicationRootPathBuildItem.resolvePath("dev"),
+                        LOGO_LINE_TO_UPDATE, LOGO_LINE_FORMAT);
 
                 smallRyeGraphQLBuildProducer
                         .produce(new SmallRyeGraphQLBuildItem(tempPath.toAbsolutePath().toString(), graphQLUiPath));
@@ -554,6 +565,11 @@ public class SmallRyeGraphQLProcessor {
                                 .updateUrl(new String(content, StandardCharsets.UTF_8), graphQLUiPath,
                                         UI_LINE_TO_UPDATE,
                                         UI_LINE_FORMAT)
+                                .getBytes(StandardCharsets.UTF_8);
+                        content = WebJarUtil
+                                .updateUrl(new String(content, StandardCharsets.UTF_8), graphQLUiPath,
+                                        LOGO_LINE_TO_UPDATE,
+                                        LOGO_LINE_FORMAT)
                                 .getBytes(StandardCharsets.UTF_8);
                     }
                     fileName = GRAPHQL_UI_FINAL_DESTINATION + "/" + fileName;

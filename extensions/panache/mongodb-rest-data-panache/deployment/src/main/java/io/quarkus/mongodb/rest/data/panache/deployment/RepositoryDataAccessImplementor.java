@@ -31,6 +31,16 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     }
 
     @Override
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page) {
+        ResultHandle query = creator.invokeInterfaceMethod(
+                ofMethod(PanacheMongoRepositoryBase.class, "findAll", PanacheQuery.class),
+                getRepositoryInstance(creator));
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query,
+                page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), query);
+    }
+
+    @Override
     public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort) {
         ResultHandle query = creator.invokeInterfaceMethod(
                 ofMethod(PanacheMongoRepositoryBase.class, "findAll", PanacheQuery.class, Sort.class),

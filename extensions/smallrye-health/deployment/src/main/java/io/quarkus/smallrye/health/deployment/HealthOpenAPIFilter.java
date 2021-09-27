@@ -32,15 +32,19 @@ import io.smallrye.openapi.api.models.responses.APIResponsesImpl;
  */
 public class HealthOpenAPIFilter implements OASFilter {
     private static final List<String> MICROPROFILE_HEALTH_TAG = Collections.singletonList("MicroProfile Health");
+    private static final String SCHEMA_HEALTH_RESPONSE = "HealthCheckResponse";
+    private static final String SCHEMA_HEALTH_STATUS = "HealthCheckStatus";
 
     private final String rootPath;
     private final String livenessPath;
     private final String readinessPath;
+    private final String startupPath;
 
-    public HealthOpenAPIFilter(String rootPath, String livenessPath, String readinessPath) {
+    public HealthOpenAPIFilter(String rootPath, String livenessPath, String readinessPath, String startupPath) {
         this.rootPath = rootPath;
         this.livenessPath = livenessPath;
         this.readinessPath = readinessPath;
+        this.startupPath = startupPath;
     }
 
     @Override
@@ -48,8 +52,8 @@ public class HealthOpenAPIFilter implements OASFilter {
         if (openAPI.getComponents() == null) {
             openAPI.setComponents(new ComponentsImpl());
         }
-        openAPI.getComponents().addSchema("HealthCheckResponse", createHealthCheckResponse());
-        openAPI.getComponents().addSchema("State", createState());
+        openAPI.getComponents().addSchema(SCHEMA_HEALTH_RESPONSE, createHealthCheckResponse());
+        openAPI.getComponents().addSchema(SCHEMA_HEALTH_STATUS, createHealthCheckStatus());
 
         if (openAPI.getPaths() == null) {
             openAPI.setPaths(new PathsImpl());
@@ -64,6 +68,9 @@ public class HealthOpenAPIFilter implements OASFilter {
 
         // Readiness
         paths.addPathItem(readinessPath, createReadinessPathItem());
+
+        // Startup
+        paths.addPathItem(startupPath, createStartupPathItem());
     }
 
     private PathItem createHealthPathItem() {
@@ -93,12 +100,21 @@ public class HealthOpenAPIFilter implements OASFilter {
         return pathItem;
     }
 
+    private PathItem createStartupPathItem() {
+        PathItem pathItem = new PathItemImpl();
+        pathItem.setDescription("MicroProfile Health - Startup Endpoint");
+        pathItem.setSummary(
+                "Startup checks are an used to tell when the application has started");
+        pathItem.setGET(createStartupOperation());
+        return pathItem;
+    }
+
     private Operation createHealthOperation() {
         Operation operation = new OperationImpl();
         operation.setDescription("Check the health of the application");
         operation.setOperationId("microprofile_health_root");
         operation.setTags(MICROPROFILE_HEALTH_TAG);
-        operation.setSummary("An aggregated view of the Liveness and Readiness of this application");
+        operation.setSummary("An aggregated view of the Liveness, Readiness and Startup of this application");
         operation.setResponses(createAPIResponses());
         return operation;
     }
@@ -119,6 +135,16 @@ public class HealthOpenAPIFilter implements OASFilter {
         operation.setOperationId("microprofile_health_readiness");
         operation.setTags(MICROPROFILE_HEALTH_TAG);
         operation.setSummary("The Readiness check of this application");
+        operation.setResponses(createAPIResponses());
+        return operation;
+    }
+
+    private Operation createStartupOperation() {
+        Operation operation = new OperationImpl();
+        operation.setDescription("Check the startup of the application");
+        operation.setOperationId("microprofile_health_startup");
+        operation.setTags(MICROPROFILE_HEALTH_TAG);
+        operation.setSummary("The Startup check of this application");
         operation.setResponses(createAPIResponses());
         return operation;
     }
@@ -146,7 +172,7 @@ public class HealthOpenAPIFilter implements OASFilter {
 
     private MediaType createMediaType() {
         MediaType mediaType = new MediaTypeImpl();
-        mediaType.setSchema(new SchemaImpl().ref("#/components/schemas/HealthCheckResponse"));
+        mediaType.setSchema(new SchemaImpl().ref("#/components/schemas/" + SCHEMA_HEALTH_RESPONSE));
         return mediaType;
     }
 
@@ -159,13 +185,13 @@ public class HealthOpenAPIFilter implements OASFilter {
      * nullable: true
      * name:
      * type: string
-     * state:
-     * $ref: '#/components/schemas/State'
-     * 
+     * status:
+     * $ref: '#/components/schemas/HealthCheckStatus'
+     *
      * @return Schema representing HealthCheckResponse
      */
     private Schema createHealthCheckResponse() {
-        Schema schema = new SchemaImpl("HealthCheckResponse");
+        Schema schema = new SchemaImpl(SCHEMA_HEALTH_RESPONSE);
         schema.setType(Schema.SchemaType.OBJECT);
         schema.setProperties(createProperties());
         return schema;
@@ -175,7 +201,7 @@ public class HealthOpenAPIFilter implements OASFilter {
         Map<String, Schema> map = new HashMap<>();
         map.put("data", createData());
         map.put("name", createName());
-        map.put("state", new SchemaImpl().ref("#/components/schemas/State"));
+        map.put("status", new SchemaImpl().ref("#/components/schemas/" + SCHEMA_HEALTH_STATUS));
         return map;
     }
 
@@ -193,16 +219,16 @@ public class HealthOpenAPIFilter implements OASFilter {
     }
 
     /**
-     * State:
+     * HealthCheckStatus:
      * enum:
      * - DOWN
      * - UP
      * type: string
-     * 
-     * @return Schema representing State
+     *
+     * @return Schema representing Status
      */
-    private Schema createState() {
-        Schema schema = new SchemaImpl("State");
+    private Schema createHealthCheckStatus() {
+        Schema schema = new SchemaImpl(SCHEMA_HEALTH_STATUS);
         schema.setEnumeration(createStateEnumValues());
         schema.setType(Schema.SchemaType.STRING);
         return schema;

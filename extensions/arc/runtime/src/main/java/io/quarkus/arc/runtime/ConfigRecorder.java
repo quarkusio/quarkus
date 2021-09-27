@@ -1,5 +1,9 @@
 package io.quarkus.arc.runtime;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -9,7 +13,10 @@ import javax.enterprise.inject.spi.DeploymentException;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
+import io.quarkus.arc.impl.ParameterizedTypeImpl;
+import io.quarkus.runtime.annotations.RecordableConstructor;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.config.ConfigMappings;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.ConfigValidationException;
@@ -28,20 +35,43 @@ public class ConfigRecorder {
         if (cl == null) {
             cl = ConfigRecorder.class.getClassLoader();
         }
+        Set<String> problems = new HashSet<>();
+        List<Throwable> suppresed = new ArrayList<>();
+        StringBuilder msg = new StringBuilder();
 
         for (ConfigValidationMetadata property : properties) {
-            Class<?> propertyClass = load(property.getType(), cl);
+            Class<?> propertyType = load(property.getRawTypeName(), cl);
+            Type effectivePropertyType = propertyType;
             // For parameterized types and arrays, we only check if the property config exists without trying to convert it
-            if (propertyClass.isArray() || (propertyClass.getTypeParameters().length > 0 && propertyClass != Map.class)) {
-                propertyClass = String.class;
+            if (propertyType.isArray() || (propertyType.getTypeParameters().length > 0 && propertyType != Map.class
+                    && propertyType != List.class && propertyType != Set.class)) {
+                effectivePropertyType = String.class;
+            } else if (property.getActualTypeArgumentNames().size() > 0) {
+                // this is a really simplified way of constructing the generic types, but we don't need anything more complex
+                // here due to what SR Config checks (which is basically if the type is a collection)
+                Type[] genericTypes = new Type[(property.getActualTypeArgumentNames().size())];
+                for (int i = 0; i < property.getActualTypeArgumentNames().size(); i++) {
+                    genericTypes[i] = load(property.getActualTypeArgumentNames().get(i), cl);
+                }
+                effectivePropertyType = new ParameterizedTypeImpl(propertyType, genericTypes);
             }
 
             try {
-                ConfigProducerUtil.getValue(property.getName(), propertyClass, property.getDefaultValue(), config);
+                ConfigProducerUtil.getValue(property.getName(), effectivePropertyType, property.getDefaultValue(), config);
             } catch (Exception e) {
-                throw new DeploymentException(
-                        "Failed to load config value of type " + propertyClass + " for: " + property.getName(), e);
+                msg.append("Failed to load config value of type ").append(effectivePropertyType).append(" for: ")
+                        .append(property.getName());
+                problems.add(property.getName());
+                suppresed.add(e);
             }
+        }
+        if (!problems.isEmpty()) {
+            DeploymentException deploymentException = new DeploymentException(
+                    new ConfigurationException(msg.toString(), problems));
+            for (Throwable i : suppresed) {
+                deploymentException.addSuppressed(i);
+            }
+            throw deploymentException;
         }
     }
 
@@ -94,15 +124,16 @@ public class ConfigRecorder {
 
     public static class ConfigValidationMetadata {
         private String name;
-        private String type;
+        private String rawTypeName;
+        private List<String> actualTypeArgumentNames;
         private String defaultValue;
 
-        public ConfigValidationMetadata() {
-        }
-
-        public ConfigValidationMetadata(final String name, final String type, final String defaultValue) {
+        @RecordableConstructor
+        public ConfigValidationMetadata(final String name, final String rawTypeName, List<String> actualTypeArgumentNames,
+                final String defaultValue) {
             this.name = name;
-            this.type = type;
+            this.rawTypeName = rawTypeName;
+            this.actualTypeArgumentNames = actualTypeArgumentNames;
             this.defaultValue = defaultValue;
         }
 
@@ -114,39 +145,33 @@ public class ConfigRecorder {
             this.name = name;
         }
 
-        public String getType() {
-            return type;
+        public String getRawTypeName() {
+            return rawTypeName;
         }
 
-        public void setType(final String type) {
-            this.type = type;
+        public List<String> getActualTypeArgumentNames() {
+            return actualTypeArgumentNames;
         }
 
         public String getDefaultValue() {
             return defaultValue;
         }
 
-        public void setDefaultValue(final String defaultValue) {
-            this.defaultValue = defaultValue;
-        }
-
         @Override
-        public boolean equals(final Object o) {
-            if (this == o) {
+        public boolean equals(Object o) {
+            if (this == o)
                 return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
+            if (o == null || getClass() != o.getClass())
                 return false;
-            }
-            final ConfigValidationMetadata that = (ConfigValidationMetadata) o;
-            return name.equals(that.name) &&
-                    type.equals(that.type) &&
-                    Objects.equals(defaultValue, that.defaultValue);
+            ConfigValidationMetadata that = (ConfigValidationMetadata) o;
+            return name.equals(that.name) && rawTypeName.equals(that.rawTypeName)
+                    && actualTypeArgumentNames.equals(that.actualTypeArgumentNames)
+                    && Objects.equals(defaultValue, that.defaultValue);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, type, defaultValue);
+            return Objects.hash(name, rawTypeName, actualTypeArgumentNames, defaultValue);
         }
     }
 }

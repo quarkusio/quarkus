@@ -10,6 +10,6 @@ public class CustomQuarkusDevModeConfigurationTest extends QuarkusDevGradleTestB
 
     @Override
     protected void testDevMode() throws Exception {
-        assertThat(getHttpResponse("/working-dir")).contains(System.getProperty("java.io.tmpdir"));
+        assertThat(getHttpResponse("/working-dir")).contains("build");
     }
 }

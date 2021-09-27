@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -25,7 +26,7 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
     private static final Logger log = Logger.getLogger(FormEncodedDataDefinition.class);
 
     public static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
-    private String defaultEncoding = "ISO-8859-1";
+    private String defaultCharset = StandardCharsets.UTF_8.displayName();;
     private boolean forceCreation = false; //if the parser should be created even if the correct headers are missing
     private int maxParams = 1000;
     private long maxAttributeSize = 2048;
@@ -38,7 +39,7 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
         String mimeType = exchange.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
         if (forceCreation || (mimeType != null && mimeType.startsWith(APPLICATION_X_WWW_FORM_URLENCODED))) {
 
-            String charset = defaultEncoding;
+            String charset = defaultCharset;
             String contentType = exchange.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
             if (contentType != null) {
                 String cs = HeaderUtil.extractQuotedValueFromHeader(contentType, "charset");
@@ -52,8 +53,8 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
         return null;
     }
 
-    public String getDefaultEncoding() {
-        return defaultEncoding;
+    public String getDefaultCharset() {
+        return defaultCharset;
     }
 
     public boolean isForceCreation() {
@@ -83,8 +84,8 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
         return this;
     }
 
-    public FormEncodedDataDefinition setDefaultEncoding(final String defaultEncoding) {
-        this.defaultEncoding = defaultEncoding;
+    public FormEncodedDataDefinition setDefaultCharset(final String defaultCharset) {
+        this.defaultCharset = defaultCharset;
         return this;
     }
 
@@ -219,7 +220,7 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
         }
 
         @Override
-        public FormData parseBlocking() throws IOException {
+        public FormData parseBlocking() throws Exception {
             final FormData existing = exchange.getFormData();
             if (existing != null) {
                 return existing;

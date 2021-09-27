@@ -1070,8 +1070,17 @@ public class QuteProcessor {
             throws IOException {
         ApplicationArchive applicationArchive = applicationArchivesBuildItem.getRootArchive();
         String basePath = "templates";
-        Path templatesPath = applicationArchive.getChildPath(basePath);
-
+        Path templatesPath = null;
+        for (Path rootDir : applicationArchive.getRootDirs()) {
+            // Note that we cannot use ApplicationArchive.getChildPath(String) here because we would not be able to detect 
+            // a wrong directory name on case-insensitive file systems 
+            templatesPath = Files.list(rootDir).filter(p -> p.getFileName().toString().equals(basePath)).findFirst()
+                    .orElse(null);
+            if (templatesPath != null) {
+                break;
+            }
+        }
+        LOGGER.debugf("Found templates dir: %s", templatesPath);
         if (templatesPath != null) {
             scan(templatesPath, templatesPath, basePath + "/", watchedPaths, templatePaths, nativeImageResources);
         }
@@ -1729,14 +1738,13 @@ public class QuteProcessor {
                 clazz = index.getClassByName(clazz.superName());
             }
         }
-        // Try the default methods
+        // Try interface methods
         for (DotName interfaceName : interfaceNames) {
             ClassInfo interfaceClassInfo = index.getClassByName(interfaceName);
             if (interfaceClassInfo != null) {
                 for (MethodInfo method : interfaceClassInfo.methods()) {
-                    // A default method is a public non-abstract instance method
                     if (Modifier.isPublic(method.flags()) && !Modifier.isStatic(method.flags())
-                            && !ValueResolverGenerator.isSynthetic(method.flags()) && !Modifier.isAbstract(method.flags())
+                            && !ValueResolverGenerator.isSynthetic(method.flags())
                             && (method.name().equals(name)
                                     || ValueResolverGenerator.getPropertyName(method.name()).equals(name))) {
                         return method;
@@ -1778,14 +1786,14 @@ public class QuteProcessor {
                 clazz = index.getClassByName(clazz.superName());
             }
         }
-        // Try the default methods
+        // Try interface methods
         for (DotName interfaceName : interfaceNames) {
             ClassInfo interfaceClassInfo = index.getClassByName(interfaceName);
             if (interfaceClassInfo != null) {
                 for (MethodInfo method : interfaceClassInfo.methods()) {
                     // A default method is a public non-abstract instance method
                     if (Modifier.isPublic(method.flags()) && !Modifier.isStatic(method.flags())
-                            && !ValueResolverGenerator.isSynthetic(method.flags()) && !Modifier.isAbstract(method.flags())
+                            && !ValueResolverGenerator.isSynthetic(method.flags())
                             && methodMatches(method, virtualMethod, expression, index, templateIdToPathFun, results)) {
                         return method;
                     }

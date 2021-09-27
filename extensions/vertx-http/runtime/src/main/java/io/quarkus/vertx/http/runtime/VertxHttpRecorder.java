@@ -60,6 +60,7 @@ import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.http.runtime.HttpConfiguration.InsecureRequests;
 import io.quarkus.vertx.http.runtime.devmode.RemoteSyncHandler;
+import io.quarkus.vertx.http.runtime.devmode.VertxHttpHotReplacementSetup;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.Filters;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
@@ -168,6 +169,7 @@ public class VertxHttpRecorder {
         }
         rootHandler = null;
         hotReplacementHandler = null;
+
     }
 
     public static void startServerAfterFailedStart() {
@@ -221,7 +223,6 @@ public class VertxHttpRecorder {
                     return ProcessorInfo.availableProcessors() * 2; //this is dev mode, so the number of IO threads not always being 100% correct does not really matter in this case
                 }
             }, null, false);
-
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -231,6 +232,10 @@ public class VertxHttpRecorder {
         Vertx vertx = vertxRuntimeValue.get();
         Router router = Router.router(vertx);
         return new RuntimeValue<>(router);
+    }
+
+    public RuntimeValue<io.vertx.mutiny.ext.web.Router> createMutinyRouter(final RuntimeValue<Router> router) {
+        return new RuntimeValue<>(new io.vertx.mutiny.ext.web.Router(router.getValue()));
     }
 
     public void startServer(Supplier<Vertx> vertx, ShutdownContext shutdown,
@@ -243,13 +248,20 @@ public class VertxHttpRecorder {
         if (startVirtual) {
             initializeVirtual(vertx.get());
         }
-        if (startSocket) {
+        if (startSocket && (httpConfiguration.hostEnabled || httpConfiguration.domainSocketEnabled)) {
             // Start the server
             if (closeTask == null) {
                 doServerStart(vertx.get(), httpBuildTimeConfig, httpConfiguration, launchMode, ioThreads,
                         websocketSubProtocols, auxiliaryApplication);
                 if (launchMode != LaunchMode.DEVELOPMENT) {
                     shutdown.addShutdownTask(closeTask);
+                } else {
+                    shutdown.addShutdownTask(new Runnable() {
+                        @Override
+                        public void run() {
+                            VertxHttpHotReplacementSetup.handleDevModeRestart();
+                        }
+                    });
                 }
             }
         }
@@ -263,7 +275,8 @@ public class VertxHttpRecorder {
     public void finalizeRouter(BeanContainer container, Consumer<Route> defaultRouteHandler,
             List<Filter> filterList, Supplier<Vertx> vertx,
             LiveReloadConfig liveReloadConfig, Optional<RuntimeValue<Router>> mainRouterRuntimeValue,
-            RuntimeValue<Router> httpRouterRuntimeValue, String rootPath, LaunchMode launchMode, boolean requireBodyHandler,
+            RuntimeValue<Router> httpRouterRuntimeValue, RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter,
+            String rootPath, LaunchMode launchMode, boolean requireBodyHandler,
             Handler<RoutingContext> bodyHandler, HttpConfiguration httpConfiguration,
             GracefulShutdownFilter gracefulShutdownFilter, ShutdownConfig shutdownConfig,
             Executor executor) {
@@ -281,6 +294,8 @@ public class VertxHttpRecorder {
 
         // Then, fire the resuming router
         event.select(Router.class).fire(httpRouteRouter);
+        // Also fires the Mutiny one
+        event.select(io.vertx.mutiny.ext.web.Router.class).fire(mutinyRouter.getValue());
 
         for (Filter filter : filterList) {
             if (filter.getHandler() != null) {
@@ -293,8 +308,8 @@ public class VertxHttpRecorder {
             defaultRouteHandler.accept(httpRouteRouter.route().order(DEFAULT_ROUTE_ORDER));
         }
 
-        container.instance(RouterProducer.class).initialize(httpRouteRouter);
-        httpRouteRouter.route().last().failureHandler(new QuarkusErrorHandler(launchMode.isDevOrTest()));
+        httpRouteRouter.route().last().failureHandler(
+                new QuarkusErrorHandler(launchMode.isDevOrTest(), httpConfiguration.unhandledErrorContentTypeDefault));
 
         if (requireBodyHandler) {
             //if this is set then everything needs the body handler installed
@@ -622,7 +637,8 @@ public class VertxHttpRecorder {
                     keystorePassword,
                     sslConfig.certificate.keyStoreFileType,
                     sslConfig.certificate.keyStoreProvider,
-                    sslConfig.certificate.keyStoreKeyAlias);
+                    sslConfig.certificate.keyStoreKeyAlias,
+                    sslConfig.certificate.keyStoreKeyPassword);
             serverOptions.setKeyCertOptions(options);
         } else {
             return null;
@@ -637,7 +653,8 @@ public class VertxHttpRecorder {
                     trustStorePassword.get(),
                     sslConfig.certificate.trustStoreFileType,
                     sslConfig.certificate.trustStoreProvider,
-                    sslConfig.certificate.trustStoreCertAlias);
+                    sslConfig.certificate.trustStoreCertAlias,
+                    Optional.empty());
             serverOptions.setTrustOptions(options);
         }
 
@@ -664,22 +681,23 @@ public class VertxHttpRecorder {
         return serverOptions;
     }
 
-    private static KeyStoreOptions createKeyStoreOptions(Path keyStorePath, String password, Optional<String> keyStoreFileType,
-            Optional<String> keyStoreProvider, Optional<String> keyStoreAlias) throws IOException {
+    private static KeyStoreOptions createKeyStoreOptions(Path path, String password, Optional<String> fileType,
+            Optional<String> provider, Optional<String> alias, Optional<String> aliasPassword) throws IOException {
         final String type;
-        if (keyStoreFileType.isPresent()) {
-            type = keyStoreFileType.get().toLowerCase();
+        if (fileType.isPresent()) {
+            type = fileType.get().toLowerCase();
         } else {
-            type = findKeystoreFileType(keyStorePath);
+            type = findKeystoreFileType(path);
         }
 
-        byte[] data = getFileContent(keyStorePath);
+        byte[] data = getFileContent(path);
         KeyStoreOptions options = new KeyStoreOptions()
                 .setPassword(password)
                 .setValue(Buffer.buffer(data))
                 .setType(type.toUpperCase())
-                .setProvider(keyStoreProvider.orElse(null))
-                .setAlias(keyStoreAlias.orElse(null));
+                .setProvider(provider.orElse(null))
+                .setAlias(alias.orElse(null))
+                .setAliasPassword(aliasPassword.orElse(null));
         return options;
     }
 
@@ -764,6 +782,7 @@ public class VertxHttpRecorder {
         options.setTcpCork(httpConfiguration.tcpCork);
         options.setTcpFastOpen(httpConfiguration.tcpFastOpen);
         options.setCompressionSupported(httpConfiguration.enableCompression);
+        options.setDecompressionSupported(httpConfiguration.enableDecompression);
         options.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
         return options;
     }

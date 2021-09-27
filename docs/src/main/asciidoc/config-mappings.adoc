@@ -427,40 +427,100 @@ WARNING: For validation to work, the `quarkus-hibernate-validator` extension is 
 === Mocking
 
 A mapping interface implementation is not a proxy, so it cannot be mocked directly with `@InjectMock` like other CDI
-beans. One trick is to make it a proxyable implementation:
+beans. One trick is to make it proxyable with a producer method:
 
 [source,java]
 ----
-@ApplicationScoped
-@io.quarkus.test.Mock
-public class ServerMock implements Server {
-    public String host() {
-        // Mockito will provide the mocking code, so this is never called
-        throw new IllegalStateException();
-    }
+public class ServerMockProducer {
+    @Inject
+    Config config;
 
-    public int port() {
-        throw new IllegalStateException();
+    @Produces
+    @ApplicationScoped
+    @io.quarkus.test.Mock
+    Server server() {
+        return config.unwrap(SmallRyeConfig.class).getConfigMapping(Server.class);
     }
 }
 ----
 
-The `ServerMock` can be injected as a mock into a Quarkus test class:
+The `Server` can be injected as a mock into a Quarkus test class with `@InjectMock`:
 
 [source,java]
 ----
 @QuarkusTest
 class ServerMockTest {
     @InjectMock
-    ServerMock serverMock;
+    Server server;
 
     @Test
     void localhost() {
-        Mockito.when(serverMock.host()).thenReturn("localhost");
-        assertEquals("localhost", serverMock.host());
+        Mockito.when(server.host()).thenReturn("localhost");
+        assertEquals("localhost", server.host());
     }
 }
 ----
+
+NOTE: The mock is just an empty shell without any actual configuration values.
+
+If the goal is to only mock certain configuration values and retain the original configuration, the mocking instance
+requires a spy:
+
+[source,java]
+----
+@ConfigMapping(prefix = "app")
+public interface AppConfig {
+    @WithDefault("app")
+    String name();
+
+    Info info();
+
+    interface Info {
+        @WithDefault("alias")
+        String alias();
+        @WithDefault("10")
+        Integer count();
+    }
+}
+
+public static class AppConfigProducer {
+    @Inject
+    Config config;
+
+    @Produces
+    @ApplicationScoped
+    @io.quarkus.test.Mock
+    AppConfig appConfig() {
+        AppConfig appConfig = config.unwrap(SmallRyeConfig.class).getConfigMapping(AppConfig.class);
+        AppConfig appConfigSpy = Mockito.spy(appConfig);
+        AppConfig.Info infoSpy = Mockito.spy(appConfig.info());
+        Mockito.when(appConfigSpy.info()).thenReturn(infoSpy);
+        return appConfigSpy;
+    }
+}
+----
+
+The `AppConfig` can be injected as a mock into a Quarkus test class with `@Inject`:
+
+[source,java]
+----
+@QuarkusTest
+class AppConfigTest {
+    @Inject
+    AppConfig appConfig;
+
+    @Test
+    void localhost() {
+        Mockito.when(appConfig.name()).thenReturn("mocked-app");
+        assertEquals("mocked-app", server.host());
+
+        Mockito.when(appConfig.info().alias()).thenReturn("mocked-alias");
+        assertEquals("mocked-alias", server.info().alias());
+    }
+}
+----
+
+NOTE: Nested elements need to be spied individually by Mockito.
 
 [[config-properties]]
 == [.line-through]#`@ConfigProperties`# (Deprecated)

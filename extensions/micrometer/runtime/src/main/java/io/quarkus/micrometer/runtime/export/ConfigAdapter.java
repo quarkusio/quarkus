@@ -10,6 +10,7 @@ import org.jboss.logging.Logger;
 import io.micrometer.core.instrument.config.MeterRegistryConfig;
 import io.micrometer.core.instrument.config.validate.InvalidReason;
 import io.micrometer.core.instrument.config.validate.Validated;
+import io.quarkus.micrometer.runtime.config.runtime.PrometheusRuntimeConfig;
 
 public class ConfigAdapter {
     private static final Logger log = Logger.getLogger(ConfigAdapter.class);
@@ -19,6 +20,20 @@ public class ConfigAdapter {
     private ConfigAdapter() {
     }
 
+    /**
+     * Accept the Quarkus config object and a prefix, e.g. {@code quarkus.micrometer.export.prometheus.}.
+     * This will:
+     * <ul>
+     * <li>Lift all properties from the global config map whose keys start with the prefix</li>
+     * <li>Trim {@code quarkus.micrometer.export.} from the beginning of the relevant key</li>
+     * <li>Replace kebab-case with camelCase in the relevant key</li>
+     * <li>Insert the transformed key and the original value into a new map</li>
+     * </ul>
+     * 
+     * @param config Quarkus Config
+     * @param prefix A String prefix beginning with {@code quarkus.} and ending with {@code .}.
+     * @return A map containing transformed keys and associated values
+     */
     public static Map<String, String> captureProperties(Config config, String prefix) {
         final Map<String, String> properties = new HashMap<>();
 
@@ -29,6 +44,31 @@ public class ConfigAdapter {
                 String value = config.getValue(name, String.class);
                 properties.put(key, value);
             }
+        }
+        return properties;
+    }
+
+    /**
+     * Accept a <String, String> map and a prefix, e.g. {@code prometheus.}.
+     * This will:
+     * <ul>
+     * <li>Replace kebab-case with camelCase in each key</li>
+     * <li>Add the prefix to each key</li>
+     * <li>Insert the transformed key and the original value into a new map</li>
+     * </ul>
+     * 
+     * @param config A Runtime config map of string keys and properties, e.g.
+     *        {@link PrometheusRuntimeConfig#prometheus}
+     * @param prefix A String prefix ending with {@code .}, e.g. {@code prometheus.}
+     * @return A map containing transformed keys and associated values
+     */
+    public static Map<String, String> captureProperties(Map<String, String> config, String prefix) {
+        final Map<String, String> properties = new HashMap<>();
+
+        // Rename and store properties
+        for (String name : config.keySet()) {
+            String key = prefix + camelHumpify(name);
+            properties.put(key, config.get(name));
         }
         return properties;
     }

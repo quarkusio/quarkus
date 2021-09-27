@@ -13,3 +13,7 @@ metadata:
   categories:
   - "cloud"
   status: "stable"
+  config:
+  - "quarkus.health."
+  - "quarkus.smallrye-health."
+  - "mp.health."

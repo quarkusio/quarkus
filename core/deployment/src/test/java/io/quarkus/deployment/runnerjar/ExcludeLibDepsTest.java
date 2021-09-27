@@ -61,16 +61,23 @@ public class ExcludeLibDepsTest extends ExecutableOutputOutcomeTestBase {
     protected void assertAppModel(AppModel appModel) throws Exception {
         final Set<AppDependency> expectedDeployDeps = new HashSet<>();
         expectedDeployDeps
-                .add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a-deployment", "1"), "compile"));
+                .add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a-deployment", "1"), "compile",
+                        AppDependency.DEPLOYMENT_CP_FLAG));
         assertEquals(expectedDeployDeps, new HashSet<>(appModel.getDeploymentDependencies()));
         final Set<AppDependency> expectedRuntimeDeps = new HashSet<>();
-        expectedRuntimeDeps.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a", "1"), "compile"));
-        expectedRuntimeDeps.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a-dep-1", "1"), "compile"));
-        expectedRuntimeDeps.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a-dep-2", "1"), "compile"));
+        expectedRuntimeDeps.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a", "1"), "compile",
+                AppDependency.DIRECT_FLAG, AppDependency.RUNTIME_EXTENSION_ARTIFACT_FLAG, AppDependency.RUNTIME_CP_FLAG,
+                AppDependency.DEPLOYMENT_CP_FLAG));
+        expectedRuntimeDeps.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a-dep-1", "1"), "compile",
+                AppDependency.RUNTIME_CP_FLAG, AppDependency.DEPLOYMENT_CP_FLAG));
+        expectedRuntimeDeps.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a-dep-2", "1"), "compile",
+                AppDependency.RUNTIME_CP_FLAG, AppDependency.DEPLOYMENT_CP_FLAG));
         expectedRuntimeDeps
-                .add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a-dep-trans-1", "1"), "compile"));
+                .add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a-dep-trans-1", "1"), "compile",
+                        AppDependency.RUNTIME_CP_FLAG, AppDependency.DEPLOYMENT_CP_FLAG));
         expectedRuntimeDeps
-                .add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a-dep-trans-2", "1"), "compile"));
+                .add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a-dep-trans-2", "1"), "compile",
+                        AppDependency.RUNTIME_CP_FLAG, AppDependency.DEPLOYMENT_CP_FLAG));
         assertEquals(expectedRuntimeDeps, new HashSet<>(appModel.getUserDependencies()));
         final Set<AppDependency> expectedFullDeps = new HashSet<>();
         expectedFullDeps.addAll(expectedDeployDeps);

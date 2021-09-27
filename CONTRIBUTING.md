@@ -63,7 +63,7 @@ Don't forget to indicate your Quarkus, Java, Maven/Gradle and GraalVM version.
 Sometimes a bug has been fixed in the `main` branch of Quarkus and you want to confirm it is fixed for your own application.
 Testing the `main` branch is easy and you have two options:
 
-* either use the snapshots we publish daily on https://oss.sonatype.org/content/repositories/snapshots/
+* either use the snapshots we publish daily on https://s01.oss.sonatype.org/content/repositories/snapshots
 * or build Quarkus all by yourself
 
 This is a quick summary to get you to quickly test main.
@@ -73,9 +73,47 @@ If you are interested in having more details, refer to the [Build section](#buil
 
 Snapshots are published daily so you will have to wait for a snapshot containing the commits you are interested in.
 
-Then just add https://oss.sonatype.org/content/repositories/snapshots/ as a Maven repository **and** a plugin repository.
+Then just add https://s01.oss.sonatype.org/content/repositories/snapshots as a Maven repository **and** a plugin repository in your settings xml:
 
-You can check the last publication date here: https://oss.sonatype.org/content/repositories/snapshots/io/quarkus/ .
+```xml
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <profiles>
+    <profile>
+       <id>quarkus-snapshots</id>
+       <repositories>
+        <repository>
+          <id>quarkus-snapshots-repository</id>
+          <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>quarkus-snapshots-plugin-repository</id>
+          <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+  </profiles>
+  <activeProfiles>
+    <activeProfile>quarkus-snapshots</activeProfile>
+  </activeProfiles>
+</settings>
+```
+You can check the last publication date here: https://s01.oss.sonatype.org/content/repositories/snapshots/io/quarkus/ .
 
 ### Building main
 
@@ -92,9 +130,9 @@ Wait for a bit and you're done.
 
 ### Updating the version
 
-Be careful, when using the `main` branch, you need to use the `quarkus-bom` instead of the `quarkus-universe-bom`.
+When using the `main` branch, you need to use the group id `io.quarkus` instead of `io.quarkus.platform` for both the Quarkus BOM and the Quarkus Maven Plugin.
 
-Update both the versions of the `quarkus-bom` and the Quarkus Maven plugin to `999-SNAPSHOT`.
+In a standard Quarkus pom.xml set the `quarkus.platform.group-id`-property to `io.quarkus` and the `quarkus.platform.version`-property to `999-SNAPSHOT` to build your application against the locally installed main branch.
 
 You can now test your application.
 
@@ -301,6 +339,40 @@ One way to accomplish this is by executing the following command:
 ```
 ./mvnw test -f integration-tests/resteasy-jackson/ -Dtest=GreetingResourceTest
 ```
+
+##### Maven Invoker tests
+
+For testing some scenarios, Quarkus uses the [Maven Invoker](https://maven.apache.org/shared/maven-invoker/) to run tests. For these cases, to run a single test, one needs to use the `invoker.test` property along with the name of the directory
+which houses the test project.
+
+For example, in order to only run the MySQL test project of the container-image tests, the Maven command would be:
+
+```
+./mvnw verify -f integration-tests/container-image/maven-invoker-way -Dinvoker.test=container-build-jib-with-mysql
+```
+
+Note that we use the `verify` goal instead of the `test` goal because the Maven Invoker is usually bound to the integration-test phase. 
+Furthermore, depending on the actual test being invoked, more options maybe needed (for the specific integration test mentioned above, `-Dstart-containers` and `-Dtest-containers` are needed).
+
+### Build with multiple threads
+
+The following standard Maven option can be used to build with multiple threads to speed things up (here 0.5 threads per CPU core):
+
+```
+./mvnw install -T0.5C
+```
+
+Please note that running tests in parallel is not supported at the moment!
+
+### Don't build any test modules
+
+To omit building currently way over 100 pure test modules, run:
+
+```
+./mvnw install -Dno-test-modules
+```
+
+This can come in handy when you are only interested in the actual "productive" artifacts, e.g. when bisecting.
 
 #### Automatic incremental build
 

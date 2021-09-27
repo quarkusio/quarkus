@@ -13,7 +13,6 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.smallrye.graphql.runtime.spi.QuarkusClassloadingService;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
-import io.smallrye.graphql.cdi.config.GraphQLConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
 import io.smallrye.graphql.schema.model.Schema;
 import io.vertx.core.Handler;
@@ -25,8 +24,7 @@ public class SmallRyeGraphQLRecorder {
 
     public RuntimeValue<Boolean> createExecutionService(BeanContainer beanContainer, Schema schema) {
         GraphQLProducer graphQLProducer = beanContainer.instance(GraphQLProducer.class);
-        GraphQLConfig graphQLConfig = beanContainer.instance(GraphQLConfig.class);
-        GraphQLSchema graphQLSchema = graphQLProducer.initialize(schema, graphQLConfig);
+        GraphQLSchema graphQLSchema = graphQLProducer.initialize(schema);
         return new RuntimeValue<>(graphQLSchema != null);
     }
 
@@ -41,13 +39,12 @@ public class SmallRyeGraphQLRecorder {
     }
 
     public Handler<RoutingContext> subscriptionHandler(BeanContainer beanContainer, RuntimeValue<Boolean> initialized) {
-        GraphQLConfig config = beanContainer.instance(GraphQLConfig.class);
-        return new SmallRyeGraphQLSubscriptionHandler(config, getCurrentIdentityAssociation(),
+        return new SmallRyeGraphQLSubscriptionHandler(getCurrentIdentityAssociation(),
                 CDI.current().select(CurrentVertxRequest.class).get());
     }
 
-    public Handler<RoutingContext> schemaHandler(RuntimeValue<Boolean> initialized) {
-        if (initialized.getValue()) {
+    public Handler<RoutingContext> schemaHandler(RuntimeValue<Boolean> initialized, boolean schemaAvailable) {
+        if (initialized.getValue() && schemaAvailable) {
             return new SmallRyeGraphQLSchemaHandler();
         } else {
             return new SmallRyeGraphQLNoEndpointHandler();

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.regex.PatternSyntaxException;
 import javax.ws.rs.core.MultivaluedMap;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -37,6 +38,7 @@ import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
 import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ListConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalDateParamConverter;
@@ -45,6 +47,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterCo
 import org.jboss.resteasy.reactive.server.core.parameters.converters.PathSegmentParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SetConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SortedSetConverter;
+import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
@@ -145,8 +148,18 @@ public class ServerEndpointIndexer
         return injectableBean.isFormParamRequired();
     }
 
+    protected boolean doesMethodHaveBlockingSignature(MethodInfo info) {
+        for (var i : methodScanners) {
+            if (i.isMethodSignatureAsync(info)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     @Override
-    protected void handleAdditionalMethodProcessing(ServerResourceMethod method, ClassInfo currentClassInfo, MethodInfo info) {
+    protected void handleAdditionalMethodProcessing(ServerResourceMethod method, ClassInfo currentClassInfo, MethodInfo info,
+            AnnotationStore annotationStore) {
         Supplier<EndpointInvoker> invokerSupplier = null;
         for (HandlerChainCustomizer i : method.getHandlerChainCustomizers()) {
             invokerSupplier = i.alternateInvoker(method);
@@ -159,11 +172,23 @@ public class ServerEndpointIndexer
         }
         method.setInvoker(invokerSupplier);
         Set<String> methodAnnotationNames = new HashSet<>();
-        List<AnnotationInstance> instances = info.annotations();
+        Collection<AnnotationInstance> instances = annotationStore.getAnnotations(info);
         for (AnnotationInstance instance : instances) {
             methodAnnotationNames.add(instance.name().toString());
         }
         method.setMethodAnnotationNames(methodAnnotationNames);
+
+        // validate the path
+        validateMethodPath(method, currentClassInfo, info);
+    }
+
+    private void validateMethodPath(ServerResourceMethod method, ClassInfo currentClassInfo, MethodInfo info) {
+        try {
+            new URITemplate(method.getPath(), false);
+        } catch (PatternSyntaxException e) {
+            throw new IllegalArgumentException("Path '" + method.getPath() + "' of method '" + currentClassInfo.name() + "#"
+                    + info.name() + "' is not a valid expression", e);
+        }
     }
 
     protected InjectableBean scanInjectableBean(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
@@ -191,7 +216,7 @@ public class ServerEndpointIndexer
                     additionalReaders,
                     annotations, field.type(), field.toString(), true, hasRuntimeConverters,
                     // We don't support annotation-less path params in injectable beans: only annotations
-                    Collections.emptySet(), field.name(), new HashMap<>());
+                    Collections.emptySet(), field.name(), EMPTY_STRING_ARRAY, new HashMap<>());
             if ((result.getType() != null) && (result.getType() != ParameterType.BEAN)) {
                 //BODY means no annotation, so for fields not injectable
                 fieldExtractors.put(field, result);
@@ -251,8 +276,9 @@ public class ServerEndpointIndexer
             Type paramType, ServerIndexedParameter parameterResult, String name, String defaultValue, ParameterType type,
             String elementType, boolean single, String signature) {
         ParameterConverterSupplier converter = parameterResult.getConverter();
+        DeclaredTypes declaredTypes = getDeclaredTypes(paramType, currentClassInfo, actualEndpointInfo);
         return new ServerMethodParameter(name,
-                elementType, toClassName(paramType, currentClassInfo, actualEndpointInfo, index),
+                elementType, declaredTypes.getDeclaredType(), declaredTypes.getDeclaredUnresolvedType(),
                 type, single, signature,
                 converter, defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded,
                 parameterResult.getCustomerParameterExtractor());
@@ -260,8 +286,13 @@ public class ServerEndpointIndexer
 
     protected void handleOtherParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
             ServerIndexedParameter builder, String elementType) {
-        builder.setConverter(extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters));
+        try {
+            builder.setConverter(extractConverter(elementType, index,
+                    existingConverters, errorLocation, hasRuntimeConverters));
+        } catch (Throwable throwable) {
+            throw new RuntimeException("Could not create converter for " + elementType + " for " + builder.getErrorLocation()
+                    + " of type " + builder.getType());
+        }
     }
 
     protected void handleSortedSetParam(Map<String, String> existingConverters, String errorLocation,

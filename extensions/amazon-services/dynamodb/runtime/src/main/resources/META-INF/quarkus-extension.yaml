@@ -10,4 +10,6 @@ metadata:
   guide: "https://quarkus.io/guides/amazon-dynamodb"
   categories:
     - "data"
-  status: "preview"
+  status: "stable"
+  config:
+  - "quarkus.dynamodb."

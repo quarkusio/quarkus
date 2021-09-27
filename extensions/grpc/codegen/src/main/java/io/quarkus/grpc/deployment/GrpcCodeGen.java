@@ -113,7 +113,7 @@ public class GrpcCodeGen implements CodeGenProvider {
                         int resultCode = process.waitFor();
                         if (resultCode != 0) {
                             throw new CodeGenException("Failed to generate Java classes from proto files: " + protoFiles +
-                                    " to " + outDir.toAbsolutePath().toString());
+                                    " to " + outDir.toAbsolutePath());
                         }
                         return true;
                     }
@@ -199,7 +199,7 @@ public class GrpcCodeGen implements CodeGenProvider {
         if (executables == null) {
             Path protocPath;
             String protocPathProperty = System.getProperty("quarkus.grpc.protoc-path");
-            String classifier = osClassifier();
+            String classifier = System.getProperty("quarkus.grpc.protoc-os-classifier", osClassifier());
             if (protocPathProperty == null) {
                 protocPath = findArtifactPath(model, PROTOC_GROUPID, PROTOC, classifier, EXE);
             } else {
@@ -310,7 +310,7 @@ public class GrpcCodeGen implements CodeGenProvider {
 
     private static void writePluginExeCmd(Path pluginPath, BufferedWriter writer) throws IOException {
         writer.write("\"" + JavaBinFinder.findBin() + "\" -cp \"" +
-                pluginPath.toAbsolutePath().toString() + "\" " + quarkusProtocPluginMain);
+                pluginPath.toAbsolutePath() + "\" " + quarkusProtocPluginMain);
         writer.newLine();
     }
 

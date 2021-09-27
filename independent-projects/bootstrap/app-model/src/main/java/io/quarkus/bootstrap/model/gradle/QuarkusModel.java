@@ -7,11 +7,7 @@ public interface QuarkusModel {
 
     Workspace getWorkspace();
 
-    List<Dependency> getAppDependencies();
-
-    List<Dependency> getExtensionDependencies();
-
-    List<Dependency> getEnforcedPlatformDependencies();
+    List<Dependency> getDependencies();
 
     PlatformImports getPlatformImports();
 }

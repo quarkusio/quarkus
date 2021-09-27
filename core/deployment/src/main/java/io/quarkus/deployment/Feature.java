@@ -62,6 +62,7 @@ public enum Feature {
     KUBERNETES,
     KUBERNETES_CLIENT,
     LIQUIBASE,
+    LIQUIBASE_MONGODB,
     LOGGING_GELF,
     MAILER,
     MICROMETER,
@@ -71,6 +72,7 @@ public enum Feature {
     MONGODB_REST_DATA_PANACHE,
     MUTINY,
     NARAYANA_JTA,
+    NARAYANA_LRA,
     NARAYANA_STM,
     NEO4J,
     OIDC,
@@ -87,7 +89,9 @@ public enum Feature {
     QUTE,
     REACTIVE_PG_CLIENT,
     REACTIVE_MYSQL_CLIENT,
+    REACTIVE_MSSQL_CLIENT,
     REACTIVE_DB2_CLIENT,
+    REACTIVE_ROUTES,
     REDIS_CLIENT,
     RESTEASY,
     RESTEASY_JACKSON,
@@ -147,7 +151,6 @@ public enum Feature {
     WEBSOCKETS_CLIENT,
     VAULT,
     VERTX,
-    VERTX_WEB,
     VERTX_GRAPHQL,
     WEBJARS_LOCATOR;
 

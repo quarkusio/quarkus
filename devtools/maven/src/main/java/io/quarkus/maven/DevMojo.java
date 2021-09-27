@@ -88,7 +88,6 @@ import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
 import io.quarkus.maven.MavenDevModeLauncher.Builder;
 import io.quarkus.maven.components.MavenVersionEnforcer;
-import io.quarkus.maven.utilities.MojoUtils;
 
 /**
  * The dev mojo, that runs a quarkus app in a forked process. A background compilation process is launched and any changes are
@@ -164,7 +163,9 @@ public class DevMojo extends AbstractMojo {
     /**
      * If this server should be started in debug mode. The default is to start in debug mode and listen on
      * port 5005. Whether or not the JVM is suspended waiting for a debugger to be attached,
-     * depends on the value of {@link #suspend}. {@code debug} supports the following options:
+     * depends on the value of {@link #suspend}.
+     * <p>
+     * {@code debug} supports the following options:
      * <table>
      * <tr>
      * <td><b>Value</b></td>
@@ -176,17 +177,18 @@ public class DevMojo extends AbstractMojo {
      * </tr>
      * <tr>
      * <td><b>true</b></td>
-     * <td>The JVM is started in debug mode and will be listening on port 5005</td>
+     * <td>The JVM is started in debug mode and will be listening on {@code debugHost}:{@code debugPort}</td>
      * </tr>
      * <tr>
      * <td><b>client</b></td>
-     * <td>The JVM is started in client mode, and attempts to connect to localhost:5005</td>
+     * <td>The JVM is started in client mode, and will attempt to connect to {@code debugHost}:{@code debugPort}</td>
      * </tr>
      * <tr>
      * <td><b>{port}</b></td>
-     * <td>The JVM is started in debug mode and will be listening on {port}</td>
+     * <td>The JVM is started in debug mode and will be listening on {@code debugHost}:{port}.</td>
      * </tr>
      * </table>
+     * By default, {@code debugHost} has the value "localhost", and {@code debugPort} is 5005.
      */
     @Parameter(defaultValue = "${debug}")
     private String debug;
@@ -216,13 +218,16 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${debugHost}")
     private String debugHost;
 
+    @Parameter(defaultValue = "${debugPort}")
+    private String debugPort;
+
     @Parameter(defaultValue = "${project.build.directory}")
     private File buildDir;
 
     @Parameter(defaultValue = "${project.build.sourceDirectory}")
     private File sourceDir;
 
-    @Parameter(defaultValue = "${project.build.directory}")
+    @Parameter
     private File workingDir;
 
     @Parameter(defaultValue = "${jvm.args}")
@@ -306,8 +311,6 @@ public class DevMojo extends AbstractMojo {
     @Component
     private BuildPluginManager pluginManager;
 
-    private Boolean debugPortOk;
-
     @Component
     private ToolchainManager toolchainManager;
 
@@ -340,9 +343,9 @@ public class DevMojo extends AbstractMojo {
         handleAutoCompile();
 
         if (enforceBuildGoal) {
-            Plugin pluginDef = MojoUtils.checkProjectForMavenBuildPlugin(project);
-
-            if (pluginDef == null) {
+            final PluginDescriptor pluginDescr = getPluginDescriptor();
+            final Plugin pluginDef = getConfiguredPluginOrNull(pluginDescr.getGroupId(), pluginDescr.getArtifactId());
+            if (pluginDef == null || !isGoalConfigured(pluginDef, "build")) {
                 getLog().warn("The quarkus-maven-plugin build goal was not configured for this project, " +
                         "skipping quarkus:dev as this is assumed to be a support library. If you want to run quarkus dev" +
                         " on this project make sure the quarkus-maven-plugin is configured with a build goal.");
@@ -500,8 +503,12 @@ public class DevMojo extends AbstractMojo {
     }
 
     private void triggerPrepare() throws MojoExecutionException {
-        final PluginDescriptor pluginDescr = (PluginDescriptor) getPluginContext().get("pluginDescriptor");
+        final PluginDescriptor pluginDescr = getPluginDescriptor();
         executeIfConfigured(pluginDescr.getGroupId(), pluginDescr.getArtifactId(), QUARKUS_GENERATE_CODE_GOAL);
+    }
+
+    private PluginDescriptor getPluginDescriptor() {
+        return (PluginDescriptor) getPluginContext().get("pluginDescriptor");
     }
 
     private void triggerCompile(boolean test) throws MojoExecutionException {
@@ -527,7 +534,7 @@ public class DevMojo extends AbstractMojo {
 
     private void executeIfConfigured(String pluginGroupId, String pluginArtifactId, String goal) throws MojoExecutionException {
         final Plugin plugin = getConfiguredPluginOrNull(pluginGroupId, pluginArtifactId);
-        if (plugin == null || plugin.getExecutions().stream().noneMatch(exec -> exec.getGoals().contains(goal))) {
+        if (!isGoalConfigured(plugin, goal)) {
             return;
         }
         getLog().info("Invoking " + plugin.getGroupId() + ":" + plugin.getArtifactId() + ":" + plugin.getVersion() + ":" + goal
@@ -544,6 +551,18 @@ public class DevMojo extends AbstractMojo {
                         project,
                         session,
                         pluginManager));
+    }
+
+    public boolean isGoalConfigured(Plugin plugin, String goal) {
+        if (plugin == null) {
+            return false;
+        }
+        for (PluginExecution pluginExecution : plugin.getExecutions()) {
+            if (pluginExecution.getGoals().contains(goal)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Xpp3Dom getPluginConfig(Plugin plugin, String goal) throws MojoExecutionException {
@@ -634,27 +653,17 @@ public class DevMojo extends AbstractMojo {
         if (mavenProject == null) {
             projectDirectory = localProject.getDir().toAbsolutePath().toString();
             Path sourcePath = localProject.getSourcesSourcesDir().toAbsolutePath();
-            if (Files.isDirectory(sourcePath)) {
-                sourcePaths = Collections.singleton(sourcePath);
-            } else {
-                sourcePaths = Collections.emptySet();
-            }
+            sourcePaths = Collections.singleton(sourcePath);
             Path testSourcePath = localProject.getTestSourcesSourcesDir().toAbsolutePath();
-            if (Files.isDirectory(testSourcePath)) {
-                testSourcePaths = Collections.singleton(testSourcePath);
-            } else {
-                testSourcePaths = Collections.emptySet();
-            }
+            testSourcePaths = Collections.singleton(testSourcePath);
         } else {
             projectDirectory = mavenProject.getBasedir().getPath();
             sourcePaths = mavenProject.getCompileSourceRoots().stream()
                     .map(Paths::get)
-                    .filter(Files::isDirectory)
                     .map(Path::toAbsolutePath)
                     .collect(Collectors.toCollection(LinkedHashSet::new));
             testSourcePaths = mavenProject.getTestCompileSourceRoots().stream()
                     .map(Paths::get)
-                    .filter(Files::isDirectory)
                     .map(Path::toAbsolutePath)
                     .collect(Collectors.toCollection(LinkedHashSet::new));
             activeProfiles = mavenProject.getActiveProfiles();
@@ -666,9 +675,7 @@ public class DevMojo extends AbstractMojo {
             classesPath = classesDir.toAbsolutePath().toString();
         }
         Path testClassesDir = localProject.getTestClassesDir();
-        if (Files.isDirectory(testClassesDir)) {
-            testClassesPath = testClassesDir.toAbsolutePath().toString();
-        }
+        testClassesPath = testClassesDir.toAbsolutePath().toString();
         resourcePaths = localProject.getResourcesSourcesDirs().toList().stream()
                 .map(Path::toAbsolutePath)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -758,7 +765,7 @@ public class DevMojo extends AbstractMojo {
             final ProcessBuilder processBuilder = new ProcessBuilder(launcher.args())
                     .redirectErrorStream(true)
                     .inheritIO()
-                    .directory(workingDir == null ? buildDir : workingDir);
+                    .directory(workingDir == null ? project.getBasedir() : workingDir);
             if (!environmentVariables.isEmpty()) {
                 processBuilder.environment().putAll(environmentVariables);
             }
@@ -802,7 +809,7 @@ public class DevMojo extends AbstractMojo {
                 .suspend(suspend)
                 .debug(debug)
                 .debugHost(debugHost)
-                .debugPortOk(debugPortOk)
+                .debugPort(debugPort)
                 .deleteDevJar(deleteDevJar);
 
         setJvmArgs(builder);

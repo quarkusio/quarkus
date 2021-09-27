@@ -63,6 +63,7 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
@@ -76,14 +77,18 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 public class KubernetesCommonHelper {
 
     private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
+    private static final String[] PROMETHEUS_ANNOTATION_TARGETS = { "Service",
+            "Deployment", "DeploymentConfig" };
 
-    public static Optional<Project> createProject(ApplicationInfoBuildItem app, OutputTargetBuildItem outputTarget,
+    public static Optional<Project> createProject(ApplicationInfoBuildItem app,
+            Optional<CustomProjectRootBuildItem> customProjectRoot, OutputTargetBuildItem outputTarget,
             PackageConfig packageConfig) {
-        return createProject(app, outputTarget.getOutputDirectory()
+        return createProject(app, customProjectRoot, outputTarget.getOutputDirectory()
                 .resolve(String.format(OUTPUT_ARTIFACT_FORMAT, outputTarget.getBaseName(), packageConfig.runnerSuffix)));
     }
 
-    public static Optional<Project> createProject(ApplicationInfoBuildItem app, Path artifactPath) {
+    public static Optional<Project> createProject(ApplicationInfoBuildItem app,
+            Optional<CustomProjectRootBuildItem> customProjectRoot, Path artifactPath) {
         //Let dekorate create a Project instance and then override with what is found in ApplicationInfoBuildItem.
         try {
             Project project = FileProjectFactory.create(artifactPath.toFile());
@@ -94,7 +99,9 @@ public class KubernetesCommonHelper {
                     project.getBuildInfo().getClassOutputDir(),
                     project.getBuildInfo().getResourceDir());
 
-            return Optional.of(new Project(project.getRoot(), buildInfo, project.getScmInfo()));
+            return Optional
+                    .of(new Project(customProjectRoot.isPresent() ? customProjectRoot.get().getRoot() : project.getRoot(),
+                            buildInfo, project.getScmInfo()));
 
         } catch (Exception e) {
             return Optional.empty();
@@ -165,25 +172,78 @@ public class KubernetesCommonHelper {
         result.addAll(createMountAndVolumeDecorators(project, target, name, config));
         result.addAll(createAppConfigVolumeAndEnvDecorators(project, target, name, config));
 
-        //Handle Command and arguments
-        command.ifPresent(c -> {
-            result.add(new DecoratorBuildItem(new ApplyCommandDecorator(name, new String[] { c.getCommand() })));
-            result.add(new DecoratorBuildItem(new ApplyArgsDecorator(name, c.getArgs())));
-        });
+        result.addAll(createCommandDecorator(project, target, name, config, command));
+        result.addAll(createArgsDecorator(project, target, name, config, command));
 
         //Handle Probes
-        result.addAll(createProbeDecorators(name, target, config.getLivenessProbe(), config.getReadinessProbe(),
-                livenessProbePath, readinessProbePath));
+        if (!ports.isEmpty()) {
+            result.addAll(createProbeDecorators(name, target, config.getLivenessProbe(), config.getReadinessProbe(),
+                    livenessProbePath, readinessProbePath));
+        }
 
         //Handle RBAC
         if (!roleBindings.isEmpty()) {
             result.add(new DecoratorBuildItem(new ApplyServiceAccountNamedDecorator()));
             result.add(new DecoratorBuildItem(new AddServiceAccountResourceDecorator()));
             roles.forEach(r -> result.add(new DecoratorBuildItem(new AddRoleResourceDecorator(r))));
-            roleBindings.forEach(rb -> result.add(new DecoratorBuildItem(
-                    new AddRoleBindingResourceDecorator(rb.getName(), null, rb.getRole(), rb.isClusterWide()
-                            ? AddRoleBindingResourceDecorator.RoleKind.ClusterRole
-                            : AddRoleBindingResourceDecorator.RoleKind.Role))));
+            roleBindings.forEach(rb -> {
+                result.add(new DecoratorBuildItem(new AddRoleBindingResourceDecorator(rb.getName(), null, rb.getRole(),
+                        rb.isClusterWide() ? AddRoleBindingResourceDecorator.RoleKind.ClusterRole
+                                : AddRoleBindingResourceDecorator.RoleKind.Role)));
+                labels.forEach(l -> {
+                    result.add(new DecoratorBuildItem(
+                            new AddLabelDecorator(rb.getName(), l.getKey(), l.getValue(), "RoleBinding")));
+                });
+            });
+        }
+
+        return result;
+    }
+
+    /**
+     * If user defines a custom command via configuration, this is used.
+     * If not, it will use the one from other extensions.
+     *
+     * @param target The deployment target (e.g. kubernetes, openshift, knative)
+     * @param name The name of the resource to accept the configuration
+     * @param config The {@link PlatformConfiguration} instance
+     * @param command Optional command item from other extensions
+     */
+    private static List<DecoratorBuildItem> createCommandDecorator(Optional<Project> project, String target, String name,
+            PlatformConfiguration config, Optional<KubernetesCommandBuildItem> command) {
+        List<DecoratorBuildItem> result = new ArrayList<>();
+        if (config.getCommand().isPresent()) {
+            // If command has been set in configuration, we use it
+            result.add(new DecoratorBuildItem(target,
+                    new ApplyCommandDecorator(name, config.getCommand().get().toArray(new String[0]))));
+        } else if (command.isPresent()) {
+            // If not, we use the command that has been provided in other extensions (if any).
+            result.add(new DecoratorBuildItem(target,
+                    new ApplyCommandDecorator(name, command.get().getCommand().toArray(new String[0]))));
+        }
+
+        return result;
+    }
+
+    /**
+     * If user defines arguments via configuration, then these will be merged to the ones from other extensions.
+     * If not, then only the arguments from other extensions will be used if any.
+     *
+     * @param target The deployment target (e.g. kubernetes, openshift, knative)
+     * @param name The name of the resource to accept the configuration
+     * @param config The {@link PlatformConfiguration} instance
+     * @param command Optional command item from other extensions
+     */
+    private static List<DecoratorBuildItem> createArgsDecorator(Optional<Project> project, String target, String name,
+            PlatformConfiguration config, Optional<KubernetesCommandBuildItem> command) {
+        List<DecoratorBuildItem> result = new ArrayList<>();
+
+        List<String> args = new ArrayList<>();
+        command.ifPresent(cmd -> args.addAll(cmd.getArgs()));
+        config.getArguments().ifPresent(args::addAll);
+
+        if (!args.isEmpty()) {
+            result.add(new DecoratorBuildItem(target, new ApplyArgsDecorator(name, args.toArray(new String[args.size()]))));
         }
 
         return result;
@@ -206,14 +266,6 @@ public class KubernetesCommonHelper {
 
         config.getWorkingDir().ifPresent(w -> {
             result.add(new DecoratorBuildItem(target, new ApplyWorkingDirDecorator(name, w)));
-        });
-
-        config.getCommand().ifPresent(c -> {
-            result.add(new DecoratorBuildItem(target, new ApplyCommandDecorator(name, c.toArray(new String[0]))));
-        });
-
-        config.getArguments().ifPresent(a -> {
-            result.add(new DecoratorBuildItem(target, new ApplyArgsDecorator(name, a.toArray(new String[0]))));
         });
 
         return result;
@@ -397,13 +449,16 @@ public class KubernetesCommonHelper {
                 String prefix = config.getPrometheusConfig().prefix;
                 if (!ports.isEmpty() && path != null) {
                     result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
-                            config.getPrometheusConfig().scrape.orElse(prefix + "/scrape"), "true")));
+                            config.getPrometheusConfig().scrape.orElse(prefix + "/scrape"), "true",
+                            PROMETHEUS_ANNOTATION_TARGETS)));
                     result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
-                            config.getPrometheusConfig().path.orElse(prefix + "/path"), path)));
+                            config.getPrometheusConfig().path.orElse(prefix + "/path"), path, PROMETHEUS_ANNOTATION_TARGETS)));
                     result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
-                            config.getPrometheusConfig().port.orElse(prefix + "/port"), "" + ports.get(0).getPort())));
+                            config.getPrometheusConfig().port.orElse(prefix + "/port"), "" + ports.get(0).getPort(),
+                            PROMETHEUS_ANNOTATION_TARGETS)));
                     result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
-                            config.getPrometheusConfig().scheme.orElse(prefix + "/scheme"), "http")));
+                            config.getPrometheusConfig().scheme.orElse(prefix + "/scheme"), "http",
+                            PROMETHEUS_ANNOTATION_TARGETS)));
                 }
             });
         }

@@ -53,8 +53,10 @@ public class TestResourceManagerTest {
         }
 
         @Override
-        public void inject(Object testInstance) {
-            ((AtomicInteger) testInstance).incrementAndGet();
+        public void inject(Object instance) {
+            if (instance instanceof AtomicInteger) {
+                ((AtomicInteger) instance).incrementAndGet();
+            }
         }
 
         @Override
@@ -71,8 +73,10 @@ public class TestResourceManagerTest {
         }
 
         @Override
-        public void inject(Object testInstance) {
-            ((AtomicInteger) testInstance).incrementAndGet();
+        public void inject(Object instance) {
+            if (instance instanceof AtomicInteger) {
+                ((AtomicInteger) instance).incrementAndGet();
+            }
         }
 
         @Override

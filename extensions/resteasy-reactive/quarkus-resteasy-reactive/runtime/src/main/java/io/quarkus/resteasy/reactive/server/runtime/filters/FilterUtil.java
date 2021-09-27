@@ -2,9 +2,11 @@ package io.quarkus.resteasy.reactive.server.runtime.filters;
 
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import javax.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
@@ -29,10 +31,24 @@ public final class FilterUtil {
         }
     }
 
+    public static void handleOptionalRestResponse(Optional<RestResponse> optional,
+            ResteasyReactiveContainerRequestContext context) {
+        if ((optional != null) && optional.isPresent()) {
+            context.abortWith(optional.get().toResponse());
+        }
+    }
+
     public static void handleResponse(Response response,
             ResteasyReactiveContainerRequestContext context) {
         if (response != null) {
             context.abortWith(response);
+        }
+    }
+
+    public static void handleRestResponse(RestResponse response,
+            ResteasyReactiveContainerRequestContext context) {
+        if (response != null) {
+            context.abortWith(response.toResponse());
         }
     }
 
@@ -74,5 +90,18 @@ public final class FilterUtil {
                 context.resume(throwable);
             }
         });
+    }
+
+    public static void handleUniRestResponse(Uni<? extends RestResponse<?>> uni,
+            ResteasyReactiveContainerRequestContext context) {
+        if (uni == null) {
+            return;
+        }
+        handleUniResponse(uni.map(new Function<RestResponse<?>, Response>() {
+            @Override
+            public Response apply(RestResponse<?> t) {
+                return t != null ? t.toResponse() : null;
+            }
+        }), context);
     }
 }

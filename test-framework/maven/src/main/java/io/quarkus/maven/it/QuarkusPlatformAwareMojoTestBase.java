@@ -18,7 +18,7 @@ public class QuarkusPlatformAwareMojoTestBase extends MojoTestBase {
             try {
                 catalog = QuarkusProjectHelper.getCatalogResolver().resolveExtensionCatalog();
             } catch (RegistryResolutionException e) {
-                throw new RuntimeException("Failed to resolve the extensions catalog", e);
+                throw new RuntimeException("Failed to resolve the extension catalog", e);
             } finally {
                 disableDevToolsTestConfig(System.getProperties());
             }

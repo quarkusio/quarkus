@@ -79,7 +79,7 @@ public class MutinyMailerImpl implements ReactiveMailer {
             return mockMailbox.send(mail);
         } else {
             return client.sendMail(message)
-                    .onItem().ignore().andContinueWithNull();
+                    .replaceWithVoid();
         }
     }
 

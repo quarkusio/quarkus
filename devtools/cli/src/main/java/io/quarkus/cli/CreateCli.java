@@ -22,14 +22,18 @@ import picocli.CommandLine.Mixin;
 @CommandLine.Command(name = "cli", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Create a Quarkus command-line project.", description = "%n"
         + "This command will create a Java project in a new ARTIFACT-ID directory.", footer = { "%n"
                 + "For example (using default values), a new Java project will be created in a 'code-with-quarkus' directory; "
-                + "it will use Maven to build an artifact with groupId='org.acme', artifactId='code-with-quarkus', and version='1.0.0-SNAPSHOT'."
+                + "it will use Maven to build an artifact with GROUP-ID='org.acme', ARTIFACT-ID='code-with-quarkus', and VERSION='1.0.0-SNAPSHOT'."
                 + "%n" }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class CreateCli extends BaseCreateCommand {
     @Mixin
     CreateProjectMixin createProject;
 
-    @CommandLine.ArgGroup(order = 1, exclusive = false, heading = "%nProject identifiers:%n")
+    @Mixin
     TargetGAVGroup gav = new TargetGAVGroup();
+
+    @CommandLine.Option(order = 1, paramLabel = "EXTENSION", names = { "-x",
+            "--extension" }, description = "Extension(s) to add to the project.", split = ",")
+    Set<String> extensions = new HashSet<>();
 
     @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version:%n")
     TargetQuarkusVersionGroup targetQuarkusVersion = new TargetQuarkusVersionGroup();
@@ -46,9 +50,6 @@ public class CreateCli extends BaseCreateCommand {
     @CommandLine.ArgGroup(order = 6, exclusive = false, validate = false)
     PropertiesOptions propertiesOptions = new PropertiesOptions();
 
-    @CommandLine.Parameters(arity = "0..1", paramLabel = "EXTENSION", description = "Extensions to add to project.")
-    Set<String> extensions = new HashSet<>();
-
     @Override
     public Integer call() throws Exception {
         try {
@@ -59,7 +60,7 @@ public class CreateCli extends BaseCreateCommand {
 
             createProject.setSingleProjectGAV(gav);
             createProject.setTestOutputDirectory(output.getTestDirectory());
-            if (createProject.checkProjectRootAlreadyExists(output)) {
+            if (createProject.checkProjectRootAlreadyExists(output, false)) {
                 return CommandLine.ExitCode.USAGE;
             }
 
@@ -81,8 +82,10 @@ public class CreateCli extends BaseCreateCommand {
             }
 
             if (success) {
-                output.info(
-                        "Navigate into this directory and get started: " + spec.root().qualifiedName() + " dev");
+                if (!runMode.isDryRun()) {
+                    output.info(
+                            "Navigate into this directory and get started: " + spec.root().qualifiedName() + " dev");
+                }
                 return CommandLine.ExitCode.OK;
             }
             return CommandLine.ExitCode.SOFTWARE;

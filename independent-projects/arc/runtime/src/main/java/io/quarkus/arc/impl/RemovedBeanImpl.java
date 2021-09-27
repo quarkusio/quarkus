@@ -14,21 +14,20 @@ public final class RemovedBeanImpl implements RemovedBean {
     private final Set<Annotation> qualifiers;
 
     public RemovedBeanImpl(Kind kind, String description, Set<Type> types, Set<Annotation> qualifiers) {
-        this.kind = kind != null ? kind : Kind.CLASS;
+        this.kind = kind;
         this.description = description;
         this.types = CollectionHelpers.toImmutableSmallSet(types);
-        this.qualifiers = qualifiers != null ? CollectionHelpers.toImmutableSmallSet(qualifiers)
-                : Qualifiers.DEFAULT_QUALIFIERS;
+        this.qualifiers = CollectionHelpers.toImmutableSmallSet(qualifiers);
     }
 
     @Override
     public Kind getKind() {
-        return kind;
+        return kind != null ? kind : Kind.CLASS;
     }
 
     @Override
     public String getDescription() {
-        return description;
+        return description != null ? description : "";
     }
 
     @Override
@@ -38,13 +37,13 @@ public final class RemovedBeanImpl implements RemovedBean {
 
     @Override
     public Set<Annotation> getQualifiers() {
-        return qualifiers;
+        return qualifiers != null ? qualifiers : Qualifiers.DEFAULT_QUALIFIERS;
     }
 
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        builder.append(kind).append(" bean ").append(description).append(" [types=")
+        builder.append(getKind()).append(" bean ").append(getDescription()).append(" [types=")
                 .append(types).append(", qualifiers=").append(qualifiers).append("]");
         return builder.toString();
     }

@@ -2,10 +2,11 @@ package io.quarkus.deployment.dev.testing;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
 
@@ -121,14 +122,18 @@ public class TestSupport implements TestController {
         }
         if (testCuratedApplication == null) {
             try {
-                List<Path> paths = new ArrayList<>();
+                Set<Path> paths = new LinkedHashSet<>();
                 paths.add(Paths.get(context.getApplicationRoot().getTest().get().getClassesPath()));
+                if (context.getApplicationRoot().getTest().get().getResourcesOutputPath() != null) {
+                    paths.add(Paths.get(context.getApplicationRoot().getTest().get().getResourcesOutputPath()));
+                }
                 paths.addAll(curatedApplication.getQuarkusBootstrap().getApplicationRoot().toList());
                 testCuratedApplication = curatedApplication.getQuarkusBootstrap().clonedBuilder()
                         .setMode(QuarkusBootstrap.Mode.TEST)
+                        .setAssertionsEnabled(true)
                         .setDisableClasspathCache(false)
                         .setIsolateDeployment(true)
-                        .setBaseClassLoader(getClass().getClassLoader())
+                        .setBaseClassLoader(getClass().getClassLoader().getParent())
                         .setTest(true)
                         .setAuxiliaryApplication(true)
                         .setHostApplicationIsTestOnly(devModeType == DevModeType.TEST_ONLY)
@@ -141,7 +146,11 @@ public class TestSupport implements TestController {
                 cl.addCloseTask(new Runnable() {
                     @Override
                     public void run() {
-                        testCuratedApplication.close();
+                        try {
+                            stop();
+                        } finally {
+                            testCuratedApplication.close();
+                        }
                     }
                 });
 
@@ -305,6 +314,18 @@ public class TestSupport implements TestController {
         }
 
         return ibr;
+    }
+
+    @Override
+    public boolean toggleLiveReloadEnabled() {
+
+        boolean lr = RuntimeUpdatesProcessor.INSTANCE.toggleLiveReloadEnabled();
+
+        for (TestListener i : testListeners) {
+            i.setLiveReloadEnabled(lr);
+        }
+
+        return lr;
     }
 
     @Override

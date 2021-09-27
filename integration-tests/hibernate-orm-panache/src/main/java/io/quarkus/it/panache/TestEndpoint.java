@@ -108,6 +108,11 @@ public class TestEndpoint {
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
 
+        // full form
+        persons = Person.find("FROM Person2 WHERE name = ?1", "stef").list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
         persons = Person.find("name = ?1", "stef").withLock(LockModeType.PESSIMISTIC_READ).list();
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
@@ -208,6 +213,13 @@ public class TestEndpoint {
         person = makeSavedPerson();
         Assertions.assertEquals(1, Dog.delete("owner = :owner", Parameters.with("owner", person)));
         Assertions.assertEquals(1, Person.delete("name", "stef"));
+        // full form
+        person = makeSavedPerson();
+        Assertions.assertEquals(1, Dog.delete("FROM Dog WHERE owner = :owner", Parameters.with("owner", person)));
+        Assertions.assertEquals(1, Person.delete("FROM Person2 WHERE name = ?1", "stef"));
+        person = makeSavedPerson();
+        Assertions.assertEquals(1, Dog.delete("DELETE FROM Dog WHERE owner = :owner", Parameters.with("owner", person)));
+        Assertions.assertEquals(1, Person.delete("DELETE FROM Person2 WHERE name = ?1", "stef"));
 
         Assertions.assertEquals(0, Person.deleteAll());
 
@@ -277,6 +289,7 @@ public class TestEndpoint {
         makeSavedPerson("p1");
         makeSavedPerson("p2");
 
+        // full form
         int updateByIndexParameter = Person.update("update from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1");
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
 
@@ -289,6 +302,7 @@ public class TestEndpoint {
         makeSavedPerson("p1");
         makeSavedPerson("p2");
 
+        // less full form
         updateByIndexParameter = Person.update("from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1");
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
 
@@ -346,6 +360,7 @@ public class TestEndpoint {
         makeSavedPerson("p1");
         makeSavedPerson("p2");
 
+        // full form
         int updateByIndexParameter = personDao.update("update from Person2 p set p.name = 'stefNEW' where p.name = ?1",
                 "stefp1");
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
@@ -359,6 +374,7 @@ public class TestEndpoint {
         makeSavedPerson("p1");
         makeSavedPerson("p2");
 
+        // less full form
         updateByIndexParameter = personDao.update("from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1");
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
 
@@ -587,6 +603,11 @@ public class TestEndpoint {
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
 
+        // full form
+        persons = personDao.find("FROM Person2 WHERE name = ?1", "stef").list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
         persons = personDao.find("name = ?1", "stef").withLock(LockModeType.PESSIMISTIC_READ).list();
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
@@ -678,6 +699,13 @@ public class TestEndpoint {
         person = makeSavedPerson();
         Assertions.assertEquals(1, dogDao.delete("owner = :owner", Parameters.with("owner", person)));
         Assertions.assertEquals(1, personDao.delete("name", "stef"));
+        // full form
+        person = makeSavedPerson();
+        Assertions.assertEquals(1, dogDao.delete("FROM Dog WHERE owner = :owner", Parameters.with("owner", person)));
+        Assertions.assertEquals(1, personDao.delete("FROM Person2 WHERE name = ?1", "stef"));
+        person = makeSavedPerson();
+        Assertions.assertEquals(1, dogDao.delete("DELETE FROM Dog WHERE owner = :owner", Parameters.with("owner", person)));
+        Assertions.assertEquals(1, personDao.delete("DELETE FROM Person2 WHERE name = ?1", "stef"));
 
         Assertions.assertEquals(0, personDao.deleteAll());
 
@@ -1119,6 +1147,17 @@ public class TestEndpoint {
         Assertions.assertEquals("stef", dogDto.ownerName);
         owner.delete();
 
+        CatOwner catOwner = new CatOwner("Julie");
+        catOwner.persist();
+        Cat bubulle = new Cat("Bubulle", catOwner);
+        bubulle.persist();
+
+        CatDto catDto = Cat.findAll().project(CatDto.class).firstResult();
+        Assertions.assertEquals("Julie", catDto.ownerName);
+
+        Cat.deleteAll();
+        CatOwner.deleteAll();
+
         return "OK";
     }
 
@@ -1289,9 +1328,9 @@ public class TestEndpoint {
     public String testBug8254() {
         CatOwner owner = new CatOwner("8254");
         owner.persist();
-        new Cat(owner).persist();
-        new Cat(owner).persist();
-        new Cat(owner).persist();
+        new Cat("Cat 1", owner).persist();
+        new Cat("Cat 2", owner).persist();
+        new Cat("Cat 3", owner).persist();
 
         // This used to fail with an invalid query "SELECT COUNT(*) SELECT DISTINCT cat.owner FROM Cat cat WHERE cat.owner = ?1"
         // Should now result in a valid query "SELECT COUNT(DISTINCT cat.owner) FROM Cat cat WHERE cat.owner = ?1"
@@ -1309,6 +1348,9 @@ public class TestEndpoint {
         assertEquals(3L, Cat.find("FROM Cat WHERE owner = ?1", owner).count());
         assertEquals(3L, Cat.find("owner", owner).count());
         assertEquals(1L, CatOwner.find("name = ?1", "8254").count());
+
+        Cat.deleteAll();
+        CatOwner.deleteAll();
 
         return "OK";
     }

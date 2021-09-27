@@ -5,7 +5,6 @@ import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -26,46 +25,6 @@ import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 
 public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
-
-    private static final Map<Integer, String> defaultReasonPhrases = new HashMap<>();
-    static {
-        defaultReasonPhrases.put(200, "OK");
-        defaultReasonPhrases.put(201, "Created");
-        defaultReasonPhrases.put(202, "Accepted");
-        defaultReasonPhrases.put(204, "No Content");
-        defaultReasonPhrases.put(205, "Reset Content");
-        defaultReasonPhrases.put(206, "Partial Content");
-        defaultReasonPhrases.put(301, "Moved Permanently");
-        defaultReasonPhrases.put(302, "Found");
-        defaultReasonPhrases.put(303, "See Other");
-        defaultReasonPhrases.put(304, "Not Modified");
-        defaultReasonPhrases.put(305, "Use Proxy");
-        defaultReasonPhrases.put(307, "Temporary Redirect");
-        defaultReasonPhrases.put(400, "Bad Request");
-        defaultReasonPhrases.put(401, "Unauthorized");
-        defaultReasonPhrases.put(402, "Payment Required");
-        defaultReasonPhrases.put(403, "Forbidden");
-        defaultReasonPhrases.put(404, "Not Found");
-        defaultReasonPhrases.put(405, "Method Not Allowed");
-        defaultReasonPhrases.put(406, "Not Acceptable");
-        defaultReasonPhrases.put(407, "Proxy Authentication Required");
-        defaultReasonPhrases.put(408, "Request Timeout");
-        defaultReasonPhrases.put(409, "Conflict");
-        defaultReasonPhrases.put(410, "Gone");
-        defaultReasonPhrases.put(411, "Length Required");
-        defaultReasonPhrases.put(412, "Precondition Failed");
-        defaultReasonPhrases.put(413, "Request Entity Too Large");
-        defaultReasonPhrases.put(414, "Request-URI Too Long");
-        defaultReasonPhrases.put(415, "Unsupported Media Type");
-        defaultReasonPhrases.put(416, "Requested Range Not Satisfiable");
-        defaultReasonPhrases.put(417, "Expectation Failed");
-        defaultReasonPhrases.put(500, "Internal Server Error");
-        defaultReasonPhrases.put(501, "Not Implemented");
-        defaultReasonPhrases.put(502, "Bad Gateway");
-        defaultReasonPhrases.put(503, "Service Unavailable");
-        defaultReasonPhrases.put(504, "Gateway Timeout");
-        defaultReasonPhrases.put(505, "HTTP Version Not Supported");
-    }
 
     protected int status = -1;
     protected String reasonPhrase;
@@ -199,7 +158,7 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
 
     @Override
     public Response.ResponseBuilder status(int status) {
-        return status(status, defaultReasonPhrases.get(status));
+        return status(status, AbstractRestResponseBuilder.defaultReasonPhrases.get(status));
     }
 
     @Override

@@ -489,13 +489,17 @@ class Parser implements Function<String, Expression>, ParserHelper {
     }
 
     private TemplateException parserError(String message) {
+        return parserError(message, origin(0));
+    }
+
+    private static TemplateException parserError(String message, Origin origin) {
         StringBuilder builder = new StringBuilder("Parser error");
-        if (!templateId.equals(generatedId)) {
-            builder.append(" in template [").append(templateId).append("]");
+        if (!origin.getTemplateId().equals(origin.getTemplateGeneratedId())) {
+            builder.append(" in template [").append(origin.getTemplateId()).append("]");
         }
-        builder.append(" on line ").append(line).append(": ")
+        builder.append(" on line ").append(origin.getLine()).append(": ")
                 .append(message);
-        return new TemplateException(origin(0),
+        return new TemplateException(origin,
                 builder.toString());
     }
 
@@ -718,19 +722,27 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 }
             }
         }
+
+        if (strParts.isEmpty()) {
+            throw parserError("empty expression found {" + value + "}", origin);
+        }
+
+        // Safe expressions
+        int lastIdx = strParts.size() - 1;
+        String last = strParts.get(lastIdx);
+        if (last.endsWith("??")) {
+            // foo.val?? -> foo.val.or(null)
+            strParts = ImmutableList.<String> builder().addAll(strParts.subList(0, lastIdx))
+                    .add(last.substring(0, last.length() - 2)).add("or(null)").build();
+        }
+
         List<Part> parts = new ArrayList<>(strParts.size());
         Part first = null;
         Iterator<String> strPartsIterator = strParts.iterator();
         while (strPartsIterator.hasNext()) {
             Part part = createPart(idGenerator, namespace, first, strPartsIterator, scope, origin);
             if (!isValidIdentifier(part.getName())) {
-                StringBuilder builder = new StringBuilder("Invalid identifier found [");
-                builder.append(value).append("]");
-                if (!origin.getTemplateId().equals(origin.getTemplateGeneratedId())) {
-                    builder.append(" in template [").append(origin.getTemplateId()).append("]");
-                }
-                builder.append(" on line ").append(origin.getLine());
-                throw new TemplateException(builder.toString());
+                throw parserError("invalid identifier found {" + value + "}", origin);
             }
             if (first == null) {
                 first = part;

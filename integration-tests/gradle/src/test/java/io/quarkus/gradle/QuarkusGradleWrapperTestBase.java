@@ -19,7 +19,6 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
 
     private static final String GRADLE_WRAPPER_WINDOWS = "gradlew.bat";
     private static final String GRADLE_WRAPPER_UNIX = "./gradlew";
-    private static final String GRADLE_NO_DAEMON = "--no-daemon";
     private static final String MAVEN_REPO_LOCAL = "maven.repo.local";
 
     private Map<String, String> systemProps;
@@ -32,13 +31,13 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         setupTestCommand();
         List<String> command = new LinkedList<>();
         command.add(getGradleWrapperCommand());
-        command.add(GRADLE_NO_DAEMON);
         command.addAll(getSytemProperties());
         command.add("--stacktrace");
         command.addAll(Arrays.asList(args));
 
         File logOutput = new File(projectDir, "command-output.log");
 
+        System.out.println("$ " + String.join(" ", command));
         Process p = new ProcessBuilder()
                 .directory(projectDir)
                 .command(command)
@@ -48,11 +47,17 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
                 .redirectError(logOutput)
                 .start();
 
-        p.waitFor(5, TimeUnit.MINUTES);
+        //long timeout for native tests
+        //that may also need to download docker
+        boolean done = p.waitFor(10, TimeUnit.MINUTES);
+        if (!done) {
+            destroyProcess(p);
+        }
         try (InputStream is = new FileInputStream(logOutput)) {
             final BuildResult commandResult = BuildResult.of(is);
-            if (p.exitValue() != 0) {
-                printCommandOutput(command, commandResult);
+            int exitCode = p.exitValue();
+            if (exitCode != 0) {
+                printCommandOutput(projectDir, command, commandResult, exitCode);
             }
             return commandResult;
         }
@@ -100,8 +105,33 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         return new StringBuilder().append("-D=").append(name).append("=").append(value).toString();
     }
 
-    private void printCommandOutput(List<String> command, BuildResult commandResult) {
-        System.err.println("Command: " + String.join(" ", command) + " failed with the following output:");
+    private void printCommandOutput(File projectDir, List<String> command, BuildResult commandResult, int exitCode) {
+        System.err.println(
+                "Command: " + String.join(" ", command) + " ran from: " + projectDir.getAbsolutePath()
+                        + " failed with exit code: " + exitCode + " and the following output:");
         System.err.println(commandResult.getOutput());
+    }
+
+    /**
+     * Try to destroy the process normally a few times
+     * and resort to forceful destruction if necessary
+     */
+    private static void destroyProcess(Process wrapperProcess) {
+        wrapperProcess.destroy();
+        int i = 0;
+        while (i++ < 10) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ignored) {
+
+            }
+            if (!wrapperProcess.isAlive()) {
+                break;
+            }
+        }
+
+        if (wrapperProcess.isAlive()) {
+            wrapperProcess.destroyForcibly();
+        }
     }
 }

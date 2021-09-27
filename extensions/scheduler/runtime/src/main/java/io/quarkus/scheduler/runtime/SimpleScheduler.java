@@ -167,6 +167,21 @@ public class SimpleScheduler implements Scheduler {
     }
 
     @Override
+    public boolean isPaused(String identity) {
+        Objects.requireNonNull(identity);
+        if (identity.isEmpty()) {
+            return false;
+        }
+        String parsedIdentity = SchedulerUtils.lookUpPropertyValue(identity);
+        for (ScheduledTask task : scheduledTasks) {
+            if (parsedIdentity.equals(task.trigger.id)) {
+                return !task.trigger.isRunning();
+            }
+        }
+        return false;
+    }
+
+    @Override
     public void resume() {
         if (!enabled) {
             LOG.warn("Scheduler is disabled and cannot be resumed");

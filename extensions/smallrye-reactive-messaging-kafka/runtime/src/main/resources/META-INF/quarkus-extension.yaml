@@ -6,7 +6,11 @@ metadata:
   keywords:
   - "kafka"
   - "reactive-kafka"
-  guide: "https://quarkus.io/guides/kafka"
+  guide: "https://quarkus.io/guides/kafka-reactive-getting-started"
   categories:
   - "messaging"
   status: "stable"
+  config:
+  - "mp.messaging."
+  - "quarkus.reactive-messaging."
+  - "quarkus.kafka."

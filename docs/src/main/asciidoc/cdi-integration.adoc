@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - CDI Integration Guide
+= CDI Integration Guide
 
 include::./attributes.adoc[]
 :numbered:
@@ -65,6 +65,8 @@ For example, classes from the _runtime module_ of a Quarkus extension are not in
 _Solution_: Use the `AdditionalBeanBuildItem`. 
 This build item can be used to specify one or more additional classes to be analyzed during the discovery. 
 Additional bean classes are transparently added to the application index processed by the container.
+
+IMPORTANT: It is not possible to conditionally enable/disable additional beans via the `@IfBuildProfile`, `@UnlessBuildProfile`, `@IfBuildProperty` and `@UnlessBuildProperty` annotations as described in <<cdi-reference.adoc#enable_build_profile>> and <<cdi-reference.adoc#enable_build_properties>>. Extensions should inspect the configuration or the current profile and only produce an `AdditionalBeanBuildItem` if really needed.
 
 .`AdditionalBeanBuildItem` Example
 [source,java]
@@ -448,9 +450,8 @@ We are going to use `InterceptorBindingRegistrarBuildItem` to get it done.
 InterceptorBindingRegistrarBuildItem addInterceptorBindings() {
     return new InterceptorBindingRegistrarBuildItem(new InterceptorBindingRegistrar() {
         @Override
-        public Map<DotName, Set<String>> registerAdditionalBindings() {
-            return Collections.singletonMap(DotName.createSimple(NotAnInterceptorBinding.class.getName()),
-                                        Collections.emptySet());
+        public List<InterceptorBinding> getAdditionalBindings() {
+            return List.of(InterceptorBinding.of(NotAnInterceptorBinding.class));
         }
     });
 }

@@ -72,6 +72,9 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
          *
          * `drop-and-create` is awesome in development mode.
          *
+         * This defaults to 'none', however if Dev Services is in use and no other extensions that manage the schema are present
+         * this will default to 'drop-and-create'.
+         *
          * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`, `validate`.
          */
         @ConfigItem(name = ConfigItem.PARENT, defaultValue = "none")
@@ -149,8 +152,14 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
         @ConfigItem(defaultValueDocumentation = "depends on dialect")
         public Optional<Boolean> jdbcWarnings = Optional.empty();
 
+        /**
+         * If set, Hibernate will log queries that took more than specified number of milliseconds to execute.
+         */
+        @ConfigItem
+        public Optional<Long> queriesSlowerThanMs = Optional.empty();
+
         public boolean isAnyPropertySet() {
-            return sql || !formatSql || jdbcWarnings.isPresent();
+            return sql || !formatSql || jdbcWarnings.isPresent() || queriesSlowerThanMs.isPresent();
         }
     }
 

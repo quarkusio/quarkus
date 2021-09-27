@@ -23,7 +23,9 @@ public class ClientProxies {
                 throw new InvalidRestClientDefinitionException(
                         "Failed to generate client for class " + clazz + " : " + failure);
             } else {
-                throw new IllegalArgumentException("Not a REST client interface: " + clazz);
+                throw new IllegalArgumentException("Not a REST client interface: " + clazz + ". No @Path annotation " +
+                        "found on the class or any methods of the interface and no HTTP method annotations " +
+                        "(@POST, @PUT, @GET, @HEAD, @DELETE, etc) found on any of the methods");
             }
         }
         //noinspection unchecked

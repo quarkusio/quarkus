@@ -10,8 +10,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.ContinuousTestingTestUtils;
+import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.vertx.http.deployment.devmode.tests.TestStatus;
 
 public class TestChangeTrackingWhenStartFailsTestCase {
 
@@ -34,12 +35,11 @@ public class TestChangeTrackingWhenStartFailsTestCase {
 
     @Test
     public void testChangeTrackingOnStartupFailure() throws InterruptedException {
-        TestStatus ts = ContinuousTestingTestUtils.waitForFirstRunToComplete();
-        Assertions.assertEquals(1L, ts.getLastRun());
+        ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
+        TestStatus ts = utils.waitForNextCompletion();
         Assertions.assertEquals(2L, ts.getTestsFailed());
         Assertions.assertEquals(2L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         //fail the startup
         test.modifySourceFile(StartupFailer.class, new Function<String, String>() {
@@ -48,12 +48,11 @@ public class TestChangeTrackingWhenStartFailsTestCase {
                 return s.replace("//fail();", "fail();");
             }
         });
-        ts = ContinuousTestingTestUtils.waitForRun(2);
-        Assertions.assertEquals(2L, ts.getLastRun());
+        ts = utils.waitForNextCompletion();
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
         Assertions.assertEquals(3L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
+
         //fail again
         test.modifySourceFile(StartupFailer.class, new Function<String, String>() {
             @Override
@@ -61,12 +60,11 @@ public class TestChangeTrackingWhenStartFailsTestCase {
                 return s.replace("fail();", "fail();fail();");
             }
         });
-        ts = ContinuousTestingTestUtils.waitForRun(3);
-        Assertions.assertEquals(3L, ts.getLastRun());
+        ts = utils.waitForNextCompletion();
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
         Assertions.assertEquals(3L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
+
         //now lets pass
         test.modifySourceFile(StartupFailer.class, new Function<String, String>() {
             @Override
@@ -74,11 +72,10 @@ public class TestChangeTrackingWhenStartFailsTestCase {
                 return s.replace("fail();fail();", "//fail();");
             }
         });
-        ts = ContinuousTestingTestUtils.waitForRun(4);
-        Assertions.assertEquals(4L, ts.getLastRun());
+        ts = utils.waitForNextCompletion();
         Assertions.assertEquals(2L, ts.getTestsFailed());
         Assertions.assertEquals(2L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
+
     }
 }

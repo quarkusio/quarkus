@@ -8,4 +8,9 @@ import io.quarkus.test.junit.NativeImageTest;
 @NativeImageTest
 public class HibernateValidatorFunctionalityInGraalITCase extends HibernateValidatorFunctionalityTest {
 
+    @Override
+    protected boolean isTestsInJVM() {
+        return false;
+    }
+
 }

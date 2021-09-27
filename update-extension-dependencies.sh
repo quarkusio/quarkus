@@ -49,7 +49,7 @@ echo ''
 # get all "artifact-id" values from the generated json file
 # pipefail is switched off briefly so that a better error can be logged when nothing is found
 set +o pipefail
-ARTIFACT_IDS=$(cd "${PRG_PATH}" && grep '^    "artifact"' devtools/bom-descriptor-json/target/*.json | grep -Eo 'quarkus-[a-z0-9-]+' | sort)
+ARTIFACT_IDS=$(cd "${PRG_PATH}" && grep '^    "artifact"' devtools/bom-descriptor-json/target/quarkus-bom-quarkus-platform-descriptor-*.json | grep -Eo 'quarkus-[a-z0-9-]+' | sort)
 set -o pipefail
 if [ -z "${ARTIFACT_IDS}" ]
 then

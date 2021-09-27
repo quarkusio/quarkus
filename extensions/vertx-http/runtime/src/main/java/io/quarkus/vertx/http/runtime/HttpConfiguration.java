@@ -222,6 +222,29 @@ public class HttpConfiguration {
     @ConfigItem
     public boolean enableCompression;
 
+    /**
+     * When enabled, vert.x will decompress the request's body if it's compressed.
+     *
+     * Note that the compression format (e.g., gzip) must be specified in the Content-Encoding header
+     * in the request.
+     */
+    @ConfigItem
+    public boolean enableDecompression;
+
+    /**
+     * Provides a hint (optional) for the default content type of responses generated for
+     * the errors not handled by the application.
+     * <p>
+     * If the client requested a supported content-type in request headers
+     * (e.g. "Accept: application/json", "Accept: text/html"),
+     * Quarkus will use that content type.
+     * <p>
+     * Otherwise, it will default to the content type configured here.
+     * </p>
+     */
+    @ConfigItem
+    public Optional<PayloadHint> unhandledErrorContentTypeDefault;
+
     public ProxyConfig proxy;
 
     public int determinePort(LaunchMode launchMode) {
@@ -236,5 +259,10 @@ public class HttpConfiguration {
         ENABLED,
         REDIRECT,
         DISABLED;
+    }
+
+    public enum PayloadHint {
+        JSON,
+        HTML,
     }
 }

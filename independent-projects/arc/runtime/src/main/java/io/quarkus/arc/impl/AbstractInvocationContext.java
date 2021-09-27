@@ -4,8 +4,8 @@ import io.quarkus.arc.ArcInvocationContext;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +46,30 @@ abstract class AbstractInvocationContext implements ArcInvocationContext, Suppli
 
     @Override
     public Set<Annotation> getInterceptorBindings() {
-        return Collections.unmodifiableSet(interceptorBindings);
+        return interceptorBindings;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T extends Annotation> T findIterceptorBinding(Class<T> annotationType) {
+        for (Annotation annotation : interceptorBindings) {
+            if (annotation.annotationType().equals(annotationType)) {
+                return (T) annotation;
+            }
+        }
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T extends Annotation> List<T> findIterceptorBindings(Class<T> annotationType) {
+        List<T> found = new ArrayList<>();
+        for (Annotation annotation : (Set<Annotation>) interceptorBindings) {
+            if (annotation.annotationType().equals(annotationType)) {
+                found.add((T) annotation);
+            }
+        }
+        return found;
     }
 
     @Override

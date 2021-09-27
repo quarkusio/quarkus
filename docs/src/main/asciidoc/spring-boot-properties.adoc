@@ -3,12 +3,15 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Accessing application properties with Spring Boot properties API
+= Accessing application properties with Spring Boot properties API
 
 include::./attributes.adoc[]
 
-If you prefer to use Spring Boot `@ConfigurationProperties` annotated class to access application properties instead of a
-Quarkus native `@ConfigProperties` or a MicroProfile `@ConfigProperty` approach, you can do that with this extension.
+If you prefer to use Spring Boot `@ConfigurationProperties` annotated class to access application properties instead of
+a Quarkus native `@ConfigProperties` or a MicroProfile `@ConfigProperty` approach, you can do that with this extension.
+
+IMPORTANT: Spring Boot `@ConfigurationProperties` has a few limitations. For instance, `Map` injection is not
+supported. Consider using link:config-mappings.adoc[Mapping configuration to objects].
 
 == Prerequisites
 
@@ -34,7 +37,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=spring-boot-properties-quickstart \
     -DclassName="org.acme.spring.boot.properties.GreetingResource" \

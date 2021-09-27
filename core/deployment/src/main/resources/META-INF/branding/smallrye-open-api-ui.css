@@ -10,11 +10,16 @@ html{
     padding-bottom: 5px !important;
 }
 
-#swagger-ui .swagger-ui .topbar a {
-    max-width: 180px;
+#swaggerUiLogoLink {
+    max-width: 50px;
+    min-width: 50px;
 }
 
-#swagger-ui .topbar-wrapper .link a::after {
+#swaggerUiTitleLink {
+    max-width: 120px;
+}
+
+#swaggerUiTitleLink::after {
     content: "Swagger UI";
     font-size: 1.25rem;
     font-weight: normal;

@@ -10,9 +10,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.ContinuousTestingTestUtils;
+import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.vertx.http.deployment.devmode.tests.TestStatus;
-import io.quarkus.vertx.http.testrunner.ContinuousTestingTestUtils;
 
 public class TestParameterizedTestCase {
 
@@ -35,12 +35,12 @@ public class TestParameterizedTestCase {
 
     @Test
     public void testParameterizedTests() throws InterruptedException {
-        TestStatus ts = ContinuousTestingTestUtils.waitForFirstRunToComplete();
-        Assertions.assertEquals(1L, ts.getLastRun());
+        ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
+        TestStatus ts = utils.waitForNextCompletion();
+
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(4L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
         test.modifyTestSourceFile(ParamET.class, new Function<String, String>() {
             @Override
@@ -48,12 +48,11 @@ public class TestParameterizedTestCase {
                 return s.replace("4", "3");
             }
         });
-        ts = ContinuousTestingTestUtils.waitForRun(2);
-        Assertions.assertEquals(2L, ts.getLastRun());
+        ts = utils.waitForNextCompletion();
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(5L, ts.getTestsPassed()); //passing test should not have been run
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
+
         Assertions.assertEquals(5L, ts.getTotalTestsPassed());
 
         test.modifySourceFile(HelloResource.class, new Function<String, String>() {
@@ -62,13 +61,11 @@ public class TestParameterizedTestCase {
                 return s.replace("hello", "boo");
             }
         });
-        ts = ContinuousTestingTestUtils.waitForRun(3);
-        Assertions.assertEquals(3L, ts.getLastRun());
+        ts = utils.waitForNextCompletion();
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
         Assertions.assertEquals(4L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-        Assertions.assertEquals(-1L, ts.getRunning());
 
     }
 }

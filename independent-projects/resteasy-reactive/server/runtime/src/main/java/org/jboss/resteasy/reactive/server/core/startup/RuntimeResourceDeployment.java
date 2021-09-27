@@ -27,6 +27,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
@@ -126,8 +127,6 @@ public class RuntimeResourceDeployment {
         MultivaluedMap<ScoreSystem.Category, ScoreSystem.Diagnostic> score = new QuarkusMultivaluedHashMap<>();
 
         Map<String, Integer> pathParameterIndexes = buildParamIndexMap(classPathTemplate, methodPathTemplate);
-        List<ServerRestHandler> handlers = new ArrayList<>();
-        addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.AFTER_MATCH);
         MediaType sseElementType = null;
         if (method.getSseElementType() != null) {
             sseElementType = MediaType.valueOf(method.getSseElementType());
@@ -143,25 +142,37 @@ public class RuntimeResourceDeployment {
         }
 
         Class<Object> resourceClass = loadClass(clazz.getClassName());
-        Class<?>[] parameterClasses = new Class[method.getParameters().length];
+        Class<?>[] parameterDeclaredTypes = new Class[method.getParameters().length];
+        Class<?>[] parameterDeclaredUnresolvedTypes = new Class[method.getParameters().length];
         for (int i = 0; i < method.getParameters().length; ++i) {
-            parameterClasses[i] = loadClass(method.getParameters()[i].declaredType);
+            MethodParameter parameter = method.getParameters()[i];
+            String declaredType = parameter.declaredType;
+            String declaredUnresolvedType = parameter.declaredUnresolvedType;
+            parameterDeclaredTypes[i] = loadClass(declaredType);
+            parameterDeclaredUnresolvedTypes[i] = parameterDeclaredTypes[i];
+            if (!declaredType.equals(declaredUnresolvedType)) {
+                parameterDeclaredUnresolvedTypes[i] = loadClass(declaredUnresolvedType);
+            }
         }
+
         Set<String> classAnnotationNames = new HashSet<>();
         for (Annotation annotation : resourceClass.getAnnotations()) {
             classAnnotationNames.add(annotation.annotationType().getName());
         }
         ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
-                parameterClasses, classAnnotationNames, method.getMethodAnnotationNames());
+                parameterDeclaredUnresolvedTypes, classAnnotationNames, method.getMethodAnnotationNames());
 
         RuntimeInterceptorDeployment.MethodInterceptorContext interceptorDeployment = runtimeInterceptorDeployment
                 .forMethod(method, lazyMethod);
 
         //setup reader and writer interceptors first
-        handlers.addAll(interceptorDeployment.setupInterceptorHandler());
-        //at this point the handler chain only has interceptors
-        //which we also want in the abort handler chain
-        List<ServerRestHandler> abortHandlingChain = new ArrayList<>(handlers);
+        List<ServerRestHandler> interceptorHandlers = interceptorDeployment.setupInterceptorHandler();
+        //we want interceptors in the abort handler chain
+        List<ServerRestHandler> abortHandlingChain = new ArrayList<>(interceptorHandlers);
+
+        List<ServerRestHandler> handlers = new ArrayList<>();
+        addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.AFTER_MATCH);
+        handlers.addAll(interceptorHandlers);
 
         // when a method is blocking, we also want all the request filters to run on the worker thread
         // because they can potentially set thread local variables
@@ -415,7 +426,7 @@ public class RuntimeResourceDeployment {
                 classPathTemplate,
                 method.getProduces() == null ? null : serverMediaType,
                 consumesMediaTypes, invoker,
-                clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterClasses,
+                clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterDeclaredTypes,
                 nonAsyncReturnType, method.isBlocking(), resourceClass,
                 lazyMethod,
                 pathParameterIndexes, score, sseElementType, clazz.resourceExceptionMapper());
@@ -548,6 +559,9 @@ public class RuntimeResourceDeployment {
                 return type.getActualTypeArguments()[0];
             }
             if (type.getRawType() == Multi.class) {
+                return type.getActualTypeArguments()[0];
+            }
+            if (type.getRawType() == RestResponse.class) {
                 return type.getActualTypeArguments()[0];
             }
             return returnType;

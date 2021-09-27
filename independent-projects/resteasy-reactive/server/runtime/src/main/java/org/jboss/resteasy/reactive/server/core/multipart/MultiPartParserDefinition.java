@@ -41,7 +41,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
 
     private Path tempFileLocation;
 
-    private String defaultEncoding = StandardCharsets.ISO_8859_1.displayName();
+    private String defaultCharset = StandardCharsets.UTF_8.displayName();
 
     private boolean deleteUploadsOnEnd = true;
 
@@ -49,7 +49,6 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
 
     private long fileSizeThreshold;
 
-    private int maxParameters = 1000;
     private long maxAttributeSize = 2048;
     private long maxEntitySize = -1;
 
@@ -75,7 +74,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 return null;
             }
             final MultiPartUploadHandler parser = new MultiPartUploadHandler(exchange, boundary, maxIndividualFileSize,
-                    fileSizeThreshold, defaultEncoding, mimeType, maxAttributeSize, maxEntitySize);
+                    fileSizeThreshold, defaultCharset, mimeType, maxAttributeSize, maxEntitySize);
             exchange.registerCompletionCallback(new CompletionCallback() {
                 @Override
                 public void onComplete(Throwable throwable) {
@@ -119,12 +118,12 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         return this;
     }
 
-    public String getDefaultEncoding() {
-        return defaultEncoding;
+    public String getDefaultCharset() {
+        return defaultCharset;
     }
 
-    public MultiPartParserDefinition setDefaultEncoding(final String defaultEncoding) {
-        this.defaultEncoding = defaultEncoding;
+    public MultiPartParserDefinition setDefaultCharset(final String defaultCharset) {
+        this.defaultCharset = defaultCharset;
         return this;
     }
 
@@ -181,6 +180,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
             this.fileSizeThreshold = fileSizeThreshold;
             this.maxAttributeSize = maxAttributeSize;
             this.maxEntitySize = maxEntitySize;
+            int maxParameters = 1000;
             this.data = new FormData(maxParameters);
             String charset = defaultEncoding;
             if (contentType != null) {
@@ -206,7 +206,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         }
 
         @Override
-        public FormData parseBlocking() throws IOException {
+        public FormData parseBlocking() throws Exception {
             final FormData existing = exchange.getFormData();
             if (existing != null) {
                 return existing;
@@ -221,8 +221,6 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                     throw new IOException("Connection terminated parsing multipart request");
                 }
                 exchange.setFormData(data);
-            } catch (RuntimeException e) {
-                throw new IOException(e);
             }
             return data;
         }
@@ -239,9 +237,9 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                     if (fileName != null && fileSizeThreshold == 0) {
                         try {
                             if (tempFileLocation != null) {
-                                file = Files.createTempFile(tempFileLocation, "undertow", "upload");
+                                file = Files.createTempFile(tempFileLocation, "resteasy-reactive", "upload");
                             } else {
-                                file = Files.createTempFile("undertow", "upload");
+                                file = Files.createTempFile("resteasy-reactive", "upload");
                             }
                             createdFiles.add(file);
                             fileChannel = FileChannel.open(file, StandardOpenOption.READ, StandardOpenOption.WRITE);
@@ -268,9 +266,9 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
             if (file == null && fileName != null && fileSizeThreshold < this.currentFileSize) {
                 try {
                     if (tempFileLocation != null) {
-                        file = Files.createTempFile(tempFileLocation, "undertow", "upload");
+                        file = Files.createTempFile(tempFileLocation, "resteasy-reactive", "upload");
                     } else {
-                        file = Files.createTempFile("undertow", "upload");
+                        file = Files.createTempFile("resteasy-reactive", "upload");
                     }
                     createdFiles.add(file);
 
@@ -323,7 +321,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                         }
                     }
 
-                    data.add(currentName, new String(contentBytes.toByteArray(), charset), charset, headers);
+                    data.add(currentName, contentBytes.toString(charset), charset, headers);
                 } catch (UnsupportedEncodingException e) {
                     throw new RuntimeException(e);
                 }

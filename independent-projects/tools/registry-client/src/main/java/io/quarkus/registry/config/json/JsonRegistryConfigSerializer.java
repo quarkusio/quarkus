@@ -19,7 +19,8 @@ public class JsonRegistryConfigSerializer extends JsonSerializer<JsonRegistryCon
     @Override
     public void serialize(JsonRegistryConfig value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         if (value.isIdOnly()) {
-            gen.writeString(value.getId());
+            // to avoid quotes it is written as a number
+            gen.writeNumber(value.getId());
         } else {
             gen.writeStartObject();
             gen.writeObjectFieldStart(value.getId());

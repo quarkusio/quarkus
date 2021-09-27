@@ -15,6 +15,7 @@ import static org.jboss.jandex.AnnotationTarget.Kind.METHOD_PARAMETER;
 import static org.jboss.jandex.AnnotationValue.createStringValue;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
@@ -79,6 +81,7 @@ public class ConfigBuildStep {
     private static final DotName LIST_NAME = DotName.createSimple(List.class.getName());
     private static final DotName SUPPLIER_NAME = DotName.createSimple(Supplier.class.getName());
     private static final DotName CONFIG_VALUE_NAME = DotName.createSimple(io.smallrye.config.ConfigValue.class.getName());
+    public static final AnnotationInstance[] EMPTY_ANNOTATION_INSTANCES = {};
 
     @BuildStep
     void additionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -182,9 +185,21 @@ public class ConfigBuildStep {
 
         Set<ConfigValidationMetadata> propertiesToValidate = new HashSet<>();
         for (ConfigPropertyBuildItem configProperty : configProperties) {
+            String rawTypeName = configProperty.getPropertyType().name().toString();
+            List<String> actualTypeArgumentNames = Collections.emptyList();
+            if (configProperty.getPropertyType().kind() == Kind.PARAMETERIZED_TYPE) {
+                List<Type> argumentTypes = configProperty.getPropertyType().asParameterizedType().arguments();
+                actualTypeArgumentNames = new ArrayList<>(argumentTypes.size());
+                for (Type argumentType : argumentTypes) {
+                    actualTypeArgumentNames.add(argumentType.name().toString());
+                    if (argumentType.kind() != Kind.PRIMITIVE) {
+                        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, argumentType.name().toString()));
+                    }
+                }
+
+            }
             propertiesToValidate.add(new ConfigValidationMetadata(configProperty.getPropertyName(),
-                    configProperty.getPropertyType().name().toString(),
-                    configProperty.getDefaultValue()));
+                    rawTypeName, actualTypeArgumentNames, configProperty.getDefaultValue()));
         }
 
         recorder.validateConfigProperties(propertiesToValidate);
@@ -316,6 +331,7 @@ public class ConfigBuildStep {
     void beanConfigClasses(
             List<ConfigClassBuildItem> configClasses,
             BeanRegistrationPhaseBuildItem beanRegistrationPhase,
+            CombinedIndexBuildItem combinedIndex,
             BuildProducer<BeanConfiguratorBuildItem> beanConfigurationRegistry) {
 
         for (ConfigClassBuildItem configClass : configClasses) {
@@ -330,14 +346,50 @@ public class ConfigBuildStep {
                                 new AnnotationValue[] { createStringValue("prefix", configClass.getPrefix()) }));
             }
 
+            collectTypes(combinedIndex, configClass);
+
             beanConfigurationRegistry.produce(new BeanConfiguratorBuildItem(
                     beanRegistrationPhase.getContext()
                             .configure(configClass.getConfigClass())
-                            .types(configClass.getConfigClass())
-                            .qualifiers(qualifiers.toArray(new AnnotationInstance[] {}))
+                            .types(collectTypes(combinedIndex, configClass))
+                            .qualifiers(qualifiers.toArray(EMPTY_ANNOTATION_INSTANCES))
                             .creator(ConfigMappingCreator.class)
                             .param("type", configClass.getConfigClass())
                             .param("prefix", configClass.getPrefix())));
+        }
+    }
+
+    private Type[] collectTypes(CombinedIndexBuildItem combinedIndex, ConfigClassBuildItem configClass) {
+        IndexView index = combinedIndex.getIndex();
+        DotName configIfaceName = DotName.createSimple(configClass.getConfigClass().getName());
+        ClassInfo configIfaceInfo = index.getClassByName(configIfaceName);
+        if ((configIfaceInfo == null) || configIfaceInfo.interfaceNames().isEmpty()) {
+            return new Type[] { Type.create(configIfaceName, Kind.CLASS) };
+        }
+
+        Set<DotName> allIfaces = new HashSet<>();
+        allIfaces.add(configIfaceName);
+        collectInterfacesRec(configIfaceInfo, index, allIfaces);
+        Type[] result = new Type[allIfaces.size()];
+        int i = 0;
+        for (DotName iface : allIfaces) {
+            result[i++] = Type.create(iface, Kind.CLASS);
+        }
+        return result;
+    }
+
+    private static void collectInterfacesRec(ClassInfo current, IndexView index, Set<DotName> result) {
+        List<DotName> interfaces = current.interfaceNames();
+        if (interfaces.isEmpty()) {
+            return;
+        }
+        for (DotName iface : interfaces) {
+            ClassInfo classByName = index.getClassByName(iface);
+            if (classByName == null) {
+                continue; // just ignore this type
+            }
+            result.add(iface);
+            collectInterfacesRec(classByName, index, result);
         }
     }
 

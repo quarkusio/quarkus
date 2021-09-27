@@ -44,10 +44,10 @@
                                 <JAVA_OPTS>-Xmx512m</JAVA_OPTS>
                             </environmentVariables>
                             <arguments>
-                                <argument>wrapper</argument>
+                                <argument>init</argument>
+                                <argument>--type</argument>
+                                <argument>basic</argument>
                                 <argument>--no-daemon</argument>
-                                <argument>--gradle-version</argument>
-                                <argument>${gradle-wrapper.version}</argument>
                             </arguments>
                             <workingDirectory>target/classes/gradle-wrapper</workingDirectory>
                             <addOutputToClasspath>true</addOutputToClasspath>

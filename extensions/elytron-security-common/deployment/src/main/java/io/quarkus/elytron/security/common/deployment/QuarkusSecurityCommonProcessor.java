@@ -23,6 +23,17 @@ public class QuarkusSecurityCommonProcessor {
     }
 
     /**
+     * Graal VM now seems to loose providers registered at static init
+     *
+     * We re-register at runtime (which is a no-op in JVM mode)
+     */
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void registerPasswordProviderForNative(ElytronCommonRecorder recorder) {
+        recorder.registerPasswordProvider();
+    }
+
+    /**
      * Register the Elytron-provided password factory SPI implementation
      *
      * @param classes producer factory for ReflectiveClassBuildItems

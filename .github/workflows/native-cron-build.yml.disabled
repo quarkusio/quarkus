@@ -23,17 +23,17 @@ jobs:
         run: docker pull quay.io/quarkus/ubi-quarkus-native-image:20.2.0-java${{ matrix.java }}
 
       - name: Set up JDK ${{ matrix.java }}
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         if: matrix.java != '8'
         with:
+          distribution: temurin
           java-version: ${{ matrix.java }}
 
       - name: Set up JDK ${{ matrix.java }}
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         if: matrix.java == '8'
         with:
+          distribution: temurin
           java-version: ${{ matrix.java }}
           # stay on a version before 252 for now because it breaks ALPN handling
           release: jdk8u242-b08

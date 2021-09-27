@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Writing JSON REST Services
+= Writing JSON REST Services
 
 include::./attributes.adoc[]
 
@@ -43,12 +43,12 @@ First, we need a new project. Create a new project with the following command:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=rest-json-quickstart \
     -DclassName="org.acme.rest.json.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy,resteasy-jackson"
+    -Dextensions="resteasy-jackson"
 cd rest-json-quickstart
 ----
 
@@ -72,7 +72,7 @@ Quarkus also supports http://json-b.net/[JSON-B] so, if you prefer JSON-B over J
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=rest-json-quickstart \
     -DclassName="org.acme.rest.json.FruitResource" \
@@ -182,6 +182,7 @@ If you don't rely on the JSON default, it is heavily recommended to annotate you
 It will allow to narrow down the number of JAX-RS providers (which can be seen as converters) included in the native executable.
 ====
 
+[[json]]
 === Configuring JSON support
 
 ==== Jackson
@@ -645,7 +646,7 @@ Configuration via an application-supplied subclass of `Application` is supported
 In contrast to JAX-RS (and RESTeasy) running in a standard servlet-container, Quarkus only supports the deployment of a single JAX-RS application.
 If multiple JAX-RS `Application` classes are defined, the build will fail with the message `Multiple classes have been annotated with @ApplicationPath which is currently not supported`.
 
-If multiple JAX-RS applications are defined, the property `quarkus.resteasy.ignoreApplicationClasses=true` can be used to ignore all explicit `Application` classes. This makes all resource-classes available via the application-path as defined by `quarkus.resteasy.path` (default: `/`).
+If multiple JAX-RS applications are defined, the property `quarkus.resteasy.ignore-application-classes=true` can be used to ignore all explicit `Application` classes. This makes all resource-classes available via the application-path as defined by `quarkus.resteasy.path` (default: `/`).
 
 === Support limitations of JAX-RS application
 

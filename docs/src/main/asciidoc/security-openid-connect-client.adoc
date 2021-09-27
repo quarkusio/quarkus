@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using OpenID Connect and OAuth2 Client and Filters to manage access tokens
+= Using OpenID Connect (OIDC) and OAuth2 Client and Filters to manage access tokens
 
 include::./attributes.adoc[]
 :toc:
@@ -596,15 +596,17 @@ quarkus.oidc-client.token-path=/protocol/openid-connect/tokens
 [[token-propagation]]
 == Token Propagation in MicroProfile RestClient client filter
 
-`quarkus-oidc-token-propagation` extension provide `io.quarkus.oidc.token.propagation.AccessTokenRequestFilter` and `io.quarkus.oidc.token.propagation.JsonWebTokenRequestFilter` JAX-RS ClientRequestFilters which propagates the current link:security-openid-connect[Bearer] or link:security-openid-connect-web-authentication[Authorization Code Flow] access token as an HTTP `Authorization` `Bearer` scheme value.
+The `quarkus-oidc-token-propagation` extension provides two JAX-RS `javax.ws.rs.client.ClientRequestFilter` class implementations that simplify the propagation of authentication information.
+`io.quarkus.oidc.token.propagation.AccessTokenRequestFilter` propagates the link:security-openid-connect[Bearer] token present in the current active request or the token acquired from the link:security-openid-connect-web-authentication[Authorization Code Flow], as the HTTP `Authorization` header's `Bearer` scheme value.
+The `io.quarkus.oidc.token.propagation.JsonWebTokenRequestFilter` provides the same functionality, but in addition provides support for JWT tokens.
 
 When you need to propagate the current Authorization Code Flow access token then the immediate token propagation will work well - as the code flow access tokens (as opposed to ID tokens) are meant to be propagated for the current Quarkus endpoint to access the remote services on behalf of the currently authenticated user.
 
 However, the direct end to end Bearer token propagation should be avoided if possible. For example, `Client -> Service A -> Service B` where `Service B` receives a token sent by `Client` to `Service A`. In such cases `Service B` will not be able to distinguish if the token came from `Service A` or from `Client` directly. For `Service B` to verify the token came from `Service A` it should be able to assert a new issuer and audience claims.
 
-Additionally, a complex application may need to exchange or update the tokens before propagating them. For example, the access context might be different when Service A is accessing Service B. In this case, Service A might be granted a narrow or a completely different set of scopes to access Service B.
+Additionally, a complex application may need to exchange or update the tokens before propagating them. For example, the access context might be different when `Service A` is accessing `Service B`. In this case, `Service A` might be granted a narrow or a completely different set of scopes to access `Service B`.
 
-Please see below how both `AccessTokenRequestFilter` and `JsonWebTokenRequestFilter` can help.
+The following sections show how `AccessTokenRequestFilter` and `JsonWebTokenRequestFilter` can help.
 
 === AccessTokenRequestFilter
 

@@ -1,5 +1,6 @@
 package io.quarkus.scheduler.test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
@@ -34,8 +35,10 @@ public class PausedResumedMethodTest {
 
     @Test
     public void testPause() throws InterruptedException {
+        assertTrue(scheduler.isPaused(IDENTITY));
         scheduler.resume(IDENTITY);
         assertTrue(Jobs.LATCH.await(3, TimeUnit.SECONDS));
+        assertFalse(scheduler.isPaused(IDENTITY));
     }
 
     static class Jobs {

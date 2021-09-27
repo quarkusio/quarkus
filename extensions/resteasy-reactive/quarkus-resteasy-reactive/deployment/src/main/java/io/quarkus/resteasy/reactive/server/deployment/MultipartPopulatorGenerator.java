@@ -189,7 +189,8 @@ final class MultipartPopulatorGenerator {
      */
     static String generate(ClassInfo multipartClassInfo, ClassOutput classOutput, IndexView index) {
         if (!multipartClassInfo.hasNoArgsConstructor()) {
-            throw new IllegalArgumentException("Classes annotated with '@MultipartForm' must contain a no-args constructor");
+            throw new IllegalArgumentException("Classes annotated with '@MultipartForm' must contain a no-args constructor. " +
+                    "The constructor is missing on " + multipartClassInfo.name());
         }
 
         String multipartClassName = multipartClassInfo.name().toString();
@@ -394,11 +395,11 @@ final class MultipartPopulatorGenerator {
                                             String.class,
                                             Class.class,
                                             java.lang.reflect.Type.class, MediaType.class,
-                                            ResteasyReactiveRequestContext.class),
+                                            ResteasyReactiveRequestContext.class, String.class),
                                     formStrValueHandle, populate.readStaticField(typeField),
                                     populate.readStaticField(genericTypeField),
                                     populate.readStaticField(mediaTypeField),
-                                    rrCtxHandle));
+                                    rrCtxHandle, formAttrNameHandle));
                         }
                     }
 

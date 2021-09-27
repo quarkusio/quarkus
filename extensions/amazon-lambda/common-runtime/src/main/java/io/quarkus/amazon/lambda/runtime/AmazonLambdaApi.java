@@ -3,6 +3,10 @@ package io.quarkus.amazon.lambda.runtime;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
+import io.quarkus.runtime.LaunchMode;
+
 /**
  * Various constants and util methods used for communication with the AWS API.
  */
@@ -28,20 +32,35 @@ public class AmazonLambdaApi {
     public static final String API_PATH_ERROR = "/error";
     public static final String API_PATH_RESPONSE = "/response";
 
-    static URL invocationNext() throws MalformedURLException {
-        return new URL(API_PROTOCOL + runtimeApi() + API_PATH_INVOCATION_NEXT);
+    // Only available in dev/test mode and points to path for mock even tserver
+    public static final String API_BASE_PATH_TEST = "/_lambda_";
+    public static final String POST_EVENT = API_BASE_PATH_TEST;
+
+    // this is quarkus specific endpoint for dev mode
+    public static final String API_PATH_REQUEUE = "/requeue";
+
+    static String baseUrl() {
+        return API_PROTOCOL + runtimeApi();
     }
 
-    static URL invocationError(String requestId) throws MalformedURLException {
-        return new URL(API_PROTOCOL + runtimeApi() + API_PATH_INVOCATION + requestId + API_PATH_ERROR);
+    static URL invocationNext(String baseUrl) throws MalformedURLException {
+        return new URL(baseUrl + API_PATH_INVOCATION_NEXT);
     }
 
-    static URL invocationResponse(String requestId) throws MalformedURLException {
-        return new URL(API_PROTOCOL + runtimeApi() + API_PATH_INVOCATION + requestId + API_PATH_RESPONSE);
+    static URL invocationError(String baseUrl, String requestId) throws MalformedURLException {
+        return new URL(baseUrl + API_PATH_INVOCATION + requestId + API_PATH_ERROR);
     }
 
-    static URL initError() throws MalformedURLException {
-        return new URL(API_PROTOCOL + runtimeApi() + API_PATH_INIT_ERROR);
+    static URL invocationResponse(String baseUrl, String requestId) throws MalformedURLException {
+        return new URL(baseUrl + API_PATH_INVOCATION + requestId + API_PATH_RESPONSE);
+    }
+
+    static URL requeue(String baseUrl, String requestId) throws MalformedURLException {
+        return new URL(baseUrl + API_PATH_INVOCATION + requestId + API_PATH_REQUEUE);
+    }
+
+    static URL initError(String baseUrl) throws MalformedURLException {
+        return new URL(baseUrl + API_PATH_INIT_ERROR);
     }
 
     static String logGroupName() {
@@ -64,10 +83,16 @@ public class AmazonLambdaApi {
         return System.getenv("AWS_LAMBDA_FUNCTION_VERSION");
     }
 
+    public static boolean isTestMode() {
+        //need this config check for native tests
+        return LaunchMode.current() == LaunchMode.TEST
+                || ConfigProvider.getConfig().getOptionalValue(QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, String.class).isPresent();
+    }
+
     private static String runtimeApi() {
-        String testApi = System.getProperty(QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API);
-        if (testApi != null) {
-            return testApi;
+        var testApi = ConfigProvider.getConfig().getOptionalValue(QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, String.class);
+        if (testApi.isPresent()) {
+            return testApi.get();
         }
         return System.getenv("AWS_LAMBDA_RUNTIME_API");
     }

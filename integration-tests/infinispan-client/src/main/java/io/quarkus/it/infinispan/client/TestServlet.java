@@ -58,6 +58,10 @@ public class TestServlet {
     RemoteCache<String, Book> cache;
 
     @Inject
+    @Remote("booksOld")
+    RemoteCache<String, Book> boolsOld;
+
+    @Inject
     @Remote("magazine")
     RemoteCache<String, Magazine> magazineCache;
 
@@ -78,9 +82,7 @@ public class TestServlet {
         ContinuousQuery<String, Book> continuousQuery = Search.getContinuousQuery(cache);
 
         QueryFactory queryFactory = Search.getQueryFactory(cache);
-        Query query = queryFactory.from(Book.class)
-                .having("publicationYear").gt(2011)
-                .build();
+        Query query = queryFactory.create("from book_sample.Book where publicationYear > 2011");
 
         ContinuousQueryListener<String, Book> listener = new ContinuousQueryListener<String, Book>() {
             @Override
@@ -182,7 +184,7 @@ public class TestServlet {
         Query query = queryFactory.from(Book.class)
                 .having("authors.name").like("%" + name + "%")
                 .build();
-        List<Book> list = query.list();
+        List<Book> list = query.execute().list();
         if (list.isEmpty()) {
             return "No one found for " + name;
         }
@@ -202,7 +204,7 @@ public class TestServlet {
         ensureStart();
         QueryFactory queryFactory = Search.getQueryFactory(cache);
         Query query = queryFactory.create("from book_sample.Book b where b.authors.name like '%" + name + "%'");
-        List<Book> list = query.list();
+        List<Book> list = query.execute().list();
         if (list.isEmpty()) {
             return "No one found for " + name;
         }

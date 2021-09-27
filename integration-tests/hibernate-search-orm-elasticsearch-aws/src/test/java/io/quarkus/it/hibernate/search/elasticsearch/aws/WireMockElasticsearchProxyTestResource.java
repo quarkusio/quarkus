@@ -4,8 +4,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.any;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 import java.util.Map;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -34,27 +32,9 @@ public class WireMockElasticsearchProxyTestResource implements QuarkusTestResour
     }
 
     @Override
-    public void inject(Object testInstance) {
-        Class<?> c = testInstance.getClass();
-        Class<? extends Annotation> annotation = InjectWireMock.class;
-        Class<?> injectedClass = WireMockServer.class;
-        while (c != Object.class) {
-            for (Field f : c.getDeclaredFields()) {
-                if (f.getAnnotation(annotation) != null) {
-                    if (!injectedClass.isAssignableFrom(f.getType())) {
-                        throw new RuntimeException(annotation + " can only be used on fields of type " + injectedClass);
-                    }
-                    f.setAccessible(true);
-                    try {
-                        f.set(testInstance, wireMockServer);
-                        return;
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-            c = c.getSuperclass();
-        }
+    public void inject(TestInjector testInjector) {
+        testInjector.injectIntoFields(wireMockServer,
+                new TestInjector.AnnotatedAndMatchesType(InjectWireMock.class, WireMockServer.class));
     }
 
     @Override

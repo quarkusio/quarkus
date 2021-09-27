@@ -43,7 +43,9 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
+import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
+import io.quarkus.kubernetes.spi.GeneratedKubernetesResourceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.runtime.LaunchMode;
@@ -89,15 +91,12 @@ class KubernetesProcessor {
             EnabledKubernetesDeploymentTargetsBuildItem kubernetesDeploymentTargets,
             List<ConfiguratorBuildItem> configurators,
             List<DecoratorBuildItem> decorators,
-            BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer) {
+            Optional<CustomProjectRootBuildItem> customProjectRoot,
+            BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer,
+            BuildProducer<GeneratedKubernetesResourceBuildItem> generatedKubernetesResourceProducer) {
 
         List<ConfiguratorBuildItem> allConfigurationRegistry = new ArrayList<>(configurators);
         List<DecoratorBuildItem> allDecorators = new ArrayList<>(decorators);
-
-        if (kubernetesPorts.isEmpty()) {
-            log.debug("The service is not an HTTP service so no Kubernetes manifests will be generated");
-            return;
-        }
 
         final Path root;
         try {
@@ -116,7 +115,8 @@ class KubernetesProcessor {
 
         try {
             // by passing false to SimpleFileWriter, we ensure that no files are actually written during this phase
-            Optional<Project> optionalProject = KubernetesCommonHelper.createProject(applicationInfo, artifactPath);
+            Optional<Project> optionalProject = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot,
+                    artifactPath);
             optionalProject.ifPresent(project -> {
 
                 final Map<String, String> generatedResourcesMap;
@@ -171,7 +171,9 @@ class KubernetesProcessor {
                     Path targetPath = outputTarget.getOutputDirectory().resolve(KUBERNETES).resolve(fileName);
                     String relativePath = targetPath.toAbsolutePath().toString().replace(root.toAbsolutePath().toString(), "");
 
-                    resourceEntry.getKey().replace(root.toAbsolutePath().toString(), KUBERNETES);
+                    generatedKubernetesResourceProducer.produce(new GeneratedKubernetesResourceBuildItem(fileName,
+                            resourceEntry.getValue().getBytes(StandardCharsets.UTF_8)));
+
                     if (fileName.endsWith(".yml") || fileName.endsWith(".json")) {
                         String target = fileName.substring(0, fileName.lastIndexOf("."));
                         if (!deploymentTargets.contains(target)) {

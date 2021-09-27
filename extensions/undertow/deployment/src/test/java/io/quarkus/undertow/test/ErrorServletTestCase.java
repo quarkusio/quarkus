@@ -31,7 +31,7 @@ public class ErrorServletTestCase {
         RestAssured.given().accept(ContentType.JSON)
                 .when().get("/error").then()
                 .statusCode(500)
-                .body("details", startsWith("Error handling"))
+                .body("details", startsWith("Error id"))
                 .body("stack", startsWith("java.lang.RuntimeException: Error !!!"));
     }
 }

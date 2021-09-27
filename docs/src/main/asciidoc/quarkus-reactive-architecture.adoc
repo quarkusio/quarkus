@@ -37,7 +37,7 @@ In addition to this, the https://principles.reactive.foundation/[Reactive Princi
 
 Reactive System is an architectural style that can be summarized by: distributed systems done right.
 Relying on asynchronous message passing helps enforce the loose coupling (both in terms of space and time) between the different components.
-You send messages to virtual destinations. The receiver can be anywhere or can even not be when the message is sent.
+You send messages to virtual destinations. The receiver can be located anywhere, or even not yet exist at the time of the message dispatch.
 The elasticity pillar allows scaling up and down individual components according to the load.
 Elasticity also provides redundancy, which helps with the resilience pillar.
 Failures are inevitable.
@@ -143,16 +143,19 @@ image::proactor-pattern.png[The proactor pattern in Quarkus,width=50%, align=cen
 
 Thanks to hints in your code (such as the `@Blocking` and `@NonBlocking` annotations), Quarkus extensions can decide when the application logic is blocking or non-blocking.
 If we go back to the HTTP endpoint example from above, the HTTP request is always received on an I/O thread.
-Then, the extension dispatching that request to your code decides whether to call it on the I/O thread, avoiding thread switches, or on a worker thread.This decision depends on the extension.
-For example, the RESTEasy Reactive extension uses the @Blocking annotation to determine if the method needs to be invoked using a worker thread, or if it can be invoked using the I/O thread.
+Then, the extension dispatching that request to your code decides whether to call it on the I/O thread, avoiding thread switches, or on a worker thread.
+This decision depends on the extension.
+For example, the RESTEasy Reactive extension uses the `@Blocking` annotation to determine if the method needs to be invoked using a worker thread, or if it can be invoked using the I/O thread.
 
-Quarkus is pragmatic and versatile.You decide how to develop and execute your application.
+Quarkus is pragmatic and versatile.
+You decide how to develop and execute your application.
 You can use the imperative way, the reactive way, or mix them, using reactive on the parts of the application under high concurrency.
 
 [#quarkus-extensions-enabling-reactive]
 == Quarkus Extensions enabling Reactive
 
-Quarkus offers a large set of reactive APIs and features.This section lists the most important, but it's not an exhaustive list.
+Quarkus offers a large set of reactive APIs and features.
+This section lists the most important, but it's not an exhaustive list.
 Quarkus adds new features in every release, and the https://github.com/quarkiverse[Quarkiverse] proposes many extensions enabling _Reactive_.
 
 === HTTP
@@ -160,16 +163,18 @@ Quarkus adds new features in every release, and the https://github.com/quarkiver
 * RESTEasy Reactive: an implementation of JAX-RS tailored for the Quarkus architecture.
 It follows a reactive-first approach but allows imperative code using the `@Blocking` annotation.
 * Reactive Routes: a declarative way to register HTTP routes directly on the Vert.x router used by Quarkus to route HTTP requests to methods.
-* Reactive Rest Client: allows consuming HTTP endpoints.Under the hood, it uses the non-blocking I/O features from Quarkus.
+* Reactive Rest Client: allows consuming HTTP endpoints.
+Under the hood, it uses the non-blocking I/O features from Quarkus.
 * Qute - the Qute template engine exposes a reactive API to render templates in a non-blocking manner.
 
 === Data
 
 * Hibernate Reactive: a version of Hibernate ORM using asynchronous and non-blocking clients to interact with the database.
 * Hibernate Reactive with Panache: provide active record and repository support on top of Hibernate Reactive.
-* Reactive PostgreSQL client: An asynchronous and non-blocking client interacting with a PostgreSQL database, allowing high concurrency.
-* Reactive MySQL client: An asynchronous and non-blocking client interacting with a MySQL database
-* The MongoDB extension: exposes an imperative and reactive (Mutiny) APIs to interact with MongoDB.Mongo with Panache offers active record support for both the imperative and reactive APIs.
+* Reactive PostgreSQL client: an asynchronous and non-blocking client interacting with a PostgreSQL database, allowing high concurrency.
+* Reactive MySQL client: an asynchronous and non-blocking client interacting with a MySQL database
+* The MongoDB extension: exposes an imperative and reactive (Mutiny) APIs to interact with MongoDB.
+* Mongo with Panache offers active record support for both the imperative and reactive APIs.
 * The Cassandra extension: exposes an imperative and reactive (Mutiny) APIs to interact with Cassandra
 * The Redis extension: exposes an imperative and reactive (Mutiny) APIs to store and retrieve data from a Redis key-value store.
 
@@ -181,7 +186,8 @@ It follows a reactive-first approach but allows imperative code using the `@Bloc
 
 === Network Protocols and Utilities
 
-* gRPC: implement and consume gRPC services.Offer reactive and imperative programming interfaces.
+* gRPC: implement and consume gRPC services.
+Offer reactive and imperative programming interfaces.
 * GraphQL: implement and query (client) data store using GraphQL. Offers Mutiny APIs and subscriptions as event streams.
 * Fault Tolerance: provide retry, fallback, circuit breakers abilities to your application.It can be used with Mutiny types.
 

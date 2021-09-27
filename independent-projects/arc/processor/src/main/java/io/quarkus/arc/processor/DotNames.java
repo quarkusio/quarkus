@@ -9,6 +9,7 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.VetoedProducer;
 import io.quarkus.arc.impl.ComputingCache;
 import java.io.Serializable;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Repeatable;
 import java.util.Optional;
 import java.util.OptionalDouble;
@@ -67,6 +68,7 @@ public final class DotNames {
     public static final DotName DISPOSES = create(Disposes.class);
     public static final DotName QUALIFIER = create(Qualifier.class);
     public static final DotName REPEATABLE = create(Repeatable.class);
+    public static final DotName INHERITED = create(Inherited.class);
     public static final DotName NONBINDING = create(Nonbinding.class);
     public static final DotName INJECT = create(Inject.class);
     public static final DotName POST_CONSTRUCT = create(PostConstruct.class);

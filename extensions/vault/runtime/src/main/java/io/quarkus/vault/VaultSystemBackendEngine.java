@@ -3,10 +3,13 @@ package io.quarkus.vault;
 import java.util.List;
 
 import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
+import io.quarkus.vault.sys.EnableEngineOptions;
 import io.quarkus.vault.sys.VaultHealth;
 import io.quarkus.vault.sys.VaultHealthStatus;
 import io.quarkus.vault.sys.VaultInit;
 import io.quarkus.vault.sys.VaultSealStatus;
+import io.quarkus.vault.sys.VaultSecretEngine;
+import io.quarkus.vault.sys.VaultTuneInfo;
 
 /**
  * This service provides access to the system backend.
@@ -79,4 +82,56 @@ public interface VaultSystemBackendEngine {
      * @return a list of all policy names
      */
     List<String> getPolicies();
+
+    /**
+     * Get the tune info for a secret engine at a specific mount.
+     *
+     * @param mount Name of the mount
+     * @return current tune info
+     */
+    VaultTuneInfo getTuneInfo(String mount);
+
+    /**
+     * Update the tune info for a secret engine at a specific mount.
+     *
+     * @param mount Name of the mount
+     * @param tuneInfo Tune info with fields to update
+     */
+    void updateTuneInfo(String mount, VaultTuneInfo tuneInfo);
+
+    /**
+     * Check if an engine is mounted at a specific mount.
+     *
+     * @param mount Name of the mount
+     * @return True if an engine is mounted, false otherwise
+     */
+    boolean isEngineMounted(String mount);
+
+    /**
+     * Enables a secret engine at a specific mount.
+     *
+     * @param engine Type of engine to mount.
+     * @param mount Engine mount path.
+     * @param description Human friendly description of mount point.
+     * @param options Engine options.
+     */
+    void enable(VaultSecretEngine engine, String mount, String description, EnableEngineOptions options);
+
+    /**
+     * Enables a secret engine at a specific mount.
+     *
+     * @param engineType Type of engine to mount.
+     * @param mount Engine mount path.
+     * @param description Human friendly description of mount point.
+     * @param options Engine options.
+     */
+    void enable(String engineType, String mount, String description, EnableEngineOptions options);
+
+    /**
+     * Disables the engine at a specific mount.
+     *
+     * @param mount Engine mount path.
+     */
+    void disable(String mount);
+
 }

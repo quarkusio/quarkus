@@ -19,10 +19,13 @@ import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
@@ -93,6 +96,7 @@ public class QuarkusBootstrap implements Serializable {
     private final boolean hostApplicationIsTestOnly;
     private final boolean flatClassPath;
     private final ConfiguredClassLoading classLoadingConfig;
+    private final boolean assertionsEnabled;
 
     private QuarkusBootstrap(Builder builder, ConfiguredClassLoading classLoadingConfig) {
         this.applicationRoot = builder.applicationRoot;
@@ -108,6 +112,7 @@ public class QuarkusBootstrap implements Serializable {
         this.baseClassLoader = builder.baseClassLoader;
         this.targetDirectory = builder.targetDirectory;
         this.appModelResolver = builder.appModelResolver;
+        this.assertionsEnabled = builder.assertionsEnabled;
         this.versionUpdate = builder.versionUpdate;
         this.versionUpdateNumber = builder.versionUpdateNumber;
         this.dependenciesOrigin = builder.dependenciesOrigin;
@@ -183,15 +188,51 @@ public class QuarkusBootstrap implements Serializable {
                             p.getProperty(selectKey("quarkus.class-loading.parent-first-artifacts", p, mode)));
                     Set<AppArtifactKey> liveReloadable = toArtifactSet(
                             p.getProperty(selectKey("quarkus.class-loading.reloadable-artifacts", p, mode)));
+                    Set<AppArtifactKey> removedArtifacts = toArtifactSet(
+                            p.getProperty(selectKey("quarkus.class-loading.removed-artifacts", p, mode)));
                     boolean flatClassPath = Boolean.parseBoolean(
                             p.getProperty(selectKey("quarkus.test.flat-class-path", p, mode)));
-                    return new ConfiguredClassLoading(parentFirst, liveReloadable, flatClassPath);
+                    Map<AppArtifactKey, List<String>> removedResources = toArtifactMapList(
+                            "quarkus.class-loading.removed-resources.", p, mode);
+                    return new ConfiguredClassLoading(parentFirst, liveReloadable, removedArtifacts, removedResources,
+                            flatClassPath);
                 } catch (IOException e) {
                     throw new RuntimeException("Failed to load bootstrap classloading config from application.properties", e);
                 }
             }
         }
-        return new ConfiguredClassLoading(Collections.emptySet(), Collections.emptySet(), false);
+        return new ConfiguredClassLoading(Collections.emptySet(), Collections.emptySet(), Collections.emptySet(),
+                Collections.emptyMap(), false);
+    }
+
+    private static Map<AppArtifactKey, List<String>> toArtifactMapList(String baseConfigKey, Properties properties, Mode mode) {
+        Properties profileProps = new Properties();
+        String profile = BootstrapProfile.getActiveProfile(mode);
+        for (Map.Entry<Object, Object> i : properties.entrySet()) {
+            String key = i.getKey().toString();
+            if (key.startsWith("%")) {
+                continue;
+            }
+            String profileKey = "%" + profile + "." + key;
+            if (properties.containsKey(profileKey)) {
+                profileProps.put(key, properties.getProperty(profileKey));
+            } else {
+                profileProps.put(key, i.getValue());
+            }
+        }
+        //now we have a 'sanitised' map with the correct props for the profile.
+        Map<AppArtifactKey, List<String>> ret = new HashMap<>();
+        for (Map.Entry<Object, Object> entry : profileProps.entrySet()) {
+            String key = entry.getKey().toString();
+            String value = entry.getValue().toString();
+            if (key.startsWith(baseConfigKey)) {
+                String artifactId = key.substring(baseConfigKey.length());
+                artifactId = artifactId.replace("\"", "");
+                List<String> resources = Arrays.asList(value.split(","));
+                ret.put(new AppArtifactKey(artifactId.split(":")), resources);
+            }
+        }
+        return ret;
     }
 
     private static String selectKey(String base, Properties p, Mode mode) {
@@ -283,6 +324,10 @@ public class QuarkusBootstrap implements Serializable {
         return rebuild;
     }
 
+    public boolean isAssertionsEnabled() {
+        return assertionsEnabled;
+    }
+
     public List<ClassLoaderEventListener> getClassLoaderEventListeners() {
         return this.classLoadListeners;
     }
@@ -298,6 +343,7 @@ public class QuarkusBootstrap implements Serializable {
                 .setLocalProjectDiscovery(localProjectDiscovery)
                 .setTargetDirectory(targetDirectory)
                 .setAppModelResolver(appModelResolver)
+                .setAssertionsEnabled(assertionsEnabled)
                 .setVersionUpdateNumber(versionUpdateNumber)
                 .setVersionUpdate(versionUpdate)
                 .setDependenciesOrigin(dependenciesOrigin)
@@ -327,6 +373,10 @@ public class QuarkusBootstrap implements Serializable {
         return flatClassPath;
     }
 
+    public boolean isTest() {
+        return test;
+    }
+
     public static class Builder {
         public List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
         public boolean hostApplicationIsTestOnly;
@@ -346,6 +396,7 @@ public class QuarkusBootstrap implements Serializable {
         Boolean localProjectDiscovery;
         Path targetDirectory;
         AppModelResolver appModelResolver;
+        boolean assertionsEnabled = inheritedAssertionsEnabled();
         VersionUpdateNumber versionUpdateNumber = VersionUpdateNumber.MICRO;
         VersionUpdate versionUpdate = VersionUpdate.NONE;
         DependenciesOrigin dependenciesOrigin;
@@ -556,6 +607,18 @@ public class QuarkusBootstrap implements Serializable {
         public Builder addClassLoaderEventListeners(List<ClassLoaderEventListener> classLoadListeners) {
             this.classLoadListeners.addAll(classLoadListeners);
             return this;
+        }
+
+        public Builder setAssertionsEnabled(boolean assertionsEnabled) {
+            this.assertionsEnabled = assertionsEnabled;
+            return this;
+        }
+
+        @SuppressWarnings("AssertWithSideEffects")
+        private boolean inheritedAssertionsEnabled() {
+            boolean result = false;
+            assert result = true;
+            return result;
         }
 
         public QuarkusBootstrap build() {

@@ -20,13 +20,15 @@ class RegistryExtensionResolver {
 
     private final RegistryConfig config;
     private final RegistryClient extensionResolver;
+    private final int index;
 
     private Pattern recognizedQuarkusVersions;
 
     RegistryExtensionResolver(RegistryClient extensionResolver,
-            MessageWriter log) throws RegistryResolutionException {
+            MessageWriter log, int index) throws RegistryResolutionException {
         this.extensionResolver = Objects.requireNonNull(extensionResolver, "Registry extension resolver is null");
         this.config = extensionResolver.resolveRegistryConfig();
+        this.index = index;
 
         String versionExpr = config.getQuarkusVersions() == null ? null
                 : config.getQuarkusVersions().getRecognizedVersionsExpression();
@@ -39,6 +41,10 @@ class RegistryExtensionResolver {
         return config.getId();
     }
 
+    int getIndex() {
+        return index;
+    }
+
     int checkQuarkusVersion(String quarkusVersion) {
         if (recognizedQuarkusVersions == null) {
             return VERSION_NOT_CONFIGURED;
@@ -48,6 +54,14 @@ class RegistryExtensionResolver {
         }
         return config.getQuarkusVersions().isExclusiveProvider() ? VERSION_EXCLUSIVE_PROVIDER
                 : VERSION_RECOGNIZED;
+    }
+
+    boolean isExclusiveProviderOf(String quarkusVersion) {
+        return checkQuarkusVersion(quarkusVersion) == VERSION_EXCLUSIVE_PROVIDER;
+    }
+
+    boolean isAcceptsQuarkusVersionQueries(String quarkusVersion) {
+        return checkQuarkusVersion(quarkusVersion) >= 0;
     }
 
     int checkPlatform(ArtifactCoords platform) {
@@ -73,5 +87,9 @@ class RegistryExtensionResolver {
 
     ExtensionCatalog resolvePlatformExtensions(ArtifactCoords platform) throws RegistryResolutionException {
         return extensionResolver.resolvePlatformExtensions(platform);
+    }
+
+    void clearCache() throws RegistryResolutionException {
+        extensionResolver.clearCache();
     }
 }

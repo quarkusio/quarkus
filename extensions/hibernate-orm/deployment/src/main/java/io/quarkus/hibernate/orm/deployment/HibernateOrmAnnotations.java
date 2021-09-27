@@ -138,6 +138,7 @@ public final class HibernateOrmAnnotations {
             DotName.createSimple("org.hibernate.annotations.ColumnTransformer"),
             DotName.createSimple("org.hibernate.annotations.ColumnTransformers"),
             DotName.createSimple("org.hibernate.annotations.Columns"),
+            DotName.createSimple("org.hibernate.annotations.Comment"),
             DotName.createSimple("org.hibernate.annotations.CreationTimestamp"),
             DotName.createSimple("org.hibernate.annotations.DiscriminatorFormula"),
             DotName.createSimple("org.hibernate.annotations.DiscriminatorOptions"),

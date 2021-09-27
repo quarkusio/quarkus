@@ -1,5 +1,6 @@
 package io.quarkus.oidc.runtime;
 
+import java.io.Closeable;
 import java.security.Key;
 import java.time.Duration;
 import java.util.List;
@@ -31,7 +32,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
-public class OidcProvider {
+public class OidcProvider implements Closeable {
 
     private static final Logger LOG = Logger.getLogger(OidcProvider.class);
     private static final String ANY_ISSUER = "any";
@@ -144,6 +145,13 @@ public class OidcProvider {
     }
 
     public Uni<TokenVerificationResult> introspectToken(String token) {
+        if (client.getMetadata().getIntrospectionUri() == null) {
+            LOG.debugf(
+                    "Token issued to client %s can not be introspected because the introspection endpoint address is unknown - "
+                            + "please check if your OpenId Connect Provider supports the token introspection",
+                    oidcConfig.clientId.get());
+            throw new AuthenticationFailedException();
+        }
         return client.introspectToken(token).onItemOrFailure()
                 .transform(new BiFunction<TokenIntrospection, Throwable, TokenVerificationResult>() {
 
@@ -153,7 +161,7 @@ public class OidcProvider {
                             throw new AuthenticationFailedException(t);
                         }
                         if (!Boolean.TRUE.equals(introspectionResult.getBoolean(OidcConstants.INTROSPECTION_TOKEN_ACTIVE))) {
-                            LOG.debugf("Token issued to client %s is not active: %s", oidcConfig.clientId.get());
+                            LOG.debugf("Token issued to client %s is not active", oidcConfig.clientId.get());
                             throw new AuthenticationFailedException();
                         }
                         Long exp = introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP);
@@ -162,7 +170,7 @@ public class OidcProvider {
                                     ? client.getOidcConfig().token.lifespanGrace.getAsInt()
                                     : 0;
                             if (System.currentTimeMillis() / 1000 > exp + lifespanGrace) {
-                                LOG.debugf("Token issued to client %s has expired %s", oidcConfig.clientId.get());
+                                LOG.debugf("Token issued to client %s has expired", oidcConfig.clientId.get());
                                 throw new AuthenticationFailedException();
                             }
                         }
@@ -187,6 +195,13 @@ public class OidcProvider {
 
     public Uni<AuthorizationCodeTokens> refreshTokens(String refreshToken) {
         return client.refreshAuthorizationCodeTokens(refreshToken);
+    }
+
+    @Override
+    public void close() {
+        if (client != null) {
+            client.close();
+        }
     }
 
     private class JsonWebKeyResolver implements RefreshableVerificationKeyResolver {

@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Validation with Hibernate Validator
+= Validation with Hibernate Validator
 
 include::./attributes.adoc[]
 
@@ -44,7 +44,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=validation-quickstart \
     -DclassName="org.acme.validation.BookResource" \
@@ -303,7 +303,11 @@ You don't have to wire anything.
 ====
 Obviously, for each listed type, you can declare only one bean.
 
-These beans should be declared as `@ApplicationScoped`.
+Most of the time, these beans should be declared as `@ApplicationScoped`.
+
+However, in the case of ``ConstraintValidator``s that are dependent of attributes of the constraint annotation
+(typically when implementing the `initialize(A constraintAnnotation)` method),
+use the `@Dependent` scope to make sure each annotation context has a separate instance of the `ConstraintValidator` bean.
 ====
 
 ==== Constraint validators as beans

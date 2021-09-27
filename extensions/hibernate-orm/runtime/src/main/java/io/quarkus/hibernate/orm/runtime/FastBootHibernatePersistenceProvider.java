@@ -172,8 +172,11 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings,
                     integrationSettings);
 
-            // Inject the datasource
-            injectDataSource(persistenceUnitName, recordedState.getDataSource(), runtimeSettingsBuilder);
+            Optional<String> dataSourceName = recordedState.getDataSource();
+            if (dataSourceName.isPresent()) {
+                // Inject the datasource
+                injectDataSource(persistenceUnitName, dataSourceName.get(), runtimeSettingsBuilder);
+            }
 
             // Inject runtime configuration if the persistence unit was defined by Quarkus configuration
             if (!recordedState.isFromPersistenceXml()) {
@@ -204,7 +207,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                     persistenceUnitName,
                     standardServiceRegistry /* Mostly ignored! (yet needs to match) */,
                     runtimeSettings,
-                    validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy());
+                    validatorFactory, cdiBeanManager);
         }
 
         log.debug("Found no matching persistence units");
@@ -368,6 +371,11 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         if (persistenceUnitConfig.log.jdbcWarnings.isPresent()) {
             runtimeSettingsBuilder.put(AvailableSettings.LOG_JDBC_WARNINGS,
                     persistenceUnitConfig.log.jdbcWarnings.get().toString());
+        }
+
+        if (persistenceUnitConfig.log.queriesSlowerThanMs.isPresent()) {
+            runtimeSettingsBuilder.put(AvailableSettings.LOG_SLOW_QUERY,
+                    persistenceUnitConfig.log.queriesSlowerThanMs.get());
         }
     }
 

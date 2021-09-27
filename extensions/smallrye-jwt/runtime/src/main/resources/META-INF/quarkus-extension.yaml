@@ -12,3 +12,7 @@ metadata:
   - "web"
   - "security"
   status: "stable"
+  config:
+  - "mp.jwt."
+  - "smallrye.jwt."
+  - "quarkus.smallrye-jwt."

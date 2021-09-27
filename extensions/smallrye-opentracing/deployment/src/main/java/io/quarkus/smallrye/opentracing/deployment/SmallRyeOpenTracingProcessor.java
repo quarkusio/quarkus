@@ -5,9 +5,11 @@ import java.lang.reflect.Method;
 import javax.enterprise.inject.spi.ObserverMethod;
 import javax.servlet.DispatcherType;
 
+import io.opentracing.Tracer;
 import io.opentracing.contrib.interceptors.OpenTracingInterceptor;
 import io.opentracing.contrib.jaxrs2.server.SpanFinishingFilter;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -28,7 +30,10 @@ import io.quarkus.undertow.deployment.FilterBuildItem;
 public class SmallRyeOpenTracingProcessor {
 
     @BuildStep
-    AdditionalBeanBuildItem registerBeans() {
+    AdditionalBeanBuildItem registerBeans(BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+        // Some components obtain the tracer via CDI.current().select(Tracer.class)
+        // E.g. io.quarkus.smallrye.opentracing.runtime.QuarkusSmallRyeTracingDynamicFeature and io.smallrye.graphql.cdi.tracing.TracingService
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(Tracer.class));
         return new AdditionalBeanBuildItem(OpenTracingInterceptor.class, TracerProducer.class);
     }
 

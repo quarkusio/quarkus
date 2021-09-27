@@ -12,11 +12,13 @@ import io.quarkus.registry.config.json.JsonRegistryPlatformsConfig;
 import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -28,24 +30,32 @@ import java.util.Objects;
 public class RegistriesConfigLocator {
 
     public static final String CONFIG_RELATIVE_PATH = ".quarkus/config.yaml";
-    public static final String CONFIG_FILE_PATH_PROPERTY = "qer.config";
+    public static final String CONFIG_FILE_PATH_PROPERTY = "quarkus.tools.config";
+
+    static final String QUARKUS_REGISTRIES = "QUARKUS_REGISTRIES";
+    static final String QUARKUS_REGISTRY_ENV_VAR_PREFIX = "QUARKUS_REGISTRY_";
 
     /**
      * Locate the registry client configuration file and deserialize it.
-     * The method will be looking for the file in the following locations in this order:
+     *
+     * The method will look for the file in the following locations in this order:
      * <ol>
-     * <li>if <code>qer.config</code> system property is set, its value will be used as the location of the configuration
-     * file</li>
+     * <li>if <code>quarkus.config.root</code> system property is set, its value will be
+     * used as the location of the configuration file</li>
      * <li>current user directory (which usually would be the project dir)</li>
      * <li><code>.quarkus/config.yaml</code> in the user home directory
      * </ol>
      *
-     * Given that the presence of the configuration file is optional, if the configuration file couldn't be located,
-     * an empty configuration would be returned to the caller.
+     * If the configuration file can't be located (it is optional),
+     * an empty configuration will be returned to the caller.
      *
      * @return registry client configuration, never null
      */
     public static RegistriesConfig resolveConfig() {
+        final RegistriesConfig config = initFromEnvironmentOrNull(System.getenv());
+        if (config != null) {
+            return config;
+        }
         final Path configYaml = locateConfigYaml();
         if (configYaml == null) {
             return completeRequiredConfig(new JsonRegistriesConfig());
@@ -81,7 +91,26 @@ public class RegistriesConfigLocator {
         }
     }
 
-    private static Path locateConfigYaml() {
+    /**
+     * Deserializes registry client configuration from a reader.
+     *
+     * @param configYaml reader
+     * @return deserialized registry client configuration
+     */
+    public static RegistriesConfig load(Reader configYaml) {
+        try {
+            return completeRequiredConfig(RegistriesConfigMapperHelper.deserializeYaml(configYaml, JsonRegistriesConfig.class));
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to parse config file " + configYaml, e);
+        }
+    }
+
+    /**
+     * Returns the registry client configuration file or null, if the file could not be found.
+     *
+     * @return the registry client configuration file or null, if the file could not be found
+     */
+    public static Path locateConfigYaml() {
         final String prop = PropertiesUtil.getProperty(CONFIG_FILE_PATH_PROPERTY);
         Path configYaml;
         if (prop != null) {
@@ -96,22 +125,31 @@ public class RegistriesConfigLocator {
         if (Files.exists(configYaml)) {
             return configYaml;
         }
-        configYaml = Paths.get(PropertiesUtil.getProperty("user.home")).resolve(CONFIG_RELATIVE_PATH);
+        configYaml = getDefaultConfigYamlLocation();
         return Files.exists(configYaml) ? configYaml : null;
     }
 
-    private static RegistriesConfig completeRequiredConfig(RegistriesConfig original) {
+    /**
+     * Returns the default location of the registry client configuration file.
+     *
+     * @return the default location of the registry client configuration file
+     */
+    public static Path getDefaultConfigYamlLocation() {
+        return Paths.get(PropertiesUtil.getProperty("user.home")).resolve(CONFIG_RELATIVE_PATH);
+    }
+
+    static RegistriesConfig completeRequiredConfig(RegistriesConfig original) {
         final JsonRegistriesConfig config = new JsonRegistriesConfig();
         config.setDebug(original.isDebug());
         if (original.getRegistries().isEmpty()) {
             config.addRegistry(getDefaultRegistry());
         } else {
+            boolean sawEnabled = false;
             for (RegistryConfig qerConfig : original.getRegistries()) {
-                if (!qerConfig.isDisabled()) {
-                    config.addRegistry(completeRequiredConfig(qerConfig));
-                }
+                config.addRegistry(completeRequiredConfig(qerConfig));
+                sawEnabled |= qerConfig.isEnabled();
             }
-            if (config.isEmpty()) {
+            if (!sawEnabled) {
                 config.addRegistry(getDefaultRegistry());
             }
         }
@@ -125,9 +163,12 @@ public class RegistriesConfigLocator {
         final String id = original.getId();
         final JsonRegistryConfig config = new JsonRegistryConfig(id);
         config.setUpdatePolicy(original.getUpdatePolicy());
+        config.setEnabled(original.isEnabled());
         config.setDescriptor(completeDescriptor(original));
-        config.setMaven(completeRequiedMavenConfig(original));
         if (original != null) {
+            if (original.getMaven() != null) {
+                config.setMaven(original.getMaven());
+            }
             if (original.getNonPlatformExtensions() != null) {
                 config.setNonPlatformExtensions(original.getNonPlatformExtensions());
             }
@@ -137,18 +178,6 @@ public class RegistriesConfigLocator {
             if (!original.getExtra().isEmpty()) {
                 config.setExtra(original.getExtra());
             }
-        }
-        return config;
-    }
-
-    private static RegistryMavenConfig completeRequiedMavenConfig(RegistryConfig original) {
-        RegistryMavenConfig originalMaven = original.getMaven();
-        if (hasRequiredConfig(originalMaven)) {
-            return originalMaven;
-        }
-        final JsonRegistryMavenConfig config = new JsonRegistryMavenConfig();
-        if (originalMaven != null) {
-            config.setRepository(originalMaven.getRepository());
         }
         return config;
     }
@@ -195,13 +224,6 @@ public class RegistriesConfigLocator {
         if (qerConfig.getDescriptor() == null) {
             return false;
         }
-        return hasRequiredConfig(qerConfig.getMaven());
-    }
-
-    private static boolean hasRequiredConfig(RegistryMavenConfig maven) {
-        if (maven == null) {
-            return false;
-        }
         return true;
     }
 
@@ -241,5 +263,59 @@ public class RegistriesConfigLocator {
         mavenRepo.setId(Constants.DEFAULT_REGISTRY_ID);
         mavenRepo.setUrl(Constants.DEFAULT_REGISTRY_MAVEN_REPO_URL);
         return qer;
+    }
+
+    static RegistriesConfig initFromEnvironmentOrNull(Map<String, String> map) {
+        final String envRegistries = map.get(QUARKUS_REGISTRIES);
+        if (envRegistries == null || envRegistries.isBlank()) {
+            return null;
+        }
+        final JsonRegistriesConfig registries = new JsonRegistriesConfig();
+        for (String registryId : envRegistries.split(",")) {
+            final JsonRegistryConfig registry = new JsonRegistryConfig();
+            registry.setId(registryId);
+            registries.addRegistry(registry);
+
+            final String envvarPrefix = getEnvVarPrefix(registryId);
+            for (Map.Entry<String, String> var : map.entrySet()) {
+                if (!var.getKey().startsWith(envvarPrefix)) {
+                    continue;
+                }
+
+                if (isEnvVarOption(var.getKey(), envvarPrefix, "UPDATE_POLICY")) {
+                    registry.setUpdatePolicy(var.getValue());
+                } else if (isEnvVarOption(var.getKey(), envvarPrefix, "REPO_URL")) {
+                    JsonRegistryMavenConfig maven = (JsonRegistryMavenConfig) registry.getMaven();
+                    if (maven == null) {
+                        maven = new JsonRegistryMavenConfig();
+                        registry.setMaven(maven);
+                    }
+                    JsonRegistryMavenRepoConfig repository = (JsonRegistryMavenRepoConfig) maven.getRepository();
+                    if (repository == null) {
+                        repository = new JsonRegistryMavenRepoConfig();
+                        maven.setRepository(repository);
+                    }
+                    repository.setUrl(var.getValue());
+                }
+            }
+        }
+        return completeRequiredConfig(registries);
+    }
+
+    private static boolean isEnvVarOption(String varName, String registryPrefix, String optionName) {
+        return varName.regionMatches(registryPrefix.length(), optionName, 0, optionName.length());
+    }
+
+    private static String getEnvVarPrefix(String registryId) {
+        final StringBuilder buf = new StringBuilder(QUARKUS_REGISTRY_ENV_VAR_PREFIX);
+        for (int i = 0; i < registryId.length(); ++i) {
+            final char c = registryId.charAt(i);
+            if (c == '.') {
+                buf.append('_');
+            } else {
+                buf.append(Character.toUpperCase(c));
+            }
+        }
+        return buf.append('_').toString();
     }
 }

@@ -14,8 +14,8 @@ import io.quarkus.cli.common.DevOptions;
 import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
-import io.quarkus.cli.common.RegistryClientMixin;
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.cli.registry.RegistryClientMixin;
 import io.quarkus.devtools.project.BuildTool;
 
 public class JBangRunner implements BuildSystemRunner {
@@ -82,7 +82,13 @@ public class JBangRunner implements BuildSystemRunner {
         if (buildOptions.buildNative) {
             args.add("--native");
         }
+        if (buildOptions.clean) {
+            args.add("--fresh");
+        }
+
         args.add("build");
+        args.addAll(flattenMappedProperties(propertiesOptions.properties));
+        args.add(registryClient.getRegistryClientProperty());
         args.addAll(params);
         args.add(getMainPath());
         return prependExecutable(args);

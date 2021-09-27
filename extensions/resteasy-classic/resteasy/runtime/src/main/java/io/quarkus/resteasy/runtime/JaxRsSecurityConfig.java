@@ -1,5 +1,8 @@
 package io.quarkus.resteasy.runtime;
 
+import java.util.List;
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -14,4 +17,16 @@ public class JaxRsSecurityConfig {
      */
     @ConfigItem(name = "deny-unannotated-endpoints")
     public boolean denyJaxRs;
+
+    /**
+     * If no security annotations are affecting a method then they will default to requiring these roles,
+     * (equivalent to adding an @RolesAllowed annotation with the roles to every endpoint class).
+     *
+     * The role of '**' means any authenticated user, which is equivalent to the {@link io.quarkus.security.Authenticated}
+     * annotation.
+     *
+     */
+    @ConfigItem
+    public Optional<List<String>> defaultRolesAllowed;
+
 }

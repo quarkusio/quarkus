@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.catalog.ExtensionOrigin;
+import java.util.Objects;
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class JsonExtensionOrigin implements ExtensionOrigin {
@@ -37,6 +38,23 @@ public class JsonExtensionOrigin implements ExtensionOrigin {
 
     public void setPlatform(boolean platform) {
         this.platform = platform;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        JsonExtensionOrigin that = (JsonExtensionOrigin) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 
     @Override

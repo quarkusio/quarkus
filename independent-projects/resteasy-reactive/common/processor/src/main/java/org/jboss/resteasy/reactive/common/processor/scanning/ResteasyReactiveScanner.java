@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.enterprise.inject.spi.DeploymentException;
 import javax.ws.rs.core.Application;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -29,23 +30,34 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.common.processor.BlockingDefault;
 import org.jboss.resteasy.reactive.common.processor.NameBindingUtil;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 public class ResteasyReactiveScanner {
 
     public static final Map<DotName, String> BUILTIN_HTTP_ANNOTATIONS_TO_METHOD;
+    public static final Map<String, DotName> METHOD_TO_BUILTIN_HTTP_ANNOTATIONS;
 
     static {
         Map<DotName, String> map = new HashMap<>();
+        Map<String, DotName> reverseMap = new HashMap<>();
         map.put(GET, "GET");
+        reverseMap.put("GET", GET);
         map.put(POST, "POST");
+        reverseMap.put("POST", POST);
         map.put(HEAD, "HEAD");
+        reverseMap.put("HEAD", HEAD);
         map.put(PUT, "PUT");
+        reverseMap.put("PUT", PUT);
         map.put(DELETE, "DELETE");
+        reverseMap.put("DELETE", DELETE);
         map.put(PATCH, "PATCH");
+        reverseMap.put("PATCH", PATCH);
         map.put(OPTIONS, "OPTIONS");
+        reverseMap.put("OPTIONS", OPTIONS);
         BUILTIN_HTTP_ANNOTATIONS_TO_METHOD = Collections.unmodifiableMap(map);
+        METHOD_TO_BUILTIN_HTTP_ANNOTATIONS = Collections.unmodifiableMap(reverseMap);
     }
 
     public static ApplicationScanningResult scanForApplicationClass(IndexView index, Set<String> excludedClasses) {
@@ -57,7 +69,7 @@ public class ResteasyReactiveScanner {
         boolean filterClasses = !excludedClasses.isEmpty();
         Application application = null;
         ClassInfo selectedAppClass = null;
-        boolean blocking = false;
+        BlockingDefault blocking = BlockingDefault.AUTOMATIC;
         for (ClassInfo applicationClassInfo : applications) {
             if (Modifier.isAbstract(applicationClassInfo.flags())) {
                 continue;
@@ -94,9 +106,13 @@ public class ResteasyReactiveScanner {
                 throw new RuntimeException("Unable to handle class: " + applicationClass, e);
             }
             if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.BLOCKING) != null) {
-                blocking = true;
+                if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
+                    throw new DeploymentException("JAX-RS Application class '" + applicationClassInfo.name()
+                            + "' contains both @Blocking and @NonBlocking annotations.");
+                }
+                blocking = BlockingDefault.BLOCKING;
             } else if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
-                blocking = false;
+                blocking = BlockingDefault.NON_BLOCKING;
             }
         }
         if (selectedAppClass != null) {
@@ -116,18 +132,13 @@ public class ResteasyReactiveScanner {
     }
 
     public static ResourceScanningResult scanResources(
-            IndexView index) {
+            IndexView index, Map<DotName, ClassInfo> additionalResources, Map<DotName, String> additionalResourcePaths) {
         Collection<AnnotationInstance> paths = index.getAnnotations(ResteasyReactiveDotNames.PATH);
 
         Collection<AnnotationInstance> allPaths = new ArrayList<>(paths);
 
-        if (allPaths.isEmpty()) {
-            // no detected @Path, bail out
-            return null;
-        }
-
-        Map<DotName, ClassInfo> scannedResources = new HashMap<>();
-        Map<DotName, String> scannedResourcePaths = new HashMap<>();
+        Map<DotName, ClassInfo> scannedResources = new HashMap<>(additionalResources);
+        Map<DotName, String> scannedResourcePaths = new HashMap<>(additionalResourcePaths);
         Map<DotName, ClassInfo> possibleSubResources = new HashMap<>();
         Map<DotName, String> pathInterfaces = new HashMap<>();
         Map<DotName, MethodInfo> resourcesThatNeedCustomProducer = new HashMap<>();

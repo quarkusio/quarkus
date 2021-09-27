@@ -23,10 +23,11 @@
           "io.quarkus:quarkus-jdbc-postgresql",
           "io.quarkus:quarkus-jdbc-mariadb",
           "io.quarkus:quarkus-jdbc-mysql",
+          "io.quarkus:quarkus-jdbc-h2",
           "io.quarkus:quarkus-jdbc-mssql",
           "io.quarkus:quarkus-jdbc-db2",
-          "io.quarkus:quarkus-jdbc-h2",
-          "io.quarkus:quarkus-jdbc-derby"
+          "io.quarkus:quarkus-jdbc-derby",
+          "io.quarkus:quarkus-jdbc-oracle"
         ]
       }
     },
@@ -128,9 +129,9 @@
         "quarkus-core-version": "${project.version}",
         "maven-plugin-groupId": "${project.groupId}",
         "maven-plugin-artifactId": "quarkus-maven-plugin",
-        "maven-plugin-version": "${project.version}",
+        "maven-plugin-version": "${quarkus-maven-plugin.version}",
         "gradle-plugin-id": "io.quarkus",
-        "gradle-plugin-version": "${project.version}",
+        "gradle-plugin-version": "${quarkus-gradle-plugin.version}",
         "supported-maven-versions": "${supported-maven-versions}",
         "proposed-maven-version": "${proposed-maven-version}",
         "maven-wrapper-version": "${maven-wrapper.version}",

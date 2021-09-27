@@ -18,13 +18,21 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.TransactionScoped;
 
+import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Unremovable;
+
 /**
  * A delegating transaction manager which receives an instance of Narayana transaction manager
  * and delegates all calls to it.
  * On top of it the implementation adds the CDI events processing for {@link TransactionScoped}.
  */
 @Singleton
+@Unremovable // used by Arc for transactional observers
 public class CDIDelegatingTransactionManager implements TransactionManager, Serializable {
+
+    private static final Logger log = Logger.getLogger(CDIDelegatingTransactionManager.class);
+
     private static final long serialVersionUID = 1598L;
 
     private final transient com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple delegate;
@@ -113,13 +121,18 @@ public class CDIDelegatingTransactionManager implements TransactionManager, Seri
      */
     @Override
     public void rollback() throws IllegalStateException, SecurityException, SystemException {
-        if (this.transactionScopeBeforeDestroyed != null) {
-            this.transactionScopeBeforeDestroyed.fire(this.getTransaction());
+        try {
+            if (this.transactionScopeBeforeDestroyed != null) {
+                this.transactionScopeBeforeDestroyed.fire(this.getTransaction());
+            }
+        } catch (Throwable t) {
+            log.error("Failed to fire @BeforeDestroyed(TransactionScoped.class)", t);
         }
 
         try {
             delegate.rollback();
         } finally {
+            //we don't need a catch block here, if this one fails we just let the exception propagate
             if (this.transactionScopeDestroyed != null) {
                 this.transactionScopeDestroyed.fire(this.toString());
             }

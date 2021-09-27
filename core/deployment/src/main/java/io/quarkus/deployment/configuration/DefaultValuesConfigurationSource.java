@@ -29,10 +29,7 @@ public class DefaultValuesConfigurationSource implements ConfigSource {
     }
 
     public String getValue(final String propertyName) {
-        if (!propertyName.startsWith("quarkus.")) {
-            return null;
-        }
-        final Container match = leafs.match(propertyName.substring(8));
+        final Container match = leafs.match(propertyName);
         if (match == null) {
             return null;
         }

@@ -252,7 +252,7 @@ public class ParserTest {
             engine.parse("{foo\nfoo}");
             fail();
         } catch (Exception expected) {
-            assertTrue(expected.getMessage().contains("Invalid identifier found"), expected.toString());
+            assertEquals("Parser error on line 1: invalid identifier found {foo\nfoo}", expected.getMessage());
         }
     }
 
@@ -347,6 +347,12 @@ public class ParserTest {
         Expression nameToUpperCase = find(expressions, "name.toUpperCase");
         assertExpr(expressions, "upperCase.length", 2, "upperCase<set#" + nameToUpperCase.getGeneratedId() + ">.length");
         assertEquals(":3:5", loopLetLoopLet.data("foo", new Foo()).render());
+    }
+
+    @Test
+    public void testInvalidNamespaceExpression() {
+        assertParserError("{data: }",
+                "Parser error on line 1: empty expression found {data:}", 1);
     }
 
     public static class Foo {

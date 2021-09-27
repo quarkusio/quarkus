@@ -34,7 +34,7 @@ public final class ProcessedCategory {
     private Comparator<Extension> extensionsComparator() {
         final List<String> pinnedList = MetadataValue.get(category.getMetadata(), MD_PINNED).asStringList();
         return Comparator.<Extension> comparingInt(e -> getPinnedIndex(pinnedList, e))
-                .thenComparing(Extension::getName);
+                .thenComparing(Extension::getName, String.CASE_INSENSITIVE_ORDER);
     }
 
     private int getPinnedIndex(List<String> pinnedList, Extension e) {

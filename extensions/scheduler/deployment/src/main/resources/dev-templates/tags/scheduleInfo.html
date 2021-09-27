@@ -1,10 +1,28 @@
 {#if it.cron}
-  <code>{it.cron}</code>
+  {#configVal it.cron /}
 {#else}
-  Every <code>{it.every}</code>
+  Every {#configVal it.every /}
+{/if}
+{#if it.identity}
+ with identity {#configVal it.identity /}
+ {#if info:scheduler.running}
+    {#if info:scheduler.isPaused(it.identity)}
+      <form method="post" enctype="application/x-www-form-urlencoded" style="float:right;">
+         <input type="hidden" name="action" value="resumeJob">
+         <input type="hidden" name="identity" value="{it.identity}">
+         <button type="submit" class="btn btn-primary" type="submit"><i class="far fa-play-circle"></i> </button>
+      </form>
+      {#else}
+      <form method="post" enctype="application/x-www-form-urlencoded" style="float:right;">
+        <input type="hidden" name="action" value="pauseJob">
+        <input type="hidden" name="identity" value="{it.identity}">
+        <button type="submit" class="btn btn-primary" type="submit"><i class="far fa-pause-circle"></i> </button>
+      </form>
+    {/if}
+  {/if}
 {/if}
 {#if it.delay > 0}
   (with delay {it.delay} {it.delayUnit.toString.toLowerCase})
-{#else if !schedule.delayed.empty}
-  (delayed for {it.delayed})
+{#else if !it.delayed.empty}
+  (delayed for {#configVal it.delayed /})
 {/if}

@@ -401,7 +401,7 @@ public class BootstrapMavenContext {
         if (mirrors != null && !mirrors.isEmpty()) {
             final DefaultMirrorSelector ms = new DefaultMirrorSelector();
             for (Mirror m : mirrors) {
-                ms.add(m.getId(), m.getUrl(), m.getLayout(), false, m.getMirrorOf(), m.getMirrorOfLayouts());
+                ms.add(m.getId(), m.getUrl(), m.getLayout(), false, m.isBlocked(), m.getMirrorOf(), m.getMirrorOfLayouts());
             }
             session.setMirrorSelector(ms);
         }
@@ -498,7 +498,9 @@ public class BootstrapMavenContext {
     }
 
     private List<RemoteRepository> resolveRemoteRepos() throws BootstrapMavenException {
+
         final List<RemoteRepository> rawRepos = new ArrayList<>();
+        readMavenReposFromEnv(rawRepos, System.getenv());
 
         getActiveSettingsProfiles().forEach(p -> addProfileRepos(p.getRepositories(), rawRepos));
 
@@ -800,31 +802,28 @@ public class BootstrapMavenContext {
         if (alternatePom != null) {
             return pomXmlOrNull(basedir.resolve(alternatePom));
         }
-        final Path pom = basedir.resolve("pom.xml");
+        final Path pom = basedir.resolve(LocalProject.POM_XML);
         return Files.exists(pom) ? pom : null;
     }
 
     static Path getPomForDirOrNull(final Path basedir, Path alternatePom) {
-        // if the basedir matches the parent of the alternate pom, it's the alternate pom
-        if (alternatePom != null
-                && alternatePom.isAbsolute()
-                && alternatePom.getParent().equals(basedir)) {
-            return alternatePom;
-        }
-        // even if the alternate pom has been specified we try the default pom.xml first
-        // since unlike Maven CLI we don't know which project originated the build
-        Path pom = basedir.resolve("pom.xml");
-        if (Files.exists(pom)) {
-            return pom;
+        if (alternatePom != null) {
+            if (alternatePom.getNameCount() == 1 || basedir.endsWith(alternatePom.getParent())) {
+                if (alternatePom.isAbsolute()) {
+                    // if the basedir matches the parent of the alternate pom, it's the alternate pom
+                    return alternatePom;
+                }
+                // if the basedir ends with the alternate POM parent relative path, we can try it as the base dir
+                final Path pom = basedir.resolve(alternatePom.getFileName());
+                if (Files.exists(pom)) {
+                    return pom;
+                }
+            }
         }
 
-        // if alternate pom path has a single element we can try it
-        // if it has more, it won't match the basedir
-        if (alternatePom != null && !alternatePom.isAbsolute() && alternatePom.getNameCount() == 1) {
-            pom = basedir.resolve(alternatePom);
-            if (Files.exists(pom)) {
-                return pom;
-            }
+        final Path pom = basedir.resolve(LocalProject.POM_XML);
+        if (Files.exists(pom)) {
+            return pom;
         }
 
         // give up
@@ -833,7 +832,7 @@ public class BootstrapMavenContext {
 
     private static Path pomXmlOrNull(Path path) {
         if (Files.isDirectory(path)) {
-            path = path.resolve("pom.xml");
+            path = path.resolve(LocalProject.POM_XML);
         }
         return Files.exists(path) ? path : null;
     }
@@ -864,5 +863,86 @@ public class BootstrapMavenContext {
             effectiveModelBuilder = s == null ? false : Boolean.parseBoolean(s);
         }
         return effectiveModelBuilder;
+    }
+
+    static final String BOOTSTRAP_MAVEN_REPOS = "BOOTSTRAP_MAVEN_REPOS";
+    static final String BOOTSTRAP_MAVEN_REPO_PREFIX = "BOOTSTRAP_MAVEN_REPO_";
+    static final String URL_SUFFIX = "_URL";
+    static final String SNAPSHOT_SUFFIX = "_SNAPSHOT";
+    static final String RELEASE_SUFFIX = "_RELEASE";
+
+    static void readMavenReposFromEnv(List<RemoteRepository> repos, Map<String, String> env) {
+        final String envRepos = env.get(BOOTSTRAP_MAVEN_REPOS);
+        if (envRepos == null || envRepos.isBlank()) {
+            return;
+        }
+        final StringBuilder buf = new StringBuilder();
+        for (int i = 0; i < envRepos.length(); ++i) {
+            final char c = envRepos.charAt(i);
+            if (c == ',') {
+                initMavenRepoFromEnv(envRepos, buf.toString(), env, repos);
+                buf.setLength(0);
+            } else {
+                buf.append(c);
+            }
+        }
+        if (buf.length() > 0) {
+            initMavenRepoFromEnv(envRepos, buf.toString(), env, repos);
+        }
+    }
+
+    private static void initMavenRepoFromEnv(String envRepos, String repoId, Map<String, String> env,
+            List<RemoteRepository> repos) {
+        final String envRepoId = toEnvVarPart(repoId);
+        String repoUrl = null;
+        boolean snapshot = true;
+        boolean release = true;
+        for (Map.Entry<String, String> envvar : env.entrySet()) {
+            final String varName = envvar.getKey();
+            if (varName.startsWith(BOOTSTRAP_MAVEN_REPO_PREFIX)
+                    && varName.regionMatches(BOOTSTRAP_MAVEN_REPO_PREFIX.length(), envRepoId, 0, envRepoId.length())) {
+                if (isMavenRepoEnvVarOption(varName, repoId, URL_SUFFIX)) {
+                    repoUrl = envvar.getValue();
+                } else if (isMavenRepoEnvVarOption(varName, repoId, SNAPSHOT_SUFFIX)) {
+                    snapshot = Boolean.parseBoolean(envvar.getValue());
+                } else if (isMavenRepoEnvVarOption(varName, repoId, RELEASE_SUFFIX)) {
+                    release = Boolean.parseBoolean(envvar.getValue());
+                }
+            }
+        }
+        if (repoUrl == null || repoUrl.isBlank()) {
+            log.warn("Maven repository " + repoId + " listed in " + BOOTSTRAP_MAVEN_REPOS + "=" + envRepos
+                    + " was ignored because the corresponding " + BOOTSTRAP_MAVEN_REPO_PREFIX + envRepoId + URL_SUFFIX
+                    + " is missing");
+        } else {
+            final RemoteRepository.Builder repoBuilder = new RemoteRepository.Builder(repoId, "default", repoUrl);
+            if (!release) {
+                repoBuilder.setReleasePolicy(new RepositoryPolicy(false, RepositoryPolicy.UPDATE_POLICY_DAILY,
+                        RepositoryPolicy.CHECKSUM_POLICY_WARN));
+            }
+            if (!snapshot) {
+                repoBuilder.setSnapshotPolicy(new RepositoryPolicy(false, RepositoryPolicy.UPDATE_POLICY_DAILY,
+                        RepositoryPolicy.CHECKSUM_POLICY_WARN));
+            }
+            repos.add(repoBuilder.build());
+        }
+    }
+
+    private static String toEnvVarPart(String s) {
+        final StringBuilder buf = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); ++i) {
+            final char c = s.charAt(i);
+            if (c == '.' || c == '-') {
+                buf.append('_');
+            } else {
+                buf.append(Character.toUpperCase(c));
+            }
+        }
+        return buf.toString();
+    }
+
+    private static boolean isMavenRepoEnvVarOption(String varName, String repoId, String option) {
+        return varName.length() == BOOTSTRAP_MAVEN_REPO_PREFIX.length() + repoId.length() + option.length()
+                && varName.endsWith(option);
     }
 }

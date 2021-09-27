@@ -5,8 +5,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-import javax.annotation.PreDestroy;
-
 import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.reactive.ReactiveRedisClient;
 import io.quarkus.redis.client.runtime.RedisConfig.RedisConfiguration;
@@ -17,7 +15,7 @@ import io.vertx.redis.client.RedisOptions;
 
 public class RedisClientsProducer {
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(10);
-    private static Map<String, RedisAPIContainer> REDIS_APIS = new ConcurrentHashMap<>();
+    static Map<String, RedisAPIContainer> REDIS_APIS = new ConcurrentHashMap<>();
 
     private final Vertx vertx;
     private final RedisConfig redisConfig;
@@ -67,12 +65,10 @@ public class RedisClientsProducer {
         return new ReactiveRedisClientImpl(mutinyRedisAPI);
     }
 
-    @PreDestroy
-    public void close() {
+    public static void close() {
         for (RedisAPIContainer container : REDIS_APIS.values()) {
             container.close();
         }
-
         REDIS_APIS.clear();
     }
 

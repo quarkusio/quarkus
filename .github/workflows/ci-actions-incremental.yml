@@ -42,7 +42,7 @@ env:
   LANG: en_US.UTF-8
   COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
   NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests install -DskipDocs"
-  JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dformat.skip -DskipDocs"
+  JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dformat.skip -DskipDocs -Dquarkus.test.hang-detection-timeout=60"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
@@ -110,9 +110,9 @@ jobs:
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: 11
       - name: Get Date
         id: get-date
@@ -174,6 +174,15 @@ jobs:
       - name: Delete Local Artifacts From Cache
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus
+      - name: Upload build reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "build-reports-Initial JDK 11 Build"
+          path: |
+            target/build-report.json
+            LICENSE.txt
+          retention-days: 2
 
   calculate-test-jobs:
     name: Calculate Test Jobs
@@ -239,19 +248,18 @@ jobs:
             maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g",
             os-name: "ubuntu-latest"
           }
-          # all the jdk.compiler ones are for Kotlin Kapt
           - {
-            name: "16",
-            java-version: 16,
-            maven_args: "$JVM_TEST_MAVEN_ARGS -pl '!devtools/gradle'",
-            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g --add-opens java.base/java.util=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.jvm=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+            name: "17",
+            java-version: 17,
+            maven_args: "$JVM_TEST_MAVEN_ARGS",
+            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g",
             os-name: "ubuntu-latest"
           }
           - {
             name: "11 Windows",
             java-version: 11,
             maven_args: "-DskipDocs -Dformat.skip",
-            maven_opts: "-Xmx1500m -XX:MaxMetaspaceSize=1g",
+            maven_opts: "-Xmx1500m -XX:MaxMetaspaceSize=1g -Xlog:gc*=debug:file=windows-java-11.txt",
             os-name: "windows-latest"
           }
 
@@ -280,9 +288,9 @@ jobs:
         run: .github/ci-prerequisites.sh
 
       - name: Set up JDK ${{ matrix.java.java-version }}
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: ${{ matrix.java.java-version }}
 
       - name: Download Maven Repo
@@ -296,7 +304,7 @@ jobs:
       - name: Build
         shell: bash
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=600 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -307,13 +315,21 @@ jobs:
         with:
           name: test-reports-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
-      - name: Upload Surefire reports (if build failed)
+      - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}
         with:
-          name: "surefire-reports-JVM Tests - JDK ${{matrix.java.name}}"
-          path: "**/target/*-reports/TEST-*.xml"
+          name: "build-reports-JVM Tests - JDK ${{matrix.java.name}}"
+          path: |
+            **/target/*-reports/TEST-*.xml
+            target/build-report.json
+            LICENSE.txt
           retention-days: 2
+      - name: Upload gc.log
+        uses: actions/upload-artifact@v2
+        with:
+          name: "GC log - JDK ${{matrix.java.name}}"
+          path: "**/windows-java-11.txt"
 
   maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
@@ -349,9 +365,9 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Build
         # Important: keep -pl ... in sync with "Calculate run flags"!
@@ -366,12 +382,15 @@ jobs:
         with:
           name: test-reports-maven-java${{matrix.java.name}}
           path: 'test-reports.tgz'
-      - name: Upload Surefire reports (if build failed)
+      - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}
         with:
-          name: "surefire-reports-Maven Tests - JDK ${{matrix.java.name}}"
-          path: "**/target/*-reports/TEST-*.xml"
+          name: "build-reports-Maven Tests - JDK ${{matrix.java.name}}"
+          path: |
+            **/target/*-reports/TEST-*.xml
+            target/build-report.json
+            LICENSE.txt
           retention-days: 2
 
   gradle-tests:
@@ -409,9 +428,9 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Verify dependencies
         # runs on Windows as well but would require newline conversion, not worth it
@@ -422,12 +441,16 @@ jobs:
         shell: bash
         # Important: keep -pl ... in sync with "Calculate run flags"!
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS install -pl integration-tests/gradle
-      - name: Upload Surefire reports (if build failed)
+      - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}
         with:
-          name: "surefire-reports-Gradle Tests - JDK ${{matrix.java.name}}"
-          path: "**/build/test-results/test/TEST-*.xml"
+          name: "build-reports-Gradle Tests - JDK ${{matrix.java.name}}"
+          path: |
+            **/build/test-results/test/TEST-*.xml
+            **/target/*-reports/TEST-*.xml
+            target/build-report.json
+            LICENSE.txt
           retention-days: 2
 
   devtools-tests:
@@ -462,9 +485,9 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Build
         # Important: keep -pl ... in sync with "Calculate run flags"!
@@ -479,12 +502,15 @@ jobs:
         with:
           name: test-reports-devtools-java${{matrix.java.name}}
           path: 'test-reports.tgz'
-      - name: Upload Surefire reports (if build failed)
+      - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}
         with:
-          name: "surefire-reports-Devtools Tests - JDK ${{matrix.java.name}}"
-          path: "**/target/*-reports/TEST-*.xml"
+          name: "build-reports-Devtools Tests - JDK ${{matrix.java.name}}"
+          path: |
+            **/target/*-reports/TEST-*.xml
+            target/build-report.json
+            LICENSE.txt
           retention-days: 2
 
   tcks-test:
@@ -505,9 +531,9 @@ jobs:
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: 11
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
@@ -535,12 +561,15 @@ jobs:
         with:
           name: test-reports-tcks
           path: 'test-reports.tgz'
-      - name: Upload Surefire reports (if build failed)
+      - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}
         with:
-          name: "surefire-reports-MicroProfile TCKs Tests"
-          path: "**/target/*-reports/TEST-*.xml"
+          name: "build-reports-MicroProfile TCKs Tests"
+          path: |
+            **/target/*-reports/TEST-*.xml
+            target/build-report.json
+            LICENSE.txt
           retention-days: 2
 
   native-tests:
@@ -563,9 +592,9 @@ jobs:
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: 11
       - name: Install cl.exe
         if: startsWith(matrix.os-name, 'windows')
@@ -577,7 +606,7 @@ jobs:
         uses: DeLaGuardo/setup-graalvm@master
         if: startsWith(matrix.os-name, 'windows')
         with:
-          graalvm-version: '21.1.0.java11'
+          graalvm-version: '21.2.0.java11'
       - name: Install native-image component
         if: startsWith(matrix.os-name, 'windows')
         run: |
@@ -611,10 +640,14 @@ jobs:
         with:
           name: test-reports-native-${{matrix.category}}
           path: 'test-reports.tgz'
-      - name: Upload Surefire reports (if build failed)
+      - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}
         with:
-          name: "surefire-reports-Native Tests - ${{matrix.category}}"
-          path: "**/target/*-reports/TEST-*.xml"
+          name: "build-reports-Native Tests - ${{matrix.category}}"
+          path: |
+            **/target/*-reports/TEST-*.xml
+            **/build/test-results/test/TEST-*.xml
+            target/build-report.json
+            LICENSE.txt
           retention-days: 2

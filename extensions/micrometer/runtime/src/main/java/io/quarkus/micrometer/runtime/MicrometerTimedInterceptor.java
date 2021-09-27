@@ -1,12 +1,14 @@
 package io.quarkus.micrometer.runtime;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import javax.annotation.Priority;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
 
 import org.jboss.logging.Logger;
 
@@ -15,16 +17,16 @@ import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
+import io.quarkus.arc.ArcInvocationContext;
 
 /**
  * Quarkus defined interceptor for types or methods annotated with {@link Timed @Timed}.
- *
- * @see Timed
  */
 @Interceptor
-@MicrometerTimed
+@Timed
 @Priority(Interceptor.Priority.LIBRARY_BEFORE + 10)
 public class MicrometerTimedInterceptor {
+
     private static final Logger log = Logger.getLogger(MicrometerTimedInterceptor.class);
     public static final String DEFAULT_METRIC_NAME = "method.timed";
 
@@ -35,42 +37,26 @@ public class MicrometerTimedInterceptor {
     }
 
     @AroundInvoke
-    Object timedMethod(InvocationContext context) throws Exception {
-        Method method = context.getMethod();
-        Timed timed = method.getAnnotation(Timed.class);
-        if (timed == null) {
+    Object timedMethod(ArcInvocationContext context) throws Exception {
+        final boolean stopWhenCompleted = CompletionStage.class.isAssignableFrom(context.getMethod().getReturnType());
+        final List<Sample> samples = getSamples(context);
+
+        if (samples.isEmpty()) {
+            // This should never happen - at least one @Timed binding must be present  
             return context.proceed();
         }
-
-        Tags commonTags = getCommonTags(method.getDeclaringClass().getName(), method.getName());
-        final boolean stopWhenCompleted = CompletionStage.class.isAssignableFrom(method.getReturnType());
-
-        return time(context, timed, commonTags, stopWhenCompleted);
-    }
-
-    Object time(InvocationContext context, Timed timed, Tags commonTags, boolean stopWhenCompleted) throws Exception {
-        final String metricName = timed.value().isEmpty() ? DEFAULT_METRIC_NAME : timed.value();
-
-        if (timed.longTask()) {
-            return processWithLongTaskTimer(context, timed, commonTags, metricName, stopWhenCompleted);
-        } else {
-            return processWithTimer(context, timed, commonTags, metricName, stopWhenCompleted);
-        }
-    }
-
-    private Object processWithTimer(InvocationContext context, Timed timed, Tags commonTags, String metricName,
-            boolean stopWhenCompleted) throws Exception {
-
-        Timer.Sample sample = Timer.start(meterRegistry);
-        Tags timerTags = Tags.concat(commonTags, timed.extraTags());
 
         if (stopWhenCompleted) {
             try {
                 return ((CompletionStage<?>) context.proceed()).whenComplete((result, throwable) -> {
-                    record(timed, metricName, sample, MicrometerRecorder.getExceptionTag(throwable), timerTags);
+                    for (Sample sample : samples) {
+                        sample.stop(MicrometerRecorder.getExceptionTag(throwable));
+                    }
                 });
             } catch (Exception ex) {
-                record(timed, metricName, sample, MicrometerRecorder.getExceptionTag(ex), timerTags);
+                for (Sample sample : samples) {
+                    sample.stop(MicrometerRecorder.getExceptionTag(ex));
+                }
                 throw ex;
             }
         }
@@ -82,11 +68,32 @@ public class MicrometerTimedInterceptor {
             exceptionClass = MicrometerRecorder.getExceptionTag(ex);
             throw ex;
         } finally {
-            record(timed, metricName, sample, exceptionClass, timerTags);
+            for (Sample sample : samples) {
+                sample.stop(exceptionClass);
+            }
         }
     }
 
-    private void record(Timed timed, String metricName, Timer.Sample sample, String exceptionClass, Tags timerTags) {
+    private List<Sample> getSamples(ArcInvocationContext context) {
+        Method method = context.getMethod();
+        Tags commonTags = getCommonTags(method.getDeclaringClass().getName(), method.getName());
+        List<Timed> timed = context.findIterceptorBindings(Timed.class);
+        if (timed.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Sample> samples = new ArrayList<>(timed.size());
+        for (Timed t : timed) {
+            if (t.longTask()) {
+                samples.add(new LongTimerSample(t, commonTags));
+            } else {
+                samples.add(new TimerSample(t, commonTags));
+            }
+        }
+        return samples;
+    }
+
+    private void record(Timed timed, Timer.Sample sample, String exceptionClass, Tags timerTags) {
+        final String metricName = timed.value().isEmpty() ? DEFAULT_METRIC_NAME : timed.value();
         try {
             Timer.Builder builder = Timer.builder(metricName)
                     .description(timed.description().isEmpty() ? null : timed.description())
@@ -103,30 +110,6 @@ public class MicrometerTimedInterceptor {
         }
     }
 
-    private Object processWithLongTaskTimer(InvocationContext context, Timed timed, Tags commonTags, String metricName,
-            boolean stopWhenCompleted) throws Exception {
-        LongTaskTimer.Sample sample = startLongTaskTimer(timed, commonTags, metricName);
-        if (sample == null) {
-            return context.proceed();
-        }
-
-        if (stopWhenCompleted) {
-            try {
-                return ((CompletionStage<?>) context.proceed())
-                        .whenComplete((result, throwable) -> stopLongTaskTimer(metricName, sample));
-            } catch (Exception ex) {
-                stopLongTaskTimer(metricName, sample);
-                throw ex;
-            }
-        }
-
-        try {
-            return context.proceed();
-        } finally {
-            stopLongTaskTimer(metricName, sample);
-        }
-    }
-
     LongTaskTimer.Sample startLongTaskTimer(Timed timed, Tags commonTags, String metricName) {
         try {
             // This will throw if the annotation is incorrect.
@@ -135,6 +118,7 @@ public class MicrometerTimedInterceptor {
                     .description(timed.description().isEmpty() ? null : timed.description())
                     .tags(commonTags)
                     .tags(timed.extraTags())
+                    .publishPercentileHistogram(timed.histogram())
                     .register(meterRegistry)
                     .start();
         } catch (Exception e) {
@@ -155,5 +139,54 @@ public class MicrometerTimedInterceptor {
 
     private Tags getCommonTags(String className, String methodName) {
         return Tags.of("class", className, "method", methodName);
+    }
+
+    abstract class Sample {
+
+        protected final Timed timed;
+        protected final Tags commonTags;
+
+        public Sample(Timed timed, Tags commonTags) {
+            this.timed = timed;
+            this.commonTags = commonTags;
+        }
+
+        String metricName() {
+            return timed.value().isEmpty() ? DEFAULT_METRIC_NAME : timed.value();
+        }
+
+        abstract void stop(String exceptionClass);
+    }
+
+    final class TimerSample extends Sample {
+
+        private final Timer.Sample sample;
+
+        public TimerSample(Timed timed, Tags commonTags) {
+            super(timed, commonTags);
+            this.sample = Timer.start(meterRegistry);
+        }
+
+        @Override
+        void stop(String exceptionClass) {
+            record(timed, sample, exceptionClass, Tags.concat(commonTags, timed.extraTags()));
+        }
+
+    }
+
+    final class LongTimerSample extends Sample {
+
+        private final LongTaskTimer.Sample sample;
+
+        public LongTimerSample(Timed timed, Tags commonTags) {
+            super(timed, commonTags);
+            this.sample = startLongTaskTimer(timed, commonTags, metricName());
+        }
+
+        @Override
+        void stop(String exceptionClass) {
+            stopLongTaskTimer(metricName(), sample);
+        }
+
     }
 }

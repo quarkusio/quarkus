@@ -25,6 +25,8 @@ import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public class ClassRoutingHandler implements ServerRestHandler {
+    private static final String INVALID_ACCEPT_HEADER_MESSAGE = "The accept header value did not match the value in @Produces";
+
     private final Map<String, RequestMapper<RuntimeResource>> mappers;
     private final int parameterOffset;
 
@@ -110,7 +112,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
                 if (MediaTypeHelper.getFirstMatch(
                         target.value.getConsumes(),
                         Collections.singletonList(MediaType.valueOf(contentType))) == null) {
-                    throw new NotSupportedException();
+                    throw new NotSupportedException("The content-type header value did not match the value in @Consumes");
                 }
             }
         }
@@ -126,7 +128,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
                     MediaType acceptsMediaType = MediaType.valueOf(accepts.trim());
                     MediaType providedMediaType = producesMediaTypes[0];
                     if (!providedMediaType.isCompatible(acceptsMediaType)) {
-                        throw new NotAcceptableException();
+                        throw new NotAcceptableException(INVALID_ACCEPT_HEADER_MESSAGE);
                     }
                 } else if (multipleAcceptsValues && (producesMediaTypes.length == 1)) {
                     // this is fairly common case, so we want it to be as fast as possible
@@ -156,7 +158,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
                     } while (true);
 
                     if (!compatible) {
-                        throw new NotAcceptableException();
+                        throw new NotAcceptableException(INVALID_ACCEPT_HEADER_MESSAGE);
                     }
                 } else {
                     // don't use any of the JAX-RS stuff from the various MediaType helper as we want to be as performant as possible
@@ -173,7 +175,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
                     }
                     if (MediaTypeHelper.getFirstMatch(Arrays.asList(producesMediaTypes),
                             acceptsMediaTypes) == null) {
-                        throw new NotAcceptableException();
+                        throw new NotAcceptableException(INVALID_ACCEPT_HEADER_MESSAGE);
                     }
                 }
             }
@@ -197,7 +199,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
     private void throwNotFound(ResteasyReactiveRequestContext requestContext) {
         // the exception mapper needs access to request scoped beans, so make sure we have the context
         requestContext.requireCDIRequestScope();
-        throw new NotFoundException();
+        throw new NotFoundException("Unable to find matching target resource method");
     }
 
     private String getRemaining(ResteasyReactiveRequestContext requestContext) {

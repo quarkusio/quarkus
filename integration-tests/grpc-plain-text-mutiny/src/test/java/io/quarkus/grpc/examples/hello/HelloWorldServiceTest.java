@@ -44,9 +44,9 @@ class HelloWorldServiceTest {
     @Test
     public void testHelloWorldServiceUsingMutinyStub() {
         HelloReply reply = MutinyGreeterGrpc.newMutinyStub(channel)
-                .sayHello(HelloRequest.newBuilder().setName("neo-blocking").build())
+                .sayHello(HelloRequest.newBuilder().setName("neo-mutiny").build())
                 .await().atMost(Duration.ofSeconds(5));
-        assertThat(reply.getMessage()).isEqualTo("Hello neo-blocking");
+        assertThat(reply.getMessage()).isEqualTo("Hello neo-mutiny");
     }
 
 }

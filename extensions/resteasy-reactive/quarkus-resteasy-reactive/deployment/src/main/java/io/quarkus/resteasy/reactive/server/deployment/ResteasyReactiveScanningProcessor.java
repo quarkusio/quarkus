@@ -24,6 +24,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
 import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
@@ -41,13 +42,17 @@ import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveExc
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveFeatureScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveParamConverterScanner;
 
+import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceInterceptorsContributorBuildItem;
@@ -63,6 +68,7 @@ import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.JaxrsFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.ParamConverterBuildItem;
+import io.quarkus.runtime.BlockingOperationNotAllowedException;
 
 /**
  * Processor that handles scanning for types and turning them into build items
@@ -91,14 +97,25 @@ public class ResteasyReactiveScanningProcessor {
         });
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @BuildStep
     public ExceptionMappersBuildItem scanForExceptionMappers(CombinedIndexBuildItem combinedIndexBuildItem,
             ApplicationResultBuildItem applicationResultBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
-            List<ExceptionMapperBuildItem> mappers) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
+            List<ExceptionMapperBuildItem> mappers, Capabilities capabilities) {
         AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
         ExceptionMapping exceptions = ResteasyReactiveExceptionMappingScanner
                 .scanForExceptionMappers(combinedIndexBuildItem.getComputingIndex(), applicationResultBuildItem.getResult());
+
+        exceptions.addBlockingProblem(BlockingOperationNotAllowedException.class);
+        exceptions.addBlockingProblem(BlockingNotAllowedException.class);
+        exceptions.addUnwrappedException(ArcUndeclaredThrowableException.class);
+        if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
+            exceptions.addNonBlockingProblem(
+                    new ExceptionMapping.ExceptionTypeAndMessageContainsPredicate(IllegalStateException.class, "HR000068"));
+        }
+
         for (Map.Entry<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> i : exceptions.getMappers()
                 .entrySet()) {
             beanBuilder.addBeanClass(i.getValue().getClassName());
@@ -106,6 +123,9 @@ public class ResteasyReactiveScanningProcessor {
         for (ExceptionMapperBuildItem additionalExceptionMapper : mappers) {
             if (additionalExceptionMapper.isRegisterAsBean()) {
                 beanBuilder.addBeanClass(additionalExceptionMapper.getClassName());
+            } else {
+                reflectiveClassBuildItemBuildProducer
+                        .produce(new ReflectiveClassBuildItem(true, false, false, additionalExceptionMapper.getClassName()));
             }
             int priority = Priorities.USER;
             if (additionalExceptionMapper.getPriority() != null) {
@@ -129,6 +149,7 @@ public class ResteasyReactiveScanningProcessor {
     @BuildStep
     public ParamConverterProvidersBuildItem scanForParamConverters(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             ApplicationResultBuildItem applicationResultBuildItem,
             List<ParamConverterBuildItem> paramConverterBuildItems) {
 
@@ -141,6 +162,9 @@ public class ResteasyReactiveScanningProcessor {
         for (ParamConverterBuildItem additionalParamConverter : paramConverterBuildItems) {
             if (additionalParamConverter.isRegisterAsBean()) {
                 beanBuilder.addBeanClass(additionalParamConverter.getClassName());
+            } else {
+                reflectiveClassBuildItemBuildProducer
+                        .produce(new ReflectiveClassBuildItem(true, false, false, additionalParamConverter.getClassName()));
             }
             int priority = Priorities.USER;
             if (additionalParamConverter.getPriority() != null) {
@@ -181,10 +205,12 @@ public class ResteasyReactiveScanningProcessor {
         }
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @BuildStep
     public ContextResolversBuildItem scanForContextResolvers(CombinedIndexBuildItem combinedIndexBuildItem,
             ApplicationResultBuildItem applicationResultBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<ContextResolverBuildItem> additionalResolvers) {
         IndexView index = combinedIndexBuildItem.getComputingIndex();
         AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
@@ -198,6 +224,9 @@ public class ResteasyReactiveScanningProcessor {
         for (ContextResolverBuildItem i : additionalResolvers) {
             if (i.isRegisterAsBean()) {
                 beanBuilder.addBeanClass(i.getClassName());
+            } else {
+                reflectiveClassBuildItemBuildProducer
+                        .produce(new ReflectiveClassBuildItem(true, false, false, i.getClassName()));
             }
             ResourceContextResolver resolver = new ResourceContextResolver();
             resolver.setClassName(i.getClassName());

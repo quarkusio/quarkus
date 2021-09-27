@@ -76,7 +76,8 @@ public class UnlessBuildPropertyTest {
         }
     }
 
-    @UnlessBuildProperty(name = "some.prop1", stringValue = "v1") // won't be enabled because the values don't match
+    @UnlessBuildProperty(name = "some.prop1", stringValue = "v1") // won't be enabled because the value matches
+    @UnlessBuildProperty(name = "some.prop1", stringValue = "v")
     @Singleton
     static class PongBean {
 
@@ -115,6 +116,7 @@ public class UnlessBuildPropertyTest {
 
         @Produces
         @UnlessBuildProperty(name = "some.prop1", stringValue = "v")
+        @UnlessBuildProperty(name = "some.prop2", stringValue = "v")
         GreetingBean matchingValueGreetingBean(FooBean fooBean) {
             return new GreetingBean() {
 

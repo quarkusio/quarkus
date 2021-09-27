@@ -77,9 +77,9 @@ jobs:
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: 11
       - name: Get Date
         id: get-date
@@ -162,11 +162,10 @@ jobs:
         run: .github/ci-prerequisites.sh
 
       - name: Set up JDK ${{ matrix.java.name }}
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: ${{ matrix.java.java-version }}
-          release: ${{ matrix.java.release }}
 
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
@@ -202,9 +201,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: 11
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
@@ -256,9 +255,9 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK ${{ matrix.java.name }}
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Run Maven integration tests
         run: eval ./mvnw $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/maven'
@@ -293,9 +292,9 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: 11
       - name: Run Maven integration tests
         shell: bash
@@ -337,9 +336,9 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK ${{ matrix.java.name }}
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Build with Gradle
         uses: eskatos/gradle-command-action@v1
@@ -361,9 +360,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: 11
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
@@ -410,9 +409,9 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK ${{ matrix.java.name }}
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Run Devtools integration tests
         run: eval ./mvnw $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools'
@@ -447,9 +446,9 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: 11
       - name: Run Devtools integration tests
         shell: bash
@@ -486,9 +485,9 @@ jobs:
         run: .github/ci-prerequisites.sh
         working-directory: ./tcks
       - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: 11
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
@@ -545,9 +544,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: 11
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh

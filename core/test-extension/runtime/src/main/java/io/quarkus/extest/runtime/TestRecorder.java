@@ -8,10 +8,13 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.extest.runtime.beans.PublicKeyProducer;
+import io.quarkus.extest.runtime.config.AnotherPrefixConfig;
 import io.quarkus.extest.runtime.config.FooRuntimeConfig;
+import io.quarkus.extest.runtime.config.PrefixConfig;
 import io.quarkus.extest.runtime.config.TestBuildAndRunTimeConfig;
 import io.quarkus.extest.runtime.config.TestRunTimeConfig;
 import io.quarkus.extest.runtime.config.XmlConfig;
+import io.quarkus.extest.runtime.config.named.PrefixNamedConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -31,14 +34,18 @@ public class TestRecorder {
      * @param beanClass - IConfigConsumer
      * @param buildTimeConfig - the extension TestBuildAndRunTimeConfig
      * @param runTimeConfig - the extension TestRunTimeConfig
-     * @see IConfigConsumer#loadConfig(TestBuildAndRunTimeConfig, TestRunTimeConfig)
+     * @see IConfigConsumer#loadConfig(TestBuildAndRunTimeConfig, TestRunTimeConfig, FooRuntimeConfig, PrefixConfig,
+     *      PrefixNamedConfig, AnotherPrefixConfig)
      */
     public void configureBeans(BeanContainer beanContainer, Class<IConfigConsumer> beanClass,
             TestBuildAndRunTimeConfig buildTimeConfig,
-            TestRunTimeConfig runTimeConfig, FooRuntimeConfig fooRuntimeConfig) {
+            TestRunTimeConfig runTimeConfig, FooRuntimeConfig fooRuntimeConfig, PrefixConfig prefixConfig,
+            PrefixNamedConfig prefixNamedConfig,
+            AnotherPrefixConfig anotherPrefixConfig) {
         log.infof("Begin BeanContainerListener callback\n");
         IConfigConsumer instance = beanContainer.instance(beanClass);
-        instance.loadConfig(buildTimeConfig, runTimeConfig, fooRuntimeConfig);
+        instance.loadConfig(buildTimeConfig, runTimeConfig, fooRuntimeConfig, prefixConfig, prefixNamedConfig,
+                anotherPrefixConfig);
         log.infof("configureBeans, instance=%s\n", instance);
     }
 

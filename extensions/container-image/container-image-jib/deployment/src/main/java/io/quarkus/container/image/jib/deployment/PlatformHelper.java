@@ -15,7 +15,7 @@ import com.google.cloud.tools.jib.api.buildplan.Platform;
  * 
  * The accepted platform format is: <os>|<arch>[/variant]|<os>/<arch>[/variant]
  * The default OS is linux and the default Architecture is amd64 (as in Jib lib)
- * Valid values for OS and Arch are define by OCI. See <a href="https://github.com/opencontainers/image-spec/blob/master/image-index.md">image-index</a>
+ * Valid values for OS and Arch are define by OCI. See <a href="https://github.com/opencontainers/image-spec/blob/main/image-index.md">image-index</a>
  *
 */
 final class PlatformHelper {

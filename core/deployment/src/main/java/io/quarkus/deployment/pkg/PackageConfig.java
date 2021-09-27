@@ -156,6 +156,21 @@ public class PackageConfig {
     @ConfigItem
     public FernflowerConfig fernflower;
 
+    /**
+     * If set to {@code true}, it will result in the Quarkus writing the transformed application bytecode
+     * to the build tool's output directory.
+     * This is useful for post-build tools that need to scan the application bytecode - for example for offline
+     * code-coverage tools.
+     *
+     * For example, if using Maven, enabling this feature will result in the classes in {@code target/classes} being
+     * updated with the versions that result after Quarkus has applied its transformations.
+     *
+     * Setting this to {@code true} however, should be done with a lot of caution and only if subsequent builds are done
+     * in a clean environment (i.e. the build tool's output directory has been completely cleaned).
+     */
+    @ConfigItem
+    public boolean writeTransformedBytecodeToBuildOutput;
+
     public boolean isAnyJarType() {
         return (type.equalsIgnoreCase(PackageConfig.JAR) ||
                 type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||

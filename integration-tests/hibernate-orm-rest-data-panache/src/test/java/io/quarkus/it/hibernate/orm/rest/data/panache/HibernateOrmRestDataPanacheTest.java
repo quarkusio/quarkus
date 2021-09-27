@@ -33,6 +33,14 @@ class HibernateOrmRestDataPanacheTest {
 
     private static final String IDIOT_TITLE = "Idiot";
 
+    private static final int DEMONS_ID = 4;
+
+    private static final String DEMONS_TITLE = "Demons";
+
+    private static final int THE_ADOLESCENT_ID = 5;
+
+    private static final String THE_ADOLESCENT_TITLE = "The adolescent";
+
     @Test
     void shouldGetAuthor() {
         given().accept("application/json")
@@ -94,11 +102,19 @@ class HibernateOrmRestDataPanacheTest {
         given().accept("application/json")
                 .when().get("/books")
                 .then().statusCode(200)
-                .and().body("id", contains(CRIME_AND_PUNISHMENT_ID, IDIOT_ID))
-                .and().body("title", contains(CRIME_AND_PUNISHMENT_TITLE, IDIOT_TITLE))
-                .and().body("author.id", contains(DOSTOEVSKY_ID, DOSTOEVSKY_ID))
-                .and().body("author.name", contains(DOSTOEVSKY_NAME, DOSTOEVSKY_NAME))
-                .and().body("author.dob", contains(DOSTOEVSKY_DOB, DOSTOEVSKY_DOB));
+                .and().body("id", contains(CRIME_AND_PUNISHMENT_ID, IDIOT_ID, DEMONS_ID, THE_ADOLESCENT_ID))
+                .and().body("title", contains(CRIME_AND_PUNISHMENT_TITLE, IDIOT_TITLE, DEMONS_TITLE, THE_ADOLESCENT_TITLE))
+                .and().body("author.id", contains(DOSTOEVSKY_ID, DOSTOEVSKY_ID, DOSTOEVSKY_ID, DOSTOEVSKY_ID))
+                .and().body("author.name", contains(DOSTOEVSKY_NAME, DOSTOEVSKY_NAME, DOSTOEVSKY_NAME, DOSTOEVSKY_NAME))
+                .and().body("author.dob", contains(DOSTOEVSKY_DOB, DOSTOEVSKY_DOB, DOSTOEVSKY_DOB, DOSTOEVSKY_DOB));
+        given().accept("application/json")
+                .when().get("/books?sort=title")
+                .then().statusCode(200)
+                .and().body("id", contains(CRIME_AND_PUNISHMENT_ID, DEMONS_ID, IDIOT_ID, THE_ADOLESCENT_ID))
+                .and().body("title", contains(CRIME_AND_PUNISHMENT_TITLE, DEMONS_TITLE, IDIOT_TITLE, THE_ADOLESCENT_TITLE))
+                .and().body("author.id", contains(DOSTOEVSKY_ID, DOSTOEVSKY_ID, DOSTOEVSKY_ID, DOSTOEVSKY_ID))
+                .and().body("author.name", contains(DOSTOEVSKY_NAME, DOSTOEVSKY_NAME, DOSTOEVSKY_NAME, DOSTOEVSKY_NAME))
+                .and().body("author.dob", contains(DOSTOEVSKY_DOB, DOSTOEVSKY_DOB, DOSTOEVSKY_DOB, DOSTOEVSKY_DOB));
     }
 
     @Test
@@ -106,19 +122,61 @@ class HibernateOrmRestDataPanacheTest {
         given().accept("application/hal+json")
                 .when().get("/books")
                 .then().statusCode(200)
-                .and().body("_embedded.books.id", contains(CRIME_AND_PUNISHMENT_ID, IDIOT_ID))
-                .and().body("_embedded.books.title", contains(CRIME_AND_PUNISHMENT_TITLE, IDIOT_TITLE))
-                .and().body("_embedded.books.author.id", contains(DOSTOEVSKY_ID, DOSTOEVSKY_ID))
-                .and().body("_embedded.books.author.name", contains(DOSTOEVSKY_NAME, DOSTOEVSKY_NAME))
-                .and().body("_embedded.books.author.dob", contains(DOSTOEVSKY_DOB, DOSTOEVSKY_DOB))
-                .and().body("_embedded.books._links.add.href", contains(endsWith("/books"), endsWith("/books")))
-                .and().body("_embedded.books._links.list.href", contains(endsWith("/books"), endsWith("/books")))
+                .and().body("_embedded.books.id", contains(CRIME_AND_PUNISHMENT_ID, IDIOT_ID, DEMONS_ID, THE_ADOLESCENT_ID))
+                .and()
+                .body("_embedded.books.title",
+                        contains(CRIME_AND_PUNISHMENT_TITLE, IDIOT_TITLE, DEMONS_TITLE, THE_ADOLESCENT_TITLE))
+                .and().body("_embedded.books.author.id", contains(DOSTOEVSKY_ID, DOSTOEVSKY_ID, DOSTOEVSKY_ID, DOSTOEVSKY_ID))
+                .and()
+                .body("_embedded.books.author.name",
+                        contains(DOSTOEVSKY_NAME, DOSTOEVSKY_NAME, DOSTOEVSKY_NAME, DOSTOEVSKY_NAME))
+                .and()
+                .body("_embedded.books.author.dob", contains(DOSTOEVSKY_DOB, DOSTOEVSKY_DOB, DOSTOEVSKY_DOB, DOSTOEVSKY_DOB))
+                .and()
+                .body("_embedded.books._links.add.href",
+                        contains(endsWith("/books"), endsWith("/books"), endsWith("/books"), endsWith("/books")))
+                .and()
+                .body("_embedded.books._links.list.href",
+                        contains(endsWith("/books"), endsWith("/books"), endsWith("/books"), endsWith("/books")))
                 .and().body("_embedded.books._links.self.href",
-                        contains(endsWith("/books/" + CRIME_AND_PUNISHMENT_ID), endsWith("/books/" + IDIOT_ID)))
+                        contains(endsWith("/books/" + CRIME_AND_PUNISHMENT_ID), endsWith("/books/" + IDIOT_ID),
+                                endsWith("/books/" + DEMONS_ID), endsWith("/books/" + THE_ADOLESCENT_ID)))
                 .and().body("_embedded.books._links.update.href",
-                        contains(endsWith("/books/" + CRIME_AND_PUNISHMENT_ID), endsWith("/books/" + IDIOT_ID)))
+                        contains(endsWith("/books/" + CRIME_AND_PUNISHMENT_ID), endsWith("/books/" + IDIOT_ID),
+                                endsWith("/books/" + DEMONS_ID), endsWith("/books/" + THE_ADOLESCENT_ID)))
                 .and().body("_embedded.books._links.remove.href",
-                        contains(endsWith("/books/" + CRIME_AND_PUNISHMENT_ID), endsWith("/books/" + IDIOT_ID)))
+                        contains(endsWith("/books/" + CRIME_AND_PUNISHMENT_ID), endsWith("/books/" + IDIOT_ID),
+                                endsWith("/books/" + DEMONS_ID), endsWith("/books/" + THE_ADOLESCENT_ID)))
+                .and().body("_links.add.href", endsWith("/books"))
+                .and().body("_links.list.href", endsWith("/books"));
+        given().accept("application/hal+json")
+                .when().get("/books?sort=title")
+                .then().statusCode(200)
+                .and().body("_embedded.books.id", contains(CRIME_AND_PUNISHMENT_ID, DEMONS_ID, IDIOT_ID, THE_ADOLESCENT_ID))
+                .and()
+                .body("_embedded.books.title",
+                        contains(CRIME_AND_PUNISHMENT_TITLE, DEMONS_TITLE, IDIOT_TITLE, THE_ADOLESCENT_TITLE))
+                .and().body("_embedded.books.author.id", contains(DOSTOEVSKY_ID, DOSTOEVSKY_ID, DOSTOEVSKY_ID, DOSTOEVSKY_ID))
+                .and()
+                .body("_embedded.books.author.name",
+                        contains(DOSTOEVSKY_NAME, DOSTOEVSKY_NAME, DOSTOEVSKY_NAME, DOSTOEVSKY_NAME))
+                .and()
+                .body("_embedded.books.author.dob", contains(DOSTOEVSKY_DOB, DOSTOEVSKY_DOB, DOSTOEVSKY_DOB, DOSTOEVSKY_DOB))
+                .and()
+                .body("_embedded.books._links.add.href",
+                        contains(endsWith("/books"), endsWith("/books"), endsWith("/books"), endsWith("/books")))
+                .and()
+                .body("_embedded.books._links.list.href",
+                        contains(endsWith("/books"), endsWith("/books"), endsWith("/books"), endsWith("/books")))
+                .and().body("_embedded.books._links.self.href",
+                        contains(endsWith("/books/" + CRIME_AND_PUNISHMENT_ID), endsWith("/books/" + DEMONS_ID),
+                                endsWith("/books/" + IDIOT_ID), endsWith("/books/" + THE_ADOLESCENT_ID)))
+                .and().body("_embedded.books._links.update.href",
+                        contains(endsWith("/books/" + CRIME_AND_PUNISHMENT_ID), endsWith("/books/" + DEMONS_ID),
+                                endsWith("/books/" + IDIOT_ID), endsWith("/books/" + THE_ADOLESCENT_ID)))
+                .and().body("_embedded.books._links.remove.href",
+                        contains(endsWith("/books/" + CRIME_AND_PUNISHMENT_ID), endsWith("/books/" + DEMONS_ID),
+                                endsWith("/books/" + IDIOT_ID), endsWith("/books/" + THE_ADOLESCENT_ID)))
                 .and().body("_links.add.href", endsWith("/books"))
                 .and().body("_links.list.href", endsWith("/books"));
     }

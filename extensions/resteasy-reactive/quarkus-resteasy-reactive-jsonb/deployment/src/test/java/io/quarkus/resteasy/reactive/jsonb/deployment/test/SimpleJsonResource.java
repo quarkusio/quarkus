@@ -15,9 +15,11 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import io.quarkus.runtime.BlockingOperationControl;
+import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
 
 @Path("/simple")
+@NonBlocking
 public class SimpleJsonResource extends SuperClass<Person> {
 
     @GET

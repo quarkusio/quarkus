@@ -27,6 +27,7 @@ updates:
       - dependency-name: com.jcraft:jzlib
       - dependency-name: org.jboss.logging:*
       - dependency-name: org.jboss.logmanager:*
+      - dependency-name: org.ow2.asm:*
       # Quarkus
       - dependency-name: io.quarkus.gizmo:gizmo
       - dependency-name: io.quarkus.http:*
@@ -74,6 +75,7 @@ updates:
       - dependency-name: com.thoughtworks.xstream:xstream
       - dependency-name: org.jacoco:*
       # Maven plugins
+      - dependency-name: io.fabric8:docker-maven-plugin
       - dependency-name: net.revelc.code.formatter:formatter-maven-plugin
       - dependency-name: net.revelc.code:impsort-maven-plugin
       # Narayana
@@ -121,6 +123,12 @@ updates:
       - dependency-name: org.apache.avro:*
       # gRPC
       - dependency-name: io.grpc:*
+      # jaeger
+      - dependency-name: io.jaegertracing:*
+      # Kotlin
+      - dependency-name: org.jetbrains.kotlin:*
+      - dependency-name: org.jetbrains.kotlinx:*
+      - dependency-name: org.jetbrains.dokka:*
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/integration-tests/gradle"

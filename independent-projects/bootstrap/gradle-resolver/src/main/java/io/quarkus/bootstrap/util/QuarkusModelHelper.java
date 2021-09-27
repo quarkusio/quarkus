@@ -19,11 +19,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import org.gradle.api.GradleException;
 
 public class QuarkusModelHelper {
 
@@ -101,30 +100,23 @@ public class QuarkusModelHelper {
     public static AppModel convert(QuarkusModel model, AppArtifact appArtifact) throws AppModelResolverException {
         AppModel.Builder appBuilder = new AppModel.Builder();
 
-        final List<AppDependency> userDeps = new ArrayList<>();
-        Map<AppArtifactKey, AppDependency> versionMap = new HashMap<>();
-        model.getAppDependencies().stream().map(QuarkusModelHelper::toAppDependency).forEach(appDependency -> {
-            userDeps.add(appDependency);
-            versionMap.put(appDependency.getArtifact().getKey(), appDependency);
-        });
-
         final Map<String, Object> capabilities = new HashMap<>();
-        final List<AppDependency> deploymentDeps = new ArrayList<>();
         final Map<String, CapabilityContract> capabilitiesContracts = new HashMap<>();
-        for (Dependency extensionDependency : model.getExtensionDependencies()) {
-            AppDependency appDep = toAppDependency(extensionDependency);
-            for (Path artifactPath : appDep.getArtifact().getPaths()) {
+        for (Dependency extensionDependency : model.getDependencies()) {
+            boolean extension = false;
+            for (File f : extensionDependency.getPaths()) {
+                final Path artifactPath = f.toPath();
                 if (!Files.exists(artifactPath) || !extensionDependency.getType().equals("jar")) {
                     continue;
                 }
                 if (Files.isDirectory(artifactPath)) {
-                    processQuarkusDir(appDep.getArtifact(),
+                    extension |= processQuarkusDir(extensionDependency,
                             artifactPath.resolve(BootstrapConstants.META_INF),
                             appBuilder, capabilities, capabilitiesContracts);
                 } else {
                     try (FileSystem artifactFs = FileSystems.newFileSystem(artifactPath,
                             QuarkusModelHelper.class.getClassLoader())) {
-                        processQuarkusDir(appDep.getArtifact(),
+                        extension |= processQuarkusDir(extensionDependency,
                                 artifactFs.getPath(BootstrapConstants.META_INF),
                                 appBuilder, capabilities, capabilitiesContracts);
                     } catch (IOException e) {
@@ -132,15 +124,10 @@ public class QuarkusModelHelper {
                     }
                 }
             }
-            if (!userDeps.contains(appDep)) {
-                AppDependency deploymentDep = alignVersion(appDep, versionMap);
-                deploymentDeps.add(deploymentDep);
-            }
+            appBuilder.addDependency(toAppDependency(extensionDependency, extensionDependency.getFlags(),
+                    extension ? AppDependency.RUNTIME_EXTENSION_ARTIFACT_FLAG : 0));
         }
         appBuilder.setCapabilitiesContracts(capabilitiesContracts);
-
-        final List<AppDependency> fullDeploymentDeps = new ArrayList<>(userDeps);
-        fullDeploymentDeps.addAll(deploymentDeps);
 
         if (!appArtifact.isResolved()) {
             PathsCollection.Builder paths = PathsCollection.builder();
@@ -162,16 +149,17 @@ public class QuarkusModelHelper {
                     new AppArtifactKey(coords.getGroupId(), coords.getArtifactId(), null, coords.getType()));
         }
 
-        appBuilder.addRuntimeDeps(userDeps)
-                .addFullDeploymentDeps(fullDeploymentDeps)
-                .addDeploymentDeps(deploymentDeps)
-                .setAppArtifact(appArtifact)
+        appBuilder.setAppArtifact(appArtifact)
                 .setPlatformImports(model.getPlatformImports());
         return appBuilder.build();
     }
 
-    public static AppDependency toAppDependency(Dependency dependency) {
-        return new AppDependency(toAppArtifact(dependency), "runtime");
+    public static AppDependency toAppDependency(Dependency dependency, int... flags) {
+        int allFlags = dependency.getFlags();
+        for (int f : flags) {
+            allFlags |= f;
+        }
+        return new AppDependency(toAppArtifact(dependency), "runtime", allFlags);
     }
 
     private static AppArtifact toAppArtifact(Dependency dependency) {
@@ -199,25 +187,27 @@ public class QuarkusModelHelper {
         try (BufferedReader reader = Files.newBufferedReader(path)) {
             rtProps.load(reader);
         } catch (IOException e) {
-            throw new GradleException("Failed to load extension description " + path, e);
+            throw new UncheckedIOException("Failed to load extension description " + path, e);
         }
         return rtProps;
     }
 
-    private static void processQuarkusDir(AppArtifact a, Path quarkusDir, AppModel.Builder appBuilder,
+    private static boolean processQuarkusDir(Dependency d, Path quarkusDir, AppModel.Builder appBuilder,
             Map<String, Object> capabilities, Map<String, CapabilityContract> capabilitiesContracts) {
         if (!Files.exists(quarkusDir)) {
-            return;
+            return false;
         }
         final Path quarkusDescr = quarkusDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME);
         if (!Files.exists(quarkusDescr)) {
-            return;
+            return false;
         }
         final Properties extProps = QuarkusModelHelper.resolveDescriptor(quarkusDescr);
         if (extProps == null) {
-            return;
+            return false;
         }
-        final String extensionCoords = a.toString();
+        final String extensionCoords = d.getGroupId() + ":" + d.getName() + ":"
+                + (d.getClassifier() == null ? "" : d.getClassifier()) + ":"
+                + (d.getType() == null || d.getType().isEmpty() ? "jar" : d.getType()) + ":" + d.getVersion();
         appBuilder.handleExtensionProperties(extProps, extensionCoords);
 
         final String providesCapabilities = extProps.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
@@ -225,6 +215,7 @@ public class QuarkusModelHelper {
             capabilitiesContracts.put(extensionCoords,
                     CapabilityContract.providesCapabilities(extensionCoords, providesCapabilities));
         }
+        return true;
     }
 
     static AppDependency alignVersion(AppDependency dependency, Map<AppArtifactKey, AppDependency> versionMap) {

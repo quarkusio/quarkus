@@ -18,17 +18,17 @@ You will build a REST application that optimizes a school timetable for students
 image::optaplanner-time-table-app-screenshot.png[]
 
 Your service will assign `Lesson` instances to `Timeslot` and `Room` instances automatically
-by using AI to adhere to hard and soft scheduling _constraints_, such as:
+by using AI to adhere to hard and soft scheduling _constraints_, such as the following examples:
 
 * A room can have at most one lesson at the same time.
 * A teacher can teach at most one lesson at the same time.
 * A student can attend at most one lesson at the same time.
-* A teacher prefers to teach in a single room.
+* A teacher prefers to teach all lessons in the same room.
 * A teacher prefers to teach sequential lessons and dislikes gaps between lessons.
 * A student dislikes sequential lessons on the same subject.
 
 Mathematically speaking, school timetabling is an _NP-hard_ problem.
-That means it is difficult to scale.
+This means it is difficult to scale.
 Simply brute force iterating through all possible combinations takes millions of years
 for a non-trivial dataset, even on a supercomputer.
 Luckily, AI constraint solvers such as OptaPlanner have advanced algorithms
@@ -67,7 +67,7 @@ Alternatively, generate it from the command line with Maven:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=optaplanner-quickstart \
     -Dextensions="resteasy,resteasy-jackson,optaplanner-quarkus,optaplanner-quarkus-jackson" \
@@ -82,8 +82,15 @@ In Maven, your `pom.xml` file contains these dependencies:
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-universe-bom</artifactId>
+        <groupId>io.quarkus.platform</groupId>
+        <artifactId>quarkus-bom</artifactId>
+        <version>{quarkus-version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus.platform</groupId>
+        <artifactId>quarkus-optaplanner-bom</artifactId>
         <version>{quarkus-version}</version>
         <type>pom</type>
         <scope>import</scope>
@@ -121,7 +128,8 @@ In Maven, your `pom.xml` file contains these dependencies:
 //[source,groovy,subs=attributes+]
 //----
 //dependencies {
-//    implementation enforcedPlatform("io.quarkus:quarkus-universe-bom:{quarkus-version}")
+//    implementation enforcedPlatform("io.quarkus.platform:quarkus-bom:{quarkus-version}")
+//    implementation enforcedPlatform("io.quarkus.platform:quarkus-optaplanner-bom:{quarkus-version}")
 //    implementation 'io.quarkus:quarkus-resteasy'
 //    implementation 'io.quarkus:quarkus-resteasy-jackson'
 //    implementation 'org.optaplanner:optaplanner-quarkus'
@@ -357,10 +365,10 @@ to avoid common pitfalls.
 
 == Define the constraints and calculate the score
 
-A _score_ represents the quality of a given solution.
+A _score_ represents the quality of a specific solution.
 The higher the better.
 OptaPlanner looks for the best solution, which is the solution with the highest score found in the available time.
-It could be the _optimal_ solution.
+It might be the _optimal_ solution.
 
 Because this use case has hard and soft constraints,
 use the `HardSoftScore` class to represent the score:
@@ -376,7 +384,7 @@ To calculate the score, you could implement an `EasyScoreCalculator` class:
 
 [source,java]
 ----
-public class TimeTableEasyScoreCalculator implements EasyScoreCalculator<TimeTable> {
+public class TimeTableEasyScoreCalculator implements EasyScoreCalculator<TimeTable, HardSoftScore> {
 
     @Override
     public HardSoftScore calculateScore(TimeTable timeTable) {
@@ -402,7 +410,7 @@ public class TimeTableEasyScoreCalculator implements EasyScoreCalculator<TimeTab
             }
         }
         int softScore = 0;
-        // Soft constraints are only implemented in optaplanner-quickstart
+        // Soft constraints are only implemented in the optaplanner-quickstarts code
         return HardSoftScore.of(hardScore, softScore);
     }
 
@@ -415,7 +423,7 @@ all lessons are re-evaluated to calculate the new score.
 
 Instead, create a `src/main/java/org/acme/optaplanner/solver/TimeTableConstraintProvider.java` class
 to perform incremental score calculation.
-It uses OptaPlanner's ConstraintStream API which is inspired by Java 8 Streams and SQL:
+It uses OptaPlanner's ConstraintStream API which is inspired by Java Streams and SQL:
 
 [source,java]
 ----
@@ -437,7 +445,7 @@ public class TimeTableConstraintProvider implements ConstraintProvider {
                 roomConflict(constraintFactory),
                 teacherConflict(constraintFactory),
                 studentGroupConflict(constraintFactory),
-                // Soft constraints are only implemented in optaplanner-quickstart
+                // Soft constraints are only implemented in the optaplanner-quickstarts code
         };
     }
 
@@ -447,32 +455,35 @@ public class TimeTableConstraintProvider implements ConstraintProvider {
         // Select a lesson ...
         return constraintFactory
                 .from(Lesson.class)
+                // ... and pair it with another lesson ...
                 .join(Lesson.class,
                         // ... in the same timeslot ...
                         Joiners.equal(Lesson::getTimeslot),
                         // ... in the same room ...
                         Joiners.equal(Lesson::getRoom),
-                        // Avoiding repeated pairs (A -> B, B -> A)
+                        // ... and the pair is unique (different id, no reverse pairs) ...
                         Joiners.lessThan(Lesson::getId))
-                // then penalize each pair with a hard weight.
+                // ... then penalize each pair with a hard weight.
                 .penalize("Room conflict", HardSoftScore.ONE_HARD);
     }
 
     private Constraint teacherConflict(ConstraintFactory constraintFactory) {
         // A teacher can teach at most one lesson at the same time.
-        return constraintFactory
-                .fromUniquePair(Lesson.class,
+        return constraintFactory.from(Lesson.class)
+                .join(Lesson.class,
                         Joiners.equal(Lesson::getTimeslot),
-                        Joiners.equal(Lesson::getTeacher))
+                        Joiners.equal(Lesson::getTeacher),
+                        Joiners.lessThan(Lesson::getId))
                 .penalize("Teacher conflict", HardSoftScore.ONE_HARD);
     }
 
     private Constraint studentGroupConflict(ConstraintFactory constraintFactory) {
         // A student can attend at most one lesson at the same time.
-        return constraintFactory
-                .fromUniquePair(Lesson.class,
+        return constraintFactory.from(Lesson.class)
+                .join(Lesson.class,
                         Joiners.equal(Lesson::getTimeslot),
-                        Joiners.equal(Lesson::getStudentGroup))
+                        Joiners.equal(Lesson::getStudentGroup),
+                        Joiners.lessThan(Lesson::getId))
                 .penalize("Student group conflict", HardSoftScore.ONE_HARD);
     }
 
@@ -512,11 +523,11 @@ import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;
 @PlanningSolution
 public class TimeTable {
 
-    @ProblemFactCollectionProperty
     @ValueRangeProvider(id = "timeslotRange")
-    private List<Timeslot> timeslotList;
     @ProblemFactCollectionProperty
+    private List<Timeslot> timeslotList;
     @ValueRangeProvider(id = "roomRange")
+    @ProblemFactCollectionProperty
     private List<Room> roomList;
     @PlanningEntityCollectionProperty
     private List<Lesson> lessonList;
@@ -576,10 +587,10 @@ However, this class is also the output of the solution:
 
 === The value range providers
 
-That `timeslotList` field is a value range provider.
+The `timeslotList` field is a value range provider.
 It holds the `Timeslot` instances which OptaPlanner can pick from to assign to the `timeslot` field of `Lesson` instances.
-The `timeslotList` field has an `@ValueRangeProvider` annotation to connect those two,
-by matching the `id` with the `valueRangeProviderRefs` of the `@PlanningVariable` in the `Lesson`.
+The `timeslotList` field has an `@ValueRangeProvider` annotation to connect the `@PlanningVariable` with the `@ValueRangeProvider`,
+by matching the value of the `id` property with the value of the `valueRangeProviderRefs` property of the `@PlanningVariable` annotation in the `Lesson` class.
 
 Following the same logic, the `roomList` field also has an `@ValueRangeProvider` annotation.
 
@@ -600,7 +611,7 @@ and your `TimeTableConstraintProvider` can select _from_ those too.
 
 Now you are ready to put everything together and create a REST service.
 But solving planning problems on REST threads causes HTTP timeout issues.
-Therefore, the Quarkus extension injects a `SolverManager`,
+Therefore, the Quarkus extension injects a `SolverManager` instance,
 which runs solvers in a separate thread pool
 and can solve multiple datasets in parallel.
 
@@ -665,7 +676,7 @@ quarkus.optaplanner.solver.termination.spent-limit=5s
 ----
 
 
-== Make the application executable
+== Run the application
 
 First start the application:
 
@@ -713,9 +724,13 @@ On the server side, the `info` log show what OptaPlanner did in those five secon
 
 === Test the application
 
+A good application includes test coverage.
+
 ==== Test the constraints
 
-To test each constraint in isolation, use a `ConstraintVerifier` in unit tests. This tests each constraint's corner cases in isolation from the other tests, which lowers maintenance when adding a new constraint with proper test coverage.
+To test each constraint in isolation, use a `ConstraintVerifier` in unit tests.
+It tests each constraint's corner cases in isolation from the other tests,
+which lowers maintenance when adding a new constraint with proper test coverage.
 
 Add a `optaplanner-test` dependency in your `pom.xml`:
 [source,xml]
@@ -728,6 +743,7 @@ Add a `optaplanner-test` dependency in your `pom.xml`:
 ----
 
 Create the `src/test/java/org/acme/optaplanner/solver/TimeTableConstraintProviderTest.java` class:
+
 [source,java]
 ----
 package org.acme.optaplanner.solver;
@@ -778,13 +794,18 @@ class TimeTableConstraintProviderTest {
 }
 ----
 
-This test verifies that the constraint `TimeTableConstraintProvider::roomConflict`, when given three lessons in the same room, where two lessons have the same timeslot, it penalizes with a  match weight of `1`. So with a constraint weight of `10hard` it would reduce the score by `-10hard`.
+This test verifies that the constraint `TimeTableConstraintProvider::roomConflict`,
+when given three lessons in the same room, where two lessons have the same timeslot,
+it penalizes with a  match weight of `1`.
+So with a constraint weight of `10hard` it would reduce the score by `-10hard`.
 
-Notice how `ConstraintVerifier` ignores the constraint weight during testing - even if those constraint weights are hard coded in the `ConstraintProvider` - because constraints weights change regularly before going into production. This way, constraint weight tweaking does not break the unit tests.
+Notice how `ConstraintVerifier` ignores the constraint weight during testing - even
+if those constraint weights are hard coded in the `ConstraintProvider` - because
+constraints weights change regularly before going into production.
+This way, constraint weight tweaking does not break the unit tests.
 
 ==== Test the solver
 
-A good application includes test coverage.
 In a JUnit test, generate a test dataset and send it to the `TimeTableResource` to solve.
 
 Create the `src/test/java/org/acme/optaplanner/rest/TimeTableResourceTest.java` class:
@@ -870,11 +891,9 @@ Add test properties to the `src/main/resources/application.properties` file:
 
 [source,properties]
 ----
-# The solver runs only for 5 seconds to avoid a HTTP timeout in this simple implementation.
-# It's recommended to run for at least 5 minutes ("5m") otherwise.
 quarkus.optaplanner.solver.termination.spent-limit=5s
 
-# Effectively disable this termination in favor of the best-score-limit
+# Effectively disable spent-time termination in favor of the best-score-limit
 %test.quarkus.optaplanner.solver.termination.spent-limit=1h
 %test.quarkus.optaplanner.solver.termination.best-score-limit=0hard/*soft
 ----
@@ -930,7 +949,7 @@ Now try adding database and UI integration:
 
 . link:rest-json[Expose them through REST].
 
-. Adjust the `TimeTableResource` to read and write a `TimeTable` in a single transaction
+. Adjust the `TimeTableResource` to read and write a `TimeTable` instance in a single transaction
 and use those accordingly:
 +
 [source,java]
@@ -939,12 +958,9 @@ package org.acme.optaplanner.rest;
 
 import javax.inject.Inject;
 import javax.transaction.Transactional;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import io.quarkus.panache.common.Sort;
 import org.acme.optaplanner.domain.Lesson;
@@ -957,8 +973,6 @@ import org.optaplanner.core.api.solver.SolverManager;
 import org.optaplanner.core.api.solver.SolverStatus;
 
 @Path("/timeTable")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class TimeTableResource {
 
     public static final Long SINGLETON_TIME_TABLE_ID = 1L;
@@ -1024,19 +1038,19 @@ public class TimeTableResource {
 }
 ----
 +
-For simplicity's sake, this code handles only one `TimeTable`,
+For simplicity's sake, this code handles only one `TimeTable` instance,
 but it is straightforward to enable multi-tenancy and handle multiple `TimeTable` instances of different high schools in parallel.
 +
-The `getTimeTable()` method returns the latest time table from the database.
+The `getTimeTable()` method returns the latest timetable from the database.
 It uses the `ScoreManager` (which is automatically injected)
-to calculate the score of that time table, so the UI can show the score.
+to calculate the score of that timetable, so the UI can show the score.
 +
-The `solve()` method starts a job to solve the current time table and store the time slot and room assignments in the database.
+The `solve()` method starts a job to solve the current timetable and store the time slot and room assignments in the database.
 It uses the `SolverManager.solveAndListen()` method to listen to intermediate best solutions
 and update the database accordingly.
 This enables the UI to show progress while the backend is still solving.
 
-. Adjust the `TimeTableResourceTest` accordingly, now that the `solve()` method returns immediately.
+. Adjust the `TimeTableResourceTest` instance accordingly, now that the `solve()` method returns immediately.
 Poll for the latest solution until the solver finishes solving:
 +
 [source,java]
@@ -1086,4 +1100,4 @@ public class TimeTableResourceTest {
 
 . Build an attractive web UI on top of these REST methods to visualize the timetable.
 
-Take a look at <<solution, the solution>> to see how this all turns out.
+Take a look at {quickstarts-tree-url}/optaplanner-quickstart[the quickstart source code] to see how this all turns out.

@@ -1,11 +1,14 @@
 package io.quarkus.arc.impl;
 
+import static java.util.function.Predicate.not;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.Components;
 import io.quarkus.arc.ComponentsProvider;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.InjectableDecorator;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableObserverMethod;
@@ -23,8 +26,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,6 +52,7 @@ import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
+import javax.enterprise.inject.spi.Decorator;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.inject.spi.InterceptionType;
 import javax.enterprise.inject.spi.Interceptor;
@@ -68,9 +70,10 @@ public class ArcContainerImpl implements ArcContainer {
 
     private final AtomicBoolean running;
 
-    private final List<InjectableBean<?>> beans;
-    private final List<RemovedBean> removedBeans;
+    private final ArrayList<InjectableBean<?>> beans;
+    private final ArrayList<RemovedBean> removedBeans;
     private final List<InjectableInterceptor<?>> interceptors;
+    private final List<InjectableDecorator<?>> decorators;
     private final List<InjectableObserverMethod<?>> observers;
     private final Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings;
     private final Map<String, Set<String>> qualifierNonbindingMembers;
@@ -84,18 +87,19 @@ public class ArcContainerImpl implements ArcContainer {
     private final ComputingCache<String, InjectableBean<?>> beansById;
     private final ComputingCache<String, Set<InjectableBean<?>>> beansByName;
 
-    private final List<ResourceReferenceProvider> resourceProviders;
+    private final ArrayList<ResourceReferenceProvider> resourceProviders;
 
     final InstanceImpl<Object> instance;
 
     private volatile ExecutorService executorService;
 
     public ArcContainerImpl() {
-        id = "" + ID_GENERATOR.incrementAndGet();
+        id = String.valueOf(ID_GENERATOR.incrementAndGet());
         running = new AtomicBoolean(true);
         beans = new ArrayList<>();
         removedBeans = new ArrayList<>();
         interceptors = new ArrayList<>();
+        decorators = new ArrayList<>();
         observers = new ArrayList<>();
         transitiveInterceptorBindings = new HashMap<>();
         qualifierNonbindingMembers = new HashMap<>();
@@ -113,11 +117,14 @@ public class ArcContainerImpl implements ArcContainer {
             for (InjectableBean<?> bean : components.getBeans()) {
                 if (bean instanceof InjectableInterceptor) {
                     interceptors.add((InjectableInterceptor<?>) bean);
+                } else if (bean instanceof InjectableDecorator) {
+                    decorators.add((InjectableDecorator<?>) bean);
                 } else {
                     beans.add(bean);
                 }
             }
             removedBeans.addAll(components.getRemovedBeans());
+            removedBeans.trimToSize();
             observers.addAll(components.getObservers());
             // Add custom contexts
             for (InjectableContext context : components.getContexts()) {
@@ -135,9 +142,10 @@ public class ArcContainerImpl implements ArcContainer {
             qualifierNonbindingMembers.putAll(components.getQualifierNonbindingMembers());
         }
         // register built-in beans
-        addBuiltInBeans();
+        addBuiltInBeans(beans);
+        beans.trimToSize();
 
-        Collections.sort(interceptors, (i1, i2) -> Integer.compare(i2.getPriority(), i1.getPriority()));
+        interceptors.sort((i1, i2) -> Integer.compare(i2.getPriority(), i1.getPriority()));
 
         resolved = new ComputingCache<>(this::resolve);
         beansById = new ComputingCache<>(this::findById);
@@ -146,6 +154,7 @@ public class ArcContainerImpl implements ArcContainer {
         for (ResourceReferenceProvider resourceProvider : ServiceLoader.load(ResourceReferenceProvider.class)) {
             resourceProviders.add(resourceProvider);
         }
+        resourceProviders.trimToSize();
 
         instance = InstanceImpl.of(Object.class, Collections.emptySet());
     }
@@ -155,13 +164,14 @@ public class ArcContainerImpl implements ArcContainer {
         if (values == null) {
             contexts.put(context.getScope(), Collections.singleton(context));
         } else {
-            List<InjectableContext> multi = new LinkedList<>(values);
+            List<InjectableContext> multi = new ArrayList<>(values.size() + 1);
+            multi.addAll(values);
             multi.add(context);
             contexts.put(context.getScope(), Collections.unmodifiableList(multi));
         }
     }
 
-    private void addBuiltInBeans() {
+    private static void addBuiltInBeans(List<InjectableBean<?>> beans) {
         // BeanManager, Event<?>, Instance<?>
         beans.add(new BeanManagerBean());
         beans.add(new EventBean());
@@ -213,7 +223,7 @@ public class ArcContainerImpl implements ArcContainer {
 
     @Override
     public Set<Class<? extends Annotation>> getScopes() {
-        return contexts.keySet().stream().collect(Collectors.toSet());
+        return new HashSet<>(contexts.keySet());
     }
 
     @Override
@@ -255,7 +265,7 @@ public class ArcContainerImpl implements ArcContainer {
                 }
             }
         }
-        InjectableBean<T> bean = filteredBean.isEmpty() || filteredBean.size() > 1 ? null
+        InjectableBean<T> bean = filteredBean.size() != 1 ? null
                 : (InjectableBean<T>) filteredBean.iterator().next();
         if (bean == null) {
             return null;
@@ -272,7 +282,7 @@ public class ArcContainerImpl implements ArcContainer {
     public <T> InstanceHandle<T> instance(InjectableBean<T> bean) {
         Objects.requireNonNull(bean);
         requireRunning();
-        return (InstanceHandle<T>) beanInstanceHandle(bean, null);
+        return beanInstanceHandle(bean, null);
     }
 
     @Override
@@ -304,7 +314,7 @@ public class ArcContainerImpl implements ArcContainer {
         Objects.requireNonNull(name);
         requireRunning();
         Set<InjectableBean<?>> resolvedBeans = beansByName.getValue(name);
-        return resolvedBeans.isEmpty() || resolvedBeans.size() > 1 ? InstanceHandleImpl.unavailable()
+        return resolvedBeans.size() != 1 ? InstanceHandleImpl.unavailable()
                 : (InstanceHandle<T>) beanInstanceHandle(resolvedBeans.iterator()
                         .next(), null);
     }
@@ -427,7 +437,7 @@ public class ArcContainerImpl implements ArcContainer {
             }
 
             try {
-                return new InstanceHandleImpl<T>(bean, bean.get(creationalContext), creationalContext, parentContext,
+                return new InstanceHandleImpl<>(bean, bean.get(creationalContext), creationalContext, parentContext,
                         destroyLogic);
             } finally {
                 if (resetCurrentInjectionPoint) {
@@ -451,7 +461,7 @@ public class ArcContainerImpl implements ArcContainer {
             Qualifiers.verify(qualifiers);
         }
         Set<InjectableBean<?>> resolvedBeans = resolved.getValue(new Resolvable(requiredType, qualifiers));
-        return resolvedBeans.isEmpty() || resolvedBeans.size() > 1 ? null : (InjectableBean<T>) resolvedBeans.iterator().next();
+        return resolvedBeans.size() != 1 ? null : (InjectableBean<T>) resolvedBeans.iterator().next();
     }
 
     Set<Bean<?>> getBeans(Type requiredType, Annotation... qualifiers) {
@@ -460,7 +470,7 @@ public class ArcContainerImpl implements ArcContainer {
         }
         Qualifiers.verify(qualifiers);
         // This method does not cache the results
-        return new HashSet<>(getMatchingBeans(new Resolvable(requiredType, qualifiers)));
+        return Set.of(getMatchingBeans(new Resolvable(requiredType, qualifiers)).toArray(new Bean<?>[] {}));
     }
 
     Set<Bean<?>> getBeans(String name) {
@@ -529,8 +539,8 @@ public class ArcContainerImpl implements ArcContainer {
             return beans.iterator().next();
         } else {
             // Try to resolve the ambiguity
-            if (beans.stream().allMatch(b -> b instanceof InjectableBean)) {
-                List<InjectableBean<?>> matching = new ArrayList<>();
+            if (beans.stream().allMatch(InjectableBean.class::isInstance)) {
+                List<InjectableBean<?>> matching = new ArrayList<>(beans.size());
                 for (Bean<? extends X> bean : beans) {
                     matching.add((InjectableBean<? extends X>) bean);
                 }
@@ -542,11 +552,7 @@ public class ArcContainerImpl implements ArcContainer {
             } else {
                 // The set contains non-Arc beans - give our best effort
                 Set<Bean<? extends X>> resolved = new HashSet<>(beans);
-                for (Iterator<Bean<? extends X>> iterator = resolved.iterator(); iterator.hasNext();) {
-                    if (!iterator.next().isAlternative()) {
-                        iterator.remove();
-                    }
-                }
+                resolved.removeIf(not(Bean::isAlternative));
                 if (resolved.size() != 1) {
                     throw new AmbiguousResolutionException(resolved.toString());
                 }
@@ -559,46 +565,43 @@ public class ArcContainerImpl implements ArcContainer {
         if (matching.isEmpty()) {
             return Collections.emptySet();
         } else if (matching.size() == 1) {
-            return Collections.singleton(matching.get(0));
+            return Set.of(matching.get(0));
+        }
+        // Try to resolve the ambiguity and return the set of disambiguated beans
+
+        // First remove the default beans
+        List<InjectableBean<?>> nonDefault = new ArrayList<>(matching);
+        nonDefault.removeIf(InjectableBean::isDefaultBean);
+        if (nonDefault.isEmpty()) {
+            // All the matching beans were default
+            return Set.copyOf(matching);
+        } else if (nonDefault.size() == 1) {
+            return Set.of(nonDefault.get(0));
         }
 
-        // Try to resolve the ambiguity
-        List<InjectableBean<?>> resolved = new ArrayList<>(matching);
+        // More than one non-default bean remains - eliminate beans that don't have a priority
+        List<InjectableBean<?>> priorityBeans = new ArrayList<>(nonDefault);
+        priorityBeans.removeIf(not(ArcContainerImpl::isAlternativeOrDeclaredOnAlternative));
+        if (priorityBeans.isEmpty()) {
+            // No alternative/priority beans are present
+            return Set.copyOf(nonDefault);
+        } else if (priorityBeans.size() == 1) {
+            return Set.of(priorityBeans.get(0));
+        } else {
+            // Keep only the highest priorities 
+            priorityBeans.sort(ArcContainerImpl::compareAlternativeBeans);
+            Integer highest = getAlternativePriority(priorityBeans.get(0));
+            priorityBeans.removeIf(bean -> !highest.equals(getAlternativePriority(bean)));
+            if (priorityBeans.size() == 1) {
+                return Set.of(priorityBeans.get(0));
+            }
+            return Set.copyOf(priorityBeans);
+        }
+    }
 
-        for (Iterator<InjectableBean<?>> iterator = resolved.iterator(); iterator.hasNext();) {
-            InjectableBean<?> beanInfo = iterator.next();
-            if (beanInfo.isDefaultBean()) {
-                iterator.remove();
-            }
-        }
-        if (resolved.size() == 1) {
-            return Collections.singleton(resolved.get(0));
-        }
-
-        for (Iterator<InjectableBean<?>> iterator = resolved.iterator(); iterator.hasNext();) {
-            InjectableBean<?> bean = iterator.next();
-            if (bean.getAlternativePriority() == null
-                    && (bean.getDeclaringBean() == null || bean.getDeclaringBean().getAlternativePriority() == null)) {
-                // Remove non-alternatives
-                iterator.remove();
-            }
-        }
-        if (resolved.size() == 1) {
-            return Collections.singleton(resolved.get(0));
-        } else if (resolved.size() > 1) {
-            resolved.sort(ArcContainerImpl::compareAlternativeBeans);
-            // Keep only the highest priorities
-            Integer highest = getAlternativePriority(resolved.get(0));
-            for (Iterator<InjectableBean<?>> iterator = resolved.iterator(); iterator.hasNext();) {
-                if (!highest.equals(getAlternativePriority(iterator.next()))) {
-                    iterator.remove();
-                }
-            }
-            if (resolved.size() == 1) {
-                return Collections.singleton(resolved.get(0));
-            }
-        }
-        return new HashSet<>(matching);
+    private static boolean isAlternativeOrDeclaredOnAlternative(InjectableBean<?> bean) {
+        return bean.getAlternativePriority() != null
+                || bean.getDeclaringBean() != null && bean.getDeclaringBean().getAlternativePriority() != null;
     }
 
     private static Integer getAlternativePriority(InjectableBean<?> bean) {
@@ -610,14 +613,14 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     List<InjectableBean<?>> getMatchingBeans(Resolvable resolvable) {
-        List<InjectableBean<?>> matching = new LinkedList<>();
+        List<InjectableBean<?>> matching = new ArrayList<>();
         for (InjectableBean<?> bean : beans) {
             if (matches(bean, resolvable.requiredType, resolvable.qualifiers)) {
                 matching.add(bean);
             }
         }
         if (matching.isEmpty() && !removedBeans.isEmpty()) {
-            List<RemovedBean> removedMatching = new LinkedList<>();
+            List<RemovedBean> removedMatching = new ArrayList<>();
             for (RemovedBean removedBean : removedBeans) {
                 if (matches(removedBean.getTypes(), removedBean.getQualifiers(), resolvable.requiredType,
                         resolvable.qualifiers)) {
@@ -637,10 +640,20 @@ public class ArcContainerImpl implements ArcContainer {
                         + "\t- Application developers can eliminate false positives via the @Unremovable annotation\n"
                         + "\t- Extensions can eliminate false positives via build items, e.g. using the UnremovableBeanBuildItem\n"
                         + "\t- See also https://quarkus.io/guides/cdi-reference#remove_unused_beans\n"
+                        + "\t- Enable the DEBUG log level to see the full stack trace to identify the method that performed the lookup\n"
                         + "%1$s%1$s%1$s%1$s\n";
                 LOGGER.warnf(msg, separator,
                         removedMatching.stream().map(Object::toString).collect(Collectors.joining("\n\t- ")),
                         resolvable.requiredType, Arrays.toString(resolvable.qualifiers));
+                if (LOGGER.isDebugEnabled()) {
+                    StringBuilder stack = new StringBuilder("\nCDI: programmatic lookup stack trace:\n");
+                    for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
+                        stack.append("\t");
+                        stack.append(e.toString());
+                        stack.append("\n");
+                    }
+                    LOGGER.debug(stack);
+                }
             }
         }
         return matching;
@@ -686,7 +699,7 @@ public class ArcContainerImpl implements ArcContainer {
             }
         }
         // Observers with smaller priority values are called first
-        Collections.sort(resolvedObservers, InjectableObserverMethod::compare);
+        resolvedObservers.sort(InjectableObserverMethod::compare);
         return resolvedObservers;
     }
 
@@ -712,6 +725,23 @@ public class ArcContainerImpl implements ArcContainer {
             }
         }
         return interceptors;
+    }
+
+    List<Decorator<?>> resolveDecorators(Set<Type> types, Annotation... qualifiers) {
+        if (decorators.isEmpty()) {
+            return Collections.emptyList();
+        }
+        if (Objects.requireNonNull(types).isEmpty()) {
+            throw new IllegalArgumentException("The set of bean types must not be empty");
+        }
+        List<Decorator<?>> decorators = new ArrayList<>();
+        for (InjectableDecorator<?> decorator : this.decorators) {
+            if (matches(types, Set.of(qualifiers), decorator.getDelegateType(),
+                    decorator.getDelegateQualifiers().toArray(new Annotation[] {}))) {
+                decorators.add(decorator);
+            }
+        }
+        return decorators;
     }
 
     private boolean hasAllInterceptionBindings(InjectableInterceptor<?> interceptor, Iterable<Annotation> bindings) {
@@ -794,14 +824,14 @@ public class ArcContainerImpl implements ArcContainer {
 
     private void requireRunning() {
         if (!running.get()) {
-            throw new IllegalStateException("Container not running: " + toString());
+            throw new IllegalStateException("Container not running: " + this);
         }
     }
 
     private static final class Resolvable {
 
         private static final Set<Type> BUILT_IN_TYPES = new HashSet<>(Arrays.asList(Event.class, Instance.class));
-        private static final Annotation[] ANY_QUALIFIER = new Annotation[] { Any.Literal.INSTANCE };
+        private static final Annotation[] ANY_QUALIFIER = { Any.Literal.INSTANCE };
 
         final Type requiredType;
 
@@ -825,7 +855,7 @@ public class ArcContainerImpl implements ArcContainer {
             final int prime = 31;
             int result = 1;
             result = prime * result + Arrays.hashCode(qualifiers);
-            result = prime * result + ((requiredType == null) ? 0 : requiredType.hashCode());
+            result = prime * result + (requiredType == null ? 0 : requiredType.hashCode());
             return result;
         }
 
@@ -848,10 +878,7 @@ public class ArcContainerImpl implements ArcContainer {
             } else if (!requiredType.equals(other.requiredType)) {
                 return false;
             }
-            if (!Arrays.equals(qualifiers, other.qualifiers)) {
-                return false;
-            }
-            return true;
+            return Arrays.equals(qualifiers, other.qualifiers);
         }
 
     }

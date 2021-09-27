@@ -3,6 +3,7 @@ package io.quarkus.cli.build;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -17,6 +18,7 @@ import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.cli.registry.RegistryClientMixin;
 import io.quarkus.devtools.commands.AddExtensions;
 import io.quarkus.devtools.commands.ListCategories;
 import io.quarkus.devtools.commands.ListExtensions;
@@ -24,6 +26,7 @@ import io.quarkus.devtools.commands.RemoveExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
 import picocli.CommandLine;
 
@@ -32,13 +35,16 @@ public class MavenRunner implements BuildSystemRunner {
     static final String otherWrapper = "mvnw";
 
     final OutputOptionMixin output;
+    final RegistryClientMixin registryClient;
     final PropertiesOptions propertiesOptions;
     final Path projectRoot;
 
-    public MavenRunner(OutputOptionMixin output, PropertiesOptions propertiesOptions, Path projectRoot) {
+    public MavenRunner(OutputOptionMixin output, PropertiesOptions propertiesOptions, RegistryClientMixin registryClient,
+            Path projectRoot) {
         this.output = output;
         this.projectRoot = projectRoot;
         this.propertiesOptions = propertiesOptions;
+        this.registryClient = registryClient;
         verifyBuildFile();
     }
 
@@ -69,7 +75,8 @@ public class MavenRunner implements BuildSystemRunner {
         return BuildTool.MAVEN;
     }
 
-    QuarkusProject quarkusProject() {
+    QuarkusProject quarkusProject() throws Exception {
+        QuarkusProjectHelper.setToolsConfig(registryClient.resolveConfig());
         return MavenProjectBuildFile.getProject(projectRoot, output, Version::clientVersion);
     }
 
@@ -154,6 +161,8 @@ public class MavenRunner implements BuildSystemRunner {
     public List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, DebugOptions debugOptions,
             List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
+        List<String> jvmArgs = new ArrayList<>();
+
         setMavenProperties(args, false);
 
         if (devOptions.clean) {
@@ -165,10 +174,12 @@ public class MavenRunner implements BuildSystemRunner {
             setSkipTests(args);
         }
 
-        //TODO: addDebugArguments(args, debugOptions);
+        debugOptions.addDebugArguments(args, jvmArgs);
+        propertiesOptions.flattenJvmArgs(jvmArgs, args);
 
         // Add any other unmatched arguments
-        args.addAll(params);
+        paramsToQuarkusArgs(params, args);
+
         BuildCommandArgs buildCommandArgs = prependExecutable(args);
         return Collections.singletonList(new Supplier<BuildCommandArgs>() {
             @Override
@@ -194,6 +205,7 @@ public class MavenRunner implements BuildSystemRunner {
 
         // add specified properties
         args.addAll(flattenMappedProperties(propertiesOptions.properties));
+        args.add(registryClient.getRegistryClientProperty());
     }
 
     void verifyBuildFile() {

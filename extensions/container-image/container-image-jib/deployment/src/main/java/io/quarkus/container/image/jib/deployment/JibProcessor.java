@@ -119,10 +119,11 @@ public class JibProcessor {
         JibContainerBuilder jibContainerBuilder;
         String packageType = packageConfig.type;
         if (packageConfig.isLegacyJar() || packageType.equalsIgnoreCase(PackageConfig.UBER_JAR)) {
-            jibContainerBuilder = createContainerBuilderFromLegacyJar(jibConfig,
+            jibContainerBuilder = createContainerBuilderFromLegacyJar(jibConfig, containerImageConfig,
                     sourceJar, outputTarget, mainClass, containerImageLabels);
         } else if (packageConfig.isFastJar()) {
-            jibContainerBuilder = createContainerBuilderFromFastJar(jibConfig, sourceJar, curateOutcome, containerImageLabels,
+            jibContainerBuilder = createContainerBuilderFromFastJar(jibConfig, containerImageConfig, sourceJar, curateOutcome,
+                    containerImageLabels,
                     appCDSResult);
         } else {
             throw new IllegalArgumentException(
@@ -161,7 +162,7 @@ public class JibProcessor {
                     "The native binary produced by the build is not a Linux binary and therefore cannot be used in a Linux container image. Consider adding \"quarkus.native.container-build=true\" to your configuration");
         }
 
-        JibContainerBuilder jibContainerBuilder = createContainerBuilderFromNative(containerImageConfig, jibConfig,
+        JibContainerBuilder jibContainerBuilder = createContainerBuilderFromNative(jibConfig, containerImageConfig,
                 nativeImage, containerImageLabels);
         setUser(jibConfig, jibContainerBuilder);
         setPlatforms(jibConfig, jibContainerBuilder);
@@ -221,6 +222,7 @@ public class JibProcessor {
         });
         containerizer.setAllowInsecureRegistries(containerImageConfig.insecure);
         containerizer.setAlwaysCacheBaseImage(jibConfig.alwaysCacheBaseImage);
+        containerizer.setOfflineMode(jibConfig.offlineMode);
         return containerizer;
     }
 
@@ -279,6 +281,7 @@ public class JibProcessor {
      * </ul>
      */
     private JibContainerBuilder createContainerBuilderFromFastJar(JibConfig jibConfig,
+            ContainerImageConfig containerImageConfig,
             JarBuildItem sourceJarBuildItem,
             CurateOutcomeBuildItem curateOutcome, List<ContainerImageLabelBuildItem> containerImageLabels,
             Optional<AppCDSResultBuildItem> appCDSResult) {
@@ -426,7 +429,7 @@ public class JibProcessor {
                     .setWorkingDirectory(workDirInContainer)
                     .setEntrypoint(entrypoint)
                     .setEnvironment(getEnvironmentVariables(jibConfig))
-                    .setLabels(allLabels(jibConfig, containerImageLabels))
+                    .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels))
                     .setCreationTime(Instant.now());
             for (int port : jibConfig.ports) {
                 jibContainerBuilder.addExposedPort(Port.tcp(port));
@@ -467,6 +470,7 @@ public class JibProcessor {
     }
 
     private JibContainerBuilder createContainerBuilderFromLegacyJar(JibConfig jibConfig,
+            ContainerImageConfig containerImageConfig,
             JarBuildItem sourceJarBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             MainClassBuildItem mainClassBuildItem,
@@ -501,7 +505,7 @@ public class JibProcessor {
 
             JibContainerBuilder jibContainerBuilder = javaContainerBuilder.toContainerBuilder()
                     .setEnvironment(getEnvironmentVariables(jibConfig))
-                    .setLabels(allLabels(jibConfig, containerImageLabels))
+                    .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels))
                     .setCreationTime(Instant.now());
 
             if (jibConfig.jvmEntrypoint.isPresent()) {
@@ -516,7 +520,7 @@ public class JibProcessor {
         }
     }
 
-    private JibContainerBuilder createContainerBuilderFromNative(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
+    private JibContainerBuilder createContainerBuilderFromNative(JibConfig jibConfig, ContainerImageConfig containerImageConfig,
             NativeImageBuildItem nativeImageBuildItem, List<ContainerImageLabelBuildItem> containerImageLabels) {
 
         List<String> entrypoint;
@@ -531,8 +535,8 @@ public class JibProcessor {
         try {
             AbsoluteUnixPath workDirInContainer = AbsoluteUnixPath.get("/work");
             JibContainerBuilder jibContainerBuilder = Jib
-                    .from(toRegistryImage(ImageReference.parse(jibConfig.baseNativeImage), containerImageConfig.username,
-                            containerImageConfig.password))
+                    .from(toRegistryImage(ImageReference.parse(jibConfig.baseNativeImage), jibConfig.baseRegistryUsername,
+                            jibConfig.baseRegistryPassword))
                     .addFileEntriesLayer(FileEntriesLayer.builder()
                             .addEntry(nativeImageBuildItem.getPath(), workDirInContainer.resolve(BINARY_NAME_IN_CONTAINER),
                                     FilePermissions.fromOctalString("775"))
@@ -540,7 +544,7 @@ public class JibProcessor {
                     .setWorkingDirectory(workDirInContainer)
                     .setEntrypoint(entrypoint)
                     .setEnvironment(getEnvironmentVariables(jibConfig))
-                    .setLabels(allLabels(jibConfig, containerImageLabels))
+                    .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels))
                     .setCreationTime(Instant.now());
             for (int port : jibConfig.ports) {
                 jibContainerBuilder.addExposedPort(Port.tcp(port));
@@ -603,12 +607,14 @@ public class JibProcessor {
         }
     }
 
-    private Map<String, String> allLabels(JibConfig jibConfig, List<ContainerImageLabelBuildItem> containerImageLabels) {
+    private Map<String, String> allLabels(JibConfig jibConfig, ContainerImageConfig containerImageConfig,
+            List<ContainerImageLabelBuildItem> containerImageLabels) {
         if (jibConfig.labels.isEmpty() && containerImageLabels.isEmpty()) {
             return Collections.emptyMap();
         }
 
         final Map<String, String> allLabels = new HashMap<>(jibConfig.labels);
+        allLabels.putAll(containerImageConfig.labels);
         for (ContainerImageLabelBuildItem containerImageLabel : containerImageLabels) {
             // we want the user supplied labels to take precedence so the user can override labels generated from other extensions if desired
             allLabels.putIfAbsent(containerImageLabel.getName(), containerImageLabel.getValue());

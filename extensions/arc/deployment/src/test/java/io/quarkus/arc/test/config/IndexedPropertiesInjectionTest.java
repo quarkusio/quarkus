@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.spi.DeploymentException;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -48,8 +47,7 @@ public class IndexedPropertiesInjectionTest {
                                     "optionals.indexed[1]=b\n" +
                                     "supplier.indexed[0]=a\n" +
                                     "supplier.indexed[1]=b\n"),
-                            "application.properties"))
-            .setExpectedException(DeploymentException.class);
+                            "application.properties"));
 
     @Inject
     IndexedBean indexedBean;

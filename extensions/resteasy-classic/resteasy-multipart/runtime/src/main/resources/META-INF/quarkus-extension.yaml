@@ -12,3 +12,5 @@ metadata:
   categories:
   - "web"
   status: "stable"
+  config:
+  - "quarkus.resteasy.multipart."

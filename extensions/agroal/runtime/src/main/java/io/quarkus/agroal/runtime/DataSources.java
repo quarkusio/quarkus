@@ -171,6 +171,15 @@ public class DataSources {
         if (dataSourceSupport.disableSslSupport) {
             agroalConnectionConfigurer.disableSslSupport(resolvedDbKind, dataSourceConfiguration);
         }
+        //we use a custom cache for two reasons:
+        //fast thread local cache should be faster
+        //and it prevents a thread local leak
+        try {
+            Class.forName("io.netty.util.concurrent.FastThreadLocal", true, Thread.currentThread().getContextClassLoader());
+            dataSourceConfiguration.connectionPoolConfiguration().connectionCache(new QuarkusNettyConnectionCache());
+        } catch (ClassNotFoundException e) {
+            dataSourceConfiguration.connectionPoolConfiguration().connectionCache(new QuarkusSimpleConnectionCache());
+        }
 
         agroalConnectionConfigurer.setExceptionSorter(resolvedDbKind, dataSourceConfiguration);
 
@@ -267,6 +276,9 @@ public class DataSources {
         if (dataSourceJdbcRuntimeConfig.backgroundValidationInterval.isPresent()) {
             poolConfiguration.validationTimeout(dataSourceJdbcRuntimeConfig.backgroundValidationInterval.get());
         }
+        if (dataSourceJdbcRuntimeConfig.foregroundValidationInterval.isPresent()) {
+            poolConfiguration.idleValidationTimeout(dataSourceJdbcRuntimeConfig.foregroundValidationInterval.get());
+        }
         if (dataSourceJdbcRuntimeConfig.validationQuerySql.isPresent()) {
             String validationQuery = dataSourceJdbcRuntimeConfig.validationQuerySql.get();
             poolConfiguration.connectionValidator(new ConnectionValidator() {
@@ -292,6 +304,10 @@ public class DataSources {
         if (dataSourceJdbcRuntimeConfig.maxLifetime.isPresent()) {
             poolConfiguration.maxLifetime(dataSourceJdbcRuntimeConfig.maxLifetime.get());
         }
+        if (dataSourceJdbcRuntimeConfig.transactionRequirement.isPresent()) {
+            poolConfiguration.transactionRequirement(dataSourceJdbcRuntimeConfig.transactionRequirement.get());
+        }
+        poolConfiguration.enhancedLeakReport(dataSourceJdbcRuntimeConfig.extendedLeakReport);
     }
 
     public DataSourceBuildTimeConfig getDataSourceBuildTimeConfig(String dataSourceName) {
@@ -362,4 +378,5 @@ public class DataSources {
             }
         }
     }
+
 }

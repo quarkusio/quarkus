@@ -129,19 +129,18 @@ public class HelloResource {
 
     @CheckedTemplate
     public static class Templates {
-        public static native TemplateInstance hello(); <1>
+        public static native TemplateInstance hello(String name); <1>
     }
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public TemplateInstance get(@QueryParam("name") String name) {
-        return Templates.hello().data("name", name); <2> <3>
+        return Templates.hello(name); <2>
     }
 }
 ----
-<1> This declares a template with path `templates/HelloResource/hello.txt`.
-<2> `Templates.hello()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering. 
-<3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
+<1> This declares a template with path `templates/HelloResource/hello`.
+<2> `Templates.hello()` returns a new template instance that is returned from the resource method. Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
  
 NOTE: Once you have declared a `@CheckedTemplate` class, we will check that all its methods point to existing templates, so if you try to use a template from your Java code and you forgot to add it, we will let you know at build time :)
 
@@ -165,7 +164,7 @@ public class GoodbyeResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public TemplateInstance get(@QueryParam("name") String name) {
-        return HelloResource.Templates.hello().data("name", name);
+        return HelloResource.Templates.hello(name);
     }
 }
 ----
@@ -186,10 +185,10 @@ import io.quarkus.qute.CheckedTemplate;
 
 @CheckedTemplate
 public class Templates {
-    public static native TemplateInstance hello(); <1>
+    public static native TemplateInstance hello(String name); <1>
 }
 ----
-<1> This declares a template with path `templates/hello.txt`.
+<1> This declares a template with path `templates/hello`.
 
 
 == Template Parameter Declarations 

@@ -40,6 +40,7 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
         int litChars = 0;
         int capGroups = 0;
         int complexGroups = 0;
+        int bracesCount = 0;
         StringBuilder sb = new StringBuilder();
         int state = 0; //0 = start, 1 = parsing name, 2 = parsing regex
         for (int i = 0; i < template.length(); ++i) {
@@ -50,10 +51,7 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                         state = 1;
                         if (sb.length() > 0) {
                             String literal = sb.toString();
-                            if (components.isEmpty()) {
-                                stem = literal;
-                            }
-                            components.add(new TemplateComponent(Type.LITERAL, literal, null, null, null));
+                            stem = handlePossibleStem((List<TemplateComponent>) components, stem, literal);
                         }
                         sb.setLength(0);
                     } else {
@@ -85,7 +83,7 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                     }
                     break;
                 case 2:
-                    if (c == '}') {
+                    if (c == '}' && bracesCount == 0) {
                         state = 0;
                         if (sb.length() > 0) {
                             capGroups++;
@@ -99,6 +97,11 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                         sb.setLength(0);
                     } else {
                         sb.append(c);
+                        if (c == '{') {
+                            bracesCount++;
+                        } else if (c == '}') {
+                            bracesCount--;
+                        }
                     }
                     break;
             }
@@ -107,15 +110,15 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
             case 0:
                 if (sb.length() > 0) {
                     String literal = sb.toString();
-                    if (components.isEmpty()) {
-                        stem = literal;
-                    }
-                    components.add(new TemplateComponent(Type.LITERAL, literal, null, null, null));
+                    stem = handlePossibleStem(components, stem, literal);
                 }
                 break;
             case 1:
             case 2:
                 throw new IllegalArgumentException("Invalid template " + template);
+        }
+        if (bracesCount > 0) {
+            throw new IllegalArgumentException("Invalid template " + template + " Unmatched { braces");
         }
 
         //coalesce the components
@@ -160,6 +163,26 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
         this.capturingGroups = capGroups;
         this.complexExpressions = complexGroups;
 
+    }
+
+    private String handlePossibleStem(List<TemplateComponent> components, String stem, String literal) {
+        if (components.isEmpty()) {
+            stem = literal;
+            if (stem.endsWith("/") && stem.length() > 1) {
+                //we don't allow stem to end with a slash
+                //so if have /hello and /hello/ they can both be matched
+                //all JAX-RS paths have an implicit (/.*)? at the end of them
+                //to technically every path has an optional implicit slash
+                stem = stem.substring(0, stem.length() - 1);
+                components.add(new TemplateComponent(Type.LITERAL, stem, null, null, null));
+                components.add(new TemplateComponent(Type.LITERAL, "/", null, null, null));
+            } else {
+                components.add(new TemplateComponent(Type.LITERAL, literal, null, null, null));
+            }
+        } else {
+            components.add(new TemplateComponent(Type.LITERAL, literal, null, null, null));
+        }
+        return stem;
     }
 
     public URITemplate(String template, String stem, int literalCharacterCount,

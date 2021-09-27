@@ -25,6 +25,9 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.release>11</maven.compiler.release>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
+        <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+
+        <assertj.version>3.20.2</assertj.version>
     </properties>
     <modules>
         <module>bom</module>
@@ -35,6 +38,15 @@
         <module>runner</module>
         <module>gradle-resolver</module>
     </modules>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.assertj</groupId>
+                <artifactId>assertj-core</artifactId>
+                <version>${assertj.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <build>
         <pluginManagement>
             <plugins>

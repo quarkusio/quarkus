@@ -19,7 +19,6 @@ import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.OidcTenantConfig.TokenStateManager.Strategy;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
-import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.TlsConfig;
@@ -60,13 +59,7 @@ public class OidcRecorder {
                         new Function<OidcTenantConfig, Uni<TenantConfigContext>>() {
                             @Override
                             public Uni<TenantConfigContext> apply(OidcTenantConfig config) {
-                                return createDynamicTenantContext(vertxValue, config, tlsConfig, config.getTenantId().get())
-                                        .plug(u -> {
-                                            if (!BlockingOperationControl.isBlockingAllowed()) {
-                                                return u.runSubscriptionOn(ExecutorRecorder.getCurrent());
-                                            }
-                                            return u;
-                                        });
+                                return createDynamicTenantContext(vertxValue, config, tlsConfig, config.getTenantId().get());
                             }
                         },
                         ExecutorRecorder.getCurrent());
@@ -249,7 +242,9 @@ public class OidcRecorder {
             return client.getJsonWebKeySet().onFailure(OidcCommonUtils.oidcEndpointNotAvailable())
                     .retry()
                     .withBackOff(OidcCommonUtils.CONNECTION_BACKOFF_DURATION, OidcCommonUtils.CONNECTION_BACKOFF_DURATION)
-                    .expireIn(connectionDelayInMillisecs);
+                    .expireIn(connectionDelayInMillisecs)
+                    .onFailure()
+                    .invoke(client::close);
         } else {
             return client.getJsonWebKeySet();
         }
@@ -290,14 +285,17 @@ public class OidcRecorder {
                     @Override
                     public Uni<OidcProviderClient> apply(OidcConfigurationMetadata metadata, Throwable t) {
                         if (t != null) {
+                            client.close();
                             return Uni.createFrom().failure(toOidcException(t, authServerUriString));
                         }
                         if (metadata == null) {
+                            client.close();
                             return Uni.createFrom().failure(new ConfigurationException(
                                     "OpenId Connect Provider configuration metadata is not configured and can not be discovered"));
                         }
                         if (oidcConfig.logout.path.isPresent()) {
                             if (!oidcConfig.endSessionPath.isPresent() && metadata.getEndSessionUri() == null) {
+                                client.close();
                                 return Uni.createFrom().failure(new ConfigurationException(
                                         "The application supports RP-Initiated Logout but the OpenID Provider does not advertise the end_session_endpoint"));
                             }

@@ -1,5 +1,6 @@
 package io.quarkus.bootstrap.resolver.test;
 
+import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.CollectDependenciesBase;
 import io.quarkus.bootstrap.resolver.TsArtifact;
@@ -30,7 +31,7 @@ public class SystemPropertyOverridesPomPropertyDependencyTestCase extends Collec
         setSystemProperty("x.version", "3");
 
         // it is expected that the system property will dominate
-        addCollectedDep(x13);
+        addCollectedDep(x13, AppDependency.DIRECT_FLAG);
     }
 
     @Override

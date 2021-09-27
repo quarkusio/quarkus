@@ -1,0 +1,16 @@
+name: Housekeeping
+description: A generalized task or cleanup not associated with a bug report or enhancement
+labels: area/housekeeping
+body:
+  - type: textarea
+    validations:
+      required: true
+    attributes:
+      label: Description
+      description: >-
+        Describe the task here.
+  - type: textarea
+    attributes:
+      label: Implementation ideas
+      description: >-
+        If you have any implementation ideas, they can go here.

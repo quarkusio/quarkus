@@ -11,7 +11,8 @@ import io.quarkus.runtime.annotations.ConfigRoot;
  * We don't really use this, because these are configurations for the config itself, so it causes a chicken / egg
  * problem, but we have it so the configurations can be properly documented.
  *
- * Relocation of the Config configurations to the Quarkus namespace is done in ConfigUtils#configBuilder.
+ * Relocation of the Config configurations to the Quarkus namespace is done in
+ * {@link io.quarkus.runtime.configuration.ConfigUtils#configBuilder}.
  */
 @ConfigRoot(name = ConfigItem.PARENT, phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class ConfigConfig {
@@ -28,4 +29,13 @@ public class ConfigConfig {
      */
     @ConfigItem(name = "config.profile.parent")
     public Optional<String> profileParent;
+
+    /**
+     * A property that allows accessing a generated UUID.
+     * It generates that UUID at startup time. So it changes between two starts including in dev mode.
+     *
+     * Access this generated UUID using expressions: `${quarkus.uuid}`.
+     */
+    @ConfigItem(name = "uuid")
+    public Optional<String> uuid;
 }

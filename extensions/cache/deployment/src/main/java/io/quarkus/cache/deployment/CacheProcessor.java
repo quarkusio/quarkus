@@ -1,6 +1,8 @@
 package io.quarkus.cache.deployment;
 
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_INVALIDATE;
+import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_INVALIDATE_ALL;
+import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_INVALIDATE_ALL_LIST;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_INVALIDATE_LIST;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_KEY;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_NAME;
@@ -33,6 +35,7 @@ import org.jboss.jandex.Type;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.deployment.exception.ClassTargetException;
@@ -40,6 +43,9 @@ import io.quarkus.cache.deployment.exception.PrivateMethodTargetException;
 import io.quarkus.cache.deployment.exception.UnknownCacheNameException;
 import io.quarkus.cache.deployment.exception.UnsupportedRepeatedAnnotationException;
 import io.quarkus.cache.deployment.exception.VoidReturnTypeTargetException;
+import io.quarkus.cache.runtime.CacheInvalidateAllInterceptor;
+import io.quarkus.cache.runtime.CacheInvalidateInterceptor;
+import io.quarkus.cache.runtime.CacheResultInterceptor;
 import io.quarkus.cache.runtime.caffeine.CaffeineCacheBuildRecorder;
 import io.quarkus.cache.runtime.caffeine.CaffeineCacheInfo;
 import io.quarkus.cache.runtime.noop.NoOpCacheBuildRecorder;
@@ -209,14 +215,32 @@ class CacheProcessor {
     }
 
     @BuildStep
-    List<BytecodeTransformerBuildItem> enhanceRestClientMethods(CombinedIndexBuildItem combinedIndex) {
+    List<BytecodeTransformerBuildItem> enhanceRestClientMethods(CombinedIndexBuildItem combinedIndex,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         List<BytecodeTransformerBuildItem> bytecodeTransformers = new ArrayList<>();
+        boolean cacheInvalidate = false;
+        boolean cacheResult = false;
+        boolean cacheInvalidateAll = false;
+
         for (AnnotationInstance registerRestClientAnnotation : combinedIndex.getIndex().getAnnotations(REGISTER_REST_CLIENT)) {
             if (registerRestClientAnnotation.target().kind() == Kind.CLASS) {
                 ClassInfo classInfo = registerRestClientAnnotation.target().asClass();
                 for (MethodInfo methodInfo : classInfo.methods()) {
-                    if (methodInfo.hasAnnotation(CACHE_INVALIDATE) || methodInfo.hasAnnotation(CACHE_INVALIDATE_LIST)
-                            || methodInfo.hasAnnotation(CACHE_RESULT)) {
+                    boolean transform = false;
+
+                    if (methodInfo.hasAnnotation(CACHE_INVALIDATE) || methodInfo.hasAnnotation(CACHE_INVALIDATE_LIST)) {
+                        transform = true;
+                        cacheInvalidate = true;
+                    }
+                    if (methodInfo.hasAnnotation(CACHE_RESULT)) {
+                        transform = true;
+                        cacheResult = true;
+                    }
+                    if (methodInfo.hasAnnotation(CACHE_INVALIDATE_ALL) || methodInfo.hasAnnotation(CACHE_INVALIDATE_ALL_LIST)) {
+                        cacheInvalidateAll = true;
+                    }
+
+                    if (transform) {
                         short[] cacheKeyParameterPositions = getCacheKeyParameterPositions(methodInfo);
                         /*
                          * The bytecode transformation is always performed even if `cacheKeyParameterPositions` is empty because
@@ -227,6 +251,18 @@ class CacheProcessor {
                     }
                 }
             }
+        }
+
+        // Interceptors need to be registered as unremovable due to the rest-client integration - interceptors 
+        // are currently resolved dynamically at runtime because per the spec interceptor bindings cannot be declared on interfaces
+        if (cacheResult) {
+            unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(CacheResultInterceptor.class.getName()));
+        }
+        if (cacheInvalidate) {
+            unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(CacheInvalidateInterceptor.class.getName()));
+        }
+        if (cacheInvalidateAll) {
+            unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(CacheInvalidateAllInterceptor.class.getName()));
         }
         return bytecodeTransformers;
     }

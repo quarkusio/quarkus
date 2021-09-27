@@ -10,10 +10,17 @@ on:
         description: 'JDK version'
         required: true
         # make sure to keep the default of JDK_VERSION in sync!
-        default: '17-ea'
+        default: '18-ea'
+      jdkDistribution:
+        description: 'JDK distribution'
+        required: true
+        # make sure to keep the default of JDK_DIST in sync!
+        # use zulu until temurin dist is available
+        default: 'zulu'
 
 env:
-  JDK_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkVersion || '17-ea' }}
+  JDK_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkVersion || '18-ea' }}
+  JDK_DIST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkDistribution || 'zulu' }}
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
   JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-containers -Dstart-containers -Dformat.skip"
@@ -27,15 +34,14 @@ jobs:
     if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
     timeout-minutes: 360
     env:
-      # "--add-opens ..." to work around https://youtrack.jetbrains.com/issue/KT-43704
-      # all the jdk.compiler ones are for Kotlin Kapt
-      MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m --add-opens java.base/java.util=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.jvm=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED
+      MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m
     steps:
 
       - name: Set up JDK
         # AdoptOpenJDK does not seem to provide EA builds, so use the standard action which provides a Zulu JDK
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2
         with:
+          distribution: ${{ env.JDK_DIST }}
           java-version: ${{ env.JDK_VERSION }}
       - name: Print Java version
         shell: bash
@@ -71,9 +77,8 @@ jobs:
       - name: Build with Maven
         # -fae to try to gather as many failures as possible
         # (but not maven.test.failure.ignore because test report generation is buggy)
-        # Gradle bits are excluded due to https://github.com/gradle/gradle/issues/13481
         run: |
-          ./mvnw $JVM_TEST_MAVEN_OPTS -Dtcks install -fae -pl '!devtools/gradle' -pl '!integration-tests/gradle'
+          ./mvnw $JVM_TEST_MAVEN_OPTS -Dtcks install -fae
       # Test reports disabled due to: https://github.com/ScaCap/action-surefire-report/issues/39
       #- name: Publish Test Report
       #  if: always()

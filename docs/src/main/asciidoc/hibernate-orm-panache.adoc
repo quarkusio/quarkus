@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Simplified Hibernate ORM with Panache
+= Simplified Hibernate ORM with Panache
 
 include::./attributes.adoc[]
 :config-file: application.properties
@@ -583,6 +583,12 @@ If your update query does not start with `update`, we support the following addi
 - `set? <singleColumnName>` (and single parameter) which will expand to `update from EntityName set <singleColumnName> = ?`
 - `set? <update-query>` will expand to `update from EntityName set <update-query>`
 
+If your delete query does not start with `delete`, we support the following additional forms:
+
+- `from EntityName ...` which will expand to `delete from EntityName ...`
+- `<singleColumnName>` (and single parameter) which will expand to `delete from EntityName where <singleColumnName> = ?`
+- `<query>` will expand to `delete from EntityName where <query>`
+
 NOTE: You can also write your queries in plain
 link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#hql[HQL]:
 
@@ -599,7 +605,7 @@ You can reference a named query instead of a (simplified) HQL query by prefixing
 [source,java]
 ----
 @Entity
-@NamedQuery(name = "Person.getByName", query = "from Person where name = :name")
+@NamedQuery(name = "Person.getByName", query = "from Person where name = ?1")
 public class Person extends PanacheEntity {
     public String name;
     public LocalDate birth;
@@ -662,7 +668,8 @@ This is also called **dynamic instantiation** or **constructor expression**, mor
 link:https://docs.jboss.org/hibernate/orm/current/userguide/html_single/Hibernate_User_Guide.html#hql-select-clause[hql select clause]
 
 The projection class needs to be a valid Java Bean and have a constructor that contains all its attributes, this constructor will be used to
-instantiate the projection DTO instead of using the entity class. This must be the only constructor of the class.
+instantiate the projection DTO instead of using the entity class. This class must have a matching constructor with all the class attributes as parameters.
+
 
 [source,java]
 ----
@@ -1115,7 +1122,7 @@ That's all there is to it: with Panache, Hibernate ORM has never looked so trim 
 
 Hibernate ORM with Panache relies on compile-time bytecode enhancements to your entities.
 
-It attempts to identity archives with Panache entities (and consumers of Panache entities)
+It attempts to identify archives with Panache entities (and consumers of Panache entities)
 by the presence of the marker file `META-INF/panache-archive.marker`. Panache includes an
 annotation processor that will automatically create this file in archives that depend on
 Panache (even indirectly). If you have disabled annotation processors you may need to create

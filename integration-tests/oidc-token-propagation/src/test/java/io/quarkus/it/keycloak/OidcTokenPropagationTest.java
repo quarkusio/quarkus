@@ -4,16 +4,17 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 
 import org.junit.jupiter.api.Test;
-import org.keycloak.representations.AccessTokenResponse;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
 
 @QuarkusTest
 @QuarkusTestResource(KeycloakRealmResourceManager.class)
 public class OidcTokenPropagationTest {
-    public static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180/auth");
+
+    final KeycloakTestClient client = new KeycloakTestClient();
 
     @Test
     public void testGetUserNameWithJwtTokenPropagation() {
@@ -54,16 +55,7 @@ public class OidcTokenPropagationTest {
                 .body(equalTo("alice"));
     }
 
-    public static String getAccessToken(String userName) {
-        return RestAssured
-                .given()
-                .param("grant_type", "password")
-                .param("username", userName)
-                .param("password", userName)
-                .param("client_id", "quarkus-app")
-                .param("client_secret", "secret")
-                .when()
-                .post(KEYCLOAK_SERVER_URL + "/realms/quarkus/protocol/openid-connect/token")
-                .as(AccessTokenResponse.class).getToken();
+    public String getAccessToken(String userName) {
+        return client.getAccessToken(userName, userName, "quarkus-app", "secret");
     }
 }

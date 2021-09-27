@@ -11,4 +11,11 @@ public class HibernateEnversBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean storeDataAtDelete;
+
+    /**
+     * Defines a suffix for historical data table.
+     */
+    @ConfigItem(defaultValue = "_AUD")
+    public String auditTableSuffix;
+
 }

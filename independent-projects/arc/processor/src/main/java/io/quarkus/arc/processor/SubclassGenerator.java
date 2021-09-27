@@ -252,12 +252,13 @@ public class SubclassGenerator extends AbstractGenerator {
                     return constructor.invokeStaticMethod(MethodDescriptors.COLLECTIONS_SINGLETON,
                             bindingsLiterals.computeIfAbsent(keys.iterator().next(), bindingsLiteralFun));
                 } else {
-                    ResultHandle bindingsHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+                    ResultHandle bindingsArray = constructor.newArray(Object.class, keys.size());
+                    int bindingsIndex = 0;
                     for (BindingKey binding : keys) {
-                        constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
+                        constructor.writeArrayValue(bindingsArray, bindingsIndex++,
                                 bindingsLiterals.computeIfAbsent(binding, bindingsLiteralFun));
                     }
-                    return bindingsHandle;
+                    return constructor.invokeStaticInterfaceMethod(MethodDescriptors.SET_OF, bindingsArray);
                 }
             }
         };
@@ -421,7 +422,8 @@ public class SubclassGenerator extends AbstractGenerator {
         ClassCreator delegateSubclass = delegateSubclassBuilder.build();
 
         Map<MethodDescriptor, DecoratorInfo> nextDecorators = bean.getNextDecorators(decorator);
-        List<DecoratorInfo> decoratorParameters = new ArrayList<>(nextDecorators.values());
+        Collection<DecoratorInfo> nextDecoratorsValues = nextDecorators.values();
+        List<DecoratorInfo> decoratorParameters = new ArrayList<>(new HashSet<>(nextDecoratorsValues));
         Collections.sort(decoratorParameters);
         Set<MethodInfo> decoratedMethods = bean.getDecoratedMethods(decorator);
         Set<MethodDescriptor> decoratedMethodDescriptors = new HashSet<>(decoratedMethods.size());
@@ -432,7 +434,7 @@ public class SubclassGenerator extends AbstractGenerator {
         List<String> constructorParameterTypes = new ArrayList<>();
         // Fields and constructor
         FieldCreator subclassField = null;
-        if (decoratedMethods.size() != decoratorParameters.size()) {
+        if (decoratedMethods.size() != nextDecoratorsValues.size()) {
             subclassField = delegateSubclass.getFieldCreator("subclass", subclass.getClassName())
                     .setModifiers(ACC_PRIVATE | ACC_FINAL);
             constructorParameterTypes.add(subclass.getClassName());
@@ -789,11 +791,13 @@ public class SubclassGenerator extends AbstractGenerator {
             ResultHandle predestroysHandle = destroy.readInstanceField(preDestroysField, destroy.getThis());
 
             // Interceptor bindings
-            ResultHandle bindingsHandle = destroy.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-            for (AnnotationInstance binding : bean.getLifecycleInterceptors(InterceptionType.PRE_DESTROY).bindings) {
+            InterceptionInfo preDestroy = bean.getLifecycleInterceptors(InterceptionType.PRE_DESTROY);
+            ResultHandle bindingsArray = destroy.newArray(Object.class, preDestroy.bindings.size());
+            int bindingsIndex = 0;
+            for (AnnotationInstance binding : preDestroy.bindings) {
                 // Create annotation literals first
                 ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
-                destroy.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
+                destroy.writeArrayValue(bindingsArray, bindingsIndex++,
                         annotationLiterals.process(destroy, classOutput, bindingClass, binding,
                                 Types.getPackageName(subclass.getClassName())));
             }
@@ -808,7 +812,7 @@ public class SubclassGenerator extends AbstractGenerator {
             // InvocationContextImpl.preDestroy(this,predestroys)
             ResultHandle invocationContext = tryCatch.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXTS_PRE_DESTROY,
                     tryCatch.getThis(), predestroysHandle,
-                    bindingsHandle);
+                    tryCatch.invokeStaticInterfaceMethod(MethodDescriptors.SET_OF, bindingsArray));
 
             // InvocationContext.proceed()
             tryCatch.invokeInterfaceMethod(MethodDescriptors.INVOCATION_CONTEXT_PROCEED, invocationContext);

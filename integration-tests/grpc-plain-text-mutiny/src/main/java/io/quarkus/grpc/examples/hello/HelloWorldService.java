@@ -6,9 +6,11 @@ import examples.HelloReply;
 import examples.HelloRequest;
 import examples.MutinyGreeterGrpc;
 import io.quarkus.grpc.GrpcService;
+import io.quarkus.grpc.RegisterInterceptor;
 import io.smallrye.mutiny.Uni;
 
 @GrpcService
+@RegisterInterceptor(IncomingInterceptor.class)
 public class HelloWorldService extends MutinyGreeterGrpc.GreeterImplBase {
 
     AtomicInteger counter = new AtomicInteger();

@@ -9,6 +9,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
+import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.deployment.index.IndexingUtil;
@@ -64,7 +65,7 @@ public class MethodValidatedAnnotationsTransformer implements AnnotationsTransfo
     private boolean requiresValidation(MethodInfo method) {
         for (DotName consideredAnnotation : consideredAnnotations) {
             if (method.hasAnnotation(consideredAnnotation)) {
-                return true;
+                return !isSynthetic(method.flags());
             }
         }
 
@@ -76,6 +77,10 @@ public class MethodValidatedAnnotationsTransformer implements AnnotationsTransfo
         }
 
         return validatedMethods.contains(new SimpleMethodSignatureKey(method));
+    }
+
+    private boolean isSynthetic(int mod) {
+        return (mod & Opcodes.ACC_SYNTHETIC) != 0;
     }
 
     private boolean isJaxrsMethod(MethodInfo method) {

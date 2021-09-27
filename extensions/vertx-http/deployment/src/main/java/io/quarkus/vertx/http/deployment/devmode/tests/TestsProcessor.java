@@ -12,6 +12,8 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.deployment.dev.testing.TestClassResult;
 import io.quarkus.deployment.dev.testing.TestListenerBuildItem;
 import io.quarkus.deployment.dev.testing.TestRunResults;
@@ -21,7 +23,6 @@ import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.deployment.devmode.console.ContinuousTestingWebSocketListener;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
 import io.quarkus.vertx.http.runtime.devmode.Json;
 import io.vertx.core.Handler;
@@ -45,6 +46,7 @@ public class TestsProcessor {
             DevConsoleRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
+            ShutdownContextBuildItem shutdownContextBuildItem,
             BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
             BuildProducer<TestListenerBuildItem> testListenerBuildItemBuildProducer) throws IOException {
         DevModeType devModeType = launchModeBuildItem.getDevModeType().orElse(null);
@@ -56,9 +58,8 @@ public class TestsProcessor {
             // Add continuous testing
             routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .route("dev/test")
-                    .handler(recorder.continousTestHandler())
+                    .handler(recorder.continuousTestHandler(shutdownContextBuildItem))
                     .build());
-            testListenerBuildItemBuildProducer.produce(new TestListenerBuildItem(new ContinuousTestingWebSocketListener()));
         }
 
     }
@@ -73,7 +74,7 @@ public class TestsProcessor {
         //DISABLED, RUNNING (run id), RUN (run id, start time, nextRunQueued)
         //GET tests/results
 
-        return new DevConsoleRouteBuildItem("tests/status", "GET", new Handler<RoutingContext>() {
+        return new DevConsoleRouteBuildItem("tests/status", "GET", new Handler<>() {
             @Override
             public void handle(RoutingContext event) {
                 jsonResponse(event);
@@ -106,7 +107,7 @@ public class TestsProcessor {
         if (testsDisabled(launchModeBuildItem, ts)) {
             return;
         }
-        routeProducer.produce(new DevConsoleRouteBuildItem("tests/toggle", "POST", new Handler<RoutingContext>() {
+        routeProducer.produce(new DevConsoleRouteBuildItem("tests/toggle", "POST", new Handler<>() {
             @Override
             public void handle(RoutingContext event) {
                 if (ts.get().isStarted()) {
@@ -120,7 +121,7 @@ public class TestsProcessor {
                 event.response().putHeader("Content-Type", "application/json; charset=utf-8").end(object.build());
             }
         }));
-        routeProducer.produce(new DevConsoleRouteBuildItem("tests/toggle-broken-only", "POST", new Handler<RoutingContext>() {
+        routeProducer.produce(new DevConsoleRouteBuildItem("tests/toggle-broken-only", "POST", new Handler<>() {
             @Override
             public void handle(RoutingContext event) {
                 boolean brokenOnlyMode = ts.get().toggleBrokenOnlyMode();
@@ -132,7 +133,7 @@ public class TestsProcessor {
     }
 
     private boolean testsDisabled(LaunchModeBuildItem launchModeBuildItem, Optional<TestSupport> ts) {
-        return !ts.isPresent() || launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL;
+        return ts.isEmpty() || launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL;
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -141,7 +142,7 @@ public class TestsProcessor {
         if (testsDisabled(launchModeBuildItem, ts)) {
             return null;
         }
-        return new DevConsoleRouteBuildItem("tests/runall", "POST", new Handler<RoutingContext>() {
+        return new DevConsoleRouteBuildItem("tests/runall", "POST", new Handler<>() {
             @Override
             public void handle(RoutingContext event) {
                 ts.get().runAllTests();
@@ -150,12 +151,12 @@ public class TestsProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    DevConsoleRouteBuildItem runFailedTests(LaunchModeBuildItem launchModeBuildItem) {
+    DevConsoleRouteBuildItem toggleTestOutput(LaunchModeBuildItem launchModeBuildItem) {
         Optional<TestSupport> ts = TestSupport.instance();
         if (testsDisabled(launchModeBuildItem, ts)) {
             return null;
         }
-        return new DevConsoleRouteBuildItem("tests/toggle-test-output", "POST", new Handler<RoutingContext>() {
+        return new DevConsoleRouteBuildItem("tests/toggle-test-output", "POST", new Handler<>() {
             @Override
             public void handle(RoutingContext event) {
 
@@ -168,12 +169,12 @@ public class TestsProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    DevConsoleRouteBuildItem toggleTestOutput(LaunchModeBuildItem launchModeBuildItem) {
+    DevConsoleRouteBuildItem runFailedTests(LaunchModeBuildItem launchModeBuildItem) {
         Optional<TestSupport> ts = TestSupport.instance();
         if (testsDisabled(launchModeBuildItem, ts)) {
             return null;
         }
-        return new DevConsoleRouteBuildItem("tests/runfailed", "POST", new Handler<RoutingContext>() {
+        return new DevConsoleRouteBuildItem("tests/runfailed", "POST", new Handler<>() {
             @Override
             public void handle(RoutingContext event) {
                 ts.get().runFailedTests();
@@ -187,7 +188,7 @@ public class TestsProcessor {
         if (testsDisabled(launchModeBuildItem, ts)) {
             return null;
         }
-        return new DevConsoleRouteBuildItem("tests/printfailures", "POST", new Handler<RoutingContext>() {
+        return new DevConsoleRouteBuildItem("tests/printfailures", "POST", new Handler<>() {
             @Override
             public void handle(RoutingContext event) {
                 ts.get().printFullResults();
@@ -201,7 +202,7 @@ public class TestsProcessor {
         if (testsDisabled(launchModeBuildItem, ts)) {
             return null;
         }
-        return new DevConsoleRouteBuildItem("tests/toggle-instrumentation", "POST", new Handler<RoutingContext>() {
+        return new DevConsoleRouteBuildItem("tests/toggle-instrumentation", "POST", new Handler<>() {
             @Override
             public void handle(RoutingContext event) {
                 boolean instrumentationEnabled = ts.get().toggleInstrumentation();
@@ -213,13 +214,43 @@ public class TestsProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
+    DevConsoleRouteBuildItem toggleLiveReloadEnabled(LaunchModeBuildItem launchModeBuildItem) {
+        Optional<TestSupport> ts = TestSupport.instance();
+        if (testsDisabled(launchModeBuildItem, ts)) {
+            return null;
+        }
+        return new DevConsoleRouteBuildItem("tests/toggle-live-reload", "POST", new Handler<>() {
+            @Override
+            public void handle(RoutingContext event) {
+                boolean liveReloadEnabled = ts.get().toggleLiveReloadEnabled();
+                Json.JsonObjectBuilder object = Json.object();
+                object.put("liveReloadEnabled", liveReloadEnabled);
+                event.response().putHeader("Content-Type", "application/json; charset=utf-8").end(object.build());
+            }
+        });
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    DevConsoleRouteBuildItem forceRestart(LaunchModeBuildItem launchModeBuildItem) {
+        if (testsDisabled(launchModeBuildItem, TestSupport.instance())) {
+            return null;
+        }
+        return new DevConsoleRouteBuildItem("tests/force-restart", "POST", new Handler<>() {
+            @Override
+            public void handle(RoutingContext event) {
+                RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
+            }
+        });
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
     DevConsoleRouteBuildItem handleTestResult(LaunchModeBuildItem launchModeBuildItem) {
         Optional<TestSupport> ts = TestSupport.instance();
         if (testsDisabled(launchModeBuildItem, ts)) {
             return null;
         }
 
-        return new DevConsoleRouteBuildItem("tests/result", "GET", new Handler<RoutingContext>() {
+        return new DevConsoleRouteBuildItem("tests/result", "GET", new Handler<>() {
             @Override
             public void handle(RoutingContext event) {
                 TestRunResults testRunResults = ts.get().getResults();

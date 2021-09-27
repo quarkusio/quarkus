@@ -12,27 +12,13 @@
     <artifactId>quarkus-tck-parent</artifactId>
     <name>Quarkus - TCK - Parent</name>
     <packaging>pom</packaging>
-    
-    <modules>
-        <module>microprofile-config</module>
-        <module>microprofile-context-propagation</module>
-        <module>microprofile-fault-tolerance</module>
-        <module>microprofile-health</module>
-        <module>microprofile-jwt</module>
-        <module>microprofile-graphql</module>
-        <module>microprofile-metrics</module>
-        <module>microprofile-reactive-messaging</module>
-        <module>microprofile-rest-client</module>
-        <module>microprofile-rest-client-reactive</module>
-        <module>microprofile-openapi</module>
-        <module>microprofile-opentracing</module>
-        <module>resteasy-reactive</module>
-    </modules>
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
         <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
     </properties>
+
+    <!-- modules are in profile test-modules -->
 
     <build>
         <plugins>
@@ -83,4 +69,29 @@
         </dependencies>
     </dependencyManagement>
 
+    <profiles>
+        <profile>
+            <id>test-modules</id>
+            <activation>
+                <property>
+                    <name>!no-test-modules</name>
+                </property>
+            </activation>
+            <modules>
+                <module>microprofile-config</module>
+                <module>microprofile-context-propagation</module>
+                <module>microprofile-fault-tolerance</module>
+                <module>microprofile-health</module>
+                <module>microprofile-jwt</module>
+                <module>microprofile-graphql</module>
+                <module>microprofile-metrics</module>
+                <module>microprofile-reactive-messaging</module>
+                <module>microprofile-rest-client</module>
+                <module>microprofile-rest-client-reactive</module>
+                <module>microprofile-openapi</module>
+                <module>microprofile-opentracing</module>
+                <module>resteasy-reactive</module>
+            </modules>
+        </profile>
+    </profiles>
 </project>

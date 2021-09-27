@@ -37,6 +37,7 @@ import io.quarkus.smallrye.jwt.runtime.auth.JsonWebTokenCredentialProducer;
 import io.quarkus.smallrye.jwt.runtime.auth.JwtPrincipalProducer;
 import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import io.quarkus.smallrye.jwt.runtime.auth.RawOptionalClaimCreator;
+import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
@@ -67,6 +68,11 @@ class SmallRyeJwtProcessor {
     @BuildStep(onlyIf = IsEnabled.class)
     EnableAllSecurityServicesBuildItem security() {
         return new EnableAllSecurityServicesBuildItem();
+    }
+
+    @BuildStep(onlyIf = IsEnabled.class)
+    public void provideSecurityInformation(BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
+        securityInformationProducer.produce(SecurityInformationBuildItem.JWT());
     }
 
     /**

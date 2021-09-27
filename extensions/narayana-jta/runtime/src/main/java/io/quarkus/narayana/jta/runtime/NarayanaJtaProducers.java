@@ -18,7 +18,6 @@ import io.quarkus.arc.Unremovable;
 
 @Dependent
 public class NarayanaJtaProducers {
-    private static final javax.transaction.UserTransaction USER_TRANSACTION = UserTransaction.userTransaction();
 
     @Produces
     @ApplicationScoped
@@ -29,7 +28,7 @@ public class NarayanaJtaProducers {
     @Produces
     @ApplicationScoped
     public javax.transaction.UserTransaction userTransaction() {
-        return USER_TRANSACTION;
+        return UserTransaction.userTransaction();
     }
 
     @Produces
@@ -40,7 +39,7 @@ public class NarayanaJtaProducers {
 
     @Produces
     @ApplicationScoped
-    @Unremovable // needed by Arc for transactional observers
+    @Unremovable
     public TransactionSynchronizationRegistry transactionSynchronizationRegistry() {
         return new TransactionSynchronizationRegistryImple();
     }

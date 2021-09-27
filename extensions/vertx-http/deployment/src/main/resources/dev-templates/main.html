@@ -11,18 +11,16 @@
         <link rel="stylesheet" href="{devRootAppend}/resources/css/dev-console.css?2">
         <link rel="stylesheet" href="{devRootAppend}/resources/css/logstream.css">
         <link rel="stylesheet" href="{devRootAppend}/resources/css/tests.css">
+        {#insert styleref /}
+        
         <link rel="shortcut icon" type="image/png" href="{devRootAppend}/resources/images/favicon.ico" >
 
         <style>
-            {#insert style/}
+            {#insert style /}
         </style>
 
-        <script src="{devRootAppend}/resources/js/jquery.min.js"></script>
-        <script src="{devRootAppend}/resources/js/bootstrap.bundle.min.js"></script>
-        <script src="{devRootAppend}/resources/js/dev-console.js"></script>
-
         <title>
-            {#if currentExtensionName && currentExtensionName != 'Eclipse Vert.x - HTTP'}
+            {#if currentExtensionName?? && currentExtensionName != 'Eclipse Vert.x - HTTP'}
             {currentExtensionName} ›
             {/if}
             {#insert title/}
@@ -31,12 +29,12 @@
     </head>
     <body>
         <!-- Top Header -->
-        <nav class="navbar sticky-top navbar-dark bg-dark">
+        <nav id="stickyTopHeaderNavBar" class="navbar sticky-top navbar-dark bg-dark">
             <a class="navbar-brand" href="{devRootAppend}/">
                 <img src="{devRootAppend}/resources/images/quarkus_icon_rgb_reverse.svg" width="40" height="30" class="d-inline-block align-middle" alt="Quarkus"/>
                 <span id="navbar-title" class="align-middle">Dev UI</span>
             </a>
-            {#if currentExtensionName}
+            {#if currentExtensionName??}
             <span id="navbar-subtitle" class="navbar-nav">
                 <span class="navbar-item">
                     {#if currentExtensionName == 'Eclipse Vert.x - HTTP'}
@@ -53,16 +51,30 @@
         </nav>
 
         <!-- Content section / Tiles -->
-        <div class="container{#if fluid}-fluid{/if} main-container">
+        <div class="container{#if fluid??}-fluid{/if} main-container">
 
-            {#if flash['message']}
-            <div class="alert alert-{flash['message']['class']} show fade" role="alert" data-timer="{flash['displayTime']}">
-                {flash['message']['text']}
+            {#if flash.message??}
+            <div class="alert alert-{flash.message.class} show fade" role="alert" data-timer="{flash.displayTime}">
+                {flash.message.text}
                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             {/if}
+            <div class="position-fixed top-0 right-0 p-3" style="z-index: 5; right: 0; top 0;">
+                <div class="toast hide" role="alert" aria-live="assertive" aria-atomic="true" data-delay="5000">
+                  <div class="toast-header">
+                    <i class="fas fa-info-circle"></i> 
+                    <strong id="toastHeader" class="mr-auto"></strong>
+                    <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div id="toastMessage" class="toast-body">
+                  </div>
+                </div>
+            </div>
+            
             {#insert body/}
         </div>
 
@@ -82,7 +94,7 @@
                                 </a>
                             </div>
                             <div class="col-md-auto px-0">
-                                {#include logmanagerNav}{/include}
+                                {#include logmanagerNav /}
                             </div>
                             <div class="col">
                                 <a id="devUiFooterResizeButton" class="btn devUiFooterButton float-right showOnOpenFooter">
@@ -102,11 +114,15 @@
             </div>
         </div>
         
-        {#include logmanagerModals}{/include}
-        {#include testsModals}{/include}
+        {#include logmanagerModals /}
+        {#include testsModals /}
 
+        <script src="{devRootAppend}/resources/js/jquery.min.js"></script>
+        <script src="{devRootAppend}/resources/js/bootstrap.bundle.min.js"></script>
+        <script src="{devRootAppend}/resources/js/dev-console.js"></script>
         <script src="{devRootAppend}/resources/js/logstream.js"></script>
         <script src="{devRootAppend}/resources/js/tests.js"></script>
+        {#insert scriptref /}
         
         <script>
                             {|
@@ -199,6 +215,17 @@
                             console.error("Unknown IDE link type: " + ideLinkType);
                             }
                             }
+                            
+                            function showToastMessage(header, message){
+                                $('#toastHeader').text("" + header);
+                                $('#toastMessage').text(message);
+                                
+                                $('.toast').toast({
+                                    autohide: true,
+                                    delay: 5000
+                                }).toast('show');
+                            }
+                            
                             |}
 
                             {#insert script / }

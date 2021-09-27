@@ -3,47 +3,48 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using Kogito to add business automation capabilities to an application
+= Using Kogito to add business automation capabilities to an application
 
 include::./attributes.adoc[]
-:extension-status: preview
 
 This guide demonstrates how your Quarkus application can use Kogito to add business automation
 to power it up with business processes and rules.
 
 Kogito is a next generation business automation toolkit that originates from well known Open Source projects
 Drools (for business rules) and jBPM (for business processes). Kogito aims at providing another approach
-to business automation where the main message is to expose your business knowledge (processes, rules and decisions)
+to business automation where the main message is to expose your business knowledge (processes, rules, decisions, predictions)
 in a domain specific way.
-
-include::./status-include.adoc[]
 
 == Prerequisites
 
 To complete this guide, you need:
 
 * less than 15 minutes
-* an IDE (Eclipse is preferred with the BPMN modeller plugin)
+* an IDE (VSCode is preferred with the Red Hat BPMN Editor VSCode Extension)
 * JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * Docker
 
 === Install modelling plugins in your IDE
 
-Kogito Tooling is currently supported in Eclipse and VSCode:
+Kogito Tooling is currently supported in VSCode, Online and on other platforms:
+
+* VSCode
+
+Download and install the https://marketplace.visualstudio.com/items?itemName=redhat.vscode-extension-bpmn-editor[Red Hat BPMN Editor VSCode Extension] to edit and model process definitions from VSCode IDE.
+
+* Online
+
+To avoid any modeler installation you can use directly use https://bpmn.new[BPMN.new] to design and model your process through your favorite web browser.
+
+* Other platforms
+
+You can reference to https://kiegroup.github.io/kogito-online/#/download[Business Modeler Hub] to download the latest platforms supported for the https://github.com/kiegroup/kogito-tooling/releases[Kogito tooling releases].
 
 * Eclipse
 
 To be able to make use of visual modelling of your processes, download Eclipse IDE and
 install from Market place Eclipse BPMN2 Modeller plugin (with jBPM Runtime Extension)
-
-* VSCode
-
-Download and install the VSCode Extension from https://github.com/kiegroup/kogito-tooling/releases[Kogito Tooling release page] to edit and model process definitions from VSCode IDE.
-
-* Online
-
-To avoid any modeler installation you can use directly use https://bpmn.new[BPMN.new] to design and model your process through your favorite web browser.
 
 == Architecture
 
@@ -63,9 +64,11 @@ At the same time this is the entry point to the service that can be consumed by 
 === Business rule
 
 A business rule allows to externalise decision logic into reusable pieces that can be easily
-used in declarative way. There are multiple ways of writing rules like decision tables,
-decision trees, rules, etc. For this example we focus on the rule format backed by DRL
-(Drools Rule Language).
+used in declarative way. There are multiple ways of writing rules like https://drools.org/learn/dmn.html[DMN models],
+decision tables, decision trees, rules, etc.
+
+For this example we focus on the rule format backed by DRL (Drools Rule Language),
+but the same business logic may be expressed with other supported Kogito knowledge formats as well.
 
 == Solution
 
@@ -82,7 +85,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kogito-quickstart \
     -Dextensions="kogito" \
@@ -164,23 +167,56 @@ the generated project.
 
 [source,plain]
 ----
-package org.acme.kogito
+package org.acme.kogito;
+
+unit PersonUnit; 
 
 import org.acme.kogito.model.Person;
 
-
-rule "Is adult" ruleflow-group "person"
-
+rule "Is adult"
 when
-    $person: Person(age > 18)
+    $person: /person[age > 18]
 then
-    modify($person) {
-    	setAdult(true)
+    modify($person) { 
+    	setAdult(true) 
     };
 end
 ----
 
 This is really a simple rule that marks a person who is older that 18 years as an adult.
+
+This example rule uses Rule Units, a new concept introduced in Kogito that helps users to encapsulate the set of rules and the facts against which those rules will be matched. The facts inserted will be inserted into a `DataStore`, a type-safe entry point. To make everything work, we need to define both the RuleUnit and the DataStore, by creating a new class `PersonUnit` inside `src/main/java/org/acme/kogito` directory:
+
+[source,java]
+----
+package org.acme.kogito;
+
+import org.acme.kogito.model.Person;
+import org.kie.kogito.rules.DataSource;
+import org.kie.kogito.rules.RuleUnitData;
+import org.kie.kogito.rules.SingletonStore;
+
+public class PersonUnit implements RuleUnitData {
+
+    private SingletonStore<Person> person;
+ 
+    public PersonUnit() {
+        this(DataSource.createSingleton());
+    }
+ 
+    public PersonUnit(SingletonStore<Person> person) {
+        this.person = person;
+    }
+
+    public SingletonStore<Person> getPerson() {
+        return person;
+    }
+
+    public void setPerson(SingletonStore<Person> person) {
+        this.person = person;
+    }
+}
+----
 
 Finally we create a business process that will make use of this rule and some other
 activities to approve a given person. Using new item wizard (File -> New -> Other -> BPMN2 Model)
@@ -207,7 +243,7 @@ To model this process yourself, just follow these steps (start event should be a
 * drag the Tasks -> Business Rule Task from the palette and drop it next to start event, link it with start event
 ** double click on the business rule task
 *** on tab I/O Parameters, set data input and output (map `person` process variable to input data with name `person` and same for data output)
-*** on tab Business Rule Task, set rule flow group to the value defined in the drl file (`person`)
+*** on tab Business Rule Task, set rule flow group to the FQCN value of the RuleUnit using the `unit:` prefix (`unit:org.acme.kogito.PersonUnit`)
 * drag the Gateways -> XOR gateway from the palette and drop it next to the business rule task, link it with rule task
 * drag the Tasks -> User Task from the palette and drop it next to the gateway, link it with gateway
 ** double click on the user task
@@ -416,9 +452,16 @@ curl -X GET http://localhost:8080/persons \
 
 To learn more about persistence in Kogito visit https://github.com/kiegroup/kogito-runtimes/wiki/Persistence[this page]
 
-== Using decision tables
+== Using DMN decision tables
 
-Kogito allows to define business rules as decision tables using the Microsoft Excel file formats.
+Kogito, like Drools, offers support of the https://drools.org/learn/dmn.html[DMN open standard] for visual and semantic execution of declarative logic.
+The business rules in this example may be also expressed using DMN decision tables or other visual paradigm of DMN, instead of DRL and RuleUnits.
+
+For more information about DMN support in Kogito, you may refer to the companion Quarkus guide specific to xref:kogito-dmn.adoc[Kogito DMN support on Quarkus], or the Kogito documentation in the links below.
+
+== Using legacy decision tables
+
+Kogito allows to define DRL rules as decision tables using the Microsoft Excel file formats.
 To be able to use such assets in your application, an additional dependency is required:
 
 [source,xml]

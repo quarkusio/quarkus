@@ -1,10 +1,17 @@
 package io.quarkus.dev.console;
 
-import java.util.ArrayDeque;
+import java.io.PrintStream;
+import java.util.List;
 import java.util.Locale;
-import java.util.function.Predicate;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 
 public abstract class QuarkusConsole {
+
+    public static final int TEST_STATUS = 100;
+    public static final int TEST_RESULTS = 200;
+    public static final int COMPILE_ERROR = 300;
 
     public static final String FORCE_COLOR_SUPPORT = "io.quarkus.force-color-support";
 
@@ -29,15 +36,33 @@ public abstract class QuarkusConsole {
             && System.getenv("MSYSTEM") != null
             && System.getenv("MSYSTEM").startsWith("MINGW")
             && "xterm".equals(System.getenv("TERM"));
-    protected final ArrayDeque<InputHolder> inputHandlers = new ArrayDeque<>();
+    protected volatile Consumer<int[]> inputHandler;
 
-    public static volatile QuarkusConsole INSTANCE = new BasicConsole(false, false, System.out);
+    public static volatile QuarkusConsole INSTANCE = new BasicConsole(hasColorSupport(), false, System.out::print);
 
     public static volatile boolean installed;
 
-    protected volatile Predicate<String> outputFilter;
+    protected static final List<BiPredicate<String, Boolean>> outputFilters = new CopyOnWriteArrayList<>();
 
     private volatile boolean started = false;
+
+    static boolean redirectsInstalled = false;
+
+    public final static PrintStream ORIGINAL_OUT = System.out;
+    public final static PrintStream ORIGINAL_ERR = System.err;
+
+    public synchronized static void installRedirects() {
+        if (redirectsInstalled) {
+            return;
+        }
+        redirectsInstalled = true;
+
+        //force console init
+        //otherwise you can get a stack overflow as it sees the redirected output
+        QuarkusConsole.INSTANCE.isInputSupported();
+        System.setOut(new RedirectPrintStream(false));
+        System.setErr(new RedirectPrintStream(true));
+    }
 
     public static boolean hasColorSupport() {
         if (Boolean.getBoolean(FORCE_COLOR_SUPPORT)) {
@@ -59,28 +84,6 @@ public abstract class QuarkusConsole {
         }
     }
 
-    public synchronized void pushInputHandler(InputHandler inputHandler) {
-        InputHolder holder = inputHandlers.peek();
-        if (holder != null) {
-            holder.setEnabled(false);
-        }
-        holder = createHolder(inputHandler);
-        if (started) {
-            holder.setEnabled(true);
-        }
-        inputHandlers.push(holder);
-        inputHandler.promptHandler(holder);
-    }
-
-    public synchronized void popInputHandler() {
-        InputHolder holder = inputHandlers.pop();
-        holder.setEnabled(false);
-        holder = inputHandlers.peek();
-        if (holder != null) {
-            holder.setEnabled(true);
-        }
-    }
-
     public static void start() {
         INSTANCE.startInternal();
     }
@@ -90,17 +93,21 @@ public abstract class QuarkusConsole {
             return;
         }
         started = true;
-        InputHolder holder = inputHandlers.peek();
-        if (holder != null) {
-            holder.setEnabled(true);
-        }
     }
 
-    public abstract InputHolder createHolder(InputHandler inputHandler);
+    public void setInputHandler(Consumer<int[]> inputHandler) {
+        this.inputHandler = inputHandler;
+    }
 
-    public abstract void write(String s);
+    public abstract void doReadLine();
 
-    public abstract void write(byte[] buf, int off, int len);
+    public abstract StatusLine registerStatusLine(int priority);
+
+    public abstract void setPromptMessage(String message);
+
+    public abstract void write(boolean errorStream, String s);
+
+    public abstract void write(boolean errorStream, byte[] buf, int off, int len);
 
     protected String stripAnsiCodes(String s) {
         if (s == null) {
@@ -110,71 +117,30 @@ public abstract class QuarkusConsole {
         return s;
     }
 
-    public void setOutputFilter(Predicate<String> logHandler) {
-        this.outputFilter = logHandler;
+    public static void addOutputFilter(BiPredicate<String, Boolean> logHandler) {
+        outputFilters.add(logHandler);
     }
 
-    protected static abstract class InputHolder implements InputHandler.ConsoleStatus {
-        public final InputHandler handler;
-        volatile boolean enabled;
-        String prompt;
-        String status;
-        String results;
-        String compileError;
+    public static void removeOutputFilter(BiPredicate<String, Boolean> logHandler) {
+        outputFilters.remove(logHandler);
+    }
 
-        protected InputHolder(InputHandler handler) {
-            this.handler = handler;
-        }
-
-        public InputHolder setEnabled(boolean enabled) {
-            this.enabled = enabled;
-            if (enabled) {
-                setStatus(status);
-                setPrompt(prompt);
-                setResults(results);
-                setCompileError(compileError);
-            }
-            return this;
-        }
-
-        @Override
-        public void setPrompt(String prompt) {
-            this.prompt = prompt;
-            if (enabled) {
-                setPromptMessage(prompt);
+    protected boolean shouldWrite(boolean errorStream, String s) {
+        boolean ok = true;
+        for (var i : outputFilters) {
+            if (!i.test(s, errorStream)) {
+                //no early exit as filters can also record output
+                ok = false;
             }
         }
+        return ok;
+    }
 
-        @Override
-        public void setStatus(String status) {
-            this.status = status;
-            if (enabled) {
-                setStatusMessage(status);
-            }
-        }
+    public boolean isInputSupported() {
+        return true;
+    }
 
-        @Override
-        public void setResults(String results) {
-            this.results = results;
-            if (enabled) {
-                setResultsMessage(results);
-            }
-        }
-
-        @Override
-        public void setCompileError(String compileError) {
-            this.compileError = compileError;
-            if (enabled) {
-                setCompileErrorMessage(compileError);
-            }
-        }
-
-        protected abstract void setStatusMessage(String status);
-
-        protected abstract void setPromptMessage(String prompt);
-
-        protected abstract void setResultsMessage(String results);
-
-        protected abstract void setCompileErrorMessage(String results);
+    public boolean isAnsiSupported() {
+        return false;
     }
 }

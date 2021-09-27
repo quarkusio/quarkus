@@ -91,14 +91,18 @@ public class UriNormalizationUtil {
      * </ul>
      *
      * @param base URI to resolve relative paths. Use {@link #toURI(String, boolean)} to construct this parameter.
-     * 
+     *
      * @param segment Relative or absolute path
      * @param trailingSlash true if resulting URI must end with a '/'
      * @throws IllegalArgumentException if the path contains invalid characters or path segments.
      */
     public static URI normalizeWithBase(URI base, String segment, boolean trailingSlash) {
         if (segment == null || segment.trim().isEmpty()) {
-            return base;
+            if ("/".equals(base.getPath())) {
+                return base;
+            }
+            // otherwise, make sure trailingSlash is honored
+            return toURI(base.getPath(), trailingSlash);
         }
         URI segmentUri = toURI(segment, trailingSlash);
         URI resolvedUri = base.resolve(segmentUri);

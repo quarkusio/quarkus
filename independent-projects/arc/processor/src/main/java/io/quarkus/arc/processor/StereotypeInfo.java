@@ -12,6 +12,8 @@ public class StereotypeInfo {
     private final boolean alternative;
     private final Integer alternativePriority;
     private final boolean isNamed;
+    private final boolean isInherited;
+    private final List<AnnotationInstance> parentStereotypes;
     private final ClassInfo target;
     // allows to differentiate between standard stereotype and one that is in fact additional bean defining annotation
     private final boolean isAdditionalBeanDefiningAnnotation;
@@ -21,7 +23,7 @@ public class StereotypeInfo {
     public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean alternative,
             Integer alternativePriority,
             boolean isNamed, boolean isAdditionalBeanDefiningAnnotation, boolean isAdditionalStereotypeBuildItem,
-            ClassInfo target) {
+            ClassInfo target, boolean isInherited, List<AnnotationInstance> parentStereotypes) {
         this.defaultScope = defaultScope;
         this.interceptorBindings = interceptorBindings;
         this.alternative = alternative;
@@ -30,12 +32,15 @@ public class StereotypeInfo {
         this.target = target;
         this.isAdditionalBeanDefiningAnnotation = isAdditionalBeanDefiningAnnotation;
         this.isAdditionalStereotypeBuildItem = isAdditionalStereotypeBuildItem;
+        this.isInherited = isInherited;
+        this.parentStereotypes = parentStereotypes;
     }
 
     public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean alternative,
             Integer alternativePriority,
-            boolean isNamed, ClassInfo target) {
-        this(defaultScope, interceptorBindings, alternative, alternativePriority, isNamed, false, false, target);
+            boolean isNamed, ClassInfo target, boolean isInherited, List<AnnotationInstance> parentStereotype) {
+        this(defaultScope, interceptorBindings, alternative, alternativePriority, isNamed, false, false, target, isInherited,
+                parentStereotype);
     }
 
     public ScopeInfo getDefaultScope() {
@@ -48,6 +53,10 @@ public class StereotypeInfo {
 
     public boolean isAlternative() {
         return alternative;
+    }
+
+    public boolean isInherited() {
+        return isInherited;
     }
 
     public Integer getAlternativePriority() {
@@ -78,4 +87,7 @@ public class StereotypeInfo {
         return !isAdditionalBeanDefiningAnnotation && !isAdditionalStereotypeBuildItem;
     }
 
+    public List<AnnotationInstance> getParentStereotypes() {
+        return parentStereotypes;
+    }
 }

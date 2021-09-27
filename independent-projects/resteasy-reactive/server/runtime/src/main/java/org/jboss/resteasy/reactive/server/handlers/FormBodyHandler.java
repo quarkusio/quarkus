@@ -12,6 +12,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.core.multipart.FormData;
 import org.jboss.resteasy.reactive.server.core.multipart.FormDataParser;
 import org.jboss.resteasy.reactive.server.core.multipart.FormEncodedDataDefinition;
 import org.jboss.resteasy.reactive.server.core.multipart.FormParserFactory;
@@ -22,8 +23,6 @@ import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public class FormBodyHandler implements ServerRestHandler, RuntimeConfigurableServerRestHandler {
-
-    private static final byte[] NO_BYTES = new byte[0];
 
     private final boolean alsoSetInputStream;
     private final Supplier<Executor> executorSupplier;
@@ -42,9 +41,12 @@ public class FormBodyHandler implements ServerRestHandler, RuntimeConfigurableSe
                         .setMaxAttributeSize(configuration.limits().maxFormAttributeSize())
                         .setMaxEntitySize(configuration.limits().maxBodySize().orElse(-1L))
                         .setDeleteUploadsOnEnd(configuration.body().deleteUploadedFilesOnEnd())
+                        .setDefaultCharset(configuration.body().defaultCharset().name())
                         .setTempFileLocation(Path.of(configuration.body().uploadsDirectory())))
+
                 .addParser(new FormEncodedDataDefinition()
-                        .setMaxAttributeSize(configuration.limits().maxFormAttributeSize()))
+                        .setMaxAttributeSize(configuration.limits().maxFormAttributeSize())
+                        .setDefaultCharset(configuration.body().defaultCharset().name()))
                 .build();
 
         try {
@@ -60,6 +62,11 @@ public class FormBodyHandler implements ServerRestHandler, RuntimeConfigurableSe
         // it's possible we've already read the entity
         if (requestContext.getFormData() != null) {
             // let's not set it twice
+            return;
+        }
+        FormData existingParsedForm = requestContext.serverRequest().getExistingParsedForm();
+        if (existingParsedForm != null) {
+            requestContext.setFormData(existingParsedForm);
             return;
         }
         ServerHttpRequest serverHttpRequest = requestContext.serverRequest();

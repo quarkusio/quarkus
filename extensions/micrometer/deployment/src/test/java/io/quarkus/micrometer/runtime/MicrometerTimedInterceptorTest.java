@@ -154,4 +154,23 @@ public class MicrometerTimedInterceptorTest {
         Assertions.assertEquals(0, timer.activeTasks());
     }
 
+    @Test
+    void testTimeMethod_repeatable() {
+        timed.repeatableCall(false);
+        Timer alphaTimer = registry.get("alpha")
+                .tag("method", "repeatableCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource")
+                .tag("exception", "none")
+                .tag("extra", "tag").timer();
+        Assertions.assertNotNull(alphaTimer);
+        Assertions.assertEquals(1, alphaTimer.count());
+        Timer bravoTimer = registry.get("bravo")
+                .tag("method", "repeatableCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource")
+                .tag("exception", "none")
+                .tag("extra", "tag").timer();
+        Assertions.assertNotNull(bravoTimer);
+        Assertions.assertEquals(1, bravoTimer.count());
+    }
+
 }

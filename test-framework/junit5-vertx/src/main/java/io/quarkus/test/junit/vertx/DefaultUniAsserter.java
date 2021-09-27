@@ -138,4 +138,31 @@ class DefaultUniAsserter implements UniAsserter {
         execution = execution.onItem().invoke(v -> Assertions.fail());
         return this;
     }
+
+    @Override
+    public <T> UniAsserter assertFailedWith(Supplier<Uni<T>> uni, Consumer<Throwable> c) {
+        execution = uniFromSupplier(uni)
+                // return a new uni so we can avoid io.smallrye.mutiny.CompositeException
+                .onItemOrFailure().transformToUni((o, t) -> {
+                    if (t == null) {
+                        return Uni.createFrom().failure(() -> Assertions.fail("Uni did not contain a failure."));
+                    } else {
+                        return Uni.createFrom().item(() -> {
+                            c.accept(t);
+                            return null;
+                        });
+                    }
+                });
+        return this;
+    }
+
+    @Override
+    public <T> UniAsserter assertFailedWith(Supplier<Uni<T>> uni, Class<? extends Throwable> c) {
+        return assertFailedWith(uni, t -> {
+            if (!c.isInstance(t)) {
+                Assertions.fail(String.format("Uni failure type '%s' was not of the expected type '%s'.",
+                        t.getClass().getName(), c.getName()));
+            }
+        });
+    }
 }

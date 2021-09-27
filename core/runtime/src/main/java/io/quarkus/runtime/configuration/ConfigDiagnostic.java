@@ -1,9 +1,12 @@
 package io.quarkus.runtime.configuration;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -22,6 +25,7 @@ public final class ConfigDiagnostic {
 
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
     private static final List<String> errorsMessages = new CopyOnWriteArrayList<>();
+    private static final Set<String> errorKeys = new CopyOnWriteArraySet<>();
 
     private ConfigDiagnostic() {
     }
@@ -31,6 +35,7 @@ public final class ConfigDiagnostic {
         final String loggedMessage = message != null ? message
                 : String.format("An invalid value was given for configuration key \"%s\"", name);
         errorsMessages.add(loggedMessage);
+        errorKeys.add(name);
     }
 
     public static void missingValue(String name, NoSuchElementException ex) {
@@ -38,11 +43,13 @@ public final class ConfigDiagnostic {
         final String loggedMessage = message != null ? message
                 : String.format("Configuration key \"%s\" is required, but its value is empty/missing", name);
         errorsMessages.add(loggedMessage);
+        errorKeys.add(name);
     }
 
     public static void duplicate(String name) {
         final String loggedMessage = String.format("Configuration key \"%s\" was specified more than once", name);
         errorsMessages.add(loggedMessage);
+        errorKeys.add(name);
     }
 
     public static void deprecated(String name) {
@@ -84,6 +91,11 @@ public final class ConfigDiagnostic {
         usedProperties.removeAll(properties);
 
         for (String property : properties) {
+            // Indexed properties not supported by @ConfigRoot, but they can show up due to the YAML source. Just ignore them.
+            if (property.contains("[") && property.contains("]")) {
+                continue;
+            }
+
             boolean found = false;
             for (String usedProperty : usedProperties) {
                 if (usedProperty.equalsIgnoreCase(StringUtil.replaceNonAlphanumericByUnderscores(property))) {
@@ -127,6 +139,7 @@ public final class ConfigDiagnostic {
      * Reset the config error status (for e.g. testing).
      */
     public static void resetError() {
+        errorKeys.clear();
         errorsMessages.clear();
     }
 
@@ -138,5 +151,9 @@ public final class ConfigDiagnostic {
             b.append(System.lineSeparator());
         }
         return b.toString();
+    }
+
+    public static Set<String> getErrorKeys() {
+        return new HashSet<>(errorKeys);
     }
 }

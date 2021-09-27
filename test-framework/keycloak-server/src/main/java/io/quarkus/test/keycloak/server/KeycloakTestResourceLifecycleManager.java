@@ -15,17 +15,20 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.util.JsonSerialization;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.restassured.RestAssured;
+import io.restassured.specification.RequestSpecification;
 
 public class KeycloakTestResourceLifecycleManager implements QuarkusTestResourceLifecycleManager {
     private GenericContainer<?> keycloak;
 
     private static String KEYCLOAK_SERVER_URL;
+    private static final Boolean KEYCLOAK_TRUSTSTORE_REQUIRED = false;
     private static final String KEYCLOAK_REALM = System.getProperty("keycloak.realm", "quarkus");
     private static final String KEYCLOAK_SERVICE_CLIENT = System.getProperty("keycloak.service.client", "quarkus-service-app");
     private static final String KEYCLOAK_WEB_APP_CLIENT = System.getProperty("keycloak.web-app.client", "quarkus-web-app");
@@ -36,8 +39,18 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
     private static final String TOKEN_USER_ROLES = System.getProperty("keycloak.token.user-roles", "user");
     private static final String TOKEN_ADMIN_ROLES = System.getProperty("keycloak.token.admin-roles", "user,admin");
 
+    private static String KEYCLOAK_TRUSTSTORE_PATH = "keycloak.jks";
+    private static String KEYCLOAK_TRUSTSTORE_SECRET = "secret";
+    private static String KEYCLOAK_TLS_KEY = "tls.key";
+    private static String KEYCLOAK_TLS_KEY_MOUNTED_PATH = "/etc/x509/https";
+    private static String KEYCLOAK_TLS_CRT = "tls.crt";
+    private static String KEYCLOAK_TLS_CRT_MOUNTED_PATH = "/etc/x509/https";
+
     static {
-        RestAssured.useRelaxedHTTPSValidation();
+        //KEYCLOAK_TRUSTSTORE_REQUIRED = Thread.currentThread().getContextClassLoader().getResource(KEYCLOAK_TLS_KEY) != null;
+        if (KEYCLOAK_USE_HTTPS && !KEYCLOAK_TRUSTSTORE_REQUIRED) {
+            RestAssured.useRelaxedHTTPSValidation();
+        }
     }
 
     @SuppressWarnings("resource")
@@ -51,12 +64,23 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
         } else {
             throw new ConfigurationException("Please set either 'keycloak.docker.image' or 'keycloak.version' system property");
         }
+
         keycloak = new GenericContainer<>(keycloakDockerImage)
                 .withExposedPorts(8080, 8443)
                 .withEnv("DB_VENDOR", "H2")
                 .withEnv("KEYCLOAK_USER", "admin")
                 .withEnv("KEYCLOAK_PASSWORD", "admin")
                 .waitingFor(Wait.forHttp("/auth").forPort(8080));
+
+        if (KEYCLOAK_USE_HTTPS && KEYCLOAK_TRUSTSTORE_REQUIRED) {
+            keycloak = keycloak
+                    .withClasspathResourceMapping(KEYCLOAK_TLS_KEY, KEYCLOAK_TLS_KEY_MOUNTED_PATH, BindMode.READ_ONLY)
+                    .withClasspathResourceMapping(KEYCLOAK_TLS_CRT, KEYCLOAK_TLS_CRT_MOUNTED_PATH, BindMode.READ_ONLY);
+            //.withCopyFileToContainer(MountableFile.forClasspathResource(KEYCLOAK_TLS_KEY),
+            //        KEYCLOAK_TLS_KEY_MOUNTED_PATH)
+            //.withCopyFileToContainer(MountableFile.forClasspathResource(KEYCLOAK_TLS_CRT),
+            //        KEYCLOAK_TLS_CRT_MOUNTED_PATH);
+        }
 
         keycloak.start();
 
@@ -71,15 +95,14 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
 
         Map<String, String> conf = new HashMap<>();
         conf.put("keycloak.url", KEYCLOAK_SERVER_URL);
+        conf.put("quarkus.oidc.auth-server-url", KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM);
 
         return conf;
     }
 
-    private void postRealm(RealmRepresentation realm) {
+    private static void postRealm(RealmRepresentation realm) {
         try {
-            RestAssured
-                    .given()
-                    .auth().oauth2(getAdminAccessToken())
+            createRequestSpec().auth().oauth2(getAdminAccessToken())
                     .contentType("application/json")
                     .body(JsonSerialization.writeValueAsBytes(realm))
                     .when()
@@ -121,8 +144,7 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
     }
 
     private static String getAdminAccessToken() {
-        return RestAssured
-                .given()
+        return createRequestSpec()
                 .param("grant_type", "password")
                 .param("username", "admin")
                 .param("password", "admin")
@@ -178,9 +200,7 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
     }
 
     public static String getAccessToken(String userName) {
-        return RestAssured
-                .given()
-                .param("grant_type", "password")
+        return createRequestSpec().param("grant_type", "password")
                 .param("username", userName)
                 .param("password", userName)
                 .param("client_id", KEYCLOAK_SERVICE_CLIENT)
@@ -191,9 +211,7 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
     }
 
     public static String getRefreshToken(String userName) {
-        return RestAssured
-                .given()
-                .param("grant_type", "password")
+        return createRequestSpec().param("grant_type", "password")
                 .param("username", userName)
                 .param("password", userName)
                 .param("client_id", KEYCLOAK_SERVICE_CLIENT)
@@ -205,9 +223,7 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
 
     @Override
     public void stop() {
-        RestAssured
-                .given()
-                .auth().oauth2(getAdminAccessToken())
+        createRequestSpec().auth().oauth2(getAdminAccessToken())
                 .when()
                 .delete(KEYCLOAK_SERVER_URL + "/admin/realms/" + KEYCLOAK_REALM).then().statusCode(204);
 
@@ -220,5 +236,13 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
 
     private static List<String> getUserRoles() {
         return Arrays.asList(TOKEN_USER_ROLES.split(","));
+    }
+
+    private static RequestSpecification createRequestSpec() {
+        RequestSpecification spec = RestAssured.given();
+        if (KEYCLOAK_TRUSTSTORE_REQUIRED) {
+            spec = spec.trustStore(KEYCLOAK_TRUSTSTORE_PATH, KEYCLOAK_TRUSTSTORE_SECRET);
+        }
+        return spec;
     }
 }

@@ -34,4 +34,19 @@ public interface UniAsserter {
     UniAsserter assertTrue(Supplier<Uni<Boolean>> uni);
 
     UniAsserter assertFalse(Supplier<Uni<Boolean>> uni);
+
+    /**
+     * Used to determine whether or not the Uni contains the expected failure.
+     * The assertions fails if the Uni does not fail.
+     *
+     * @param c Consumer that performs custom assertions on whether or not the failure matches expectations. This allows
+     *        asserting on anything present in the {@code Throwable} like, the cause or the message
+     */
+    <T> UniAsserter assertFailedWith(Supplier<Uni<T>> uni, Consumer<Throwable> c);
+
+    /**
+     * Used to determine whether or not the Uni contains the expected failure type.
+     * The assertions fails if the Uni does not fail.
+     */
+    <T> UniAsserter assertFailedWith(Supplier<Uni<T>> uni, Class<? extends Throwable> c);
 }

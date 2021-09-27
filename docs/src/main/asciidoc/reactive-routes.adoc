@@ -18,16 +18,19 @@ The code presented in this guide is available in this {quickstarts-base-url}[Git
 
 Before going further, let's have a look at the HTTP layer of Quarkus.
 Quarkus HTTP support is based on a non-blocking and reactive engine (Eclipse Vert.x and Netty).
-All the HTTP requests your application receive are handled by _event loops_ (IO Thread) and then are routed towards the code that manages the request.
+All the HTTP requests your application receive are handled by _event loops_ (I/O Thread) and then are routed towards the code that manages the request.
 Depending on the destination, it can invoke the code managing the request on a worker thread (Servlet, Jax-RS) or use the IO Thread (reactive route).
 Note that because of this, a reactive route must be non-blocking or explicitly declare its blocking nature (which would result by being called on a worker thread).
 
 image:http-architecture.png[alt=Quarkus HTTP Architecture]
 
+See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture documentation] for further details on this topic.
+
+
 == Declaring reactive routes
 
 The first way to use reactive routes is to use the `@Route` annotation.
-To have access to this annotation, you need to add the `quarkus-vertx-web` extension:
+To have access to this annotation, you need to add the `quarkus-reactive-routes` extension:
 
 In your `pom.xml` file, add:
 
@@ -35,7 +38,7 @@ In your `pom.xml` file, add:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-vertx-web</artifactId>
+    <artifactId>quarkus-reactive-routes</artifactId>
 </dependency>
 ----
 
@@ -603,8 +606,17 @@ Check the https://vertx.io/docs/vertx-web/java/#_basic_vert_x_web_concepts[Vert.
 [NOTE]
 ====
 `Router` access is provided by the `quarkus-vertx-http` extension.
-If you use `quarkus-resteasy` or `quarkus-vertx-web`, the extension will be added automatically.
+If you use `quarkus-resteasy` or `quarkus-reactive-routes`, the extension will be added automatically.
 ====
+
+You can also receive the Mutiny variant of the Router (`io.vertx.mutiny.ext.web.Router`):
+
+[source,java]
+----
+public void init(@Observes io.vertx.mutiny.ext.web.Router router) {
+    router.get("/my-route").handler(rc -> rc.response().endAndForget("Hello from my route"));
+}
+----
 
 == Intercepting HTTP requests
 

@@ -1,0 +1,13 @@
+{#if info:oidcProviderUrlBase??}
+<a href="{info:oidcProviderUrlBase}/provider" class="badge badge-light">
+  <i class="fa fa-boxes fa-fw"></i>
+  Provider: <span class="badge badge-light">{info:oidcProviderName}</span></a>
+{#else if info:oidcProviderName??}
+<a href="{urlbase}/provider" class="badge badge-light">
+  <i class="fa fa-boxes fa-fw"></i>
+  Provider: <span class="badge badge-light">{info:oidcProviderName}</span></a>
+{#else if info:authorizationUrl??}
+<a href="{urlbase}/provider" class="badge badge-light">
+  <i class="fa fa-boxes fa-fw"></i>
+  Dev Console</a>
+{/if}  

@@ -11,11 +11,13 @@ import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
+import io.quarkus.grpc.GlobalInterceptor;
 
 /**
  * A interceptor to handle server header.
  */
 @ApplicationScoped
+@GlobalInterceptor
 public class HeaderServerInterceptor implements ServerInterceptor {
 
     private static final Logger logger = Logger.getLogger(HeaderServerInterceptor.class.getName());
@@ -30,7 +32,7 @@ public class HeaderServerInterceptor implements ServerInterceptor {
             final Metadata requestHeaders,
             ServerCallHandler<I, O> next) {
         logger.info("header received from client:" + requestHeaders);
-        return next.startCall(new ForwardingServerCall.SimpleForwardingServerCall<I, O>(call) {
+        return next.startCall(new ForwardingServerCall.SimpleForwardingServerCall<>(call) {
             @Override
             public void sendHeaders(Metadata responseHeaders) {
                 responseHeaders.put(CUSTOM_HEADER_KEY, "customRespondValue");

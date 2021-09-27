@@ -2,6 +2,7 @@ package io.quarkus.test.common;
 
 import java.io.Closeable;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,6 +21,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Predicate;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.jandex.AnnotationInstance;
@@ -45,6 +47,11 @@ public class TestResourceManager implements Closeable {
 
     public TestResourceManager(Class<?> testClass, Class<?> profileClass, List<TestResourceClassEntry> additionalTestResources,
             boolean disableGlobalTestResources) {
+        this(testClass, profileClass, additionalTestResources, disableGlobalTestResources, Collections.emptyMap());
+    }
+
+    public TestResourceManager(Class<?> testClass, Class<?> profileClass, List<TestResourceClassEntry> additionalTestResources,
+            boolean disableGlobalTestResources, Map<String, String> devServicesProperties) {
         this.parallelTestResourceEntries = new ArrayList<>();
         this.sequentialTestResourceEntries = new ArrayList<>();
 
@@ -61,6 +68,17 @@ public class TestResourceManager implements Closeable {
 
         this.allTestResourceEntries = new ArrayList<>(sequentialTestResourceEntries);
         this.allTestResourceEntries.addAll(parallelTestResourceEntries);
+        DevServicesContext context = new DevServicesContext() {
+            @Override
+            public Map<String, String> devServicesProperties() {
+                return devServicesProperties;
+            }
+        };
+        for (var i : allTestResourceEntries) {
+            if (i.getTestResource() instanceof DevServicesContext.ContextAware) {
+                ((DevServicesContext.ContextAware) i.getTestResource()).setIntegrationTestContext(context);
+            }
+        }
     }
 
     public void init() {
@@ -141,7 +159,9 @@ public class TestResourceManager implements Closeable {
 
     public void inject(Object testInstance) {
         for (TestResourceEntry entry : allTestResourceEntries) {
-            entry.getTestResource().inject(testInstance);
+            QuarkusTestResourceLifecycleManager quarkusTestResourceLifecycleManager = entry.getTestResource();
+            quarkusTestResourceLifecycleManager.inject(testInstance);
+            quarkusTestResourceLifecycleManager.inject(new DefaultTestInjector(testInstance));
         }
     }
 
@@ -457,6 +477,40 @@ public class TestResourceManager implements Closeable {
         public Annotation getConfigAnnotation() {
             return configAnnotation;
         }
+    }
+
+    // visible for testing
+    static class DefaultTestInjector implements QuarkusTestResourceLifecycleManager.TestInjector {
+
+        // visible for testing
+        final Object testInstance;
+
+        private DefaultTestInjector(Object testInstance) {
+            this.testInstance = testInstance;
+        }
+
+        @Override
+        public void injectIntoFields(Object fieldValue, Predicate<Field> predicate) {
+            Class<?> c = testInstance.getClass();
+            while (c != Object.class) {
+                for (Field f : c.getDeclaredFields()) {
+                    if (predicate.test(f)) {
+                        f.setAccessible(true);
+                        try {
+                            f.set(testInstance, fieldValue);
+                            return;
+                        } catch (Exception e) {
+                            throw new RuntimeException("Unable to set field '" + f.getName()
+                                    + "' using 'QuarkusTestResourceLifecycleManager.TestInjector' ", e);
+                        }
+                    }
+                }
+                c = c.getSuperclass();
+            }
+            System.err.println("Unable to determine matching fields for injection of test instance '"
+                    + testInstance.getClass().getName() + "'");
+        }
+
     }
 
 }

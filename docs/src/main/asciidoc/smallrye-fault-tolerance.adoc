@@ -319,7 +319,9 @@ as follows:
 [source,java]
 ----
 import java.util.Collections;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
 import org.eclipse.microprofile.faulttolerance.Fallback;
+
 ...
 public class CoffeeResource {
     ...

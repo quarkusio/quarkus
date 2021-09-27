@@ -4,7 +4,6 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Amazon Lambda
-:extension-status: preview
 
 include::./attributes.adoc[]
 
@@ -16,8 +15,6 @@ Amazon's Custom Runtime if you want a smaller memory footprint and faster cold b
 
 Quarkus's integration with lambdas also supports Quarkus's Live Coding development cycle.  You an
 bring up your Quarkus lambda project in dev or test mode and code on your project live.
-
-include::./status-include.adoc[]
 
 == Prerequisites
 

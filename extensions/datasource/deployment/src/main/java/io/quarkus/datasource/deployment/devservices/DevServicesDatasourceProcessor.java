@@ -40,7 +40,7 @@ public class DevServicesDatasourceProcessor {
 
     static volatile List<Closeable> databases;
 
-    static volatile Map<String, Object> cachedProperties;
+    static volatile Map<String, String> cachedProperties;
 
     static volatile boolean first = true;
 
@@ -62,8 +62,8 @@ public class DevServicesDatasourceProcessor {
         if (databases != null) {
             boolean restartRequired = false;
             if (!restartRequired) {
-                for (Map.Entry<String, Object> entry : cachedProperties.entrySet()) {
-                    if (!Objects.equals(entry.getValue().toString(),
+                for (Map.Entry<String, String> entry : cachedProperties.entrySet()) {
+                    if (!Objects.equals(entry.getValue(),
                             ConfigProvider.getConfig().getOptionalValue(entry.getKey(), String.class).orElse(null))) {
                         restartRequired = true;
                         break;
@@ -102,7 +102,7 @@ public class DevServicesDatasourceProcessor {
         //to keep things simpler for now we are only going to support this for the default datasource
         //support for named datasources will come later
 
-        Map<String, Object> propertiesMap = new HashMap<>();
+        Map<String, String> propertiesMap = new HashMap<>();
         List<Closeable> closeableList = new ArrayList<>();
         Map<String, List<DevServicesDatasourceConfigurationHandlerBuildItem>> configHandlersByDbType = configurationHandlerBuildItems
                 .stream()
@@ -178,7 +178,7 @@ public class DevServicesDatasourceProcessor {
             boolean hasNamedDatasources,
             Map<String, DevServicesDatasourceProvider> devDBProviders, DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
             Map<String, List<DevServicesDatasourceConfigurationHandlerBuildItem>> configurationHandlerBuildItems,
-            Map<String, Object> propertiesMap, List<Closeable> closeableList,
+            Map<String, String> propertiesMap, List<Closeable> closeableList,
             LaunchMode launchMode, Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem) {
         boolean explicitlyDisabled = !(dataSourceBuildTimeConfig.devservices.enabled
@@ -268,10 +268,13 @@ public class DevServicesDatasourceProcessor {
                 propertiesMap.put(devServicesPrefix + "image-name", dataSourceBuildTimeConfig.devservices.imageName.get());
             }
             if (dataSourceBuildTimeConfig.devservices.port.isPresent()) {
-                propertiesMap.put(devServicesPrefix + "port", dataSourceBuildTimeConfig.devservices.port.getAsInt());
+                propertiesMap.put(devServicesPrefix + "port",
+                        Integer.toString(dataSourceBuildTimeConfig.devservices.port.getAsInt()));
             }
             if (!dataSourceBuildTimeConfig.devservices.properties.isEmpty()) {
-                propertiesMap.put(devServicesPrefix + "properties", dataSourceBuildTimeConfig.devservices.properties);
+                for (var e : dataSourceBuildTimeConfig.devservices.properties.entrySet()) {
+                    propertiesMap.put(devServicesPrefix + "properties." + e.getKey(), e.getValue());
+                }
             }
 
             Map<String, String> devDebProperties = new HashMap<>();

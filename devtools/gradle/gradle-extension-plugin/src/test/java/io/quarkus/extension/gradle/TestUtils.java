@@ -7,22 +7,39 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+
 public class TestUtils {
 
-    public static final String DEFAULT_BUILD_GRADLE_CONTENT = "plugins {\n" +
-            "id 'java'\n" +
-            "id 'io.quarkus.extension'\n" +
-            "}\n" +
-            "group 'org.acme'\n" +
-            "version '1.0.0'\n";
+    public static String getDefaultGradleBuildFileContent() throws IOException {
+        return "plugins {\n" +
+                "id 'java'\n" +
+                "id 'io.quarkus.extension'\n" +
+                "}\n" +
+                "group 'org.acme'\n" +
+                "version '1.0.0'\n" +
+                "repositories { \n" +
+                "mavenCentral()\n" +
+                "mavenLocal()\n" +
+                "}\n" +
+                "dependencies { \n" +
+                "implementation enforcedPlatform(\"io.quarkus:quarkus-bom:" + getCurrentQuarkusVersion() + "\")\n" +
+                "implementation \"io.quarkus:quarkus-arc\" \n" +
+                "}\n";
+    }
 
     public static BuildResult runExtensionDescriptorTask(File testProjectDir) {
         BuildResult extensionDescriptorResult = GradleRunner.create()
@@ -39,7 +56,7 @@ public class TestUtils {
     public static void createExtensionProject(File testProjectDir) throws IOException {
         File runtimeModule = new File(testProjectDir, "runtime");
         runtimeModule.mkdir();
-        writeFile(new File(runtimeModule, "build.gradle"), DEFAULT_BUILD_GRADLE_CONTENT);
+        writeFile(new File(runtimeModule, "build.gradle"), getDefaultGradleBuildFileContent());
 
         File deploymentModule = new File(testProjectDir, "deployment");
         deploymentModule.mkdir();
@@ -67,5 +84,30 @@ public class TestUtils {
             extensionProperties.load(reader);
         }
         return extensionProperties;
+    }
+
+    public static ObjectNode readExtensionFile(Path extensionFile) throws IOException {
+        YAMLFactory yf = new YAMLFactory();
+        ObjectMapper mapper = new ObjectMapper(yf)
+                .setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
+        try (InputStream is = Files.newInputStream(extensionFile)) {
+            return mapper.readValue(is, ObjectNode.class);
+        } catch (IOException io) {
+            throw new IOException("Failed to parse " + extensionFile, io);
+        }
+    }
+
+    public static String getCurrentQuarkusVersion() throws IOException {
+        final Path curDir = Paths.get("").toAbsolutePath().normalize();
+        final Path gradlePropsFile = curDir.getParent().resolve("gradle.properties");
+        Properties props = new Properties();
+        try (InputStream is = Files.newInputStream(gradlePropsFile)) {
+            props.load(is);
+        }
+        final String quarkusVersion = props.getProperty("version");
+        if (quarkusVersion == null) {
+            throw new IllegalStateException("Failed to locate Quarkus version in " + gradlePropsFile);
+        }
+        return quarkusVersion;
     }
 }

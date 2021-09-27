@@ -32,6 +32,7 @@ public class DeploymentInfo {
     private Function<Object, Object> clientProxyUnwrapper;
     private String applicationPath;
     private List<HandlerChainCustomizer> globalHandlerCustomers = new ArrayList<>();
+    private boolean developmentMode;
 
     public ResourceInterceptors getInterceptors() {
         return interceptors;
@@ -165,6 +166,15 @@ public class DeploymentInfo {
 
     public DeploymentInfo setGlobalHandlerCustomers(List<HandlerChainCustomizer> globalHandlerCustomers) {
         this.globalHandlerCustomers = globalHandlerCustomers;
+        return this;
+    }
+
+    public boolean isDevelopmentMode() {
+        return developmentMode;
+    }
+
+    public DeploymentInfo setDevelopmentMode(boolean developmentMode) {
+        this.developmentMode = developmentMode;
         return this;
     }
 }

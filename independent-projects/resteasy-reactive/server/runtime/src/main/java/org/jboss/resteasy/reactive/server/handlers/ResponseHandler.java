@@ -19,6 +19,8 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
  */
 public class ResponseHandler implements ServerRestHandler {
 
+    public static final ResponseHandler INSTANCE = new ResponseHandler();
+
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         Object result = requestContext.getResult();

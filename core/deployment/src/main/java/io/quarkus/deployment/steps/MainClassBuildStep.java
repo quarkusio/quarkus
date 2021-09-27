@@ -47,6 +47,7 @@ import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.QuarkusApplicationClassBuildItem;
+import io.quarkus.deployment.builditem.RecordableConstructorBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -115,6 +116,7 @@ public class MainClassBuildStep {
             List<FeatureBuildItem> features,
             BuildProducer<ApplicationClassNameBuildItem> appClassNameProducer,
             List<BytecodeRecorderObjectLoaderBuildItem> loaders,
+            List<RecordableConstructorBuildItem> recordableConstructorBuildItems,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             LaunchModeBuildItem launchMode,
             LiveReloadBuildItem liveReloadBuildItem,
@@ -174,7 +176,8 @@ public class MainClassBuildStep {
         TryBlock tryBlock = mv.tryBlock();
         tryBlock.invokeStaticMethod(CONFIGURE_STEP_TIME_START);
         for (StaticBytecodeRecorderBuildItem holder : staticInitTasks) {
-            writeRecordedBytecode(holder.getBytecodeRecorder(), null, substitutions, loaders, gizmoOutput, startupContext,
+            writeRecordedBytecode(holder.getBytecodeRecorder(), null, substitutions, recordableConstructorBuildItems, loaders,
+                    gizmoOutput, startupContext,
                     tryBlock);
         }
         tryBlock.returnValue(null);
@@ -269,6 +272,7 @@ public class MainClassBuildStep {
         tryBlock.invokeStaticMethod(CONFIGURE_STEP_TIME_START);
         for (MainBytecodeRecorderBuildItem holder : mainMethod) {
             writeRecordedBytecode(holder.getBytecodeRecorder(), holder.getGeneratedStartupContextClassName(), substitutions,
+                    recordableConstructorBuildItems,
                     loaders, gizmoOutput, startupContext, tryBlock);
         }
 
@@ -437,6 +441,7 @@ public class MainClassBuildStep {
 
     private void writeRecordedBytecode(BytecodeRecorderImpl recorder, String fallbackGeneratedStartupTaskClassName,
             List<ObjectSubstitutionBuildItem> substitutions,
+            List<RecordableConstructorBuildItem> recordableConstructorBuildItems,
             List<BytecodeRecorderObjectLoaderBuildItem> loaders, GeneratedClassGizmoAdaptor gizmoOutput,
             ResultHandle startupContext, BytecodeCreator bytecodeCreator) {
 
@@ -451,6 +456,9 @@ public class MainClassBuildStep {
             }
             for (BytecodeRecorderObjectLoaderBuildItem item : loaders) {
                 recorder.registerObjectLoader(item.getObjectLoader());
+            }
+            for (var item : recordableConstructorBuildItems) {
+                recorder.markClassAsConstructorRecordable(item.getClazz());
             }
             recorder.writeBytecode(gizmoOutput);
         }

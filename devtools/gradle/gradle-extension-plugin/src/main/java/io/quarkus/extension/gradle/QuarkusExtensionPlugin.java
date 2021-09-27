@@ -1,7 +1,5 @@
 package io.quarkus.extension.gradle;
 
-import java.io.File;
-
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -12,6 +10,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
+import org.gradle.api.tasks.TaskProvider;
 
 import io.quarkus.extension.gradle.tasks.ExtensionDescriptorTask;
 
@@ -32,13 +31,16 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
 
     private void registerTasks(Project project, QuarkusExtensionConfiguration quarkusExt) {
         TaskContainer tasks = project.getTasks();
-        ExtensionDescriptorTask extensionDescriptorTask = tasks.create(EXTENSION_DESCRIPTOR_TASK_NAME,
+        TaskProvider<ExtensionDescriptorTask> extensionDescriptorTask = tasks.register(EXTENSION_DESCRIPTOR_TASK_NAME,
                 ExtensionDescriptorTask.class, task -> {
                     JavaPluginConvention convention = project.getConvention().getPlugin(JavaPluginConvention.class);
-                    File resourcesDir = convention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput()
-                            .getResourcesDir();
-                    task.setResourcesDir(resourcesDir);
+                    SourceSet mainSourceSet = convention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+                    task.setOutputResourcesDir(mainSourceSet.getOutput().getResourcesDir());
+                    task.setInputResourcesDir(mainSourceSet.getResources().getSourceDirectories().getAsPath());
                     task.setQuarkusExtensionConfiguration(quarkusExt);
+                    Configuration classpath = project.getConfigurations()
+                            .getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+                    task.setClasspath(classpath);
                 });
 
         project.getPlugins().withType(

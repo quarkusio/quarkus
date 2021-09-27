@@ -180,6 +180,7 @@
                 <module>elytron-security</module>
                 <module>elytron-security-oauth2</module>
                 <module>elytron-resteasy</module>
+                <module>elytron-resteasy-reactive</module>
                 <module>elytron-undertow</module>
                 <module>flyway</module>
                 <module>liquibase</module>

@@ -64,7 +64,7 @@ public class DevServicesDatasourceProcessor {
             if (!restartRequired) {
                 for (Map.Entry<String, String> entry : cachedProperties.entrySet()) {
                     if (!Objects.equals(entry.getValue(),
-                            ConfigProvider.getConfig().getOptionalValue(entry.getKey(), String.class).orElse(null))) {
+                            trim(ConfigProvider.getConfig().getOptionalValue(entry.getKey(), String.class).orElse(null)))) {
                         restartRequired = true;
                         break;
                     }
@@ -170,6 +170,13 @@ public class DevServicesDatasourceProcessor {
         databases = closeableList;
         cachedProperties = propertiesMap;
         return new DevServicesDatasourceResultBuildItem(defaultResult, namedResults);
+    }
+
+    private String trim(String optional) {
+        if (optional == null) {
+            return null;
+        }
+        return optional.trim();
     }
 
     private DevServicesDatasourceResultBuildItem.DbResult startDevDb(String dbName,

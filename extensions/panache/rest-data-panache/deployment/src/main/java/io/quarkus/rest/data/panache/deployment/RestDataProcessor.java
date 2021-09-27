@@ -3,12 +3,17 @@ package io.quarkus.rest.data.panache.deployment;
 import java.util.Arrays;
 import java.util.List;
 
+import org.jboss.resteasy.links.impl.EL;
+
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
 import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
@@ -24,8 +29,6 @@ import io.quarkus.rest.data.panache.runtime.hal.HalEntityWrapperJsonbSerializer;
 import io.quarkus.rest.data.panache.runtime.hal.HalLink;
 import io.quarkus.rest.data.panache.runtime.hal.HalLinkJacksonSerializer;
 import io.quarkus.rest.data.panache.runtime.hal.HalLinkJsonbSerializer;
-import io.quarkus.resteasy.reactive.server.deployment.GeneratedJaxRsResourceGizmoAdaptor;
-import io.quarkus.resteasy.reactive.spi.GeneratedJaxRsResourceBuildItem;
 
 public class RestDataProcessor {
 
@@ -37,8 +40,8 @@ public class RestDataProcessor {
     @BuildStep
     void implementResources(CombinedIndexBuildItem index, List<RestDataResourceBuildItem> resourceBuildItems,
             List<ResourcePropertiesBuildItem> resourcePropertiesBuildItems, Capabilities capabilities,
-            BuildProducer<GeneratedJaxRsResourceBuildItem> implementationsProducer) {
-        ClassOutput classOutput = new GeneratedJaxRsResourceGizmoAdaptor(implementationsProducer);
+            BuildProducer<GeneratedBeanBuildItem> implementationsProducer) {
+        ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
         JaxRsResourceImplementor jaxRsResourceImplementor = new JaxRsResourceImplementor(hasValidatorCapability(capabilities));
         ResourcePropertiesProvider resourcePropertiesProvider = new ResourcePropertiesProvider(index.getIndex());
 
@@ -74,6 +77,11 @@ public class RestDataProcessor {
                 HalLinkJsonbSerializer.class.getName()));
     }
 
+    @BuildStep
+    RuntimeInitializedClassBuildItem el() {
+        return new RuntimeInitializedClassBuildItem(EL.class.getCanonicalName());
+    }
+
     private ResourceProperties getResourceProperties(ResourcePropertiesProvider resourcePropertiesProvider,
             ResourceMetadata resourceMetadata, List<ResourcePropertiesBuildItem> resourcePropertiesBuildItems) {
         for (ResourcePropertiesBuildItem resourcePropertiesBuildItem : resourcePropertiesBuildItems) {
@@ -90,7 +98,7 @@ public class RestDataProcessor {
     }
 
     private boolean hasHalCapability(Capabilities capabilities) {
-        return capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JSONB)
-                || capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JACKSON);
+        return capabilities.isPresent(Capability.RESTEASY_JSON_JSONB)
+                || capabilities.isPresent(Capability.RESTEASY_JSON_JACKSON);
     }
 }

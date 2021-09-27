@@ -19,7 +19,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+            <artifactId>quarkus-resteasy-jackson</artifactId>
         </dependency>
         <!-- Service Binding - This isn't necessary to any Kafka functionality, but we want to test that Quarkus provides the proper config from a mock service binding -->
         <dependency>
@@ -63,7 +63,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson-deployment</artifactId>
+            <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

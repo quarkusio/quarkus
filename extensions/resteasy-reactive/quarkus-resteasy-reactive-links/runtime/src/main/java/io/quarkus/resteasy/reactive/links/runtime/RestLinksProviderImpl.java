@@ -2,6 +2,7 @@ package io.quarkus.resteasy.reactive.links.runtime;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.ws.rs.core.Link;
@@ -33,9 +34,8 @@ final class RestLinksProviderImpl implements RestLinksProvider {
     public Collection<Link> getTypeLinks(Class<?> elementType) {
         verifyInit();
 
-        List<LinkInfo> linkInfoList = linksContainer.getForClass(elementType);
-        List<Link> links = new ArrayList<>(linkInfoList.size());
-        for (LinkInfo linkInfo : linkInfoList) {
+        List<Link> links = new LinkedList<>();
+        for (LinkInfo linkInfo : linksContainer.getForClass(elementType)) {
             if (linkInfo.getPathParameters().size() == 0) {
                 links.add(Link.fromUriBuilder(uriInfo.getBaseUriBuilder().path(linkInfo.getPath()))
                         .rel(linkInfo.getRel())
@@ -49,9 +49,8 @@ final class RestLinksProviderImpl implements RestLinksProvider {
     public <T> Collection<Link> getInstanceLinks(T instance) {
         verifyInit();
 
-        List<LinkInfo> linkInfoList = linksContainer.getForClass(instance.getClass());
-        List<Link> links = new ArrayList<>(linkInfoList.size());
-        for (LinkInfo linkInfo : linkInfoList) {
+        List<Link> links = new LinkedList<>();
+        for (LinkInfo linkInfo : linksContainer.getForClass(instance.getClass())) {
             links.add(Link.fromUriBuilder(uriInfo.getBaseUriBuilder().path(linkInfo.getPath()))
                     .rel(linkInfo.getRel())
                     .build(getPathParameterValues(linkInfo, instance)));

@@ -30,6 +30,6 @@ then
     echo "Web Site updated - wait for CI build"
 else
     echo "Run the following command to check the web site (if not done already)"
-    echo "cd target/web-site  && bundle exec jekyll serve"
+    echo "(cd target/web-site  && bundle exec jekyll serve)"
 fi
 

@@ -74,6 +74,7 @@ updates:
       - dependency-name: com.thoughtworks.xstream:xstream
       - dependency-name: org.jacoco:*
       # Maven plugins
+      - dependency-name: io.fabric8:docker-maven-plugin
       - dependency-name: net.revelc.code.formatter:formatter-maven-plugin
       - dependency-name: net.revelc.code:impsort-maven-plugin
       # Narayana

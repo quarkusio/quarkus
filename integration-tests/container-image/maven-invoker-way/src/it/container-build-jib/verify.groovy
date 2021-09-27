@@ -11,9 +11,8 @@ try {
     return
 }
 
-String group = System.getProperty("user.name")
-assert ExecUtil.exec("docker", "images", group + "/container-build-jib")
-assert ExecUtil.exec("docker", "rmi", group + "/container-build-jib:0.1-SNAPSHOT")
+assert ExecUtil.exec("docker", "images", "container-build-jib")
+assert ExecUtil.exec("docker", "rmi", "container-build-jib:0.1-SNAPSHOT")
 
 
 Path pathInIT = Paths.get("target", "it", "container-build-jib", "target")
@@ -36,7 +35,7 @@ propertiesFile.withInputStream {
 }
 
 assert properties.type == 'jar-container'
-assert properties."metadata.container-image" == group + "/container-build-jib:0.1-SNAPSHOT"
+assert properties."metadata.container-image" == "container-build-jib:0.1-SNAPSHOT"
 
 
 assert Files.exists(target.resolve("jib-image.digest"))

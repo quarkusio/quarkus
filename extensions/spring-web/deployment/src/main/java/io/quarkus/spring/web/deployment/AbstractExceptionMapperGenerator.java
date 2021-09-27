@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
+import javax.ws.rs.ext.Provider;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -35,6 +36,8 @@ abstract class AbstractExceptionMapperGenerator {
     String generate() {
         String generatedClassName = "io.quarkus.spring.web.mappers." + exceptionDotName.withoutPackagePrefix() + "_Mapper_"
                 + HashUtil.sha1(exceptionDotName.toString());
+        String generatedSubtypeClassName = "io.quarkus.spring.web.mappers.Subtype" + exceptionDotName.withoutPackagePrefix()
+                + "Mapper_" + HashUtil.sha1(exceptionDotName.toString());
         String exceptionClassName = exceptionDotName.toString();
 
         try (ClassCreator cc = ClassCreator.builder()
@@ -61,7 +64,15 @@ abstract class AbstractExceptionMapperGenerator {
             }
         }
 
-        return generatedClassName;
+        // additionally generate a dummy subtype to get past the RESTEasy's ExceptionMapper check for synthetic classes
+        try (ClassCreator cc = ClassCreator.builder()
+                .classOutput(classOutput).className(generatedSubtypeClassName)
+                .superClass(generatedClassName)
+                .build()) {
+            cc.addAnnotation(Provider.class);
+        }
+
+        return generatedSubtypeClassName;
     }
 
     protected void preGenerateMethodBody(ClassCreator cc) {
@@ -82,7 +93,6 @@ abstract class AbstractExceptionMapperGenerator {
         return 500; // the default value of @ResponseStatus
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     private int enumValueToHttpStatus(String enumValue) {
         try {
             Class<?> httpStatusClass = Class.forName("org.springframework.http.HttpStatus");

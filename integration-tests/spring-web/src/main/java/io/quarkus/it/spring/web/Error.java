@@ -1,5 +1,8 @@
 package io.quarkus.it.spring.web;
 
+import javax.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement
 public class Error {
 
     private String message;

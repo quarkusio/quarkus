@@ -10,7 +10,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Variant;
 
-import org.jboss.resteasy.reactive.server.core.request.ServerDrivenNegotiation;
+import org.jboss.resteasy.core.request.ServerDrivenNegotiation;
 
 public final class ResponseContentTypeResolver {
 

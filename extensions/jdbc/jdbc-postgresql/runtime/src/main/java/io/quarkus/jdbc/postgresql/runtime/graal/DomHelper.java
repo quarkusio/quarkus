@@ -18,6 +18,8 @@ import org.postgresql.util.PSQLState;
 import org.postgresql.xml.DefaultPGXmlFactoryFactory;
 import org.postgresql.xml.PGXmlFactoryFactory;
 
+import com.oracle.svm.core.annotate.NeverInline;
+
 /**
  * Used by PgSQLXML: easier to keep the actual code separated from the substitutions.
  */
@@ -48,10 +50,9 @@ public final class DomHelper {
         }
     }
 
-    //When GraalVM can figure out a constant name for the target method to be invoked reflectively,
-    //it automatically registers it for reflection. We don't want that to happen in this particular case.
+    @NeverInline("Prevent GraalVM from figuring out the target method to be invoked reflectively, so that it can't automatically register it for reflection")
     private static String obfuscatedMethodName() {
-        return "reallyProcessDom" + "Result";
+        return "reallyProcessDomResult";
     }
 
     public static String reallyProcessDomResult(DOMResult domResult, BaseConnection conn) throws SQLException {

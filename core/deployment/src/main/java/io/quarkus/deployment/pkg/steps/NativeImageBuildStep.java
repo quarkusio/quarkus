@@ -568,7 +568,7 @@ public class NativeImageBuildStep {
                     } else if (prop.getKey().equals("quarkus.native.enable-all-charsets") && prop.getValue() != null) {
                         addAllCharsets |= Boolean.parseBoolean(prop.getValue());
                     } else if (prop.getKey().equals("quarkus.native.inline-before-analysis") && prop.getValue() != null) {
-                        inlineBeforeAnalysis |= Boolean.parseBoolean(prop.getValue());
+                        inlineBeforeAnalysis = Boolean.parseBoolean(prop.getValue());
                     } else {
                         // todo maybe just -D is better than -J-D in this case
                         if (prop.getValue() == null) {
@@ -651,14 +651,14 @@ public class NativeImageBuildStep {
                     // This option was removed in GraalVM 21.1 https://github.com/oracle/graal/pull/3258
                     nativeImageArgs.add("--enable-all-security-services");
                 }
-                if (inlineBeforeAnalysis) {
-                    if (graalVMVersion.isNewerThan(GraalVM.Version.VERSION_20_3)) {
-                        nativeImageArgs.add("-H:+InlineBeforeAnalysis");
+                if (graalVMVersion.isNewerThan(GraalVM.Version.VERSION_20_3)) {
+                    if (inlineBeforeAnalysis) {
+                        if (graalVMVersion.isOlderThan(GraalVM.Version.VERSION_21_3)) {
+                            // Enabled by default in GraalVM >= 21.3
+                            nativeImageArgs.add("-H:+InlineBeforeAnalysis");
+                        }
                     } else {
-                        log.warn(
-                                "The InlineBeforeAnalysis feature is not supported in GraalVM versions prior to 21.0.0."
-                                        + " InlineBeforeAnalysis will thus not be enabled, please consider using a newer"
-                                        + " GraalVM version if your application relies on this feature.");
+                        nativeImageArgs.add("-H:-InlineBeforeAnalysis");
                     }
                 }
                 if (!noPIE.isEmpty()) {
@@ -703,10 +703,6 @@ public class NativeImageBuildStep {
                 }
 
                 if (graalVMVersion.isNewerThan(GraalVM.Version.VERSION_21_1)) {
-
-                    // Disable single parsing of compiler graphs till https://github.com/oracle/graal/issues/3435 gets fixed
-                    nativeImageArgs.add("-H:-ParseOnce");
-
                     // AdditionalSecurityProviders
                     if (nativeImageSecurityProviders != null && !nativeImageSecurityProviders.isEmpty()) {
                         String additionalSecurityProviders = nativeImageSecurityProviders.stream()

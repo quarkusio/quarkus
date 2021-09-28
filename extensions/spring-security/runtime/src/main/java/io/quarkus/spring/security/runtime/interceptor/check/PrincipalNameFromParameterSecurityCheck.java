@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 
 /**
@@ -30,12 +31,21 @@ public class PrincipalNameFromParameterSecurityCheck implements SecurityCheck {
 
     @Override
     public void apply(SecurityIdentity identity, Method method, Object[] parameters) {
+        doApply(identity, parameters, method.getDeclaringClass().getName(), method.getName());
+    }
+
+    @Override
+    public void apply(SecurityIdentity identity, MethodDescription methodDescription, Object[] parameters) {
+        doApply(identity, parameters, methodDescription.getClassName(), methodDescription.getMethodName());
+    }
+
+    private void doApply(SecurityIdentity identity, Object[] parameters, String className, String methodName) {
         if (index > parameters.length - 1) {
-            throw genericNotApplicableException(method);
+            throw genericNotApplicableException(className, methodName);
         }
         Object parameterValue = parameters[index];
         if (!(parameterValue instanceof String)) {
-            throw genericNotApplicableException(method);
+            throw genericNotApplicableException(className, methodName);
         }
         String parameterValueStr = (String) parameterValue;
 
@@ -53,12 +63,12 @@ public class PrincipalNameFromParameterSecurityCheck implements SecurityCheck {
                 throw new ForbiddenException();
             }
         }
-
     }
 
-    private IllegalStateException genericNotApplicableException(Method method) {
+    private IllegalStateException genericNotApplicableException(String className, String methodName) {
         return new IllegalStateException(
-                "PrincipalNameFromParameterSecurityCheck with index " + index + " cannot be applied to " + method);
+                "PrincipalNameFromParameterSecurityCheck with index " + index + " cannot be applied to '" + className + "#"
+                        + methodName + "'");
     }
 
     public enum CheckType {

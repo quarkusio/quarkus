@@ -71,6 +71,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -156,6 +157,20 @@ public class KafkaProcessor {
                 javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag.class.getName()));
 
         indexDependency.produce(new IndexDependencyBuildItem("org.apache.kafka", "kafka-clients"));
+    }
+
+    @BuildStep
+    void relaxSaslElytron(BuildProducer<RunTimeConfigurationDefaultBuildItem> config) {
+        // If elytron is on the classpath and the Kafka connection uses SASL, the Elytron client SASL implementation
+        // is stricter than what Kafka expects. In this case, configure the SASL client to relax some constraints.
+        // See https://github.com/quarkusio/quarkus/issues/20088.
+        try {
+            Class.forName("org.wildfly.security.sasl.gssapi.AbstractGssapiMechanism", false,
+                    Thread.currentThread().getContextClassLoader());
+            config.produce(new RunTimeConfigurationDefaultBuildItem("kafka.wildfly.sasl.relax-compliance", "true"));
+        } catch (Exception e) {
+            // AbstractGssapiMechanism is not on the classpath, do not set wildfly.sasl.relax-compliance
+        }
     }
 
     @BuildStep

@@ -134,6 +134,7 @@
                 <module>kafka</module>
                 <module>kafka-ssl</module>
                 <module>kafka-sasl</module>
+                <module>kafka-sasl-elytron</module>
                 <module>kafka-snappy</module>
                 <module>kafka-avro</module>
                 <module>kafka-avro-apicurio2</module>

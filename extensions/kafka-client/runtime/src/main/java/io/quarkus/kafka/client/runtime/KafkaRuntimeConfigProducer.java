@@ -32,8 +32,10 @@ public class KafkaRuntimeConfigProducer {
             if (!propertyNameLowerCase.startsWith(CONFIG_PREFIX)) {
                 continue;
             }
+            // Replace _ by . - This is because Kafka properties tend to use . and env variables use _ for every special
+            // character. So, replace _ with .
             String effectivePropertyName = propertyNameLowerCase.substring(CONFIG_PREFIX.length() + 1).toLowerCase()
-                    .replaceAll("[^a-z0-9.]", ".");
+                    .replace("_", ".");
             String value = config.getOptionalValue(propertyName, String.class).orElse("");
             result.put(effectivePropertyName, value);
         }

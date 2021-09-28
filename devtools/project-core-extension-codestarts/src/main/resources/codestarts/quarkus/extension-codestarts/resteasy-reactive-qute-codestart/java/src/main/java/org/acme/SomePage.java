@@ -1,4 +1,5 @@
 package org.acme;
+
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 

@@ -1,4 +1,5 @@
-package org.acme;
+package ilove.quark.us;
+
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 

@@ -3,6 +3,7 @@ package io.quarkus.test.mongodb;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 import org.jboss.logging.Logger;
 
@@ -20,9 +21,17 @@ import de.flapdoodle.embed.process.runtime.Network;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
+    public static final String PORT = "port";
+    private static final int DEFAULT_PORT = 27017;
     private static MongodExecutable MONGO;
 
     private static final Logger LOGGER = Logger.getLogger(MongoTestResource.class);
+    private Integer port;
+
+    @Override
+    public void init(Map<String, String> initArgs) {
+        port = Optional.ofNullable(initArgs.get(PORT)).map(Integer::parseInt).orElse(DEFAULT_PORT);
+    }
 
     @Override
     public Map<String, String> start() {
@@ -35,7 +44,6 @@ public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
         }
         try {
             Version.Main version = Version.Main.V4_0;
-            int port = 27017;
             LOGGER.infof("Starting Mongo %s on port %s", version, port);
             IMongodConfig config = new MongodConfigBuilder()
                     .version(version)

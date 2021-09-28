@@ -54,6 +54,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     static final String SESSION_COOKIE_NAME = "q_session";
     static final String SESSION_MAX_AGE_PARAM = "session-max-age";
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
+    static final Integer MAX_COOKIE_VALUE_LENGTH = 4096;
 
     private static final Logger LOG = Logger.getLogger(CodeAuthenticationMechanism.class);
 
@@ -388,9 +389,21 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                                     @Override
                                     public Void apply(String cookieValue) {
-                                        createCookie(context, configContext.oidcConfig,
+                                        String sessionCookie = createCookie(context, configContext.oidcConfig,
                                                 getSessionCookieName(configContext.oidcConfig),
-                                                cookieValue, sessionMaxAge);
+                                                cookieValue, sessionMaxAge).getValue();
+                                        if (sessionCookie.length() >= MAX_COOKIE_VALUE_LENGTH) {
+                                            LOG.warnf(
+                                                    "Session cookie length for the tenant %s is equal or greater than %d bytes."
+                                                            + " Browsers may ignore this cookie which will cause a new challenge for the authenticated users."
+                                                            + " Recommendations: 1. Set 'quarkus.oidc.token-state-manager.split-tokens=true'"
+                                                            + " to have the ID, access and refresh tokens stored in separate cookies."
+                                                            + " 2. Set 'quarkus.oidc.token-state-manager.strategy=id-refresh-tokens' if you do not need to use the access token"
+                                                            + " as a source of roles or to request UserInfo or propagate it to the downstream services."
+                                                            + " 3. Register a custom 'quarkus.oidc.TokenStateManager' CDI bean with the alternative priority set to 1.",
+                                                    configContext.oidcConfig.tenantId.get(),
+                                                    MAX_COOKIE_VALUE_LENGTH);
+                                        }
                                         fireEvent(SecurityEvent.Type.OIDC_LOGIN, securityIdentity);
                                         return null;
                                     }

@@ -1,5 +1,6 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineBuildOutputDirectory;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResources;
@@ -148,6 +149,7 @@ public class QuarkusMainIntegrationTestExtension implements BeforeEachCallback, 
                 }
 
                 launcher.includeAsSysProps(additionalProperties);
+                activateLogging();
                 return launcher.runToCompletion(args);
 
             } finally {

@@ -25,7 +25,6 @@ import com.google.common.collect.Sets;
 
 import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
-import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Tag;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.testing.PlatformAwareTestBase;
 import io.quarkus.devtools.testing.SnapshotTesting;
@@ -37,15 +36,19 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
 
     private static final Path testDirPath = Paths.get("target/quarkus-codestart-build-test");
 
-    private static final Set<String> EXCLUDED = Sets.newHashSet(
-            "azure-functions-http-example");
-
-    private static final Set<String> RUN_ALONE = Sets.newHashSet("spring-web-codestart", "resteasy-reactive-codestart",
-            "picocli-codestart");
+    private static final Set<String> EXCLUDED = Sets.newHashSet("spring-web-codestart", "picocli-codestart");
 
     @BeforeAll
     static void setUp() throws IOException {
         SnapshotTesting.deleteTestDirectory(testDirPath.toFile());
+    }
+
+    private static boolean isExcluded(String codestart) {
+        if (codestart.contains("resteasy-reactive")) {
+            return true;
+        }
+
+        return EXCLUDED.contains(codestart);
     }
 
     private Map<String, Object> getTestInputData(final Map<String, Object> override) {
@@ -68,40 +71,35 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
     }
 
     @ParameterizedTest
-    @MethodSource("provideLanguages")
+    @MethodSource("getLanguages")
     public void testGradle(String language) throws Exception {
         final List<String> codestarts = getExtensionCodestarts();
         generateProjectRunTests("gradle", language, codestarts);
     }
 
     @ParameterizedTest
-    @MethodSource("provideLanguages")
+    @MethodSource("getLanguages")
     public void testGradleKotlinDSL(String language) throws Exception {
         final List<String> codestarts = getExtensionCodestarts();
         generateProjectRunTests("gradle-kotlin-dsl", language, codestarts);
     }
 
     @ParameterizedTest
-    @MethodSource("provideRunAloneCodestarts")
-    public void testRunAloneCodestartsJava(String codestart) throws Exception {
+    @MethodSource("getExamplesCodestarts")
+    public void testExampleCodestartsJava(String codestart) throws Exception {
         generateProjectRunTests("maven", "java", singletonList(codestart));
     }
 
     @ParameterizedTest
-    @MethodSource("provideRunAloneCodestarts")
-    public void testRunAloneCodestartsKotlin(String codestart) throws Exception {
+    @MethodSource("getExamplesCodestarts")
+    public void testExampleCodestartsKotlin(String codestart) throws Exception {
         generateProjectRunTests("maven", "kotlin", singletonList(codestart));
     }
 
     @ParameterizedTest
-    @MethodSource("provideRunAloneCodestarts")
-    public void testRunAloneCodestartsScala(String codestart) throws Exception {
+    @MethodSource("getExamplesCodestarts")
+    public void testExampleCodestartsScala(String codestart) throws Exception {
         generateProjectRunTests("maven", "scala", singletonList(codestart));
-    }
-
-    @Test
-    public void generateAzureFunctionsHttpExampleProjectRun() throws Exception {
-        generateProjectRunTests("maven", "java", singletonList("azure-functions-http-example"));
     }
 
     private void generateProjectRunTests(String buildTool, String language, List<String> codestarts)
@@ -147,32 +145,23 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
         return QuarkusCodestartCatalog.fromExtensionsCatalog(getExtensionsCatalog(), getCodestartsResourceLoaders());
     }
 
-    private List<String> getExtensionCodestarts() throws IOException {
-        return getAllExamples()
-                .filter(c -> !shouldRunAlone(c))
-                .map(Codestart::getName)
-                .collect(Collectors.toList());
-    }
-
-    private Stream<Arguments> provideRunAloneCodestarts() throws IOException {
-        return getAllExamples()
-                .filter(this::shouldRunAlone)
+    private Stream<Arguments> getExamplesCodestarts() throws IOException {
+        return getCatalog().getCodestarts().stream()
+                .filter(QuarkusCodestartCatalog::isExample)
                 .map(Codestart::getName)
                 .map(Arguments::of);
     }
 
-    private Stream<Arguments> provideLanguages() {
+    private Stream<Arguments> getLanguages() {
         return Stream.of("java", "kotlin", "scala")
                 .map(Arguments::of);
     }
 
-    private Stream<Codestart> getAllExamples() throws IOException {
+    private List<String> getExtensionCodestarts() throws IOException {
         return getCatalog().getCodestarts().stream()
                 .filter(QuarkusCodestartCatalog::isExtensionCodestart)
-                .filter(c -> !EXCLUDED.contains(c.getName()));
-    }
-
-    private boolean shouldRunAlone(Codestart c) {
-        return c.containsTag(Tag.EXAMPLE.key()) || RUN_ALONE.contains(c.getName());
+                .map(Codestart::getName)
+                .filter(name -> !isExcluded(name))
+                .collect(Collectors.toList());
     }
 }

@@ -14,6 +14,8 @@
     <name>Quarkus - Extensions - Parent pom</name>
     <packaging>pom</packaging>
     <modules>
+        <!-- Netty loom adaptor-->
+        <module>netty-loom-adaptor</module>
         <!-- Plumbing -->
         <module>arc</module>
         <module>scheduler</module>
@@ -193,6 +195,7 @@
         <module>grpc-common</module>
 
         <module>awt</module>
+
     </modules>
 
     <build>

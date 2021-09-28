@@ -100,6 +100,7 @@ public class RuntimeResourceDeployment {
     private final ServerSerialisers serialisers;
     private final ResteasyReactiveConfig resteasyReactiveConfig;
     private final Supplier<Executor> executorSupplier;
+    private final Supplier<Executor> virtualExecutorSupplier;
     private final RuntimeInterceptorDeployment runtimeInterceptorDeployment;
     private final DynamicEntityWriter dynamicEntityWriter;
     private final ResourceLocatorHandler resourceLocatorHandler;
@@ -108,20 +109,24 @@ public class RuntimeResourceDeployment {
      */
     private final boolean defaultBlocking;
     private final BlockingHandler blockingHandler;
+    private final BlockingHandler blockingHandlerVirtualThread;
     private final ResponseWriterHandler responseWriterHandler;
 
     public RuntimeResourceDeployment(DeploymentInfo info, Supplier<Executor> executorSupplier,
+            Supplier<Executor> virtualExecutorSupplier,
             RuntimeInterceptorDeployment runtimeInterceptorDeployment, DynamicEntityWriter dynamicEntityWriter,
             ResourceLocatorHandler resourceLocatorHandler, boolean defaultBlocking) {
         this.info = info;
         this.serialisers = info.getSerialisers();
         this.resteasyReactiveConfig = info.getResteasyReactiveConfig();
         this.executorSupplier = executorSupplier;
+        this.virtualExecutorSupplier = virtualExecutorSupplier;
         this.runtimeInterceptorDeployment = runtimeInterceptorDeployment;
         this.dynamicEntityWriter = dynamicEntityWriter;
         this.resourceLocatorHandler = resourceLocatorHandler;
         this.defaultBlocking = defaultBlocking;
         this.blockingHandler = new BlockingHandler(executorSupplier);
+        this.blockingHandlerVirtualThread = new BlockingHandler(virtualExecutorSupplier);
         this.responseWriterHandler = new ResponseWriterHandler(dynamicEntityWriter);
     }
 
@@ -197,11 +202,22 @@ public class RuntimeResourceDeployment {
         Optional<Integer> blockingHandlerIndex = Optional.empty();
         if (!defaultBlocking) {
             if (method.isBlocking()) {
-                handlers.add(blockingHandler);
+                if (method.isRunOnVirtualThread()) {
+                    handlers.add(blockingHandlerVirtualThread);
+                } else {
+                    handlers.add(blockingHandler);
+                }
                 blockingHandlerIndex = Optional.of(handlers.size() - 1);
                 score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionBlocking);
             } else {
-                handlers.add(NonBlockingHandler.INSTANCE);
+                if (method.isRunOnVirtualThread()) {
+                    //should not happen
+                    log.error("a method was both non blocking and @RunOnVirtualThread, it is now considered " +
+                            "@RunOnVirtual and blocking");
+                    handlers.add(blockingHandlerVirtualThread);
+                } else {
+                    handlers.add(NonBlockingHandler.INSTANCE);
+                }
                 score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionNonBlocking);
             }
         }
@@ -461,7 +477,7 @@ public class RuntimeResourceDeployment {
                 method.getProduces() == null ? null : serverMediaType,
                 consumesMediaTypes, invoker,
                 clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterDeclaredTypes,
-                effectiveReturnType, method.isBlocking(), resourceClass,
+                effectiveReturnType, method.isBlocking(), method.isRunOnVirtualThread(), resourceClass,
                 lazyMethod,
                 pathParameterIndexes, info.isDevelopmentMode() ? score : null, streamElementType,
                 clazz.resourceExceptionMapper());

@@ -28,6 +28,7 @@ public class RuntimeResource {
     private final Class<?>[] parameterTypes;
     private final Type returnType;
     private final boolean blocking;
+    private final boolean runOnVirtualThread;
     private final Class<?> resourceClass;
     private final ResteasyReactiveResourceInfo lazyMethod;
     private final Map<String, Integer> pathParameterIndexes;
@@ -40,7 +41,8 @@ public class RuntimeResource {
             EndpointInvoker invoker,
             BeanFactory<Object> endpointFactory, ServerRestHandler[] handlerChain, String javaMethodName,
             Class<?>[] parameterTypes,
-            Type returnType, boolean blocking, Class<?> resourceClass, ResteasyReactiveResourceInfo lazyMethod,
+            Type returnType, boolean blocking, boolean runOnVirtualThread, Class<?> resourceClass,
+            ResteasyReactiveResourceInfo lazyMethod,
             Map<String, Integer> pathParameterIndexes, Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score,
             MediaType streamElementType,
             Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> classExceptionMappers) {
@@ -56,6 +58,7 @@ public class RuntimeResource {
         this.parameterTypes = parameterTypes;
         this.returnType = returnType;
         this.blocking = blocking;
+        this.runOnVirtualThread = runOnVirtualThread;
         this.resourceClass = resourceClass;
         this.lazyMethod = lazyMethod;
         this.pathParameterIndexes = pathParameterIndexes;
@@ -102,6 +105,10 @@ public class RuntimeResource {
 
     public boolean isBlocking() {
         return blocking;
+    }
+
+    public boolean isRunOnVirtualThread() {
+        return runOnVirtualThread;
     }
 
     public Class<?> getResourceClass() {

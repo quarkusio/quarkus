@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.common.processor;
 
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import java.io.InputStream;
@@ -170,6 +171,7 @@ public final class ResteasyReactiveDotNames {
     public static final DotName INVOCATION_CALLBACK = DotName.createSimple(InvocationCallback.class.getName());
 
     public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
+    public static final DotName RUN_ON_VIRTUAL_THREAD = DotName.createSimple(RunOnVirtualThread.class.getName());
     public static final DotName NON_BLOCKING = DotName.createSimple(NonBlocking.class.getName());
     public static final DotName SUSPENDED = DotName.createSimple(Suspended.class.getName());
     public static final DotName PRE_MATCHING = DotName.createSimple(PreMatching.class.getName());

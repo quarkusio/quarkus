@@ -71,7 +71,7 @@ public final class JandexUtil {
             inputClassInfo = fetchFromIndex(input, index);
         } catch (Exception e) {
             // keep compatibility with what clients already expect
-            throw new IllegalArgumentException(e);
+            throw new IllegalArgumentException("Couldn't fetch '" + input.toString() + "' class from index", e);
         }
 
         Type startingType = getType(inputClassInfo, index);
@@ -372,6 +372,7 @@ public final class JandexUtil {
         private final DotName dotName;
 
         public ClassNotIndexedException(DotName dotName) {
+            super("'" + dotName.toString() + "' is not indexed");
             this.dotName = dotName;
         }
     }

@@ -51,6 +51,7 @@ public class DependencyUtils {
         configurationCopy.getDependencies().addAll(boms);
 
         for (Configuration toDuplicate : toDuplicates) {
+            configurationCopy.getDependencyConstraints().addAll(toDuplicate.getAllDependencyConstraints());
             for (Dependency dependency : toDuplicate.getAllDependencies()) {
                 if (includedBuild(project, dependency.getName()) != null) {
                     continue;

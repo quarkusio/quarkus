@@ -136,16 +136,6 @@ updates:
         update-types: ["version-update:semver-major"]
     rebase-strategy: disabled
   - package-ecosystem: gradle
-    directory: "/integration-tests/gradle"
-    schedule:
-      interval: daily
-      time: "21:00"
-      timezone: Europe/Paris
-    open-pull-requests-limit: 4
-    labels:
-      - area/dependencies
-    rebase-strategy: disabled
-  - package-ecosystem: gradle
     directory: "/devtools/gradle"
     schedule:
       interval: daily

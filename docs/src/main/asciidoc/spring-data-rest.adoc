@@ -41,7 +41,7 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=spring-data-rest-quickstart \
-    -Dextensions="spring-data-rest,resteasy-reactive-jackson,quarkus-jdbc-postgresql" \
+    -Dextensions="spring-data-rest,resteasy-jackson,quarkus-jdbc-postgresql" \
     -DnoExamples
 cd spring-data-rest-quickstart
 ----
@@ -76,7 +76,7 @@ For the tests you will also need REST Assured. Add it to the `pom.xml`:
 </dependency>
 ----
 
-Note: both `resteasy-reactive-jackson` and `resteasy-reactive-jsonb` are supported and can be interchanged.
+Note: both `resteasy-jackson` and `resteasy-jsonb` are supported and can be interchanged.
 
 == Define the Entity
 

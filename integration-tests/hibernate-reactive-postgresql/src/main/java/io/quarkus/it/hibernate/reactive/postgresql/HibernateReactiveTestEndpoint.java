@@ -6,6 +6,7 @@ import javax.ws.rs.Path;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 
+import io.quarkus.security.Authenticated;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.Row;
@@ -13,6 +14,7 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 
 @Path("/tests")
+@Authenticated
 public class HibernateReactiveTestEndpoint {
 
     @Inject

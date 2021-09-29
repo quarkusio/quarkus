@@ -66,7 +66,12 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         this.contextExecutor = new Executor() {
             @Override
             public void execute(Runnable command) {
-                internal.execute(command);
+                internal.runOnContext(new Handler<Void>() {
+                    @Override
+                    public void handle(Void unused) {
+                        command.run();
+                    }
+                });
             }
         };
     }
@@ -101,7 +106,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         return ((ConnectionBase) context.request().connection()).channel().eventLoop();
     }
 
-    protected Executor getContextExecutor() {
+    public Executor getContextExecutor() {
         return contextExecutor;
     }
 
@@ -281,6 +286,11 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
             ret.add(i.getKey(), i.getValue());
         }
         return ret;
+    }
+
+    @Override
+    public boolean isOnIoThread() {
+        return ((ConnectionBase) request.connection()).channel().eventLoop().inEventLoop();
     }
 
     @SuppressWarnings("unchecked")

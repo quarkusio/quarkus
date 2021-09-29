@@ -69,6 +69,8 @@ public interface ServerHttpRequest {
         return null;
     }
 
+    boolean isOnIoThread();
+
     interface ReadCallback {
 
         void done();

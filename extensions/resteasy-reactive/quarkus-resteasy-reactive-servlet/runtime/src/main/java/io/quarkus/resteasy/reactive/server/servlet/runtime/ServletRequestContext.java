@@ -318,6 +318,12 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     }
 
     @Override
+    public boolean isOnIoThread() {
+        //does not really apply to Servlet
+        return true;
+    }
+
+    @Override
     public ServerHttpResponse setStatusCode(int code) {
         response.setStatus(code);
         return this;

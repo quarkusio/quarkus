@@ -16,4 +16,8 @@ public class UserInfo extends AbstractJsonObjectResponse {
     public UserInfo(JsonObject json) {
         super(json);
     }
+
+    public String getUserInfoString() {
+        return getNonNullJsonString();
+    }
 }

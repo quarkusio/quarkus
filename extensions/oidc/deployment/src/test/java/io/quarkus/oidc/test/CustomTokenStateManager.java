@@ -5,6 +5,7 @@ import javax.inject.Inject;
 
 import io.quarkus.arc.AlternativePriority;
 import io.quarkus.oidc.AuthorizationCodeTokens;
+import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
@@ -20,14 +21,14 @@ public class CustomTokenStateManager implements TokenStateManager {
 
     @Override
     public Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
-            AuthorizationCodeTokens sessionContent, TokenStateManager.CreateTokenStateRequestContext requestContext) {
+            AuthorizationCodeTokens sessionContent, OidcRequestContext<String> requestContext) {
         return tokenStateManager.createTokenState(routingContext, oidcConfig, sessionContent, requestContext)
                 .map(t -> (t + "|custom"));
     }
 
     @Override
     public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig,
-            String tokenState, TokenStateManager.GetTokensRequestContext requestContext) {
+            String tokenState, OidcRequestContext<AuthorizationCodeTokens> requestContext) {
         if (!tokenState.endsWith("|custom")) {
             throw new IllegalStateException();
         }
@@ -37,7 +38,7 @@ public class CustomTokenStateManager implements TokenStateManager {
 
     @Override
     public Uni<Void> deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
-            TokenStateManager.DeleteTokensRequestContext requestContext) {
+            OidcRequestContext<Void> requestContext) {
         if (!tokenState.endsWith("|custom")) {
             throw new IllegalStateException();
         }

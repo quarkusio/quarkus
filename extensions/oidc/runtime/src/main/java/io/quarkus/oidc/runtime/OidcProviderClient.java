@@ -12,6 +12,7 @@ import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenIntrospection;
+import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.OidcEndpointAccessException;
@@ -55,7 +56,7 @@ public class OidcProviderClient implements Closeable {
                 .transform(resp -> getJsonWebKeySet(resp));
     }
 
-    public Uni<JsonObject> getUserInfo(String token) {
+    public Uni<UserInfo> getUserInfo(String token) {
         return client.getAbs(metadata.getUserInfoUri())
                 .putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + token)
                 .send().onItem().transform(resp -> getUserInfo(resp));
@@ -126,8 +127,8 @@ public class OidcProviderClient implements Closeable {
         return new AuthorizationCodeTokens(idToken, accessToken, refreshToken);
     }
 
-    private JsonObject getUserInfo(HttpResponse<Buffer> resp) {
-        return getJsonObject(resp);
+    private UserInfo getUserInfo(HttpResponse<Buffer> resp) {
+        return new UserInfo(getString(resp));
     }
 
     private TokenIntrospection getTokenIntrospection(HttpResponse<Buffer> resp) {

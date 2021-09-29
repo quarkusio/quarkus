@@ -10,9 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
@@ -25,11 +23,8 @@ import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.SecurityEvent;
-import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
-import io.quarkus.runtime.BlockingOperationControl;
-import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
@@ -37,7 +32,6 @@ import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.impl.CookieImpl;
@@ -61,9 +55,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     private static final String STATE_COOKIE_NAME = "q_auth";
     private static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
 
-    private final CreateTokenStateRequestContext createTokenStateRequestContext = new CreateTokenStateRequestContext();
-    private final GetTokensRequestContext getTokenStateRequestContext = new GetTokensRequestContext();
-    private final DeleteTokensRequestContext deleteTokensRequestContext = new DeleteTokensRequestContext();
+    private final BlockingTaskRunner<String> createTokenStateRequestContext = new BlockingTaskRunner<String>();
+    private final BlockingTaskRunner<AuthorizationCodeTokens> getTokenStateRequestContext = new BlockingTaskRunner<AuthorizationCodeTokens>();
+    private final BlockingTaskRunner<Void> deleteTokensRequestContext = new BlockingTaskRunner<Void>();
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
@@ -661,50 +655,5 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     static String getCookieSuffix(String tenantId) {
         return !"Default".equals(tenantId) ? "_" + tenantId : "";
-    }
-
-    private static class CreateTokenStateRequestContext extends BlockingTaskRunner<String>
-            implements TokenStateManager.CreateTokenStateRequestContext {
-    }
-
-    private static class GetTokensRequestContext extends BlockingTaskRunner<AuthorizationCodeTokens>
-            implements TokenStateManager.GetTokensRequestContext {
-    }
-
-    private static class DeleteTokensRequestContext extends BlockingTaskRunner<Void>
-            implements TokenStateManager.DeleteTokensRequestContext {
-    }
-
-    private static class BlockingTaskRunner<T> {
-        public Uni<T> runBlocking(Supplier<T> function) {
-            return Uni.createFrom().deferred(new Supplier<Uni<? extends T>>() {
-                @Override
-                public Uni<T> get() {
-                    if (BlockingOperationControl.isBlockingAllowed()) {
-                        try {
-                            return Uni.createFrom().item(function.get());
-                        } catch (Throwable t) {
-                            return Uni.createFrom().failure(t);
-                        }
-                    } else {
-                        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super T>>() {
-                            @Override
-                            public void accept(UniEmitter<? super T> uniEmitter) {
-                                ExecutorRecorder.getCurrent().execute(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        try {
-                                            uniEmitter.complete(function.get());
-                                        } catch (Throwable t) {
-                                            uniEmitter.fail(t);
-                                        }
-                                    }
-                                });
-                            }
-                        });
-                    }
-                }
-            });
-        }
     }
 }

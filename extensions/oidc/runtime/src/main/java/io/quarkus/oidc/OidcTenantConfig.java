@@ -112,6 +112,24 @@ public class OidcTenantConfig extends OidcCommonConfig {
     @ConfigItem
     public TokenStateManager tokenStateManager = new TokenStateManager();
 
+    /**
+     * Allow caching the token introspection data.
+     * Note enabling this property does not enable the cache itself but only permits to cache the token introspection
+     * for a given tenant. If the default token cache can be used then please see {@link OidcConfig.TokenCache} how to enable
+     * it.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean allowTokenIntrospectionCache = true;
+
+    /**
+     * Allow caching the user info data.
+     * Note enabling this property does not enable the cache itself but only permits to cache the user info data
+     * for a given tenant. If the default token cache can be used then please see {@link OidcConfig.TokenCache} how to enable
+     * it.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean allowUserInfoCache = true;
+
     @ConfigGroup
     public static class Logout {
 
@@ -869,5 +887,21 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
     public void setApplicationType(ApplicationType type) {
         this.applicationType = type;
+    }
+
+    public boolean isAllowTokenIntrospectionCache() {
+        return allowTokenIntrospectionCache;
+    }
+
+    public void setAllowTokenIntrospectionCache(boolean allowTokenIntrospectionCache) {
+        this.allowTokenIntrospectionCache = allowTokenIntrospectionCache;
+    }
+
+    public boolean isAllowUserInfoCache() {
+        return allowUserInfoCache;
+    }
+
+    public void setAllowUserInfoCache(boolean allowUserInfoCache) {
+        this.allowUserInfoCache = allowUserInfoCache;
     }
 }

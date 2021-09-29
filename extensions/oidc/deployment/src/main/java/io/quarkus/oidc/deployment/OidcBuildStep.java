@@ -27,6 +27,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
+import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
 import io.quarkus.oidc.runtime.OidcAuthenticationMechanism;
 import io.quarkus.oidc.runtime.OidcConfig;
@@ -89,6 +90,19 @@ public class OidcBuildStep {
         additionalBeans.produce(builder.build());
     }
 
+    @BuildStep(onlyIf = IsCacheEnabled.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public SyntheticBeanBuildItem addDefaultCacheBean(OidcConfig config,
+            OidcRecorder recorder,
+            CoreVertxBuildItem vertxBuildItem) {
+        return SyntheticBeanBuildItem.configure(DefaultTokenIntrospectionUserInfoCache.class).unremovable()
+                .types(DefaultTokenIntrospectionUserInfoCache.class)
+                .supplier(recorder.setupTokenCache(config, vertxBuildItem.getVertx()))
+                .scope(Singleton.class)
+                .setRuntimeInit()
+                .done();
+    }
+
     @BuildStep(onlyIf = IsEnabled.class)
     EnableAllSecurityServicesBuildItem security() {
         return new EnableAllSecurityServicesBuildItem();
@@ -131,6 +145,14 @@ public class OidcBuildStep {
 
         public boolean getAsBoolean() {
             return config.enabled;
+        }
+    }
+
+    public static class IsCacheEnabled implements BooleanSupplier {
+        OidcBuildTimeConfig config;
+
+        public boolean getAsBoolean() {
+            return config.enabled && config.defaultTokenCacheEnabled;
         }
     }
 }

@@ -4,7 +4,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import io.quarkus.arc.AlternativePriority;
-import io.quarkus.oidc.OidcContext;
+import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.TokenIntrospectionCache;
@@ -21,26 +21,26 @@ public class CustomIntrospectionUserInfoCache implements TokenIntrospectionCache
 
     @Override
     public Uni<Void> addIntrospection(String token, TokenIntrospection introspection, OidcTenantConfig oidcConfig,
-            OidcContext<Void> requestContext) {
+            OidcRequestContext<Void> requestContext) {
         return tokenCache.addIntrospection(token, introspection, oidcConfig, requestContext);
     }
 
     @Override
     public Uni<TokenIntrospection> getIntrospection(String token, OidcTenantConfig oidcConfig,
-            OidcContext<TokenIntrospection> requestContext) {
+            OidcRequestContext<TokenIntrospection> requestContext) {
         return tokenCache.getIntrospection(token, oidcConfig, requestContext);
     }
 
     @Override
     public Uni<Void> addUserInfo(String token, UserInfo userInfo, OidcTenantConfig oidcConfig,
-            OidcContext<Void> requestContext) {
+            OidcRequestContext<Void> requestContext) {
         return requestContext
                 .runBlocking(() -> tokenCache.addUserInfo(token, userInfo, oidcConfig, requestContext).await().indefinitely());
     }
 
     @Override
     public Uni<UserInfo> getUserInfo(String token, OidcTenantConfig oidcConfig,
-            OidcContext<UserInfo> requestContext) {
+            OidcRequestContext<UserInfo> requestContext) {
         return tokenCache.getUserInfo(token, oidcConfig, requestContext);
     }
 

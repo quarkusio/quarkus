@@ -23,7 +23,6 @@ import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.SecurityEvent;
-import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.AuthenticationCompletionException;
@@ -56,9 +55,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     private static final String STATE_COOKIE_NAME = "q_auth";
     private static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
 
-    private final CreateTokenStateRequestContext createTokenStateRequestContext = new CreateTokenStateRequestContext();
-    private final GetTokensRequestContext getTokenStateRequestContext = new GetTokensRequestContext();
-    private final DeleteTokensRequestContext deleteTokensRequestContext = new DeleteTokensRequestContext();
+    private final BlockingTaskRunner<String> createTokenStateRequestContext = new BlockingTaskRunner<String>();
+    private final BlockingTaskRunner<AuthorizationCodeTokens> getTokenStateRequestContext = new BlockingTaskRunner<AuthorizationCodeTokens>();
+    private final BlockingTaskRunner<Void> deleteTokensRequestContext = new BlockingTaskRunner<Void>();
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
@@ -656,17 +655,5 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     static String getCookieSuffix(String tenantId) {
         return !"Default".equals(tenantId) ? "_" + tenantId : "";
-    }
-
-    private static class CreateTokenStateRequestContext extends AbstractBlockingTaskRunner<String>
-            implements TokenStateManager.CreateTokenStateRequestContext {
-    }
-
-    private static class GetTokensRequestContext extends AbstractBlockingTaskRunner<AuthorizationCodeTokens>
-            implements TokenStateManager.GetTokensRequestContext {
-    }
-
-    private static class DeleteTokensRequestContext extends AbstractBlockingTaskRunner<Void>
-            implements TokenStateManager.DeleteTokensRequestContext {
     }
 }

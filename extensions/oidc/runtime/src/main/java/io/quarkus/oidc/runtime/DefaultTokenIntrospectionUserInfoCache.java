@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
 
-import io.quarkus.oidc.OidcContext;
+import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.TokenIntrospectionCache;
@@ -65,7 +65,7 @@ public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectio
 
     @Override
     public Uni<Void> addIntrospection(String token, TokenIntrospection introspection, OidcTenantConfig oidcTenantConfig,
-            OidcContext<Void> requestContext) {
+            OidcRequestContext<Void> requestContext) {
         if (cacheConfig.maxSize > 0) {
             CacheEntry entry = findValidCacheEntry(token);
             if (entry != null) {
@@ -80,14 +80,14 @@ public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectio
 
     @Override
     public Uni<TokenIntrospection> getIntrospection(String token, OidcTenantConfig oidcConfig,
-            OidcContext<TokenIntrospection> requestContext) {
+            OidcRequestContext<TokenIntrospection> requestContext) {
         CacheEntry entry = findValidCacheEntry(token);
         return entry == null ? NULL_INTROSPECTION_UNI : Uni.createFrom().item(entry.introspection);
     }
 
     @Override
     public Uni<Void> addUserInfo(String token, UserInfo userInfo, OidcTenantConfig oidcTenantConfig,
-            OidcContext<Void> requestContext) {
+            OidcRequestContext<Void> requestContext) {
         if (cacheConfig.maxSize > 0) {
             CacheEntry entry = findValidCacheEntry(token);
             if (entry != null) {
@@ -102,7 +102,7 @@ public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectio
 
     @Override
     public Uni<UserInfo> getUserInfo(String token, OidcTenantConfig oidcConfig,
-            OidcContext<UserInfo> requestContext) {
+            OidcRequestContext<UserInfo> requestContext) {
         CacheEntry entry = findValidCacheEntry(token);
         return entry == null ? NULL_USERINFO_UNI : Uni.createFrom().item(entry.userInfo);
     }

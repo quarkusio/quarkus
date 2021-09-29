@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import javax.enterprise.context.ApplicationScoped;
 
 import io.quarkus.oidc.AuthorizationCodeTokens;
+import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenStateManager;
 import io.smallrye.mutiny.Uni;
@@ -18,7 +19,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
 
     @Override
     public Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
-            AuthorizationCodeTokens tokens, TokenStateManager.CreateTokenStateRequestContext requestContext) {
+            AuthorizationCodeTokens tokens, OidcRequestContext<String> requestContext) {
         StringBuilder sb = new StringBuilder();
         sb.append(tokens.getIdToken());
         if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.KEEP_ALL_TOKENS) {
@@ -62,7 +63,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
 
     @Override
     public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
-            TokenStateManager.GetTokensRequestContext requestContext) {
+            OidcRequestContext<AuthorizationCodeTokens> requestContext) {
         String[] tokens = CodeAuthenticationMechanism.COOKIE_PATTERN.split(tokenState);
         String idToken = tokens[0];
 
@@ -98,7 +99,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
 
     @Override
     public Uni<Void> deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
-            TokenStateManager.DeleteTokensRequestContext requestContext) {
+            OidcRequestContext<Void> requestContext) {
         if (oidcConfig.tokenStateManager.splitTokens) {
             CodeAuthenticationMechanism.removeCookie(routingContext, getAccessTokenCookie(routingContext, oidcConfig),
                     oidcConfig);

@@ -620,8 +620,15 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-H:DebugInfoSourceSearchPath=" + APP_SOURCES);
                 }
                 if (nativeConfig.debugBuildProcess) {
+                    String debugBuildProcessHost;
+                    if (isContainerBuild) {
+                        debugBuildProcessHost = "0.0.0.0";
+                    } else {
+                        debugBuildProcessHost = "localhost";
+                    }
                     nativeImageArgs
-                            .add("-J-Xrunjdwp:transport=dt_socket,address=" + DEBUG_BUILD_PROCESS_PORT + ",server=y,suspend=y");
+                            .add("-J-Xrunjdwp:transport=dt_socket,address=" + debugBuildProcessHost + ":"
+                                    + DEBUG_BUILD_PROCESS_PORT + ",server=y,suspend=y");
                 }
                 if (nativeConfig.enableReports) {
                     nativeImageArgs.add("-H:+PrintAnalysisCallTree");

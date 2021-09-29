@@ -60,6 +60,7 @@ class BuildProfileTest {
                 .header("X-RF-4", nullValue())
                 .header("X-RF-5", notNullValue())
                 .header("X-RF-6", nullValue())
+                .header("X-RF-7", notNullValue())
                 .body(Matchers.is("ok1"));
     }
 
@@ -176,6 +177,21 @@ class BuildProfileTest {
         }
     }
 
+    public static class ResponseFilter7 implements ContainerResponseFilter {
+
+        private final String value;
+
+        public ResponseFilter7(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
+                throws IOException {
+            responseContext.getHeaders().add("X-RF-7", value);
+        }
+    }
+
     @IfBuildProfile("test")
     @Provider
     public static class Feature1 implements Feature {
@@ -225,6 +241,7 @@ class BuildProfileTest {
         @Override
         public void configure(ResourceInfo resourceInfo, FeatureContext context) {
             context.register(ResponseFilter5.class);
+            context.register(new ResponseFilter7("Value"));
         }
     }
 

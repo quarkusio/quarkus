@@ -32,14 +32,16 @@ public final class ApplicationScanningResult {
 
     public KeepProviderResult keepProvider(ClassInfo providerClass) {
         if (filterClasses) {
-            // we don't care about provider annotations, they're manually registered (but for the server only)
             if (allowedClasses.isEmpty()) {
-                // we only have only classes to exclude
-                return excludedClasses.contains(providerClass.name().toString()) ? KeepProviderResult.DISCARD
-                        : KeepProviderResult.SERVER_ONLY;
+                // we have only classes to exclude
+                if (excludedClasses.contains(providerClass.name().toString())) {
+                    return KeepProviderResult.DISCARD;
+                }
+            } else {
+                // we don't care about provider annotations, they're manually registered (but for the server only)
+                return allowedClasses.contains(providerClass.name().toString()) ? KeepProviderResult.SERVER_ONLY
+                        : KeepProviderResult.DISCARD;
             }
-            return allowedClasses.contains(providerClass.name().toString()) ? KeepProviderResult.SERVER_ONLY
-                    : KeepProviderResult.DISCARD;
         }
         return providerClass.classAnnotation(ResteasyReactiveDotNames.PROVIDER) != null ? KeepProviderResult.NORMAL
                 : KeepProviderResult.DISCARD;
@@ -48,7 +50,7 @@ public final class ApplicationScanningResult {
     public boolean keepClass(String className) {
         if (filterClasses) {
             if (allowedClasses.isEmpty()) {
-                // we only have only classes to exclude
+                // we have only classes to exclude
                 return !excludedClasses.contains(className);
             }
             return allowedClasses.contains(className);

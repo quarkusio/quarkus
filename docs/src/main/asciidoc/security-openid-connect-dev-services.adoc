@@ -218,6 +218,11 @@ Follow the link and you'll be able log in to your provider, get the tokens and t
 
 If you work with other providers then a Dev UI experience described in the <<keycloak-authorization-code-grant,Authorization Code Grant for Keycloak>> section might differ slightly. For example, an access token may not be in a JWT format so it won't be possibe to show its internal content, though all providers should return an ID Token as JWT.
 
+[NOTE]
+====
+The current access token is used by default to test the service with `Swagger UI` or `GrapghQL UI`. If the provider (other than Keycloak) returns a binary access token then it will be used with `Swagger UI` or `GrapghQL UI` only if this provider has a token introspection endpoint otherwise an `IdToken` which is always in a JWT format will be passed to `Swagger UI` or `GrapghQL UI`. In such cases you can verify with the manual Dev UI test that `401` will always be returned for the current binary access token. Also note that using `IdToken` as a fallback with either of these UIs is only possible with the authorization code flow.
+====
+
 Some providers such as `Auth0` do not support a standard RP initiated logout so a logout option will also be hidden.
 
 At the moment `Dev UI for all OpenId Connect Providers` only supports an authorization code grant. More grants may be supported in the future, similarly to how it is done with `Dev Services for Keycloak`.

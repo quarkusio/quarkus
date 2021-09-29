@@ -41,7 +41,8 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     (String) configProps.get().getProperties().get("quarkus.oidc.credentials.secret"),
                     realmUrl + "/protocol/openid-connect/auth",
                     realmUrl + "/protocol/openid-connect/token",
-                    realmUrl + "/protocol/openid-connect/logout");
+                    realmUrl + "/protocol/openid-connect/logout",
+                    true);
 
         }
     }

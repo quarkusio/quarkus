@@ -218,4 +218,14 @@ public class Sort {
     public List<Column> getColumns() {
         return columns;
     }
+
+    /**
+     * Initialize an empty Sort object with no columns defined.
+     * 
+     * @return a new empty Sort instance.
+     * @see #by(String...)
+     */
+    public static Sort empty() {
+        return by();
+    }
 }

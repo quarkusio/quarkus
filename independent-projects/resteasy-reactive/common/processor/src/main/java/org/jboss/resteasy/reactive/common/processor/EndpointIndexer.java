@@ -6,6 +6,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BLOCKING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BOOLEAN;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CHARACTER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETABLE_FUTURE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETION_STAGE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONSUMES;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONTEXT;
@@ -685,6 +686,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 // NOTE: same code in RuntimeResourceDeployment.getNonAsyncReturnType
                 ParameterizedType parameterizedType = returnType.asParameterizedType();
                 if (COMPLETION_STAGE.equals(parameterizedType.name())
+                        || COMPLETABLE_FUTURE.equals(parameterizedType.name())
                         || UNI.equals(parameterizedType.name())
                         || MULTI.equals(parameterizedType.name())
                         || REST_RESPONSE.equals(parameterizedType.name())) {

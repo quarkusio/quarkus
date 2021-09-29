@@ -193,6 +193,11 @@ public class SimpleQuarkusRestTestCase {
         RestAssured.get("/simple/async/cs/fail")
                 .then().body(Matchers.equalTo("OK"))
                 .statusCode(666);
+        RestAssured.get("/simple/async/cf/ok")
+                .then().body(Matchers.equalTo("CF-OK"));
+        RestAssured.get("/simple/async/cf/fail")
+                .then().body(Matchers.equalTo("OK"))
+                .statusCode(666);
         RestAssured.get("/simple/async/uni/ok")
                 .then().body(Matchers.equalTo("UNI-OK"));
         RestAssured.get("/simple/async/uni/fail")

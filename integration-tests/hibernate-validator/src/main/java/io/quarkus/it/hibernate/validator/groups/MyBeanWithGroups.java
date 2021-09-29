@@ -7,14 +7,14 @@ import javax.validation.constraints.Null;
 
 public class MyBeanWithGroups {
 
-    @Null(groups = ValidationGroups.Put.class)
-    @NotNull(groups = { ValidationGroups.Post.class, ValidationGroups.Get.class, ValidationGroups.Delete.class })
+    @Null(groups = ValidationGroups.Post.class)
+    @NotNull(groups = { ValidationGroups.Put.class, ValidationGroups.Get.class, ValidationGroups.Delete.class })
     private Long id;
 
     @NotNull
     private String name;
 
-    @AssertFalse(groups = { ValidationGroups.Put.class, ValidationGroups.Post.class, ValidationGroups.Get.class })
+    @AssertFalse(groups = { ValidationGroups.Post.class, ValidationGroups.Put.class, ValidationGroups.Get.class })
     @AssertTrue(groups = ValidationGroups.Delete.class)
     private boolean deleted;
 

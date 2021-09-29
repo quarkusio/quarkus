@@ -110,6 +110,8 @@ public class ContainerImageConfig {
                     return Optional.empty();
                 }
                 return Optional.of(originalGroup.toLowerCase().replace(' ', '-'));
+            } else if (originalGroup.isEmpty()) {
+                return Optional.empty();
             }
         }
         return group;

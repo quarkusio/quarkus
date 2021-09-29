@@ -62,9 +62,9 @@ public class DevServicesDatasourceProcessor {
         if (databases != null) {
             boolean restartRequired = false;
             if (!restartRequired) {
-                for (Map.Entry<String, String> i : cachedProperties.entrySet()) {
-                    if (!Objects.equals(i.getValue(),
-                            ConfigProvider.getConfig().getOptionalValue(i.getKey(), String.class).orElse(null))) {
+                for (Map.Entry<String, String> entry : cachedProperties.entrySet()) {
+                    if (!Objects.equals(entry.getValue(),
+                            trim(ConfigProvider.getConfig().getOptionalValue(entry.getKey(), String.class).orElse(null)))) {
                         restartRequired = true;
                         break;
                     }
@@ -172,6 +172,13 @@ public class DevServicesDatasourceProcessor {
         return new DevServicesDatasourceResultBuildItem(defaultResult, namedResults);
     }
 
+    private String trim(String optional) {
+        if (optional == null) {
+            return null;
+        }
+        return optional.trim();
+    }
+
     private DevServicesDatasourceResultBuildItem.DbResult startDevDb(String dbName,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             List<DefaultDataSourceDbKindBuildItem> installedDrivers,
@@ -262,8 +269,22 @@ public class DevServicesDatasourceProcessor {
                             dataSourceBuildTimeConfig.devservices.port, launchMode);
             closeableList.add(datasource.getCloseTask());
 
-            Map<String, String> devDebProperties = new HashMap<>();
             propertiesMap.put(prefix + "db-kind", dataSourceBuildTimeConfig.dbKind.orElse(null));
+            String devServicesPrefix = prefix + "devservices.";
+            if (dataSourceBuildTimeConfig.devservices.imageName.isPresent()) {
+                propertiesMap.put(devServicesPrefix + "image-name", dataSourceBuildTimeConfig.devservices.imageName.get());
+            }
+            if (dataSourceBuildTimeConfig.devservices.port.isPresent()) {
+                propertiesMap.put(devServicesPrefix + "port",
+                        Integer.toString(dataSourceBuildTimeConfig.devservices.port.getAsInt()));
+            }
+            if (!dataSourceBuildTimeConfig.devservices.properties.isEmpty()) {
+                for (var e : dataSourceBuildTimeConfig.devservices.properties.entrySet()) {
+                    propertiesMap.put(devServicesPrefix + "properties." + e.getKey(), e.getValue());
+                }
+            }
+
+            Map<String, String> devDebProperties = new HashMap<>();
             for (DevServicesDatasourceConfigurationHandlerBuildItem devDbConfigurationHandlerBuildItem : configHandlers) {
                 devDebProperties.putAll(devDbConfigurationHandlerBuildItem.getConfigProviderFunction()
                         .apply(dbName, datasource));

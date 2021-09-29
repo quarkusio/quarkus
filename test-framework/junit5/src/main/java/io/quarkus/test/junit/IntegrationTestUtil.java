@@ -45,6 +45,7 @@ import io.quarkus.bootstrap.util.PathsUtils;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.runtime.configuration.ProfileManager;
+import io.quarkus.runtime.logging.LoggingSetupRecorder;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.TestClassIndexer;
@@ -294,6 +295,12 @@ public final class IntegrationTestUtil {
         }
 
         return new DefaultDevServicesLaunchResult(propertyMap, networkId, curatedApplication);
+    }
+
+    static void activateLogging() {
+        // calling this method of the Recorder essentially sets up logging and configures most things
+        // based on the provided configuration
+        LoggingSetupRecorder.handleFailedStart();
     }
 
     static class DefaultDevServicesLaunchResult implements ArtifactLauncher.InitContext.DevServicesLaunchResult {

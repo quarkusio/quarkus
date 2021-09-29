@@ -10,10 +10,17 @@ on:
         description: 'JDK version'
         required: true
         # make sure to keep the default of JDK_VERSION in sync!
-        default: '17-ea'
+        default: '18-ea'
+      jdkDistribution:
+        description: 'JDK distribution'
+        required: true
+        # make sure to keep the default of JDK_DIST in sync!
+        # use zulu until temurin dist is available
+        default: 'zulu'
 
 env:
-  JDK_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkVersion || '17-ea' }}
+  JDK_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkVersion || '18-ea' }}
+  JDK_DIST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkDistribution || 'zulu' }}
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
   JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-containers -Dstart-containers -Dformat.skip"
@@ -34,7 +41,7 @@ jobs:
         # AdoptOpenJDK does not seem to provide EA builds, so use the standard action which provides a Zulu JDK
         uses: actions/setup-java@v2
         with:
-          distribution: temurin
+          distribution: ${{ env.JDK_DIST }}
           java-version: ${{ env.JDK_VERSION }}
       - name: Print Java version
         shell: bash

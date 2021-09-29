@@ -263,21 +263,21 @@ public class HibernateValidatorTestResource
         return "FAILED";
     }
 
-    @PUT
-    @Path("/rest-end-point-validation-groups/")
-    @Produces(MediaType.TEXT_PLAIN)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public String testRestEndPointValidationGroups_Put(
-            @Valid @ConvertGroup(to = ValidationGroups.Put.class) MyBeanWithGroups bean) {
-        return "passed";
-    }
-
     @POST
     @Path("/rest-end-point-validation-groups/")
     @Produces(MediaType.TEXT_PLAIN)
     @Consumes(MediaType.APPLICATION_JSON)
     public String testRestEndPointValidationGroups_Post(
             @Valid @ConvertGroup(to = ValidationGroups.Post.class) MyBeanWithGroups bean) {
+        return "passed";
+    }
+
+    @PUT
+    @Path("/rest-end-point-validation-groups/")
+    @Produces(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public String testRestEndPointValidationGroups_Put(
+            @Valid @ConvertGroup(to = ValidationGroups.Put.class) MyBeanWithGroups bean) {
         return "passed";
     }
 

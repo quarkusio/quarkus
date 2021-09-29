@@ -13,9 +13,10 @@ metadata:
   - "web"
   status: "stable"
   codestart:
-    name: "undertow-websockets"
-    kind: "example"
-    languages: "java"
+    name: "websockets"
+    languages: 
+    - "java"
+    - "kotlin"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   config:
   - "quarkus.websocket."

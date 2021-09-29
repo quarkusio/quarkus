@@ -293,6 +293,7 @@ import org.jboss.resteasy.reactive.RestPath;
 import javax.annotation.PostConstruct;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import java.net.URI;
 import java.util.Set;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
@@ -305,7 +306,7 @@ public class CountriesResource {
     @PostConstruct
     public void setUp(){
         countriesService = RestClientBuilder.newBuilder()
-            .baseUrl("https://restcountries.eu/rest")
+            .baseUri(URI.create("https://restcountries.eu/rest"))
             .build(CountriesService.class);
     }
 

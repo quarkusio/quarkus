@@ -10,7 +10,7 @@ metadata:
     - "reactive"
   status: "stable"
   codestart:
-    name: "resteasy-reactive"
+    name: "resteasy-reactive-qute"
     languages:
       - "java"
       - "kotlin"

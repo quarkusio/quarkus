@@ -223,17 +223,7 @@ public class NativeImageBuildStep {
                     Path finalSymbolsPath = outputTargetBuildItem.getOutputDirectory().resolve(symbolsName);
                     IoUtils.copy(generatedSymbols, finalSymbolsPath);
                     Files.delete(generatedSymbols);
-                    final String sources = "sources";
-                    final Path generatedSources = outputDir.resolve(sources);
-                    final Path finalSources = outputTargetBuildItem.getOutputDirectory().resolve(sources);
-                    IoUtils.copy(generatedSources, finalSources);
-                    IoUtils.recursiveDelete(generatedSources);
-                } else {
-                    log.warn(
-                            "objcopy executable not found in PATH. Debug symbols therefore cannot be placed into the dedicated directory.");
-                    log.warn("That also means that resulting native executable is larger as it embeds the debug symbols.");
                 }
-
             }
             System.setProperty("native.image.path", finalExecutablePath.toAbsolutePath().toString());
 

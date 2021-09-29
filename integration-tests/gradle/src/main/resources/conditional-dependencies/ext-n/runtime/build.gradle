@@ -9,9 +9,9 @@ dependencies {
     implementation project(':ext-i:runtime')
 }
 
-extensionDescriptor {
-    deployment = "org.acme:ext-n-deployment:1.0-SNAPSHOT"
-    dependencyCondition = ["org.acme:ext-k::jar"]
+quarkusExtension {
+    deploymentArtifact = "org.acme:ext-n-deployment:1.0-SNAPSHOT"
+    dependencyConditions = ["org.acme:ext-k::jar"]
 }
 
 publishing {

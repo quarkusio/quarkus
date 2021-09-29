@@ -10,9 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
@@ -25,11 +23,8 @@ import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.SecurityEvent;
-import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
-import io.quarkus.runtime.BlockingOperationControl;
-import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
@@ -37,7 +32,6 @@ import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.impl.CookieImpl;
@@ -54,15 +48,16 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     static final String SESSION_COOKIE_NAME = "q_session";
     static final String SESSION_MAX_AGE_PARAM = "session-max-age";
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
+    static final Integer MAX_COOKIE_VALUE_LENGTH = 4096;
 
     private static final Logger LOG = Logger.getLogger(CodeAuthenticationMechanism.class);
 
     private static final String STATE_COOKIE_NAME = "q_auth";
     private static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
 
-    private final CreateTokenStateRequestContext createTokenStateRequestContext = new CreateTokenStateRequestContext();
-    private final GetTokensRequestContext getTokenStateRequestContext = new GetTokensRequestContext();
-    private final DeleteTokensRequestContext deleteTokensRequestContext = new DeleteTokensRequestContext();
+    private final BlockingTaskRunner<String> createTokenStateRequestContext = new BlockingTaskRunner<String>();
+    private final BlockingTaskRunner<AuthorizationCodeTokens> getTokenStateRequestContext = new BlockingTaskRunner<AuthorizationCodeTokens>();
+    private final BlockingTaskRunner<Void> deleteTokensRequestContext = new BlockingTaskRunner<Void>();
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
@@ -388,9 +383,21 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                                     @Override
                                     public Void apply(String cookieValue) {
-                                        createCookie(context, configContext.oidcConfig,
+                                        String sessionCookie = createCookie(context, configContext.oidcConfig,
                                                 getSessionCookieName(configContext.oidcConfig),
-                                                cookieValue, sessionMaxAge);
+                                                cookieValue, sessionMaxAge).getValue();
+                                        if (sessionCookie.length() >= MAX_COOKIE_VALUE_LENGTH) {
+                                            LOG.warnf(
+                                                    "Session cookie length for the tenant %s is equal or greater than %d bytes."
+                                                            + " Browsers may ignore this cookie which will cause a new challenge for the authenticated users."
+                                                            + " Recommendations: 1. Set 'quarkus.oidc.token-state-manager.split-tokens=true'"
+                                                            + " to have the ID, access and refresh tokens stored in separate cookies."
+                                                            + " 2. Set 'quarkus.oidc.token-state-manager.strategy=id-refresh-tokens' if you do not need to use the access token"
+                                                            + " as a source of roles or to request UserInfo or propagate it to the downstream services."
+                                                            + " 3. Register a custom 'quarkus.oidc.TokenStateManager' CDI bean with the alternative priority set to 1.",
+                                                    configContext.oidcConfig.tenantId.get(),
+                                                    MAX_COOKIE_VALUE_LENGTH);
+                                        }
                                         fireEvent(SecurityEvent.Type.OIDC_LOGIN, securityIdentity);
                                         return null;
                                     }
@@ -648,50 +655,5 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     static String getCookieSuffix(String tenantId) {
         return !"Default".equals(tenantId) ? "_" + tenantId : "";
-    }
-
-    private static class CreateTokenStateRequestContext extends BlockingTaskRunner<String>
-            implements TokenStateManager.CreateTokenStateRequestContext {
-    }
-
-    private static class GetTokensRequestContext extends BlockingTaskRunner<AuthorizationCodeTokens>
-            implements TokenStateManager.GetTokensRequestContext {
-    }
-
-    private static class DeleteTokensRequestContext extends BlockingTaskRunner<Void>
-            implements TokenStateManager.DeleteTokensRequestContext {
-    }
-
-    private static class BlockingTaskRunner<T> {
-        public Uni<T> runBlocking(Supplier<T> function) {
-            return Uni.createFrom().deferred(new Supplier<Uni<? extends T>>() {
-                @Override
-                public Uni<T> get() {
-                    if (BlockingOperationControl.isBlockingAllowed()) {
-                        try {
-                            return Uni.createFrom().item(function.get());
-                        } catch (Throwable t) {
-                            return Uni.createFrom().failure(t);
-                        }
-                    } else {
-                        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super T>>() {
-                            @Override
-                            public void accept(UniEmitter<? super T> uniEmitter) {
-                                ExecutorRecorder.getCurrent().execute(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        try {
-                                            uniEmitter.complete(function.get());
-                                        } catch (Throwable t) {
-                                            uniEmitter.fail(t);
-                                        }
-                                    }
-                                });
-                            }
-                        });
-                    }
-                }
-            });
-        }
     }
 }

@@ -25,6 +25,7 @@ public class OidcResource {
     private volatile boolean rotate;
     private volatile int jwkEndpointCallCount;
     private volatile int introspectionEndpointCallCount;
+    private volatile int userInfoEndpointCallCount;
 
     @PostConstruct
     public void init() throws Exception {
@@ -42,6 +43,7 @@ public class OidcResource {
         return "{" +
                 "   \"token_endpoint\":" + "\"" + baseUri + "/token\"," +
                 "   \"introspection_endpoint\":" + "\"" + baseUri + "/introspect\"," +
+                "   \"userinfo_endpoint\":" + "\"" + baseUri + "/userinfo\"," +
                 "   \"jwks_uri\":" + "\"" + baseUri + "/jwks\"" +
                 "  }";
     }
@@ -98,6 +100,30 @@ public class OidcResource {
                 "   \"scope\": \"user\"," +
                 "   \"email\": \"user@gmail.com\"," +
                 "   \"username\": \"alice\"" +
+                "  }";
+    }
+
+    @GET
+    @Path("userinfo-endpoint-call-count")
+    public int userInfoEndpointCallCount() {
+        return userInfoEndpointCallCount;
+    }
+
+    @POST
+    @Path("userinfo-endpoint-call-count")
+    public int resetUserInfoEndpointCallCount() {
+        userInfoEndpointCallCount = 0;
+        return userInfoEndpointCallCount;
+    }
+
+    @GET
+    @Produces("application/json")
+    @Path("userinfo")
+    public String userinfo() {
+        userInfoEndpointCallCount++;
+
+        return "{" +
+                "   \"preferred_username\": \"alice\"" +
                 "  }";
     }
 

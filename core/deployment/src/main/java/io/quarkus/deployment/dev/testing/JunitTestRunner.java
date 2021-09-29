@@ -618,10 +618,9 @@ public class JunitTestRunner {
                             ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
                     cr.accept(new TestTracingProcessor.TracingClassVisitor(writer, i), 0);
                     transformedClasses.put(i.replace('.', '/') + ".class", writer.toByteArray());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                } catch (Exception e) {
+                    log.error("Failed to instrument " + i + " for usage tracking", e);
                 }
-
             }
             cl = testApplication.createRuntimeClassLoader(testApplication.getAugmentClassLoader(), Collections.emptyMap(),
                     transformedClasses);

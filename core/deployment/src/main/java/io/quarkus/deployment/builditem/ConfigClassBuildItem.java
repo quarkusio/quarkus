@@ -1,8 +1,9 @@
-package io.quarkus.arc.deployment;
+package io.quarkus.deployment.builditem;
 
 import java.util.Set;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.runtime.annotations.StaticInitSafe;
 
 public final class ConfigClassBuildItem extends MultiBuildItem {
     private final Class<?> configClass;
@@ -46,8 +47,12 @@ public final class ConfigClassBuildItem extends MultiBuildItem {
         return Type.PROPERTIES.equals(type);
     }
 
+    public boolean isStaticInitSafe() {
+        return configClass.isAnnotationPresent(StaticInitSafe.class);
+    }
+
     public enum Type {
         MAPPING,
-        PROPERTIES;
+        PROPERTIES
     }
 }

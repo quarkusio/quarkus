@@ -1,7 +1,5 @@
 package io.quarkus.oidc;
 
-import java.util.function.Supplier;
-
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -26,7 +24,7 @@ public interface TokenStateManager {
      * @return the token state
      *
      * @deprecated Use
-     *             {@link #createTokenState(RoutingContext, OidcTenantConfig, AuthorizationCodeTokens, CreateTokenStateRequestContext)}
+     *             {@link #createTokenState(RoutingContext, OidcTenantConfig, AuthorizationCodeTokens, OidcRequestContext)}
      *
      */
     @Deprecated
@@ -46,7 +44,7 @@ public interface TokenStateManager {
      * @return the token state
      */
     default Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
-            AuthorizationCodeTokens tokens, CreateTokenStateRequestContext requestContext) {
+            AuthorizationCodeTokens tokens, OidcRequestContext<String> requestContext) {
         return Uni.createFrom().item(createTokenState(routingContext, oidcConfig, tokens));
     }
 
@@ -55,11 +53,11 @@ public interface TokenStateManager {
      *
      * @param routingContext the request context
      * @param oidcConfig the tenant configuration
-     * @param tokens the token state
+     * @param tokenState the token state
      *
      * @return the authorization code flow tokens
      *
-     * @deprecated Use {@link #getTokens(RoutingContext, OidcTenantConfig, String, GetTokensRequestContext)} instead.
+     * @deprecated Use {@link #getTokens(RoutingContext, OidcTenantConfig, String, OidcRequestContext)} instead.
      */
     @Deprecated
     default AuthorizationCodeTokens getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState) {
@@ -71,13 +69,13 @@ public interface TokenStateManager {
      *
      * @param routingContext the request context
      * @param oidcConfig the tenant configuration
-     * @param tokens the token state
+     * @param tokenState the token state
      * @param requestContext the request context
      *
      * @return the authorization code flow tokens
      */
     default Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig,
-            String tokenState, GetTokensRequestContext requestContext) {
+            String tokenState, OidcRequestContext<AuthorizationCodeTokens> requestContext) {
         return Uni.createFrom().item(getTokens(routingContext, oidcConfig, tokenState));
     }
 
@@ -86,9 +84,9 @@ public interface TokenStateManager {
      *
      * @param routingContext the request context
      * @param oidcConfig the tenant configuration
-     * @param tokens the token state
+     * @param tokenState the token state
      *
-     * @deprecated Use {@link #deleteTokens(RoutingContext, OidcTenantConfig, String, DeleteTokensRequestContext)} instead
+     * @deprecated Use {@link #deleteTokens(RoutingContext, OidcTenantConfig, String, OidcRequestContext)} instead
      */
     @Deprecated
     default void deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState) {
@@ -100,41 +98,12 @@ public interface TokenStateManager {
      *
      * @param routingContext the request context
      * @param oidcConfig the tenant configuration
-     * @param tokens the token state
+     * @param tokenState the token state
      */
     default Uni<Void> deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
-            DeleteTokensRequestContext requestContext) {
+            OidcRequestContext<Void> requestContext) {
         deleteTokens(routingContext, oidcConfig, tokenState);
         return Uni.createFrom().voidItem();
     }
 
-    /**
-     * A context object that can be used to create a token state by running a blocking task.
-     * <p>
-     * Blocking providers should use this context to prevent excessive and unnecessary delegation to thread pools.
-     */
-    interface CreateTokenStateRequestContext {
-
-        Uni<String> runBlocking(Supplier<String> function);
-    }
-
-    /**
-     * A context object that can be used to convert the token state to the tokens by running a blocking task.
-     * <p>
-     * Blocking providers should use this context to prevent excessive and unnecessary delegation to thread pools.
-     */
-    interface GetTokensRequestContext {
-
-        Uni<AuthorizationCodeTokens> runBlocking(Supplier<AuthorizationCodeTokens> function);
-    }
-
-    /**
-     * A context object that can be used to delete the token state by running a blocking task.
-     * <p>
-     * Blocking providers should use this context to prevent excessive and unnecessary delegation to thread pools.
-     */
-    interface DeleteTokensRequestContext {
-
-        Uni<Void> runBlocking(Supplier<Void> function);
-    }
 }

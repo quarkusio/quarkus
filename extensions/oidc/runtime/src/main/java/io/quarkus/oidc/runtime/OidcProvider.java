@@ -23,14 +23,12 @@ import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenIntrospection;
+import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.AuthenticationFailedException;
-import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.RoutingContext;
 
 public class OidcProvider implements Closeable {
 
@@ -144,7 +142,7 @@ public class OidcProvider implements Closeable {
         });
     }
 
-    public Uni<TokenVerificationResult> introspectToken(String token) {
+    public Uni<TokenIntrospection> introspectToken(String token) {
         if (client.getMetadata().getIntrospectionUri() == null) {
             LOG.debugf(
                     "Token issued to client %s can not be introspected because the introspection endpoint address is unknown - "
@@ -153,10 +151,10 @@ public class OidcProvider implements Closeable {
             throw new AuthenticationFailedException();
         }
         return client.introspectToken(token).onItemOrFailure()
-                .transform(new BiFunction<TokenIntrospection, Throwable, TokenVerificationResult>() {
+                .transform(new BiFunction<TokenIntrospection, Throwable, TokenIntrospection>() {
 
                     @Override
-                    public TokenVerificationResult apply(TokenIntrospection introspectionResult, Throwable t) {
+                    public TokenIntrospection apply(TokenIntrospection introspectionResult, Throwable t) {
                         if (t != null) {
                             throw new AuthenticationFailedException(t);
                         }
@@ -175,17 +173,13 @@ public class OidcProvider implements Closeable {
                             }
                         }
 
-                        return new TokenVerificationResult(null, introspectionResult);
+                        return introspectionResult;
                     }
 
                 });
     }
 
-    public Uni<JsonObject> getUserInfo(RoutingContext vertxContext, TokenAuthenticationRequest request) {
-        String accessToken = vertxContext.get(OidcConstants.ACCESS_TOKEN_VALUE);
-        if (accessToken == null) {
-            accessToken = request.getToken().getToken();
-        }
+    public Uni<UserInfo> getUserInfo(String accessToken) {
         return client.getUserInfo(accessToken);
     }
 

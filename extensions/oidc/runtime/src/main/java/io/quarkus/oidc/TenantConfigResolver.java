@@ -1,7 +1,5 @@
 package io.quarkus.oidc;
 
-import java.util.function.Supplier;
-
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -22,7 +20,7 @@ public interface TenantConfigResolver {
      * @param context the routing context
      * @return the tenant configuration. If {@code null}, indicates that the default configuration/tenant should be chosen
      *
-     * @deprecated Use {@link #resolve(RoutingContext, TenantConfigRequestContext))} instead.
+     * @deprecated Use {@link #resolve(RoutingContext, OidcRequestContext<OidcTenantConfig>))} instead.
      */
     @Deprecated
     default OidcTenantConfig resolve(RoutingContext context) {
@@ -36,20 +34,7 @@ public interface TenantConfigResolver {
      * @return the tenant configuration. If the uni resolves to {@code null}, indicates that the default configuration/tenant
      *         should be chosen
      */
-    default Uni<OidcTenantConfig> resolve(RoutingContext routingContext, TenantConfigRequestContext requestContext) {
+    default Uni<OidcTenantConfig> resolve(RoutingContext routingContext, OidcRequestContext<OidcTenantConfig> requestContext) {
         return Uni.createFrom().item(resolve(routingContext));
     }
-
-    /**
-     * A context object that can be used to run blocking tasks.
-     * <p>
-     * Blocking {@code TenantConfigResolver} providers should use this context object to run blocking tasks, to prevent
-     * excessive and unnecessary delegation to thread pools.
-     */
-    interface TenantConfigRequestContext {
-
-        Uni<OidcTenantConfig> runBlocking(Supplier<OidcTenantConfig> function);
-
-    }
-
 }

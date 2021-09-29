@@ -15,6 +15,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.security.spi.runtime.SecurityCheckStorage;
 import io.smallrye.mutiny.subscription.UniSubscriber;
@@ -31,6 +32,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
 
     private volatile InjectableInstance<CurrentIdentityAssociation> currentIdentityAssociation;
     private volatile SecurityCheck check;
+    private volatile AuthorizationController authorizationController;
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
@@ -44,6 +46,12 @@ public class EagerSecurityHandler implements ServerRestHandler {
             this.check = check;
         }
         if (check == NULL_SENTINEL) {
+            return;
+        }
+        if (authorizationController == null) {
+            authorizationController = Arc.container().instance(AuthorizationController.class).get();
+        }
+        if (!authorizationController.isAuthorizationEnabled()) {
             return;
         }
         requestContext.requireCDIRequestScope();

@@ -4,6 +4,7 @@ import java.util.function.Supplier;
 
 import javax.enterprise.context.ApplicationScoped;
 
+import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
@@ -15,7 +16,7 @@ import io.vertx.ext.web.RoutingContext;
 public class CustomTenantConfigResolver implements TenantConfigResolver {
 
     @Override
-    public Uni<OidcTenantConfig> resolve(RoutingContext context, TenantConfigRequestContext requestContext) {
+    public Uni<OidcTenantConfig> resolve(RoutingContext context, OidcRequestContext<OidcTenantConfig> requestContext) {
         return requestContext.runBlocking(new Supplier<OidcTenantConfig>() {
             @Override
             public OidcTenantConfig get() {

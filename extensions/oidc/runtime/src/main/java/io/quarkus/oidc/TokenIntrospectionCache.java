@@ -16,7 +16,7 @@ public interface TokenIntrospectionCache {
      * @param requestContext the request context which can be used to run the blocking tasks
      */
     Uni<Void> addIntrospection(String token, TokenIntrospection introspection, OidcTenantConfig oidcConfig,
-            OidcContext<Void> requestContext);
+            OidcRequestContext<Void> requestContext);
 
     /**
      * Get the cached {@link TokenIntrospection} result.
@@ -26,5 +26,5 @@ public interface TokenIntrospectionCache {
      * @param requestContext the request context which can be used to run the blocking tasks
      */
     Uni<TokenIntrospection> getIntrospection(String token, OidcTenantConfig oidcConfig,
-            OidcContext<TokenIntrospection> requestContext);
+            OidcRequestContext<TokenIntrospection> requestContext);
 }

@@ -15,7 +15,8 @@ public interface UserInfoCache {
      * @param oidcConfig the tenant configuration
      * @param requestContext the request context which can be used to run the blocking tasks
      */
-    Uni<Void> addUserInfo(String token, UserInfo userInfo, OidcTenantConfig oidcConfig, OidcContext<Void> requestContext);
+    Uni<Void> addUserInfo(String token, UserInfo userInfo, OidcTenantConfig oidcConfig,
+            OidcRequestContext<Void> requestContext);
 
     /**
      * Get the cached {@link UserInfo}.
@@ -27,5 +28,5 @@ public interface UserInfoCache {
      * @param oidcConfig the tenant configuration
      * @param requestContext the request context which can be used to run the blocking tasks
      */
-    Uni<UserInfo> getUserInfo(String token, OidcTenantConfig oidcConfig, OidcContext<UserInfo> requestContext);
+    Uni<UserInfo> getUserInfo(String token, OidcTenantConfig oidcConfig, OidcRequestContext<UserInfo> requestContext);
 }

@@ -56,7 +56,7 @@ public class DefaultTenantConfigResolver {
     @ConfigProperty(name = "quarkus.http.proxy.enable-forwarded-prefix")
     boolean enableHttpForwardedPrefix;
 
-    private final TenantConfigRequestContext blockingRequestContext = new TenantConfigRequestContext();
+    private final BlockingTaskRunner<OidcTenantConfig> blockingRequestContext = new BlockingTaskRunner<OidcTenantConfig>();
 
     private volatile boolean securityEventObserved;
 
@@ -214,7 +214,4 @@ public class DefaultTenantConfigResolver {
         return enableHttpForwardedPrefix;
     }
 
-    private static class TenantConfigRequestContext extends AbstractBlockingTaskRunner<OidcTenantConfig>
-            implements TenantConfigResolver.TenantConfigRequestContext {
-    }
 }

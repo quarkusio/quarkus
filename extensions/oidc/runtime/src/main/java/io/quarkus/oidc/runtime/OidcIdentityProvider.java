@@ -14,7 +14,6 @@ import org.jose4j.lang.UnresolvableKeyException;
 
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdTokenCredential;
-import io.quarkus.oidc.OidcContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.OidcTokenCredential;
@@ -47,9 +46,9 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     @Inject
     DefaultTenantConfigResolver tenantResolver;
 
-    private UniVoidOidcContext uniVoidOidcContext = new UniVoidOidcContext();
-    private GetIntrospectionRequestContext getIntrospectionRequestContext = new GetIntrospectionRequestContext();
-    private GetUserInfoRequestContext getUserInfoRequestContext = new GetUserInfoRequestContext();
+    private BlockingTaskRunner<Void> uniVoidOidcContext = new BlockingTaskRunner<Void>();
+    private BlockingTaskRunner<TokenIntrospection> getIntrospectionRequestContext = new BlockingTaskRunner<TokenIntrospection>();
+    private BlockingTaskRunner<UserInfo> getUserInfoRequestContext = new BlockingTaskRunner<UserInfo>();
 
     @Override
     public Class<TokenAuthenticationRequest> getRequestType() {
@@ -369,13 +368,5 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 }
             });
         }
-    }
-
-    private static class GetIntrospectionRequestContext extends AbstractBlockingTaskRunner<TokenIntrospection>
-            implements OidcContext<TokenIntrospection> {
-    }
-
-    private static class GetUserInfoRequestContext extends AbstractBlockingTaskRunner<UserInfo>
-            implements OidcContext<UserInfo> {
     }
 }

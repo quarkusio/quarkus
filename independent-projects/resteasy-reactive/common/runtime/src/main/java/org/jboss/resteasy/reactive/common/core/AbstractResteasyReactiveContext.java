@@ -117,7 +117,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
 
     protected abstract Executor getEventLoop();
 
-    protected Executor getContextExecutor() {
+    public Executor getContextExecutor() {
         return null;
     }
 

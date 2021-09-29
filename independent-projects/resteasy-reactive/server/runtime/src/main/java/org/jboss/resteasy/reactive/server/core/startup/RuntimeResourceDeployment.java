@@ -65,6 +65,7 @@ import org.jboss.resteasy.reactive.server.handlers.FormBodyHandler;
 import org.jboss.resteasy.reactive.server.handlers.InputHandler;
 import org.jboss.resteasy.reactive.server.handlers.InstanceHandler;
 import org.jboss.resteasy.reactive.server.handlers.InvocationHandler;
+import org.jboss.resteasy.reactive.server.handlers.NonBlockingHandler;
 import org.jboss.resteasy.reactive.server.handlers.ParameterHandler;
 import org.jboss.resteasy.reactive.server.handlers.PerRequestInstanceHandler;
 import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
@@ -184,6 +185,7 @@ public class RuntimeResourceDeployment {
                 blockingHandlerIndex = Optional.of(handlers.size() - 1);
                 score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionBlocking);
             } else {
+                handlers.add(NonBlockingHandler.INSTANCE);
                 score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionNonBlocking);
             }
         }

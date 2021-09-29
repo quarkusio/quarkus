@@ -11,6 +11,8 @@ import io.restassured.RestAssured;
 
 /**
  * Test various JPA operations running in Quarkus
+ *
+ * Also makes sure that these work with a blocking security implementation
  */
 @QuarkusTest
 @TestHTTPEndpoint(HibernateReactiveTestEndpoint.class)
@@ -18,7 +20,8 @@ public class HibernateReactiveTest {
 
     @Test
     public void reactiveCowPersist() {
-        RestAssured.when()
+        RestAssured.given().when()
+                .auth().preemptive().basic("scott", "jb0ss")
                 .get("/reactiveCowPersist")
                 .then()
                 .body(containsString("\"name\":\"Carolina\"}")); //Use containsString as we don't know the Id this object will have
@@ -26,7 +29,8 @@ public class HibernateReactiveTest {
 
     @Test
     public void reactiveFindMutiny() {
-        RestAssured.when()
+        RestAssured.given().when()
+                .auth().preemptive().basic("scott", "jb0ss")
                 .get("/reactiveFindMutiny")
                 .then()
                 .body(is("{\"id\":5,\"name\":\"Aloi\"}"));
@@ -34,7 +38,8 @@ public class HibernateReactiveTest {
 
     @Test
     public void reactivePersist() {
-        RestAssured.when()
+        RestAssured.given().when()
+                .auth().preemptive().basic("scott", "jb0ss")
                 .get("/reactivePersist")
                 .then()
                 .body(is("Tulip"));
@@ -42,7 +47,8 @@ public class HibernateReactiveTest {
 
     @Test
     public void reactiveRemoveTransientEntity() {
-        RestAssured.when()
+        RestAssured.given().when()
+                .auth().preemptive().basic("scott", "jb0ss")
                 .get("/reactiveRemoveTransientEntity")
                 .then()
                 .body(is("OK"));
@@ -50,7 +56,8 @@ public class HibernateReactiveTest {
 
     @Test
     public void reactiveRemoveManagedEntity() {
-        RestAssured.when()
+        RestAssured.given().when()
+                .auth().preemptive().basic("scott", "jb0ss")
                 .get("/reactiveRemoveManagedEntity")
                 .then()
                 .body(is("OK"));
@@ -58,7 +65,8 @@ public class HibernateReactiveTest {
 
     @Test
     public void reactiveUpdate() {
-        RestAssured.when()
+        RestAssured.given().when()
+                .auth().preemptive().basic("scott", "jb0ss")
                 .get("/reactiveUpdate")
                 .then()
                 .body(is("Tina"));

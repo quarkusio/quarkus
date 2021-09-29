@@ -21,4 +21,10 @@ public class JpaOperationsSortTest {
         assertEquals(" ORDER BY foo , bar", PanacheJpaUtil.toOrderBy(sort));
     }
 
+    @Test
+    public void testEmptySortEmptyYieldsEmptyString() {
+        Sort emptySort = Sort.empty();
+        assertEquals("", PanacheJpaUtil.toOrderBy(emptySort));
+    }
+
 }

@@ -1,0 +1,30 @@
+plugins {
+    id 'java'
+    id 'io.quarkus'
+}
+
+group = 'com.quarkus.demo'
+version = '1.0'
+
+repositories {
+    mavenCentral()
+    if (System.properties.containsKey('maven.repo.local')) {
+        maven {
+            url System.properties.get('maven.repo.local')
+        }
+    } else {
+        mavenLocal()
+    }
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-resteasy'
+
+    constraints {
+        implementation 'javax.json.bind:javax.json.bind-api:1.0'
+    }
+
+    implementation 'javax.json.bind:javax.json.bind-api'
+}
+

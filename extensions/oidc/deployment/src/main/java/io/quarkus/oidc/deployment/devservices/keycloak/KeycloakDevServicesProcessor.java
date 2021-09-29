@@ -368,9 +368,9 @@ public class KeycloakDevServicesProcessor {
             } else {
                 if (fixedExposedPort.isPresent()) {
                     addFixedExposedPort(fixedExposedPort.getAsInt(), KEYCLOAK_PORT);
-                } else {
-                    addExposedPort(KEYCLOAK_PORT);
                 }
+                // we always add this one in order to avoid dumb warning messages from the wait strategy...
+                addExposedPort(KEYCLOAK_PORT);
             }
 
             if (sharedContainer && LaunchMode.current() == LaunchMode.DEVELOPMENT) {

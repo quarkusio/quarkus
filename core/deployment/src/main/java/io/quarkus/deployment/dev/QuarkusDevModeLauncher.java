@@ -233,13 +233,6 @@ public abstract class QuarkusDevModeLauncher {
             return (B) this;
         }
 
-        public boolean isTestsPresent() {
-            if (main == null) {
-                return false;
-            }
-            return main.getTest().isPresent();
-        }
-
         @SuppressWarnings("unchecked")
         public B dependency(ModuleInfo module) {
             dependencies.add(module);

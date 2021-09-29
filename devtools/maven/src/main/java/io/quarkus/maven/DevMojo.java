@@ -644,7 +644,7 @@ public class DevMojo extends AbstractMojo {
         String classesPath = null;
         Set<Path> resourcePaths;
         Set<Path> testSourcePaths;
-        String testClassesPath = null;
+        String testClassesPath;
         Set<Path> testResourcePaths;
         List<Profile> activeProfiles = Collections.emptyList();
 

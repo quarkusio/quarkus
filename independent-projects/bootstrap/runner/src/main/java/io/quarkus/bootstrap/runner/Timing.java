@@ -113,8 +113,9 @@ public class Timing {
         final long stopTimeNanoSeconds = System.nanoTime() - t.bootStopTime;
         final Logger logger = Logger.getLogger("io.quarkus");
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(stopTimeNanoSeconds);
-        logger.infof("%s stopped in %ss",
+        logger.infof("%s%s stopped in %ss",
                 (UNSET_VALUE.equals(name) || name == null || name.trim().isEmpty()) ? "Quarkus" : name,
+                auxiliaryApplication ? "(test application)" : "",
                 secondsRepresentation);
         t.bootStopTime = -1;
 

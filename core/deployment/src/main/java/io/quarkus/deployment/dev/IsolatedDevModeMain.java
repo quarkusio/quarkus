@@ -255,7 +255,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             }
             QuarkusCompiler compiler = new QuarkusCompiler(curatedApplication, compilationProviders, context);
             TestSupport testSupport = null;
-            if (devModeType == DevModeType.LOCAL && context.getApplicationRoot().getTest().isPresent()) {
+            if (devModeType == DevModeType.LOCAL) {
                 testSupport = new TestSupport(curatedApplication, compilationProviders, context, devModeType);
             }
 

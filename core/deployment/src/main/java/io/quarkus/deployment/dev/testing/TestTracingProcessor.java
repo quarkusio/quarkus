@@ -70,6 +70,7 @@ public class TestTracingProcessor {
         for (TestListenerBuildItem i : testListenerBuildItems) {
             testSupport.addListener(i.listener);
         }
+        testSupport.setConfig(config);
         testSupport.setTags(config.includeTags.orElse(Collections.emptyList()),
                 config.excludeTags.orElse(Collections.emptyList()));
         testSupport.setPatterns(config.includePattern.orElse(null),

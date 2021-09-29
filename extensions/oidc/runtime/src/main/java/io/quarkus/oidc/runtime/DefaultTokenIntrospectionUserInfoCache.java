@@ -21,23 +21,21 @@ import io.vertx.core.Vertx;
 /**
  * Default TokenIntrospection and UserInfo Cache implementation.
  * A single cache entry can keep TokenIntrospection and/or UserInfo.
- * 
+ * <p>
  * In most cases it is the opaque bearer access tokens which are introspected
  * but the code flow access tokens can also be introspected if they have the roles claims.
- *
+ * <p>
  * In either case, if a remote request to fetch UserInfo is required then it will be the same access token
  * which has been introspected which will be used to request UserInfo.
  */
 public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectionCache, UserInfoCache {
     private static final Uni<TokenIntrospection> NULL_INTROSPECTION_UNI = Uni.createFrom().nullItem();
     private static final Uni<UserInfo> NULL_USERINFO_UNI = Uni.createFrom().nullItem();
-    private static final IntUnaryOperator DECREMENT_OPERATOR = (n -> (n > 0) ? n - 1 : n);
 
     private TokenCache cacheConfig;
 
     private Map<String, CacheEntry> cacheMap;
-    private AtomicInteger cacheSize = new AtomicInteger();
-    private IntUnaryOperator incrementOperator;
+    private AtomicInteger size = new AtomicInteger();
 
     public DefaultTokenIntrospectionUserInfoCache(OidcConfig oidcConfig, Vertx vertx) {
         this.cacheConfig = oidcConfig.tokenCache;
@@ -47,15 +45,13 @@ public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectio
     private void init(Vertx vertx) {
         if (cacheConfig.maxSize > 0) {
             cacheMap = new ConcurrentHashMap<>();
-            incrementOperator = new IncrementOperator(cacheConfig.maxSize);
             if (cacheConfig.cleanUpTimerInterval.isPresent()) {
                 vertx.setPeriodic(cacheConfig.cleanUpTimerInterval.get().toMillis(), new Handler<Long>() {
                     @Override
                     public void handle(Long event) {
                         // Remove all the entries which have expired
-                        removeInvalidEntries(true);
+                        removeInvalidEntries();
                     }
-
                 });
             }
         } else {
@@ -115,31 +111,26 @@ public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectio
         cacheMap.clear();
     }
 
-    private void removeInvalidEntries(boolean removeAll) {
+    private void removeInvalidEntries() {
         long now = now();
         for (Iterator<Map.Entry<String, CacheEntry>> it = cacheMap.entrySet().iterator(); it.hasNext();) {
             Map.Entry<String, CacheEntry> next = it.next();
             if (isEntryExpired(next.getValue(), now)) {
                 it.remove();
-                cacheSize.updateAndGet(DECREMENT_OPERATOR);
-                if (!removeAll) {
-                    break;
-                }
+                size.decrementAndGet();
             }
         }
     }
 
     private boolean prepareSpaceForNewCacheEntry() {
-        int currentSize = cacheSize.get();
-        if (currentSize == cacheConfig.maxSize) {
-            removeInvalidEntries(false);
-        }
-        // Get a new size - it can still be equal to the max size but guaranteed not to be greater than it.
-        int newSize = cacheSize.updateAndGet(incrementOperator);
-
-        // Increment has happened if the new size is still less than the max size
-        // or equal to it but greater than the captured current size. 
-        return newSize < cacheConfig.maxSize || newSize > currentSize;
+        int currentSize;
+        do {
+            currentSize = size.get();
+            if (currentSize == cacheConfig.maxSize) {
+                return false;
+            }
+        } while (!size.compareAndSet(currentSize, currentSize + 1));
+        return true;
     }
 
     private CacheEntry findValidCacheEntry(String token) {
@@ -150,7 +141,7 @@ public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectio
                 // Entry has expired, remote introspection will be required
                 entry = null;
                 cacheMap.remove(token);
-                cacheSize.updateAndGet(DECREMENT_OPERATOR);
+                size.decrementAndGet();
             }
         }
         return entry;

@@ -996,18 +996,33 @@ public class JaxrsClientReactiveProcessor {
             if (Modifier.isStatic(field.flags())) {
                 continue;
             }
-            if (!Modifier.isPublic(field.flags())) {
-                throw new IllegalArgumentException("Non-public field found in a multipart form data class "
+
+            String fieldName = field.name();
+            ResultHandle fieldValue = null;
+            String getterName = "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+            for (MethodInfo method : formClass.methods()) {
+                if (method.name().equals(getterName) && method.returnType().name().equals(field.type().name())
+                        && method.parameters().isEmpty() && Modifier.isPublic(method.flags())
+                        && !Modifier.isStatic(method.flags())) {
+                    fieldValue = methodCreator.invokeVirtualMethod(method, methodParam);
+                    break;
+                }
+            }
+            if ((fieldValue == null) && Modifier.isPublic(field.flags())) {
+                fieldValue = methodCreator.readInstanceField(field, methodParam);
+
+            }
+            if (fieldValue == null) {
+                throw new IllegalArgumentException("Non-public field '" + fieldName
+                        + "' without a getter, found in a multipart form data class '"
                         + formClassType.name()
-                        + ". Rest Client Reactive only supports multipart form classes with a list of public fields");
+                        + "'. Rest Client Reactive only supports multipart form classes with fields that are public or have public getters.");
             }
 
             String formParamName = formParamName(field);
             String partType = formPartType(field);
 
             Type fieldType = field.type();
-
-            ResultHandle fieldValue = methodCreator.readInstanceField(field, methodParam);
 
             switch (fieldType.kind()) {
                 case CLASS:

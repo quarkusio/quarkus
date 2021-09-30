@@ -1207,7 +1207,7 @@ Quarkus supports binding services to applications via the link:https://github.co
 Specifically Quarkus implements the link:https://github.com/k8s-service-bindings/spec#application-projection[Application Projection] part of the specification, thus allowing
 applications running in appropriately configured Kubernetes clusters to consume services (such as a Database or a Broker) without the need for user configuration.
 
-Currently, the following Quarkus extensions support this feature:
+Currently, the following Quarkus extensions (and extensions that depend on these) support this feature:
 
 * quarkus-jdbc-mariadb
 * quarkus-jdbc-mssql
@@ -1215,6 +1215,7 @@ Currently, the following Quarkus extensions support this feature:
 * quarkus-jdbc-postgresql
 * quarkus-kafka-client
 * quarkus-smallrye-reactive-messaging-kafka
+* quarkus-mongo-client
 
 This list of extensions will grow as more services with supported bindings become available on Kubernetes.
 

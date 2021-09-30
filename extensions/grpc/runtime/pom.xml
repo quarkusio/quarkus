@@ -30,10 +30,10 @@
             <artifactId>quarkus-arc</artifactId>
         </dependency>
 
-        <!-- for dev mode, TODO: try to get rid of it-->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http</artifactId>
+            <artifactId>quarkus-vertx-http-dev-console-runtime-spi</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

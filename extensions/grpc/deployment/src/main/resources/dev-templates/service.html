@@ -68,7 +68,7 @@ span.connected-status {
             wsUri = "ws:";
           }
 
-          wsUri += "//" + window.location.host + "/q/dev/grpc-test";
+          wsUri += "//" + window.location.host + "/q/dev/io.quarkus.quarkus-grpc/grpc-test";
           grpcWS = new WebSocket(wsUri);
           grpcWS.onopen = function (event) {
             console.log("websocket connected");

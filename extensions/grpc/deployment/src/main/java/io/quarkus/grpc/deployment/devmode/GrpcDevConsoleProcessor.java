@@ -31,7 +31,6 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
-import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.runtime.BeanLookupSupplier;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -44,6 +43,7 @@ import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.testing.GrpcWebSocketProxy;
+import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
@@ -53,8 +53,6 @@ import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
 import io.quarkus.grpc.runtime.devmode.DelegatingGrpcBeansStorage;
 import io.quarkus.grpc.runtime.devmode.GrpcDevConsoleRecorder;
 import io.quarkus.grpc.runtime.devmode.GrpcServices;
-import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.deployment.RouteBuildItem;
 
 public class GrpcDevConsoleProcessor {
 
@@ -67,8 +65,7 @@ public class GrpcDevConsoleProcessor {
                         new BeanLookupSupplier(GrpcServices.class)));
     }
 
-    @IfBuildProfile("dev")
-    @BuildStep
+    @BuildStep(onlyIf = IsDevelopment.class)
     void prepareDelegatingBeanStorage(
             List<DelegatingGrpcBeanBuildItem> delegatingBeans,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
@@ -133,11 +130,9 @@ public class GrpcDevConsoleProcessor {
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = IsDevelopment.class)
-    public RouteBuildItem createWebSocketEndpoint(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            GrpcDevConsoleRecorder recorder) {
+    public DevConsoleRouteBuildItem createWebSocketEndpoint(GrpcDevConsoleRecorder recorder) {
         recorder.setServerConfiguration();
-        return nonApplicationRootPathBuildItem.routeBuilder().route("dev/grpc-test")
-                .handler(recorder.handler()).build();
+        return new DevConsoleRouteBuildItem("grpc-test", "GET", recorder.handler());
     }
 
     Collection<Class<?>> getGrpcServices(IndexView index) throws ClassNotFoundException {
@@ -167,4 +162,5 @@ public class GrpcDevConsoleProcessor {
         serviceClasses.add(HealthGrpc.class);
         return serviceClasses;
     }
+
 }

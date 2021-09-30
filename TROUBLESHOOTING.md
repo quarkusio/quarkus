@@ -46,9 +46,6 @@ apt install openjdk-8-dbg
 # Ubuntu/Debian - Java 11
  apt install openjdk-11-dbg
 
-# On CentOS, RHEL and some other RPM-based distributions - Java 8
-debuginfo-install java-1.8.0-openjdk
-
 # On CentOS, RHEL and some other RPM-based distributions - Java 11
 debuginfo-install java-11-openjdk
 ```

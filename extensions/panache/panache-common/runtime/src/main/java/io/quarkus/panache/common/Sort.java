@@ -218,4 +218,14 @@ public class Sort {
     public List<Column> getColumns() {
         return columns;
     }
+
+    /**
+     * Creates an Empty Sort instance. Equivalent to {@link #by()}.
+     *
+     * @return a new empty Sort instance
+     * @see #by(String[])
+     */
+    public static Sort empty() {
+        return by();
+    }
 }

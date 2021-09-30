@@ -358,6 +358,7 @@ quarkus.datasource.jdbc.url=jdbc:mysql://${application.server}:3306/mydatabase?u
 Additionally, the Expression Expansion engine supports the following segments:
 
 * `${expression:value}` - Provides a default value after the `:` if the expansion doesn't find a value.
+* `${expression:}` - Provides a `null` value if the expansion doesn't find a value.
 * `${my.prop${compose}}` - Composed expressions. Inner expressions are resolved first.
 * `${my.prop}${my.prop}` - Multiple expressions.
 

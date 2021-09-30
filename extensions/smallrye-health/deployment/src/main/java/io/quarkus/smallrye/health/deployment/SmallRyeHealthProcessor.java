@@ -62,6 +62,7 @@ import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+import io.quarkus.smallrye.health.runtime.QuarkusAsyncHealthCheckFactory;
 import io.quarkus.smallrye.health.runtime.ShutdownReadinessListener;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthGroupHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthHandler;
@@ -167,6 +168,7 @@ class SmallRyeHealthProcessor {
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(WELLNESS));
 
         // Add additional beans
+        additionalBean.produce(new AdditionalBeanBuildItem(QuarkusAsyncHealthCheckFactory.class));
         additionalBean.produce(new AdditionalBeanBuildItem(SmallRyeHealthReporter.class));
 
         // Make ArC discover @HealthGroup as a qualifier

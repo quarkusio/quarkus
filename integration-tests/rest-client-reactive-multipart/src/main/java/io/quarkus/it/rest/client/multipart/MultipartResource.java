@@ -55,11 +55,12 @@ public class MultipartResource {
     public String sendByteArrayWithPojo(@RestQuery @DefaultValue("true") Boolean withPojo) {
         FileWithPojo data = new FileWithPojo();
         data.file = HELLO_WORLD.getBytes(UTF_8);
-        data.fileName = GREETING_TXT;
+        data.setFileName(GREETING_TXT);
         if (withPojo) {
-            data.pojo = new Pojo();
-            data.pojo.setName("some-name");
-            data.pojo.setValue("some-value");
+            Pojo pojo = new Pojo();
+            pojo.setName("some-name");
+            pojo.setValue("some-value");
+            data.setPojo(pojo);
         }
         try {
             return client.sendFileWithPojo(data);

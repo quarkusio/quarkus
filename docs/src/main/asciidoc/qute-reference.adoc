@@ -1575,6 +1575,22 @@ class Item {
 ----
 <1> The generated value resolver knows how to invoke the `BigDecimal.setScale()` method.
 
+[[native_executables]]
+=== Native Executables
+
+In the JVM mode a reflection-based value resolver may be used to access properties and call methods of the model classes.
+But this does not work for <<building-native-image.adoc,a native executable>> out of the box.
+As a result, you may encounter template exceptions like `Property "name" not found on the base object "org.acme.Foo" in expression {foo.name} in template hello.html` even if the `Foo` class declares a relevant getter method.
+
+There are several ways to solve this problem:
+
+* Make use of <<typesafe_templates,type-safe templates>> or <<typesafe_expressions,type-safe expressions>>
+** In this case, an optimized value resolver is generated automatically and used at rutime
+** This is the preferred solution
+* Annotate the model class with <<template_data,`@TemplateData`>> - a specialized value resolver is generated and used at rutime
+* Annotate the model class with `@io.quarkus.runtime.annotations.RegisterForReflection` to make the reflection-based value resolver work
+
+
 [[resteasy_integration]]
 === RESTEasy Integration
 

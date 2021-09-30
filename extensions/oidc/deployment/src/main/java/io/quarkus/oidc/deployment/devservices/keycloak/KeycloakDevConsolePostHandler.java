@@ -45,8 +45,13 @@ public class KeycloakDevConsolePostHandler extends DevConsolePostHandler {
                         form.get("clientSecret"),
                         KeycloakDevServicesProcessor.capturedDevServicesConfiguration.webClienTimeout);
             }
-
-            testServiceInternal(event, client, form.get("serviceUrl"), token);
+            LOG.infof("Test token: %s", token);
+            if (form.get("serviceUrl") != null) {
+                testServiceInternal(event, client, form.get("serviceUrl"), token);
+            } else {
+                // only token is required
+                event.put("result", token);
+            }
         } catch (Throwable t) {
             LOG.errorf("Token can not be acquired from Keycloak: %s", t.toString());
         } finally {
@@ -56,7 +61,6 @@ public class KeycloakDevConsolePostHandler extends DevConsolePostHandler {
 
     private void testServiceInternal(RoutingContext event, WebClient client, String serviceUrl, String token) {
         try {
-            LOG.infof("Test token: %s", token);
             LOG.infof("Sending token to '%s'", serviceUrl);
             int statusCode = client.getAbs(serviceUrl)
                     .putHeader(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + token).send().await().indefinitely()

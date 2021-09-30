@@ -1,6 +1,7 @@
 package io.quarkus.oidc.deployment.devservices;
 
 import java.time.Duration;
+import java.util.Set;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
@@ -35,13 +36,20 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
     private static final String CLIENT_ID_CONFIG_KEY = CONFIG_PREFIX + "client-id";
     private static final String CLIENT_SECRET_CONFIG_KEY = CONFIG_PREFIX + "credentials.secret";
 
+    // Well-known providers
+
+    private static final String KEYCLOAK = "Keycloak";
+    private static final String AZURE = "Azure";
+
+    private static final Set<String> OTHER_PROVIDERS = Set.of("Auth0", "Okta", "Google");
+
     @BuildStep(onlyIf = IsDevelopment.class)
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     void prepareOidcDevConsole(BuildProducer<DevConsoleTemplateInfoBuildItem> console,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             BuildProducer<DevConsoleRouteBuildItem> devConsoleRoute,
             Capabilities capabilities) {
-        if (isOidcTenantEnabled() && isAuthServerUrlSet() && isClientIdSet() && isServiceAuthType()) {
+        if (isOidcTenantEnabled() && isAuthServerUrlSet() && isClientIdSet()) {
 
             if (vertxInstance == null) {
                 vertxInstance = Vertx.vertx();
@@ -68,20 +76,21 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                 return;
             }
             String providerName = tryToGetProviderName(authServerUrl);
-            if ("Keycloak".equals(providerName)) {
+            if (KEYCLOAK.equals(providerName)) {
                 console.produce(new DevConsoleTemplateInfoBuildItem("keycloakAdminUrl",
                         authServerUrl.substring(0, authServerUrl.indexOf("/realms/"))));
             }
             produceDevConsoleTemplateItems(capabilities,
                     console,
                     providerName,
-                    SERVICE_APP_TYPE,
+                    getApplicationType(),
                     "code",
                     getConfigProperty(CLIENT_ID_CONFIG_KEY),
                     getClientSecret(),
                     metadata.getString("authorization_endpoint"),
                     metadata.getString("token_endpoint"),
-                    metadata.getString("end_session_endpoint"));
+                    metadata.getString("end_session_endpoint"),
+                    metadata.containsKey("introspection_endpoint"));
 
             produceDevConsoleRouteItems(devConsoleRoute,
                     new OidcTestServiceHandler(vertxInstance, Duration.ofSeconds(3)),
@@ -91,12 +100,16 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
 
     private String tryToGetProviderName(String authServerUrl) {
         if (authServerUrl.contains("/realms/")) {
-            return "Keycloak";
+            return KEYCLOAK;
         }
-        if (authServerUrl.contains("auth0")) {
-            return "Auth0";
+        if (authServerUrl.contains("microsoft")) {
+            return AZURE;
         }
-        // etc
+        for (String provider : OTHER_PROVIDERS) {
+            if (authServerUrl.contains(provider.toLowerCase())) {
+                return provider;
+            }
+        }
         return null;
     }
 
@@ -142,9 +155,8 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
         return ConfigUtils.isPropertyPresent(AUTH_SERVER_URL_CONFIG_KEY);
     }
 
-    private boolean isServiceAuthType() {
-        return SERVICE_APP_TYPE.equals(
-                ConfigProvider.getConfig().getOptionalValue(APP_TYPE_CONFIG_KEY, String.class).orElse(SERVICE_APP_TYPE));
+    private static String getApplicationType() {
+        return ConfigProvider.getConfig().getOptionalValue(APP_TYPE_CONFIG_KEY, String.class).orElse(SERVICE_APP_TYPE);
     }
 
 }

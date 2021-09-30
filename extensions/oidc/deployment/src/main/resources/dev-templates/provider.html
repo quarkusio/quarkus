@@ -136,39 +136,19 @@ var port = {config:property('quarkus.http.port')};
     }
 
     function navigateToSwaggerUi(){
-        {#if info:swaggerIsAvailable??}
-        var url = "{config:http-path('quarkus.swagger-ui.path')}";
-        
-        var authorizedValue = {
-            "SecurityScheme":{
-                "schema":{
-                    "flow":"implicit",
-                    "authorizationUrl":"{info:authorizationUrl}",
-                    "tokenUrl":"{info:tokenUrl}",
-                    "type":"oauth2",
-                    "description":"Authentication"
-                },
-                "clientId":"{info:clientId}",
-                "name":"SecurityScheme",
-                "token":{
-                    "access_token":accessToken,
-                    "token_type":"Bearer",
-                    "expires_in":"900"
-                }
-            }
-        };
-        
-        localStorage.setItem('authorized', JSON.stringify(authorizedValue));
-        window.open(url, '_blank').focus();
-        {/if}
+        navigateToSwaggerUiWithToken(getTokenForNavigation())
     }
     
     function navigateToGraphQLUi(){
-        {#if info:graphqlIsAvailable??}
-            var url = "{config:http-path('quarkus.smallrye-graphql.ui.root-path')}";
-            var headerJson = '{"authorization": "Bearer ' + accessToken + '"}';
-            url = url + '/?' + encodeURIComponent('headers') + '=' + encodeURIComponent(headerJson);
-            window.open(url, '_blank').focus();
+        navigateToGraphQLUiWithToken(getTokenForNavigation())
+    }
+    
+    function getTokenForNavigation(){
+        {#if info:introspectionIsAvailable??}
+            return accessToken;
+        {#else}
+            var parts = accessToken.split(".");
+            return parts.length == 3 ? accessToken : idToken;
         {/if}
     }
     
@@ -269,6 +249,34 @@ var port = {config:property('quarkus.http.port')};
               printResponseData(data, "User: " + userName + ", " + "service path: " + servicePath);
             });
     }
+    
+    function testServiceWithPasswordInSwaggerUi(userName){
+        $.post("testService",
+            {
+              tokenUrl: '{info:tokenUrl}',
+              client: '{info:clientId}',
+              clientSecret: '{info:clientSecret}',
+              user: userName,
+              grant: '{info:oidcGrantType}'
+            },
+            function(data, status){
+              navigateToSwaggerUiWithToken(data);
+            });
+    }
+    
+    function testServiceWithPasswordInGraphQLUi(userName){
+        $.post("testService",
+            {
+              tokenUrl: '{info:tokenUrl}',
+              client: '{info:clientId}',
+              clientSecret: '{info:clientSecret}',
+              user: userName,
+              grant: '{info:oidcGrantType}'
+            },
+            function(data, status){
+              navigateToGraphQLUiWithToken(data);
+            });
+    }
 {/if}
 
 {#if info:oidcGrantType is 'client_credentials'}
@@ -285,7 +293,69 @@ var port = {config:property('quarkus.http.port')};
               printResponseData(data, "Service path: " + servicePath);
             });
     }
+    function testServiceWithClientCredentialsInSwaggerUi(){
+        $.post("testService",
+            {
+              tokenUrl: '{info:tokenUrl}',
+              client: '{info:clientId}',
+              clientSecret: '{info:clientSecret}',
+              grant: '{info:oidcGrantType}'
+            },
+            function(data, status){
+              navigateToSwaggerUiWithToken(data);
+            });
+    }
+    
+    function testServiceWithClientCredentialsInGraphQLUi(){
+        $.post("testService",
+            {
+              tokenUrl: '{info:tokenUrl}',
+              client: '{info:clientId}',
+              clientSecret: '{info:clientSecret}',
+              grant: '{info:oidcGrantType}'
+            },
+            function(data, status){
+              navigateToGraphQLUiWithToken(data);
+            });
+    }
 {/if}
+
+function navigateToSwaggerUiWithToken(token){
+    {#if info:swaggerIsAvailable??}
+    var url = "{config:http-path('quarkus.swagger-ui.path')}";
+    
+    var authorizedValue = {
+        "SecurityScheme":{
+            "schema":{
+                "flow":"implicit",
+                "authorizationUrl":"{info:authorizationUrl}",
+                "tokenUrl":"{info:tokenUrl}",
+                "type":"oauth2",
+                "description":"Authentication"
+            },
+            "clientId":"{info:clientId}",
+            "name":"SecurityScheme",
+            "token":{
+                "access_token":token,
+                "token_type":"Bearer",
+                "expires_in":"900"
+            }
+        }
+    };
+    
+    localStorage.setItem('authorized', JSON.stringify(authorizedValue));
+    window.open(url, '_blank').focus();
+    {/if}
+}
+
+function navigateToGraphQLUiWithToken(token){
+    {#if info:graphqlIsAvailable??}
+        var url = "{config:http-path('quarkus.smallrye-graphql.ui.root-path')}";
+        var headerJson = '{"authorization": "Bearer ' + token + '"}';
+        url = url + '/?' + encodeURIComponent('headers') + '=' + encodeURIComponent(headerJson);
+        window.open(url, '_blank').focus();
+    {/if}
+}
 
 function printResponseData(data, message){
     if(data.startsWith("2")){
@@ -480,6 +550,18 @@ function signInToService(servicePath) {
                     <div class="col offset-md-2">
                         <button onclick="testServiceWithPassword($('#userName').val(), $('#servicePath').val());" class="btn btn-primary btn-block" title="Test service">Test service</button>
                     </div>
+                    <div class="float-right">
+	                    {#if info:swaggerIsAvailable??}
+	                    <a onclick="testServiceWithPasswordInSwaggerUi($('#userName').val());" class="btn btn-link" title="Test in Swagger UI">
+	                        <i class="fas fa-external-link-alt"></i> Swagger UI
+	                    </a>
+	                    {/if}
+	                    {#if info:graphqlIsAvailable??}
+	                    <a onclick="testServiceWithPasswordInGraphQLUi($('#userName').val());" class="btn btn-link" title="Test in GraphQL UI">
+	                        <i class="fas fa-external-link-alt"></i> GraphQL UI
+	                    </a>
+	                    {/if}
+	                </div>
                 </div>    
 
                 <br/>
@@ -506,6 +588,18 @@ function signInToService(servicePath) {
                     <div class="col offset-md-2">
                         <button onclick="testServiceWithClientCredentials($('#servicePath').val());" class="btn btn-primary btn-block" title="Test service">Test service</button>
                     </div>
+                    <div class="float-right">
+	                    {#if info:swaggerIsAvailable??}
+	                    <a onclick="testServiceWithClientCredentialsInSwaggerUi();" class="btn btn-link" title="Test in Swagger UI">
+	                        <i class="fas fa-external-link-alt"></i> Swagger UI
+	                    </a>
+	                    {/if}
+	                    {#if info:graphqlIsAvailable??}
+	                    <a onclick="testServiceWithClientCredentialsInGraphQLUi();" class="btn btn-link" title="Test in GraphQL UI">
+	                        <i class="fas fa-external-link-alt"></i> GraphQL UI
+	                    </a>
+	                    {/if}
+	                </div>
                 </div>    
 
                 <br/>

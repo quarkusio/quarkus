@@ -17,7 +17,8 @@ public abstract class AbstractDevConsoleProcessor {
             String clientSecret,
             String authorizationUrl,
             String tokenUrl,
-            String logoutUrl) {
+            String logoutUrl,
+            boolean introspectionIsAvailable) {
         if (oidcProviderName != null) {
             devConsoleTemplate.produce(new DevConsoleTemplateInfoBuildItem("oidcProviderName", oidcProviderName));
         }
@@ -38,6 +39,7 @@ public abstract class AbstractDevConsoleProcessor {
         if (capabilities.isPresent(Capability.SMALLRYE_GRAPHQL)) {
             devConsoleTemplate.produce(new DevConsoleTemplateInfoBuildItem("graphqlIsAvailable", true));
         }
+        devConsoleTemplate.produce(new DevConsoleTemplateInfoBuildItem("introspectionIsAvailable", introspectionIsAvailable));
     }
 
     protected void produceDevConsoleRouteItems(BuildProducer<DevConsoleRouteBuildItem> devConsoleRoute,

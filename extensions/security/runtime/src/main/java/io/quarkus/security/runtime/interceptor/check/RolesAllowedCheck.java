@@ -12,6 +12,7 @@ import java.util.function.Function;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 
 public class RolesAllowedCheck implements SecurityCheck {
@@ -51,6 +52,15 @@ public class RolesAllowedCheck implements SecurityCheck {
 
     @Override
     public void apply(SecurityIdentity identity, Method method, Object[] parameters) {
+        doApply(identity, allowedRoles);
+    }
+
+    @Override
+    public void apply(SecurityIdentity identity, MethodDescription method, Object[] parameters) {
+        doApply(identity, allowedRoles);
+    }
+
+    static void doApply(SecurityIdentity identity, String[] allowedRoles) {
         for (String role : allowedRoles) {
             if (identity.hasRole(role) || ("**".equals(role) && !identity.isAnonymous())) {
                 return;

@@ -9,6 +9,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 import io.quarkus.arc.Arc;
@@ -16,6 +17,7 @@ import io.quarkus.arc.InjectableInstance;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.AuthorizationController;
+import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.security.spi.runtime.SecurityCheckStorage;
 import io.smallrye.mutiny.subscription.UniSubscriber;
@@ -28,6 +30,11 @@ public class EagerSecurityHandler implements ServerRestHandler {
         public void apply(SecurityIdentity identity, Method method, Object[] parameters) {
 
         }
+
+        @Override
+        public void apply(SecurityIdentity identity, MethodDescription method, Object[] parameters) {
+
+        }
     };
 
     private volatile InjectableInstance<CurrentIdentityAssociation> currentIdentityAssociation;
@@ -36,10 +43,15 @@ public class EagerSecurityHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
+        if (this.check == NULL_SENTINEL) {
+            return;
+        }
         SecurityCheck check = this.check;
+        ResteasyReactiveResourceInfo lazyMethod = requestContext.getTarget().getLazyMethod();
+        MethodDescription methodDescription = new MethodDescription(lazyMethod.getResourceClass().getName(),
+                lazyMethod.getName(), MethodDescription.typesAsStrings(lazyMethod.getParameterTypes()));
         if (check == null) {
-            check = Arc.container().instance(SecurityCheckStorage.class).get()
-                    .getSecurityCheck(requestContext.getTarget().getLazyMethod().getMethod());
+            check = Arc.container().instance(SecurityCheckStorage.class).get().getSecurityCheck(methodDescription);
             if (check == null) {
                 check = NULL_SENTINEL;
             }
@@ -60,7 +72,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
         getCurrentIdentityAssociation().get().getDeferredIdentity().map(new Function<SecurityIdentity, Object>() {
             @Override
             public Object apply(SecurityIdentity securityIdentity) {
-                theCheck.apply(securityIdentity, requestContext.getTarget().getLazyMethod().getMethod(),
+                theCheck.apply(securityIdentity, methodDescription,
                         requestContext.getParameters());
                 return null;
             }

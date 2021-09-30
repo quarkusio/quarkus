@@ -182,7 +182,7 @@ public class TestSupport implements TestController {
                             .setDisableClasspathCache(false)
                             .setIsolateDeployment(true)
                             .setExistingModel(null)
-                            .setBaseClassLoader(getClass().getClassLoader().getParent())
+                            .setBaseClassLoader(ClassLoader.getSystemClassLoader())
                             .setTest(true)
                             .setAuxiliaryApplication(true)
                             .setHostApplicationIsTestOnly(devModeType == DevModeType.TEST_ONLY)

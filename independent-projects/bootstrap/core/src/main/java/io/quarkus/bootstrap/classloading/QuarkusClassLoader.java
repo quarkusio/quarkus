@@ -86,7 +86,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private volatile boolean driverLoaded;
 
     private QuarkusClassLoader(Builder builder) {
-        super(builder.parent);
+        super(builder.parent instanceof QuarkusClassLoader ? builder.parent : null);
         this.name = builder.name;
         this.elements = builder.elements;
         this.bannedElements = builder.bannedElements;

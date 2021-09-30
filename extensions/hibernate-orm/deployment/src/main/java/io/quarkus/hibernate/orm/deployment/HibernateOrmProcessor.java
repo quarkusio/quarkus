@@ -30,7 +30,9 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
@@ -1021,26 +1023,19 @@ public final class HibernateOrmProcessor {
             descriptor.getProperties().setProperty(AvailableSettings.GENERATE_STATISTICS, "true");
         }
 
-        // sql-load-script
+        // sql-load-scripts
         Optional<String> importFile = getSqlLoadScript(persistenceUnitConfig.sqlLoadScript, launchMode);
 
         if (importFile.isPresent()) {
-            Path loadScriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(importFile.get());
+            Boolean allLoadScriptFilesExist = Stream.of(importFile.get().split(","))
+                    .map(String::trim)
+                    .map(handleLoadScriptFile(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem,
+                            nativeImageResources, hotDeploymentWatchedFiles))
+                    .reduce(true, (x, y) -> x && y);
 
-            if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
-                // enlist resource if present
-                nativeImageResources.produce(new NativeImageResourceBuildItem(importFile.get()));
+            if (allLoadScriptFilesExist) {
                 descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, importFile.get());
-            } else if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
-                //raise exception if explicit file is not present (i.e. not the default)
-                throw new ConfigurationError(
-                        "Unable to find file referenced in '"
-                                + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "sql-load-script") + "="
-                                + persistenceUnitConfig.sqlLoadScript.get() + "'. Remove property or add file to your path.");
             }
-            // in dev mode we want to make sure that we watch for changes to file even if it doesn't currently exist
-            // as a user could still add it after performing the initial configuration
-            hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(importFile.get()));
         } else {
             //Disable implicit loading of the default import script (import.sql)
             descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, "");
@@ -1088,6 +1083,32 @@ public final class HibernateOrmProcessor {
                         persistenceUnitConfig.multitenantSchemaDatasource.orElse(null),
                         xmlMappings,
                         false, false));
+    }
+
+    private static Function<String, Boolean> handleLoadScriptFile(String persistenceUnitName,
+            HibernateOrmConfigPersistenceUnit persistenceUnitConfig, ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
+        return file -> {
+            boolean fileExists = false;
+            Path loadScriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(file);
+
+            if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
+                // enlist resource if present
+                nativeImageResources.produce(new NativeImageResourceBuildItem(file));
+                fileExists = true;
+            } else if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
+                //raise exception if explicit file is not present (i.e. not the default)
+                throw new ConfigurationError(
+                        "Unable to find file referenced in '"
+                                + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "sql-load-script") + "="
+                                + persistenceUnitConfig.sqlLoadScript.get() + "'. Remove property or add file to your path.");
+            }
+            // in dev mode we want to make sure that we watch for changes to file even if it doesn't currently exist
+            // as a user could still add it after performing the initial configuration
+            hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(file));
+            return fileExists;
+        };
     }
 
     private static Optional<JdbcDataSourceBuildItem> findJdbcDataSource(String persistenceUnitName,

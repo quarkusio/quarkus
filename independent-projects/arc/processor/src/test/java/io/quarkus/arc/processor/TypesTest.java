@@ -59,6 +59,7 @@ public class TypesTest {
                 ParameterizedType fooType = t.asParameterizedType();
                 assertEquals("T", fooType.arguments().get(0).asTypeVariable().identifier());
                 assertEquals(DotNames.OBJECT, fooType.arguments().get(0).asTypeVariable().bounds().get(0).name());
+                assertTrue(Types.containsTypeVariable(fooType));
             }
         }
         ClassInfo producerClass = index.getClassByName(producerName);

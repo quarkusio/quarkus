@@ -357,6 +357,13 @@ function navigateToGraphQLUiWithToken(token){
     {/if}
 }
 
+function navigateToSwaggerUiWithoutToken(){
+    {#if info:swaggerIsAvailable??}
+    var url = "{config:http-path('quarkus.swagger-ui.path')}";
+    window.open(url, '_blank').focus();
+    {/if}
+}
+
 function printResponseData(data, message){
     if(data.startsWith("2")){
         $('#results').append("<i class='far fa-check-circle text-success px-2'></i>");
@@ -624,6 +631,13 @@ function signInToService(servicePath) {
                 <div class="col offset-md-2">
                     <button onclick="signInToService($('#servicePath').val());" class="btn btn-success btn-block" title="Log into your Web Application">Log into your Web Application</button>
                 </div>
+                <div class="float-right">
+	                    {#if info:swaggerIsAvailable??}
+	                    <a onclick="navigateToSwaggerUiWithoutToken();" class="btn btn-link" title="Test in Swagger UI">
+	                        <i class="fas fa-external-link-alt"></i> Swagger UI
+	                    </a>
+	                    {/if}
+	                </div>
             </div>
         </div>
     </div> 

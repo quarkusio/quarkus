@@ -27,28 +27,28 @@ public class ObjectMapperProducer {
     @Singleton
     @Produces
     public ObjectMapper objectMapper(Instance<ObjectMapperCustomizer> customizers,
-            JacksonConfigSupport jacksonConfigSupport) {
+            JacksonBuildTimeConfig jacksonBuildTimeConfig) {
         ObjectMapper objectMapper = new ObjectMapper();
-        if (!jacksonConfigSupport.isFailOnUnknownProperties()) {
+        if (!jacksonBuildTimeConfig.failOnUnknownProperties) {
             // this feature is enabled by default, so we disable it
             objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         }
-        if (!jacksonConfigSupport.isFailOnEmptyBeans()) {
+        if (!jacksonBuildTimeConfig.failOnEmptyBeans) {
             // this feature is enabled by default, so we disable it
             objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         }
-        if (!jacksonConfigSupport.isWriteDatesAsTimestamps()) {
+        if (!jacksonBuildTimeConfig.writeDatesAsTimestamps) {
             // this feature is enabled by default, so we disable it
             objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         }
-        if (jacksonConfigSupport.isAcceptCaseInsensitiveEnums()) {
+        if (jacksonBuildTimeConfig.acceptCaseInsensitiveEnums) {
             objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
         }
-        JsonInclude.Include serializationInclusion = jacksonConfigSupport.getSerializationInclusion();
+        JsonInclude.Include serializationInclusion = jacksonBuildTimeConfig.serializationInclusion.orElse(null);
         if (serializationInclusion != null) {
             objectMapper.setSerializationInclusion(serializationInclusion);
         }
-        ZoneId zoneId = jacksonConfigSupport.getTimeZone();
+        ZoneId zoneId = jacksonBuildTimeConfig.timezone.orElse(null);
         if ((zoneId != null) && !zoneId.getId().equals("UTC")) { // Jackson uses UTC as the default, so let's not reset it
             objectMapper.setTimeZone(TimeZone.getTimeZone(zoneId));
         }

@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
-import io.quarkus.cli.build.BaseBuildCommand;
+import io.quarkus.cli.common.OutputOptionMixin;
 import picocli.CommandLine;
 import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.Unmatched;
@@ -15,7 +15,13 @@ import picocli.CommandLine.Unmatched;
                 ProjectExtensionsCategories.class,
                 ProjectExtensionsAdd.class,
                 ProjectExtensionsRemove.class }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "Options:%n")
-public class ProjectExtensions extends BaseBuildCommand implements Callable<Integer> {
+public class ProjectExtensions implements Callable<Integer> {
+
+    @CommandLine.Mixin
+    protected OutputOptionMixin output;
+
+    @CommandLine.Spec
+    protected CommandLine.Model.CommandSpec spec;
 
     @Unmatched // avoids throwing errors for unmatched arguments
     List<String> unmatchedArgs;

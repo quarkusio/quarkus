@@ -24,7 +24,7 @@ public class RegistryClientMixin {
 
     /** @see io.quarkus.cli.registry.ToggleRegistryClientMixin#setRegistryClient */
     public final String getRegistryClientProperty() {
-        return "-DquarkusRegistryClient=" + Boolean.toString(enabled());
+        return "-DquarkusRegistryClient=" + enabled();
     }
 
     @CommandLine.Option(names = {

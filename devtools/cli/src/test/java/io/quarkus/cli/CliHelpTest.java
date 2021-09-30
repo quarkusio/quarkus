@@ -4,7 +4,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -54,7 +53,6 @@ public class CliHelpTest {
 
     @Test
     @Order(23)
-    @Disabled
     public void testCreateExtensionHelp() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "extension", "--help");
         result.echoSystemOut();

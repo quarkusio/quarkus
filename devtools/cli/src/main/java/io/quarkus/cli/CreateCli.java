@@ -7,7 +7,6 @@ import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.cli.create.BaseCreateCommand;
 import io.quarkus.cli.create.CodeGenerationGroup;
-import io.quarkus.cli.create.CreateProjectMixin;
 import io.quarkus.cli.create.TargetBuildToolGroup;
 import io.quarkus.cli.create.TargetGAVGroup;
 import io.quarkus.cli.create.TargetLanguageGroup;
@@ -25,9 +24,6 @@ import picocli.CommandLine.Mixin;
                 + "it will use Maven to build an artifact with GROUP-ID='org.acme', ARTIFACT-ID='code-with-quarkus', and VERSION='1.0.0-SNAPSHOT'."
                 + "%n" }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class CreateCli extends BaseCreateCommand {
-    @Mixin
-    CreateProjectMixin createProject;
-
     @Mixin
     TargetGAVGroup gav = new TargetGAVGroup();
 
@@ -58,23 +54,23 @@ public class CreateCli extends BaseCreateCommand {
 
             extensions.add("picocli"); // make sure picocli is selected.
 
-            createProject.setSingleProjectGAV(gav);
-            createProject.setTestOutputDirectory(output.getTestDirectory());
-            if (createProject.checkProjectRootAlreadyExists(output, false)) {
+            setSingleProjectGAV(gav);
+            setTestOutputDirectory(output.getTestDirectory());
+            if (checkProjectRootAlreadyExists(false)) {
                 return CommandLine.ExitCode.USAGE;
             }
 
             BuildTool buildTool = targetBuildTool.getBuildTool(BuildTool.MAVEN);
             SourceType sourceType = targetLanguage.getSourceType(buildTool, extensions, output);
-            createProject.setSourceTypeExtensions(extensions, sourceType);
-            createProject.setCodegenOptions(codeGeneration);
+            setSourceTypeExtensions(extensions, sourceType);
+            setCodegenOptions(codeGeneration);
 
-            QuarkusCommandInvocation invocation = createProject.build(buildTool, targetQuarkusVersion,
-                    output, propertiesOptions.properties);
+            QuarkusCommandInvocation invocation = build(buildTool, targetQuarkusVersion,
+                    propertiesOptions.properties);
 
             boolean success = true;
             if (runMode.isDryRun()) {
-                createProject.dryRun(buildTool, invocation, output);
+                dryRun(buildTool, invocation, output);
             } else if (BuildTool.JBANG.equals(buildTool)) {
                 success = new CreateJBangProjectCommandHandler().execute(invocation).isSuccess();
             } else {
@@ -104,7 +100,7 @@ public class CreateCli extends BaseCreateCommand {
                 + ", targetLanguage=" + targetLanguage
                 + ", codeGeneration=" + codeGeneration
                 + ", extensions=" + extensions
-                + ", project=" + createProject
+                + ", project=" + super.toString()
                 + ", properties=" + propertiesOptions.properties
                 + '}';
     }

@@ -79,11 +79,27 @@ public interface MultipartClient {
 
         @FormParam("fileName")
         @PartType(MediaType.TEXT_PLAIN)
-        public String fileName;
+        private String fileName;
 
         @FormParam("pojo")
         @PartType(MediaType.APPLICATION_JSON)
-        public Pojo pojo;
+        private Pojo pojo;
+
+        public String getFileName() {
+            return fileName;
+        }
+
+        public void setFileName(String fileName) {
+            this.fileName = fileName;
+        }
+
+        public Pojo getPojo() {
+            return pojo;
+        }
+
+        public void setPojo(Pojo pojo) {
+            this.pojo = pojo;
+        }
     }
 
     class Pojo {

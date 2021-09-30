@@ -237,6 +237,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                     if (fileName != null && fileSizeThreshold == 0) {
                         try {
                             if (tempFileLocation != null) {
+                                Files.createDirectories(tempFileLocation);
                                 file = Files.createTempFile(tempFileLocation, "resteasy-reactive", "upload");
                             } else {
                                 file = Files.createTempFile("resteasy-reactive", "upload");
@@ -266,6 +267,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
             if (file == null && fileName != null && fileSizeThreshold < this.currentFileSize) {
                 try {
                     if (tempFileLocation != null) {
+                        Files.createDirectories(tempFileLocation);
                         file = Files.createTempFile(tempFileLocation, "resteasy-reactive", "upload");
                     } else {
                         file = Files.createTempFile("resteasy-reactive", "upload");

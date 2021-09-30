@@ -12,46 +12,45 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
+import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.restclient.config.RestClientConfig;
+import io.quarkus.restclient.config.RestClientsConfig;
 
 public class RestClientBase {
-    public static final String MP_REST = "mp-rest";
-    public static final String REST_URL_FORMAT = "%s/" + MP_REST + "/url";
-    public static final String REST_URI_FORMAT = "%s/" + MP_REST + "/uri";
-    public static final String REST_CONNECT_TIMEOUT_FORMAT = "%s/" + MP_REST + "/connectTimeout";
-    public static final String REST_READ_TIMEOUT_FORMAT = "%s/" + MP_REST + "/readTimeout";
-    public static final String REST_SCOPE_FORMAT = "%s/" + MP_REST + "/scope";
-    public static final String REST_PROVIDERS = "%s/" + MP_REST + "/providers";
-    public static final String REST_TRUST_STORE = "%s/" + MP_REST + "/trustStore";
-    public static final String REST_TRUST_STORE_PASSWORD = "%s/" + MP_REST + "/trustStorePassword";
-    public static final String REST_TRUST_STORE_TYPE = "%s/" + MP_REST + "/trustStoreType";
-    public static final String REST_KEY_STORE = "%s/" + MP_REST + "/keyStore";
-    public static final String REST_KEY_STORE_PASSWORD = "%s/" + MP_REST + "/keyStorePassword";
-    public static final String REST_KEY_STORE_TYPE = "%s/" + MP_REST + "/keyStoreType";
-    public static final String REST_HOSTNAME_VERIFIER = "%s/" + MP_REST + "/hostnameVerifier";
+
+    public static final String QUARKUS_CONFIG_REST_URL_FORMAT = "quarkus.rest-config.\"%s\".url";
+    public static final String QUARKUS_CONFIG_REST_URI_FORMAT = "quarkus.rest-config.\"%s\".uri";
 
     private final Class<?> proxyType;
     private final String baseUriFromAnnotation;
-    private final String propertyPrefix;
     private final Class<?>[] annotationProviders;
+    private final RestClientsConfig configRoot;
+    private final String configKey;
 
-    public RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String propertyPrefix,
+    public RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String configKey,
             Class<?>[] annotationProviders) {
+        this(proxyType, baseUriFromAnnotation, configKey, annotationProviders,
+                getConfigRoot());
+    }
+
+    RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String configKey,
+            Class<?>[] annotationProviders, RestClientsConfig configRoot) {
         this.proxyType = proxyType;
         this.baseUriFromAnnotation = baseUriFromAnnotation;
-        this.propertyPrefix = propertyPrefix;
+        this.configKey = configKey;
         this.annotationProviders = annotationProviders;
+        this.configRoot = configRoot;
     }
 
     public Object create() {
@@ -60,6 +59,10 @@ public class RestClientBase {
         configureTimeouts(builder);
         configureProviders(builder);
         configureSsl(builder);
+        configureProxy(builder);
+        configureRedirects(builder);
+        configureQueryParamStyle(builder);
+        configureCustomProperties(builder);
         // If we have context propagation, then propagate context to the async client threads
         InstanceHandle<ManagedExecutor> managedExecutor = Arc.container().instance(ManagedExecutor.class);
         if (managedExecutor.isAvailable()) {
@@ -69,20 +72,75 @@ public class RestClientBase {
         return builder.build(proxyType);
     }
 
-    private void configureSsl(RestClientBuilder builder) {
-        Optional<String> maybeTrustStore = getOptionalDynamicProperty(REST_TRUST_STORE, String.class);
-        if (maybeTrustStore.isPresent()) {
-            registerTrustStore(maybeTrustStore.get(), builder);
+    void configureCustomProperties(RestClientBuilder builder) {
+        Optional<Integer> connectionPoolSize = oneOf(clientConfigByClassName().connectionPoolSize,
+                clientConfigByConfigKey().connectionPoolSize);
+        if (connectionPoolSize.isPresent()) {
+            builder.property("resteasy.connectionPoolSize", connectionPoolSize.get());
         }
 
-        Optional<String> maybeKeyStore = getOptionalDynamicProperty(REST_KEY_STORE, String.class);
-        if (maybeKeyStore.isPresent()) {
-            registerKeyStore(maybeKeyStore.get(), builder);
+        Optional<Integer> connectionTTL = oneOf(clientConfigByClassName().connectionTTL,
+                clientConfigByConfigKey().connectionTTL);
+        if (connectionTTL.isPresent()) {
+            builder.property("resteasy.connectionTTL",
+                    Arrays.asList(connectionTTL.get(), TimeUnit.MILLISECONDS));
+        }
+    }
+
+    void configureProxy(RestClientBuilder builder) {
+        Optional<String> proxyAddress = oneOf(clientConfigByClassName().proxyAddress, clientConfigByConfigKey().proxyAddress);
+        if (proxyAddress.isPresent()) {
+            String proxyString = proxyAddress.get();
+
+            int lastColonIndex = proxyString.lastIndexOf(':');
+
+            if (lastColonIndex <= 0 || lastColonIndex == proxyString.length() - 1) {
+                throw new RuntimeException("Invalid proxy string. Expected <hostname>:<port>, found '" + proxyString + "'");
+            }
+
+            String host = proxyString.substring(0, lastColonIndex);
+            int port;
+            try {
+                port = Integer.parseInt(proxyString.substring(lastColonIndex + 1));
+            } catch (NumberFormatException e) {
+                throw new RuntimeException("Invalid proxy setting. The port is not a number in '" + proxyString + "'", e);
+            }
+
+            builder.proxyAddress(host, port);
+        }
+    }
+
+    void configureRedirects(RestClientBuilder builder) {
+        Optional<Boolean> followRedirects = oneOf(clientConfigByClassName().followRedirects,
+                clientConfigByConfigKey().followRedirects);
+        if (followRedirects.isPresent()) {
+            builder.followRedirects(followRedirects.get());
+        }
+    }
+
+    void configureQueryParamStyle(RestClientBuilder builder) {
+        Optional<QueryParamStyle> queryParamStyle = oneOf(clientConfigByClassName().queryParamStyle,
+                clientConfigByConfigKey().queryParamStyle);
+        if (queryParamStyle.isPresent()) {
+            builder.queryParamStyle(queryParamStyle.get());
+        }
+    }
+
+    void configureSsl(RestClientBuilder builder) {
+        Optional<String> trustStore = oneOf(clientConfigByClassName().trustStore, clientConfigByConfigKey().trustStore);
+        if (trustStore.isPresent()) {
+            registerTrustStore(trustStore.get(), builder);
         }
 
-        Optional<String> maybeHostnameVerifier = getOptionalDynamicProperty(REST_HOSTNAME_VERIFIER, String.class);
-        if (maybeHostnameVerifier.isPresent()) {
-            registerHostnameVerifier(maybeHostnameVerifier.get(), builder);
+        Optional<String> keyStore = oneOf(clientConfigByClassName().keyStore, clientConfigByConfigKey().keyStore);
+        if (keyStore.isPresent()) {
+            registerKeyStore(keyStore.get(), builder);
+        }
+
+        Optional<String> hostnameVerifier = oneOf(clientConfigByClassName().hostnameVerifier,
+                clientConfigByConfigKey().hostnameVerifier);
+        if (hostnameVerifier.isPresent()) {
+            registerHostnameVerifier(hostnameVerifier.get(), builder);
         }
     }
 
@@ -107,11 +165,13 @@ public class RestClientBase {
     }
 
     private void registerKeyStore(String keyStorePath, RestClientBuilder builder) {
-        Optional<String> keyStorePassword = getOptionalDynamicProperty(REST_KEY_STORE_PASSWORD, String.class);
-        Optional<String> keyStoreType = getOptionalDynamicProperty(REST_KEY_STORE_TYPE, String.class);
-
         try {
+            Optional<String> keyStoreType = oneOf(clientConfigByClassName().keyStoreType,
+                    clientConfigByConfigKey().keyStoreType);
             KeyStore keyStore = KeyStore.getInstance(keyStoreType.orElse("JKS"));
+
+            Optional<String> keyStorePassword = oneOf(clientConfigByClassName().keyStorePassword,
+                    clientConfigByConfigKey().keyStorePassword);
             if (keyStorePassword.isEmpty()) {
                 throw new IllegalArgumentException("No password provided for keystore");
             }
@@ -131,15 +191,17 @@ public class RestClientBase {
     }
 
     private void registerTrustStore(String trustStorePath, RestClientBuilder builder) {
-        Optional<String> maybeTrustStorePassword = getOptionalDynamicProperty(REST_TRUST_STORE_PASSWORD, String.class);
-        Optional<String> maybeTrustStoreType = getOptionalDynamicProperty(REST_TRUST_STORE_TYPE, String.class);
-
         try {
-            KeyStore trustStore = KeyStore.getInstance(maybeTrustStoreType.orElse("JKS"));
-            if (maybeTrustStorePassword.isEmpty()) {
+            Optional<String> trustStoreType = oneOf(clientConfigByClassName().trustStoreType,
+                    clientConfigByConfigKey().trustStoreType);
+            KeyStore trustStore = KeyStore.getInstance(trustStoreType.orElse("JKS"));
+
+            Optional<String> trustStorePassword = oneOf(clientConfigByClassName().trustStorePassword,
+                    clientConfigByConfigKey().trustStorePassword);
+            if (trustStorePassword.isEmpty()) {
                 throw new IllegalArgumentException("No password provided for truststore");
             }
-            String password = maybeTrustStorePassword.get();
+            String password = trustStorePassword.get();
 
             try (InputStream input = locateStream(trustStorePath)) {
                 trustStore.load(input, password.toCharArray());
@@ -179,10 +241,11 @@ public class RestClientBase {
         }
     }
 
-    private void configureProviders(RestClientBuilder builder) {
-        Optional<String> maybeProviders = getOptionalDynamicProperty(REST_PROVIDERS, String.class);
-        if (maybeProviders.isPresent()) {
-            registerProviders(builder, maybeProviders.get());
+    void configureProviders(RestClientBuilder builder) {
+        Optional<String> providers = oneOf(clientConfigByClassName().providers, clientConfigByConfigKey().providers);
+
+        if (providers.isPresent()) {
+            registerProviders(builder, providers.get());
         }
         if (annotationProviders != null) {
             for (Class<?> annotationProvider : annotationProviders) {
@@ -205,34 +268,38 @@ public class RestClientBase {
         }
     }
 
-    private void configureTimeouts(RestClientBuilder builder) {
-        Optional<Long> connectTimeout = getOptionalDynamicProperty(REST_CONNECT_TIMEOUT_FORMAT, Long.class);
+    void configureTimeouts(RestClientBuilder builder) {
+        Optional<Long> connectTimeout = oneOf(clientConfigByClassName().connectTimeout,
+                clientConfigByConfigKey().connectTimeout);
         if (connectTimeout.isPresent()) {
             builder.connectTimeout(connectTimeout.get(), TimeUnit.MILLISECONDS);
         }
 
-        Optional<Long> readTimeout = getOptionalDynamicProperty(REST_READ_TIMEOUT_FORMAT, Long.class);
+        Optional<Long> readTimeout = oneOf(clientConfigByClassName().readTimeout,
+                clientConfigByConfigKey().readTimeout);
         if (readTimeout.isPresent()) {
             builder.readTimeout(readTimeout.get(), TimeUnit.MILLISECONDS);
         }
     }
 
-    private void configureBaseUrl(RestClientBuilder builder) {
-        Optional<String> propertyOptional = getOptionalDynamicProperty(REST_URI_FORMAT, String.class);
-        if (propertyOptional.isEmpty()) {
-            propertyOptional = getOptionalDynamicProperty(REST_URL_FORMAT, String.class);
+    void configureBaseUrl(RestClientBuilder builder) {
+        Optional<String> baseUrlOptional = oneOf(clientConfigByClassName().uri, clientConfigByConfigKey().uri);
+        if (baseUrlOptional.isEmpty()) {
+            baseUrlOptional = oneOf(clientConfigByClassName().url, clientConfigByConfigKey().url);
         }
         if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty())
-                && propertyOptional.isEmpty()) {
+                && baseUrlOptional.isEmpty()) {
+            String propertyPrefix = configKey != null ? configKey : proxyType.getName();
             throw new IllegalArgumentException(
                     String.format(
                             "Unable to determine the proper baseUrl/baseUri. " +
                                     "Consider registering using @RegisterRestClient(baseUri=\"someuri\"), @RegisterRestClient(configKey=\"orkey\"), "
                                     +
                                     "or by adding '%s' or '%s' to your Quarkus configuration",
-                            String.format(REST_URL_FORMAT, propertyPrefix), String.format(REST_URI_FORMAT, propertyPrefix)));
+                            String.format(QUARKUS_CONFIG_REST_URL_FORMAT, propertyPrefix),
+                            String.format(QUARKUS_CONFIG_REST_URI_FORMAT, propertyPrefix)));
         }
-        String baseUrl = propertyOptional.orElse(baseUriFromAnnotation);
+        String baseUrl = baseUrlOptional.orElse(baseUriFromAnnotation);
 
         try {
             builder.baseUrl(new URL(baseUrl));
@@ -247,10 +314,36 @@ public class RestClientBase {
         }
     }
 
-    private <T> Optional<T> getOptionalDynamicProperty(String propertyFormat, Class<T> type) {
-        final Config config = ConfigProvider.getConfig();
-        Optional<T> interfaceNameValue = config.getOptionalValue(String.format(propertyFormat, proxyType.getName()), type);
-        return interfaceNameValue.isPresent() ? interfaceNameValue
-                : config.getOptionalValue(String.format(propertyFormat, propertyPrefix), type);
+    private static RestClientsConfig getConfigRoot() {
+        InstanceHandle<RestClientsConfig> configHandle = Arc.container()
+                .instance(RestClientsConfig.class);
+        if (!configHandle.isAvailable()) {
+            throw new IllegalStateException("Unable to find the RestClientConfigRootProvider");
+        }
+        return configHandle.get();
+    }
+
+    private RestClientConfig clientConfigByConfigKey() {
+        if (configKey != null) {
+            return this.configRoot.configs.getOrDefault(configKey, RestClientConfig.EMPTY);
+        }
+        return RestClientConfig.EMPTY;
+    }
+
+    private RestClientConfig clientConfigByClassName() {
+        if (this.configRoot.configs.containsKey(proxyType.getName())) {
+            return this.configRoot.configs.get(proxyType.getName());
+        }
+        if (this.configRoot.configs.containsKey(proxyType.getSimpleName())) {
+            return this.configRoot.configs.get(proxyType.getSimpleName());
+        }
+        return RestClientConfig.EMPTY;
+    }
+
+    private static <T> Optional<T> oneOf(Optional<T> o1, Optional<T> o2) {
+        if (o1.isPresent()) {
+            return o1;
+        }
+        return o2;
     }
 }

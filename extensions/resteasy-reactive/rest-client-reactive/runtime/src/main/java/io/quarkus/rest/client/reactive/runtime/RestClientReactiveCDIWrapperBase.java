@@ -12,8 +12,8 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
 
     private final T delegate;
 
-    public RestClientReactiveCDIWrapperBase(Class<T> jaxrsInterface, String baseUriFromAnnotation, String propertyPrefix) {
-        this.delegate = RestClientCDIDelegateBuilder.createDelegate(jaxrsInterface, baseUriFromAnnotation, propertyPrefix);
+    public RestClientReactiveCDIWrapperBase(Class<T> jaxrsInterface, String baseUriFromAnnotation, String configKey) {
+        this.delegate = RestClientCDIDelegateBuilder.createDelegate(jaxrsInterface, baseUriFromAnnotation, configKey);
     }
 
     @Override

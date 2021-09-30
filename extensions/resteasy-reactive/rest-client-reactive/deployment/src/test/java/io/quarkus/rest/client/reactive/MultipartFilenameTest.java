@@ -34,7 +34,7 @@ public class MultipartFilenameTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(Resource.class, FormData.class, Client.class, ClientForm.class))
-            .withConfigurationResource("dependent-test-application.properties");
+            .withConfigurationResource("mp-global-scope-test-application.properties");
 
     @Test
     void shouldPassOriginalFileName() throws IOException {

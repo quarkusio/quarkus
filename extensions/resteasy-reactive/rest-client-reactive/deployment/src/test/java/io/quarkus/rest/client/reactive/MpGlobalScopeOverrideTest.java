@@ -17,12 +17,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class MpRestClientScopeOverrideTest {
+public class MpGlobalScopeOverrideTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(HelloClient2.class))
-            .withConfigurationResource("dependent-test-application.properties");
+                    .addClasses(HelloResource.class, HelloClient2.class))
+            .withConfigurationResource("mp-global-scope-test-application.properties");
 
     @RestClient
     HelloClient2 client;
@@ -33,5 +33,10 @@ public class MpRestClientScopeOverrideTest {
         Set<Bean<?>> beans = beanManager.getBeans(HelloClient2.class, RestClient.LITERAL);
         Bean<?> resolvedBean = beanManager.resolve(beans);
         assertThat(resolvedBean.getScope()).isEqualTo(Dependent.class);
+    }
+
+    @Test
+    void shouldConnect() {
+        assertThat(client.echo("Bob")).isEqualTo("hello, Bob");
     }
 }

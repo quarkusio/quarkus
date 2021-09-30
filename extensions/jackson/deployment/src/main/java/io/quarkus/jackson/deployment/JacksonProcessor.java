@@ -30,14 +30,11 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
-import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -48,9 +45,6 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.jackson.ObjectMapperCustomizer;
-import io.quarkus.jackson.runtime.JacksonBuildTimeConfig;
-import io.quarkus.jackson.runtime.JacksonConfigSupport;
-import io.quarkus.jackson.runtime.JacksonRecorder;
 import io.quarkus.jackson.runtime.ObjectMapperProducer;
 import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
@@ -231,16 +225,6 @@ public class JacksonProcessor {
             classPathJacksonModules.produce(new ClassPathJacksonModuleBuildItem(moduleClassName));
         } catch (Exception ignored) {
         }
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    SyntheticBeanBuildItem pushConfigurationBean(JacksonRecorder jacksonRecorder,
-            JacksonBuildTimeConfig jacksonBuildTimeConfig) {
-        return SyntheticBeanBuildItem.configure(JacksonConfigSupport.class)
-                .scope(Singleton.class)
-                .supplier(jacksonRecorder.jacksonConfigSupport(jacksonBuildTimeConfig))
-                .done();
     }
 
     // Generate a ObjectMapperCustomizer bean that registers each serializer / deserializer as well as detected modules with the ObjectMapper

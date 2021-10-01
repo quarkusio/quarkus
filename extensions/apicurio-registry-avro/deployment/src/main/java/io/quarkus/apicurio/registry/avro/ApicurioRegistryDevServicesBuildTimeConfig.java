@@ -29,7 +29,7 @@ public class ApicurioRegistryDevServicesBuildTimeConfig {
      * The Apicurio Registry image to use.
      * Note that only Apicurio Registry 2.x images are supported.
      */
-    @ConfigItem(defaultValue = "apicurio/apicurio-registry-mem:2.0.1.Final")
+    @ConfigItem(defaultValue = "apicurio/apicurio-registry-mem:2.1.1.Final")
     public String imageName;
 
     /**

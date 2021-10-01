@@ -201,7 +201,8 @@
         <log4j2-jboss-logmanager.version>1.0.0.Final</log4j2-jboss-logmanager.version>
         <log4j-jboss-logmanager.version>1.2.2.Final</log4j-jboss-logmanager.version>
         <avro.version>1.11.0</avro.version>
-        <apicurio-registry.version>2.0.1.Final</apicurio-registry.version>
+        <apicurio-registry.version>2.1.1.Final</apicurio-registry.version>
+        <apicurio-common-rest-client.version>0.0.9.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
         <jacoco.version>0.8.7</jacoco.version>
         <testcontainers.version>1.16.2</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
         <docker-java.version>3.2.12</docker-java.version> <!-- must be the version Testcontainers use -->
@@ -3045,6 +3046,11 @@
                 <groupId>io.apicurio</groupId>
                 <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
                 <version>${apicurio-registry.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.apicurio</groupId>
+                <artifactId>apicurio-common-rest-client-vertx</artifactId>
+                <version>${apicurio-common-rest-client.version}</version>
             </dependency>
 
             <dependency>

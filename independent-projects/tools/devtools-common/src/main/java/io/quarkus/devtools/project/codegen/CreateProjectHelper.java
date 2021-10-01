@@ -41,7 +41,7 @@ public class CreateProjectHelper {
         return name;
     }
 
-    public static Path checkProjectRootPath(Path outputPath, String name, boolean dryRun) {
+    public static Path checkProjectRootPath(Path outputPath, String name) {
         requireNonNull(name, "Must specify project name");
         requireNonNull(outputPath, "Must specify output path");
 

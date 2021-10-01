@@ -7,7 +7,6 @@ import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.cli.create.BaseCreateCommand;
-import io.quarkus.cli.create.CreateProjectMixin;
 import io.quarkus.cli.create.ExtensionGAVMixin;
 import io.quarkus.cli.create.ExtensionNameGenerationGroup;
 import io.quarkus.cli.create.ExtensionTestGenerationGroup;
@@ -74,9 +73,6 @@ public class CreateExtension extends BaseCreateCommand {
     protected CommandLine.Model.CommandSpec spec;
 
     @Mixin
-    CreateProjectMixin createProject;
-
-    @Mixin
     ExtensionGAVMixin gav = new ExtensionGAVMixin();
 
     @CommandLine.ArgGroup(order = 1, heading = "%nQuarkus version:%n")
@@ -97,19 +93,19 @@ public class CreateExtension extends BaseCreateCommand {
             output.debug("Creating a new extension project with initial parameters: %s", this);
             output.throwIfUnmatchedArguments(spec.commandLine());
 
-            createProject.setExtensionId(gav.getExtensionId());
-            createProject.setTestOutputDirectory(output.getTestDirectory());
-            if (createProject.checkProjectRootAlreadyExists(output, runMode.isDryRun())) {
+            setExtensionId(gav.getExtensionId());
+            setTestOutputDirectory(output.getTestDirectory());
+            if (checkProjectRootAlreadyExists(runMode.isDryRun())) {
                 return CommandLine.ExitCode.USAGE;
             }
 
             BuildTool buildTool = BuildTool.MAVEN;
-            QuarkusProject quarkusProject = createProject.getExtensionVersions(buildTool, targetQuarkusVersion, output);
+            QuarkusProject quarkusProject = getExtensionVersions(buildTool, targetQuarkusVersion);
             ExtensionCatalog catalog = quarkusProject.getExtensionsCatalog();
             ArtifactCoords quarkusBom = catalog.getBom();
 
             final CreateExtensionCommandHandler createExtension = new io.quarkus.devtools.commands.CreateExtension(
-                    createProject.outputDirectory())
+                    outputDirectory())
                             .extensionId(gav.getExtensionId())
                             .groupId(gav.getGroupId())
                             .version(gav.getVersion())
@@ -153,12 +149,12 @@ public class CreateExtension extends BaseCreateCommand {
         CommandLine.Help help = spec.commandLine().getHelp();
         output.printText(new String[] {
                 "\nA new extension would have been created in",
-                "\t" + createProject.outputDirectory().toString(),
+                "\t" + outputDirectory().toString(),
                 "\nThe extension would have been created using the following settings:\n"
         });
         Map<String, String> dryRunOutput = new TreeMap<>();
         for (Map.Entry<String, Object> entry : invocation.getData().entrySet()) {
-            dryRunOutput.put(createProject.prettyName(entry.getKey()), entry.getValue().toString());
+            dryRunOutput.put(prettyName(entry.getKey()), entry.getValue().toString());
         }
         dryRunOutput.put("Skip Unit Test", "" + testGeneration.skipUnitTest());
         dryRunOutput.put("Skip Dev-mode Test", "" + testGeneration.skipDevModeTest());

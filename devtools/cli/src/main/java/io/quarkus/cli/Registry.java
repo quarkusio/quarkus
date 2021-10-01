@@ -1,8 +1,9 @@
 package io.quarkus.cli;
 
 import java.util.List;
+import java.util.concurrent.Callable;
 
-import io.quarkus.cli.registry.BaseRegistryCommand;
+import io.quarkus.cli.common.OutputOptionMixin;
 import picocli.CommandLine;
 import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.Unmatched;
@@ -11,12 +12,17 @@ import picocli.CommandLine.Unmatched;
         RegistryListCommand.class,
         RegistryAddCommand.class,
         RegistryRemoveCommand.class }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
-public class Registry extends BaseRegistryCommand {
+public class Registry implements Callable<Integer> {
+
+    @CommandLine.Mixin
+    protected OutputOptionMixin output;
+
+    @CommandLine.Spec
+    protected CommandLine.Model.CommandSpec spec;
 
     @Unmatched // avoids throwing errors for unmatched arguments
     List<String> unmatchedArgs;
 
-    @Override
     public Integer call() throws Exception {
         final ParseResult result = spec.commandLine().getParseResult();
         final CommandLine appCommand = spec.subcommands().get("list");

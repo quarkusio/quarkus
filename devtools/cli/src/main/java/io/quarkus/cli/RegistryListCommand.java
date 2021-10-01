@@ -3,7 +3,6 @@ package io.quarkus.cli;
 import java.nio.file.Path;
 
 import io.quarkus.cli.registry.BaseRegistryCommand;
-import io.quarkus.cli.registry.RegistryClientMixin;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.catalog.Platform;
 import io.quarkus.registry.catalog.PlatformCatalog;
@@ -16,9 +15,6 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "list", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "List enabled Quarkus registries", description = "%n"
         + "This command will list currently enabled Quarkus extension registries.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class RegistryListCommand extends BaseRegistryCommand {
-
-    @CommandLine.Mixin
-    protected RegistryClientMixin registryClient;
 
     @CommandLine.Option(names = {
             "--streams" }, description = "List currently recommended platform streams", defaultValue = "false")

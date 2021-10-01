@@ -275,26 +275,26 @@ public class KafkaStreamsProducer {
 
     private static void setTrustStoreConfig(TrustStoreConfig tsc, Properties properties) {
         if (tsc != null) {
-            setProperty(tsc.type, properties, "ssl.truststore.type");
-            setProperty(tsc.location, properties, "ssl.truststore.location");
-            setProperty(tsc.password, properties, "ssl.truststore.password");
-            setProperty(tsc.certificates, properties, "ssl.truststore.certificates");
+            setProperty(tsc.type, properties, SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG);
+            setProperty(tsc.location, properties, SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG);
+            setProperty(tsc.password, properties, SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG);
+            setProperty(tsc.certificates, properties, SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG);
         }
     }
 
     private static void setKeyStoreConfig(KeyStoreConfig ksc, Properties properties) {
         if (ksc != null) {
-            setProperty(ksc.type, properties, "ssl.keystore.type");
-            setProperty(ksc.location, properties, "ssl.keystore.location");
-            setProperty(ksc.password, properties, "ssl.keystore.password");
-            setProperty(ksc.key, properties, "ssl.keystore.key");
-            setProperty(ksc.certificateChain, properties, "ssl.keystore.certificate.chain");
+            setProperty(ksc.type, properties, SslConfigs.SSL_KEYSTORE_TYPE_CONFIG);
+            setProperty(ksc.location, properties, SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG);
+            setProperty(ksc.password, properties, SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG);
+            setProperty(ksc.key, properties, SslConfigs.SSL_KEYSTORE_KEY_CONFIG);
+            setProperty(ksc.certificateChain, properties, SslConfigs.SSL_KEYSTORE_CERTIFICATE_CHAIN_CONFIG);
         }
     }
 
     private static void setKeyConfig(KeyConfig kc, Properties properties) {
         if (kc != null) {
-            setProperty(kc.password, properties, "ssl.key.password");
+            setProperty(kc.password, properties, SslConfigs.SSL_KEY_PASSWORD_CONFIG);
         }
     }
 

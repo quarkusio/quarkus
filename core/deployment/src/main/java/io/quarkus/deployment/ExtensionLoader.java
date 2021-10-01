@@ -476,16 +476,16 @@ public final class ExtensionLoader {
         // now iterate the methods
         final List<Method> methods = getMethods(clazz);
         for (Method method : methods) {
-            final int mods = method.getModifiers();
-            if (Modifier.isStatic(mods)) {
+            final BuildStep buildStep = method.getAnnotation(BuildStep.class);
+            if (buildStep == null) {
                 continue;
             }
-            if (!method.isAnnotationPresent(BuildStep.class))
-                continue;
-            if (!Modifier.isPublic(mods) || !Modifier.isPublic(method.getDeclaringClass().getModifiers())) {
+            if (Modifier.isStatic(method.getModifiers())) {
+                throw new RuntimeException("A build step must be a non-static method: " + method);
+            }
+            if (!Modifier.isPublic(method.getModifiers()) || !Modifier.isPublic(method.getDeclaringClass().getModifiers())) {
                 method.setAccessible(true);
             }
-            final BuildStep buildStep = method.getAnnotation(BuildStep.class);
             final Class<? extends BooleanSupplier>[] onlyIf = buildStep.onlyIf();
             final Class<? extends BooleanSupplier>[] onlyIfNot = buildStep.onlyIfNot();
             final Parameter[] methodParameters = method.getParameters();

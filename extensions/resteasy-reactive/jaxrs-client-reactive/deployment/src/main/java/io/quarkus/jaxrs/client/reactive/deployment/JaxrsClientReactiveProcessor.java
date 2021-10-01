@@ -678,6 +678,21 @@ public class JaxrsClientReactiveProcessor {
                                             handleHeaderMethod.getMethodParam(1));
                                     handleHeaderMethod.returnValue(invocationBuilderRef);
                                     invocationBuilderEnrichers.put(handleHeaderDescriptor, paramValue);
+                                } else if (param.parameterType == ParameterType.COOKIE) {
+                                    // cookies are added at the invocation builder level
+                                    MethodDescriptor handleCookieDescriptor = MethodDescriptor.ofMethod(subName,
+                                            subMethod.getName() + "$$" + subMethodIndex + "$$handleCookie$$" + paramIdx,
+                                            Invocation.Builder.class,
+                                            Invocation.Builder.class, param.type);
+                                    MethodCreator handleCookieMethod = sub.getMethodCreator(handleCookieDescriptor);
+
+                                    AssignableResultHandle invocationBuilderRef = handleCookieMethod
+                                            .createVariable(Invocation.Builder.class);
+                                    handleCookieMethod.assign(invocationBuilderRef, handleCookieMethod.getMethodParam(0));
+                                    addCookieParam(handleCookieMethod, invocationBuilderRef, param.name,
+                                            handleCookieMethod.getMethodParam(1));
+                                    handleCookieMethod.returnValue(invocationBuilderRef);
+                                    invocationBuilderEnrichers.put(handleCookieDescriptor, paramValue);
                                 } else if (param.parameterType == ParameterType.FORM) {
                                     formParams = createIfAbsent(subMethodCreator, formParams);
                                     subMethodCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
@@ -749,6 +764,22 @@ public class JaxrsClientReactiveProcessor {
                                     addHeaderParam(handleHeaderMethod, invocationBuilderRef, param.name,
                                             handleHeaderMethod.getMethodParam(1));
                                     handleHeaderMethod.returnValue(invocationBuilderRef);
+                                    invocationBuilderEnrichers.put(handleHeaderDescriptor,
+                                            subMethodCreator.getMethodParam(paramIdx));
+                                } else if (param.parameterType == ParameterType.COOKIE) {
+                                    // cookies are added at the invocation builder level
+                                    MethodDescriptor handleHeaderDescriptor = MethodDescriptor.ofMethod(subName,
+                                            subMethod.getName() + "$$" + subMethodIndex + "$$handleCookie$$" + paramIdx,
+                                            Invocation.Builder.class,
+                                            Invocation.Builder.class, param.type);
+                                    MethodCreator handleCookieMethod = c.getMethodCreator(handleHeaderDescriptor);
+
+                                    AssignableResultHandle invocationBuilderRef = handleCookieMethod
+                                            .createVariable(Invocation.Builder.class);
+                                    handleCookieMethod.assign(invocationBuilderRef, handleCookieMethod.getMethodParam(0));
+                                    addCookieParam(handleCookieMethod, invocationBuilderRef, param.name,
+                                            handleCookieMethod.getMethodParam(1));
+                                    handleCookieMethod.returnValue(invocationBuilderRef);
                                     invocationBuilderEnrichers.put(handleHeaderDescriptor,
                                             subMethodCreator.getMethodParam(paramIdx));
                                 } else if (param.parameterType == ParameterType.FORM) {
@@ -906,6 +937,21 @@ public class JaxrsClientReactiveProcessor {
                             addHeaderParam(handleHeaderMethod, invocationBuilderRef, param.name,
                                     handleHeaderMethod.getMethodParam(1));
                             handleHeaderMethod.returnValue(invocationBuilderRef);
+                            invocationBuilderEnrichers.put(handleHeaderDescriptor, methodCreator.getMethodParam(paramIdx));
+                        } else if (param.parameterType == ParameterType.COOKIE) {
+                            // headers are added at the invocation builder level
+                            MethodDescriptor handleHeaderDescriptor = MethodDescriptor.ofMethod(name,
+                                    method.getName() + "$$" + methodIndex + "$$handleCookie$$" + paramIdx,
+                                    Invocation.Builder.class,
+                                    Invocation.Builder.class, param.type);
+                            MethodCreator handleCookieMethod = c.getMethodCreator(handleHeaderDescriptor);
+
+                            AssignableResultHandle invocationBuilderRef = handleCookieMethod
+                                    .createVariable(Invocation.Builder.class);
+                            handleCookieMethod.assign(invocationBuilderRef, handleCookieMethod.getMethodParam(0));
+                            addCookieParam(handleCookieMethod, invocationBuilderRef, param.name,
+                                    handleCookieMethod.getMethodParam(1));
+                            handleCookieMethod.returnValue(invocationBuilderRef);
                             invocationBuilderEnrichers.put(handleHeaderDescriptor, methodCreator.getMethodParam(paramIdx));
                         } else if (param.parameterType == ParameterType.FORM) {
                             formParams = createIfAbsent(methodCreator, formParams);

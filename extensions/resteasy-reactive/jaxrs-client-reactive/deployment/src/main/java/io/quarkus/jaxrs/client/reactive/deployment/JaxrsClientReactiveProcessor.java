@@ -666,7 +666,7 @@ public class JaxrsClientReactiveProcessor {
                                 } else if (param.parameterType == ParameterType.HEADER) {
                                     // headers are added at the invocation builder level
                                     MethodDescriptor handleHeaderDescriptor = MethodDescriptor.ofMethod(subName,
-                                            subMethod.getName() + "$$" + subMethodIndex + "$$handleHeader$$" + paramIdx,
+                                            subMethod.getName() + "$$" + subMethodIndex + "$$handleHeader$$param" + paramIdx,
                                             Invocation.Builder.class,
                                             Invocation.Builder.class, param.type);
                                     MethodCreator handleHeaderMethod = sub.getMethodCreator(handleHeaderDescriptor);
@@ -681,7 +681,7 @@ public class JaxrsClientReactiveProcessor {
                                 } else if (param.parameterType == ParameterType.COOKIE) {
                                     // cookies are added at the invocation builder level
                                     MethodDescriptor handleCookieDescriptor = MethodDescriptor.ofMethod(subName,
-                                            subMethod.getName() + "$$" + subMethodIndex + "$$handleCookie$$" + paramIdx,
+                                            subMethod.getName() + "$$" + subMethodIndex + "$$handleCookie$$param" + paramIdx,
                                             Invocation.Builder.class,
                                             Invocation.Builder.class, param.type);
                                     MethodCreator handleCookieMethod = sub.getMethodCreator(handleCookieDescriptor);
@@ -756,7 +756,7 @@ public class JaxrsClientReactiveProcessor {
                                             subMethod.getName() + "$$" + subMethodIndex + "$$handleHeader$$" + paramIdx,
                                             Invocation.Builder.class,
                                             Invocation.Builder.class, param.type);
-                                    MethodCreator handleHeaderMethod = c.getMethodCreator(handleHeaderDescriptor);
+                                    MethodCreator handleHeaderMethod = sub.getMethodCreator(handleHeaderDescriptor);
 
                                     AssignableResultHandle invocationBuilderRef = handleHeaderMethod
                                             .createVariable(Invocation.Builder.class);
@@ -772,7 +772,7 @@ public class JaxrsClientReactiveProcessor {
                                             subMethod.getName() + "$$" + subMethodIndex + "$$handleCookie$$" + paramIdx,
                                             Invocation.Builder.class,
                                             Invocation.Builder.class, param.type);
-                                    MethodCreator handleCookieMethod = c.getMethodCreator(handleHeaderDescriptor);
+                                    MethodCreator handleCookieMethod = sub.getMethodCreator(handleHeaderDescriptor);
 
                                     AssignableResultHandle invocationBuilderRef = handleCookieMethod
                                             .createVariable(Invocation.Builder.class);

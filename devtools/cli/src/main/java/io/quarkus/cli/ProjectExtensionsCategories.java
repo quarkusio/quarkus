@@ -112,7 +112,7 @@ public class ProjectExtensionsCategories extends BaseBuildCommand implements Cal
         if (extensionListHint) {
             output.info("");
             output.info(ListCategories.LIST_EXTENSIONS_HINT,
-                    "`quarkus extensions list --installable --category \"categoryId\"`");
+                    "`quarkus extension list --installable --category \"categoryId\"`");
         }
     }
 

@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.deployment;
 
 import java.nio.charset.Charset;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -70,7 +71,7 @@ public class HibernateOrmConfigPersistenceUnit {
      */
     // @formatter:on
     @ConfigItem(defaultValueDocumentation = "import.sql in DEV, TEST ; no-file otherwise")
-    public Optional<String> sqlLoadScript;
+    public Optional<List<String>> sqlLoadScript;
 
     /**
      * The size of the batches used when loading entities and collections.

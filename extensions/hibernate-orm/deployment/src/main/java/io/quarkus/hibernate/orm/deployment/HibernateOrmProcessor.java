@@ -30,9 +30,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
@@ -771,18 +769,16 @@ public final class HibernateOrmProcessor {
         }
     }
 
-    private static Optional<String> getSqlLoadScript(Optional<String> sqlLoadScript, LaunchMode launchMode) {
+    private static List<String> getSqlLoadScript(Optional<List<String>> sqlLoadScript, LaunchMode launchMode) {
         // Explicit file or default Hibernate ORM file.
         if (sqlLoadScript.isPresent()) {
-            if (NO_SQL_LOAD_SCRIPT_FILE.equalsIgnoreCase(sqlLoadScript.get())) {
-                return Optional.empty();
-            } else {
-                return Optional.of(sqlLoadScript.get());
-            }
+            return sqlLoadScript.get().stream()
+                    .filter(s -> !NO_SQL_LOAD_SCRIPT_FILE.equalsIgnoreCase(s))
+                    .collect(Collectors.toList());
         } else if (launchMode == LaunchMode.NORMAL) {
-            return Optional.empty();
+            return Collections.emptyList();
         } else {
-            return Optional.of("import.sql");
+            return List.of("import.sql");
         }
     }
 
@@ -1024,17 +1020,31 @@ public final class HibernateOrmProcessor {
         }
 
         // sql-load-scripts
-        Optional<String> importFile = getSqlLoadScript(persistenceUnitConfig.sqlLoadScript, launchMode);
+        List<String> importFiles = getSqlLoadScript(persistenceUnitConfig.sqlLoadScript, launchMode);
 
-        if (importFile.isPresent()) {
-            Boolean allLoadScriptFilesExist = Stream.of(importFile.get().split(","))
-                    .map(String::trim)
-                    .map(handleLoadScriptFile(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem,
-                            nativeImageResources, hotDeploymentWatchedFiles))
-                    .reduce(true, (x, y) -> x && y);
+        if (!importFiles.isEmpty()) {
+            for (String importFile : importFiles) {
+                Path loadScriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(importFile);
 
-            if (allLoadScriptFilesExist) {
-                descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, importFile.get());
+                if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
+                    // enlist resource if present
+                    nativeImageResources.produce(new NativeImageResourceBuildItem(importFile));
+                } else if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
+                    //raise exception if explicit file is not present (i.e. not the default)
+                    throw new ConfigurationError(
+                            "Unable to find file referenced in '"
+                                    + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "sql-load-script") + "="
+                                    + String.join(",", persistenceUnitConfig.sqlLoadScript.get())
+                                    + "'. Remove property or add file to your path.");
+                }
+                // in dev mode we want to make sure that we watch for changes to file even if it doesn't currently exist
+                // as a user could still add it after performing the initial configuration
+                hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(importFile));
+            }
+
+            // only set the found import files if configured
+            if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
+                descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, String.join(",", importFiles));
             }
         } else {
             //Disable implicit loading of the default import script (import.sql)
@@ -1083,32 +1093,6 @@ public final class HibernateOrmProcessor {
                         persistenceUnitConfig.multitenantSchemaDatasource.orElse(null),
                         xmlMappings,
                         false, false));
-    }
-
-    private static Function<String, Boolean> handleLoadScriptFile(String persistenceUnitName,
-            HibernateOrmConfigPersistenceUnit persistenceUnitConfig, ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
-            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
-        return file -> {
-            boolean fileExists = false;
-            Path loadScriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(file);
-
-            if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
-                // enlist resource if present
-                nativeImageResources.produce(new NativeImageResourceBuildItem(file));
-                fileExists = true;
-            } else if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
-                //raise exception if explicit file is not present (i.e. not the default)
-                throw new ConfigurationError(
-                        "Unable to find file referenced in '"
-                                + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "sql-load-script") + "="
-                                + persistenceUnitConfig.sqlLoadScript.get() + "'. Remove property or add file to your path.");
-            }
-            // in dev mode we want to make sure that we watch for changes to file even if it doesn't currently exist
-            // as a user could still add it after performing the initial configuration
-            hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(file));
-            return fileExists;
-        };
     }
 
     private static Optional<JdbcDataSourceBuildItem> findJdbcDataSource(String persistenceUnitName,

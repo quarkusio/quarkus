@@ -23,7 +23,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -38,7 +37,6 @@ public class ConfigMappingUtils {
     private ConfigMappingUtils() {
     }
 
-    @BuildStep
     public static void generateConfigClasses(
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,

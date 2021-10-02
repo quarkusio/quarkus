@@ -578,9 +578,8 @@ to produce the final build artifact(s).
 
 ==== Build steps
 
-A _build step_ is a method which is annotated with the `@io.quarkus.deployment.annotations.BuildStep` annotation.  Each
-build step may <<consuming-values,consume>> items that are produced by earlier stages, and <<producing-values,produce>> items
-that can be consumed by later stages. Build steps are normally only run when they produce a build item that is
+A _build step_ is a non-static method which is annotated with the `@io.quarkus.deployment.annotations.BuildStep` annotation.  
+Each build step may <<consuming-values,consume>> items that are produced by earlier stages, and <<producing-values,produce>> items that can be consumed by later stages. Build steps are normally only run when they produce a build item that is
 ultimately consumed by another step.
 
 Build steps are normally placed on plain classes within an extension's deployment module.  The classes are automatically

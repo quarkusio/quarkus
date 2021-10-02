@@ -144,7 +144,7 @@ class QuarkusJacksonJsonCodec implements JsonCodec {
             ObjectMapper mapper = pretty ? prettyMapper() : QuarkusJacksonJsonCodec.mapper;
             return mapper.writeValueAsString(object);
         } catch (Exception e) {
-            throw new EncodeException("Failed to encode as JSON: " + e.getMessage());
+            throw new EncodeException("Failed to encode as JSON: " + e.getMessage(), e);
         }
     }
 
@@ -154,7 +154,7 @@ class QuarkusJacksonJsonCodec implements JsonCodec {
             ObjectMapper mapper = pretty ? prettyMapper() : QuarkusJacksonJsonCodec.mapper;
             return Buffer.buffer(mapper.writeValueAsBytes(object));
         } catch (Exception e) {
-            throw new EncodeException("Failed to encode as JSON: " + e.getMessage());
+            throw new EncodeException("Failed to encode as JSON: " + e.getMessage(), e);
         }
     }
 

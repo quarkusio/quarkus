@@ -17,6 +17,7 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
+import io.quarkus.runtime.LaunchMode;
 
 @Mojo(name = "generate-code", defaultPhase = LifecyclePhase.GENERATE_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class GenerateCodeMojo extends QuarkusBootstrapMojo {
@@ -26,6 +27,9 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
      */
     @Parameter(defaultValue = "false", property = "quarkus.generate-code.skip", alias = "quarkus.prepare.skip")
     private boolean skipSourceGeneration = false;
+
+    @Parameter(defaultValue = "NORMAL", property = "launchMode")
+    String mode;
 
     @Override
     protected boolean beforeExecute() throws MojoExecutionException, MojoFailureException {
@@ -51,10 +55,15 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
             Consumer<Path> sourceRegistrar,
             boolean test) throws MojoFailureException, MojoExecutionException {
 
+        final LaunchMode launchMode = test ? LaunchMode.TEST : LaunchMode.valueOf(mode);
+        if (getLog().isDebugEnabled()) {
+            getLog().debug("Bootstrapping Quarkus application in mode " + launchMode);
+        }
+
         ClassLoader originalTccl = Thread.currentThread().getContextClassLoader();
         try {
 
-            final CuratedApplication curatedApplication = bootstrapApplication();
+            final CuratedApplication curatedApplication = bootstrapApplication(launchMode);
 
             QuarkusClassLoader deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
             Thread.currentThread().setContextClassLoader(deploymentClassLoader);

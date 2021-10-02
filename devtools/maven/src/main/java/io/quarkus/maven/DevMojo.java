@@ -95,6 +95,7 @@ import io.quarkus.maven.MavenDevModeLauncher.Builder;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.runtime.LaunchMode;
 
 /**
  * The dev mojo, that runs a quarkus app in a forked process. A background compilation process is launched and any changes are
@@ -512,12 +513,13 @@ public class DevMojo extends AbstractMojo {
     }
 
     private void initToolchain() throws MojoExecutionException {
-        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_TOOLCHAINS_PLUGIN, "toolchain");
+        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_TOOLCHAINS_PLUGIN, "toolchain", Collections.emptyMap());
     }
 
     private void triggerPrepare() throws MojoExecutionException {
         final PluginDescriptor pluginDescr = getPluginDescriptor();
-        executeIfConfigured(pluginDescr.getGroupId(), pluginDescr.getArtifactId(), QUARKUS_GENERATE_CODE_GOAL);
+        executeIfConfigured(pluginDescr.getGroupId(), pluginDescr.getArtifactId(), QUARKUS_GENERATE_CODE_GOAL,
+                Collections.singletonMap("mode", LaunchMode.DEVELOPMENT.name()));
     }
 
     private PluginDescriptor getPluginDescriptor() {
@@ -528,10 +530,12 @@ public class DevMojo extends AbstractMojo {
         handleResources(test);
 
         // compile the Kotlin sources if needed
-        executeIfConfigured(ORG_JETBRAINS_KOTLIN, KOTLIN_MAVEN_PLUGIN, test ? "test-compile" : "compile");
+        executeIfConfigured(ORG_JETBRAINS_KOTLIN, KOTLIN_MAVEN_PLUGIN, test ? "test-compile" : "compile",
+                Collections.emptyMap());
 
         // Compile the Java sources if needed
-        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_COMPILER_PLUGIN, test ? "testCompile" : "compile");
+        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_COMPILER_PLUGIN, test ? "testCompile" : "compile",
+                Collections.emptyMap());
     }
 
     /**
@@ -542,16 +546,18 @@ public class DevMojo extends AbstractMojo {
         if (resources.isEmpty()) {
             return;
         }
-        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_RESOURCES_PLUGIN, test ? "testResources" : "resources");
+        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_RESOURCES_PLUGIN, test ? "testResources" : "resources",
+                Collections.emptyMap());
     }
 
-    private void executeIfConfigured(String pluginGroupId, String pluginArtifactId, String goal) throws MojoExecutionException {
+    private void executeIfConfigured(String pluginGroupId, String pluginArtifactId, String goal, Map<String, String> params)
+            throws MojoExecutionException {
         final Plugin plugin = getConfiguredPluginOrNull(pluginGroupId, pluginArtifactId);
         if (!isGoalConfigured(plugin, goal)) {
             return;
         }
         getLog().info("Invoking " + plugin.getGroupId() + ":" + plugin.getArtifactId() + ":" + plugin.getVersion() + ":" + goal
-                + " @ " + project.getArtifactId());
+                + ") @ " + project.getArtifactId());
         executeMojo(
                 plugin(
                         groupId(pluginGroupId),
@@ -559,7 +565,7 @@ public class DevMojo extends AbstractMojo {
                         version(plugin.getVersion()),
                         plugin.getDependencies()),
                 goal(goal),
-                getPluginConfig(plugin, goal),
+                getPluginConfig(plugin, goal, params),
                 executionEnvironment(
                         project,
                         session,
@@ -578,7 +584,7 @@ public class DevMojo extends AbstractMojo {
         return false;
     }
 
-    private Xpp3Dom getPluginConfig(Plugin plugin, String goal) throws MojoExecutionException {
+    private Xpp3Dom getPluginConfig(Plugin plugin, String goal, Map<String, String> params) throws MojoExecutionException {
         Xpp3Dom mergedConfig = null;
         if (!plugin.getExecutions().isEmpty()) {
             for (PluginExecution exec : plugin.getExecutions()) {
@@ -609,6 +615,12 @@ public class DevMojo extends AbstractMojo {
                     configuration.addChild(child);
                 }
             }
+        }
+
+        for (Map.Entry<String, String> param : params.entrySet()) {
+            final Xpp3Dom p = new Xpp3Dom(param.getKey());
+            p.setValue(param.getValue());
+            configuration.addChild(p);
         }
 
         return configuration;
@@ -889,28 +901,35 @@ public class DevMojo extends AbstractMojo {
 
         setKotlinSpecificFlags(builder);
 
-        final MavenArtifactResolver.Builder resolverBuilder = MavenArtifactResolver.builder()
-                .setRepositorySystem(repoSystem)
-                .setRemoteRepositories(repos)
-                .setRemoteRepositoryManager(remoteRepositoryManager)
-                .setWorkspaceDiscovery(true);
-
         // path to the serialized application model
         final Path appModelLocation = resolveSerializedModelLocation();
-        // if it already exists, it may be a reload triggered by a change in a POM
-        // in which case we should not be using the original Maven session
-        boolean reinitializeMavenSession = Files.exists(appModelLocation);
-        if (reinitializeMavenSession) {
-            Files.delete(appModelLocation);
-        } else {
-            // we can re-use the original Maven session
-            resolverBuilder.setRepositorySystemSession(repoSession);
-        }
 
-        final ApplicationModel appModel = new BootstrapAppModelResolver(resolverBuilder.build())
-                .setDevMode(true)
-                .setCollectReloadableDependencies(!noDeps)
-                .resolveModel(new GACTV(project.getGroupId(), project.getArtifactId(), null, "jar", project.getVersion()));
+        ApplicationModel appModel = bootstrapProvider
+                .getResolvedApplicationModel(QuarkusBootstrapProvider.getProjectId(project), LaunchMode.DEVELOPMENT);
+        if (appModel != null) {
+            bootstrapProvider.close();
+        } else {
+            final MavenArtifactResolver.Builder resolverBuilder = MavenArtifactResolver.builder()
+                    .setRepositorySystem(repoSystem)
+                    .setRemoteRepositories(repos)
+                    .setRemoteRepositoryManager(remoteRepositoryManager)
+                    .setWorkspaceDiscovery(true);
+
+            // if it already exists, it may be a reload triggered by a change in a POM
+            // in which case we should not be using the original Maven session
+            boolean reinitializeMavenSession = Files.exists(appModelLocation);
+            if (reinitializeMavenSession) {
+                Files.delete(appModelLocation);
+            } else {
+                // we can re-use the original Maven session
+                resolverBuilder.setRepositorySystemSession(repoSession);
+            }
+
+            appModel = new BootstrapAppModelResolver(resolverBuilder.build())
+                    .setDevMode(true)
+                    .setCollectReloadableDependencies(!noDeps)
+                    .resolveModel(new GACTV(project.getGroupId(), project.getArtifactId(), null, "jar", project.getVersion()));
+        }
 
         // serialize the app model to avoid re-resolving it in the dev process
         BootstrapUtils.serializeAppModel(appModel, appModelLocation);

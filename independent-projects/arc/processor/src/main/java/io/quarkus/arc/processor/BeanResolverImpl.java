@@ -83,9 +83,7 @@ class BeanResolverImpl implements BeanResolver {
     private List<BeanInfo> findMatching(TypeAndQualifiers typeAndQualifiers) {
         List<BeanInfo> resolved = new ArrayList<>();
         //optimisation for the simple class case
-        Collection<BeanInfo> potentialBeans = typeAndQualifiers.type.kind() == CLASS
-                ? beanDeployment.getBeansByType(typeAndQualifiers.type)
-                : beanDeployment.getBeans();
+        Collection<BeanInfo> potentialBeans = potentialBeans(typeAndQualifiers.type);
         for (BeanInfo b : potentialBeans) {
             if (Beans.matches(b, typeAndQualifiers)) {
                 resolved.add(b);
@@ -97,14 +95,20 @@ class BeanResolverImpl implements BeanResolver {
     List<BeanInfo> findTypeMatching(Type type) {
         List<BeanInfo> resolved = new ArrayList<>();
         //optimisation for the simple class case
-        Collection<BeanInfo> potentialBeans = type.kind() == CLASS ? beanDeployment.getBeansByType(type)
-                : beanDeployment.getBeans();
+        Collection<BeanInfo> potentialBeans = potentialBeans(type);
         for (BeanInfo b : potentialBeans) {
             if (Beans.matchesType(b, type)) {
                 resolved.add(b);
             }
         }
         return resolved.isEmpty() ? Collections.emptyList() : resolved;
+    }
+
+    Collection<BeanInfo> potentialBeans(Type type) {
+        if ((type.kind() == CLASS || type.kind() == PARAMETERIZED_TYPE) && !type.name().equals(DotNames.OBJECT)) {
+            return beanDeployment.getBeansByRawType(type.name());
+        }
+        return beanDeployment.getBeans();
     }
 
     boolean matches(Type requiredType, Type beanType) {

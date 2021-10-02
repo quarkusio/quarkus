@@ -68,7 +68,7 @@ public class BeanDeployment {
     private final Map<DotName, StereotypeInfo> stereotypes;
 
     private final List<BeanInfo> beans;
-    private volatile Map<Type, List<BeanInfo>> beansByType = null;
+    private volatile Map<DotName, List<BeanInfo>> beansByType;
 
     private final List<InterceptorInfo> interceptors;
     private final List<DecoratorInfo> decorators;
@@ -289,15 +289,32 @@ public class BeanDeployment {
     }
 
     private void initBeanByTypeMap() {
-        beansByType = new HashMap<>();
-        for (var bean : beans) {
-            for (var beanType : bean.types) {
-                beansByType.computeIfAbsent(beanType, (s) -> new ArrayList<>()).add(bean);
+        Map<DotName, List<BeanInfo>> map = new HashMap<>();
+        for (BeanInfo bean : beans) {
+            for (Type beanType : bean.types) {
+                if (DotNames.OBJECT.equals(beanType.name())) {
+                    // Every bean has java.lang.Object - no need to cache results here
+                    continue;
+                }
+                List<BeanInfo> beans = map.get(beanType.name());
+                if (beans == null) {
+                    // Very often, there will be exactly one bean for a given type
+                    map.put(beanType.name(), List.of(bean));
+                } else {
+                    if (beans.size() == 1) {
+                        map.put(beanType.name(), List.of(beans.get(0), bean));
+                    } else {
+                        BeanInfo[] array = new BeanInfo[beans.size() + 1];
+                        for (int i = 0; i < beans.size(); i++) {
+                            array[i] = beans.get(i);
+                        }
+                        array[beans.size()] = bean;
+                        map.put(beanType.name(), List.of(array));
+                    }
+                }
             }
         }
-        for (var e : beansByType.entrySet()) {
-            e.setValue(Collections.unmodifiableList(e.getValue()));
-        }
+        this.beansByType = map;
     }
 
     private void removeUnusedComponents(Set<BeanInfo> declaresObserver,
@@ -423,8 +440,8 @@ public class BeanDeployment {
         return Collections.unmodifiableList(beans);
     }
 
-    public Collection<BeanInfo> getBeansByType(Type type) {
-        var ret = beansByType.get(type);
+    Collection<BeanInfo> getBeansByRawType(DotName typeName) {
+        var ret = beansByType.get(typeName);
         if (ret == null) {
             return Collections.emptyList();
         }

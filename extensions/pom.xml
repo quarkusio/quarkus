@@ -129,6 +129,7 @@
         <module>smallrye-jwt</module>
         <module>oidc-common</module>
         <module>oidc</module>
+        <module>oidc-cache</module>
         <module>oidc-token-propagation</module>
         <module>oidc-client</module>
         <module>oidc-client-filter</module>

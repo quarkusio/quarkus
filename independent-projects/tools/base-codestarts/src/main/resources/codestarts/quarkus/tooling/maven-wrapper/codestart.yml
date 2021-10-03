@@ -2,7 +2,6 @@ name: maven-wrapper
 type: tooling
 output-strategy:
   "mvnw": "executable"
-  "mvnw.cmd": "executable"
 language:
   base:
     data:

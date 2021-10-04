@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 
+import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.cli.common.TargetQuarkusVersionGroup;
@@ -33,6 +34,9 @@ public class BaseCreateCommand implements Callable<Integer> {
 
     @Mixin
     ToggleRegistryClientMixin registryClient;
+
+    @CommandLine.Mixin
+    protected HelpOption helpOption;
 
     @Spec
     protected CommandSpec spec;

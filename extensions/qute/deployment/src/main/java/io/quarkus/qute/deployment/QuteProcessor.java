@@ -1708,6 +1708,7 @@ public class QuteProcessor {
     private static AnnotationTarget findProperty(String name, ClassInfo clazz, IndexView index) {
         Set<DotName> interfaceNames = new HashSet<>();
         while (clazz != null) {
+            addInterfaces(clazz, index, interfaceNames);
             interfaceNames.addAll(clazz.interfaceNames());
             // Fields
             for (FieldInfo field : clazz.fields()) {
@@ -1756,6 +1757,19 @@ public class QuteProcessor {
         return null;
     }
 
+    private static void addInterfaces(ClassInfo clazz, IndexView index, Set<DotName> interfaceNames) {
+        if (clazz == null) {
+            return;
+        }
+        List<DotName> names = clazz.interfaceNames();
+        if (!names.isEmpty()) {
+            interfaceNames.addAll(names);
+            for (DotName name : names) {
+                addInterfaces(index.getClassByName(name), index, interfaceNames);
+            }
+        }
+    }
+
     /**
      * Find a non-static non-synthetic method with the given name, matching number of params and assignable parameter types.
      *
@@ -1771,7 +1785,7 @@ public class QuteProcessor {
             IndexView index, Function<String, String> templateIdToPathFun, Map<String, Match> results) {
         Set<DotName> interfaceNames = new HashSet<>();
         while (clazz != null) {
-            interfaceNames.addAll(clazz.interfaceNames());
+            addInterfaces(clazz, index, interfaceNames);
             for (MethodInfo method : clazz.methods()) {
                 if (Modifier.isPublic(method.flags()) && !Modifier.isStatic(method.flags())
                         && !ValueResolverGenerator.isSynthetic(method.flags())

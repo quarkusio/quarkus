@@ -20,7 +20,7 @@ public class InterfaceValidationSuccessTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(Metrics.class, Count.class, Wrapper.class)
+                    .addClasses(Metrics.class, Count.class, Wrapper.class, NumericWrapper.class)
                     .addAsResource(new StringAsset("{@java.util.List list}"
                             + "{list.empty}:{list.toString}"),
                             "templates/list.html")
@@ -76,7 +76,10 @@ public class InterfaceValidationSuccessTest {
         String name(int age);
     }
 
-    public interface Count extends Wrapper<Integer> {
+    public interface NumericWrapper extends Wrapper<Integer> {
+    }
+
+    public interface Count extends NumericWrapper {
     }
 
     public interface Metrics {

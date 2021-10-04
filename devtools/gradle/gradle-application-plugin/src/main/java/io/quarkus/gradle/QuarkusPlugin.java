@@ -271,8 +271,8 @@ public class QuarkusPlugin implements Plugin<Project> {
     }
 
     private void verifyGradleVersion() {
-        if (GradleVersion.current().compareTo(GradleVersion.version("5.0")) < 0) {
-            throw new GradleException("Quarkus plugin requires Gradle 5.0 or later. Current version is: " +
+        if (GradleVersion.current().compareTo(GradleVersion.version("6.1")) < 0) {
+            throw new GradleException("Quarkus plugin requires Gradle 6.1 or later. Current version is: " +
                     GradleVersion.current());
         }
     }

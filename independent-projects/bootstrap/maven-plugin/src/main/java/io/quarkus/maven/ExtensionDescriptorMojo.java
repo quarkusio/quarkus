@@ -512,13 +512,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
         root.accept(coreVersionLocator);
         if (coreVersionLocator.coreVersion != null) {
-            ObjectNode metadata;
-            JsonNode mvalue = extObject.get(METADATA);
-            if (mvalue != null && mvalue.isObject()) {
-                metadata = (ObjectNode) mvalue;
-            } else {
-                metadata = extObject.putObject(METADATA);
-            }
+            ObjectNode metadata = getMetadataNode(extObject);
             metadata.put("built-with-quarkus-core", coreVersionLocator.coreVersion);
         } else if (!ignoreNotDetectedQuarkusCoreVersion) {
             throw new MojoExecutionException("Failed to determine the Quarkus core version used to build the extension");
@@ -943,7 +937,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     }
 
     private void transformLegacyToNew(ObjectNode extObject, ObjectMapper mapper) {
-        ObjectNode metadata = null;
+        ObjectNode metadata = getMetadataNode(extObject);
 
         // Note: groupId and artifactId shouldn't normally be in the source json but
         // just putting it
@@ -956,13 +950,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         if (extObject.get("artifactId") != null) {
             extObject.set(ARTIFACT_ID, extObject.get("artifactId"));
             extObject.remove("artifactId");
-        }
-
-        JsonNode mvalue = extObject.get(METADATA);
-        if (mvalue != null && mvalue.isObject()) {
-            metadata = (ObjectNode) mvalue;
-        } else {
-            metadata = mapper.createObjectNode();
         }
 
         if (extObject.get("labels") != null) {

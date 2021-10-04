@@ -72,8 +72,6 @@
         <jakarta.websocket-api.version>1.1.2</jakarta.websocket-api.version>
         <jakarta.xml.bind-api.version>2.3.3</jakarta.xml.bind-api.version>
         <jaxb-runtime.version>2.3.3-b02</jaxb-runtime.version>
-        <!-- just for test dependency convergence -->
-        <jaxb-api.version>2.3.1</jaxb-api.version>
         <jboss-jaxrs-api_2.1_spec.version>2.0.1.Final</jboss-jaxrs-api_2.1_spec.version>
         <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
         <asm.version>9.1</asm.version>
@@ -3093,11 +3091,6 @@
                         <artifactId>commons-logging</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>javax.xml.bind</groupId>
-                <artifactId>jaxb-api</artifactId>
-                <version>${jaxb-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.rest-assured</groupId>

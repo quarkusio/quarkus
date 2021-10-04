@@ -24,6 +24,7 @@ public class CliHelpTest {
     public void testCommandHelp() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "--help");
         result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
 
         CliDriver.Result result2 = CliDriver.execute(workspaceRoot);
         Assertions.assertEquals(result.stdout, result2.stdout, "Invoking the base command should show usage help");
@@ -31,52 +32,59 @@ public class CliHelpTest {
     }
 
     @Test
-    @Order(20)
+    @Order(10)
     public void testCreateHelp() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "--help");
         result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
     }
 
     @Test
-    @Order(21)
+    @Order(11)
     public void testCreateAppHelp() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--help");
         result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
     }
 
     @Test
-    @Order(22)
+    @Order(12)
     public void testCreateCliHelp() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "cli", "--help");
         result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
     }
 
     @Test
-    @Order(23)
+    @Order(13)
     public void testCreateExtensionHelp() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "extension", "--help");
         result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
+    }
+
+    @Test
+    @Order(20)
+    public void testBuildHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "build", "--help");
+        result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
     }
 
     @Test
     @Order(30)
-    public void testBuildHelp() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "build", "--help");
+    public void testDevHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "dev", "--help");
         result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
     }
 
     @Test
     @Order(40)
-    public void testDevHelp() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "dev", "--help");
-        result.echoSystemOut();
-    }
-
-    @Test
-    @Order(50)
     public void testExtHelp() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "ext", "--help");
         result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
 
         CliDriver.Result result2 = CliDriver.execute(workspaceRoot, "extension", "--help");
         Assertions.assertEquals(result.stdout, result2.stdout, "Help output for command aliases should be the same.");
@@ -84,10 +92,11 @@ public class CliHelpTest {
     }
 
     @Test
-    @Order(51)
+    @Order(41)
     public void testExtCatHelp() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "ext", "cat", "--help");
         result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
 
         CliDriver.Result result2 = CliDriver.execute(workspaceRoot, "ext", "cat", "--help");
         Assertions.assertEquals(result.stdout, result2.stdout, "Help output for command aliases should be the same.");
@@ -95,10 +104,11 @@ public class CliHelpTest {
     }
 
     @Test
-    @Order(52)
+    @Order(42)
     public void testExtListHelp() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "ext", "ls", "--help");
         result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
 
         CliDriver.Result result2 = CliDriver.execute(workspaceRoot, "ext", "list", "--help");
         Assertions.assertEquals(result.stdout, result2.stdout, "Help output for command aliases should be the same.");
@@ -106,21 +116,55 @@ public class CliHelpTest {
     }
 
     @Test
-    @Order(53)
+    @Order(43)
     public void testExtAddHelp() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "ext", "add", "--help");
         result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
     }
 
     @Test
-    @Order(53)
+    @Order(44)
     public void testExtRemoveHelp() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "ext", "rm", "--help");
         result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
 
         CliDriver.Result result2 = CliDriver.execute(workspaceRoot, "ext", "remove", "--help");
         Assertions.assertEquals(result.stdout, result2.stdout, "Help output for command aliases should be the same.");
         CliDriver.println("-- same as above\n\n");
+    }
+
+    @Test
+    @Order(50)
+    public void testRegistryHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "registry", "--help");
+        result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
+    }
+
+    @Test
+    @Order(51)
+    public void testRegistryListHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "registry", "list", "--help");
+        result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
+    }
+
+    @Test
+    @Order(51)
+    public void testRegistryAddHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "registry", "add", "--help");
+        result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
+    }
+
+    @Test
+    @Order(52)
+    public void testRegistryRemoveHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "registry", "rm", "--help");
+        result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
     }
 
     @Order(60)
@@ -128,6 +172,7 @@ public class CliHelpTest {
     public void testGenerateCompletionHelp() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "completion", "--help");
         result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
     }
 
     @Test
@@ -135,6 +180,7 @@ public class CliHelpTest {
     public void testCommandVersion() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "version", "--help");
         result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
     }
 
     @Test

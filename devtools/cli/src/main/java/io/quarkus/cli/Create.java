@@ -3,6 +3,7 @@ package io.quarkus.cli;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
 import picocli.CommandLine;
 import picocli.CommandLine.ParseResult;
@@ -16,6 +17,9 @@ public class Create implements Callable<Integer> {
 
     @CommandLine.Mixin
     protected OutputOptionMixin output;
+
+    @CommandLine.Mixin
+    protected HelpOption helpOption;
 
     @CommandLine.Spec
     protected CommandLine.Model.CommandSpec spec;

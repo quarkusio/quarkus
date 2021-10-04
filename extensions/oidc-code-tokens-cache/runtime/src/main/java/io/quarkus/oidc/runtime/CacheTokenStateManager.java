@@ -1,5 +1,7 @@
 package io.quarkus.oidc.runtime;
 
+import javax.enterprise.context.ApplicationScoped;
+
 import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheResult;
@@ -12,8 +14,6 @@ import io.vertx.core.http.Cookie;
 import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.ext.web.RoutingContext;
 
-import javax.enterprise.context.ApplicationScoped;
-
 @ApplicationScoped
 public class CacheTokenStateManager implements TokenStateManager {
 
@@ -21,7 +21,8 @@ public class CacheTokenStateManager implements TokenStateManager {
     private static final String SESSION_RT_COOKIE_NAME = CodeAuthenticationMechanism.SESSION_COOKIE_NAME + "_rt";
 
     @Override
-    public Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig, AuthorizationCodeTokens tokens, OidcRequestContext<String> requestContext) {
+    public Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
+            AuthorizationCodeTokens tokens, OidcRequestContext<String> requestContext) {
 
         if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.KEEP_ALL_TOKENS) {
             CodeAuthenticationMechanism.createCookie(routingContext,
@@ -50,7 +51,8 @@ public class CacheTokenStateManager implements TokenStateManager {
 
     @Override
     @CacheResult(cacheName = "tokenState")
-    public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, @CacheKey String tokenState, OidcRequestContext<AuthorizationCodeTokens> requestContext) {
+    public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig,
+            @CacheKey String tokenState, OidcRequestContext<AuthorizationCodeTokens> requestContext) {
 
         String idToken = tokenState;
         String accessToken = null;
@@ -76,7 +78,8 @@ public class CacheTokenStateManager implements TokenStateManager {
 
     @Override
     @CacheInvalidate(cacheName = "tokenState")
-    public Uni<Void> deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, @CacheKey String tokenState, OidcRequestContext<Void> requestContext) {
+    public Uni<Void> deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, @CacheKey String tokenState,
+            OidcRequestContext<Void> requestContext) {
         CodeAuthenticationMechanism.removeCookie(routingContext, getAccessTokenCookie(routingContext, oidcConfig),
                 oidcConfig);
         CodeAuthenticationMechanism.removeCookie(routingContext, getRefreshTokenCookie(routingContext, oidcConfig),

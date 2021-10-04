@@ -4,31 +4,28 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-oidc-cache-parent</artifactId>
+    <artifactId>quarkus-oidc-code-tokens-cache-parent</artifactId>
     <version>999-SNAPSHOT</version>
   </parent>
-  <artifactId>quarkus-oidc-cache</artifactId>
-  <name>Quarkus - OpenID Cache - Runtime</name>
+  <artifactId>quarkus-oidc-code-tokens-cache-deployment</artifactId>
+  <name>Quarkus - OpenID Connect Token Cache - Deployment</name>
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-arc</artifactId>
+      <artifactId>quarkus-arc-deployment</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-oidc</artifactId>
+      <artifactId>quarkus-oidc-code-tokens-cache</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-cache</artifactId>
+      <artifactId>quarkus-junit5-internal</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
   <build>
     <plugins>
-      <plugin>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
-      </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>

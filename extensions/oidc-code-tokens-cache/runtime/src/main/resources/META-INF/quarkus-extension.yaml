@@ -1,8 +1,8 @@
 name: Oidc Cache
-#description: OpenID Cache ...
+#description: Use the cache for storing authorization code flow tokens
 metadata:
 #  keywords:
-#    - oidc-cache
+#    - oidc-code-tokens-cache
 #  guide: ...
 #  categories:
 #    - "miscellaneous"

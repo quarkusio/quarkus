@@ -9,9 +9,9 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>quarkus-oidc-cache-parent</artifactId>
+  <artifactId>quarkus-oidc-code-tokens-cache-parent</artifactId>
   <packaging>pom</packaging>
-  <name>Quarkus - OpenID Cache - Parent</name>
+  <name>Quarkus - OpenID Connect Token Cache - Parent</name>
   <modules>
     <module>deployment</module>
     <module>runtime</module>

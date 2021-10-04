@@ -8,7 +8,7 @@ import io.quarkus.oidc.runtime.CacheTokenStateManager;
 
 class OidcCacheProcessor {
 
-    private static final String FEATURE = "oidc-cache";
+    private static final String FEATURE = "oidc-code-tokens-cache";
 
     @BuildStep
     FeatureBuildItem feature() {

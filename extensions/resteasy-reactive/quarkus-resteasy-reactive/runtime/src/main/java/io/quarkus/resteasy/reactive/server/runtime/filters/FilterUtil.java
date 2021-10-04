@@ -19,6 +19,7 @@ import io.smallrye.mutiny.Uni;
  * that don't return {@code void}.
  * See {@code io.quarkus.resteasy.reactive.server.deployment.CustomFilterGenerator}
  */
+@SuppressWarnings("unused")
 public final class FilterUtil {
 
     private FilterUtil() {
@@ -52,14 +53,14 @@ public final class FilterUtil {
         }
     }
 
-    public static void handleUniVoid(Uni<Void> uni, ResteasyReactiveContainerRequestContext context) {
+    public static void handleUniVoid(Uni<Object> uni, ResteasyReactiveContainerRequestContext context) {
         if (uni == null) {
             return;
         }
         context.suspend();
-        uni.subscribe().with(new Consumer<Void>() {
+        uni.subscribe().with(new Consumer<Object>() {
             @Override
-            public void accept(Void unused) {
+            public void accept(Object unused) {
                 context.resume();
             }
         }, new Consumer<Throwable>() {

@@ -7,7 +7,7 @@ import org.jboss.resteasy.reactive.server.spi.EndpointInvoker
  *
  * @see [EndpointInvoker]
  *
- * Also see io.quarkus.resteasy.reactive.server.deployment.KotlinCoroutineIntegrationProcessor for the build-time part
+ * Also see {@code io.quarkus.resteasy.reactive.kotlin.deployment.KotlinCoroutineIntegrationProcessor} for the build-time part
  * of coroutine support
  */
 interface CoroutineEndpointInvoker: EndpointInvoker {

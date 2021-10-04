@@ -171,13 +171,17 @@ public class NativeConfig {
      * used by default. If docker is not available or is an alias to podman, podman will be used instead as the default.
      */
     @ConfigItem
-    public boolean containerBuild;
+    public Optional<Boolean> containerBuild;
 
     /**
      * If this build is done using a remote docker daemon.
      */
     @ConfigItem
     public boolean remoteContainerBuild;
+
+    public boolean isContainerBuild() {
+        return containerBuild.orElse(containerRuntime.isPresent() || remoteContainerBuild);
+    }
 
     /**
      * The docker image to use to do the image build

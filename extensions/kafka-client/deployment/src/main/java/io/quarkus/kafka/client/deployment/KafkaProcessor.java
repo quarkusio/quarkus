@@ -254,7 +254,7 @@ public class KafkaProcessor {
 
         String root = "org/xerial/snappy/native/";
         // add linux64 native lib when targeting containers
-        if (nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild) {
+        if (nativeConfig.isContainerBuild()) {
             String dir = "Linux/x86_64";
             String snappyNativeLibraryName = "libsnappyjava.so";
             String path = root + dir + "/" + snappyNativeLibraryName;

@@ -56,8 +56,8 @@
         },
         {
             "category": "Messaging1",
-            "timeout": 100,
-            "test-modules": "kafka, kafka-ssl, kafka-sasl, kafka-avro, kafka-avro-apicurio2, kafka-snappy, kafka-streams, reactive-messaging-kafka",
+            "timeout": 110,
+            "test-modules": "kafka, kafka-ssl, kafka-sasl, kafka-avro, kafka-avro-apicurio2, kafka-snappy, kafka-streams, reactive-messaging-kafka, kafka-oauth-keycloak",
             "os-name": "ubuntu-latest"
         },
         {

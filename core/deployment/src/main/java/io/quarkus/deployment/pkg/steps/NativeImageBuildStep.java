@@ -110,7 +110,6 @@ public class NativeImageBuildStep {
                 .setRunnerJarName(runnerJar.getFileName().toString())
                 // the path to native-image is not known now, it is only known at the time the native-sources will be consumed
                 .setNativeImageName(nativeImageName)
-                .setContainerBuild(nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild)
                 .build();
         List<String> command = nativeImageArgs.getArgs();
         try (FileOutputStream commandFOS = new FileOutputStream(outputDir.resolve("native-image.args").toFile())) {
@@ -153,7 +152,7 @@ public class NativeImageBuildStep {
 
         String noPIE = "";
 
-        boolean isContainerBuild = isContainerBuild(nativeConfig);
+        boolean isContainerBuild = nativeConfig.isContainerBuild();
         if (!isContainerBuild && SystemUtils.IS_OS_LINUX) {
             noPIE = detectNoPIE();
         }
@@ -202,7 +201,6 @@ public class NativeImageBuildStep {
                     .setRunnerJarName(runnerJarName)
                     .setNativeImageName(nativeImageName)
                     .setNoPIE(noPIE)
-                    .setContainerBuild(isContainerBuild)
                     .setGraalVMVersion(graalVMVersion)
                     .build();
 
@@ -254,13 +252,9 @@ public class NativeImageBuildStep {
         return resultingExecutableName;
     }
 
-    public static boolean isContainerBuild(NativeConfig nativeConfig) {
-        return nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild || nativeConfig.remoteContainerBuild;
-    }
-
     private static NativeImageBuildRunner getNativeImageBuildRunner(NativeConfig nativeConfig, Path outputDir,
             String nativeImageName, String resultingExecutableName) {
-        if (!isContainerBuild(nativeConfig)) {
+        if (!nativeConfig.isContainerBuild()) {
             NativeImageBuildLocalRunner localRunner = getNativeImageBuildLocalRunner(nativeConfig, outputDir.toFile());
             if (localRunner != null) {
                 return localRunner;
@@ -482,7 +476,6 @@ public class NativeImageBuildStep {
             private Path outputDir;
             private String runnerJarName;
             private String noPIE = "";
-            private boolean isContainerBuild = false;
             private GraalVM.Version graalVMVersion = GraalVM.Version.UNVERSIONED;
             private String nativeImageName;
             private boolean classpathIsBroken;
@@ -530,11 +523,6 @@ public class NativeImageBuildStep {
 
             public Builder setNoPIE(String noPIE) {
                 this.noPIE = noPIE;
-                return this;
-            }
-
-            public Builder setContainerBuild(boolean containerBuild) {
-                isContainerBuild = containerBuild;
                 return this;
             }
 
@@ -591,7 +579,7 @@ public class NativeImageBuildStep {
                     enableAllSecurityServices = true;
                 }
 
-                handleAdditionalProperties(nativeConfig, nativeImageArgs, isContainerBuild, outputDir);
+                handleAdditionalProperties(nativeConfig, nativeImageArgs, nativeConfig.isContainerBuild(), outputDir);
                 nativeImageArgs.add(
                         "-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
                 nativeImageArgs.add("-H:+JNI");

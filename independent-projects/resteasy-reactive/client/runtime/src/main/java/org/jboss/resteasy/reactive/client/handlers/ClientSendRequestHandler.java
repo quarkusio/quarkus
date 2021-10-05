@@ -1,6 +1,9 @@
 package org.jboss.resteasy.reactive.client.handlers;
 
 import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.stork.ServiceInstance;
+import io.smallrye.stork.Stork;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -18,11 +21,16 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Variant;
+import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.client.AsyncResultUni;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
@@ -32,6 +40,8 @@ import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
+    private static final Logger log = Logger.getLogger(ClientSendRequestHandler.class);
+
     private final boolean followRedirects;
 
     public ClientSendRequestHandler(boolean followRedirects) {
@@ -44,21 +54,19 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             return;
         }
         requestContext.suspend();
-        Future<HttpClientRequest> future = createRequest(requestContext);
+        Uni<HttpClientRequest> future = createRequest(requestContext);
+
         // DNS failures happen before we send the request
-        future.onFailure(new Handler<Throwable>() {
+        future.subscribe().with(new Consumer<>() {
             @Override
-            public void handle(Throwable event) {
-                if (event instanceof IOException) {
-                    requestContext.resume(new ProcessingException(event));
+            public void accept(HttpClientRequest httpClientRequest) {
+                final long startTime;
+
+                if (requestContext.getCallStatsCollector() != null) {
+                    startTime = System.nanoTime();
                 } else {
-                    requestContext.resume(event);
+                    startTime = 0L;
                 }
-            }
-        });
-        future.onSuccess(new Handler<HttpClientRequest>() {
-            @Override
-            public void handle(HttpClientRequest httpClientRequest) {
                 Future<HttpClientResponse> sent;
                 if (requestContext.isMultipart()) {
                     Promise<HttpClientRequest> requestPromise = Promise.promise();
@@ -90,6 +98,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
 
                         requestPromise.complete(httpClientRequest);
                     } catch (Throwable e) {
+                        reportFinish(System.nanoTime() - startTime, e, requestContext);
                         requestContext.resume(e);
                         return;
                     }
@@ -109,16 +118,22 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     }
                 }
 
-                sent.onSuccess(new Handler<HttpClientResponse>() {
+                sent.onSuccess(new Handler<>() {
                     @Override
                     public void handle(HttpClientResponse clientResponse) {
                         try {
                             requestContext.initialiseResponse(clientResponse);
+                            int status = clientResponse.statusCode();
+                            if (status >= 500 && status < 600) {
+                                reportFinish(System.nanoTime() - startTime, new InternalServerErrorException(), requestContext);
+                            } else {
+                                reportFinish(System.nanoTime() - startTime, null, requestContext);
+                            }
                             if (!requestContext.isRegisterBodyHandler()) {
                                 clientResponse.pause();
                                 requestContext.resume();
                             } else {
-                                clientResponse.bodyHandler(new Handler<Buffer>() {
+                                clientResponse.bodyHandler(new Handler<>() {
                                     @Override
                                     public void handle(Buffer buffer) {
                                         try {
@@ -136,11 +151,12 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                 });
                             }
                         } catch (Throwable t) {
+                            reportFinish(System.nanoTime() - startTime, t, requestContext);
                             requestContext.resume(t);
                         }
                     }
                 })
-                        .onFailure(new Handler<Throwable>() {
+                        .onFailure(new Handler<>() {
                             @Override
                             public void handle(Throwable failure) {
                                 if (failure instanceof IOException) {
@@ -151,26 +167,87 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                             }
                         });
             }
+        }, new Consumer<>() {
+            @Override
+            public void accept(Throwable event) {
+                if (event instanceof IOException) {
+                    ProcessingException throwable = new ProcessingException(event);
+                    reportFinish(0, throwable, requestContext);
+                    requestContext.resume(throwable);
+                } else {
+                    requestContext.resume(event);
+                    reportFinish(0, event, requestContext);
+                }
+            }
         });
     }
 
-    public Future<HttpClientRequest> createRequest(RestClientRequestContext state) {
+    private void reportFinish(long timeInNs, Throwable throwable, RestClientRequestContext requestContext) {
+        ServiceInstance serviceInstance = requestContext.getCallStatsCollector();
+        if (serviceInstance != null) {
+            serviceInstance.recordResult(timeInNs, throwable);
+        }
+    }
+
+    public Uni<HttpClientRequest> createRequest(RestClientRequestContext state) {
         HttpClient httpClient = state.getHttpClient();
         URI uri = state.getUri();
-        boolean isHttps = "https".equals(uri.getScheme());
-        int port = uri.getPort() != -1 ? uri.getPort() : (isHttps ? 443 : 80);
-        RequestOptions requestOptions = new RequestOptions();
-        requestOptions.setHost(uri.getHost());
-        requestOptions.setPort(port);
-        requestOptions.setMethod(HttpMethod.valueOf(state.getHttpMethod()));
-        requestOptions.setURI(uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()));
-        requestOptions.setFollowRedirects(followRedirects);
-        requestOptions.setSsl(isHttps);
         Object readTimeout = state.getConfiguration().getProperty(QuarkusRestClientProperties.READ_TIMEOUT);
-        if (readTimeout instanceof Long) {
-            requestOptions.setTimeout((Long) readTimeout);
+        Uni<RequestOptions> requestOptions;
+        if (uri.getScheme().startsWith(Stork.STORK)) {
+            boolean isHttps = "storks".equals(uri.getScheme());
+            String serviceName = uri.getHost();
+            Uni<ServiceInstance> serviceInstance;
+            try {
+                serviceInstance = Stork.getInstance()
+                        .getService(serviceName)
+                        .selectServiceInstance();
+            } catch (Throwable e) {
+                log.error("Error selecting service instance for serviceName: " + serviceName, e);
+                return Uni.createFrom().failure(e);
+            }
+            requestOptions = serviceInstance.onItem().transform(new Function<>() {
+                @Override
+                public RequestOptions apply(ServiceInstance serviceInstance) {
+                    if (serviceInstance.gatherStatistics()) {
+                        state.setCallStatsCollector(serviceInstance);
+                    }
+                    return new RequestOptions()
+                            .setHost(serviceInstance.getHost())
+                            .setPort(serviceInstance.getPort())
+                            .setSsl(isHttps);
+                }
+            });
+        } else {
+            boolean isHttps = "https".equals(uri.getScheme());
+            int port = getPort(isHttps, uri.getPort());
+            requestOptions = Uni.createFrom().item(new RequestOptions().setHost(uri.getHost())
+                    .setPort(port).setSsl(isHttps));
         }
-        return httpClient.request(requestOptions);
+
+        return requestOptions.onItem()
+                .transform(r -> r.setMethod(HttpMethod.valueOf(state.getHttpMethod()))
+                        .setURI(uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()))
+                        .setFollowRedirects(followRedirects))
+                .onItem().invoke(r -> {
+                    if (readTimeout instanceof Long) {
+                        r.setTimeout((Long) readTimeout);
+                    }
+                })
+                .onItem().transformToUni(new Function<RequestOptions, Uni<? extends HttpClientRequest>>() {
+                    @Override
+                    public Uni<? extends HttpClientRequest> apply(RequestOptions options) {
+                        return AsyncResultUni.toUni(handler -> httpClient.request(options, handler));
+                    }
+                });
+    }
+
+    private int getPort(boolean isHttps, int specifiedPort) {
+        return specifiedPort != -1 ? specifiedPort : defaultPort(isHttps);
+    }
+
+    private int defaultPort(boolean isHttps) {
+        return isHttps ? 443 : 80;
     }
 
     private QuarkusMultipartFormUpload setMultipartHeadersAndPrepareBody(HttpClientRequest httpClientRequest,

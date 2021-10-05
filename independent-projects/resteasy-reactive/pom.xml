@@ -57,6 +57,7 @@
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
         <jackson.version>2.12.5</jackson.version>
+        <smallrye-stork.version>1.0.0.Alpha6</smallrye-stork.version>
     </properties>
 
     <modules>
@@ -267,6 +268,11 @@
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>commons-logging-jboss-logging</artifactId>
                 <version>${commons-logging-jboss-logging.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.stork</groupId>
+                <artifactId>smallrye-stork-api</artifactId>
+                <version>${smallrye-stork.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.spec.javax.xml.bind</groupId>

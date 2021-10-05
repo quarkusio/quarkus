@@ -4,13 +4,13 @@ import static io.quarkus.arc.processor.MethodDescriptors.MAP_PUT;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIENT_HEADERS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
+import static java.util.Arrays.asList;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.CDI_WRAPPER_SUFFIX;
 import static org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner.BUILTIN_HTTP_ANNOTATIONS_TO_METHOD;
 
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,14 +54,18 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
@@ -77,9 +81,13 @@ import io.quarkus.rest.client.reactive.runtime.HeaderContainer;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveCDIWrapperBase;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
+import io.quarkus.rest.client.reactive.runtime.SmallRyeStorkRecorder;
 import io.quarkus.restclient.config.RestClientConfigUtils;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
+import io.smallrye.stork.microprofile.MicroProfileConfigProvider;
+import io.smallrye.stork.spi.LoadBalancerProvider;
+import io.smallrye.stork.spi.ServiceDiscoveryProvider;
 
 class RestClientReactiveProcessor {
 
@@ -93,6 +101,16 @@ class RestClientReactiveProcessor {
     @BuildStep
     void announceFeature(BuildProducer<FeatureBuildItem> features) {
         features.produce(new FeatureBuildItem(Feature.REST_CLIENT_REACTIVE));
+    }
+
+    @BuildStep
+    void registerServiceProviders(BuildProducer<ServiceProviderBuildItem> services) {
+        services.produce(new ServiceProviderBuildItem(io.smallrye.stork.config.ConfigProvider.class.getName(),
+                MicroProfileConfigProvider.class.getName()));
+
+        for (Class<?> providerClass : asList(LoadBalancerProvider.class, ServiceDiscoveryProvider.class)) {
+            services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(providerClass.getName()));
+        }
     }
 
     @BuildStep
@@ -135,12 +153,18 @@ class RestClientReactiveProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupAdditionalBeans(
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+    void setupAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             RestClientRecorder restClientRecorder) {
         restClientRecorder.setRestClientBuilderResolver();
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(HeaderContainer.class));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
+    void initializeStork(SmallRyeStorkRecorder storkRecorder, ShutdownContextBuildItem shutdown) {
+        storkRecorder.initialize(shutdown);
     }
 
     @BuildStep
@@ -220,7 +244,7 @@ class RestClientReactiveProcessor {
         for (AnnotationInstance annotation : index.getAnnotations(REGISTER_PROVIDERS)) {
             String targetClass = annotation.target().asClass().name().toString();
             annotationsByClassName.computeIfAbsent(targetClass, key -> new ArrayList<>())
-                    .addAll(Arrays.asList(annotation.value().asNestedArray()));
+                    .addAll(asList(annotation.value().asNestedArray()));
         }
 
         try (ClassCreator classCreator = ClassCreator.builder()
@@ -310,7 +334,7 @@ class RestClientReactiveProcessor {
         IndexView index = combinedIndex.getIndex();
         List<AnnotationInstance> allInstances = new ArrayList<>(index.getAnnotations(REGISTER_PROVIDER));
         for (AnnotationInstance annotation : index.getAnnotations(REGISTER_PROVIDERS)) {
-            allInstances.addAll(Arrays.asList(annotation.value().asNestedArray()));
+            allInstances.addAll(asList(annotation.value().asNestedArray()));
         }
         allInstances.addAll(index.getAnnotations(REGISTER_CLIENT_HEADERS));
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();

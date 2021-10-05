@@ -14,7 +14,10 @@
     <name>RESTEasy Reactive - Client - Runtime</name>
 
     <dependencies>
-
+        <dependency>
+            <groupId>io.smallrye.stork</groupId>
+            <artifactId>smallrye-stork-api</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus.resteasy.reactive</groupId>
             <artifactId>resteasy-reactive-common</artifactId>

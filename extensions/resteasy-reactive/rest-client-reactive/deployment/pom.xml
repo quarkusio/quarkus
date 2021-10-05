@@ -56,7 +56,17 @@
             <artifactId>jakarta.servlet-api</artifactId>
             <scope>test</scope>
         </dependency>
-    </dependencies>
+        <dependency>
+            <groupId>io.smallrye.stork</groupId>
+            <artifactId>smallrye-stork-load-balancer-response-time</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.stork</groupId>
+            <artifactId>smallrye-stork-service-discovery-static-list</artifactId>
+            <scope>test</scope>
+        </dependency>
+   </dependencies>
 
     <build>
         <plugins>

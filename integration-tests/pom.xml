@@ -258,6 +258,7 @@
                 <module>resteasy-reactive-kotlin</module>
                 <module>rest-client-reactive</module>
                 <module>rest-client-reactive-multipart</module>
+                <module>rest-client-reactive-stork</module>
                 <module>packaging</module>
                 <module>simple with space</module>
                 <module>consul-config</module>

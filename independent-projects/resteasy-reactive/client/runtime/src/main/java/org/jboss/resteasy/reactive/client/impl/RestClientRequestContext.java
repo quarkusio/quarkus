@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import io.smallrye.stork.ServiceInstance;
 import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
@@ -81,6 +82,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     private ClientResponseContextImpl clientResponseContext;
     private InputStream responseEntityStream;
     private Response abortedWith;
+    private ServiceInstance callStatsCollector;
 
     public RestClientRequestContext(ClientImpl restClient,
             HttpClient httpClient, String httpMethod, URI uri,
@@ -145,6 +147,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         return res;
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T readEntity(InputStream in,
             GenericType<T> responseType, MediaType mediaType,
             MultivaluedMap<String, Object> metadata)
@@ -426,5 +429,13 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     public ClientRestHandler[] getAbortHandlerChainWithoutResponseFilters() {
         return abortHandlerChainWithoutResponseFilters;
+    }
+
+    public void setCallStatsCollector(ServiceInstance serviceInstance) {
+        this.callStatsCollector = serviceInstance;
+    }
+
+    public ServiceInstance getCallStatsCollector() {
+        return callStatsCollector;
     }
 }

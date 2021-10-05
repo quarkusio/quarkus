@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.processor;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -11,10 +12,13 @@ import javax.ws.rs.Priorities;
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.server.util.MethodId;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
@@ -23,12 +27,16 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem;
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
+import io.quarkus.resteasy.reactive.jackson.runtime.ResteasyReactiveServerJacksonRecorder;
 import io.quarkus.resteasy.reactive.jackson.runtime.mappers.DefaultMismatchedInputException;
 import io.quarkus.resteasy.reactive.jackson.runtime.mappers.NativeInvalidDefinitionExceptionMapper;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.BasicServerJacksonMessageBodyWriter;
@@ -49,6 +57,7 @@ public class ResteasyReactiveJacksonProcessor {
 
     private static final DotName JSON_VIEW = DotName.createSimple(JsonView.class.getName());
     private static final DotName CUSTOM_SERIALIZATION = DotName.createSimple(CustomSerialization.class.getName());
+    private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature) {
@@ -115,54 +124,81 @@ public class ResteasyReactiveJacksonProcessor {
                 : FullyFeaturedServerJacksonMessageBodyWriter.class.getName();
     }
 
+    @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void handleJsonAnnotations(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             CombinedIndexBuildItem index,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
-            BuildProducer<JacksonFeatureBuildItem> jacksonFeaturesProducer) {
+            BuildProducer<JacksonFeatureBuildItem> jacksonFeaturesProducer,
+            ResteasyReactiveServerJacksonRecorder recorder, ShutdownContextBuildItem shutdown) {
         if (!resourceScanningResultBuildItem.isPresent()) {
             return;
         }
         Collection<ClassInfo> resourceClasses = resourceScanningResultBuildItem.get().getResult().getScannedResources()
                 .values();
-        Set<String> classesNeedingReflectionOnMethods = new HashSet<>();
         Set<JacksonFeatureBuildItem.Feature> jacksonFeatures = new HashSet<>();
         for (ClassInfo resourceClass : resourceClasses) {
-            DotName resourceClassDotName = resourceClass.name();
             if (resourceClass.annotations().containsKey(JSON_VIEW)) {
-                classesNeedingReflectionOnMethods.add(resourceClassDotName.toString());
                 jacksonFeatures.add(JacksonFeatureBuildItem.Feature.JSON_VIEW);
+                for (AnnotationInstance instance : resourceClass.annotations().get(JSON_VIEW)) {
+                    AnnotationValue annotationValue = instance.value();
+                    if (annotationValue == null) {
+                        continue;
+                    }
+                    if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
+                        continue;
+                    }
+                    Type[] jsonViews = annotationValue.asClassArray();
+                    if ((jsonViews == null) || (jsonViews.length == 0)) {
+                        continue;
+                    }
+                    recorder.recordJsonView(getMethodId(instance.target().asMethod()), jsonViews[0].name().toString());
+                }
             }
             if (resourceClass.annotations().containsKey(CUSTOM_SERIALIZATION)) {
-                classesNeedingReflectionOnMethods.add(resourceClassDotName.toString());
                 jacksonFeatures.add(JacksonFeatureBuildItem.Feature.CUSTOM_SERIALIZATION);
                 for (AnnotationInstance instance : resourceClass.annotations().get(CUSTOM_SERIALIZATION)) {
                     AnnotationValue annotationValue = instance.value();
-                    if (annotationValue != null) {
-                        Type biFunctionType = annotationValue.asClass();
-                        ClassInfo biFunctionClassInfo = index.getIndex().getClassByName(biFunctionType.name());
-                        if (biFunctionClassInfo == null) {
-                            // be lenient
-                        } else {
-                            if (!biFunctionClassInfo.hasNoArgsConstructor()) {
-                                throw new RuntimeException(
-                                        "Class '" + biFunctionClassInfo.name() + "' must contain a no-args constructor");
-                            }
-                        }
-                        reflectiveClassProducer.produce(
-                                new ReflectiveClassBuildItem(true, false, false, biFunctionType.name().toString()));
+                    if (annotationValue == null) {
+                        continue;
                     }
+                    if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
+                        continue;
+                    }
+                    Type biFunctionType = annotationValue.asClass();
+                    if (biFunctionType == null) {
+                        continue;
+                    }
+                    ClassInfo biFunctionClassInfo = index.getIndex().getClassByName(biFunctionType.name());
+                    if (biFunctionClassInfo == null) {
+                        // be lenient
+                    } else {
+                        if (!biFunctionClassInfo.hasNoArgsConstructor()) {
+                            throw new IllegalArgumentException(
+                                    "Class '" + biFunctionClassInfo.name() + "' must contain a no-args constructor");
+                        }
+                    }
+                    reflectiveClassProducer.produce(
+                            new ReflectiveClassBuildItem(true, false, false, biFunctionType.name().toString()));
+                    recorder.recordCustomSerialization(getMethodId(instance.target().asMethod()),
+                            biFunctionType.name().toString());
                 }
             }
-        }
-        if (!classesNeedingReflectionOnMethods.isEmpty()) {
-            reflectiveClassProducer.produce(
-                    new ReflectiveClassBuildItem(true, false, classesNeedingReflectionOnMethods.toArray(new String[0])));
         }
         if (!jacksonFeatures.isEmpty()) {
             for (JacksonFeatureBuildItem.Feature jacksonFeature : jacksonFeatures) {
                 jacksonFeaturesProducer.produce(new JacksonFeatureBuildItem(jacksonFeature));
             }
+            recorder.configureShutdown(shutdown);
         }
+    }
+
+    private String getMethodId(MethodInfo methodInfo) {
+        List<String> parameterClassNames = new ArrayList<>(methodInfo.parameters().size());
+        for (Type parameter : methodInfo.parameters()) {
+            parameterClassNames.add(parameter.name().toString());
+        }
+        return MethodId.get(methodInfo.name(), methodInfo.declaringClass().name().toString(),
+                parameterClassNames.toArray(EMPTY_STRING_ARRAY));
     }
 }

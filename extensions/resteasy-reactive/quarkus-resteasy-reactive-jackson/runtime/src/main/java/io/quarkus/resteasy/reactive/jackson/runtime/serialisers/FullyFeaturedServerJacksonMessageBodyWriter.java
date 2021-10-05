@@ -8,7 +8,6 @@ import static org.jboss.resteasy.reactive.server.vertx.providers.serialisers.jso
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -24,17 +23,16 @@ import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
-import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
+import io.quarkus.resteasy.reactive.jackson.runtime.ResteasyReactiveServerJacksonRecorder;
 
 public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
     private final ObjectMapper originalMapper;
     private final ObjectWriter defaultWriter;
-    private final ConcurrentMap<Method, ObjectWriter> perMethodWriter = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ObjectWriter> perMethodWriter = new ConcurrentHashMap<>();
 
     @Inject
     public FullyFeaturedServerJacksonMessageBodyWriter(ObjectMapper mapper) {
@@ -54,16 +52,19 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
             // where JsonView is not used
             ResteasyReactiveResourceInfo resourceInfo = context.getResteasyReactiveResourceInfo();
             if (resourceInfo != null) {
-                if (resourceInfo.requiresCustomSerialization()) {
-                    Method method = resourceInfo.getMethod();
-                    if (handleCustomSerialization(method, o, genericType, stream)) {
-                        return;
-                    }
-                } else if (resourceInfo.requiresJsonViewName()) {
-                    Method method = resourceInfo.getMethod();
-                    if (handleJsonView(method.getAnnotation(JsonView.class), o, stream)) {
-                        return;
-                    }
+                String methodId = resourceInfo.getMethodId();
+                var customSerializationValue = ResteasyReactiveServerJacksonRecorder.customSerializationForMethod(methodId);
+                if (customSerializationValue != null) {
+                    ObjectWriter objectWriter = perMethodWriter.computeIfAbsent(methodId,
+                            new MethodObjectWriterFunction(customSerializationValue, genericType, originalMapper));
+                    objectWriter.writeValue(stream, o);
+                    return;
+                }
+
+                Class<?> jsonViewValue = ResteasyReactiveServerJacksonRecorder.jsonViewForMethod(methodId);
+                if (jsonViewValue != null) {
+                    defaultWriter.withView(jsonViewValue).writeValue(stream, o);
+                    return;
                 }
             }
             defaultWriter.writeValue(stream, o);
@@ -72,36 +73,13 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
         stream.close();
     }
 
-    // TODO: this can definitely be made faster if necessary by optimizing the use of the map and also by moving the creation of the
-    //  biFunction to build time
-    private boolean handleCustomSerialization(Method method, Object o, Type genericType, OutputStream stream)
-            throws IOException {
-        CustomSerialization customSerialization = method.getAnnotation(CustomSerialization.class);
-        if ((customSerialization == null)) {
-            return false;
-        }
-        Class<? extends BiFunction<ObjectMapper, Type, ObjectWriter>> biFunctionClass = customSerialization.value();
-        ObjectWriter objectWriter = perMethodWriter.computeIfAbsent(method,
-                new MethodObjectWriterFunction(biFunctionClass, genericType, originalMapper));
-        objectWriter.writeValue(stream, o);
-        return true;
-    }
-
-    private boolean handleJsonView(JsonView jsonView, Object o, OutputStream stream) throws IOException {
-        if ((jsonView != null) && (jsonView.value().length > 0)) {
-            defaultWriter.withView(jsonView.value()[0]).writeValue(stream, o);
-            return true;
-        }
-        return false;
-    }
-
     @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
         doLegacyWrite(o, annotations, httpHeaders, entityStream, defaultWriter);
     }
 
-    private static class MethodObjectWriterFunction implements Function<Method, ObjectWriter> {
+    private static class MethodObjectWriterFunction implements Function<String, ObjectWriter> {
         private final Class<? extends BiFunction<ObjectMapper, Type, ObjectWriter>> clazz;
         private final Type genericType;
         private final ObjectMapper originalMapper;
@@ -114,7 +92,7 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
         }
 
         @Override
-        public ObjectWriter apply(Method method) {
+        public ObjectWriter apply(String methodId) {
             try {
                 BiFunction<ObjectMapper, Type, ObjectWriter> biFunctionInstance = clazz.getDeclaredConstructor().newInstance();
                 ObjectWriter objectWriter = biFunctionInstance.apply(originalMapper, genericType);

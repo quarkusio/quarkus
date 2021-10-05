@@ -131,7 +131,7 @@ And the Decision Requirement Graph (DRG) should look like:
 image:kogito-DMN-guide-screenshot-DRG.png[alt=DMN model definition]
 
 To get started quickly you may copy the DMN model definition file from the
-{quickstarts-tree-url}/kogito-quickstart/src/main/resources/pricing.dmn[quickstart]
+{quickstarts-tree-url}/kogito-dmn-quickstart/src/main/resources/pricing.dmn[quickstart]
 
 The decision logic for the `Base price` Decision node shall be a DMN Decision Table with the following entries:
 

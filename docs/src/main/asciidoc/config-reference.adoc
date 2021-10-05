@@ -363,7 +363,7 @@ Additionally, the Expression Expansion engine supports the following segments:
 
 If an expression cannot be expanded and no default is supplied a `NoSuchElementException` is thrown.
 
-NOTE: Expresions lookups are performed in all config sources. The expression values and expansion values may reside in
+NOTE: Expressions lookups are performed in all config sources. The expression values and expansion values may reside in
 different config sources.
 
 === With Environment Variables

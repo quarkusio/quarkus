@@ -2,6 +2,8 @@ package io.quarkus.minikube.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
+import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_GROUP;
+import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.MAX_NODE_PORT_VALUE;
@@ -67,7 +69,9 @@ public class MinikubeProcessor {
 
     @BuildStep
     public void checkMinikube(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
-        deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(MINIKUBE, DEPLOYMENT, MINIKUBE_PRIORITY, true));
+        deploymentTargets.produce(
+                new KubernetesDeploymentTargetBuildItem(MINIKUBE, DEPLOYMENT, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,
+                        MINIKUBE_PRIORITY, true));
     }
 
     @BuildStep

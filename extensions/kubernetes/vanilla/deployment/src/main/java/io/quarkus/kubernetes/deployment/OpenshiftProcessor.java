@@ -4,6 +4,8 @@ package io.quarkus.kubernetes.deployment;
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_S2I_IMAGE_NAME;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG;
+import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG_GROUP;
+import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT_APP_RUNTIME;
@@ -62,7 +64,8 @@ public class OpenshiftProcessor {
     @BuildStep
     public void checkOpenshift(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
         List<String> targets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
-        deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(OPENSHIFT, DEPLOYMENT_CONFIG, OPENSHIFT_PRIORITY,
+        deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(OPENSHIFT, DEPLOYMENT_CONFIG,
+                DEPLOYMENT_CONFIG_GROUP, DEPLOYMENT_CONFIG_VERSION, OPENSHIFT_PRIORITY,
                 targets.contains(OPENSHIFT)));
     }
 

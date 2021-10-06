@@ -3,6 +3,8 @@ package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
+import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_GROUP;
+import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.VANILLA_KUBERNETES_PRIORITY;
@@ -57,11 +59,14 @@ public class VanillaKubernetesProcessor {
             // default
             deploymentTargets
                     .produce(
-                            new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT, VANILLA_KUBERNETES_PRIORITY, true));
+                            new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT, DEPLOYMENT_GROUP,
+                                    DEPLOYMENT_VERSION,
+                                    VANILLA_KUBERNETES_PRIORITY, true));
         }
 
-        deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT,
-                VANILLA_KUBERNETES_PRIORITY, userSpecifiedDeploymentTargets.contains(KUBERNETES)));
+        deploymentTargets
+                .produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,
+                        VANILLA_KUBERNETES_PRIORITY, userSpecifiedDeploymentTargets.contains(KUBERNETES)));
     }
 
     @BuildStep

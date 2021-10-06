@@ -8,8 +8,10 @@ import io.quarkus.bootstrap.model.PlatformImportsImpl;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.BuildDependencyGraphVisitor;
 import io.quarkus.bootstrap.resolver.maven.DeploymentInjectingDependencyVisitor;
+import io.quarkus.bootstrap.resolver.maven.DeploymentInjectionException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.SimpleDependencyGraphTransformationContext;
+import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.bootstrap.workspace.ProcessedSources;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -21,6 +23,9 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
+import java.io.IOException;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -191,6 +196,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         }
 
         final ResolvedDependency appArtifact = resolve(coords, mvnArtifact, managedRepos);
+        final boolean preferWorkspacePaths = !containsExtensionMetadata(appArtifact) && (devmode || test);
 
         final ApplicationModelBuilder appBuilder = new ApplicationModelBuilder().setAppArtifact(appArtifact);
         if (appArtifact.getWorkspaceModule() != null) {
@@ -227,7 +233,8 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
         final DeploymentInjectingDependencyVisitor deploymentInjector;
         try {
-            deploymentInjector = new DeploymentInjectingDependencyVisitor(mvn, managedDeps, repos, appBuilder, devmode || test,
+            deploymentInjector = new DeploymentInjectingDependencyVisitor(mvn, managedDeps, repos, appBuilder,
+                    preferWorkspacePaths,
                     collectReloadableDeps && reloadableModules.isEmpty());
             deploymentInjector.injectDeploymentDependencies(resolvedDeps);
         } catch (BootstrapDependencyProcessingException e) {
@@ -276,7 +283,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                         }
                     }
                     appBuilder.addDependency(
-                            toAppArtifact(dep.getArtifact(), module, devmode || test)
+                            toAppArtifact(dep.getArtifact(), module, false)
                                     .setScope(dep.getDependency().getScope())
                                     .setFlags(flags).build());
                 }
@@ -286,6 +293,36 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         collectPlatformProperties(appBuilder, managedDeps);
 
         return appBuilder.build();
+    }
+
+    private static boolean containsExtensionMetadata(ResolvedDependency dep) {
+        if (!ArtifactCoords.TYPE_JAR.equals(dep.getType())) {
+            return false;
+        }
+        for (Path path : dep.getResolvedPaths()) {
+            if (!Files.exists(path)) {
+                continue;
+            }
+            if (Files.isDirectory(path)) {
+                if (containsExtensionMetadata(path)) {
+                    return true;
+                }
+            } else {
+                try (FileSystem artifactFs = ZipUtils.newFileSystem(path)) {
+                    if (containsExtensionMetadata(artifactFs.getPath(""))) {
+                        return true;
+                    }
+                } catch (IOException e) {
+                    throw new DeploymentInjectionException("Failed to read " + path, e);
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean containsExtensionMetadata(final Path path) {
+        return Files.exists(path.resolve(BootstrapConstants.BUILD_STEPS_PATH))
+                || Files.exists(path.resolve(BootstrapConstants.DESCRIPTOR_PATH));
     }
 
     private io.quarkus.maven.dependency.ResolvedDependency resolve(ArtifactCoords appArtifact, Artifact mvnArtifact,

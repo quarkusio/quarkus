@@ -59,6 +59,7 @@ import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
@@ -68,12 +69,20 @@ public class KnativeProcessor {
     private static final String LATEST_REVISION = "latest";
 
     @BuildStep
-    public void checkKnative(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
+    public void checkKnative(ApplicationInfoBuildItem applicationInfo, KnativeConfig config,
+            BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
+            BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
         List<String> targets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
+        boolean knativeEnabled = targets.contains(KNATIVE);
         deploymentTargets.produce(
                 new KubernetesDeploymentTargetBuildItem(KNATIVE, KNATIVE_SERVICE, KNATIVE_SERVICE_GROUP,
                         KNATIVE_SERVICE_VERSION, KNATIVE_PRIORITY,
-                        targets.contains(KNATIVE)));
+                        knativeEnabled));
+        if (knativeEnabled) {
+            String name = ResourceNameUtil.getResourceName(config, applicationInfo);
+            resourceMeta.produce(new KubernetesResourceMetadataBuildItem(KNATIVE, KNATIVE_SERVICE_GROUP,
+                    KNATIVE_SERVICE_VERSION, KNATIVE_SERVICE, name));
+        }
     }
 
     @BuildStep

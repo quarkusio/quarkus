@@ -54,6 +54,7 @@ import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
@@ -62,11 +63,19 @@ public class OpenshiftProcessor {
     private static final int OPENSHIFT_PRIORITY = DEFAULT_PRIORITY;
 
     @BuildStep
-    public void checkOpenshift(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
+    public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, OpenshiftConfig config,
+            BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
+            BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
         List<String> targets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
+        boolean openshiftEnabled = targets.contains(OPENSHIFT);
         deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(OPENSHIFT, DEPLOYMENT_CONFIG,
                 DEPLOYMENT_CONFIG_GROUP, DEPLOYMENT_CONFIG_VERSION, OPENSHIFT_PRIORITY,
-                targets.contains(OPENSHIFT)));
+                openshiftEnabled));
+        if (openshiftEnabled) {
+            String name = ResourceNameUtil.getResourceName(config, applicationInfo);
+            resourceMeta.produce(new KubernetesResourceMetadataBuildItem(OPENSHIFT, DEPLOYMENT_CONFIG_GROUP,
+                    DEPLOYMENT_CONFIG_VERSION, DEPLOYMENT_CONFIG, name));
+        }
     }
 
     @BuildStep

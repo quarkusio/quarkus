@@ -27,6 +27,5 @@
         <module>maven</module>
         <module>gradle</module>
         <module>cli</module>
-        <module>reflection-agent</module>
     </modules>
 </project>

@@ -6,11 +6,9 @@ import io.vertx.core.http.HttpMethod;
 
 public class HttpStreamConfig extends StreamConfigBase {
     public final HttpMethod method;
-    public final String path;
 
     public HttpStreamConfig(String path, String method, String name, int bufferSize) {
-        super(bufferSize);
-        this.path = path;
+        super(bufferSize, path);
         this.method = toHttpMethod(method, name);
     }
 

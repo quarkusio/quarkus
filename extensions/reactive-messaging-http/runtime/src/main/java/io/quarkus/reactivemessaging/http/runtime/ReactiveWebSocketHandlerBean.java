@@ -28,7 +28,7 @@ public class ReactiveWebSocketHandlerBean extends ReactiveHandlerBeanBase<WebSoc
 
     @Override
     protected void handleRequest(RoutingContext event, MultiEmitter<? super WebSocketMessage<?>> emitter,
-            StrictQueueSizeGuard guard) {
+            StrictQueueSizeGuard guard, String path) {
         event.request().toWebSocket(
                 webSocket -> {
                     if (webSocket.failed()) {
@@ -37,7 +37,11 @@ public class ReactiveWebSocketHandlerBean extends ReactiveHandlerBeanBase<WebSoc
                         ServerWebSocket serverWebSocket = webSocket.result();
                         serverWebSocket.handler(
                                 b -> {
-                                    if (guard.prepareToEmit()) {
+                                    if (emitter == null) {
+                                        onUnexpectedError(serverWebSocket, null,
+                                                "No consumer subscribed for messages sent to " +
+                                                        "Reactive Messaging WebSocket endpoint on path: " + path);
+                                    } else if (guard.prepareToEmit()) {
                                         try {
                                             emitter.emit(new WebSocketMessage<>(b,
                                                     () -> serverWebSocket.write(Buffer.buffer("ACK")),
@@ -67,7 +71,7 @@ public class ReactiveWebSocketHandlerBean extends ReactiveHandlerBeanBase<WebSoc
 
     @Override
     protected String key(RoutingContext context) {
-        return context.normalisedPath();
+        return context.normalizedPath();
     }
 
     @Override
@@ -78,7 +82,7 @@ public class ReactiveWebSocketHandlerBean extends ReactiveHandlerBeanBase<WebSoc
     private void onUnexpectedError(ServerWebSocket serverWebSocket, Throwable error, String message) {
         log.error(message, error);
         // TODO some error message for the client? exception mapper would be best...
-        serverWebSocket.close((short) 3500, message);
+        serverWebSocket.close((short) 3500, "Unexpected error while processing the message");
     }
 
     Multi<WebSocketMessage<?>> getProcessor(String path) {

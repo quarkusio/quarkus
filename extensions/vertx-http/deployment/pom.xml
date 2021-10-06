@@ -269,6 +269,19 @@
                                         <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
                                     </fileMappers>
                                 </artifactItem>
+                                <!-- Mermaid -->
+                                <artifactItem>
+                                    <groupId>org.webjars.npm</groupId>
+                                    <artifactId>mermaid</artifactId>
+                                    <version>${webjar.mermaid.version}</version>
+                                    <type>jar</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/classes/dev-static/js/</outputDirectory>
+                                    <includes>**/mermaid.min.js, **/mermaid.min.js.map</includes>
+                                    <fileMappers>
+                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
+                                    </fileMappers>
+                                </artifactItem>
                             </artifactItems>
                         </configuration>
                     </execution>

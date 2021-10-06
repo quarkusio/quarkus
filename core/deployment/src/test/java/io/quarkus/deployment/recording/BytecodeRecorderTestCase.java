@@ -280,7 +280,7 @@ public class BytecodeRecorderTestCase {
             recorder.add(instance);
             recorder.add(instance);
             recorder.result(instance);
-        }, new TestJavaBean(null, 2));
+        }, new TestJavaBean(null, 2, 2));
     }
 
     @Test

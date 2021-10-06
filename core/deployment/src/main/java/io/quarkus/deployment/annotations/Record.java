@@ -53,4 +53,15 @@ public @interface Record {
      */
     boolean optional() default false;
 
+    /**
+     * If this is set to false then parameters are considered equal based on equals/hashCode, instead of identity.
+     *
+     * This is an advanced option, it is only useful if you are recording lots of objects that you expect to be the same
+     * but have different identities. This allows multiple objects at deployment time to be interned into a single
+     * object at runtime.
+     *
+     * This is an advanced option, most recorders don't want this.
+     */
+    boolean useIdentityComparisonForParameters() default true;
+
 }

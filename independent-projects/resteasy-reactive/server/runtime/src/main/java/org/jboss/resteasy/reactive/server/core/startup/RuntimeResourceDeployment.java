@@ -106,6 +106,8 @@ public class RuntimeResourceDeployment {
      * If the runtime will always default to blocking (e.g. Servlet)
      */
     private final boolean defaultBlocking;
+    private final BlockingHandler blockingHandler;
+    private final ResponseWriterHandler responseWriterHandler;
 
     public RuntimeResourceDeployment(DeploymentInfo info, Supplier<Executor> executorSupplier,
             CustomServerRestHandlers customServerRestHandlers,
@@ -120,6 +122,8 @@ public class RuntimeResourceDeployment {
         this.dynamicEntityWriter = dynamicEntityWriter;
         this.resourceLocatorHandler = resourceLocatorHandler;
         this.defaultBlocking = defaultBlocking;
+        this.blockingHandler = new BlockingHandler(executorSupplier);
+        this.responseWriterHandler = new ResponseWriterHandler(dynamicEntityWriter);
     }
 
     public RuntimeResource buildResourceMethod(ResourceClass clazz,
@@ -181,7 +185,7 @@ public class RuntimeResourceDeployment {
         Optional<Integer> blockingHandlerIndex = Optional.empty();
         if (!defaultBlocking) {
             if (method.isBlocking()) {
-                handlers.add(new BlockingHandler(executorSupplier));
+                handlers.add(blockingHandler);
                 blockingHandlerIndex = Optional.of(handlers.size() - 1);
                 score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionBlocking);
             } else {
@@ -286,7 +290,7 @@ public class RuntimeResourceDeployment {
             boolean single = param.isSingle();
             ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, locatableResource, param.parameterType,
                     param.type, param.name,
-                    single, param.encoded, param.customerParameterExtractor);
+                    single, param.encoded, param.customParameterExtractor);
             ParameterConverter converter = null;
             ParamConverterProviders paramConverterProviders = info.getParamConverterProviders();
             boolean userProviderConvertersExist = !paramConverterProviders.getParamConverterProviders().isEmpty();
@@ -403,25 +407,25 @@ public class RuntimeResourceDeployment {
         //in future there will be one per filter
         List<ServerRestHandler> responseFilterHandlers;
         if (method.isSse()) {
-            handlers.add(new SseResponseWriterHandler());
+            handlers.add(SseResponseWriterHandler.INSTANCE);
             responseFilterHandlers = Collections.emptyList();
         } else {
             handlers.add(new ResponseHandler());
             addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED);
             responseFilterHandlers = new ArrayList<>(interceptorDeployment.setupResponseFilterHandler());
             handlers.addAll(responseFilterHandlers);
-            handlers.add(new ResponseWriterHandler(dynamicEntityWriter));
+            handlers.add(responseWriterHandler);
         }
         if (!clazz.resourceExceptionMapper().isEmpty() && (instanceHandler != null)) {
             // when class level exception mapper are used, we need to make sure that an instance of resource class exists
             // so we can invoke it
             abortHandlingChain.add(instanceHandler);
         }
-        abortHandlingChain.add(new ExceptionHandler());
-        abortHandlingChain.add(new ResponseHandler());
+        abortHandlingChain.add(ExceptionHandler.INSTANCE);
+        abortHandlingChain.add(ResponseHandler.INSTANCE);
         abortHandlingChain.addAll(responseFilterHandlers);
 
-        abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
+        abortHandlingChain.add(responseWriterHandler);
         handlers.add(0, new AbortChainHandler(abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY)));
 
         return new RuntimeResource(method.getHttpMethod(), methodPathTemplate,
@@ -431,7 +435,7 @@ public class RuntimeResourceDeployment {
                 clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterDeclaredTypes,
                 nonAsyncReturnType, method.isBlocking(), resourceClass,
                 lazyMethod,
-                pathParameterIndexes, score, sseElementType, clazz.resourceExceptionMapper());
+                pathParameterIndexes, info.isDevelopmentMode() ? score : null, sseElementType, clazz.resourceExceptionMapper());
     }
 
     private boolean isSingleEffectiveWriter(List<MessageBodyWriter<?>> buildTimeWriters) {

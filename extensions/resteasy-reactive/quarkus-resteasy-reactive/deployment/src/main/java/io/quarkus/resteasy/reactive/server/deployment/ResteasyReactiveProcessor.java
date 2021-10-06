@@ -62,6 +62,8 @@ import org.jboss.resteasy.reactive.server.model.DynamicFeatures;
 import org.jboss.resteasy.reactive.server.model.Features;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
+import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
+import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
@@ -86,6 +88,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.RecordableConstructorBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -126,6 +129,7 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderOverrideBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterOverrideBuildItem;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
@@ -168,6 +172,12 @@ public class ResteasyReactiveProcessor {
     @BuildStep
     MinNettyAllocatorMaxOrderBuildItem setMinimalNettyMaxOrderSize() {
         return new MinNettyAllocatorMaxOrderBuildItem(3);
+    }
+
+    @BuildStep
+    void recordableConstructor(BuildProducer<RecordableConstructorBuildItem> ctors) {
+        ctors.produce(new RecordableConstructorBuildItem(ServerResourceMethod.class));
+        ctors.produce(new RecordableConstructorBuildItem(ServerMethodParameter.class));
     }
 
     @BuildStep
@@ -258,8 +268,12 @@ public class ResteasyReactiveProcessor {
 
     @SuppressWarnings("unchecked")
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    public void setupEndpoints(Capabilities capabilities, BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+    //note useIdentityComparisonForParameters=false
+    //resteasy can generate lots of small collections with similar values as part of its metadata gathering
+    //this allows multiple objects to be compressed into a single object at runtime
+    //saving memory and reducing reload time
+    @Record(value = ExecutionTime.STATIC_INIT, useIdentityComparisonForParameters = false)
+    public void setupEndpoints(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             BeanContainerBuildItem beanContainerBuildItem,
             ResteasyReactiveConfig config,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
@@ -579,6 +593,7 @@ public class ResteasyReactiveProcessor {
                     .setGlobalHandlerCustomers(
                             new ArrayList<>(Collections.singletonList(new SecurityContextOverrideHandler.Customizer()))) //TODO: should be pluggable
                     .setResourceClasses(resourceClasses)
+                    .setDevelopmentMode(launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT)
                     .setLocatableResourceClasses(subResourceClasses)
                     .setParamConverterProviders(paramConverterProviders);
             quarkusRestDeploymentInfoBuildItemBuildProducer

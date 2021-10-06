@@ -491,6 +491,7 @@ public final class ExtensionLoader {
             final Parameter[] methodParameters = method.getParameters();
             final Record recordAnnotation = method.getAnnotation(Record.class);
             final boolean isRecorder = recordAnnotation != null;
+            final boolean identityComparison = isRecorder ? recordAnnotation.useIdentityComparisonForParameters() : true;
             if (isRecorder) {
                 boolean recorderFound = false;
                 for (Class<?> p : method.getParameterTypes()) {
@@ -810,7 +811,7 @@ public final class ExtensionLoader {
                                 BytecodeRecorderImpl bri = isRecorder
                                         ? new BytecodeRecorderImpl(recordAnnotation.value() == ExecutionTime.STATIC_INIT,
                                                 clazz.getSimpleName(), method.getName(),
-                                                Integer.toString(method.toString().hashCode()))
+                                                Integer.toString(method.toString().hashCode()), identityComparison)
                                         : null;
                                 for (int i = 0; i < methodArgs.length; i++) {
                                     methodArgs[i] = methodParamFns.get(i).apply(bc, bri);

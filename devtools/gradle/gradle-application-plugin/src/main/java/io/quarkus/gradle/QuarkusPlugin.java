@@ -40,7 +40,6 @@ import io.quarkus.gradle.tasks.QuarkusAddExtension;
 import io.quarkus.gradle.tasks.QuarkusBuild;
 import io.quarkus.gradle.tasks.QuarkusDev;
 import io.quarkus.gradle.tasks.QuarkusGenerateCode;
-import io.quarkus.gradle.tasks.QuarkusGenerateConfig;
 import io.quarkus.gradle.tasks.QuarkusListCategories;
 import io.quarkus.gradle.tasks.QuarkusListExtensions;
 import io.quarkus.gradle.tasks.QuarkusListPlatforms;
@@ -64,7 +63,6 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String QUARKUS_GENERATE_CODE_TASK_NAME = "quarkusGenerateCode";
     public static final String QUARKUS_GENERATE_CODE_TESTS_TASK_NAME = "quarkusGenerateCodeTests";
     public static final String QUARKUS_BUILD_TASK_NAME = "quarkusBuild";
-    public static final String GENERATE_CONFIG_TASK_NAME = "generateConfig";
     public static final String QUARKUS_DEV_TASK_NAME = "quarkusDev";
     public static final String QUARKUS_REMOTE_DEV_TASK_NAME = "quarkusRemoteDev";
     public static final String QUARKUS_TEST_TASK_NAME = "quarkusTest";
@@ -107,7 +105,6 @@ public class QuarkusPlugin implements Plugin<Project> {
         tasks.create(LIST_PLATFORMS_TASK_NAME, QuarkusListPlatforms.class);
         tasks.create(ADD_EXTENSION_TASK_NAME, QuarkusAddExtension.class);
         tasks.create(REMOVE_EXTENSION_TASK_NAME, QuarkusRemoveExtension.class);
-        tasks.create(GENERATE_CONFIG_TASK_NAME, QuarkusGenerateConfig.class);
 
         QuarkusGenerateCode quarkusGenerateCode = tasks.create(QUARKUS_GENERATE_CODE_TASK_NAME, QuarkusGenerateCode.class);
         QuarkusGenerateCode quarkusGenerateCodeTests = tasks.create(QUARKUS_GENERATE_CODE_TESTS_TASK_NAME,

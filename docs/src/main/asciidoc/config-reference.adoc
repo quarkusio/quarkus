@@ -442,39 +442,6 @@ without any gaps.
 
 IMPORTANT: Indexed Properties are not supported in Environment Variables.
 
-== Generate Configuration
-
-It is also possible to generate an example `application.properties` with all known configuration properties:
-
-[source,bash]
---
-./mvnw quarkus:generate-config
---
-
-This creates a `src/main/resources/application.properties.example` file that contains all the config options
-exposed via the extensions currently present in the application. These options are commented out, and have their value
-set to defaults when applicable. For example this HTTP port config entry will appear as:
-
-.application.properties
-[source,properties]
---
-#
-# The HTTP port
-#
-#quarkus.http.port=8080
---
-
-Rather than generating an example config file, you can also add these to you actual config file by setting the `-Dfile`
-parameter:
-
-[source,bash]
---
-./mvnw quarkus:generate-config -Dfile=application.properties
---
-
-If a config option is already present it will not be added, so it is safe to run this after adding an extension to see
-which configurations are available.
-
 [[configuring_quarkus]]
 == Configuring Quarkus
 

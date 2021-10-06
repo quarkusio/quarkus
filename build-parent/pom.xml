@@ -118,6 +118,7 @@
         <webjar.font-awesome.version>5.15.2</webjar.font-awesome.version>
         <webjar.jquery.version>3.5.1</webjar.jquery.version>
         <webjar.codemirror.version>5.62.0</webjar.codemirror.version>
+        <webjar.mermaid.version>8.9.1</webjar.mermaid.version>
 
         <!-- revapi API check -->
         <revapi-maven-plugin.version>0.12.1</revapi-maven-plugin.version>

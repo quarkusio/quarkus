@@ -124,6 +124,8 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
             resultMap.put("files", result);
             final List<String> javaargs = new ArrayList<>();
             javaargs.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
+            javaargs.add(
+                    "-Djava.util.concurrent.ForkJoinPool.common.threadFactory=io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThreadFactory");
             resultMap.put("java-args", javaargs);
             resultMap.put("main-class", buildResult.consume(MainClassBuildItem.class).getClassName());
             if (nativeRequested) {

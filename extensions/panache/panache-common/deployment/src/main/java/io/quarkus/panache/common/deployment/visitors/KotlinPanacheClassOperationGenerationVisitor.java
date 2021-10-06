@@ -42,6 +42,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
@@ -55,7 +56,7 @@ import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.TypeBundle;
 
 /**
- * kotlinc compiles default methods in to the implementing classes so we need to elide them first and then we can
+ * kotlinc compiles default methods in to the implementing classes, so we need to elide them first, and then we can
  * generate new methods like we do elsewhere.
  */
 public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
@@ -199,7 +200,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         } else {
             returnType = getDescriptor(method.returnType(), mapper);
         }
-        return joiner.toString() + returnType;
+        return joiner + returnType;
     }
 
     private void checkCast(MethodVisitor mv, Type returnType, String operationReturnType) {
@@ -314,11 +315,6 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                     AnnotationInstance generateBridge = method.annotation(DOTNAME_GENERATE_BRIDGE);
                     if (generateBridge != null) {
                         definedMethods.remove(method.name() + getDescriptor(method, m -> m));
-                        AnnotationValue typeErased = generateBridge.value("targetReturnTypeErased");
-                        if (typeErased != null && typeErased.asBoolean()) {
-                            definedMethods.remove(method.name()
-                                    + bridgeMethodDescriptor(method, type -> type));
-                        }
                     }
                 });
     }
@@ -430,7 +426,9 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
 
         StringJoiner joiner = new StringJoiner("", "(", ")");
         joiner.add(CLASS.descriptor());
-        descriptors(method, joiner);
+        for (Type parameter : method.parameters()) {
+            joiner.add(parameter.kind() == Kind.TYPE_VARIABLE ? OBJECT.descriptor() : getDescriptor(parameter, argMapper));
+        }
 
         Type returnType = method.returnType();
         String descriptor = getDescriptor(returnType, argMapper);
@@ -548,27 +546,24 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     public void visitEnd() {
         for (MethodInfo method : indexView.getClassByName(baseType.dotName()).methods()) {
             String descriptor = getDescriptor(method, type -> typeArguments.getOrDefault(type, OBJECT).descriptor());
-            if (!definedMethods.containsKey(method.name() + descriptor)) {
-                AnnotationInstance bridge = method.annotation(DOTNAME_GENERATE_BRIDGE);
-                if (bridge != null) {
+            AnnotationInstance bridge = method.annotation(DOTNAME_GENERATE_BRIDGE);
+            if (!definedMethods.containsKey(method.name() + descriptor) && bridge != null) {
+                generate(method);
+                if (needsJvmBridge(method)) {
+                    String bridgeDescriptor = bridgeMethodDescriptor(method, type -> {
+                        ByteCodeType mapped = typeArguments.get(type);
+                        return mapped != null ? mapped.descriptor() : type;
+                    });
+                    if (!definedMethods.containsKey(method.name() + bridgeDescriptor)) {
+                        generateBridge(method, bridgeDescriptor);
+                    }
 
-                    generate(method);
-                    if (needsJvmBridge(method)) {
-                        String bridgeDescriptor = bridgeMethodDescriptor(method, type -> {
-                            ByteCodeType mapped = typeArguments.get(type);
-                            return mapped != null ? mapped.descriptor() : type;
-                        });
-                        if (!definedMethods.containsKey(method.name() + bridgeDescriptor)) {
-                            generateBridge(method, bridgeDescriptor);
-                        }
-
-                        AnnotationValue targetReturnTypeErased = bridge.value("targetReturnTypeErased");
-                        if (typeArguments.get("Id").isPrimitive() && targetReturnTypeErased != null
-                                && targetReturnTypeErased.asBoolean()) {
-                            if (method.parameters().size() == 1
-                                    && method.parameters().get(0).asTypeVariable().identifier().equals("Id")) {
-                                generatePrimitiveBridge(method, descriptor);
-                            }
+                    AnnotationValue targetReturnTypeErased = bridge.value("targetReturnTypeErased");
+                    if (typeArguments.get("Id").isPrimitive() && targetReturnTypeErased != null
+                            && targetReturnTypeErased.asBoolean()) {
+                        if (method.parameters().size() == 1
+                                && method.parameters().get(0).asTypeVariable().identifier().equals("Id")) {
+                            generatePrimitiveBridge(method, descriptor);
                         }
                     }
                 }

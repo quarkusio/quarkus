@@ -9,9 +9,11 @@ import java.util.Set;
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Alternative;
+import javax.inject.Inject;
 
 import io.quarkus.security.credential.Credential;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.runtime.SecurityIdentityAssociation;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -89,4 +91,21 @@ public class IdentityMock implements SecurityIdentity {
         return null;
     }
 
+    @Alternative
+    @ApplicationScoped
+    @Priority(1)
+    public static class IdentityAssociationMock extends SecurityIdentityAssociation {
+        @Inject
+        IdentityMock identity;
+
+        @Override
+        public Uni<SecurityIdentity> getDeferredIdentity() {
+            return Uni.createFrom().item(identity);
+        }
+
+        @Override
+        public SecurityIdentity getIdentity() {
+            return identity;
+        }
+    }
 }

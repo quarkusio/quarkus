@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package security;
+option java_package = "com.example.security";
+
+service SecuredService {
+  rpc unaryCall(Container) returns (ThreadInfo);
+  rpc streamCall(stream Container) returns (stream ThreadInfo);
+}
+
+message ThreadInfo {
+  bool isOnEventLoop = 1;
+}
+
+message Container {
+  string text = 1;
+}

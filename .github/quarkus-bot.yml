@@ -328,8 +328,10 @@ triage:
         - core/deployment/src/main/java/io/quarkus/deployment/configuration/
         - core/runtime/src/main/java/io/quarkus/runtime/configuration/
     - labels: [area/core]
+      notify: [aloubyansky, gsmet, geoand, radcortez, Sanne, stuartwdouglas]
       directories:
         - core/
+        - integration-tests/production-mode
     - labels: [area/dependencies]
       directories:
         - .github/dependabot.yml

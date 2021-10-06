@@ -113,6 +113,7 @@
                 </property>
             </activation>
             <modules>
+                <module>production-mode</module>
                 <module>avro-reload</module>
                 <module>awt</module>
                 <module>bouncycastle</module>

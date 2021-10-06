@@ -212,7 +212,7 @@ public final class LoggingResourceProcessor {
     void setupStackTraceFormatter(ApplicationArchivesBuildItem item) {
         List<IndexView> indexList = new ArrayList<>();
         for (ApplicationArchive i : item.getAllApplicationArchives()) {
-            if (Files.isDirectory(i.getArchiveLocation())) {
+            if (i.getResolvedPaths().isSinglePath() && Files.isDirectory(i.getResolvedPaths().getSinglePath())) {
                 indexList.add(i.getIndex());
             }
         }

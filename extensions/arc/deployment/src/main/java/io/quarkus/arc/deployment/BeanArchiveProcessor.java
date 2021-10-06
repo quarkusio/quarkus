@@ -21,7 +21,6 @@ import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
 import io.quarkus.arc.processor.BeanDeployment;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -32,6 +31,7 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.index.IndexDependencyConfig;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.index.PersistentClassIndex;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 public class BeanArchiveProcessor {
 
@@ -154,8 +154,8 @@ public class BeanArchiveProcessor {
 
     private boolean isApplicationArchiveExcluded(ArcConfig config, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems,
             ApplicationArchive archive) {
-        if (archive.getArtifactKey() != null) {
-            AppArtifactKey key = archive.getArtifactKey();
+        if (archive.getKey() != null) {
+            final ArtifactKey key = archive.getKey();
             for (IndexDependencyConfig excludeDependency : config.excludeDependency.values()) {
                 if (archiveMatches(key, excludeDependency.groupId, excludeDependency.artifactId,
                         excludeDependency.classifier)) {
@@ -174,7 +174,7 @@ public class BeanArchiveProcessor {
         return false;
     }
 
-    public static boolean archiveMatches(AppArtifactKey key, String groupId, String artifactId, Optional<String> classifier) {
+    public static boolean archiveMatches(ArtifactKey key, String groupId, String artifactId, Optional<String> classifier) {
 
         if (Objects.equal(key.getArtifactId(), artifactId)
                 && Objects.equal(key.getGroupId(), groupId)) {

@@ -27,14 +27,13 @@ import java.util.stream.Stream;
 import org.codehaus.plexus.util.io.RawInputStreamFacade;
 import org.jboss.logging.Logger;
 
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppDependency;
-import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.bootstrap.prebuild.CodeGenFailureException;
 import io.quarkus.deployment.CodeGenContext;
 import io.quarkus.deployment.CodeGenProvider;
 import io.quarkus.deployment.util.ProcessUtil;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.utilities.JavaBinFinder;
 import io.quarkus.utilities.OS;
@@ -89,7 +88,7 @@ public class GrpcCodeGen implements CodeGenProvider {
                             .map(this::escapeWhitespace)
                             .collect(Collectors.toList());
                     if (!protoFiles.isEmpty()) {
-                        initExecutables(workDir, context.appModel());
+                        initExecutables(workDir, context.applicationModel());
 
                         Collection<String> protosToImport = gatherImports(workDir.resolve("protoc-dependencies"), context);
 
@@ -139,12 +138,12 @@ public class GrpcCodeGen implements CodeGenProvider {
         List<String> dependenciesToScan = Arrays.asList(scanForImports.split(","));
 
         Set<String> importDirectories = new HashSet<>();
-        AppModel appModel = context.appModel();
-        for (AppDependency dependency : appModel.getUserDependencies()) {
-            AppArtifact artifact = dependency.getArtifact();
+        ApplicationModel appModel = context.applicationModel();
+        for (ResolvedDependency artifact : appModel.getRuntimeDependencies()) {
             if (scanAll
-                    || dependenciesToScan.contains(String.format("%s:%s", artifact.getGroupId(), artifact.getArtifactId()))) {
-                for (Path path : artifact.getPaths()) {
+                    || dependenciesToScan.contains(
+                            String.format("%s:%s", artifact.getGroupId(), artifact.getArtifactId()))) {
+                for (Path path : artifact.getResolvedPaths()) {
                     Path jarName = path.getFileName();
                     if (jarName.toString().endsWith(".jar")) {
                         final JarFile jar;
@@ -195,7 +194,7 @@ public class GrpcCodeGen implements CodeGenProvider {
         }
     }
 
-    private void initExecutables(Path workDir, AppModel model) throws CodeGenException {
+    private void initExecutables(Path workDir, ApplicationModel model) throws CodeGenException {
         if (executables == null) {
             Path protocPath;
             String protocPathProperty = System.getProperty("quarkus.grpc.protoc-path");
@@ -216,7 +215,7 @@ public class GrpcCodeGen implements CodeGenProvider {
         }
     }
 
-    private Path prepareExecutable(Path buildDir, AppModel model,
+    private Path prepareExecutable(Path buildDir, ApplicationModel model,
             String groupId, String artifactId, String classifier, String packaging) throws CodeGenException {
         Path artifactPath = findArtifactPath(model, groupId, artifactId, classifier, packaging);
 
@@ -247,17 +246,16 @@ public class GrpcCodeGen implements CodeGenProvider {
         return exe;
     }
 
-    private static Path findArtifactPath(AppModel model, String groupId, String artifactId, String classifier,
+    private static Path findArtifactPath(ApplicationModel model, String groupId, String artifactId, String classifier,
             String packaging) {
         Path artifactPath = null;
 
-        for (AppDependency dep : model.getFullDeploymentDeps()) {
-            AppArtifact artifact = dep.getArtifact();
+        for (ResolvedDependency artifact : model.getDependencies()) {
             if (groupId.equals(artifact.getGroupId())
                     && artifactId.equals(artifact.getArtifactId())
                     && classifier.equals(artifact.getClassifier())
                     && packaging.equals(artifact.getType())) {
-                artifactPath = artifact.getPaths().getSinglePath();
+                artifactPath = artifact.getResolvedPaths().getSinglePath();
             }
         }
         return artifactPath;
@@ -278,7 +276,7 @@ public class GrpcCodeGen implements CodeGenProvider {
         }
     }
 
-    private static Path prepareQuarkusGrpcExecutable(AppModel appModel, Path buildDir) throws CodeGenException {
+    private static Path prepareQuarkusGrpcExecutable(ApplicationModel appModel, Path buildDir) throws CodeGenException {
         Path pluginPath = findArtifactPath(appModel, "io.quarkus", "quarkus-grpc-protoc-plugin", "shaded", "jar");
         if (pluginPath == null) {
             throw new CodeGenException("Failed to find Quarkus gRPC protoc plugin among dependencies");

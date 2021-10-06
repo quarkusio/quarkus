@@ -84,7 +84,6 @@ import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfiguratorBuildItem;
 import io.quarkus.arc.deployment.CustomScopeBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -106,6 +105,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.undertow.runtime.HttpSessionContext;
 import io.quarkus.undertow.runtime.ServletHttpSecurityPolicy;
@@ -163,8 +163,8 @@ public class UndertowBuildStep {
     }
 
     private boolean jacksonOnClasspath(CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        for (AppDependency appDep : curateOutcomeBuildItem.getEffectiveModel().getUserDependencies()) {
-            if (appDep.getArtifact().getArtifactId().equals("jackson-core")) {
+        for (ResolvedDependency appDep : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
+            if (appDep.getArtifactId().equals("jackson-core")) {
                 return true;
             }
         }

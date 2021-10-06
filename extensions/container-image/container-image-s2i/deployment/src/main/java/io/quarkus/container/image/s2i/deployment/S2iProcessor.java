@@ -39,7 +39,6 @@ import io.fabric8.openshift.api.model.Build;
 import io.fabric8.openshift.api.model.BuildConfig;
 import io.fabric8.openshift.api.model.ImageStream;
 import io.fabric8.openshift.client.OpenShiftClient;
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.ImageUtil;
 import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
@@ -63,6 +62,7 @@ import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHandler;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class S2iProcessor {
 
@@ -88,10 +88,12 @@ public class S2iProcessor {
             BuildProducer<BaseImageInfoBuildItem> builderImageProducer,
             BuildProducer<KubernetesCommandBuildItem> commandProducer) {
 
-        final List<AppDependency> appDeps = curateOutcomeBuildItem.getEffectiveModel().getUserDependencies();
+        final Collection<ResolvedDependency> appDeps = curateOutcomeBuildItem.getApplicationModel()
+                .getRuntimeDependencies();
         String outputJarFileName = jarBuildItem.getPath().getFileName().toString();
         String classpath = appDeps.stream()
-                .map(d -> d.getArtifact().getGroupId() + "." + d.getArtifact().getPath().getFileName())
+                .map(d -> d.getGroupId() + "."
+                        + d.getResolvedPaths().getSinglePath().getFileName())
                 .map(s -> concatUnixPaths(s2iConfig.jarDirectory, "lib", s))
                 .collect(Collectors.joining(":"));
 

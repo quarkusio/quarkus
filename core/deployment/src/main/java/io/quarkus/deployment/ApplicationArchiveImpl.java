@@ -1,6 +1,5 @@
 package io.quarkus.deployment;
 
-import java.io.Closeable;
 import java.nio.file.Path;
 
 import org.jboss.jandex.IndexView;
@@ -8,31 +7,27 @@ import org.jboss.jandex.IndexView;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.paths.PathCollection;
+import io.quarkus.paths.PathList;
 
 public final class ApplicationArchiveImpl extends MultiBuildItem implements ApplicationArchive {
 
     private final IndexView indexView;
-    private final PathsCollection rootDirs;
-    private final boolean jar;
-    private final PathsCollection paths;
-    private final AppArtifactKey artifactKey;
+    private final PathCollection rootDirs;
+    private final PathCollection paths;
+    private final ArtifactKey artifactKey;
 
-    public ApplicationArchiveImpl(IndexView indexView, Path archiveRoot, Closeable closeable, boolean jar,
-            Path archiveLocation, AppArtifactKey artifactKey) {
-        this(indexView, PathsCollection.of(archiveRoot), PathsCollection.of(archiveLocation), artifactKey);
+    public ApplicationArchiveImpl(IndexView indexView, Path archiveRoot,
+            Path archiveLocation, ArtifactKey artifactKey) {
+        this(indexView, PathList.of(archiveRoot), PathList.of(archiveLocation), artifactKey);
     }
 
-    public ApplicationArchiveImpl(IndexView indexView, PathsCollection rootDirs, PathsCollection paths,
-            AppArtifactKey artifactKey) {
-        this(indexView, rootDirs, paths, false, artifactKey);
-    }
-
-    private ApplicationArchiveImpl(IndexView indexView, PathsCollection rootDirs, PathsCollection paths, boolean jar,
-            AppArtifactKey artifactKey) {
+    public ApplicationArchiveImpl(IndexView indexView, PathCollection rootDirs, PathCollection paths,
+            ArtifactKey artifactKey) {
         this.indexView = indexView;
         this.rootDirs = rootDirs;
         this.paths = paths;
-        this.jar = jar;
         this.artifactKey = artifactKey;
     }
 
@@ -43,35 +38,41 @@ public final class ApplicationArchiveImpl extends MultiBuildItem implements Appl
 
     @Override
     @Deprecated
-    public Path getArchiveRoot() {
-        return rootDirs.iterator().next();
-    }
-
-    @Override
-    @Deprecated
-    public boolean isJarArchive() {
-        return jar;
-    }
-
-    @Override
-    @Deprecated
     public Path getArchiveLocation() {
         return paths.iterator().next();
     }
 
     @Override
+    @Deprecated
     public PathsCollection getRootDirs() {
+        return PathsCollection.from(rootDirs);
+    }
+
+    @Override
+    public PathCollection getRootDirectories() {
         return rootDirs;
     }
 
     @Override
+    @Deprecated
     public PathsCollection getPaths() {
+        return PathsCollection.from(paths);
+    }
+
+    @Override
+    public PathCollection getResolvedPaths() {
         return paths;
     }
 
     @Override
     public AppArtifactKey getArtifactKey() {
-        return artifactKey;
+        return artifactKey == null ? null
+                : new AppArtifactKey(artifactKey.getGroupId(), artifactKey.getArtifactId(), artifactKey.getClassifier(),
+                        artifactKey.getType());
     }
 
+    @Override
+    public ArtifactKey getKey() {
+        return artifactKey;
+    }
 }

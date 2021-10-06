@@ -9,6 +9,8 @@ import org.jboss.jandex.IndexView;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.PathsCollection;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.paths.PathCollection;
 
 /**
  * Represents an archive that is part of application code.
@@ -25,35 +27,28 @@ public interface ApplicationArchive {
     IndexView getIndex();
 
     /**
-     *
-     * Returns a path representing the archive root. Note that if this is a jar archive this is not the path to the
-     * jar, but rather a path to the root of the mounted {@link com.sun.nio.zipfs.ZipFileSystem}
-     *
-     * @return The archive root.
-     * @deprecated in favor of {@link #getRootDirs()}
-     */
-    @Deprecated
-    Path getArchiveRoot();
-
-    /**
-     *
-     * @return <code>true</code> if this archive is a jar
-     * @deprecated does not appear to be used anywhere and now it shouldn't be
-     */
-    @Deprecated
-    boolean isJarArchive();
-
-    /**
      * If this archive is a jar file it will return the path to the jar file on the file system,
      * otherwise it will return the directory that this corresponds to.
      *
-     * @deprecated in favor of {@link #getPaths()}
+     * @deprecated in favor of {@link #getResolvedPaths()}
      */
     @Deprecated
     Path getArchiveLocation();
 
     /**
+     * @deprecated in favor of {@link #getRootDirectories()}
      *
+     *             Returns paths representing the archive root directories. Note that every path in this collection
+     *             is guaranteed to be a directory. If the actual application archive appears to be a JAR,
+     *             this collection will include a path to the root of the mounted {@link java.nio.file.FileSystem}
+     *             created from the JAR.
+     *
+     * @return The archive root directories.
+     */
+    @Deprecated
+    PathsCollection getRootDirs();
+
+    /**
      * Returns paths representing the archive root directories. Note that every path in this collection
      * is guaranteed to be a directory. If the actual application archive appears to be a JAR,
      * this collection will include a path to the root of the mounted {@link java.nio.file.FileSystem}
@@ -61,19 +56,32 @@ public interface ApplicationArchive {
      *
      * @return The archive root directories.
      */
-    PathsCollection getRootDirs();
+    PathCollection getRootDirectories();
+
+    /**
+     * @deprecated in favor of {@link #getResolvedPaths()}
+     * @return The paths representing the application root paths.
+     */
+    @Deprecated
+    PathsCollection getPaths();
 
     /**
      * 
      * @return The paths representing the application root paths.
      */
-    PathsCollection getPaths();
+    PathCollection getResolvedPaths();
 
     /**
-     * 
+     * @deprecated in favor of {@link #getKey()}
      * @return the artifact key or null if not available
      */
     AppArtifactKey getArtifactKey();
+
+    /**
+     *
+     * @return the artifact key or null if not available
+     */
+    ArtifactKey getKey();
 
     /**
      * Convenience method, returns the child path if it exists, otherwise null.
@@ -82,7 +90,7 @@ public interface ApplicationArchive {
      * @return The child path, or null if it does not exist.
      */
     default Path getChildPath(String path) {
-        return getRootDirs().resolveExistingOrNull(path);
+        return getRootDirectories().resolveExistingOrNull(path);
     }
 
     /**
@@ -94,8 +102,8 @@ public interface ApplicationArchive {
      * @param consumer entry consumer
      */
     default void processEntry(String path, BiConsumer<Path, Path> consumer) {
-        final Iterator<Path> dirs = getRootDirs().iterator();
-        final Iterator<Path> paths = getPaths().iterator();
+        final Iterator<Path> dirs = getRootDirectories().iterator();
+        final Iterator<Path> paths = getResolvedPaths().iterator();
         while (dirs.hasNext()) {
             final Path child = dirs.next().resolve(path);
             if (Files.exists(child)) {

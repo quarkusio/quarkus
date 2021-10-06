@@ -1,7 +1,7 @@
 package io.quarkus.bootstrap.resolver;
 
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -49,7 +49,7 @@ public class TsRepoBuilder {
         } catch (Exception e) {
             error("Failed to persist pom.xml for " + artifact, e);
         }
-        install(artifact.toPomArtifact().toAppArtifact(), pomXml);
+        install(artifact.toPomArtifact().toArtifact(), pomXml);
         if (p == null) {
             switch (artifact.type) {
                 case TsArtifact.TYPE_JAR:
@@ -71,11 +71,11 @@ public class TsRepoBuilder {
             }
         }
         if (p != null) {
-            install(artifact.toAppArtifact(), p);
+            install(artifact.toArtifact(), p);
         }
     }
 
-    protected void install(AppArtifact artifact, Path file) {
+    protected void install(ArtifactCoords artifact, Path file) {
         try {
             resolver.install(artifact, file);
         } catch (AppModelResolverException e) {

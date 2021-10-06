@@ -43,15 +43,11 @@ import org.gradle.jvm.toolchain.JavaToolchainSpec;
 import org.gradle.util.GradleVersion;
 
 import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.AppDependency;
-import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
-import io.quarkus.bootstrap.resolver.AppModelResolver;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
+import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusDev extends QuarkusTask {
@@ -258,31 +254,22 @@ public class QuarkusDev extends QuarkusTask {
 
         builder.sourceEncoding(getSourceEncoding());
 
-        final AppModel appModel;
-        final AppModelResolver modelResolver = extension().getAppModelResolver(LaunchMode.DEVELOPMENT);
-        try {
-            final AppArtifact appArtifact = extension().getAppArtifact();
-            appArtifact.setPaths(QuarkusGradleUtils.getOutputPaths(project));
-            appModel = modelResolver.resolveModel(appArtifact);
-        } catch (AppModelResolverException e) {
-            throw new GradleException("Failed to resolve application model " + extension().getAppArtifact() + " dependencies",
-                    e);
-        }
-
-        final Set<AppArtifactKey> projectDependencies = new HashSet<>();
+        final ApplicationModel appModel = extension().getApplicationModel(LaunchMode.DEVELOPMENT);
+        final Set<GACT> projectDependencies = new HashSet<>();
         addSelfWithLocalDeps(project, builder, new HashSet<>(), projectDependencies, true);
 
-        for (AppDependency appDependency : appModel.getFullDeploymentDeps()) {
-            final AppArtifact appArtifact = appDependency.getArtifact();
+        for (io.quarkus.maven.dependency.ResolvedDependency artifact : appModel.getDependencies()) {
             //we only use the launcher for launching from the IDE, we need to exclude it
-            if (appArtifact.getGroupId().equals("io.quarkus") && appArtifact.getGroupId().equals("quarkus-ide-launcher")) {
+            if (artifact.getGroupId().equals("io.quarkus")
+                    && artifact.getArtifactId().equals("quarkus-ide-launcher")) {
                 continue;
             }
-            if (!projectDependencies.contains(new AppArtifactKey(appArtifact.getGroupId(), appArtifact.getArtifactId()))) {
-                appArtifact.getPaths().forEach(p -> {
+            if (!projectDependencies
+                    .contains(new GACT(artifact.getGroupId(), artifact.getArtifactId()))) {
+                artifact.getResolvedPaths().forEach(p -> {
                     if (Files.exists(p)) {
-                        if (appArtifact.getGroupId().equals("io.quarkus")
-                                && appArtifact.getArtifactId().equals("quarkus-class-change-agent")) {
+                        if (artifact.getGroupId().equals("io.quarkus")
+                                && artifact.getArtifactId().equals("quarkus-class-change-agent")) {
                             builder.jvmArgs("-javaagent:" + p.toFile().getAbsolutePath());
                         } else {
                             addToClassPaths(builder, p.toFile());
@@ -298,7 +285,7 @@ public class QuarkusDev extends QuarkusTask {
         //to the runner jar
         addGradlePluginDeps(builder);
 
-        JavaPluginConvention javaPluginConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
+        final JavaPluginConvention javaPluginConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
         if (javaPluginConvention != null) {
             builder.sourceJavaVersion(javaPluginConvention.getSourceCompatibility().toString());
             builder.targetJavaVersion(javaPluginConvention.getTargetCompatibility().toString());
@@ -318,17 +305,7 @@ public class QuarkusDev extends QuarkusTask {
         serializedModel.toFile().deleteOnExit();
         builder.jvmArgs("-D" + BootstrapConstants.SERIALIZED_APP_MODEL + "=" + serializedModel.toAbsolutePath());
 
-        final AppModel testAppModel;
-        final AppModelResolver testModelResolver = extension().getAppModelResolver(LaunchMode.TEST);
-        try {
-            final AppArtifact appArtifact = extension().getAppArtifact();
-            appArtifact.setPaths(QuarkusGradleUtils.getOutputPaths(project));
-            testAppModel = testModelResolver.resolveModel(appArtifact);
-        } catch (AppModelResolverException e) {
-            throw new GradleException(
-                    "Failed to resolve application model " + extension().getAppArtifact() + " dependencies",
-                    e);
-        }
+        final ApplicationModel testAppModel = extension().getApplicationModel(LaunchMode.TEST);
         final Path serializedTestModel = QuarkusGradleUtils.serializeAppModel(testAppModel, this, true);
         serializedTestModel.toFile().deleteOnExit();
         builder.jvmArgs("-D" + BootstrapConstants.SERIALIZED_TEST_APP_MODEL + "=" + serializedTestModel.toAbsolutePath());
@@ -347,7 +324,7 @@ public class QuarkusDev extends QuarkusTask {
     }
 
     private void addSelfWithLocalDeps(Project project, GradleDevModeLauncher.Builder builder, Set<String> visited,
-            Set<AppArtifactKey> addedDeps, boolean root) {
+            Set<GACT> addedDeps, boolean root) {
         if (!visited.add(project.getPath())) {
             return;
         }
@@ -363,9 +340,8 @@ public class QuarkusDev extends QuarkusTask {
         addLocalProject(project, builder, addedDeps, root);
     }
 
-    private void addLocalProject(Project project, GradleDevModeLauncher.Builder builder, Set<AppArtifactKey> addeDeps,
-            boolean root) {
-        final AppArtifactKey key = new AppArtifactKey(project.getGroup().toString(), project.getName());
+    private void addLocalProject(Project project, GradleDevModeLauncher.Builder builder, Set<GACT> addeDeps, boolean root) {
+        final GACT key = new GACT(project.getGroup().toString(), project.getName());
         if (addeDeps.contains(key)) {
             return;
         }
@@ -421,7 +397,8 @@ public class QuarkusDev extends QuarkusTask {
             resourcesOutputPath = classesDir;
         }
 
-        DevModeContext.ModuleInfo.Builder moduleBuilder = new DevModeContext.ModuleInfo.Builder().setAppArtifactKey(key)
+        DevModeContext.ModuleInfo.Builder moduleBuilder = new DevModeContext.ModuleInfo.Builder()
+                .setArtifactKey(new GACT(key.getGroupId(), key.getArtifactId()))
                 .setName(project.getName())
                 .setProjectDirectory(project.getProjectDir().getAbsolutePath())
                 .setSourcePaths(PathsCollection.from(sourcePaths))
@@ -475,8 +452,7 @@ public class QuarkusDev extends QuarkusTask {
                 }
             }
         }
-        DevModeContext.ModuleInfo wsModuleInfo = moduleBuilder
-                .build();
+        DevModeContext.ModuleInfo wsModuleInfo = moduleBuilder.build();
 
         if (root) {
             builder.mainModule(wsModuleInfo);

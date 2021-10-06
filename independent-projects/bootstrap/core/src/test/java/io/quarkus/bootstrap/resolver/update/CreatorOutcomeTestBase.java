@@ -37,7 +37,7 @@ public abstract class CreatorOutcomeTestBase extends ResolverSetupCleanup {
         IoUtils.recursiveDelete(ws);
         final Path outputDir = IoUtils.mkdirs(ws.resolve("target"));
 
-        Path applicationRoot = resolver.resolve(appJar.toAppArtifact());
+        Path applicationRoot = resolver.resolve(appJar.toArtifact()).getResolvedPaths().getSinglePath();
         final QuarkusBootstrap.Builder bootstrap = QuarkusBootstrap.builder()
                 .setApplicationRoot(applicationRoot)
                 .setProjectRoot(applicationRoot)

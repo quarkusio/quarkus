@@ -6,7 +6,12 @@ import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.maven.artifact.Artifact;
@@ -15,7 +20,6 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 
 import com.google.common.cache.Cache;
@@ -24,11 +28,17 @@ import com.google.common.cache.CacheBuilder;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.PathsCollection;
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACT;
+import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.dependency.ResolvedArtifactDependency;
+import io.quarkus.runtime.LaunchMode;
 import io.smallrye.common.expression.Expression;
 
 @Component(role = QuarkusBootstrapProvider.class, instantiationStrategy = "singleton")
@@ -43,6 +53,10 @@ public class QuarkusBootstrapProvider implements Closeable {
     private final Cache<String, QuarkusAppBootstrapProvider> appBootstrapProviders = CacheBuilder.newBuilder()
             .concurrencyLevel(4).softValues().initialCapacity(10).build();
 
+    static ArtifactKey getProjectId(MavenProject project) {
+        return new GACT(project.getGroupId(), project.getArtifactId());
+    }
+
     public RepositorySystem repositorySystem() {
         return repoSystem;
     }
@@ -51,7 +65,7 @@ public class QuarkusBootstrapProvider implements Closeable {
         return remoteRepoManager;
     }
 
-    private QuarkusAppBootstrapProvider provider(AppArtifactKey projectId, String executionId) {
+    private QuarkusAppBootstrapProvider provider(ArtifactKey projectId, String executionId) {
         try {
             return appBootstrapProviders.get(String.format("%s-%s", projectId, executionId), QuarkusAppBootstrapProvider::new);
         } catch (ExecutionException e) {
@@ -60,26 +74,26 @@ public class QuarkusBootstrapProvider implements Closeable {
         }
     }
 
-    public MavenArtifactResolver artifactResolver(QuarkusBootstrapMojo mojo)
+    public CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode)
             throws MojoExecutionException {
-        return provider(mojo.projectId(), mojo.executionId()).artifactResolver(mojo);
+        return provider(mojo.projectId(), mojo.executionId()).bootstrapApplication(mojo, mode);
     }
 
-    // @deprecated in 1.14.0.Final
-    @Deprecated
-    public AppArtifact projectArtifact(QuarkusBootstrapMojo mojo)
-            throws MojoExecutionException {
-        return provider(mojo.projectId(), mojo.executionId()).appArtifact(mojo);
-    }
-
-    public QuarkusBootstrap bootstrapQuarkus(QuarkusBootstrapMojo mojo)
-            throws MojoExecutionException {
-        return provider(mojo.projectId(), mojo.executionId()).bootstrapQuarkus(mojo);
-    }
-
-    public CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo)
-            throws MojoExecutionException {
-        return provider(mojo.projectId(), mojo.executionId()).curateApplication(mojo);
+    public ApplicationModel getResolvedApplicationModel(ArtifactKey projectId, LaunchMode mode) {
+        if (appBootstrapProviders.size() == 0) {
+            return null;
+        }
+        final QuarkusAppBootstrapProvider provider = appBootstrapProviders.getIfPresent(projectId + "-null");
+        if (provider == null) {
+            return null;
+        }
+        if (mode == LaunchMode.DEVELOPMENT) {
+            return provider.devApp == null ? null : provider.devApp.getApplicationModel();
+        }
+        if (mode == LaunchMode.TEST) {
+            return provider.testApp == null ? null : provider.testApp.getApplicationModel();
+        }
+        return provider.prodApp == null ? null : provider.prodApp.getApplicationModel();
     }
 
     @Override
@@ -98,19 +112,16 @@ public class QuarkusBootstrapProvider implements Closeable {
 
     private class QuarkusAppBootstrapProvider implements Closeable {
 
-        private AppArtifact appArtifact;
-        private MavenArtifactResolver artifactResolver;
-        private QuarkusBootstrap quarkusBootstrap;
-        private CuratedApplication curatedApp;
+        private CuratedApplication prodApp;
+        private CuratedApplication devApp;
+        private CuratedApplication testApp;
 
-        private MavenArtifactResolver artifactResolver(QuarkusBootstrapMojo mojo)
+        private MavenArtifactResolver artifactResolver(QuarkusBootstrapMojo mojo, LaunchMode mode)
                 throws MojoExecutionException {
-            if (artifactResolver != null) {
-                return artifactResolver;
-            }
             try {
-                return artifactResolver = MavenArtifactResolver.builder()
-                        .setWorkspaceDiscovery(false)
+                return MavenArtifactResolver.builder()
+                        .setWorkspaceDiscovery(mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST)
+                        .setPreferPomsFromWorkspace(mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST)
                         .setRepositorySystem(repoSystem)
                         .setRepositorySystemSession(mojo.repositorySystemSession())
                         .setRemoteRepositories(mojo.remoteRepositories())
@@ -121,11 +132,8 @@ public class QuarkusBootstrapProvider implements Closeable {
             }
         }
 
-        protected QuarkusBootstrap bootstrapQuarkus(QuarkusBootstrapMojo mojo) throws MojoExecutionException {
-            if (quarkusBootstrap != null) {
-                return quarkusBootstrap;
-            }
-
+        protected CuratedApplication doBootstrap(QuarkusBootstrapMojo mojo, LaunchMode mode)
+                throws MojoExecutionException {
             final Properties projectProperties = mojo.mavenProject().getProperties();
             final Properties effectiveProperties = new Properties();
             // quarkus. properties > ignoredEntries in pom.xml
@@ -161,60 +169,69 @@ public class QuarkusBootstrapProvider implements Closeable {
                 }
             }
 
+            final BootstrapAppModelResolver modelResolver = new BootstrapAppModelResolver(artifactResolver(mojo, mode))
+                    .setDevMode(mode == LaunchMode.DEVELOPMENT)
+                    .setTest(mode == LaunchMode.TEST);
+
+            final List<MavenProject> localProjects = mojo.mavenProject().getCollectedProjects();
+            final Set<ArtifactKey> reloadableModules = new HashSet<>(localProjects.size() + 1);
+            final ArtifactCoords artifactCoords = appArtifact(mojo);
+            reloadableModules.add(new GACT(artifactCoords.getGroupId(), artifactCoords.getArtifactId()));
+            for (MavenProject project : localProjects) {
+                reloadableModules.add(new GACT(project.getGroupId(), project.getArtifactId()));
+            }
+
+            final ApplicationModel appModel;
+            try {
+                appModel = modelResolver.resolveManagedModel(artifactCoords, Collections.emptyList(), managingProject(mojo),
+                        reloadableModules);
+            } catch (AppModelResolverException e) {
+                throw new MojoExecutionException("Failed to bootstrap application in " + mode + " mode", e);
+            }
+
             QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
-                    .setAppArtifact(appArtifact(mojo))
-                    .setManagingProject(managingProject(mojo))
-                    .setMavenArtifactResolver(artifactResolver(mojo))
+                    .setAppArtifact(appModel.getAppArtifact())
+                    .setExistingModel(appModel)
                     .setIsolateDeployment(true)
                     .setBaseClassLoader(getClass().getClassLoader())
                     .setBuildSystemProperties(effectiveProperties)
-                    .setLocalProjectDiscovery(false)
                     .setProjectRoot(mojo.baseDir().toPath())
                     .setBaseName(mojo.finalName())
                     .setTargetDirectory(mojo.buildDir().toPath());
 
-            for (MavenProject project : mojo.mavenProject().getCollectedProjects()) {
-                builder.addLocalArtifact(new AppArtifactKey(project.getGroupId(), project.getArtifactId(), null,
-                        project.getArtifact().getArtifactHandler().getExtension()));
-            }
-
-            return quarkusBootstrap = builder.build();
-        }
-
-        protected CuratedApplication curateApplication(QuarkusBootstrapMojo mojo) throws MojoExecutionException {
-            if (curatedApp != null) {
-                return curatedApp;
-            }
             try {
-                return curatedApp = bootstrapQuarkus(mojo).bootstrap();
-            } catch (MojoExecutionException e) {
-                throw e;
+                return builder.build().bootstrap();
             } catch (BootstrapException e) {
                 throw new MojoExecutionException("Failed to bootstrap the application", e);
             }
         }
 
-        protected AppArtifact managingProject(QuarkusBootstrapMojo mojo) {
+        protected CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode)
+                throws MojoExecutionException {
+            if (mode == LaunchMode.DEVELOPMENT) {
+                return devApp == null ? devApp = doBootstrap(mojo, mode) : devApp;
+            }
+            if (mode == LaunchMode.TEST) {
+                return testApp == null ? testApp = doBootstrap(mojo, mode) : testApp;
+            }
+            return prodApp == null ? prodApp = doBootstrap(mojo, mode) : prodApp;
+        }
+
+        protected GACTV managingProject(QuarkusBootstrapMojo mojo) {
             if (mojo.appArtifactCoords() == null) {
                 return null;
             }
             final Artifact artifact = mojo.mavenProject().getArtifact();
-            return new AppArtifact(artifact.getGroupId(), artifact.getArtifactId(),
+            return new GACTV(artifact.getGroupId(), artifact.getArtifactId(),
                     artifact.getClassifier(), artifact.getArtifactHandler().getExtension(),
                     artifact.getVersion());
         }
 
-        private AppArtifact appArtifact(QuarkusBootstrapMojo mojo) throws MojoExecutionException {
-            return appArtifact == null ? appArtifact = initAppArtifact(mojo) : appArtifact;
-        }
-
-        private AppArtifact initAppArtifact(QuarkusBootstrapMojo mojo) throws MojoExecutionException {
+        private ArtifactCoords appArtifact(QuarkusBootstrapMojo mojo)
+                throws MojoExecutionException {
             String appArtifactCoords = mojo.appArtifactCoords();
             if (appArtifactCoords == null) {
                 final Artifact projectArtifact = mojo.mavenProject().getArtifact();
-                final AppArtifact appArtifact = new AppArtifact(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
-                        projectArtifact.getClassifier(), projectArtifact.getArtifactHandler().getExtension(),
-                        projectArtifact.getVersion());
 
                 File projectFile = projectArtifact.getFile();
                 if (projectFile == null) {
@@ -231,8 +248,9 @@ public class QuarkusBootstrapProvider implements Closeable {
                         }
                     }
                 }
-                appArtifact.setPaths(PathsCollection.of(projectFile.toPath()));
-                return appArtifact;
+                return new ResolvedArtifactDependency(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
+                        projectArtifact.getClassifier(), projectArtifact.getArtifactHandler().getExtension(),
+                        projectArtifact.getVersion(), projectFile.toPath());
             }
 
             final String[] coordsArr = appArtifactCoords.split(":");
@@ -244,7 +262,7 @@ public class QuarkusBootstrapProvider implements Closeable {
             final String groupId = coordsArr[0];
             final String artifactId = coordsArr[1];
             String classifier = "";
-            String type = "jar";
+            String type = GACTV.TYPE_JAR;
             String version = null;
             if (coordsArr.length == 3) {
                 version = coordsArr[2];
@@ -255,57 +273,43 @@ public class QuarkusBootstrapProvider implements Closeable {
                     version = coordsArr[4];
                 }
             }
+            Path path = null;
             if (version == null) {
                 for (Artifact dep : mojo.mavenProject().getArtifacts()) {
                     if (dep.getArtifactId().equals(artifactId)
                             && dep.getGroupId().equals(groupId)
                             && dep.getClassifier().equals(classifier)
                             && dep.getType().equals(type)) {
-                        return new AppArtifact(dep.getGroupId(),
-                                dep.getArtifactId(),
-                                dep.getClassifier(),
-                                dep.getArtifactHandler().getExtension(),
-                                dep.getVersion());
+                        version = dep.getVersion();
+                        if (dep.getFile() != null) {
+                            path = dep.getFile().toPath();
+                        }
+                        break;
                     }
                 }
-                throw new IllegalStateException("Failed to locate " + appArtifactCoords + " among the project dependencies");
+                if (version == null) {
+                    throw new IllegalStateException(
+                            "Failed to locate " + appArtifactCoords + " among the project dependencies");
+                }
             }
 
-            final AppArtifact appArtifact = new AppArtifact(groupId, artifactId, classifier, type, version);
-            try {
-                appArtifact.setPath(
-                        artifactResolver(mojo).resolve(new DefaultArtifact(groupId, artifactId, classifier, type, version))
-                                .getArtifact().getFile().toPath());
-            } catch (MojoExecutionException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new MojoExecutionException("Failed to resolve " + appArtifact, e);
-            }
-            return appArtifact;
+            return new GACTV(groupId, artifactId, classifier, type, version);
         }
 
         @Override
         public void close() {
-            if (curatedApp != null) {
-                curatedApp.close();
-                curatedApp = null;
+            if (prodApp != null) {
+                prodApp.close();
+                prodApp = null;
             }
-            appArtifact = null;
-            quarkusBootstrap = null;
+            if (devApp != null) {
+                devApp.close();
+                devApp = null;
+            }
+            if (testApp != null) {
+                testApp.close();
+                testApp = null;
+            }
         }
     }
-
-    /*
-     * private static boolean hasSources(MavenProject project) {
-     * if (new File(project.getBuild().getSourceDirectory()).exists()) {
-     * return true;
-     * }
-     * for (Resource r : project.getBuild().getResources()) {
-     * if (new File(r.getDirectory()).exists()) {
-     * return true;
-     * }
-     * }
-     * return false;
-     * }
-     */
 }

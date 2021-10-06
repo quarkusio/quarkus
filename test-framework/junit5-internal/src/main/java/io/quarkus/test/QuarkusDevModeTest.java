@@ -45,7 +45,6 @@ import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.deployment.dev.CompilationProvider;
@@ -54,6 +53,7 @@ import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.testing.TestScanningLock;
+import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.util.ClassPathUtils;
@@ -344,7 +344,7 @@ public class QuarkusDevModeTest
             context.setCacheDir(cache.toFile());
 
             DevModeContext.ModuleInfo.Builder moduleBuilder = new DevModeContext.ModuleInfo.Builder()
-                    .setAppArtifactKey(AppArtifactKey.fromString("io.quarkus.test:app-under-test"))
+                    .setArtifactKey(GACT.fromString("io.quarkus.test:app-under-test"))
                     .setName("default")
                     .setProjectDirectory(deploymentDir.toAbsolutePath().toString())
                     .setSourcePaths(PathsCollection.of(deploymentSourcePath.toAbsolutePath()))

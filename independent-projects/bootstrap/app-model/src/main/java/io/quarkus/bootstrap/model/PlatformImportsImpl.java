@@ -2,6 +2,8 @@ package io.quarkus.bootstrap.model;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.GACTV;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,12 +40,12 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
     // metadata for each found platform release by platform key
     private final Map<String, PlatformInfo> allPlatformInfo = new HashMap<>();
     // imported platform BOMs by platform keys (groupId)
-    private final Map<String, Collection<AppArtifactCoords>> importedPlatformBoms = new HashMap<>();
+    private final Map<String, Collection<ArtifactCoords>> importedPlatformBoms = new HashMap<>();
 
-    private final Map<AppArtifactCoords, PlatformImport> platformImports = new HashMap<>();
+    private final Map<ArtifactCoords, PlatformImport> platformImports = new HashMap<>();
 
     final Map<String, String> collectedProps = new HashMap<String, String>();
-    private final Collection<AppArtifactCoords> platformBoms = new ArrayList<>();
+    private final Collection<ArtifactCoords> platformBoms = new ArrayList<>();
     private final Collection<PlatformReleaseInfo> platformReleaseInfo = new ArrayList<>();
 
     public PlatformImportsImpl() {
@@ -53,7 +55,7 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
         return platformReleaseInfo;
     }
 
-    public Collection<AppArtifactCoords> getImportedPlatformBoms() {
+    public Collection<ArtifactCoords> getImportedPlatformBoms() {
         return platformBoms;
     }
 
@@ -74,7 +76,7 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
     }
 
     public void addPlatformDescriptor(String groupId, String artifactId, String classifier, String type, String version) {
-        final AppArtifactCoords bomCoords = new AppArtifactCoords(groupId,
+        final ArtifactCoords bomCoords = new GACTV(groupId,
                 artifactId.substring(0,
                         artifactId.length() - BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length()),
                 null, "pom",
@@ -85,7 +87,7 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
 
     public void addPlatformProperties(String groupId, String artifactId, String classifier, String type, String version,
             Path propsPath) throws AppModelResolverException {
-        final AppArtifactCoords bomCoords = new AppArtifactCoords(groupId,
+        final ArtifactCoords bomCoords = new GACTV(groupId,
                 artifactId.substring(0,
                         artifactId.length() - BootstrapConstants.PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX.length()),
                 null, "pom",
@@ -123,7 +125,7 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
     @Override
     public String getMisalignmentReport() {
         StringWriter error = null;
-        for (Map.Entry<AppArtifactCoords, PlatformImport> pi : platformImports.entrySet()) {
+        for (Map.Entry<ArtifactCoords, PlatformImport> pi : platformImports.entrySet()) {
             if (!pi.getValue().descriptorFound) {
                 if (error == null) {
                     error = new StringWriter();
@@ -173,13 +175,13 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
         return isAligned(importedPlatformBoms);
     }
 
-    boolean isAligned(Map<String, Collection<AppArtifactCoords>> importedPlatformBoms) {
-        for (Map.Entry<AppArtifactCoords, PlatformImport> pi : platformImports.entrySet()) {
+    boolean isAligned(Map<String, Collection<ArtifactCoords>> importedPlatformBoms) {
+        for (Map.Entry<ArtifactCoords, PlatformImport> pi : platformImports.entrySet()) {
             if (!pi.getValue().descriptorFound) {
                 return false;
             }
         }
-        for (Map.Entry<String, Collection<AppArtifactCoords>> platformImportedBoms : importedPlatformBoms.entrySet()) {
+        for (Map.Entry<String, Collection<ArtifactCoords>> platformImportedBoms : importedPlatformBoms.entrySet()) {
             final PlatformInfo platformInfo = allPlatformInfo.get(platformImportedBoms.getKey());
             if (platformInfo != null && !platformInfo.isAligned(platformImportedBoms.getValue())) {
                 return false;
@@ -189,9 +191,9 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
     }
 
     private Map<String, List<List<String>>> getPossibleAlignemnts(
-            Map<String, Collection<AppArtifactCoords>> importedPlatformBoms) {
+            Map<String, Collection<ArtifactCoords>> importedPlatformBoms) {
         final Map<String, List<List<String>>> alignments = new HashMap<>(importedPlatformBoms.size());
-        for (Map.Entry<String, Collection<AppArtifactCoords>> platformImportedBoms : importedPlatformBoms.entrySet()) {
+        for (Map.Entry<String, Collection<ArtifactCoords>> platformImportedBoms : importedPlatformBoms.entrySet()) {
             final PlatformInfo platformInfo = allPlatformInfo.get(platformImportedBoms.getKey());
             if (platformInfo == null || platformInfo.isAligned(platformImportedBoms.getValue())) {
                 continue;

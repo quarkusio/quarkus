@@ -148,13 +148,13 @@ public class TestSupport implements TestController {
                     continue;
                 } else if (config.includeModulePattern.isPresent()) {
                     Pattern p = Pattern.compile(config.includeModulePattern.get());
-                    if (!p.matcher(module.getAppArtifactKey().getGroupId() + ":" + module.getAppArtifactKey().getArtifactId())
+                    if (!p.matcher(module.getArtifactKey().getGroupId() + ":" + module.getArtifactKey().getArtifactId())
                             .matches()) {
                         continue;
                     }
                 } else if (config.excludeModulePattern.isPresent()) {
                     Pattern p = Pattern.compile(config.excludeModulePattern.get());
-                    if (p.matcher(module.getAppArtifactKey().getGroupId() + ":" + module.getAppArtifactKey().getArtifactId())
+                    if (p.matcher(module.getArtifactKey().getGroupId() + ":" + module.getArtifactKey().getArtifactId())
                             .matches()) {
                         continue;
                     }

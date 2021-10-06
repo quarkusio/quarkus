@@ -4,13 +4,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppDependency;
-import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsDependency;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
+import io.quarkus.maven.dependency.ArtifactDependency;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.DependencyFlags;
+import io.quarkus.maven.dependency.GACTV;
 
 /**
  * The test allowing to make sure that if we exclude an extension from another extension, the
@@ -66,30 +69,33 @@ public class ExcludeExtensionDepsTest extends ExecutableOutputOutcomeTestBase {
     }
 
     @Override
-    protected void assertAppModel(AppModel appModel) throws Exception {
-        final Set<AppDependency> expectedDeployDeps = new HashSet<>();
+    protected void assertAppModel(ApplicationModel appModel) throws Exception {
+        final Set<Dependency> expectedDeployDeps = new HashSet<>();
         expectedDeployDeps
-                .add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-b-deployment", "1"), "compile",
-                        AppDependency.DEPLOYMENT_CP_FLAG));
-        assertEquals(expectedDeployDeps, new HashSet<>(appModel.getDeploymentDependencies()));
-        final Set<AppDependency> expectedRuntimeDeps = new HashSet<>();
-        expectedRuntimeDeps.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-b", "1"), "compile",
-                AppDependency.DIRECT_FLAG, AppDependency.RUNTIME_EXTENSION_ARTIFACT_FLAG, AppDependency.RUNTIME_CP_FLAG,
-                AppDependency.DEPLOYMENT_CP_FLAG));
-        expectedRuntimeDeps.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-b-dep-1", "1"), "compile",
-                AppDependency.RUNTIME_CP_FLAG, AppDependency.DEPLOYMENT_CP_FLAG));
-        expectedRuntimeDeps.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-b-dep-2", "1"), "compile",
-                AppDependency.RUNTIME_CP_FLAG, AppDependency.DEPLOYMENT_CP_FLAG));
+                .add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-b-deployment", "1"), "compile",
+                        DependencyFlags.DEPLOYMENT_CP));
+        assertEquals(expectedDeployDeps, appModel.getDependencies().stream().filter(d -> d.isDeploymentCp() && !d.isRuntimeCp())
+                .map(d -> new ArtifactDependency(d)).collect(Collectors.toSet()));
+        final Set<Dependency> expectedRuntimeDeps = new HashSet<>();
+        expectedRuntimeDeps.add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-b", "1"), "compile",
+                DependencyFlags.DIRECT, DependencyFlags.RUNTIME_EXTENSION_ARTIFACT, DependencyFlags.RUNTIME_CP,
+                DependencyFlags.DEPLOYMENT_CP));
+        expectedRuntimeDeps.add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-b-dep-1", "1"), "compile",
+                DependencyFlags.RUNTIME_CP, DependencyFlags.DEPLOYMENT_CP));
+        expectedRuntimeDeps.add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-b-dep-2", "1"), "compile",
+                DependencyFlags.RUNTIME_CP, DependencyFlags.DEPLOYMENT_CP));
         expectedRuntimeDeps
-                .add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-b-dep-trans-1", "1"), "compile",
-                        AppDependency.RUNTIME_CP_FLAG, AppDependency.DEPLOYMENT_CP_FLAG));
+                .add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-b-dep-trans-1", "1"), "compile",
+                        DependencyFlags.RUNTIME_CP, DependencyFlags.DEPLOYMENT_CP));
         expectedRuntimeDeps
-                .add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-b-dep-trans-2", "1"), "compile",
-                        AppDependency.RUNTIME_CP_FLAG, AppDependency.DEPLOYMENT_CP_FLAG));
-        assertEquals(expectedRuntimeDeps, new HashSet<>(appModel.getUserDependencies()));
-        final Set<AppDependency> expectedFullDeps = new HashSet<>();
+                .add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-b-dep-trans-2", "1"), "compile",
+                        DependencyFlags.RUNTIME_CP, DependencyFlags.DEPLOYMENT_CP));
+        assertEquals(expectedRuntimeDeps,
+                appModel.getRuntimeDependencies().stream().map(d -> new ArtifactDependency(d)).collect(Collectors.toSet()));
+        final Set<Dependency> expectedFullDeps = new HashSet<>();
         expectedFullDeps.addAll(expectedDeployDeps);
         expectedFullDeps.addAll(expectedRuntimeDeps);
-        assertEquals(expectedFullDeps, new HashSet<>(appModel.getFullDeploymentDeps()));
+        assertEquals(expectedFullDeps,
+                appModel.getDependencies().stream().map(d -> new ArtifactDependency(d)).collect(Collectors.toSet()));
     }
 }

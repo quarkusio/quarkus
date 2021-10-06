@@ -3,16 +3,19 @@ package io.quarkus.bootstrap.app;
 import io.quarkus.bootstrap.BootstrapAppModelFactory;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.AppDependency;
-import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.update.DependenciesOrigin;
 import io.quarkus.bootstrap.resolver.update.VersionUpdate;
 import io.quarkus.bootstrap.resolver.update.VersionUpdateNumber;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.GACT;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -82,13 +85,13 @@ public class QuarkusBootstrap implements Serializable {
     private final VersionUpdateNumber versionUpdateNumber;
     private final VersionUpdate versionUpdate;
     private final DependenciesOrigin dependenciesOrigin;
-    private final AppArtifact appArtifact;
+    private final ResolvedDependency appArtifact;
     private final boolean isolateDeployment;
     private final MavenArtifactResolver mavenArtifactResolver;
-    private final AppArtifact managingProject;
-    private final List<AppDependency> forcedDependencies;
+    private final ArtifactCoords managingProject;
+    private final List<Dependency> forcedDependencies;
     private final boolean disableClasspathCache;
-    private final AppModel existingModel;
+    private final ApplicationModel existingModel;
     private final boolean rebuild;
     private final Set<AppArtifactKey> localArtifacts;
     private final List<ClassLoaderEventListener> classLoadListeners;
@@ -184,15 +187,15 @@ public class QuarkusBootstrap implements Serializable {
                 try (InputStream in = Files.newInputStream(props)) {
                     Properties p = new Properties();
                     p.load(in);
-                    Set<AppArtifactKey> parentFirst = toArtifactSet(
+                    Set<ArtifactKey> parentFirst = toArtifactSet(
                             p.getProperty(selectKey("quarkus.class-loading.parent-first-artifacts", p, mode)));
-                    Set<AppArtifactKey> liveReloadable = toArtifactSet(
+                    Set<ArtifactKey> liveReloadable = toArtifactSet(
                             p.getProperty(selectKey("quarkus.class-loading.reloadable-artifacts", p, mode)));
-                    Set<AppArtifactKey> removedArtifacts = toArtifactSet(
+                    Set<ArtifactKey> removedArtifacts = toArtifactSet(
                             p.getProperty(selectKey("quarkus.class-loading.removed-artifacts", p, mode)));
                     boolean flatClassPath = Boolean.parseBoolean(
                             p.getProperty(selectKey("quarkus.test.flat-class-path", p, mode)));
-                    Map<AppArtifactKey, List<String>> removedResources = toArtifactMapList(
+                    Map<ArtifactKey, List<String>> removedResources = toArtifactMapList(
                             "quarkus.class-loading.removed-resources.", p, mode);
                     return new ConfiguredClassLoading(parentFirst, liveReloadable, removedArtifacts, removedResources,
                             flatClassPath);
@@ -205,7 +208,7 @@ public class QuarkusBootstrap implements Serializable {
                 Collections.emptyMap(), false);
     }
 
-    private static Map<AppArtifactKey, List<String>> toArtifactMapList(String baseConfigKey, Properties properties, Mode mode) {
+    private static Map<ArtifactKey, List<String>> toArtifactMapList(String baseConfigKey, Properties properties, Mode mode) {
         Properties profileProps = new Properties();
         String profile = BootstrapProfile.getActiveProfile(mode);
         for (Map.Entry<Object, Object> i : properties.entrySet()) {
@@ -221,7 +224,7 @@ public class QuarkusBootstrap implements Serializable {
             }
         }
         //now we have a 'sanitised' map with the correct props for the profile.
-        Map<AppArtifactKey, List<String>> ret = new HashMap<>();
+        Map<ArtifactKey, List<String>> ret = new HashMap<>();
         for (Map.Entry<Object, Object> entry : profileProps.entrySet()) {
             String key = entry.getKey().toString();
             String value = entry.getValue().toString();
@@ -229,7 +232,7 @@ public class QuarkusBootstrap implements Serializable {
                 String artifactId = key.substring(baseConfigKey.length());
                 artifactId = artifactId.replace("\"", "");
                 List<String> resources = Arrays.asList(value.split(","));
-                ret.put(new AppArtifactKey(artifactId.split(":")), resources);
+                ret.put(new GACT(artifactId.split(":")), resources);
             }
         }
         return ret;
@@ -244,13 +247,13 @@ public class QuarkusBootstrap implements Serializable {
         return base;
     }
 
-    private static Set<AppArtifactKey> toArtifactSet(String config) {
+    private static Set<ArtifactKey> toArtifactSet(String config) {
         if (config == null) {
             return new HashSet<>();
         }
-        Set<AppArtifactKey> ret = new HashSet<>();
+        Set<ArtifactKey> ret = new HashSet<>();
         for (String i : config.split(",")) {
-            ret.add(new AppArtifactKey(i.split(":")));
+            ret.add(new GACT(i.split(":")));
         }
         return ret;
     }
@@ -350,7 +353,7 @@ public class QuarkusBootstrap implements Serializable {
                 .setIsolateDeployment(isolateDeployment)
                 .setMavenArtifactResolver(mavenArtifactResolver)
                 .setManagingProject(managingProject)
-                .setForcedDependencies(new ArrayList<>(forcedDependencies))
+                .setForcedDependencies(forcedDependencies)
                 .setDisableClasspathCache(disableClasspathCache)
                 .addClassLoaderEventListeners(classLoadListeners)
                 .setExistingModel(existingModel);
@@ -400,13 +403,13 @@ public class QuarkusBootstrap implements Serializable {
         VersionUpdateNumber versionUpdateNumber = VersionUpdateNumber.MICRO;
         VersionUpdate versionUpdate = VersionUpdate.NONE;
         DependenciesOrigin dependenciesOrigin;
-        AppArtifact appArtifact;
+        ResolvedDependency appArtifact;
         boolean isolateDeployment;
         MavenArtifactResolver mavenArtifactResolver;
-        AppArtifact managingProject;
-        List<AppDependency> forcedDependencies = new ArrayList<>();
+        ArtifactCoords managingProject;
+        List<Dependency> forcedDependencies = new ArrayList<>();
         boolean disableClasspathCache;
-        AppModel existingModel;
+        ApplicationModel existingModel;
         final Set<AppArtifactKey> localArtifacts = new HashSet<>();
         boolean auxiliaryApplication;
 
@@ -538,19 +541,19 @@ public class QuarkusBootstrap implements Serializable {
          * The app artifact. Note that if you want to use this as the basis of the application
          * you must also explicitly set the application root to this artifacts paths.
          */
-        public Builder setAppArtifact(AppArtifact appArtifact) {
+        public Builder setAppArtifact(ResolvedDependency appArtifact) {
             if (applicationRoot != null) {
                 throw new IllegalStateException("Cannot set both application root and app artifact");
             }
             this.appArtifact = appArtifact;
-            this.applicationRoot = appArtifact.getPaths();
-            if (appArtifact.getPaths().isSinglePath()) {
-                this.projectRoot = appArtifact.getPaths().getSinglePath();
+            this.applicationRoot = PathsCollection.from(appArtifact.getResolvedPaths());
+            if (appArtifact.getResolvedPaths().isSinglePath()) {
+                this.projectRoot = appArtifact.getResolvedPaths().getSinglePath();
             }
             return this;
         }
 
-        public Builder setManagingProject(AppArtifact managingProject) {
+        public Builder setManagingProject(ArtifactCoords managingProject) {
             this.managingProject = managingProject;
             return this;
         }
@@ -580,16 +583,16 @@ public class QuarkusBootstrap implements Serializable {
          * If set, each of these dependencies will either be added to the application dependencies if the GA doesn't match any
          * application dependencies, or override the existing version if the GA does match
          */
-        public Builder setForcedDependencies(List<AppDependency> forcedDependencies) {
+        public Builder setForcedDependencies(List<Dependency> forcedDependencies) {
             this.forcedDependencies = forcedDependencies;
             return this;
         }
 
-        public AppModel getExistingModel() {
+        public ApplicationModel getExistingModel() {
             return existingModel;
         }
 
-        public Builder setExistingModel(AppModel existingModel) {
+        public Builder setExistingModel(ApplicationModel existingModel) {
             this.existingModel = existingModel;
             return this;
         }
@@ -624,7 +627,8 @@ public class QuarkusBootstrap implements Serializable {
         public QuarkusBootstrap build() {
             Objects.requireNonNull(applicationRoot, "Application root must not be null");
             if (appArtifact != null) {
-                localArtifacts.add(appArtifact.getKey());
+                localArtifacts
+                        .add(new AppArtifactKey(appArtifact.getGroupId(), appArtifact.getArtifactId()));
             }
 
             ConfiguredClassLoading classLoadingConfig = createClassLoadingConfig(applicationRoot, mode);

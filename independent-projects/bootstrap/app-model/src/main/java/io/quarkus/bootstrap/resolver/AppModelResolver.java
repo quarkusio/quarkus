@@ -1,10 +1,12 @@
 package io.quarkus.bootstrap.resolver;
 
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.AppDependency;
-import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -19,20 +21,20 @@ public interface AppModelResolver {
     /**
      * (Re-)links an artifact to a path.
      *
-     * @param appArtifact an artifact to (re-)link to the path
+     * @param artifact an artifact to (re-)link to the path
      * @param localPath local path to the artifact
      * @throws AppModelResolverException in case of a failure
      */
-    void relink(AppArtifact appArtifact, Path localPath) throws AppModelResolverException;
+    void relink(ArtifactCoords artifact, Path localPath) throws AppModelResolverException;
 
     /**
      * Resolves an artifact.
      *
      * @param artifact artifact to resolve
-     * @return local path
+     * @return resolved artifact
      * @throws AppModelResolverException in case of a failure
      */
-    Path resolve(AppArtifact artifact) throws AppModelResolverException;
+    ResolvedDependency resolve(ArtifactCoords artifact) throws AppModelResolverException;
 
     /**
      * Resolve application direct and transitive dependencies configured by the user.
@@ -43,7 +45,7 @@ public interface AppModelResolver {
      * @return the list of dependencies configured by the user
      * @throws AppModelResolverException in case of a failure
      */
-    default List<AppDependency> resolveUserDependencies(AppArtifact artifact) throws AppModelResolverException {
+    default Collection<ResolvedDependency> resolveUserDependencies(ArtifactCoords artifact) throws AppModelResolverException {
         return resolveUserDependencies(artifact, Collections.emptyList());
     }
 
@@ -58,7 +60,7 @@ public interface AppModelResolver {
      * @return the list of dependencies configured by the user
      * @throws AppModelResolverException in case of a failure
      */
-    List<AppDependency> resolveUserDependencies(AppArtifact artifact, List<AppDependency> deps)
+    Collection<ResolvedDependency> resolveUserDependencies(ArtifactCoords artifact, Collection<Dependency> deps)
             throws AppModelResolverException;
 
     /**
@@ -68,7 +70,7 @@ public interface AppModelResolver {
      * @return
      * @throws AppModelResolverException
      */
-    AppModel resolveModel(AppArtifact artifact) throws AppModelResolverException;
+    ApplicationModel resolveModel(ArtifactCoords artifact) throws AppModelResolverException;
 
     /**
      * Resolve artifact dependencies given the specific versions of the direct dependencies
@@ -78,10 +80,11 @@ public interface AppModelResolver {
      * @return collected dependencies
      * @throws AppModelResolverException in case of a failure
      */
-    AppModel resolveModel(AppArtifact root, List<AppDependency> deps) throws AppModelResolverException;
+    ApplicationModel resolveModel(ArtifactCoords root, Collection<Dependency> deps) throws AppModelResolverException;
 
-    AppModel resolveManagedModel(AppArtifact appArtifact, List<AppDependency> directDeps, AppArtifact managingProject,
-            Set<AppArtifactKey> localProjects)
+    ApplicationModel resolveManagedModel(ArtifactCoords appArtifact, Collection<Dependency> directDeps,
+            ArtifactCoords managingProject,
+            Set<ArtifactKey> localProjects)
             throws AppModelResolverException;
 
     /**
@@ -92,7 +95,7 @@ public interface AppModelResolver {
      * @return the list of versions released later than the version of the artifact
      * @throws AppModelResolverException in case of a failure
      */
-    List<String> listLaterVersions(AppArtifact artifact, String upToVersion, boolean inclusive)
+    List<String> listLaterVersions(ArtifactCoords artifact, String upToVersion, boolean inclusive)
             throws AppModelResolverException;
 
     /**
@@ -107,7 +110,7 @@ public interface AppModelResolver {
      * @return the next version from the specified range or null if the next version is not available
      * @throws AppModelResolverException in case of a failure
      */
-    String getNextVersion(AppArtifact artifact, String fromVersion, boolean fromVersionIncluded, String upToVersion,
+    String getNextVersion(ArtifactCoords artifact, String fromVersion, boolean fromVersionIncluded, String upToVersion,
             boolean upToVersionIncluded) throws AppModelResolverException;
 
     /**
@@ -120,7 +123,7 @@ public interface AppModelResolver {
      * @return the latest version up to specified boundary
      * @throws AppModelResolverException in case of a failure
      */
-    String getLatestVersion(AppArtifact artifact, String upToVersion, boolean inclusive) throws AppModelResolverException;
+    String getLatestVersion(ArtifactCoords artifact, String upToVersion, boolean inclusive) throws AppModelResolverException;
 
     /**
      * Resolves the latest version from the specified range. The version of the artifact is ignored.
@@ -130,5 +133,5 @@ public interface AppModelResolver {
      * @return the latest version of the artifact from the range or null, if no version was found for the specified range
      * @throws AppModelResolverException in case of a failure
      */
-    String getLatestVersionFromRange(AppArtifact appArtifact, String range) throws AppModelResolverException;
+    String getLatestVersionFromRange(ArtifactCoords appArtifact, String range) throws AppModelResolverException;
 }

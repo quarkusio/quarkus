@@ -1071,7 +1071,7 @@ public class QuteProcessor {
         ApplicationArchive applicationArchive = applicationArchivesBuildItem.getRootArchive();
         String basePath = "templates";
         Path templatesPath = null;
-        for (Path rootDir : applicationArchive.getRootDirs()) {
+        for (Path rootDir : applicationArchive.getRootDirectories()) {
             // Note that we cannot use ApplicationArchive.getChildPath(String) here because we would not be able to detect 
             // a wrong directory name on case-insensitive file systems 
             templatesPath = Files.list(rootDir).filter(p -> p.getFileName().toString().equals(basePath)).findFirst()

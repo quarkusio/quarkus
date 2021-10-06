@@ -1,6 +1,6 @@
 package io.quarkus.bootstrap.resolver.update;
 
-import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import java.util.List;
 
 /**
@@ -9,9 +9,9 @@ import java.util.List;
  */
 public interface UpdateDiscovery {
 
-    List<String> listUpdates(AppArtifact artifact);
+    List<String> listUpdates(ResolvedDependency artifact);
 
-    String getNextVersion(AppArtifact artifact);
+    String getNextVersion(ResolvedDependency artifact);
 
-    String getLatestVersion(AppArtifact artifact);
+    String getLatestVersion(ResolvedDependency artifact);
 }

@@ -1,16 +1,13 @@
 package io.quarkus.bootstrap.utils;
 
-import static io.quarkus.bootstrap.util.QuarkusModelHelper.DEVMODE_REQUIRED_TASKS;
-import static io.quarkus.bootstrap.util.QuarkusModelHelper.ENABLE_JAR_PACKAGING;
-import static io.quarkus.bootstrap.util.QuarkusModelHelper.TEST_REQUIRED_TASKS;
-
-import io.quarkus.bootstrap.model.gradle.QuarkusModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.QuarkusGradleModelFactory;
-import io.quarkus.bootstrap.util.QuarkusModelHelper;
+import io.quarkus.bootstrap.util.BootstrapUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import org.jboss.logging.Logger;
 
@@ -20,6 +17,11 @@ import org.jboss.logging.Logger;
 public class BuildToolHelper {
 
     private static final Logger log = Logger.getLogger(BuildToolHelper.class);
+
+    private final static String[] DEVMODE_REQUIRED_TASKS = new String[] { "classes" };
+    private final static String[] TEST_REQUIRED_TASKS = new String[] { "classes", "testClasses" };
+    private final static List<String> ENABLE_JAR_PACKAGING = Collections
+            .singletonList("-Dorg.gradle.java.compile-classpath-packaging=true");
 
     public enum BuildTool {
         MAVEN("pom.xml"),
@@ -95,29 +97,30 @@ public class BuildToolHelper {
         return null;
     }
 
-    public static QuarkusModel enableGradleAppModelForTest(Path projectRoot)
+    public static ApplicationModel enableGradleAppModelForTest(Path projectRoot)
             throws IOException, AppModelResolverException {
         // We enable jar packaging since we want test-fixtures as jars
         return enableGradleAppModel(projectRoot, "TEST", ENABLE_JAR_PACKAGING, TEST_REQUIRED_TASKS);
     }
 
-    public static QuarkusModel enableGradleAppModel(Path projectRoot, String mode, List<String> jvmArgs, String... tasks)
+    public static ApplicationModel enableGradleAppModel(Path projectRoot, String mode, List<String> jvmArgs, String... tasks)
             throws IOException, AppModelResolverException {
         if (isGradleProject(projectRoot)) {
-            final QuarkusModel model = QuarkusGradleModelFactory.create(getBuildFile(projectRoot, BuildTool.GRADLE).toFile(),
+            final ApplicationModel model = QuarkusGradleModelFactory.create(
+                    getBuildFile(projectRoot, BuildTool.GRADLE).toFile(),
                     mode, jvmArgs, tasks);
-            QuarkusModelHelper.exportModel(model, "TEST".equalsIgnoreCase(mode));
+            BootstrapUtils.exportModel(model, "TEST".equalsIgnoreCase(mode));
             return model;
         }
         return null;
     }
 
-    public static QuarkusModel enableGradleAppModelForDevMode(Path projectRoot)
+    public static ApplicationModel enableGradleAppModelForDevMode(Path projectRoot)
             throws IOException, AppModelResolverException {
         if (isGradleProject(projectRoot)) {
-            final QuarkusModel model = QuarkusGradleModelFactory
+            final ApplicationModel model = QuarkusGradleModelFactory
                     .createForTasks(getBuildFile(projectRoot, BuildTool.GRADLE).toFile(), DEVMODE_REQUIRED_TASKS);
-            QuarkusModelHelper.exportModel(model, false);
+            BootstrapUtils.exportModel(model, false);
             return model;
         }
         return null;

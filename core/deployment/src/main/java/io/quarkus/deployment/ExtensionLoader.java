@@ -44,7 +44,7 @@ import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 import org.wildfly.common.function.Functions;
 
-import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStepBuilder;
@@ -125,7 +125,7 @@ public final class ExtensionLoader {
      * @throws ClassNotFoundException if a build step class is not found
      */
     public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps,
-            AppModel appModel, LaunchMode launchMode, DevModeType devModeType,
+            ApplicationModel appModel, LaunchMode launchMode, DevModeType devModeType,
             Consumer<ConfigBuilder> configCustomizer)
             throws IOException, ClassNotFoundException {
         // populate with all known types

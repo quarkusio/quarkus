@@ -1,10 +1,13 @@
 package io.quarkus.bootstrap.model;
 
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -16,16 +19,12 @@ import org.jboss.logging.Logger;
 /**
  * A representation of the Quarkus dependency model for a given application.
  *
- * Changes made to this class should also be reflected in {@link PersistentAppModel}
+ * Changes made to this class should also be reflected in {@link MutableJarApplicationModel}
  *
- * @author Alexey Loubyansky
+ * @deprecated in favor of {@link ApplicationModel}
  */
-public class AppModel implements Serializable {
-
-    public static final String PARENT_FIRST_ARTIFACTS = "parent-first-artifacts";
-    public static final String RUNNER_PARENT_FIRST_ARTIFACTS = "runner-parent-first-artifacts";
-    public static final String EXCLUDED_ARTIFACTS = "excluded-artifacts";
-    public static final String LESSER_PRIORITY_ARTIFACTS = "lesser-priority-artifacts";
+@Deprecated
+public class AppModel implements ApplicationModel, Serializable {
 
     private static final Logger log = Logger.getLogger(AppModel.class);
 
@@ -69,7 +68,7 @@ public class AppModel implements Serializable {
 
     private AppModel(Builder builder) {
         this.appArtifact = builder.appArtifact;
-        this.dependencies = builder.filter(builder.dependencies);
+        this.dependencies = builder.filter(builder.dependencies.values());
         this.parentFirstArtifacts = builder.parentFirstArtifacts;
         this.runnerParentFirstArtifacts = builder.runnerParentFirstArtifacts;
         this.lesserPriorityArtifacts = builder.lesserPriorityArtifacts;
@@ -149,7 +148,7 @@ public class AppModel implements Serializable {
 
         private AppArtifact appArtifact;
 
-        private final List<AppDependency> dependencies = new ArrayList<>();
+        private final Map<ArtifactKey, AppDependency> dependencies = new LinkedHashMap<>();
         private final Set<AppArtifactKey> parentFirstArtifacts = new HashSet<>();
         private final Set<AppArtifactKey> runnerParentFirstArtifacts = new HashSet<>();
         private final Set<AppArtifactKey> excludedArtifacts = new HashSet<>();
@@ -176,12 +175,16 @@ public class AppModel implements Serializable {
         }
 
         public Builder addDependency(AppDependency dep) {
-            dependencies.add(dep);
+            dependencies.put(dep.getArtifact().getKey(), dep);
             return this;
         }
 
+        public AppDependency getDependency(ArtifactKey key) {
+            return dependencies.get(key);
+        }
+
         public Builder addDependencies(Collection<AppDependency> deps) {
-            dependencies.addAll(deps);
+            deps.forEach(d -> addDependency(d));
             return this;
         }
 
@@ -317,12 +320,42 @@ public class AppModel implements Serializable {
             return depPredicate;
         }
 
-        private List<AppDependency> filter(List<AppDependency> deps) {
+        private List<AppDependency> filter(Collection<AppDependency> deps) {
             return deps.stream().filter(dependencyPredicate()).collect(Collectors.toList());
         }
 
         public AppModel build() {
             return new AppModel(this);
         }
+    }
+
+    @Override
+    public Collection<ResolvedDependency> getDependencies() {
+        return new ArrayList<>(dependencies);
+    }
+
+    @Override
+    public Collection<ExtensionCapabilities> getExtensionCapabilities() {
+        return new ArrayList<>(capabilitiesContracts.values());
+    }
+
+    @Override
+    public Set<ArtifactKey> getParentFirst() {
+        return new HashSet<>(parentFirstArtifacts);
+    }
+
+    @Override
+    public Set<ArtifactKey> getRunnerParentFirst() {
+        return new HashSet<>(runnerParentFirstArtifacts);
+    }
+
+    @Override
+    public Set<ArtifactKey> getLowerPriorityArtifacts() {
+        return new HashSet<>(lesserPriorityArtifacts);
+    }
+
+    @Override
+    public Set<ArtifactKey> getReloadableWorkspaceDependencies() {
+        return new HashSet<>(localProjectArtifacts);
     }
 }

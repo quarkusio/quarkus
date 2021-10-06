@@ -11,18 +11,18 @@ import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
-import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 public class ExtensionDependency {
 
     ModuleVersionIdentifier extensionId;
     AppArtifactCoords deploymentModule;
     List<Dependency> conditionalDependencies;
-    List<AppArtifactKey> dependencyConditions;
+    List<ArtifactKey> dependencyConditions;
 
     ExtensionDependency(ModuleVersionIdentifier extensionId, AppArtifactCoords deploymentModule,
             List<Dependency> conditionalDependencies,
-            List<AppArtifactKey> dependencyConditions) {
+            List<ArtifactKey> dependencyConditions) {
         this.extensionId = extensionId;
         this.deploymentModule = deploymentModule;
         this.conditionalDependencies = conditionalDependencies;

@@ -18,6 +18,6 @@ public class QuarkusModelBuilderTest {
         when(version.toString()).thenReturn(":commons-lang3-3.9:");
         when(artifact.getModuleVersion()).thenReturn(version);
         when(artifact.getFile()).thenReturn(Files.currentFolder());
-        assertThatCode(() -> QuarkusModelBuilder.toDependency(artifact)).doesNotThrowAnyException();
+        assertThatCode(() -> GradleApplicationModelBuilder.toDependency(artifact)).doesNotThrowAnyException();
     }
 }

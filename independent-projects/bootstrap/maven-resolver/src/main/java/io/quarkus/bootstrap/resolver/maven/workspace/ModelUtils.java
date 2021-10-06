@@ -4,6 +4,8 @@ import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.util.PropertyUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.GACTV;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -57,8 +59,8 @@ public class ModelUtils {
      * @param appArtifact application artifact
      * @return provisioning state artifact
      */
-    public static AppArtifact getStateArtifact(AppArtifact appArtifact) {
-        return new AppArtifact(appArtifact.getGroupId() + ".quarkus.curate",
+    public static ArtifactCoords getStateArtifact(ArtifactCoords appArtifact) {
+        return new GACTV(appArtifact.getGroupId() + ".quarkus.curate",
                 appArtifact.getArtifactId(),
                 "",
                 "pom",

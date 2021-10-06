@@ -14,9 +14,9 @@ import org.gradle.api.tasks.TaskAction;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.extension.gradle.QuarkusExtensionConfiguration;
+import io.quarkus.maven.dependency.GACT;
 
 /**
  * Task that generates extension descriptor files.
@@ -67,9 +67,9 @@ public class ExtensionDescriptorTask extends DefaultTask {
         if (dependencyConditions != null && !dependencyConditions.isEmpty()) {
             final StringBuilder buf = new StringBuilder();
             int i = 0;
-            buf.append(AppArtifactKey.fromString(dependencyConditions.get(i++)).toGacString());
+            buf.append(GACT.fromString(dependencyConditions.get(i++)).toGacString());
             while (i < dependencyConditions.size()) {
-                buf.append(' ').append(AppArtifactKey.fromString(dependencyConditions.get(i++)).toGacString());
+                buf.append(' ').append(GACT.fromString(dependencyConditions.get(i++)).toGacString());
             }
             props.setProperty(BootstrapConstants.DEPENDENCY_CONDITION, buf.toString());
         }

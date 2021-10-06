@@ -22,8 +22,6 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
@@ -39,6 +37,8 @@ import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
+import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class NativeImageBuildStep {
 
@@ -284,11 +284,9 @@ public class NativeImageBuildStep {
             libDirFile.mkdirs();
         }
 
-        final List<AppDependency> appDeps = curateOutcomeBuildItem.getEffectiveModel().getUserDependencies();
-        for (AppDependency appDep : appDeps) {
-            final AppArtifact depArtifact = appDep.getArtifact();
-            if (depArtifact.getType().equals("jar")) {
-                for (Path resolvedDep : depArtifact.getPaths()) {
+        for (ResolvedDependency depArtifact : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
+            if (depArtifact.getType().equals(GACTV.TYPE_JAR)) {
+                for (Path resolvedDep : depArtifact.getResolvedPaths()) {
                     if (!Files.isDirectory(resolvedDep)) {
                         // Do we need to handle transformed classes?
                         // Their bytecode might have been modified but is there source for such modification?

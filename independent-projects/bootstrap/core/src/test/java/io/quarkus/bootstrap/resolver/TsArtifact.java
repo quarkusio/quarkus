@@ -1,7 +1,9 @@
 package io.quarkus.bootstrap.resolver;
 
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACT;
+import io.quarkus.maven.dependency.GACTV;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -87,8 +89,8 @@ public class TsArtifact {
         this.version = version;
     }
 
-    public AppArtifactKey getKey() {
-        return new AppArtifactKey(groupId, artifactId);
+    public ArtifactKey getKey() {
+        return new GACT(groupId, artifactId);
     }
 
     public String getGroupId() {
@@ -223,8 +225,8 @@ public class TsArtifact {
         return model;
     }
 
-    public AppArtifact toAppArtifact() {
-        return new AppArtifact(groupId, artifactId, classifier, type, version);
+    public ArtifactCoords toArtifact() {
+        return new GACTV(groupId, artifactId, classifier, type, version);
     }
 
     /**

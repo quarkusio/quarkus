@@ -1,6 +1,7 @@
 package io.quarkus.gradle;
 
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -13,74 +14,86 @@ import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
 
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.AppDependency;
-import io.quarkus.bootstrap.model.AppModel;
-import io.quarkus.bootstrap.model.gradle.QuarkusModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.util.QuarkusModelHelper;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.dependency.ResolvedArtifactDependency;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class AppModelGradleResolver implements AppModelResolver {
 
-    private AppModel appModel;
     private final Project project;
-    private final QuarkusModel model;
+    private final ApplicationModel model;
 
-    public AppModelGradleResolver(Project project, QuarkusModel model) {
+    public AppModelGradleResolver(Project project, ApplicationModel model) {
         this.model = model;
         this.project = project;
     }
 
     @Override
-    public String getLatestVersion(AppArtifact appArtifact, String upToVersion, boolean inclusive)
+    public String getLatestVersion(ArtifactCoords appArtifact, String upToVersion,
+            boolean inclusive)
             throws AppModelResolverException {
         try {
-            return resolveArtifact(new AppArtifact(appArtifact.getGroupId(), appArtifact.getArtifactId(),
-                    appArtifact.getClassifier(), appArtifact.getType(),
-                    "[" + appArtifact.getVersion() + "," + upToVersion + (inclusive ? "]" : ")"))).getVersion();
+            return resolveArtifact(
+                    new GACTV(appArtifact.getGroupId(), appArtifact.getArtifactId(),
+                            appArtifact.getClassifier(), appArtifact.getType(),
+                            "[" + appArtifact.getVersion() + "," + upToVersion + (inclusive ? "]" : ")")))
+                                    .getVersion();
         } catch (AppModelResolverException e) {
             return null;
         }
     }
 
     @Override
-    public String getLatestVersionFromRange(AppArtifact appArtifact, String range) throws AppModelResolverException {
+    public String getLatestVersionFromRange(ArtifactCoords appArtifact, String range)
+            throws AppModelResolverException {
         try {
-            return resolveArtifact(new AppArtifact(appArtifact.getGroupId(), appArtifact.getArtifactId(),
-                    appArtifact.getClassifier(), appArtifact.getType(), range)).getVersion();
+            return resolveArtifact(
+                    new GACTV(appArtifact.getGroupId(), appArtifact.getArtifactId(),
+                            appArtifact.getClassifier(), appArtifact.getType(), range)).getVersion();
         } catch (AppModelResolverException e) {
             return null;
         }
     }
 
     @Override
-    public String getNextVersion(AppArtifact appArtifact, String fromVersion, boolean fromVersionIncluded, String upToVersion,
+    public String getNextVersion(ArtifactCoords appArtifact, String fromVersion,
+            boolean fromVersionIncluded, String upToVersion,
             boolean upToVersionIncluded)
             throws AppModelResolverException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public List<String> listLaterVersions(AppArtifact appArtifact, String upToVersion, boolean inclusive)
+    public List<String> listLaterVersions(ArtifactCoords appArtifact, String upToVersion,
+            boolean inclusive)
             throws AppModelResolverException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void relink(AppArtifact appArtifact, Path localPath) throws AppModelResolverException {
+    public void relink(ArtifactCoords artifact, Path localPath)
+            throws AppModelResolverException {
 
     }
 
     @Override
-    public Path resolve(AppArtifact appArtifact) throws AppModelResolverException {
-        return resolveArtifact(appArtifact).getPaths().getSinglePath();
+    public ResolvedDependency resolve(ArtifactCoords appArtifact) throws AppModelResolverException {
+        return resolveArtifact(appArtifact);
     }
 
-    private AppArtifact resolveArtifact(AppArtifact appArtifact) throws AppModelResolverException {
-        if (appArtifact.isResolved()) {
-            return appArtifact;
+    private ResolvedDependency resolveArtifact(
+            ArtifactCoords appArtifact) throws AppModelResolverException {
+        if (ResolvedDependency.class.isAssignableFrom(appArtifact.getClass())) {
+            final ResolvedDependency resolved = (ResolvedDependency) appArtifact;
+            if (resolved.isResolved()) {
+                return resolved;
+            }
         }
         final DefaultDependencyArtifact dep = new DefaultDependencyArtifact();
         dep.setExtension(appArtifact.getType());
@@ -108,48 +121,43 @@ public class AppModelGradleResolver implements AppModelResolver {
                     && (a.getClassifier() == null ? appArtifact.getClassifier() == null
                             : a.getClassifier().equals(appArtifact.getClassifier()))
                     && appArtifact.getGroupId().equals(a.getModuleVersion().getId().getGroup())) {
-                if (!appArtifact.getVersion().equals(a.getModuleVersion().getId().getVersion())) {
-                    appArtifact = new AppArtifact(appArtifact.getGroupId(), appArtifact.getArtifactId(),
-                            appArtifact.getClassifier(), appArtifact.getType(), a.getModuleVersion().getId().getVersion());
-                }
-                appArtifact.setPath(a.getFile().toPath());
-                break;
+                final String version = appArtifact.getVersion().equals(a.getModuleVersion().getId().getVersion())
+                        ? appArtifact.getVersion()
+                        : a.getModuleVersion().getId().getVersion();
+                return new ResolvedArtifactDependency(appArtifact.getGroupId(), appArtifact.getArtifactId(),
+                        appArtifact.getClassifier(), appArtifact.getType(), version, a.getFile().toPath());
             }
         }
-
-        if (!appArtifact.isResolved()) {
-            throw new AppModelResolverException("Failed to resolve " + appArtifact);
-        }
-        return appArtifact;
+        throw new AppModelResolverException("Failed to resolve " + appArtifact);
     }
 
     @Override
-    public List<AppDependency> resolveUserDependencies(AppArtifact appArtifact, List<AppDependency> directDeps) {
+    public Collection<ResolvedDependency> resolveUserDependencies(ArtifactCoords appArtifact,
+            Collection<Dependency> directDeps) {
         return Collections.emptyList();
     }
 
     @Override
-    public AppModel resolveModel(AppArtifact appArtifact) throws AppModelResolverException {
-        if (appModel != null) {
-            if (appModel.getAppArtifact().equals(appArtifact)) {
-                return appModel;
-            } else {
-                throw new AppModelResolverException(
-                        "Requested artifact : " + appArtifact + ", does not match loaded model " + appModel.getAppArtifact());
-            }
+    public ApplicationModel resolveModel(ArtifactCoords appArtifact)
+            throws AppModelResolverException {
+        if (model.getAppArtifact().toGACTVString().equals(appArtifact.toGACTVString())) {
+            return model;
         }
-        appModel = QuarkusModelHelper.convert(model, appArtifact);
-        return appModel;
+        throw new AppModelResolverException(
+                "Requested artifact " + appArtifact + " does not match loaded model " + model.getAppArtifact());
     }
 
     @Override
-    public AppModel resolveModel(AppArtifact root, List<AppDependency> deps) throws AppModelResolverException {
+    public ApplicationModel resolveModel(ArtifactCoords root, Collection<Dependency> deps)
+            throws AppModelResolverException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public AppModel resolveManagedModel(AppArtifact appArtifact, List<AppDependency> directDeps, AppArtifact managingProject,
-            Set<AppArtifactKey> localProjects)
+    public ApplicationModel resolveManagedModel(ArtifactCoords appArtifact,
+            Collection<Dependency> directDeps,
+            ArtifactCoords managingProject,
+            Set<ArtifactKey> localProjects)
             throws AppModelResolverException {
         return resolveModel(appArtifact);
     }

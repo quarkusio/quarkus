@@ -1,5 +1,6 @@
 package io.quarkus.bootstrap.model;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,7 +20,7 @@ public class PlatformInfo implements Serializable {
         return key;
     }
 
-    boolean isAligned(Collection<AppArtifactCoords> importedBoms) {
+    boolean isAligned(Collection<ArtifactCoords> importedBoms) {
         if (streams.isEmpty()) {
             return true;
         }
@@ -29,11 +30,11 @@ public class PlatformInfo implements Serializable {
         return streams.get(0).isAligned(importedBoms);
     }
 
-    List<List<String>> getPossibleAlignments(Collection<AppArtifactCoords> importedPlatformBoms) {
+    List<List<String>> getPossibleAlignments(Collection<ArtifactCoords> importedPlatformBoms) {
         if (streams.size() > 1) {
             final StringBuilder buf = new StringBuilder();
             buf.append("Imported BOMs ");
-            final Iterator<AppArtifactCoords> it = importedPlatformBoms.iterator();
+            final Iterator<ArtifactCoords> it = importedPlatformBoms.iterator();
             if (it.hasNext()) {
                 buf.append(it.next());
                 while (it.hasNext()) {

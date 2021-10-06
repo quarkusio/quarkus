@@ -30,7 +30,7 @@ import org.gradle.api.tasks.testing.Test;
 import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry;
 import org.gradle.util.GradleVersion;
 
-import io.quarkus.gradle.builder.QuarkusModelBuilder;
+import io.quarkus.gradle.builder.GradleApplicationModelBuilder;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.dependency.ConditionalDependenciesEnabler;
 import io.quarkus.gradle.dependency.ExtensionDependency;
@@ -267,7 +267,7 @@ public class QuarkusPlugin implements Plugin<Project> {
     }
 
     private void registerModel() {
-        registry.register(new QuarkusModelBuilder());
+        registry.register(new GradleApplicationModelBuilder());
     }
 
     private void verifyGradleVersion() {

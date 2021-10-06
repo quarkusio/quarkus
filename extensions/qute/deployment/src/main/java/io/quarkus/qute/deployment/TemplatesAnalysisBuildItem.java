@@ -24,7 +24,7 @@ public final class TemplatesAnalysisBuildItem extends SimpleBuildItem {
     /**
      * Analysis of a particular template found in the given path.
      */
-    static class TemplateAnalysis {
+    public static final class TemplateAnalysis {
 
         // A user-defined id; may be null
         public final String id;

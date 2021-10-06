@@ -14,6 +14,7 @@ import javax.inject.Inject;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.specific.AvroGenerated;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.Headers;
 import org.assertj.core.groups.Tuple;
@@ -39,6 +40,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.kafka.KafkaRecord;
+import io.smallrye.reactive.messaging.kafka.KafkaRecordBatch;
 import io.smallrye.reactive.messaging.kafka.Record;
 import io.vertx.core.json.JsonArray;
 
@@ -2390,4 +2392,76 @@ public class DefaultSerdeConfigTest {
             return null;
         }
     }
+
+    @Test
+    void produceBatchConfigWithSerdeAutodetect() {
+        // @formatter:off
+        Tuple[] expectations = {
+                tuple("mp.messaging.incoming.channel1.value.deserializer", JacksonDtoDeserializer.class.getName()),
+                tuple("mp.messaging.incoming.channel1.batch", "true"),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", JacksonDtoDeserializer.class.getName()),
+                tuple("mp.messaging.incoming.channel2.batch", "true"),
+                tuple("mp.messaging.incoming.channel3.key.deserializer", "org.apache.kafka.common.serialization.IntegerDeserializer"),
+                tuple("mp.messaging.incoming.channel3.value.deserializer", JacksonDtoDeserializer.class.getName()),
+                tuple("mp.messaging.incoming.channel3.batch", "true"),
+                tuple("mp.messaging.incoming.channel4.key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"),
+                tuple("mp.messaging.incoming.channel4.value.deserializer", JacksonDtoDeserializer.class.getName()),
+                tuple("mp.messaging.incoming.channel4.batch", "true"),
+                tuple("mp.messaging.incoming.channel5.key.deserializer", "org.apache.kafka.common.serialization.IntegerDeserializer"),
+                tuple("mp.messaging.incoming.channel5.value.deserializer", JacksonDtoDeserializer.class.getName()),
+                tuple("mp.messaging.incoming.channel5.batch", "true"),
+                tuple("mp.messaging.incoming.channel6.key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"),
+                tuple("mp.messaging.incoming.channel6.value.deserializer", JacksonDtoDeserializer.class.getName()),
+                tuple("mp.messaging.incoming.channel6.batch", "true"),
+                tuple("mp.messaging.incoming.channel7.value.deserializer", JacksonDtoDeserializer.class.getName()),
+                tuple("mp.messaging.incoming.channel7.batch", "true"),
+                tuple("mp.messaging.incoming.channel8.value.deserializer", JacksonDtoDeserializer.class.getName()),
+                tuple("mp.messaging.incoming.channel8.batch", "true"),
+                tuple("mp.messaging.incoming.channel9.batch", "true"),
+                tuple("mp.messaging.incoming.channel10.batch", "true"),
+        };
+        // @formatter:on
+
+        doTest(expectations, JacksonDto.class, JacksonDtoDeserializer.class, BatchChannels.class);
+    }
+
+    private static class BatchChannels {
+
+        @Channel("channel1")
+        Multi<List<JacksonDto>> channel1;
+
+        @Incoming("channel2")
+        void channel2(List<JacksonDto> jacksonDto) {
+        }
+
+        @Channel("channel3")
+        Multi<KafkaRecordBatch<Integer, JacksonDto>> channel3;
+
+        @Incoming("channel4")
+        void channel4(KafkaRecordBatch<String, JacksonDto> jacksonDto) {
+        }
+
+        @Channel("channel5")
+        Multi<ConsumerRecords<Integer, JacksonDto>> channel5;
+
+        @Incoming("channel6")
+        void channel6(ConsumerRecords<String, JacksonDto> jacksonDto) {
+        }
+
+        @Channel("channel7")
+        Multi<Message<List<JacksonDto>>> channel7;
+
+        @Incoming("channel8")
+        void channel8(Message<List<JacksonDto>> jacksonDto) {
+        }
+
+        @Channel("channel9") // Not supported
+        Multi<List<Message<JacksonDto>>> channel9;
+
+        @Incoming("channel10") // Not supported
+        void channel10(List<Message<JacksonDto>> jacksonDto) {
+        }
+
+    }
+
 }

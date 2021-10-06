@@ -34,5 +34,9 @@ final class DotNames {
     static final DotName OBJECT_MAPPER_SERIALIZER = DotName.createSimple(io.quarkus.kafka.client.serialization.ObjectMapperSerializer.class.getName());
     static final DotName JSONB_DESERIALIZER = DotName.createSimple(io.quarkus.kafka.client.serialization.JsonbDeserializer.class.getName());
     static final DotName JSONB_SERIALIZER = DotName.createSimple(io.quarkus.kafka.client.serialization.JsonbSerializer.class.getName());
+
+    static final DotName LIST = DotName.createSimple(java.util.List.class.getName());
+    static final DotName KAFKA_BATCH_RECORD = DotName.createSimple(io.smallrye.reactive.messaging.kafka.KafkaRecordBatch.class.getName());
+    static final DotName CONSUMER_RECORDS = DotName.createSimple(org.apache.kafka.clients.consumer.ConsumerRecords.class.getName());
     // @formatter:on
 }

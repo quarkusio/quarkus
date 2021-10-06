@@ -259,6 +259,8 @@ They have the same effect.
 Thus, you can use both.
 The first one provides more fine-grained tuning such as the worker pool to use and whether it preserves the order.
 The second one, used also with other reactive features of Quarkus, uses the default worker pool and preserves the order.
+
+Detailed information on the usage of `@Blocking` annotation can be found in https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.1/advanced/blocking.html[SmallRye Reactive Messaging – Handling blocking execution].
 ====
 
 === Acknowledgment Strategies
@@ -321,8 +323,9 @@ This strategy should not be used in high load environment, as offset commit is e
 
 - `ignore` performs no commit. This strategy is the default strategy when the consumer is explicitly configured with `enable.auto.commit` to true.
 It delegates the offset commit to the underlying Kafka client.
-This strategy provides at-least-once delivery if the channel processes the message without performing any asynchronous operations and when `enable.auto.commit` is set to true.
-However, if the processing failed between two commits, messages received after the commit and before the failure will be re-processed.
+When `enable.auto.commit` is `true` this strategy **DOES NOT** guarantee at-least-once delivery.
+SmallRye Reactive Messaging processes records asynchronously, so offsets may be committed for records that have been polled but not yet processed.
+In case of a failure, only records that were not committed yet will be re-processed.
 
 [IMPORTANT]
 ====
@@ -566,6 +569,53 @@ mp.messaging.incoming.your-channel.group.id=${quarkus.uuid}
 
 IMPORTANT: If the `group.id` attribute is not set, it defaults the `quarkus.application.name` configuration property.
 
+=== Receiving Kafka Records in Batches
+
+By default, incoming methods receive each Kafka record individually.
+Under the hood, Kafka consumer clients poll the broker constantly and receive records in batches, presented inside the `ConsumerRecords` container.
+
+In *batch* mode, your application can receive all the records returned by the consumer *poll* in one go.
+
+To achieve this you need to specify a compatible container type to receive all the data:
+
+[source, java]
+----
+@Incoming("prices")
+public void consume(List<Double> prices) {
+    for (double price : prices) {
+        // process price
+    }
+}
+----
+
+The incoming method can also receive `Message<List<Payload>>`, `KafkaRecordBatch<Key, Payload>` `ConsumerRecords<Key, Payload>` types.
+They give access to record details such as offset or timestamp:
+
+[source, java]
+----
+@Incoming("prices")
+public CompletionStage<Void> consumeMessage(KafkaRecordBatch<String, Double> records) {
+    for (KafkaRecord<String, Double> record : records) {
+        String payload = record.getPayload();
+        String topic = record.getTopic();
+        // process messages
+    }
+    // ack will commit the latest offsets (per partition) of the batch.
+    return records.ack();
+}
+
+----
+
+Note that the successful processing of the incoming record batch will commit the latest offsets for each partition received inside the batch.
+The configured commit strategy will be applied for these records only.
+
+Conversely, if the processing throws an exception, all messages are _nacked_, applying the failure strategy for all the records inside the batch.
+
+[NOTE]
+====
+Quarkus autodetects batch types for incoming channels and sets batch configuration automatically.
+You can configure batch mode explicitly with `mp.messaging.incoming.$channel.batch` property.
+====
 
 == Sending messages to Kafka
 
@@ -808,6 +858,8 @@ The `io.smallrye.reactive.messaging.annotations.Emitter`, `io.smallrye.reactive.
 The new `Emitter.send` method returns a `CompletionStage` completed when the produced message is acknowledged.
 ====
 
+More information on how to use `Emitter` can be found in https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.1/emitter/emitter.html#_emitter_and_channel[SmallRye Reactive Messaging – Emitters and Channels]
+
 === Write Acknowledgement
 
 When Kafka broker receives a record, its acknowledgement can take time depending on the configuration.
@@ -1043,7 +1095,8 @@ public class KafkaClients {
 
 ----
 
-This configuration map will contain all Kafka related properties configured inside `application.properties` file.
+The `default-kafka-broker` configuration map contains all application properties prefixed with `kafka.` or `KAFKA_`.
+For more configuration options check out <<kafka-configuration-resolution>>.
 
 [[kafka-serialization]]
 == JSON serialization
@@ -1593,7 +1646,8 @@ See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture do
 [[kafka-configuration]]
 == Configuration Reference
 
-More details about the SmallRye Reactive Messaging configuration can be found in the https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.6/kafka/kafka.html[SmallRye Reactive Messaging - Kafka Connector Documentation].
+More details about the SmallRye Reactive Messaging configuration can be found in the https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.1/kafka/kafka.html[SmallRye Reactive Messaging - Kafka Connector Documentation].
+
 The most important attributes are listed in the tables below:
 
 === Incoming channel configuration (polling from Kafka)
@@ -1612,12 +1666,32 @@ Some properties have aliases which can be configured globally:
 kafka.bootstrap.servers=...
 ----
 
+You can also pass any property supported by the underlying https://kafka.apache.org/documentation/#consumerconfigs[Kafka consumer].
+
+For example, to configure the `max.poll.records` property, use:
+
+[source,properties]
+----
+mp.messaging.incoming.[channel].max.poll.records=1000
+----
+
+Some consumer client properties are configured to sensible default values:
+
+If not set, `reconnect.backoff.max.ms` is set to `10000` to avoid high load on disconnection.
+
+If not set, `key.deserializer` is set to `org.apache.kafka.common.serialization.StringDeserializer`.
+
+The consumer `client.id` is configured according to the number of clients to create using `mp.messaging.incoming.[channel].partitions` property.
+
+- If a `client.id` is provided, it is used as-is or suffixed with client index if `partitions` property is set.
+- If a `client.id` is not provided, it is generated as `kafka-consumer-[channel][-index]`.
+
+
 include::smallrye-kafka-incoming.adoc[]
 
 === Outgoing channel configuration (writing to Kafka)
 
 The following attributes are configured using:
-
 
 [source, properties]
 ----
@@ -1631,7 +1705,52 @@ Some properties have aliases which can be configured globally:
 kafka.bootstrap.servers=...
 ----
 
+Some producer client properties are configured to sensible default values:
+
+If not set, `reconnect.backoff.max.ms` is set to `10000` to avoid high load on disconnection.
+
+If not set, `key.serializer` is set to `org.apache.kafka.common.serialization.StringSerializer`.
+
+If not set, producer `client.id` is generated as `kafka-producer-[channel]`.
+
 include::smallrye-kafka-outgoing.adoc[]
+
+[[kafka-configuration-resolution]]
+=== Kafka Configuration Resolution
+
+Quarkus exposes all Kafka related application properties, prefixed with `kafka.` or `KAFKA_` inside a configuration map with `default-kafka-broker` name.
+This configuration is used to establish the connection with the Kafka broker.
+
+In addition to this default configuration, you can configure the name of the `Map` producer using the `kafka-configuration` attribute:
+
+[source, properties]
+----
+mp.messaging.incoming.my-channel.connector=smallrye-kafka
+mp.messaging.incoming.my-channel.kafka-configuration=my-configuration
+----
+
+In this case, the connector looks for the `Map` associated with the `my-configuration` name.
+If `kafka-configuration` is not set, an optional lookup for a `Map` exposed with the channel name (`my-channel` in the previous example) is done.
+
+[source, java]
+----
+@Produces
+@ApplicationScoped
+@Identifier("my-configuration")
+Map<String, Object> outgoing() {
+    return Map.ofEntries(
+            Map.entry("value.serializer", ObjectMapperSerializer.class.getName())
+    );
+}
+----
+
+IMPORTANT: If `kafka-configuration` is set and no `Map` can be found, the deployment fails.
+
+Attribute values are resolved as follows:
+
+1. the attribute is set directly on the channel configuration (`mp.messaging.incoming.my-channel.attribute=value`),
+2. if not set, the connector looks for a `Map` with the channel name or the configured `kafka-configuration` (if set) and the value is retrieved from that `Map`
+3. If the resolved `Map` does not contain the value the default `Map` is used (exposed with the `default-kafka-broker` name)
 
 == Integrating with Kafka - Common patterns
 

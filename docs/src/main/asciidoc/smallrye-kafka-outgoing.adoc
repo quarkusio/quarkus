@@ -3,133 +3,137 @@
 |===
 |Attribute (_alias_) | Description | Mandatory | Default
 
-| *acks* | The number of acknowledgments the producer requires the leader to have received before considering a request complete. This controls the durability of records that are sent. Accepted values are: 0, 1, all
+| [.no-hyphens]#*acks*# | The number of acknowledgments the producer requires the leader to have received before considering a request complete. This controls the durability of records that are sent. Accepted values are: 0, 1, all
 
 Type: _string_ | false | `1`
 
-| *bootstrap.servers*
+| [.no-hyphens]#*bootstrap.servers*#
 
-_(kafka.bootstrap.servers)_ | A comma-separated list of host:port to use for establishing the initial connection to the Kafka cluster.
+[.no-hyphens]#_(kafka.bootstrap.servers)_# | A comma-separated list of host:port to use for establishing the initial connection to the Kafka cluster.
 
 Type: _string_ | false | `localhost:9092`
 
-| *buffer.memory* | The total bytes of memory the producer can use to buffer records waiting to be sent to the server.
+| [.no-hyphens]#*buffer.memory*# | The total bytes of memory the producer can use to buffer records waiting to be sent to the server.
 
 Type: _long_ | false | `33554432`
 
-| *close-timeout* | The amount of milliseconds waiting for a graceful shutdown of the Kafka producer
+| [.no-hyphens]#*close-timeout*# | The amount of milliseconds waiting for a graceful shutdown of the Kafka producer
 
 Type: _int_ | false | `10000`
 
-| *cloud-events* | Enables (default) or disables the Cloud Event support. If enabled on an _incoming_ channel, the connector analyzes the incoming records and try to create Cloud Event metadata. If enabled on an _outgoing_, the connector sends the outgoing messages as Cloud Event if the message includes Cloud Event Metadata.
+| [.no-hyphens]#*cloud-events*# | Enables (default) or disables the Cloud Event support. If enabled on an _incoming_ channel, the connector analyzes the incoming records and try to create Cloud Event metadata. If enabled on an _outgoing_, the connector sends the outgoing messages as Cloud Event if the message includes Cloud Event Metadata.
 
 Type: _boolean_ | false | `true`
 
-| *cloud-events-data-content-type*
+| [.no-hyphens]#*cloud-events-data-content-type*#
 
-_(cloud-events-default-data-content-type)_ | Configure the default `datacontenttype` attribute of the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `datacontenttype` attribute itself
-
-Type: _string_ | false |
-
-| *cloud-events-data-schema*
-
-_(cloud-events-default-data-schema)_ | Configure the default `dataschema` attribute of the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `dataschema` attribute itself
+[.no-hyphens]#_(cloud-events-default-data-content-type)_# | Configure the default `datacontenttype` attribute of the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `datacontenttype` attribute itself
 
 Type: _string_ | false |
 
-| *cloud-events-insert-timestamp*
+| [.no-hyphens]#*cloud-events-data-schema*#
 
-_(cloud-events-default-timestamp)_ | Whether or not the connector should insert automatically the `time` attribute` into the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `time` attribute itself
+[.no-hyphens]#_(cloud-events-default-data-schema)_# | Configure the default `dataschema` attribute of the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `dataschema` attribute itself
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*cloud-events-insert-timestamp*#
+
+[.no-hyphens]#_(cloud-events-default-timestamp)_# | Whether or not the connector should insert automatically the `time` attribute` into the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `time` attribute itself
 
 Type: _boolean_ | false | `true`
 
-| *cloud-events-mode* | The Cloud Event mode (`structured` or `binary` (default)). Indicates how are written the cloud events in the outgoing record
+| [.no-hyphens]#*cloud-events-mode*# | The Cloud Event mode (`structured` or `binary` (default)). Indicates how are written the cloud events in the outgoing record
 
 Type: _string_ | false | `binary`
 
-| *cloud-events-source*
+| [.no-hyphens]#*cloud-events-source*#
 
-_(cloud-events-default-source)_ | Configure the default `source` attribute of the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `source` attribute itself
-
-Type: _string_ | false |
-
-| *cloud-events-subject*
-
-_(cloud-events-default-subject)_ | Configure the default `subject` attribute of the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `subject` attribute itself
+[.no-hyphens]#_(cloud-events-default-source)_# | Configure the default `source` attribute of the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `source` attribute itself
 
 Type: _string_ | false |
 
-| *cloud-events-type*
+| [.no-hyphens]#*cloud-events-subject*#
 
-_(cloud-events-default-type)_ | Configure the default `type` attribute of the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `type` attribute itself
+[.no-hyphens]#_(cloud-events-default-subject)_# | Configure the default `subject` attribute of the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `subject` attribute itself
 
 Type: _string_ | false |
 
-| *health-enabled* | Whether health reporting is enabled (default) or disabled
+| [.no-hyphens]#*cloud-events-type*#
+
+[.no-hyphens]#_(cloud-events-default-type)_# | Configure the default `type` attribute of the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `type` attribute itself
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*health-enabled*# | Whether health reporting is enabled (default) or disabled
 
 Type: _boolean_ | false | `true`
 
-| *health-readiness-enabled* | Whether readiness health reporting is enabled (default) or disabled
+| [.no-hyphens]#*health-readiness-enabled*# | Whether readiness health reporting is enabled (default) or disabled
 
 Type: _boolean_ | false | `true`
 
-| *health-readiness-timeout* | _deprecated_ - During the readiness health check, the connector connects to the broker and retrieves the list of topics. This attribute specifies the maximum duration (in ms) for the retrieval. If exceeded, the channel is considered not-ready. Deprecated: Use 'health-topic-verification-timeout' instead.
+| [.no-hyphens]#*health-readiness-timeout*# | _deprecated_ - During the readiness health check, the connector connects to the broker and retrieves the list of topics. This attribute specifies the maximum duration (in ms) for the retrieval. If exceeded, the channel is considered not-ready. Deprecated: Use 'health-topic-verification-timeout' instead.
 
 Type: _long_ | false |
 
-| *health-readiness-topic-verification* | _deprecated_ - Whether the readiness check should verify that topics exist on the broker. Default to false. Enabling it requires an admin connection. Deprecated: Use 'health-topic-verification-enabled' instead.
+| [.no-hyphens]#*health-readiness-topic-verification*# | _deprecated_ - Whether the readiness check should verify that topics exist on the broker. Default to false. Enabling it requires an admin connection. Deprecated: Use 'health-topic-verification-enabled' instead.
 
 Type: _boolean_ | false |
 
-| *health-topic-verification-enabled* | Whether the startup and readiness check should verify that topics exist on the broker. Default to false. Enabling it requires an admin client connection.
+| [.no-hyphens]#*health-topic-verification-enabled*# | Whether the startup and readiness check should verify that topics exist on the broker. Default to false. Enabling it requires an admin client connection.
 
 Type: _boolean_ | false | `false`
 
-| *health-topic-verification-timeout* | During the startup and readiness health check, the connector connects to the broker and retrieves the list of topics. This attribute specifies the maximum duration (in ms) for the retrieval. If exceeded, the channel is considered not-ready.
+| [.no-hyphens]#*health-topic-verification-timeout*# | During the startup and readiness health check, the connector connects to the broker and retrieves the list of topics. This attribute specifies the maximum duration (in ms) for the retrieval. If exceeded, the channel is considered not-ready.
 
 Type: _long_ | false | `2000`
 
-| *key* | A key to used when writing the record
+| [.no-hyphens]#*kafka-configuration*# | Identifier of a CDI bean that provides the default Kafka consumer/producer configuration for this channel. The channel configuration can still override any attribute. The bean must have a type of Map<String, Object> and must use the @io.smallrye.common.annotation.Identifier qualifier to set the identifier.
 
 Type: _string_ | false |
 
-| *key.serializer* | The serializer classname used to serialize the record's key
+| [.no-hyphens]#*key*# | A key to used when writing the record
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*key.serializer*# | The serializer classname used to serialize the record's key
 
 Type: _string_ | false | `org.apache.kafka.common.serialization.StringSerializer`
 
-| *max-inflight-messages* | The maximum number of messages to be written to Kafka concurrently. It limits the number of messages waiting to be written and acknowledged by the broker. You can set this attribute to `0` remove the limit
+| [.no-hyphens]#*max-inflight-messages*# | The maximum number of messages to be written to Kafka concurrently. It limits the number of messages waiting to be written and acknowledged by the broker. You can set this attribute to `0` remove the limit
 
 Type: _long_ | false | `1024`
 
-| *merge* | Whether the connector should allow multiple upstreams
+| [.no-hyphens]#*merge*# | Whether the connector should allow multiple upstreams
 
 Type: _boolean_ | false | `false`
 
-| *partition* | The target partition id. -1 to let the client determine the partition
+| [.no-hyphens]#*partition*# | The target partition id. -1 to let the client determine the partition
 
 Type: _int_ | false | `-1`
 
-| *propagate-record-key* | Propagate incoming record key to the outgoing record
+| [.no-hyphens]#*propagate-record-key*# | Propagate incoming record key to the outgoing record
 
 Type: _boolean_ | false | `false`
 
-| *retries* | If set to a positive number, the connector will try to resend any record that was not delivered successfully (with a potentially transient error) until the number of retries is reached. If set to 0, retries are disabled. If not set, the connector tries to resend any record that failed to be delivered (because of a potentially transient error) during an amount of time configured by `delivery.timeout.ms`.
+| [.no-hyphens]#*retries*# | If set to a positive number, the connector will try to resend any record that was not delivered successfully (with a potentially transient error) until the number of retries is reached. If set to 0, retries are disabled. If not set, the connector tries to resend any record that failed to be delivered (because of a potentially transient error) during an amount of time configured by `delivery.timeout.ms`.
 
 Type: _long_ | false | `2147483647`
 
-| *topic* | The consumed / populated Kafka topic. If neither this property nor the `topics` properties are set, the channel name is used
+| [.no-hyphens]#*topic*# | The consumed / populated Kafka topic. If neither this property nor the `topics` properties are set, the channel name is used
 
 Type: _string_ | false |
 
-| *tracing-enabled* | Whether tracing is enabled (default) or disabled
+| [.no-hyphens]#*tracing-enabled*# | Whether tracing is enabled (default) or disabled
 
 Type: _boolean_ | false | `true`
 
-| *value.serializer* | The serializer classname used to serialize the payload
+| [.no-hyphens]#*value.serializer*# | The serializer classname used to serialize the payload
 
 Type: _string_ | true |
 
-| *waitForWriteCompletion* | Whether the client waits for Kafka to acknowledge the written record before acknowledging the message
+| [.no-hyphens]#*waitForWriteCompletion*# | Whether the client waits for Kafka to acknowledge the written record before acknowledging the message
 
 Type: _boolean_ | false | `true`
 

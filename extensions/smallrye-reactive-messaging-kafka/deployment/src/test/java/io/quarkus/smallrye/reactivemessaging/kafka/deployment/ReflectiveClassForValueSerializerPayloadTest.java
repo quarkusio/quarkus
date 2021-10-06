@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.assertj.core.groups.Tuple;
 import org.eclipse.microprofile.config.Config;
@@ -25,11 +26,9 @@ import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 
 import io.quarkus.kafka.client.serialization.JsonbDeserializer;
+import io.quarkus.kafka.client.serialization.JsonbSerializer;
+import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
-import io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest.JacksonDto;
-import io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest.JacksonDtoDeserializer;
-import io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest.JsonbDto;
-import io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest.JsonbDtoSerializer;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.common.MapBackedConfigSource;
 import io.smallrye.mutiny.Multi;
@@ -54,7 +53,16 @@ class ReflectiveClassForValueSerializerPayloadTest {
                 .containsOnly(expectations);
     }
 
+    static class JacksonDto {
+    }
+
     private static class JacksonDtoSerializer extends ObjectMapperSerializer<JacksonDto> {
+    }
+
+    private static class JacksonDtoDeserializer extends ObjectMapperDeserializer<JacksonDto> {
+        public JacksonDtoDeserializer() {
+            super(JacksonDto.class);
+        }
     }
 
     private static class JacksonDtoSerde {
@@ -184,6 +192,16 @@ class ReflectiveClassForValueSerializerPayloadTest {
 
         doTest(expectations, configMap, JacksonDto.class, JacksonDtoSerializer.class, JacksonDtoDeserializer.class,
                 JacksonDtoSerde.class);
+    }
+
+    static class JsonbDto {
+    }
+
+    static class JsonbDtoSerializer extends JsonbSerializer<JsonbDto> {
+        @Override
+        public byte[] serialize(String topic, Headers headers, JsonbDto data) {
+            return null;
+        }
     }
 
     static class JsonbDtoDeserializer extends JsonbDeserializer<JsonbDto> {

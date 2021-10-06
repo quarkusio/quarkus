@@ -3,6 +3,9 @@ package io.quarkus.smallrye.reactivemessaging.deployment;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.smallrye.reactive.messaging.extension.EmitterConfiguration;
 
+/**
+ * Represents an emitter injection.
+ */
 public final class EmitterBuildItem extends MultiBuildItem {
 
     /**

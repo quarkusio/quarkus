@@ -3,6 +3,9 @@ package io.quarkus.smallrye.reactivemessaging.deployment;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.smallrye.reactive.messaging.extension.ChannelConfiguration;
 
+/**
+ * Represents a channel injection.
+ */
 public final class ChannelBuildItem extends MultiBuildItem {
 
     /**

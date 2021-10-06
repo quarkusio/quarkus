@@ -242,6 +242,15 @@ public class BeanInfo implements InjectionTargetInfo {
         return qualifiers;
     }
 
+    public Optional<AnnotationInstance> getQualifier(DotName dotName) {
+        for (AnnotationInstance qualifier : qualifiers) {
+            if (qualifier.name().equals(dotName)) {
+                return Optional.of(qualifier);
+            }
+        }
+        return Optional.empty();
+    }
+
     public boolean hasDefaultQualifiers() {
         return qualifiers.size() == 2 && qualifiers.contains(BuiltinQualifier.DEFAULT.getInstance())
                 && qualifiers.contains(BuiltinQualifier.ANY.getInstance());

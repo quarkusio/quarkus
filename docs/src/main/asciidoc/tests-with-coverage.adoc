@@ -212,12 +212,16 @@ In addition to including the `quarkus-jacoco` extension in your pom you will nee
                 </goals>
                 <configuration>
                   <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>  <1>
+                  <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>
+                  <append>true</append>
                 </configuration>
               </execution>
               <execution>
                 <id>default-prepare-agent-integration</id> <2>
                 <goals>
                   <goal>prepare-agent-integration</goal>
+                  <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>
+                  <append>true</append>
                 </goals>
                 <configuration>
                   <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>

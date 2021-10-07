@@ -183,31 +183,33 @@ public class DeploymentInjectingDependencyVisitor {
         }
 
         Artifact artifact = node.getArtifact();
-        ResolvedDependencyBuilder newRtDep = null;
-        if (allRuntimeDeps.add(getKey(artifact))) {
+        final boolean add = allRuntimeDeps.add(getKey(artifact));
+        if (add) {
             artifact = resolve(artifact);
-            WorkspaceModule module = null;
-            if (resolver.getProjectModuleResolver() != null) {
-                module = resolver.getProjectModuleResolver().getProjectModule(artifact.getGroupId(), artifact.getArtifactId());
-            }
-            newRtDep = toAppArtifact(artifact, module, preferWorkspacePaths)
-                    .setRuntimeCp()
-                    .setDeploymentCp()
-                    .setOptional(node.getDependency().isOptional())
-                    .setScope(node.getDependency().getScope())
-                    .setDirect(collectingDirectDeps);
-            if (module != null) {
-                newRtDep.setWorkspaceModule().setReloadable();
-                if (collectReloadableModules) {
-                    appBuilder.addReloadableWorkspaceModule(new GACT(artifact.getGroupId(), artifact.getArtifactId()));
-                }
-            }
         }
 
         try {
             final ExtensionDependency extDep = getExtensionDependencyOrNull(node, artifact);
 
-            if (newRtDep != null) {
+            if (add) {
+                WorkspaceModule module = null;
+                if (resolver.getProjectModuleResolver() != null) {
+                    module = resolver.getProjectModuleResolver().getProjectModule(artifact.getGroupId(),
+                            artifact.getArtifactId());
+                }
+                final ResolvedDependencyBuilder newRtDep = toAppArtifact(artifact, module,
+                        preferWorkspacePaths && extDep == null && collectingTopExtensionRuntimeNodes)
+                                .setRuntimeCp()
+                                .setDeploymentCp()
+                                .setOptional(node.getDependency().isOptional())
+                                .setScope(node.getDependency().getScope())
+                                .setDirect(collectingDirectDeps);
+                if (module != null) {
+                    newRtDep.setWorkspaceModule().setReloadable();
+                    if (collectReloadableModules) {
+                        appBuilder.addReloadableWorkspaceModule(new GACT(artifact.getGroupId(), artifact.getArtifactId()));
+                    }
+                }
                 if (extDep != null) {
                     newRtDep.setRuntimeExtensionArtifact();
                 }

@@ -17,3 +17,9 @@ metadata:
   - "quarkus.health."
   - "quarkus.smallrye-health."
   - "mp.health."
+  codestart:
+    name: "smallrye-health"
+    languages:
+      - "java"
+      - "kotlin"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"  

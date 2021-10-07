@@ -25,7 +25,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
-import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
@@ -52,11 +51,6 @@ public class OidcClientBuildStep {
     @BuildStep(onlyIf = IsEnabled.class)
     FeatureBuildItem featureBuildItem() {
         return new FeatureBuildItem(Feature.OIDC_CLIENT);
-    }
-
-    @BuildStep(onlyIf = IsEnabled.class)
-    EnableAllSecurityServicesBuildItem security() {
-        return new EnableAllSecurityServicesBuildItem();
     }
 
     @BuildStep(onlyIf = IsEnabled.class)

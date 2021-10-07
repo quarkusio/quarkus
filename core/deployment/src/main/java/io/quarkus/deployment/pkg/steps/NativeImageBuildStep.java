@@ -545,7 +545,6 @@ public class NativeImageBuildStep {
             public NativeImageInvokerInfo build() {
                 List<String> nativeImageArgs = new ArrayList<>();
                 boolean enableSslNative = false;
-                boolean enableAllSecurityServices = nativeConfig.enableAllSecurityServices;
                 boolean inlineBeforeAnalysis = nativeConfig.inlineBeforeAnalysis;
                 boolean addAllCharsets = nativeConfig.addAllCharsets;
                 boolean enableHttpsUrlHandler = nativeConfig.enableHttpsUrlHandler;
@@ -558,7 +557,10 @@ public class NativeImageBuildStep {
                                 + " Please consider removing this configuration key as it is ignored (JNI is always enabled) and it"
                                 + " will be removed in a future Quarkus version.");
                     } else if (prop.getKey().equals("quarkus.native.enable-all-security-services") && prop.getValue() != null) {
-                        enableAllSecurityServices |= Boolean.parseBoolean(prop.getValue());
+                        log.warn(
+                                "Your application is setting the deprecated 'quarkus.native.enable-all-security-services' configuration key."
+                                        + " Please consider removing this configuration key as it is ignored and it"
+                                        + " will be removed in a future Quarkus version.");
                     } else if (prop.getKey().equals("quarkus.native.enable-all-charsets") && prop.getValue() != null) {
                         addAllCharsets |= Boolean.parseBoolean(prop.getValue());
                     } else if (prop.getKey().equals("quarkus.native.inline-before-analysis") && prop.getValue() != null) {
@@ -582,7 +584,6 @@ public class NativeImageBuildStep {
 
                 if (enableSslNative) {
                     enableHttpsUrlHandler = true;
-                    enableAllSecurityServices = true;
                 }
 
                 handleAdditionalProperties(nativeConfig, nativeImageArgs, nativeConfig.isContainerBuild(), outputDir);
@@ -648,10 +649,6 @@ public class NativeImageBuildStep {
                 if (!protocols.isEmpty()) {
                     nativeImageArgs.add("-H:EnableURLProtocols=" + String.join(",", protocols));
                 }
-                if (enableAllSecurityServices && graalVMVersion.isOlderThan(GraalVM.Version.VERSION_21_1)) {
-                    // This option was removed in GraalVM 21.1 https://github.com/oracle/graal/pull/3258
-                    nativeImageArgs.add("--enable-all-security-services");
-                }
                 if (inlineBeforeAnalysis) {
                     if (graalVMVersion.isOlderThan(GraalVM.Version.VERSION_21_3)) {
                         // Enabled by default in GraalVM >= 21.3
@@ -701,21 +698,17 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-H:+DashboardAll");
                 }
 
-                if (graalVMVersion.isNewerThan(GraalVM.Version.VERSION_21_1)) {
-                    // AdditionalSecurityProviders
-                    if (nativeImageSecurityProviders != null && !nativeImageSecurityProviders.isEmpty()) {
-                        String additionalSecurityProviders = nativeImageSecurityProviders.stream()
-                                .map(p -> p.getSecurityProvider())
-                                .collect(Collectors.joining(","));
-                        nativeImageArgs.add("-H:AdditionalSecurityProviders=" + additionalSecurityProviders);
-                    }
+                if (nativeImageSecurityProviders != null && !nativeImageSecurityProviders.isEmpty()) {
+                    String additionalSecurityProviders = nativeImageSecurityProviders.stream()
+                            .map(p -> p.getSecurityProvider())
+                            .collect(Collectors.joining(","));
+                    nativeImageArgs.add("-H:AdditionalSecurityProviders=" + additionalSecurityProviders);
+                }
 
-                    // --exclude-config options
-                    for (ExcludeConfigBuildItem excludeConfig : excludeConfigs) {
-                        nativeImageArgs.add("--exclude-config");
-                        nativeImageArgs.add(excludeConfig.getJarFile());
-                        nativeImageArgs.add(excludeConfig.getResourceName());
-                    }
+                for (ExcludeConfigBuildItem excludeConfig : excludeConfigs) {
+                    nativeImageArgs.add("--exclude-config");
+                    nativeImageArgs.add(excludeConfig.getJarFile());
+                    nativeImageArgs.add(excludeConfig.getResourceName());
                 }
 
                 nativeImageArgs.add(nativeImageName);

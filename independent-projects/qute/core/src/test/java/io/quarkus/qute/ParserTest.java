@@ -355,6 +355,18 @@ public class ParserTest {
                 "Parser error on line 1: empty expression found {data:}", 1);
     }
 
+    @Test
+    public void testInvalidVirtualMethod() {
+        assertParserError("{foo.baz()(}",
+                "Parser error on line 1: invalid virtual method in {foo.baz()(}", 1);
+    }
+
+    @Test
+    public void testInvalidBracket() {
+        assertParserError("{foo.baz[}",
+                "Parser error on line 1: invalid bracket notation expression in {foo.baz[}", 1);
+    }
+
     public static class Foo {
 
         public List<Item> getItems() {

@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import io.quarkus.qute.TemplateNode.Origin;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,20 +31,20 @@ public final class Expressions {
         return value.substring(0, start);
     }
 
-    public static List<String> parseVirtualMethodParams(String value) {
+    public static List<String> parseVirtualMethodParams(String value, Origin origin, String exprValue) {
         int start = value.indexOf(LEFT_BRACKET);
         if (start != -1 && value.endsWith(RIGHT_BRACKET)) {
             String params = value.substring(start + 1, value.length() - 1);
             return splitParts(params, PARAMS_SPLIT_CONFIG);
         }
-        throw new IllegalArgumentException("Not a virtual method: " + value);
+        throw Parser.parserError("invalid virtual method in {" + exprValue + "}", origin);
     }
 
-    public static String parseBracketContent(String value) {
+    public static String parseBracketContent(String value, Origin origin, String exprValue) {
         if (value.endsWith(SQUARE_RIGHT_BRACKET)) {
             return value.substring(1, value.length() - 1);
         }
-        throw new IllegalArgumentException("Not a bracket notation expression: " + value);
+        throw Parser.parserError("invalid bracket notation expression in {" + exprValue + "}", origin);
     }
 
     public static String buildVirtualMethodSignature(String name, List<String> params) {

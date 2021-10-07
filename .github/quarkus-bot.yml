@@ -331,7 +331,6 @@ triage:
       notify: [aloubyansky, gsmet, geoand, radcortez, Sanne, stuartwdouglas]
       directories:
         - core/
-        - integration-tests/production-mode
     - labels: [area/dependencies]
       directories:
         - .github/dependabot.yml

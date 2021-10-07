@@ -1,4 +1,4 @@
-package io.quarkus.it.prodmode;
+package io.quarkus.forkjoin;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
@@ -26,7 +26,7 @@ public class ForkJoinPoolAssertions {
         CountDownLatch allDone = new CountDownLatch(poolParallelism);
         CountDownLatch taskRelease = new CountDownLatch(1);
         if (poolParallelism < 1) {
-            System.err
+            System.out
                     .println("Can't test this when ForkJoinPool.getCommonPoolParallelism() has been forced to less than one.");
             return false;
         }
@@ -52,7 +52,8 @@ public class ForkJoinPoolAssertions {
         }
         try {
             if (!allDone.await(10, TimeUnit.SECONDS)) {
-                throw new IllegalStateException("Timed out while trying to scale up the fork join pool");
+                System.out.println("Timed out while trying to scale up the fork join pool");
+                return false;
             }
         } catch (InterruptedException e) {
             e.printStackTrace();

@@ -1083,9 +1083,10 @@ public class JaxrsClientReactiveProcessor {
                                     "No @PartType annotation found on multipart form field of type File: " +
                                             formClass.name() + "." + field.name());
                         }
-                        ResultHandle filePath = methodCreator.invokeVirtualMethod(
+                        BytecodeCreator ifFileNotNull = methodCreator.ifNotNull(fieldValue).trueBranch();
+                        ResultHandle filePath = ifFileNotNull.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(File.class, "toPath", Path.class), fieldValue);
-                        addFile(methodCreator, multipartForm, formParamName, partType, filePath);
+                        addFile(ifFileNotNull, multipartForm, formParamName, partType, filePath);
                     } else if (is(PATH, fieldClass, index)) {
                         // and so is path
                         if (partType == null) {
@@ -1093,10 +1094,12 @@ public class JaxrsClientReactiveProcessor {
                                     "No @PartType annotation found on multipart form field of type Path: " +
                                             formClass.name() + "." + field.name());
                         }
-                        addFile(methodCreator, multipartForm, formParamName, partType, fieldValue);
+                        BytecodeCreator ifPathNotNull = methodCreator.ifNotNull(fieldValue).trueBranch();
+                        addFile(ifPathNotNull, multipartForm, formParamName, partType, fieldValue);
                     } else if (is(BUFFER, fieldClass, index)) {
                         // and buffer
-                        addBuffer(methodCreator, multipartForm, formParamName, partType, fieldValue, field);
+                        BytecodeCreator ifBufferNotNull = methodCreator.ifNotNull(fieldValue).trueBranch();
+                        addBuffer(ifBufferNotNull, multipartForm, formParamName, partType, fieldValue, field);
                     } else { // assume POJO:
                         addPojo(methodCreator, multipartForm, formParamName, partType, fieldValue, field);
                     }
@@ -1109,10 +1112,11 @@ public class JaxrsClientReactiveProcessor {
                         throw new IllegalArgumentException("Array of unsupported type: " + componentType.name()
                                 + " on " + formClassType.name() + "." + field.name());
                     }
-                    ResultHandle buffer = methodCreator.invokeStaticInterfaceMethod(
+                    BytecodeCreator ifArrayNotNull = methodCreator.ifNotNull(fieldValue).trueBranch();
+                    ResultHandle buffer = ifArrayNotNull.invokeStaticInterfaceMethod(
                             MethodDescriptor.ofMethod(Buffer.class, "buffer", Buffer.class, byte[].class),
                             fieldValue);
-                    addBuffer(methodCreator, multipartForm, formParamName, partType, buffer, field);
+                    addBuffer(ifArrayNotNull, multipartForm, formParamName, partType, buffer, field);
                     break;
                 case PRIMITIVE:
                     // primitives are converted to text and sent as attribute
@@ -1145,7 +1149,7 @@ public class JaxrsClientReactiveProcessor {
      * add file upload, see {@link QuarkusMultipartForm#binaryFileUpload(String, String, String, String)} and
      * {@link QuarkusMultipartForm#textFileUpload(String, String, String, String)}
      */
-    private void addFile(MethodCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
+    private void addFile(BytecodeCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
             String partType, ResultHandle filePath) {
         ResultHandle fileNamePath = methodCreator.invokeInterfaceMethod(PATH_GET_FILENAME, filePath);
         ResultHandle fileName = methodCreator.invokeVirtualMethod(OBJECT_TO_STRING, fileNamePath);
@@ -1209,7 +1213,7 @@ public class JaxrsClientReactiveProcessor {
                         multipartForm, methodCreator.load(formParamName), fieldValue));
     }
 
-    private void addBuffer(MethodCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
+    private void addBuffer(BytecodeCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
             String partType, ResultHandle buffer, FieldInfo field) {
         if (partType == null) {
             throw new IllegalArgumentException(

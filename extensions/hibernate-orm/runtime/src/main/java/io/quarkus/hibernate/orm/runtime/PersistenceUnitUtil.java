@@ -70,7 +70,7 @@ public class PersistenceUnitUtil {
                             + " This is deprecated usage and will not work in future versions of Quarkus."
                             + " Annotate this bean with @%2$s(\"%4$s\") instead of @%3$s(\"%4$s\") to make it future-proof.",
                             beanType.getName(), PersistenceUnitExtension.class.getSimpleName(),
-                            PersistenceUnit.class.getSimpleName());
+                            PersistenceUnit.class.getSimpleName(), persistenceUnitName);
                 }
             }
         }

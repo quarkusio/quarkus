@@ -190,7 +190,8 @@ public class DeploymentInjectingDependencyVisitor {
             if (resolver.getProjectModuleResolver() != null) {
                 module = resolver.getProjectModuleResolver().getProjectModule(artifact.getGroupId(), artifact.getArtifactId());
             }
-            newRtDep = toAppArtifact(artifact, module, preferWorkspacePaths)
+            //if a classifier is set we never prefer workspace paths
+            newRtDep = toAppArtifact(artifact, module, preferWorkspacePaths && artifact.getClassifier().isEmpty())
                     .setRuntimeCp()
                     .setDeploymentCp()
                     .setOptional(node.getDependency().isOptional())

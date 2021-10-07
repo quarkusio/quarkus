@@ -435,18 +435,10 @@ public class NativeImageAutoFeatureStep {
                     }
                 }
                 if (entry.getValue().fields) {
-                    BranchResult graalVm21Test = tc.ifGreaterEqualZero(
-                            tc.invokeVirtualMethod(VERSION_COMPARE_TO,
-                                    tc.invokeStaticMethod(VERSION_CURRENT),
-                                    tc.marshalAsArray(int.class, tc.load(21))));
-                    graalVm21Test.trueBranch().invokeStaticMethod(
+                    tc.invokeStaticMethod(
                             ofMethod(RUNTIME_REFLECTION, "register", void.class,
                                     boolean.class, boolean.class, Field[].class),
                             tc.load(entry.getValue().finalFieldsWritable), tc.load(entry.getValue().serialization), fields);
-                    graalVm21Test.falseBranch().invokeStaticMethod(
-                            ofMethod(RUNTIME_REFLECTION, "register", void.class,
-                                    boolean.class, Field[].class),
-                            tc.load(entry.getValue().finalFieldsWritable), fields);
                 } else if (!entry.getValue().fieldSet.isEmpty()) {
                     ResultHandle farray = tc.newArray(Field.class, tc.load(1));
                     for (String field : entry.getValue().fieldSet) {
@@ -547,38 +539,20 @@ public class NativeImageAutoFeatureStep {
 
         TryBlock requiredCatch = requiredFeatures.tryBlock();
 
-        // It's too early in the GraalVM build to use Version.getCurrent()
-        BranchResult featuresGraalVm20Test = requiredCatch.ifTrue(requiredCatch
-                .invokeVirtualMethod(ofMethod(String.class, "startsWith", boolean.class, String.class),
-                        requiredCatch.invokeStaticMethod(
-                                ofMethod(System.class, "getProperty", String.class, String.class),
-                                requiredCatch.load("org.graalvm.version")),
-                        requiredCatch.load("20.")));
-
-        BytecodeCreator featuresIfGraalVM21Plus = featuresGraalVm20Test.falseBranch();
-
-        ResultHandle serializationFeatureClass = featuresIfGraalVM21Plus
+        ResultHandle serializationFeatureClass = requiredCatch
                 .loadClass("com.oracle.svm.reflect.serialize.hosted.SerializationFeature");
-        featuresIfGraalVM21Plus.returnValue(featuresIfGraalVM21Plus.invokeStaticMethod(
+        ResultHandle requiredFeaturesList = requiredCatch.invokeStaticMethod(
                 ofMethod("java.util.Collections", "singletonList", List.class, Object.class),
-                serializationFeatureClass));
+                serializationFeatureClass);
 
-        BytecodeCreator featuresIfNotGraalVM21Plus = featuresGraalVm20Test.trueBranch();
-        featuresIfNotGraalVM21Plus
-                .returnValue(featuresIfNotGraalVM21Plus
-                        .invokeStaticMethod(ofMethod("java.util.Collections", "emptyList", List.class)));
+        requiredCatch.returnValue(requiredFeaturesList);
 
         // method to register class for registration
         MethodCreator addSerializationForClass = file.getMethodCreator("registerSerializationForClass", "V", Class.class);
         addSerializationForClass.setModifiers(Modifier.PRIVATE | Modifier.STATIC);
         ResultHandle clazz = addSerializationForClass.getMethodParam(0);
 
-        BranchResult graalVm21Test = addSerializationForClass.ifGreaterEqualZero(
-                addSerializationForClass.invokeVirtualMethod(VERSION_COMPARE_TO,
-                        addSerializationForClass.invokeStaticMethod(VERSION_CURRENT),
-                        addSerializationForClass.marshalAsArray(int.class, addSerializationForClass.load(21))));
-
-        TryBlock tc = graalVm21Test.trueBranch().tryBlock();
+        TryBlock tc = addSerializationForClass.tryBlock();
 
         ResultHandle currentThread = tc
                 .invokeStaticMethod(ofMethod(Thread.class, "currentThread", Thread.class));

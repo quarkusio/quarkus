@@ -2,18 +2,12 @@ package io.quarkus.jsch.deployment;
 
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.jsch.runtime.PortWatcherRunTime;
 
 class JSchProcessor {
-
-    @BuildStep
-    EnableAllSecurityServicesBuildItem enableAllSecurityServices() {
-        return new EnableAllSecurityServicesBuildItem();
-    }
 
     @BuildStep
     ExtensionSslNativeSupportBuildItem sslNativeSupport() {

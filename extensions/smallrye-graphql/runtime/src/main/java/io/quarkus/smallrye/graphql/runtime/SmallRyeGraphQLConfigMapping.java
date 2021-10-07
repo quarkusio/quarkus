@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.graphql.deployment;
+package io.quarkus.smallrye.graphql.runtime;
 
 import java.util.Collections;
 import java.util.HashMap;

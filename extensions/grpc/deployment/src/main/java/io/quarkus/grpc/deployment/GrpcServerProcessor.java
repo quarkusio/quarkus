@@ -261,7 +261,7 @@ public class GrpcServerProcessor {
     AnnotationsTransformerBuildItem transformUserDefinedServices(CombinedIndexBuildItem combinedIndexBuildItem,
             CustomScopeAnnotationsBuildItem customScopes) {
         // User-defined services usually only declare the @GrpcService qualifier
-        // We need to add @GrpcEnableRequestContext and @Singleton if needed 
+        // We need to add @Singleton if needed 
         Set<DotName> userDefinedServices = new HashSet<>();
         for (AnnotationInstance annotation : combinedIndexBuildItem.getIndex().getAnnotations(GrpcDotNames.GRPC_SERVICE)) {
             if (annotation.target().kind() == Kind.CLASS) {

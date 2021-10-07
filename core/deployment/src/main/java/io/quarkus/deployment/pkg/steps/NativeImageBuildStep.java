@@ -652,15 +652,13 @@ public class NativeImageBuildStep {
                     // This option was removed in GraalVM 21.1 https://github.com/oracle/graal/pull/3258
                     nativeImageArgs.add("--enable-all-security-services");
                 }
-                if (graalVMVersion.isNewerThan(GraalVM.Version.VERSION_20_3)) {
-                    if (inlineBeforeAnalysis) {
-                        if (graalVMVersion.isOlderThan(GraalVM.Version.VERSION_21_3)) {
-                            // Enabled by default in GraalVM >= 21.3
-                            nativeImageArgs.add("-H:+InlineBeforeAnalysis");
-                        }
-                    } else {
-                        nativeImageArgs.add("-H:-InlineBeforeAnalysis");
+                if (inlineBeforeAnalysis) {
+                    if (graalVMVersion.isOlderThan(GraalVM.Version.VERSION_21_3)) {
+                        // Enabled by default in GraalVM >= 21.3
+                        nativeImageArgs.add("-H:+InlineBeforeAnalysis");
                     }
+                } else {
+                    nativeImageArgs.add("-H:-InlineBeforeAnalysis");
                 }
                 if (!noPIE.isEmpty()) {
                     nativeImageArgs.add("-H:NativeLinkerOption=" + noPIE);

@@ -1,6 +1,5 @@
 package io.quarkus.runtime.util;
 
-import java.util.function.BooleanSupplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -56,21 +55,5 @@ public class JavaVersionUtil {
 
     public static boolean isGraalvmJdk() {
         return IS_GRAALVM_JDK;
-    }
-
-    /* Clone of com.oracle.svm.core.jdk.JDK17OrLater to work around #19645 issue with GraalVM 20.3 */
-    public static class JDK17OrLater implements BooleanSupplier {
-        @Override
-        public boolean getAsBoolean() {
-            return JavaVersionUtil.isJava17OrHigher();
-        }
-    }
-
-    /* Clone of com.oracle.svm.core.jdk.JDK16OrEarlier to work around #19645 issue with GraalVM 20.3 */
-    public static class JDK16OrEarlier implements BooleanSupplier {
-        @Override
-        public boolean getAsBoolean() {
-            return JavaVersionUtil.isJava16OrLower();
-        }
     }
 }

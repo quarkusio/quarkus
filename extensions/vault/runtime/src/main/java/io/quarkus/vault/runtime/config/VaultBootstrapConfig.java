@@ -33,7 +33,7 @@ public class VaultBootstrapConfig {
     public static final String DEFAULT_SECRET_CONFIG_CACHE_PERIOD = "10M";
     public static final String KUBERNETES_CACERT = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt";
     public static final String DEFAULT_CONNECT_TIMEOUT = "5S";
-    public static final String DEFAULT_READ_TIMEOUT = "1S";
+    public static final String DEFAULT_READ_TIMEOUT = "5S";
     public static final String DEFAULT_TLS_USE_KUBERNETES_CACERT = "true";
     public static final String DEFAULT_KUBERNETES_AUTH_MOUNT_PATH = "auth/kubernetes";
 
@@ -140,6 +140,12 @@ public class VaultBootstrapConfig {
     @ConfigItem(name = "secret-config-kv-path")
     @ConfigDocMapKey("prefix")
     public Map<String, KvPathConfig> secretConfigKvPathPrefix;
+
+    /**
+     * Maximum number of attempts when fetching MP Config properties on the initial connection.
+     */
+    @ConfigItem(defaultValue = "1")
+    public int mpConfigInitialAttempts;
 
     /**
      * Used to hide confidential infos, for logging in particular.

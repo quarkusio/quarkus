@@ -99,4 +99,8 @@ public class MyService {
         return "ok";
     }
 
+    public static int getDummy(int val) {
+        return val * 2;
+    }
+
 }

@@ -1,5 +1,6 @@
 package io.quarkus.qute.generator;
 
+import static java.util.function.Predicate.not;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
 import io.quarkus.gizmo.AssignableResultHandle;
@@ -17,6 +18,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.EvaluatedParams;
+import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.TemplateData;
 import io.quarkus.qute.ValueResolver;
 import java.lang.reflect.Modifier;
@@ -66,6 +68,7 @@ public class ValueResolverGenerator {
     public static final DotName TEMPLATE_DATA_CONTAINER = DotName.createSimple(TemplateData.Container.class.getName());
 
     public static final String SUFFIX = "_ValueResolver";
+    public static final String NAMESPACE_SUFFIX = "_Namespace" + SUFFIX;
     public static final String NESTED_SEPARATOR = "$_";
 
     private static final Logger LOGGER = Logger.getLogger(ValueResolverGenerator.class);
@@ -76,6 +79,7 @@ public class ValueResolverGenerator {
 
     public static final String TARGET = "target";
     public static final String IGNORE_SUPERCLASSES = "ignoreSuperclasses";
+    public static final String NAMESPACE = "namespace";
     public static final String IGNORE = "ignore";
     public static final String PROPERTIES = "properties";
 
@@ -161,6 +165,7 @@ public class ValueResolverGenerator {
         ClassInfo clazz = nameToClass.get(className);
         String clazzName = className.toString();
         boolean ignoreSuperclasses = false;
+        String namespace = null;
 
         AnnotationInstance templateData = nameToTemplateData.get(className);
         if (templateData == null) {
@@ -179,6 +184,18 @@ public class ValueResolverGenerator {
             if (ignoreSuperclassesValue != null) {
                 ignoreSuperclasses = ignoreSuperclassesValue.asBoolean();
             }
+            AnnotationValue namespaceValue = templateData.value(NAMESPACE);
+            if (namespaceValue != null) {
+                namespace = namespaceValue.asString().trim();
+            } else {
+                namespace = TemplateData.UNDERSCORED_FQCN;
+            }
+            if (namespace.isBlank()) {
+                namespace = null;
+            }
+            if (namespace != null && namespace.equals(TemplateData.UNDERSCORED_FQCN)) {
+                namespace = clazzName.replace(".", "_").replace("$", "_");
+            }
         }
 
         Predicate<AnnotationTarget> filters = initFilters(templateData);
@@ -193,16 +210,38 @@ public class ValueResolverGenerator {
         }
         String targetPackage = packageName(clazz.name());
         String generatedName = generatedNameFromTarget(targetPackage, baseName, SUFFIX);
-        generatedTypes.add(generatedName.replace('/', '.'));
 
         ClassCreator valueResolver = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .interfaces(ValueResolver.class).build();
 
         implementGetPriority(valueResolver, priority);
         implementAppliesTo(valueResolver, clazz);
-        implementResolve(valueResolver, clazzName, clazz, filters, ignoreSuperclasses);
+        boolean hasMembers = implementResolve(valueResolver, clazzName, clazz,
+                filters.and(not(ValueResolverGenerator::staticsFilter)),
+                ignoreSuperclasses);
 
-        valueResolver.close();
+        if (hasMembers) {
+            // Do not generate the resolver if no relevant members are found
+            valueResolver.close();
+            generatedTypes.add(generatedName.replace('/', '.'));
+        }
+
+        if (namespace != null) {
+            // Generate a namespace resolver to access static members
+            generatedName = generatedNameFromTarget(targetPackage, baseName, NAMESPACE_SUFFIX);
+
+            ClassCreator namespaceResolver = ClassCreator.builder().classOutput(classOutput).className(generatedName)
+                    .interfaces(NamespaceResolver.class).build();
+            implementGetNamespace(namespaceResolver, namespace);
+            boolean hasStatics = implementNamespaceResolve(namespaceResolver, clazzName, clazz,
+                    filters.and(ValueResolverGenerator::staticsFilter));
+
+            if (hasStatics) {
+                // Do not generate the resolver if no statics are found
+                namespaceResolver.close();
+                generatedTypes.add(generatedName.replace('/', '.'));
+            }
+        }
     }
 
     private void implementGetPriority(ClassCreator valueResolver, int priority) {
@@ -211,7 +250,13 @@ public class ValueResolverGenerator {
         getPriority.returnValue(getPriority.load(priority));
     }
 
-    private void implementResolve(ClassCreator valueResolver, String clazzName, ClassInfo clazz,
+    private void implementGetNamespace(ClassCreator namespaceResolver, String namespace) {
+        MethodCreator getNamespace = namespaceResolver.getMethodCreator("getNamespace", String.class)
+                .setModifiers(ACC_PUBLIC);
+        getNamespace.returnValue(getNamespace.load(namespace));
+    }
+
+    private boolean implementResolve(ClassCreator valueResolver, String clazzName, ClassInfo clazz,
             Predicate<AnnotationTarget> filter, boolean ignoreSuperclasses) {
         MethodCreator resolve = valueResolver.getMethodCreator("resolve", CompletionStage.class, EvalContext.class)
                 .setModifiers(ACC_PUBLIC);
@@ -226,7 +271,7 @@ public class ValueResolverGenerator {
         // First collect and sort methods (getters must come before is/has properties, etc.)
         List<MethodKey> methods = clazz.methods().stream().filter(filter::test).map(MethodKey::new).sorted()
                 .collect(Collectors.toList());
-        if (!ignoreSuperclasses) {
+        if (!ignoreSuperclasses && !clazz.isEnum()) {
             DotName superName = clazz.superName();
             while (superName != null && !superName.equals(DotNames.OBJECT)) {
                 ClassInfo superClass = index.getClassByName(superName);
@@ -271,18 +316,16 @@ public class ValueResolverGenerator {
                                     zeroParamsBranch.invokeVirtualMethod(Descriptors.EQUALS,
                                             resolve.load(field.name()), name))
                             .trueBranch();
-                    ResultHandle value;
-                    if (Modifier.isStatic(field.flags())) {
-                        value = fieldMatch
-                                .readStaticField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()));
-                    } else {
-                        value = fieldMatch
-                                .readInstanceField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()),
-                                        base);
-                    }
+                    ResultHandle value = fieldMatch
+                            .readInstanceField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()),
+                                    base);
                     fieldMatch.returnValue(fieldMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
                 }
             }
+        }
+
+        if (methods.isEmpty() && fields.isEmpty()) {
+            return false;
         }
 
         if (!methods.isEmpty()) {
@@ -375,6 +418,145 @@ public class ValueResolverGenerator {
             }
         }
         resolve.returnValue(resolve.invokeStaticMethod(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
+        return true;
+    }
+
+    private boolean implementNamespaceResolve(ClassCreator valueResolver, String clazzName, ClassInfo clazz,
+            Predicate<AnnotationTarget> filter) {
+        MethodCreator resolve = valueResolver.getMethodCreator("resolve", CompletionStage.class, EvalContext.class)
+                .setModifiers(ACC_PUBLIC);
+
+        ResultHandle evalContext = resolve.getMethodParam(0);
+        ResultHandle base = resolve.invokeInterfaceMethod(Descriptors.GET_BASE, evalContext);
+        ResultHandle name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
+        ResultHandle params = resolve.invokeInterfaceMethod(Descriptors.GET_PARAMS, evalContext);
+        ResultHandle paramsCount = resolve.invokeInterfaceMethod(Descriptors.COLLECTION_SIZE, params);
+
+        // First collect static members
+        List<MethodKey> methods = clazz.methods().stream()
+                .filter(filter::test)
+                .map(MethodKey::new)
+                .sorted()
+                .collect(Collectors.toList());
+
+        List<FieldInfo> fields = clazz.fields().stream()
+                .filter(filter::test)
+                .collect(Collectors.toList());
+
+        if (methods.isEmpty() && fields.isEmpty()) {
+            return false;
+        }
+
+        // Static fields
+        if (!fields.isEmpty()) {
+            BytecodeCreator zeroParamsBranch = resolve.ifNonZero(paramsCount).falseBranch();
+            for (FieldInfo field : fields) {
+                LOGGER.debugf("Static field added: %s", field);
+                // Match field name
+                BytecodeCreator fieldMatch = zeroParamsBranch
+                        .ifNonZero(
+                                zeroParamsBranch.invokeVirtualMethod(Descriptors.EQUALS,
+                                        resolve.load(field.name()), name))
+                        .trueBranch();
+                ResultHandle value = fieldMatch
+                        .readStaticField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()));
+                fieldMatch.returnValue(fieldMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
+            }
+        }
+
+        // Static methods
+        if (!methods.isEmpty()) {
+            // name, number of params -> list of methods
+            Map<Match, List<MethodInfo>> matches = new HashMap<>();
+            Map<Match, List<MethodInfo>> varargsMatches = new HashMap<>();
+
+            for (MethodKey methodKey : methods) {
+                MethodInfo method = methodKey.method;
+                List<Type> methodParams = method.parameters();
+                if (methodParams.isEmpty()) {
+                    // No params - just invoke the method
+                    LOGGER.debugf("Static method added %s", method);
+                    try (BytecodeCreator matchScope = createMatchScope(resolve, method.name(), 0, method.returnType(), name,
+                            params, paramsCount)) {
+                        ResultHandle ret;
+                        boolean hasCompletionStage = !skipMemberType(method.returnType())
+                                && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
+                        ResultHandle invokeRet;
+                        if (Modifier.isInterface(clazz.flags())) {
+                            invokeRet = matchScope.invokeStaticInterfaceMethod(MethodDescriptor.of(method));
+                        } else {
+                            invokeRet = matchScope.invokeStaticMethod(MethodDescriptor.of(method));
+                        }
+                        if (hasCompletionStage) {
+                            ret = invokeRet;
+                        } else {
+                            ret = matchScope.invokeStaticMethod(Descriptors.COMPLETED_STAGE, invokeRet);
+                        }
+                        matchScope.returnValue(ret);
+                    }
+                } else {
+                    // Collect methods with params
+                    Match match = new Match(method.name(), method.parameters().size());
+                    List<MethodInfo> methodMatches = matches.get(match);
+                    if (methodMatches == null) {
+                        methodMatches = new ArrayList<>();
+                        matches.put(match, methodMatches);
+                    }
+                    methodMatches.add(method);
+
+                    if (isVarArgs(method)) {
+                        // The last argument is a sequence of arguments -> match name and min number of params
+                        // getList(int age, String... names) -> "getList", 1
+                        match = new Match(method.name(), method.parameters().size() - 1);
+                        methodMatches = varargsMatches.get(match);
+                        if (methodMatches == null) {
+                            methodMatches = new ArrayList<>();
+                            varargsMatches.put(match, methodMatches);
+                        }
+                        methodMatches.add(method);
+                    }
+                }
+            }
+
+            // Match methods by name and number of params
+            for (Entry<Match, List<MethodInfo>> entry : matches.entrySet()) {
+                Match match = entry.getKey();
+
+                // The set of matching methods is made up of the methods matching the name and number of params + varargs methods matching the name and minimal number of params
+                // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param 
+                Set<MethodInfo> methodMatches = new HashSet<>(entry.getValue());
+                varargsMatches.entrySet().stream()
+                        .filter(e -> e.getKey().name.equals(match.name) && e.getKey().paramsCount >= match.paramsCount)
+                        .forEach(e -> methodMatches.addAll(e.getValue()));
+
+                if (methodMatches.size() == 1) {
+                    // Single method matches the name and number of params
+                    matchMethod(methodMatches.iterator().next(), clazz, resolve, base, name, params, paramsCount, evalContext);
+                } else {
+                    // Multiple methods match the name and number of params
+                    matchMethods(match.name, match.paramsCount, methodMatches, clazz, resolve, base, name,
+                            params, paramsCount, evalContext);
+                }
+            }
+
+            // For varargs methods we also need to match name and any number of params
+            Map<String, List<MethodInfo>> varargsMap = new HashMap<>();
+            for (Entry<Match, List<MethodInfo>> entry : varargsMatches.entrySet()) {
+                List<MethodInfo> list = varargsMap.get(entry.getKey().name);
+                if (list == null) {
+                    list = new ArrayList<>();
+                    varargsMap.put(entry.getKey().name, list);
+                }
+                list.addAll(entry.getValue());
+            }
+            for (Entry<String, List<MethodInfo>> entry : varargsMap.entrySet()) {
+                matchMethods(entry.getKey(), Integer.MIN_VALUE, entry.getValue(), clazz, resolve, base, name, params,
+                        paramsCount, evalContext);
+            }
+        }
+        resolve.returnValue(resolve.invokeStaticMethod(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
+
+        return true;
     }
 
     private void matchMethod(MethodInfo method, ClassInfo clazz, MethodCreator resolve, ResultHandle base, ResultHandle name,
@@ -457,12 +639,22 @@ public class ValueResolverGenerator {
         exception.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
                 exception.getCaughtException());
 
-        if (Modifier.isInterface(clazz.flags())) {
-            tryCatch.assign(invokeRet,
-                    tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, paramsHandle));
+        if (Modifier.isStatic(method.flags())) {
+            if (Modifier.isInterface(clazz.flags())) {
+                tryCatch.assign(invokeRet,
+                        tryCatch.invokeStaticInterfaceMethod(MethodDescriptor.of(method), paramsHandle));
+            } else {
+                tryCatch.assign(invokeRet,
+                        tryCatch.invokeStaticMethod(MethodDescriptor.of(method), paramsHandle));
+            }
         } else {
-            tryCatch.assign(invokeRet,
-                    tryCatch.invokeVirtualMethod(MethodDescriptor.of(method), whenBase, paramsHandle));
+            if (Modifier.isInterface(clazz.flags())) {
+                tryCatch.assign(invokeRet,
+                        tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, paramsHandle));
+            } else {
+                tryCatch.assign(invokeRet,
+                        tryCatch.invokeVirtualMethod(MethodDescriptor.of(method), whenBase, paramsHandle));
+            }
         }
 
         if (hasCompletionStage) {
@@ -595,12 +787,22 @@ public class ValueResolverGenerator {
                     realParamsHandle[parameterTypes.size() - 1] = varargsResults;
                 }
 
-                if (Modifier.isInterface(clazz.flags())) {
-                    tryCatch.assign(invokeRet,
-                            tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, realParamsHandle));
+                if (Modifier.isStatic(method.flags())) {
+                    if (Modifier.isInterface(clazz.flags())) {
+                        tryCatch.assign(invokeRet,
+                                tryCatch.invokeStaticInterfaceMethod(MethodDescriptor.of(method), realParamsHandle));
+                    } else {
+                        tryCatch.assign(invokeRet,
+                                tryCatch.invokeStaticMethod(MethodDescriptor.of(method), realParamsHandle));
+                    }
                 } else {
-                    tryCatch.assign(invokeRet,
-                            tryCatch.invokeVirtualMethod(MethodDescriptor.of(method), whenBase, realParamsHandle));
+                    if (Modifier.isInterface(clazz.flags())) {
+                        tryCatch.assign(invokeRet,
+                                tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, realParamsHandle));
+                    } else {
+                        tryCatch.assign(invokeRet,
+                                tryCatch.invokeVirtualMethod(MethodDescriptor.of(method), whenBase, realParamsHandle));
+                    }
                 }
 
                 if (hasCompletionStage) {
@@ -675,7 +877,7 @@ public class ValueResolverGenerator {
 
         BytecodeCreator matchScope = bytecodeCreator.createScope();
         // Match name
-        BytecodeCreator notMatched = matchScope.ifNonZero(matchScope.invokeVirtualMethod(Descriptors.EQUALS,
+        BytecodeCreator notMatched = matchScope.ifTrue(matchScope.invokeVirtualMethod(Descriptors.EQUALS,
                 matchScope.load(methodName),
                 name))
                 .falseBranch();
@@ -812,17 +1014,31 @@ public class ValueResolverGenerator {
         return true;
     }
 
+    static boolean staticsFilter(AnnotationTarget target) {
+        switch (target.kind()) {
+            case METHOD:
+                return Modifier.isStatic(target.asMethod().flags());
+            case FIELD:
+                return Modifier.isStatic(target.asField().flags());
+            default:
+                throw new IllegalArgumentException();
+        }
+    }
+
     static boolean defaultFilter(AnnotationTarget target) {
-        // Always ignore constructors, static and non-public members, synthetic and void methods
+        // Always ignore constructors, non-public members, synthetic and void methods
         switch (target.kind()) {
             case METHOD:
                 MethodInfo method = target.asMethod();
-                return Modifier.isPublic(method.flags()) && !Modifier.isStatic(method.flags()) && !isSynthetic(method.flags())
-                        && method.returnType().kind() != org.jboss.jandex.Type.Kind.VOID && !method.name().equals("<init>")
+                return Modifier.isPublic(method.flags())
+                        && !isSynthetic(method.flags())
+                        && method.returnType().kind() != org.jboss.jandex.Type.Kind.VOID
+                        && !method.name().equals("<init>")
                         && !method.name().equals("<clinit>");
             case FIELD:
                 FieldInfo field = target.asField();
-                return Modifier.isPublic(field.flags()) && !Modifier.isStatic(field.flags()) && !isSynthetic(field.flags());
+                return Modifier.isPublic(field.flags())
+                        && !isSynthetic(field.flags());
             default:
                 throw new IllegalArgumentException("Unsupported annotation target");
         }

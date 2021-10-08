@@ -46,6 +46,7 @@ final public class Constants {
 
     public static final String ANNOTATION_TEMPLATE = "io.quarkus.runtime.annotations.Template";
     public static final String ANNOTATION_RECORDER = "io.quarkus.runtime.annotations.Recorder";
+    public static final String ANNOTATION_RECORD = "io.quarkus.deployment.annotations.Record";
 
     public static final String MEMORY_SIZE_TYPE = "io.quarkus.runtime.configuration.MemorySize";
     public static final String ANNOTATION_CONFIG_ITEM = "io.quarkus.runtime.annotations.ConfigItem";

@@ -6,6 +6,10 @@
 [![Project Chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg?style=for-the-badge&logo=zulip)](https://quarkusio.zulipchat.com/)
 [![Supported JVM Versions](https://img.shields.io/badge/JVM-11--17-brightgreen.svg?style=for-the-badge&logo=Java)](https://github.com/quarkusio/quarkus/actions/runs/113853915/)
 
+<a href="https://foojay.io/today/works-with-openjdk"><img align="left" src="https://github.com/foojayio/badges/raw/main/works_with_openjdk/Works-with-OpenJDK.png" width="100"></a>
+<br><br><br>
+----
+
 # Quarkus - Supersonic Subatomic Java
 
 Quarkus is a Cloud Native, (Linux) Container First framework for writing Java applications.

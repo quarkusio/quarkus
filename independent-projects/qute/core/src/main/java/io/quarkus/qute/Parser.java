@@ -492,7 +492,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
         return parserError(message, origin(0));
     }
 
-    private static TemplateException parserError(String message, Origin origin) {
+    static TemplateException parserError(String message, Origin origin) {
         StringBuilder builder = new StringBuilder("Parser error");
         if (!origin.getTemplateId().equals(origin.getTemplateGeneratedId())) {
             builder.append(" in template [").append(origin.getTemplateId()).append("]");
@@ -740,7 +740,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
         Part first = null;
         Iterator<String> strPartsIterator = strParts.iterator();
         while (strPartsIterator.hasNext()) {
-            Part part = createPart(idGenerator, namespace, first, strPartsIterator, scope, origin);
+            Part part = createPart(idGenerator, namespace, first, strPartsIterator, scope, origin, value);
             if (!isValidIdentifier(part.getName())) {
                 throw parserError("invalid identifier found {" + value + "}", origin);
             }
@@ -753,12 +753,11 @@ class Parser implements Function<String, Expression>, ParserHelper {
     }
 
     private static Part createPart(Supplier<Integer> idGenerator, String namespace, Part first,
-            Iterator<String> strPartsIterator, Scope scope,
-            Origin origin) {
+            Iterator<String> strPartsIterator, Scope scope, Origin origin, String exprValue) {
         String value = strPartsIterator.next();
         if (Expressions.isVirtualMethod(value)) {
             String name = Expressions.parseVirtualMethodName(value);
-            List<String> strParams = new ArrayList<>(Expressions.parseVirtualMethodParams(value));
+            List<String> strParams = new ArrayList<>(Expressions.parseVirtualMethodParams(value, origin, exprValue));
             List<Expression> params = new ArrayList<>(strParams.size());
             for (String strParam : strParams) {
                 params.add(parseExpression(idGenerator, strParam.trim(), scope, origin));
@@ -769,7 +768,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
         }
         // Try to parse the literal for bracket notation
         if (Expressions.isBracketNotation(value)) {
-            value = Expressions.parseBracketContent(value);
+            value = Expressions.parseBracketContent(value, origin, exprValue);
             Object literal = LiteralSupport.getLiteralValue(value);
             if (literal != null && !Results.isNotFound(literal)) {
                 value = literal.toString();

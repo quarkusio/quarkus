@@ -300,7 +300,6 @@ public class RestClientCDIDelegateBuilder<T> {
                 clientConfigByConfigKey().uri);
 
         if (propertyOptional.isEmpty()) {
-            // mstodo is the url there string?
             propertyOptional = oneOf(clientConfigByClassName().url,
                     clientConfigByConfigKey().url);
         }

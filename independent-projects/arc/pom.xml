@@ -38,7 +38,7 @@
         <!-- Versions -->
         <version.cdi>2.0.2</version.cdi>
         <version.jta>1.3.3</version.jta>
-        <version.jandex>2.4.0.Final</version.jandex>
+        <version.jandex>2.4.1.Final</version.jandex>
         <version.junit5>5.8.1</version.junit5>
         <version.maven>3.8.1</version.maven>
         <version.assertj>3.20.2</version.assertj>

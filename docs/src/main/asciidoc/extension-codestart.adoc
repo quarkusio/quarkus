@@ -95,6 +95,16 @@ The codestart should not include any business logic, instead, it should contain 
 
 You can also use it for dev using the `buildAllProjectsForLocalUse` (Disabled by default because it's already covered by `QuarkusCodestartBuildIT`).
 
+If you want to try using the CLI or Maven plugin for generating a project with your codestart:
+
+- After adding the codestart and updating the relevant extension's metadata yml file (and building both modules), you also have to rebuild the `devtools/bom-descriptor-json` module to include the codestart in the platform descriptor.
+
+- If using the CLI, you'll probably need to add `-P=io.quarkus:quarkus-bom:999-SNAPSHOT` to the CLI's arguments to use your snapshot of the platform
+
+- Example CLI command: `quarkus create app -x smallrye-health --code --java -P=io.quarkus:quarkus-bom:999-SNAPSHOT`
+
+- Equivalent for the Maven plugin: `mvn io.quarkus:quarkus-maven-plugin:2.3.0.Final:create -Dextensions=smallrye-health -DplatformVersion=999-SNAPSHOT`
+
 == Writing an Extension Codestart in the Quarkiverse or standalone
 
 For extensions hosted outside of the Quarkus core[https://github.com/quarkusio/quarkus] repository, codestarts will typically be located in the runtime module (with special instruction in the `pom.xml` to generate a separate codestart artifact). https://github.com/ia3andy/aloha-code/[Here, window="_blank"] is an example extension with a codestart & its tests

@@ -291,28 +291,28 @@ public class BeanDeployment {
     private void initBeanByTypeMap() {
         Map<DotName, List<BeanInfo>> map = new HashMap<>();
         for (BeanInfo bean : beans) {
-            for (Type beanType : bean.types) {
-                if (DotNames.OBJECT.equals(beanType.name())) {
+            bean.types.stream().map(Type::name).distinct().forEach(rawTypeName -> {
+                if (DotNames.OBJECT.equals(rawTypeName)) {
                     // Every bean has java.lang.Object - no need to cache results here
-                    continue;
+                    return;
                 }
-                List<BeanInfo> beans = map.get(beanType.name());
+                List<BeanInfo> beans = map.get(rawTypeName);
                 if (beans == null) {
                     // Very often, there will be exactly one bean for a given type
-                    map.put(beanType.name(), List.of(bean));
+                    map.put(rawTypeName, List.of(bean));
                 } else {
                     if (beans.size() == 1) {
-                        map.put(beanType.name(), List.of(beans.get(0), bean));
+                        map.put(rawTypeName, List.of(beans.get(0), bean));
                     } else {
                         BeanInfo[] array = new BeanInfo[beans.size() + 1];
                         for (int i = 0; i < beans.size(); i++) {
                             array[i] = beans.get(i);
                         }
                         array[beans.size()] = bean;
-                        map.put(beanType.name(), List.of(array));
+                        map.put(rawTypeName, List.of(array));
                     }
                 }
-            }
+            });
         }
         this.beansByType = map;
     }

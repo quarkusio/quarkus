@@ -54,7 +54,7 @@
         <maven-model-helper.version>18</maven-model-helper.version>
         <commons-io.version>2.11.0</commons-io.version>
         <smallrye-common.version>1.6.0</smallrye-common.version>
-        <jandex-maven-plugin.version>1.2.0</jandex-maven-plugin.version>
+        <jandex-maven-plugin.version>1.2.1</jandex-maven-plugin.version>
     </properties>
     <modules>
         <module>artifact-api</module>

@@ -14,6 +14,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 
@@ -75,9 +76,11 @@ public class MultipartResource {
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
     @Blocking
-    public String sendByteArray() {
+    public String sendByteArray(@QueryParam("nullFile") @DefaultValue("false") boolean nullFile) {
         WithByteArrayAsBinaryFile data = new WithByteArrayAsBinaryFile();
-        data.file = HELLO_WORLD.getBytes(UTF_8);
+        if (!nullFile) {
+            data.file = HELLO_WORLD.getBytes(UTF_8);
+        }
         data.fileName = GREETING_TXT;
         return client.sendByteArrayAsBinaryFile(data);
     }
@@ -87,9 +90,11 @@ public class MultipartResource {
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
     @Blocking
-    public String sendBuffer() {
+    public String sendBuffer(@QueryParam("nullFile") @DefaultValue("false") boolean nullFile) {
         WithBufferAsBinaryFile data = new WithBufferAsBinaryFile();
-        data.file = Buffer.buffer(HELLO_WORLD);
+        if (!nullFile) {
+            data.file = Buffer.buffer(HELLO_WORLD);
+        }
         data.fileName = GREETING_TXT;
         return client.sendBufferAsBinaryFile(data);
     }
@@ -99,16 +104,19 @@ public class MultipartResource {
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
     @Blocking
-    public String sendFileAsBinary() throws IOException {
-        File tempFile = File.createTempFile("quarkus-test", ".bin");
-        tempFile.deleteOnExit();
-
-        try (FileOutputStream fileOutputStream = new FileOutputStream(tempFile)) {
-            fileOutputStream.write(HELLO_WORLD.getBytes());
-        }
-
+    public String sendFileAsBinary(@QueryParam("nullFile") @DefaultValue("false") boolean nullFile) throws IOException {
         WithFileAsBinaryFile data = new WithFileAsBinaryFile();
-        data.file = tempFile;
+
+        if (!nullFile) {
+            File tempFile = File.createTempFile("quarkus-test", ".bin");
+            tempFile.deleteOnExit();
+
+            try (FileOutputStream fileOutputStream = new FileOutputStream(tempFile)) {
+                fileOutputStream.write(HELLO_WORLD.getBytes());
+            }
+
+            data.file = tempFile;
+        }
         data.fileName = GREETING_TXT;
         return client.sendFileAsBinaryFile(data);
     }
@@ -118,16 +126,19 @@ public class MultipartResource {
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
     @Blocking
-    public String sendPathAsBinary() throws IOException {
-        File tempFile = File.createTempFile("quarkus-test", ".bin");
-        tempFile.deleteOnExit();
-
-        try (FileOutputStream fileOutputStream = new FileOutputStream(tempFile)) {
-            fileOutputStream.write(HELLO_WORLD.getBytes());
-        }
-
+    public String sendPathAsBinary(@QueryParam("nullFile") @DefaultValue("false") boolean nullFile) throws IOException {
         WithPathAsBinaryFile data = new WithPathAsBinaryFile();
-        data.file = tempFile.toPath();
+
+        if (!nullFile) {
+            File tempFile = File.createTempFile("quarkus-test", ".bin");
+            tempFile.deleteOnExit();
+
+            try (FileOutputStream fileOutputStream = new FileOutputStream(tempFile)) {
+                fileOutputStream.write(HELLO_WORLD.getBytes());
+            }
+
+            data.file = tempFile.toPath();
+        }
         data.fileName = GREETING_TXT;
         return client.sendPathAsBinaryFile(data);
     }
@@ -198,7 +209,8 @@ public class MultipartResource {
     @Path("/echo/binary")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public String consumeMultipart(@MultipartForm MultipartBodyWithBinaryFile body) {
-        return String.format("fileOk:%s,nameOk:%s", containsHelloWorld(body.file), GREETING_TXT.equals(body.fileName));
+        return String.format("fileOk:%s,nameOk:%s", body.file == null ? "null" : containsHelloWorld(body.file),
+                GREETING_TXT.equals(body.fileName));
     }
 
     @POST

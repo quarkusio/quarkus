@@ -41,7 +41,6 @@ import javax.persistence.ValidationMode;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 import javax.transaction.TransactionManager;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
@@ -130,6 +129,7 @@ import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
 import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.panache.common.deployment.HibernateModelClassCandidatesForFieldAccessBuildItem;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
@@ -196,10 +196,9 @@ public final class HibernateOrmProcessor {
             dsName = "quarkus.datasource." + config.defaultPersistenceUnit.datasource.get() + ".username";
         }
 
-        if (ConfigProvider.getConfig().getOptionalValue(dsName, String.class).isEmpty()) {
+        if (!ConfigUtils.isPropertyPresent(dsName)) {
             if (devServicesResult.getConfig().containsKey(dsName)) {
-                if (ConfigProvider.getConfig().getOptionalValue("quarkus.hibernate-orm.database.generation", String.class)
-                        .isEmpty()) {
+                if (!ConfigUtils.isPropertyPresent("quarkus.hibernate-orm.database.generation")) {
                     LOG.info(
                             "Setting quarkus.hibernate-orm.database.generation=drop-and-create to initialize Dev Services managed database");
                     runTimeConfigurationDefaultBuildItemBuildProducer.produce(new RunTimeConfigurationDefaultBuildItem(
@@ -215,10 +214,10 @@ public final class HibernateOrmProcessor {
             } else {
                 dsName = "quarkus.datasource." + entry.getValue().datasource.get() + ".username";
             }
-            if (ConfigProvider.getConfig().getOptionalValue(dsName, String.class).isEmpty()) {
+            if (!ConfigUtils.isPropertyPresent(dsName)) {
                 if (devServicesResult.getConfig().containsKey(dsName)) {
                     String propertyName = "quarkus.hibernate-orm." + entry.getKey() + ".database.generation";
-                    if (ConfigProvider.getConfig().getOptionalValue(propertyName, String.class).isEmpty()) {
+                    if (!ConfigUtils.isPropertyPresent(propertyName)) {
                         LOG.info("Setting " + propertyName + "=drop-and-create to initialize Dev Services managed database");
                         runTimeConfigurationDefaultBuildItemBuildProducer
                                 .produce(new RunTimeConfigurationDefaultBuildItem(propertyName, "drop-and-create"));

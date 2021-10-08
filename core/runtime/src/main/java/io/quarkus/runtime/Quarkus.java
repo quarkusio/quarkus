@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.function.BiConsumer;
 
 import org.jboss.logging.Logger;
-import org.jboss.logmanager.LogManager;
 
 import io.quarkus.launcher.QuarkusLauncher;
 
@@ -57,7 +56,9 @@ public class Quarkus {
     public static void run(Class<? extends QuarkusApplication> quarkusApplication, BiConsumer<Integer, Throwable> exitHandler,
             String... args) {
         try {
-            System.setProperty("java.util.logging.manager", LogManager.class.getName());
+            System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
+            System.setProperty("java.util.concurrent.ForkJoinPool.common.threadFactory",
+                    "io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThreadFactory");
             //production and common dev mode path
             //we already have an application, run it directly
             Class<? extends Application> appClass = (Class<? extends Application>) Class.forName(Application.APP_CLASS_NAME,

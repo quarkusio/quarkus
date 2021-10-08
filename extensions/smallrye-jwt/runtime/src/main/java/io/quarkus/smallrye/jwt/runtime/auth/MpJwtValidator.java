@@ -28,14 +28,17 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
     private static final Logger log = Logger.getLogger(MpJwtValidator.class);
 
     final JWTParser parser;
+    final boolean blockingAuthentication;
 
     public MpJwtValidator() {
         this.parser = null;
+        this.blockingAuthentication = false;
     }
 
     @Inject
-    public MpJwtValidator(JWTParser parser) {
+    public MpJwtValidator(JWTParser parser, SmallRyeJwtConfig config) {
         this.parser = parser;
+        this.blockingAuthentication = config == null ? false : config.blockingAuthentication;
     }
 
     @Override
@@ -46,22 +49,33 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
     @Override
     public Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             AuthenticationRequestContext context) {
-        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
-            @Override
-            public void accept(UniEmitter<? super SecurityIdentity> uniEmitter) {
-                try {
-                    JsonWebToken jwtPrincipal = parser.parse(request.getToken().getToken());
-                    uniEmitter.complete(QuarkusSecurityIdentity.builder().setPrincipal(jwtPrincipal)
-                            .addCredential(request.getToken())
-                            .addRoles(jwtPrincipal.getGroups())
-                            .addAttribute(SecurityIdentity.USER_ATTRIBUTE, jwtPrincipal).build());
-
-                } catch (ParseException e) {
-                    log.debug("Authentication failed", e);
-                    uniEmitter.fail(new AuthenticationFailedException(e));
+        if (!blockingAuthentication) {
+            return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
+                @Override
+                public void accept(UniEmitter<? super SecurityIdentity> uniEmitter) {
+                    try {
+                        uniEmitter.complete(createSecurityIdentity(request));
+                    } catch (AuthenticationFailedException e) {
+                        uniEmitter.fail(e);
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            return context.runBlocking(() -> createSecurityIdentity(request));
+        }
 
+    }
+
+    private SecurityIdentity createSecurityIdentity(TokenAuthenticationRequest request) {
+        try {
+            JsonWebToken jwtPrincipal = parser.parse(request.getToken().getToken());
+            return QuarkusSecurityIdentity.builder().setPrincipal(jwtPrincipal)
+                    .addCredential(request.getToken())
+                    .addRoles(jwtPrincipal.getGroups())
+                    .addAttribute(SecurityIdentity.USER_ATTRIBUTE, jwtPrincipal).build();
+        } catch (ParseException e) {
+            log.debug("Authentication failed", e);
+            throw new AuthenticationFailedException(e);
+        }
     }
 }

@@ -1569,11 +1569,42 @@ class Item {
 
 [source,html]
 ----
-{#each items} <1>
+{#each items}
   {it.price.setScale(2, rounding)} <1>
 {/each}
 ----
 <1> The generated value resolver knows how to invoke the `BigDecimal.setScale()` method.
+
+==== Accessing Static Fields and Methods
+
+If `@TemplateData#namespace()` is set to a non-empty value then a namespace resolver is automatically generated to access static fields and methods of the target class.
+By default, the namespace is the FQCN of the target class where dots and dollar signs are replaced by underscores.
+For example, the namespace for a class with name `org.acme.Foo` is `org_acme_Foo`.
+The static field `Foo.AGE` can be accessed via `{org_acme_Foo:AGE}`.
+The static method `Foo.computeValue(int number)` can be accessed via `{org_acme_Foo:computeValue(10)}`.
+ 
+NOTE: A namespace can only consist of alphanumeric characters and underscores.
+
+.Enum Annotated With `@TemplateData`
+[source,java]
+----
+package model;
+
+@TemplateData <1>
+public enum Status {
+    ON,
+    OFF
+}
+----
+<1> A name resolver with the namespace `model_Status` is generated automatically.
+
+.Template Accessing Enum Constants
+[source,html]
+----
+{#if machine.status == model_Status:ON}
+  The machine is ON!
+{/if}
+----
 
 [[native_executables]]
 === Native Executables

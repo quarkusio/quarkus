@@ -914,6 +914,9 @@ public class QuteProcessor {
                     idx = name.lastIndexOf(ExtensionMethodGenerator.SUFFIX);
                 }
                 if (idx == -1) {
+                    idx = name.lastIndexOf(ValueResolverGenerator.NAMESPACE_SUFFIX);
+                }
+                if (idx == -1) {
                     idx = name.lastIndexOf(ValueResolverGenerator.SUFFIX);
                 }
                 String className = name.substring(0, idx);

@@ -240,9 +240,9 @@ and `javac`:
 [source,xml]
 ----
 <plugin>
-  <groupId>io.quarkus</groupId>
+  <groupId>${quarkus.platform.group-id}</groupId>
   <artifactId>quarkus-maven-plugin</artifactId>
-  <version>${quarkus-plugin.version}</version>
+  <version>${quarkus.platform.version}</version>
 
   <configuration>
     <source>${maven.compiler.source}</source>
@@ -425,7 +425,7 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 <dependencyManagement>
     <dependencies>
         <dependency> <1>
-            <groupId>io.quarkus.platform</groupId>
+            <groupId>${quarkus.platform.group-id}</groupId>
             <artifactId>quarkus-bom</artifactId>
             <version>${quarkus.platform.version}</version>
             <type>pom</type>
@@ -437,7 +437,7 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 <build>
     <plugins>
         <plugin> <2>
-            <groupId>io.quarkus.platform</groupId>
+            <groupId>${quarkus.platform.group-id}</groupId>
             <artifactId>quarkus-maven-plugin</artifactId>
             <version>${quarkus.platform.version}</version>
             <extensions>true</extensions> <3>
@@ -589,9 +589,9 @@ In order of precedence (greater precedence first):
     <plugins>
       ...
       <plugin>
-        <groupId>io.quarkus</groupId>
+        <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
-        <version>${quarkus-plugin.version}</version>
+        <version>${quarkus.platform.version}</version>
         <extensions>true</extensions>
         <configuration>
           <systemProperties>
@@ -618,9 +618,9 @@ In order of precedence (greater precedence first):
     <plugins>
       ...
       <plugin>
-        <groupId>io.quarkus</groupId>
+        <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
-        <version>${quarkus-plugin.version}</version>
+        <version>${quarkus.platform.version}</version>
         <extensions>true</extensions>
         <configuration>
           <properties>
@@ -662,7 +662,7 @@ A typical example is when you want to build your application with different conf
 
 In that case, it is possible to add as many executions as needed to the Quarkus Maven plugin configuration.
 
-Below is an example of a Quarkus Maven plugin configuration that will produce two builds of the same application: one  using the `prod-oracle` profile and the other one using the `prod-postgresql` profile.
+Below is an example of a Quarkus Maven plugin configuration that will produce two builds of the same application: one using the `prod-oracle` profile and the other one using the `prod-postgresql` profile.
 
 [source,xml]
 ----
@@ -673,9 +673,9 @@ Below is an example of a Quarkus Maven plugin configuration that will produce tw
     <plugins>
       ...
       <plugin>
-        <groupId>io.quarkus</groupId>
+        <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
-        <version>${quarkus-plugin.version}</version>
+        <version>${quarkus.platform.version}</version>
         <extensions>true</extensions>
         <executions>
           <execution>
@@ -738,9 +738,9 @@ To isolate profile-specific dependencies from other profiles, the JDBC drivers c
     <plugins>
       ...
       <plugin>
-        <groupId>io.quarkus</groupId>
+        <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
-        <version>${quarkus-plugin.version}</version>
+        <version>${quarkus.platform.version}</version>
         <extensions>true</extensions>
         <executions>
           ...

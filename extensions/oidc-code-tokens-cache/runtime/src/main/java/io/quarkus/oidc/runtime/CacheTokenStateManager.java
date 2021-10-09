@@ -2,6 +2,7 @@ package io.quarkus.oidc.runtime;
 
 import javax.enterprise.context.ApplicationScoped;
 
+import io.quarkus.arc.AlternativePriority;
 import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheResult;
@@ -15,6 +16,7 @@ import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
+@AlternativePriority(1)
 public class CacheTokenStateManager implements TokenStateManager {
 
     private static final String SESSION_AT_COOKIE_NAME = CodeAuthenticationMechanism.SESSION_COOKIE_NAME + "_at";

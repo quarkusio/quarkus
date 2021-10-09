@@ -234,7 +234,7 @@ jobs:
     needs: [build-jdk11, calculate-test-jobs]
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.run_jvm == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
-    timeout-minutes: 270
+    timeout-minutes: 300
     env:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
     strategy:

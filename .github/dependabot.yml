@@ -6,7 +6,7 @@ updates:
       interval: daily
       time: "23:00"
       timezone: Europe/Paris
-    open-pull-requests-limit: 4
+    open-pull-requests-limit: 6
     labels:
       - area/dependencies
     allow:

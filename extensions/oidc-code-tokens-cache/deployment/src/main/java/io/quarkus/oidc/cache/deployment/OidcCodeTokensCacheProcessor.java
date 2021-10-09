@@ -6,7 +6,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.oidc.runtime.CacheTokenStateManager;
 
-class OidcCacheProcessor {
+class OidcCodeTokensCacheProcessor {
 
     private static final String FEATURE = "oidc-code-tokens-cache";
 
@@ -15,6 +15,7 @@ class OidcCacheProcessor {
         return new FeatureBuildItem(FEATURE);
     }
 
+    @BuildStep
     AdditionalBeanBuildItem cacheTokenStateManager(Capabilities capabilities) {
 
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();

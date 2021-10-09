@@ -126,7 +126,7 @@
         <rest-assured.version>4.4.0</rest-assured.version>
         <junit.jupiter.version>5.8.1</junit.jupiter.version>
         <testng.version>6.14.2</testng.version>
-        <assertj.version>3.20.2</assertj.version>
+        <assertj.version>3.21.0</assertj.version>
         <infinispan.version>12.1.7.Final</infinispan.version>
         <infinispan.protostream.version>4.4.1.Final</infinispan.protostream.version>
         <caffeine.version>2.9.2</caffeine.version>

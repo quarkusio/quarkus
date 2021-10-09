@@ -14,7 +14,6 @@
     <name>Quarkus - Integration Tests</name>
 
     <packaging>pom</packaging>
-
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
         <gpg.skip>true</gpg.skip>
@@ -280,7 +279,6 @@
                 <module>logging-min-level-unset</module>
                 <module>logging-min-level-set</module>
                 <module>logging-panache</module>
-                <module>redis-devservices</module>
 
                 <!-- gRPC tests -->
                 <module>grpc-tls</module>
@@ -295,6 +293,10 @@
                 <module>grpc-hibernate-reactive</module>
                 <module>google-cloud-functions-http</module>
                 <module>google-cloud-functions</module>
+
+                <!-- DevServices tests -->
+                <module>devservices-postgresql</module>
+                <module>devservices-redis</module>
             </modules>
         </profile>
 

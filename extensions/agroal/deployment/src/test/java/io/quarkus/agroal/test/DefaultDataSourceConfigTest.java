@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.SQLException;
@@ -60,6 +61,7 @@ public class DefaultDataSourceConfigTest {
                 agroalConnectionFactoryConfiguration.jdbcTransactionIsolation());
         assertTrue(agroalConnectionFactoryConfiguration.trackJdbcResources());
         assertTrue(dataSource.getConfiguration().metricsEnabled());
+        assertFalse(configuration.flushOnClose());
         assertEquals(newConnectionSql, agroalConnectionFactoryConfiguration.initialSql());
         assertThat(agroalConnectionFactoryConfiguration.jdbcProperties())
                 .contains(

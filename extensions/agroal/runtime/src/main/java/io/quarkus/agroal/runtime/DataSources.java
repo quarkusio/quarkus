@@ -308,6 +308,7 @@ public class DataSources {
             poolConfiguration.transactionRequirement(dataSourceJdbcRuntimeConfig.transactionRequirement.get());
         }
         poolConfiguration.enhancedLeakReport(dataSourceJdbcRuntimeConfig.extendedLeakReport);
+        poolConfiguration.flushOnClose(dataSourceJdbcRuntimeConfig.flushOnClose);
     }
 
     public DataSourceBuildTimeConfig getDataSourceBuildTimeConfig(String dataSourceName) {

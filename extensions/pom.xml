@@ -66,6 +66,7 @@
         <module>smallrye-reactive-messaging-kafka</module>
         <module>smallrye-reactive-messaging-amqp</module>
         <module>smallrye-reactive-messaging-mqtt</module>
+        <module>smallrye-reactive-messaging-rabbitmq</module>
         <module>smallrye-context-propagation</module>
         <module>reactive-datasource</module>
         <module>reactive-db2-client</module>

@@ -73,6 +73,14 @@ link:mongodb#dev-services[MongoDB Guide].
 
 include::{generated-dir}/config/quarkus-mongodb-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
 
+== RabbitMQ
+
+The RabbitMQ Dev Service will be enabled when the `quarkus-smallrye-reactive-messaging-rabbitmq` extension is present in your application, and
+the broker address has not been explicitly configured. More information can be found at the
+link:rabbitmq-dev-services[RabbitMQ Dev Services Guide].
+
+include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-rabbitmq-config-group-rabbitmq-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+
 == Redis
 
 The Redis Dev Service will be enabled when the `quarkus-redis-client` extension is present in your application, and

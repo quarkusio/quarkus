@@ -3,18 +3,13 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Getting Started to SmallRye Reactive Messaging with AMQP 1.0
+= Getting Started to SmallRye Reactive Messaging with RabbitMQ
 
 include::./attributes.adoc[]
 
-This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with AMQP 1.0.
+This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with RabbitMQ.
 
 include::./status-include.adoc[]
-
-IMPORTANT: If you want to use RabbitMQ, you should use the xref:rabbitmq.adoc[SmallRye Reactive Messaging RabbitMQ extension].
-Alternatively, if want to use RabbitMQ with AMQP 1.0 you need to enable the AMQP 1.0 plugin in the RabbitMQ broker;
-check the https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.9/amqp/amqp.html#amqp-rabbitmq[connecting to RabbitMQ]
-documentation.
 
 == Prerequisites
 
@@ -29,20 +24,19 @@ To complete this guide, you need:
 
 == Architecture
 
-In this guide, we are going to develop two applications communicating with an AMQP broker.
-We will use https://activemq.apache.org/components/artemis/[Artemis], but you can use any AMQP 1.0 broker.
-The first application sends a _quote request_ to an AMQP queue and consumes messages from the _quote_ queue.
+In this guide, we are going to develop two applications communicating with a RabbitMQ broker.
+The first application sends a _quote request_ to the RabbitMQ _quote requests_ exchange and consumes messages from the _quote_ queue.
 The second application receives the _quote request_ and sends a _quote_ back.
 
 image::amqp-qs-architecture.png[alt=Architecture, align=center,width=80%]
 
 The first application, the `producer`, will let the user request some quotes over an HTTP endpoint.
 For each quote request, a random identifier is generated and returned to the user, to put the quote request on _pending_.
-At the same time the generated request id is sent over the `quote-requests` queue.
+At the same time the generated request id is sent to the `quote-requests` exchange.
 
 image::amqp-qs-app-screenshot.png[alt=Producer App UI, align=center]
 
-The second application, the `processor`, in turn, will read from the `quote-requests` queue put a random price to the quote, and send it to a queue named `quotes`.
+The second application, the `processor`, in turn, will read from the `quote-requests` queue put a random price to the quote, and send it to an exchange named `quotes`.
 
 Lastly, the `producer` will read the quotes and send them to the browser using server-sent events.
 The user will therefore see the quote price updated from _pending_ to the received price in real-time.
@@ -54,7 +48,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `amqp-quickstart` {quickstarts-tree-url}/amqp-quickstart[directory].
+The solution is located in the `rabbitmq-quickstart` {quickstarts-tree-url}/rabbitmq-quickstart[directory].
 
 == Creating the Maven Project
 
@@ -66,15 +60,15 @@ To create the _producer_ project, in a terminal run:
 ----
 mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
-    -DprojectArtifactId=amqp-quickstart-producer \
+    -DprojectArtifactId=rabbitmq-quickstart-producer \
     -DnoCode=true \
-    -Dextensions=resteasy-reactive-jackson,smallrye-reactive-messaging-amqp
+    -Dextensions=smallrye-reactive-messaging-rabbitmq,resteasy-reactive-jackson
 ----
 
 This command creates the project structure and select the two Quarkus extensions we will be using:
 
-1. RESTEasy Reactive and it's Jackson support to handle JSON payloads
-2. The Reactive Messaging AMQP connector
+1. The Reactive Messaging RabbitMQ connector
+2. RESTEasy Reactive and it's Jackson support to handle JSON payloads
 
 To create the _processor_ project, from the same directory, run:
 
@@ -82,9 +76,9 @@ To create the _processor_ project, from the same directory, run:
 ----
 mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
-    -DprojectArtifactId=amqp-quickstart-processor \
+    -DprojectArtifactId=rabbitmq-quickstart-processor \
     -DnoCode=true \
-    -Dextensions=smallrye-reactive-messaging-amqp
+    -Dextensions=smallrye-reactive-messaging-rabbitmq
 ----
 
 At that point you should have the following structure:
@@ -92,7 +86,7 @@ At that point you should have the following structure:
 [source, text]
 ----
 .
-├── amqp-quickstart-processor
+├── rabbitmq-quickstart-processor
 │  ├── README.md
 │  ├── mvnw
 │  ├── mvnw.cmd
@@ -103,7 +97,7 @@ At that point you should have the following structure:
 │        ├── java
 │        └── resources
 │           └── application.properties
-└── amqp-quickstart-producer
+└── rabbitmq-quickstart-producer
    ├── README.md
    ├── mvnw
    ├── mvnw.cmd
@@ -122,11 +116,11 @@ Open the two projects in your favorite IDE.
 
 The `Quote` class will be used in both `producer` and `processor` projects.
 For the sake of simplicity we will duplicate the class.
-In both projects, create the `src/main/java/org/acme/amqp/model/Quote.java` file, with the following content:
+In both projects, create the `src/main/java/org/acme/rabbitmq/model/Quote.java` file, with the following content:
 
 [source,java]
 ----
-package org.acme.amqp.model;
+package org.acme.rabbitmq.model;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
@@ -156,10 +150,10 @@ public class Quote {
 }
 ----
 
-JSON representation of `Quote` objects will be used in messages sent to the AMQP queues
+JSON representation of `Quote` objects will be used in messages sent to the RabbitMQ queues
 and also in the server-sent events sent to browser clients.
 
-Quarkus has built-in capabilities to deal with JSON AMQP messages.
+Quarkus has built-in capabilities to deal with JSON RabbitMQ messages.
 
 [NOTE]
 .@RegisterForReflection
@@ -171,11 +165,11 @@ Without, the native compilation would remove the fields and methods during the d
 
 == Sending quote request
 
-Inside the `producer` project locate the generated  `src/main/java/org/acme/amqp/producer/QuotesResource.java` file, and update the content to be:
+Inside the `producer` project locate the generated  `src/main/java/org/acme/rabbitmq/producer/QuotesResource.java` file, and update the content to be:
 
 [source,java]
 ----
-package org.acme.amqp.producer;
+package org.acme.rabbitmq.producer;
 
 import java.util.UUID;
 
@@ -185,7 +179,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.acme.amqp.model.Quote;
+import org.acme.rabbitmq.model.Quote;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 
@@ -197,7 +191,8 @@ public class QuotesResource {
     @Channel("quote-requests") Emitter<String> quoteRequestEmitter; // <1>
 
     /**
-     * Endpoint to generate a new quote request id and send it to "quote-requests" AMQP queue using the emitter.
+     * Endpoint to generate a new quote request id and send it to "quote-requests" channel (which
+     * maps to the "quote-requests" RabbitMQ exchange) using the emitter.
      */
     @POST
     @Path("/request")
@@ -210,42 +205,43 @@ public class QuotesResource {
 }
 ----
 <1> Inject a Reactive Messaging `Emitter` to send messages to the `quote-requests` channel.
-<2> On a post request, generate a random UUID and send it to the AMQP queue using the emitter.
+<2> On a post request, generate a random UUID and send it to the RabbitMQ queue using the emitter.
 
-This channel is mapped to an AMQP queue using the configuration we will add to the `application.properties` file.
+This channel is mapped to a RabbitMQ exchange using the configuration we will add to the `application.properties` file.
 Open the `src/main/resource/application.properties` file and add:
 
 [source, properties]
 ----
-# Configure the outgoing `quote-requests` queue
-mp.messaging.outgoing.quote-requests.connector=smallrye-amqp
+# Configure the outgoing RabbitMQ exchange `quote-requests`
+mp.messaging.outgoing.quote-requests.connector=smallrye-rabbitmq
+mp.messaging.outgoing.quote-requests.exchange.name=quote-requests
 ----
 
-All we need to specify is the `smallrye-amqp` connector.
-By default, reactive messaging maps the channel name `quote-requests` to the AMQP queue name.
+All we need to specify is the `smallrye-rabbitmq` connector.
+By default, reactive messaging maps the channel name `quote-requests` to the same RabbitMQ exchange name.
 
 == Processing quote requests
 
 Now let's consume the quote request and give out a price.
-Inside the `processor` project, locate the `src/main/java/org/acme/amqp/processor/QuoteProcessor.java` file and add the following:
+Inside the `processor` project, locate the `src/main/java/org/acme/rabbitmq/processor/QuoteProcessor.java` file and add the following:
 
 [source, java]
 ----
-package org.acme.amqp.processor;
+package org.acme.rabbitmq.processor;
 
 import java.util.Random;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import org.acme.amqp.model.Quote;
+import org.acme.rabbitmq.model.Quote;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 
 import io.smallrye.reactive.messaging.annotations.Blocking;
 
 /**
- * A bean consuming data from the "request" AMQP queue and giving out a random quote.
- * The result is pushed to the "quotes" AMQP queue.
+ * A bean consuming data from the "quote-requests" RabbitMQ queue and giving out a random quote.
+ * The result is pushed to the "quotes" RabbitMQ exchange.
  */
 @ApplicationScoped
 public class QuoteProcessor {
@@ -256,8 +252,8 @@ public class QuoteProcessor {
     @Outgoing("quotes")         // <2>
     @Blocking                   // <3>
     public Quote process(String quoteRequest) throws InterruptedException {
-        // simulate some hard working task
-        Thread.sleep(200);
+        // simulate some hard-working task
+        Thread.sleep(1000);
         return new Quote(quoteRequest, random.nextInt(100));
     }
 }
@@ -266,19 +262,21 @@ public class QuoteProcessor {
 <2> Indicates that the objects returned by the method are sent to the `quotes` channel
 <3> Indicates that the processing is _blocking_ and cannot be run on the caller thread.
 
-The `process` method is called for every AMQP message from the `quote-requests` queue, and will send a `Quote` object to the `quotes` queue.
+The `process` method is called for every RabbitMQ message from the `quote-requests` queue, and will send a `Quote` object to the `quotes` exchange.
 
 As with the previous example we need to configure the connectors in the `application.properties` file.
 Open the `src/main/resources/application.properties` file and add:
 
 [source, properties]
 ----
-# Configure the incoming AMQP queue `quote-requests`
-mp.messaging.incoming.requests.connector=smallrye-amqp
-mp.messaging.incoming.requests.address=quote-requests
+# Configure the incoming RabbitMQ queue `quote-requests`
+mp.messaging.incoming.requests.connector=smallrye-rabbitmq
+mp.messaging.incoming.requests.queue.name=quote-requests
+mp.messaging.incoming.requests.exchange.name=quote-requests
 
-# Configure the outgoing AMQP queue `quotes`
-mp.messaging.outgoing.quotes.connector=smallrye-amqp
+# Configure the outgoing RabbitMQ exchange `quotes`
+mp.messaging.outgoing.quotes.connector=smallrye-rabbitmq
+mp.messaging.outgoing.quotes.exchange.name=quotes
 ----
 
 Note that in this case we have one incoming and one outgoing connector configuration, each one distinctly named.
@@ -288,8 +286,8 @@ The configuration keys are structured as follows:
 
 The `channel-name` segment must match the value set in the `@Incoming` and `@Outgoing` annotation:
 
-* `quote-requests` -> AMQP queue from which we read the quote requests
-* `quotes` -> AMQP queue in which we write the quotes
+* `quote-requests` -> RabbitMQ queue from which we read the quote requests
+* `quotes` -> RabbitMQ exchange in which we write the quotes
 
 == Receiving quotes
 
@@ -322,10 +320,10 @@ Add the following inside `application.properties` file:
 [source, properties]
 ----
 # Configure the outgoing `quote-requests` queue
-mp.messaging.outgoing.quote-requests.connector=smallrye-amqp
+mp.messaging.outgoing.quote-requests.connector=smallrye-rabbitmq
 
 # Configure the incoming `quotes` queue
-mp.messaging.incoming.quotes.connector=smallrye-amqp
+mp.messaging.incoming.quotes.connector=smallrye-rabbitmq
 ----
 
 == The HTML page
@@ -384,26 +382,26 @@ You just need to run both applications using:
 
 [source,bash]
 ----
-> mvn -f amqp-quickstart-producer quarkus:dev
+> mvn -f rabbitmq-quickstart-producer quarkus:dev
 ----
 
 And, in a separate terminal:
 
 [source, bash]
 ----
-> mvn -f amqp-quickstart-processor quarkus:dev
+> mvn -f rabbitmq-quickstart-processor quarkus:dev
 ----
 
-Quarkus starts a AMQP broker automatically, configures the application and shares the broker instance between different applications.
-See xref:amqp-dev-services.adoc[Dev Services for AMQP] for more details.
+Quarkus starts a RabbitMQ broker automatically, configures the application and shares the broker instance between different applications.
+See xref:rabbitmq-dev-services.adoc[Dev Services for RabbitMQ] for more details.
 
 
 Open `http://localhost:8080/quotes.html` in your browser and request some quotes by clicking the button.
 
 == Running in JVM or Native mode
 
-When not running in dev or test mode, you will need to start your AMQP broker.
-You can follow the instructions from the https://activemq.apache.org/components/artemis/documentation/latest/using-server.html[Apache ActiveMQ Artemis website] or create a `docker-compose.yaml` file with the following content:
+When not running in dev or test mode, you will need to start your RabbitMQ broker.
+You can follow the instructions from the https://hub.docker.com/_/rabbitmq[RabbitMQ Docker website] or create a `docker-compose.yaml` file with the following content:
 
 [source, yaml]
 ----
@@ -411,57 +409,52 @@ version: '2'
 
 services:
 
-  artemis:
-    image: quay.io/artemiscloud/activemq-artemis-broker:0.1.2
+  rabbit:
+    image: rabbitmq:3.9-management
     ports:
-      - "8161:8161"
-      - "61616:61616"
       - "5672:5672"
-    environment:
-      AMQ_USER: quarkus
-      AMQ_PASSWORD: quarkus
     networks:
-      - amqp-quickstart-network
+      - rabbitmq-quickstart-network
 
   producer:
-    image: quarkus-quickstarts/amqp-quickstart-producer:1.0-${QUARKUS_MODE:-jvm}
+    image: quarkus-quickstarts/rabbitmq-quickstart-producer:1.0-${QUARKUS_MODE:-jvm}
     build:
-      context: amqp-quickstart-producer
+      context: rabbitmq-quickstart-producer
       dockerfile: src/main/docker/Dockerfile.${QUARKUS_MODE:-jvm}
     environment:
-      AMQP_HOST: artemis
-      AMQP_PORT: 5672
+      RABBITMQ_HOST: rabbit
+      RABBITMQ_PORT: 5672
     ports:
       - "8080:8080"
     networks:
-      - amqp-quickstart-network
+      - rabbitmq-quickstart-network
 
   processor:
-    image: quarkus-quickstarts/amqp-quickstart-processor:1.0-${QUARKUS_MODE:-jvm}
+    image: quarkus-quickstarts/rabbitmq-quickstart-processor:1.0-${QUARKUS_MODE:-jvm}
     build:
-      context: amqp-quickstart-processor
+      context: rabbitmq-quickstart-processor
       dockerfile: src/main/docker/Dockerfile.${QUARKUS_MODE:-jvm}
     environment:
-      AMQP_HOST: artemis
-      AMQP_PORT: 5672
+      RABBITMQ_HOST: rabbit
+      RABBITMQ_PORT: 5672
     networks:
-      - amqp-quickstart-network
+      - rabbitmq-quickstart-network
 
 networks:
-  amqp-quickstart-network:
-    name: amqp-quickstart
+  rabbitmq-quickstart-network:
+    name: rabbitmq-quickstart
 ----
 
-Note how the AMQP broker location is configured.
-The `amqp.host` and `amqp.port` (`AMQP_HOST` and `AMQP_PORT` environment variables) properties configure location.
+Note how the RabbitMQ broker location is configured.
+The `rabbitmq-host` and `rabbitmq-port` (`AMQP_HOST` and `AMQP_PORT` environment variables) properties configure location.
 
 
 First, make sure you stopped the applications, and build both applications in JVM mode with:
 
 [source, bash]
 ----
-> mvn -f amqp-quickstart-producer clean package
-> mvn -f amqp-quickstart-processor clean package
+> mvn -f rabbitmq-quickstart-producer clean package
+> mvn -f rabbitmq-quickstart-processor clean package
 ----
 
 Once packaged, run `docker compose up --build`.
@@ -471,8 +464,8 @@ To run your applications as native, first we need to build the native executable
 
 [source, bash]
 ----
-> mvn -f amqp-quickstart-producer package -Pnative  -Dquarkus.native.container-build=true
-> mvn -f amqp-quickstart-processor package -Pnative -Dquarkus.native.container-build=true
+> mvn -f rabbitmq-quickstart-producer package -Pnative  -Dquarkus.native.container-build=true
+> mvn -f rabbitmq-quickstart-processor package -Pnative -Dquarkus.native.container-build=true
 ----
 
 The `-Dquarkus.native.container-build=true` instructs Quarkus to build Linux 64bits native executables, who can run inside containers.
@@ -488,10 +481,8 @@ As before, the UI is exposed on http://localhost:8080/quotes.html
 
 == Going further
 
-This guide has shown how you can interact with AMQP 1.0 using Quarkus.
+This guide has shown how you can interact with RabbitMQ using Quarkus.
 It utilizes https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging] to build data streaming applications.
 
-If you did the Kafka quickstart, you have realized that it's the same code.
+If you did the Kafka, you have realized that it's the same code.
 The only difference is the connector configuration and the JSON mapping.
-
-

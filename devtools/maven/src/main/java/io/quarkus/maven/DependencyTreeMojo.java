@@ -1,6 +1,12 @@
 package io.quarkus.maven;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -40,13 +46,61 @@ public class DependencyTreeMojo extends AbstractMojo {
     @Parameter(property = "mode", required = false, defaultValue = "prod")
     String mode;
 
+    /**
+     * If specified, this parameter will cause the dependency tree to be written to the path specified, instead of writing to
+     * the console.
+     */
+    @Parameter(property = "outputFile", required = false)
+    File outputFile;
+
+    /**
+     * Whether to append outputs into the output file or overwrite it.
+     */
+    @Parameter(property = "appendOutput", required = false, defaultValue = "false")
+    boolean appendOutput;
+
     protected MavenArtifactResolver resolver;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
-        String buf = "Quarkus application " + mode.toUpperCase() + " mode build dependency tree:";
-        getLog().info(buf);
+        BufferedWriter writer = null;
+        final Consumer<String> log;
+        if (outputFile == null) {
+            log = s -> getLog().info(s);
+        } else {
+            final BufferedWriter bw;
+            try {
+                Files.createDirectories(outputFile.toPath().getParent());
+                bw = writer = Files.newBufferedWriter(outputFile.toPath(),
+                        appendOutput && outputFile.exists() ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
+            } catch (IOException e) {
+                throw new MojoExecutionException("Failed to initialize file output writer", e);
+            }
+            log = s -> {
+                try {
+                    bw.write(s);
+                    bw.newLine();
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to log the dependency tree to a file", e);
+                }
+            };
+        }
+        try {
+            logTree(log);
+        } finally {
+            if (writer != null) {
+                try {
+                    writer.close();
+                } catch (IOException e) {
+                    getLog().debug("Failed to close the output file", e);
+                }
+            }
+        }
+    }
+
+    private void logTree(final Consumer<String> log) throws MojoExecutionException {
+        log.accept("Quarkus application " + mode.toUpperCase() + " mode build dependency tree:");
 
         final GACTV appArtifact = new GACTV(project.getGroupId(), project.getArtifactId(), null, "pom", project.getVersion());
         final BootstrapAppModelResolver modelResolver;
@@ -64,7 +118,7 @@ public class DependencyTreeMojo extends AbstractMojo {
                             "Parameter 'mode' was set to '" + mode + "' while expected one of 'dev', 'test' or 'prod'");
                 }
             }
-            modelResolver.setBuildTreeLogger(s -> getLog().info(s));
+            modelResolver.setBuildTreeLogger(log);
             modelResolver.resolveModel(appArtifact);
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to resolve application model " + appArtifact + " dependencies", e);
@@ -86,5 +140,4 @@ public class DependencyTreeMojo extends AbstractMojo {
                         .build()
                 : resolver;
     }
-
 }

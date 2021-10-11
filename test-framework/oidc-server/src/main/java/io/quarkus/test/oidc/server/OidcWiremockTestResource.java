@@ -62,6 +62,8 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                         "    \"token_introspection_endpoint\": \"" + server.baseUrl()
                                         + "/auth/realms/quarkus/protocol/openid-connect/token/introspect\",\n" +
                                         "    \"authorization_endpoint\": \"" + server.baseUrl() + "/auth/realms/quarkus\"," +
+                                        "    \"userinfo_endpoint\": \"" + server.baseUrl()
+                                        + "/auth/realms/quarkus/protocol/openid-connect/userinfo\"," +
                                         "    \"token_endpoint\": \"" + server.baseUrl() + "/auth/realms/quarkus/token\"," +
                                         "    \"issuer\" : \"" + TOKEN_ISSUER + "\"," +
                                         "    \"introspection_endpoint\": \"" + server.baseUrl()
@@ -85,6 +87,14 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                         "  ]\n" +
                                         "}")));
 
+        server.stubFor(
+                get(urlEqualTo("/auth/realms/quarkus/protocol/openid-connect/userinfo"))
+                        .willReturn(aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "      \"preferred_username\": \"alice\""
+                                        + "}")));
+
         // define the mock for the introspect endpoint
 
         // Valid
@@ -99,7 +109,7 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
 
         // Login Page
         server.stubFor(
-                get(urlPathMatching("/auth/realms/quarkus"))
+                get(urlPathMatching("/auth/realms/quarkus[/]?"))
                         .willReturn(aResponse()
                                 .withHeader("Content-Type", "text/html")
                                 .withBody("<html>\n" +
@@ -179,15 +189,15 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
         return new HashSet<>(Arrays.asList(TOKEN_USER_ROLES.split(",")));
     }
 
-    private String getAccessToken(String userName, Set<String> groups) {
+    public static String getAccessToken(String userName, Set<String> groups) {
         return generateJwtToken(userName, groups);
     }
 
-    private String getIdToken(String userName, Set<String> groups) {
+    public static String getIdToken(String userName, Set<String> groups) {
         return generateJwtToken(userName, groups);
     }
 
-    private String generateJwtToken(String userName, Set<String> groups) {
+    public static String generateJwtToken(String userName, Set<String> groups) {
         return Jwt.preferredUserName(userName)
                 .groups(groups)
                 .issuer(TOKEN_ISSUER)

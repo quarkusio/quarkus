@@ -50,6 +50,7 @@ public class OidcCommonUtils {
 
     static final byte AMP = '&';
     static final byte EQ = '=';
+    static final String HTTP_SCHEME = "http";
 
     private static final Logger LOG = Logger.getLogger(OidcCommonUtils.class);
 
@@ -165,6 +166,9 @@ public class OidcCommonUtils {
 
     public static String getOidcEndpointUrl(String authServerUrl, Optional<String> endpointPath) {
         if (endpointPath.isPresent()) {
+            if (endpointPath.get().startsWith(HTTP_SCHEME)) {
+                return endpointPath.get();
+            }
             return authServerUrl + prependSlash(endpointPath.get());
         } else {
             return null;

@@ -525,6 +525,13 @@ public class OidcTenantConfig extends OidcCommonConfig {
         @ConfigItem(defaultValue = "true")
         public boolean javaScriptAutoRedirect = true;
 
+        /**
+         * Requires that ID token is available when the authorization code flow completes. In most case this property
+         * should be enabled. Disable this property only when you need to use the authorization code flow with OAuth2 providers.
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean idTokenRequired = true;
+
         public boolean isJavaScriptAutoRedirect() {
             return javaScriptAutoRedirect;
         }
@@ -635,6 +642,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setCookiePathHeader(String cookiePathHeader) {
             this.cookiePathHeader = Optional.of(cookiePathHeader);
+        }
+
+        public boolean isIdTokenRequired() {
+            return idTokenRequired;
+        }
+
+        public void setIdTokenRequired(boolean idTokenRequired) {
+            this.idTokenRequired = idTokenRequired;
         }
 
     }

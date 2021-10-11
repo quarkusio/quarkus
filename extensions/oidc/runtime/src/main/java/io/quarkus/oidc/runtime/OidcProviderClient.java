@@ -30,6 +30,11 @@ public class OidcProviderClient implements Closeable {
     private static final Logger LOG = Logger.getLogger(OidcProviderClient.class);
 
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
+    private static final String CONTENT_TYPE_HEADER = String.valueOf(HttpHeaders.CONTENT_TYPE);
+    private static final String ACCEPT_HEADER = String.valueOf(HttpHeaders.ACCEPT);
+    private static final String APPLICATION_X_WWW_FORM_URLENCODED = String
+            .valueOf(HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
+    private static final String APPLICATION_JSON = "application/json";
 
     private final WebClient client;
     private final OidcConfigurationMetadata metadata;
@@ -99,7 +104,8 @@ public class OidcProviderClient implements Closeable {
 
     private UniOnItem<HttpResponse<Buffer>> getHttpResponse(String uri, MultiMap formBody) {
         HttpRequest<Buffer> request = client.postAbs(uri);
-        request.putHeader(HttpHeaders.CONTENT_TYPE.toString(), HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
+        request.putHeader(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
+        request.putHeader(ACCEPT_HEADER, APPLICATION_JSON);
         if (clientSecretBasicAuthScheme != null) {
             request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
         } else if (clientJwtKey != null) {

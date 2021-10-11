@@ -100,7 +100,9 @@ public class ClassTransformingBuildStep {
             if (!i.isCacheable()) {
                 nonCacheable.add(i.getClassToTransform());
             }
-            classReaderOptions.put(i.getClassToTransform(), i.getClassReaderOptions());
+            classReaderOptions.merge(i.getClassToTransform(), i.getClassReaderOptions(),
+                    // class reader options are bit flags (see org.objectweb.asm.ClassReader)
+                    (oldValue, newValue) -> oldValue | newValue);
         }
         QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
         Map<String, Path> transformedToArchive = new ConcurrentHashMap<>();

@@ -5421,6 +5421,11 @@
                         <goals>
                             <goal>flatten-platform-bom</goal>
                         </goals>
+                        <configuration>
+                            <excludeArtifactKeys>
+                                <key>junit:junit</key> <!-- comes from the jackson-bom -->
+                            </excludeArtifactKeys>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

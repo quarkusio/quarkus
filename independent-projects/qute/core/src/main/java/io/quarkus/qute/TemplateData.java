@@ -24,9 +24,15 @@ import java.lang.annotation.Target;
 public @interface TemplateData {
 
     /**
-     * Constant value for {@link #key()} indicating that the annotated element's name should be used as-is.
+     * Constant value for {@link #namespace()} indicating that the fully qualified class name of the target class should be
+     * used. Dots and dollar signs are replaced by underscores.
      */
     String UNDERSCORED_FQCN = "<<undescored fqcn>>";
+
+    /**
+     * Constant value for {@link #namespace()} indicating that the simple name of the target class should be used.
+     */
+    String SIMPLENAME = "<<simplename>>";
 
     /**
      * The class a value resolver should be generated for. By default, the annotated type.

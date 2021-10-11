@@ -88,7 +88,7 @@ final class TypeInfos {
             if (part.isVirtualMethod() || Expressions.isVirtualMethod(typeInfo)) {
                 return new VirtualMethodInfo(typeInfo, part.asVirtualMethod(), hint);
             }
-            return new PropertyInfo(typeInfo, part, hint);
+            return new PropertyInfo(part.getName(), part, hint);
         }
     }
 

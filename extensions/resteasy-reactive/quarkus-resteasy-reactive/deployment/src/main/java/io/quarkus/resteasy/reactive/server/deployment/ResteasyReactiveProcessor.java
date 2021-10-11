@@ -266,7 +266,6 @@ public class ResteasyReactiveProcessor {
         unremoveableBeans.produce(UnremovableBeanBuildItem.beanClassNames(beanParams.toArray(new String[0])));
     }
 
-    @SuppressWarnings("unchecked")
     @BuildStep
     //note useIdentityComparisonForParameters=false
     //resteasy can generate lots of small collections with similar values as part of its metadata gathering
@@ -281,44 +280,23 @@ public class ResteasyReactiveProcessor {
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             ResteasyReactiveRecorder recorder,
-            RecorderContext recorderContext,
-            ShutdownContextBuildItem shutdownContext,
-            HttpBuildTimeConfig vertxConfig,
-            List<DynamicFeatureBuildItem> dynamicFeatures,
-            List<MessageBodyReaderBuildItem> additionalMessageBodyReaders,
-            List<MessageBodyWriterBuildItem> additionalMessageBodyWriters,
-            List<MessageBodyReaderOverrideBuildItem> messageBodyReaderOverrideBuildItems,
-            List<MessageBodyWriterOverrideBuildItem> messageBodyWriterOverrideBuildItems,
-            List<JaxrsFeatureBuildItem> features,
             List<ServerDefaultProducesHandlerBuildItem> serverDefaultProducesHandlers,
-            Optional<RequestContextFactoryBuildItem> requestContextFactoryBuildItem,
             Optional<ClassLevelExceptionMappersBuildItem> classLevelExceptionMappers,
-            BuildProducer<ResteasyReactiveDeploymentInfoBuildItem> quarkusRestDeploymentInfoBuildItemBuildProducer,
-            BuildProducer<ResteasyReactiveDeploymentBuildItem> quarkusRestDeploymentBuildItemBuildProducer,
+            BuildProducer<SetupEndpointsResultBuildItem> setupEndpointsResultProducer,
             BuildProducer<ResteasyReactiveResourceMethodEntriesBuildItem> resourceMethodEntriesBuildItemBuildProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
-            BuildProducer<RouteBuildItem> routes,
             ApplicationResultBuildItem applicationResultBuildItem,
-            ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
-            ExceptionMappersBuildItem exceptionMappersBuildItem,
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
-            ContextResolversBuildItem contextResolversBuildItem,
             List<ApplicationClassPredicateBuildItem> applicationClassPredicateBuildItems,
-            List<MethodScannerBuildItem> methodScanners, ResteasyReactiveServerConfig serverConfig,
-            List<AnnotationsTransformerBuildItem> annotationTransformerBuildItems,
-            LaunchModeBuildItem launchModeBuildItem)
+            List<MethodScannerBuildItem> methodScanners,
+            List<AnnotationsTransformerBuildItem> annotationTransformerBuildItems)
             throws NoSuchMethodException {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
             // no detected @Path, bail out
             return;
         }
-
-        recorderContext.registerNonDefaultConstructor(
-                MediaType.class.getDeclaredConstructor(String.class, String.class, String.class),
-                mediaType -> Stream.of(mediaType.getType(), mediaType.getSubtype(), mediaType.getParameters())
-                        .collect(toList()));
 
         IndexView index = beanArchiveIndexBuildItem.getIndex();
 
@@ -330,7 +308,6 @@ public class ResteasyReactiveProcessor {
 
         ApplicationScanningResult appResult = applicationResultBuildItem.getResult();
         Set<String> singletonClasses = appResult.getSingletonClasses();
-        Application application = appResult.getApplication();
 
         Map<String, String> existingConverters = new HashMap<>();
         List<ResourceClass> resourceClasses = new ArrayList<>();
@@ -340,19 +317,11 @@ public class ResteasyReactiveProcessor {
         Map<String, InjectableBean> injectableBeans = new HashMap<>();
         QuarkusServerEndpointIndexer serverEndpointIndexer;
 
-        ResourceInterceptors interceptors = resourceInterceptorsBuildItem.getResourceInterceptors();
-        ExceptionMapping exceptionMapping = exceptionMappersBuildItem.getExceptionMapping();
-        ContextResolvers contextResolvers = contextResolversBuildItem.getContextResolvers();
         ParamConverterProviders paramConverterProviders = paramConverterProvidersBuildItem.getParamConverterProviders();
         Function<String, BeanFactory<?>> factoryFunction = s -> FactoryUtils.factory(s, singletonClasses, recorder,
                 beanContainerBuildItem);
-        interceptors.initializeDefaultFactories(factoryFunction);
-        exceptionMapping.initializeDefaultFactories(factoryFunction);
-        contextResolvers.initializeDefaultFactories(factoryFunction);
         paramConverterProviders.initializeDefaultFactories(factoryFunction);
         paramConverterProviders.sort();
-        interceptors.sort();
-        interceptors.getContainerRequestFilters().validateThreadModel();
 
         try (ClassCreator c = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true),
                 QUARKUS_INIT_CLASS, null, Object.class.getName(), ResteasyReactiveInitialiser.class.getName());
@@ -519,122 +488,207 @@ public class ResteasyReactiveProcessor {
                 toScan.addAll(index.getKnownDirectSubclasses(classInfo.name()));
             }
 
-            Features feats = new Features();
-            for (JaxrsFeatureBuildItem feature : features) {
-                ResourceFeature resourceFeature = new ResourceFeature();
-                resourceFeature
-                        .setFactory(
-                                FactoryUtils.factory(feature.getClassName(), singletonClasses, recorder,
-                                        beanContainerBuildItem));
-                feats.addFeature(resourceFeature);
-            }
-
-            DynamicFeatures dynamicFeats = new DynamicFeatures();
-            for (DynamicFeatureBuildItem additionalDynamicFeature : dynamicFeatures) {
-                ResourceDynamicFeature resourceFeature = new ResourceDynamicFeature();
-                resourceFeature.setFactory(
-                        recorder.factory(additionalDynamicFeature.getClassName(), beanContainerBuildItem.getValue()));
-                dynamicFeats.addFeature(resourceFeature);
-            }
-
-            ServerSerialisers serialisers = new ServerSerialisers();
-            SerializersUtil.setupSerializers(recorder, reflectiveClass, additionalMessageBodyReaders,
-                    additionalMessageBodyWriters, messageBodyReaderOverrideBuildItems, messageBodyWriterOverrideBuildItems,
-                    beanContainerBuildItem, applicationResultBuildItem, serialisers,
-                    RuntimeType.SERVER);
-            // built-ins
-
-            for (Serialisers.BuiltinWriter builtinWriter : ServerSerialisers.BUILTIN_WRITERS) {
-                registerWriter(recorder, serialisers, builtinWriter.entityClass, builtinWriter.writerClass,
-                        beanContainerBuildItem.getValue(),
-                        builtinWriter.mediaType);
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, builtinWriter.writerClass.getName()));
-            }
-            for (Serialisers.BuiltinReader builtinReader : ServerSerialisers.BUILTIN_READERS) {
-                registerReader(recorder, serialisers, builtinReader.entityClass, builtinReader.readerClass,
-                        beanContainerBuildItem.getValue(),
-                        builtinReader.mediaType, builtinReader.constraint);
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, builtinReader.readerClass.getName()));
-            }
-
-            for (AdditionalReaderWriter.Entry additionalReader : additionalReaders.get()) {
-                Class readerClass = additionalReader.getHandlerClass();
-                registerReader(recorder, serialisers, additionalReader.getEntityClass(), readerClass,
-                        beanContainerBuildItem.getValue(), additionalReader.getMediaType(), additionalReader.getConstraint());
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, readerClass.getName()));
-            }
-
-            for (AdditionalReaderWriter.Entry entry : additionalWriters.get()) {
-                Class writerClass = entry.getHandlerClass();
-                registerWriter(recorder, serialisers, entry.getEntityClass(), writerClass,
-                        beanContainerBuildItem.getValue(), entry.getMediaType());
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, writerClass.getName()));
-            }
-
-            initConverters.returnValue(null);
-            BeanFactory<ResteasyReactiveInitialiser> initClassFactory = recorder.factory(QUARKUS_INIT_CLASS,
-                    beanContainerBuildItem.getValue());
-
-            String applicationPath = determineApplicationPath(index, getAppPath(serverConfig.path));
-            // spec allows the path contain encoded characters
-            if ((applicationPath != null) && applicationPath.contains("%")) {
-                applicationPath = Encode.decodePath(applicationPath);
-            }
-
-            String deploymentPath = sanitizeApplicationPath(applicationPath);
-
-            // Handler used for both the default and non-default deployment path (specified as application path or resteasyConfig.path)
-            // Routes use the order VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1 to ensure the default route is called before the resteasy one
-            Class<? extends Application> applicationClass = application == null ? Application.class : application.getClass();
-            DeploymentInfo deploymentInfo = new DeploymentInfo()
-                    .setInterceptors(interceptors.sort())
-                    .setConfig(createRestReactiveConfig(config))
-                    .setExceptionMapping(exceptionMapping)
-                    .setCtxResolvers(contextResolvers)
-                    .setFeatures(feats)
-                    .setClientProxyUnwrapper(new ClientProxyUnwrapper())
-                    .setApplicationSupplier(recorder.handleApplication(applicationClass, singletonClasses.isEmpty()))
-                    .setFactoryCreator(recorder.factoryCreator(beanContainerBuildItem.getValue()))
-                    .setDynamicFeatures(dynamicFeats)
-                    .setSerialisers(serialisers)
-                    .setApplicationPath(applicationPath)
-                    .setGlobalHandlerCustomers(
-                            new ArrayList<>(Collections.singletonList(new SecurityContextOverrideHandler.Customizer()))) //TODO: should be pluggable
-                    .setResourceClasses(resourceClasses)
-                    .setDevelopmentMode(launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT)
-                    .setLocatableResourceClasses(subResourceClasses)
-                    .setParamConverterProviders(paramConverterProviders);
-            quarkusRestDeploymentInfoBuildItemBuildProducer
-                    .produce(new ResteasyReactiveDeploymentInfoBuildItem(deploymentInfo));
-
-            RuntimeValue<Deployment> deployment = recorder.createDeployment(deploymentInfo,
-                    beanContainerBuildItem.getValue(), shutdownContext, vertxConfig,
-                    requestContextFactoryBuildItem.map(RequestContextFactoryBuildItem::getFactory).orElse(null),
-                    initClassFactory, launchModeBuildItem.getLaunchMode());
-
-            quarkusRestDeploymentBuildItemBuildProducer
-                    .produce(new ResteasyReactiveDeploymentBuildItem(deployment, deploymentPath));
-
+            setupEndpointsResultProducer.produce(new SetupEndpointsResultBuildItem(resourceClasses, subResourceClasses,
+                    additionalReaders, additionalWriters));
             resourceMethodEntriesBuildItemBuildProducer
                     .produce(new ResteasyReactiveResourceMethodEntriesBuildItem(resourceMethodEntries));
 
-            if (!requestContextFactoryBuildItem.isPresent()) {
-                Handler<RoutingContext> handler = recorder.handler(deployment);
+            initConverters.returnValue(null);
+        }
+    }
 
-                // Exact match for resources matched to the root path
-                routes.produce(RouteBuildItem.builder()
-                        .orderedRoute(deploymentPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1).handler(handler).build());
-                String matchPath = deploymentPath;
-                if (matchPath.endsWith("/")) {
-                    matchPath += "*";
-                } else {
-                    matchPath += "/*";
-                }
-                // Match paths that begin with the deployment path
-                routes.produce(
-                        RouteBuildItem.builder().orderedRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1)
-                                .handler(handler).build());
+    @BuildStep
+    @Record(value = ExecutionTime.STATIC_INIT, useIdentityComparisonForParameters = false)
+    public void serverSerializers(ResteasyReactiveRecorder recorder,
+            BeanContainerBuildItem beanContainerBuildItem,
+            ApplicationResultBuildItem applicationResultBuildItem,
+            List<MessageBodyReaderBuildItem> additionalMessageBodyReaders,
+            List<MessageBodyWriterBuildItem> additionalMessageBodyWriters,
+            List<MessageBodyReaderOverrideBuildItem> messageBodyReaderOverrideBuildItems,
+            List<MessageBodyWriterOverrideBuildItem> messageBodyWriterOverrideBuildItems,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ServerSerialisersBuildItem> serverSerializersProducer) {
+
+        ServerSerialisers serialisers = recorder.createServerSerialisers();
+        SerializersUtil.setupSerializers(recorder, reflectiveClass, additionalMessageBodyReaders,
+                additionalMessageBodyWriters, messageBodyReaderOverrideBuildItems, messageBodyWriterOverrideBuildItems,
+                beanContainerBuildItem, applicationResultBuildItem, serialisers,
+                RuntimeType.SERVER);
+
+        // built-ins
+        for (Serialisers.BuiltinWriter builtinWriter : ServerSerialisers.BUILTIN_WRITERS) {
+            registerWriter(recorder, serialisers, builtinWriter.entityClass, builtinWriter.writerClass,
+                    beanContainerBuildItem.getValue(),
+                    builtinWriter.mediaType);
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, builtinWriter.writerClass.getName()));
+        }
+        for (Serialisers.BuiltinReader builtinReader : ServerSerialisers.BUILTIN_READERS) {
+            registerReader(recorder, serialisers, builtinReader.entityClass, builtinReader.readerClass,
+                    beanContainerBuildItem.getValue(),
+                    builtinReader.mediaType, builtinReader.constraint);
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, builtinReader.readerClass.getName()));
+        }
+
+        serverSerializersProducer.produce(new ServerSerialisersBuildItem(serialisers));
+    }
+
+    @SuppressWarnings("unchecked")
+    @BuildStep
+    @Record(value = ExecutionTime.STATIC_INIT, useIdentityComparisonForParameters = false)
+    public void setupDeployment(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            BeanContainerBuildItem beanContainerBuildItem,
+            ResteasyReactiveConfig config,
+            Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+            ResteasyReactiveRecorder recorder,
+            RecorderContext recorderContext,
+            ShutdownContextBuildItem shutdownContext,
+            HttpBuildTimeConfig vertxConfig,
+            SetupEndpointsResultBuildItem setupEndpointsResult,
+            ServerSerialisersBuildItem serverSerialisersBuildItem,
+            List<DynamicFeatureBuildItem> dynamicFeatures,
+            List<JaxrsFeatureBuildItem> features,
+            Optional<RequestContextFactoryBuildItem> requestContextFactoryBuildItem,
+            BuildProducer<ResteasyReactiveDeploymentInfoBuildItem> quarkusRestDeploymentInfoBuildItemBuildProducer,
+            BuildProducer<ResteasyReactiveDeploymentBuildItem> quarkusRestDeploymentBuildItemBuildProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<RouteBuildItem> routes,
+            ApplicationResultBuildItem applicationResultBuildItem,
+            ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
+            ExceptionMappersBuildItem exceptionMappersBuildItem,
+            ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
+            ContextResolversBuildItem contextResolversBuildItem,
+            ResteasyReactiveServerConfig serverConfig,
+            LaunchModeBuildItem launchModeBuildItem)
+            throws NoSuchMethodException {
+
+        if (!resourceScanningResultBuildItem.isPresent()) {
+            // no detected @Path, bail out
+            return;
+        }
+
+        recorderContext.registerNonDefaultConstructor(
+                MediaType.class.getDeclaredConstructor(String.class, String.class, String.class),
+                mediaType -> Stream.of(mediaType.getType(), mediaType.getSubtype(), mediaType.getParameters())
+                        .collect(toList()));
+
+        IndexView index = beanArchiveIndexBuildItem.getIndex();
+
+        ApplicationScanningResult appResult = applicationResultBuildItem.getResult();
+        Set<String> singletonClasses = appResult.getSingletonClasses();
+        Application application = appResult.getApplication();
+
+        List<ResourceClass> resourceClasses = setupEndpointsResult.getResourceClasses();
+        List<ResourceClass> subResourceClasses = setupEndpointsResult.getSubResourceClasses();
+        AdditionalReaders additionalReaders = setupEndpointsResult.getAdditionalReaders();
+        AdditionalWriters additionalWriters = setupEndpointsResult.getAdditionalWriters();
+
+        ResourceInterceptors interceptors = resourceInterceptorsBuildItem.getResourceInterceptors();
+        ExceptionMapping exceptionMapping = exceptionMappersBuildItem.getExceptionMapping();
+        ContextResolvers contextResolvers = contextResolversBuildItem.getContextResolvers();
+        ParamConverterProviders paramConverterProviders = paramConverterProvidersBuildItem.getParamConverterProviders();
+        Function<String, BeanFactory<?>> factoryFunction = s -> FactoryUtils.factory(s, singletonClasses, recorder,
+                beanContainerBuildItem);
+        interceptors.initializeDefaultFactories(factoryFunction);
+        exceptionMapping.initializeDefaultFactories(factoryFunction);
+        contextResolvers.initializeDefaultFactories(factoryFunction);
+        paramConverterProviders.initializeDefaultFactories(factoryFunction);
+        paramConverterProviders.sort();
+        interceptors.sort();
+        interceptors.getContainerRequestFilters().validateThreadModel();
+
+        Features feats = new Features();
+        for (JaxrsFeatureBuildItem feature : features) {
+            ResourceFeature resourceFeature = new ResourceFeature();
+            resourceFeature
+                    .setFactory(
+                            FactoryUtils.factory(feature.getClassName(), singletonClasses, recorder,
+                                    beanContainerBuildItem));
+            feats.addFeature(resourceFeature);
+        }
+
+        DynamicFeatures dynamicFeats = new DynamicFeatures();
+        for (DynamicFeatureBuildItem additionalDynamicFeature : dynamicFeatures) {
+            ResourceDynamicFeature resourceFeature = new ResourceDynamicFeature();
+            resourceFeature.setFactory(
+                    recorder.factory(additionalDynamicFeature.getClassName(), beanContainerBuildItem.getValue()));
+            dynamicFeats.addFeature(resourceFeature);
+        }
+
+        ServerSerialisers serialisers = serverSerialisersBuildItem.getSerialisers();
+
+        for (AdditionalReaderWriter.Entry additionalReader : additionalReaders.get()) {
+            Class readerClass = additionalReader.getHandlerClass();
+            registerReader(recorder, serialisers, additionalReader.getEntityClass(), readerClass,
+                    beanContainerBuildItem.getValue(), additionalReader.getMediaType(), additionalReader.getConstraint());
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, readerClass.getName()));
+        }
+
+        for (AdditionalReaderWriter.Entry entry : additionalWriters.get()) {
+            Class writerClass = entry.getHandlerClass();
+            registerWriter(recorder, serialisers, entry.getEntityClass(), writerClass,
+                    beanContainerBuildItem.getValue(), entry.getMediaType());
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, writerClass.getName()));
+        }
+
+        BeanFactory<ResteasyReactiveInitialiser> initClassFactory = recorder.factory(QUARKUS_INIT_CLASS,
+                beanContainerBuildItem.getValue());
+
+        String applicationPath = determineApplicationPath(index, getAppPath(serverConfig.path));
+        // spec allows the path contain encoded characters
+        if ((applicationPath != null) && applicationPath.contains("%")) {
+            applicationPath = Encode.decodePath(applicationPath);
+        }
+
+        String deploymentPath = sanitizeApplicationPath(applicationPath);
+
+        // Handler used for both the default and non-default deployment path (specified as application path or resteasyConfig.path)
+        // Routes use the order VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1 to ensure the default route is called before the resteasy one
+        Class<? extends Application> applicationClass = application == null ? Application.class : application.getClass();
+        DeploymentInfo deploymentInfo = new DeploymentInfo()
+                .setInterceptors(interceptors.sort())
+                .setConfig(createRestReactiveConfig(config))
+                .setExceptionMapping(exceptionMapping)
+                .setCtxResolvers(contextResolvers)
+                .setFeatures(feats)
+                .setClientProxyUnwrapper(new ClientProxyUnwrapper())
+                .setApplicationSupplier(recorder.handleApplication(applicationClass, singletonClasses.isEmpty()))
+                .setFactoryCreator(recorder.factoryCreator(beanContainerBuildItem.getValue()))
+                .setDynamicFeatures(dynamicFeats)
+                .setSerialisers(serialisers)
+                .setApplicationPath(applicationPath)
+                .setGlobalHandlerCustomers(
+                        new ArrayList<>(Collections.singletonList(new SecurityContextOverrideHandler.Customizer()))) //TODO: should be pluggable
+                .setResourceClasses(resourceClasses)
+                .setDevelopmentMode(launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT)
+                .setLocatableResourceClasses(subResourceClasses)
+                .setParamConverterProviders(paramConverterProviders);
+        quarkusRestDeploymentInfoBuildItemBuildProducer
+                .produce(new ResteasyReactiveDeploymentInfoBuildItem(deploymentInfo));
+
+        RuntimeValue<Deployment> deployment = recorder.createDeployment(deploymentInfo,
+                beanContainerBuildItem.getValue(), shutdownContext, vertxConfig,
+                requestContextFactoryBuildItem.map(RequestContextFactoryBuildItem::getFactory).orElse(null),
+                initClassFactory, launchModeBuildItem.getLaunchMode());
+
+        quarkusRestDeploymentBuildItemBuildProducer
+                .produce(new ResteasyReactiveDeploymentBuildItem(deployment, deploymentPath));
+
+        if (!requestContextFactoryBuildItem.isPresent()) {
+            Handler<RoutingContext> handler = recorder.handler(deployment);
+
+            // Exact match for resources matched to the root path
+            routes.produce(RouteBuildItem.builder()
+                    .orderedRoute(deploymentPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1).handler(handler).build());
+            String matchPath = deploymentPath;
+            if (matchPath.endsWith("/")) {
+                matchPath += "*";
+            } else {
+                matchPath += "/*";
             }
+            // Match paths that begin with the deployment path
+            routes.produce(
+                    RouteBuildItem.builder().orderedRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1)
+                            .handler(handler).build());
         }
     }
 

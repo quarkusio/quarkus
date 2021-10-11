@@ -31,16 +31,6 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
         this.projectRoot = projectRoot;
     }
 
-    @Test
-    public void canGenerateConfig() throws Exception {
-        createProject(SourceType.JAVA);
-
-        BuildResult build = runGradleWrapper(projectRoot, "generateConfig");
-
-        assertThat(build.getTasks().get(":generateConfig")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
-        assertThat(projectRoot.toPath().resolve("src/main/resources/application.properties.example")).exists();
-    }
-
     @ParameterizedTest(name = "Build {0} project")
     @EnumSource(SourceType.class)
     public void canBuild(SourceType sourceType) throws Exception {

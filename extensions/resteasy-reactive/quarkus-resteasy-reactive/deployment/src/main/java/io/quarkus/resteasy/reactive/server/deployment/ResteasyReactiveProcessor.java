@@ -295,6 +295,7 @@ public class ResteasyReactiveProcessor {
             Optional<ClassLevelExceptionMappersBuildItem> classLevelExceptionMappers,
             BuildProducer<ResteasyReactiveDeploymentInfoBuildItem> quarkusRestDeploymentInfoBuildItemBuildProducer,
             BuildProducer<ResteasyReactiveDeploymentBuildItem> quarkusRestDeploymentBuildItemBuildProducer,
+            BuildProducer<ResteasyReactiveResourceMethodEntriesBuildItem> resourceMethodEntriesBuildItemBuildProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<RouteBuildItem> routes,
@@ -357,6 +358,8 @@ public class ResteasyReactiveProcessor {
                 QUARKUS_INIT_CLASS, null, Object.class.getName(), ResteasyReactiveInitialiser.class.getName());
                 MethodCreator initConverters = c.getMethodCreator("init", void.class, Deployment.class)) {
 
+            List<ResteasyReactiveResourceMethodEntriesBuildItem.Entry> resourceMethodEntries = new ArrayList<>();
+
             QuarkusServerEndpointIndexer.Builder serverEndpointIndexerBuilder = new QuarkusServerEndpointIndexer.Builder()
                     .addMethodScanners(
                             methodScanners.stream().map(MethodScannerBuildItem::getMethodScanner).collect(toList()))
@@ -382,6 +385,11 @@ public class ResteasyReactiveProcessor {
                         @Override
                         public void accept(EndpointIndexer.ResourceMethodCallbackData entry) {
                             MethodInfo method = entry.getMethodInfo();
+
+                            resourceMethodEntries.add(new ResteasyReactiveResourceMethodEntriesBuildItem.Entry(
+                                    entry.getBasicResourceClassInfo(), method,
+                                    entry.getActualEndpointInfo(), entry.getResourceMethod()));
+
                             String source = ResteasyReactiveProcessor.class.getSimpleName() + " > " + method.declaringClass()
                                     + "[" + method + "]";
 
@@ -606,6 +614,10 @@ public class ResteasyReactiveProcessor {
 
             quarkusRestDeploymentBuildItemBuildProducer
                     .produce(new ResteasyReactiveDeploymentBuildItem(deployment, deploymentPath));
+
+            resourceMethodEntriesBuildItemBuildProducer
+                    .produce(new ResteasyReactiveResourceMethodEntriesBuildItem(resourceMethodEntries));
+
             if (!requestContextFactoryBuildItem.isPresent()) {
                 Handler<RoutingContext> handler = recorder.handler(deployment);
 

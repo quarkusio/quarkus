@@ -36,7 +36,7 @@ public class QuarkusExtensionPluginTest {
 
     @Test
     public void jarShouldContainsExtensionPropertiesFile() throws IOException {
-        TestUtils.writeFile(buildFile, TestUtils.DEFAULT_BUILD_GRADLE_CONTENT);
+        TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent());
         BuildResult jarResult = GradleRunner.create()
                 .withPluginClasspath()
                 .withProjectDir(testProjectDir)
@@ -65,7 +65,7 @@ public class QuarkusExtensionPluginTest {
 
     @Test
     public void pluginShouldAddAnnotationProcessor() throws IOException {
-        TestUtils.writeFile(buildFile, TestUtils.DEFAULT_BUILD_GRADLE_CONTENT);
+        TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent());
         BuildResult dependencies = GradleRunner.create()
                 .withPluginClasspath()
                 .withProjectDir(testProjectDir)

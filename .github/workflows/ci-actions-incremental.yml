@@ -329,7 +329,9 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: "GC log - JDK ${{matrix.java.name}}"
-          path: "**/windows-java-11.txt"
+          path: |
+            **/windows-java-11.txt
+            !**/build/tmp/**
 
   maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}

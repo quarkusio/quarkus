@@ -84,6 +84,7 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>compile</scope>
+            <version>${junit4.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>

@@ -74,10 +74,14 @@ public class DependencyTreeMojo extends AbstractMojo {
     protected MavenArtifactResolver resolver() throws BootstrapMavenException {
         return resolver == null
                 ? resolver = MavenArtifactResolver.builder()
-                        .setRepositorySystem(bootstrapProvider.repositorySystem())
                         .setRemoteRepositoryManager(bootstrapProvider.remoteRepositoryManager())
-                        //.setRepositorySystemSession(repoSession) the session should be initialized with the loaded workspace
+                        // The system needs to be initialized with the bootstrap model builder to properly interpolate system properties set on the command line
+                        // e.g. -Dquarkus.platform.version=xxx
+                        //.setRepositorySystem(bootstrapProvider.repositorySystem())
+                        // The session should be initialized with the loaded workspace
+                        //.setRepositorySystemSession(repoSession)
                         .setRemoteRepositories(repos)
+                        // To support multimodule projects that haven't been installed
                         .setPreferPomsFromWorkspace(true)
                         .build()
                 : resolver;

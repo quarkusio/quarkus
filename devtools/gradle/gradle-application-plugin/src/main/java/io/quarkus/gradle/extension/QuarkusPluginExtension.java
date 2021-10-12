@@ -28,8 +28,8 @@ import io.quarkus.bootstrap.model.gradle.ModelParameter;
 import io.quarkus.bootstrap.model.gradle.impl.ModelParameterImpl;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.gradle.AppModelGradleResolver;
-import io.quarkus.gradle.builder.GradleApplicationModelBuilder;
 import io.quarkus.gradle.tasks.QuarkusGradleUtils;
+import io.quarkus.gradle.tooling.GradleApplicationModelBuilder;
 import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusPluginExtension {

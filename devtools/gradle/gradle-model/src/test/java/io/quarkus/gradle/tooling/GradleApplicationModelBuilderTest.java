@@ -1,4 +1,4 @@
-package io.quarkus.gradle.builder;
+package io.quarkus.gradle.tooling;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
@@ -9,7 +9,7 @@ import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedModuleVersion;
 import org.junit.jupiter.api.Test;
 
-public class QuarkusModelBuilderTest {
+public class GradleApplicationModelBuilderTest {
 
     @Test
     void testToAppDependency() {

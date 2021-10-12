@@ -30,7 +30,6 @@ import org.gradle.api.tasks.testing.Test;
 import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry;
 import org.gradle.util.GradleVersion;
 
-import io.quarkus.gradle.builder.GradleApplicationModelBuilder;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.dependency.ConditionalDependenciesEnabler;
 import io.quarkus.gradle.dependency.ExtensionDependency;
@@ -48,6 +47,7 @@ import io.quarkus.gradle.tasks.QuarkusRemoveExtension;
 import io.quarkus.gradle.tasks.QuarkusTest;
 import io.quarkus.gradle.tasks.QuarkusTestConfig;
 import io.quarkus.gradle.tasks.QuarkusTestNative;
+import io.quarkus.gradle.tooling.GradleApplicationModelBuilder;
 
 public class QuarkusPlugin implements Plugin<Project> {
 
@@ -67,7 +67,6 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String QUARKUS_REMOTE_DEV_TASK_NAME = "quarkusRemoteDev";
     public static final String QUARKUS_TEST_TASK_NAME = "quarkusTest";
     public static final String DEV_MODE_CONFIGURATION_NAME = "quarkusDev";
-    public static final String ANNOTATION_PROCESSOR_CONFIGURATION_NAME = "quarkusAnnotationProcessor";
 
     @Deprecated
     public static final String BUILD_NATIVE_TASK_NAME = "buildNative";

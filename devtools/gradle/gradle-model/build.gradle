@@ -1,0 +1,4 @@
+dependencies {
+    implementation "io.quarkus:quarkus-core-deployment:${version}"
+    testImplementation "io.quarkus:quarkus-devtools-testing:${version}"
+}

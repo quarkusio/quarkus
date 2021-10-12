@@ -12,16 +12,25 @@ import io.quarkus.security.identity.SecurityIdentity;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-@Path("/api/admin/bearer")
+@Path("/api/admin")
 public class AdminResource {
 
     @Inject
     SecurityIdentity identity;
 
+    @Path("bearer")
     @GET
     @RolesAllowed("admin")
     @Produces(MediaType.APPLICATION_JSON)
     public String admin() {
+        return "granted:" + identity.getRoles();
+    }
+
+    @Path("bearer-wrong-role-path")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String adminWrongRolePath() {
         return "granted:" + identity.getRoles();
     }
 }

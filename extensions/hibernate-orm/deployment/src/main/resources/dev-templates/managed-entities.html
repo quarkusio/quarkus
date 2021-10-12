@@ -9,9 +9,9 @@
 {#else}
 
 {#for pu in info:persistence.persistenceUnits}
-<h4><span class="badge">Persistence Unit</span> <i class="badge badge-info">{pu}</i></h4>
+<h4><span class="badge">Persistence Unit</span> <i class="badge badge-info">{pu.name}</i></h4>
 
-{#if info:persistence.getManagedEntities(pu).isEmpty}
+{#if pu.managedEntities.isEmpty}
 <p>No entities were found.</p>
 {#else}
 <table class="table table-striped">
@@ -23,7 +23,7 @@
     </tr>
     </thead>
     <tbody>
-    {#for entity in info:persistence.getManagedEntities(pu)}
+    {#for entity in pu.managedEntities}
     <tr>
         <td>{count}.</td>
         <td>{entity.className}</td>

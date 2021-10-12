@@ -9,9 +9,9 @@
 {#else}
 
 {#for pu in info:persistence.persistenceUnits}
-<h4><span class="badge">Persistence Unit</span> <i class="badge badge-info">{pu}</i></h4>
+<h4><span class="badge">Persistence Unit</span> <i class="badge badge-info">{pu.name}</i></h4>
 
-{#if info:persistence.getAllNamedQueries(pu).isEmpty}
+{#if pu.allNamedQueries.isEmpty}
 <p>No named queries were found.</p>
 {#else}
 <table class="table table-striped">
@@ -26,7 +26,7 @@
     </tr>
     </thead>
     <tbody>
-    {#for query in info:persistence.getAllNamedQueries(pu)}
+    {#for query in pu.allNamedQueries}
     <tr>
         <td>{count}.</td>
         <td>{query.name}</td>

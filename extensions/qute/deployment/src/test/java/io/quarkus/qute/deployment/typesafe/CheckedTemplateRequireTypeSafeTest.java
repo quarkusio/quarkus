@@ -30,8 +30,11 @@ public class CheckedTemplateRequireTypeSafeTest {
                                     + "{inject:fool.getJoke(null)} "
                                     + "{inject:fool.getJoke(identifier)} "
                                     + "{#each name.chars.iterator}"
-                                    + "{! {index} is not considered an error because the binding is registered by the loop section !}"
-                                    + "{index}. {it}"
+                                    // {it_index} is not considered an error because the binding is registered by the loop section !}
+                                    + "{it_index}."
+                                    // however, {index} is an error
+                                    + "{index}"
+                                    + "{it}"
                                     + "{/each}"),
                             "templates/CheckedTemplateRequireTypeSafeTest/hola.txt"))
             .assertException(t -> {
@@ -45,9 +48,10 @@ public class CheckedTemplateRequireTypeSafeTest {
                     e = e.getCause();
                 }
                 assertNotNull(te);
-                assertTrue(te.getMessage().contains("Found template problems (2)"), te.getMessage());
+                assertTrue(te.getMessage().contains("Found template problems (3)"), te.getMessage());
                 assertTrue(te.getMessage().contains("any"), te.getMessage());
                 assertTrue(te.getMessage().contains("identifier"), te.getMessage());
+                assertTrue(te.getMessage().contains("index"), te.getMessage());
             });
 
     @Test

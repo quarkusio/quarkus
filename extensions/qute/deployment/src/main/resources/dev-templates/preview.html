@@ -61,7 +61,7 @@
      {#if template.parameters}
        testData{dataCount} = '{';
        {#each template.parameters}
-       testData{dataCount} += '\n  // Template parameter {count}: {it.value.raw}\n';
+       testData{dataCount} += '\n  // Template parameter {template_count}: {it.value.raw}\n';
        testData{dataCount} += '  "{it.key}" : null';
        {#if hasNext}
        testData{dataCount} += ',';

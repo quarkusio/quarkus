@@ -196,8 +196,8 @@ public interface SectionHelperFactory<T extends SectionHelper> {
             this.parameters = new HashMap<>(parameters);
         }
 
-        public List<Parameter> get(String sectionPart) {
-            return parameters.getOrDefault(sectionPart, Collections.emptyList());
+        public List<Parameter> get(String blockLabel) {
+            return parameters.getOrDefault(blockLabel, Collections.emptyList());
         }
 
         @Override

@@ -22,6 +22,7 @@ public final class EngineBuilder {
     final List<ParserHook> parserHooks;
     boolean removeStandaloneLines;
     boolean strictRendering;
+    String iterationMetadataPrefix;
 
     EngineBuilder() {
         this.sectionHelperFactories = new HashMap<>();
@@ -32,6 +33,7 @@ public final class EngineBuilder {
         this.parserHooks = new ArrayList<>();
         this.strictRendering = true;
         this.removeStandaloneLines = true;
+        this.iterationMetadataPrefix = LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_ALIAS_UNDERSCORE;
     }
 
     public EngineBuilder addSectionHelper(SectionHelperFactory<?> factory) {
@@ -55,7 +57,7 @@ public final class EngineBuilder {
     }
 
     public EngineBuilder addDefaultSectionHelpers() {
-        return addSectionHelpers(new IfSectionHelper.Factory(), new LoopSectionHelper.Factory(),
+        return addSectionHelpers(new IfSectionHelper.Factory(), new LoopSectionHelper.Factory(iterationMetadataPrefix),
                 new WithSectionHelper.Factory(), new IncludeSectionHelper.Factory(), new InsertSectionHelper.Factory(),
                 new SetSectionHelper.Factory(), new WhenSectionHelper.Factory(), new EvalSectionHelper.Factory());
     }
@@ -165,6 +167,29 @@ public final class EngineBuilder {
      */
     public EngineBuilder strictRendering(boolean value) {
         this.strictRendering = value;
+        return this;
+    }
+
+    /**
+     * This prefix is used to access the iteration metadata inside a loop section. This method must be called before a
+     * {@link LoopSectionHelper.Factory} is registered, i.e. before {@link #addDefaultSectionHelpers()} or before
+     * {@link #addSectionHelper(SectionHelperFactory)}.
+     * <p>
+     * A valid prefix consists of alphanumeric characters and underscores.
+     * 
+     * @param prefix
+     * @return self
+     * @see LoopSectionHelper.Factory
+     */
+    public EngineBuilder iterationMetadataPrefix(String prefix) {
+        if (!LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_NONE.equals(prefix)
+                && !LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_ALIAS_UNDERSCORE.equals(prefix)
+                && !LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_ALIAS_QM.equals(prefix)
+                && !Namespaces.NAMESPACE_PATTERN.matcher(prefix).matches()) {
+            throw new TemplateException("[" + prefix
+                    + "] is not a valid iteration metadata prefix. The value can only consist of alphanumeric characters and underscores.");
+        }
+        this.iterationMetadataPrefix = prefix;
         return this;
     }
 

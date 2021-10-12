@@ -66,8 +66,7 @@ public class EngineProducer {
         LOGGER.debugf("Initializing Qute [templates: %s, tags: %s, resolvers: %s", context.getTemplatePaths(), tags,
                 context.getResolverClasses());
 
-        EngineBuilder builder = Engine.builder()
-                .addDefaultSectionHelpers();
+        EngineBuilder builder = Engine.builder();
 
         // We don't register the map resolver because of param declaration validation
         // See DefaultTemplateExtensions
@@ -122,6 +121,12 @@ public class EngineProducer {
 
         // Remove standalone lines if desired
         builder.removeStandaloneLines(runtimeConfig.removeStandaloneLines);
+
+        // Iteration metadata prefix
+        builder.iterationMetadataPrefix(config.iterationMetadataPrefix);
+
+        // Default section helpers
+        builder.addDefaultSectionHelpers();
 
         // Allow anyone to customize the builder
         builderReady.fire(builder);

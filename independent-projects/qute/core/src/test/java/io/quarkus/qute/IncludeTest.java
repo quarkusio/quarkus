@@ -65,7 +65,8 @@ public class IncludeTest {
         Engine engine = Engine.builder().addDefaults().build();
         engine.putTemplate("foo", engine.parse("{#insert snippet}empty{/insert}"));
         assertEquals("1.2.3.4.5.",
-                engine.parse("{#for i in 5}{#include foo}{#snippet}{count}.{/snippet} this should be ingored {/include}{/for}")
+                engine.parse(
+                        "{#for i in 5}{#include foo}{#snippet}{i_count}.{/snippet} this should be ingored {/include}{/for}")
                         .render());
     }
 

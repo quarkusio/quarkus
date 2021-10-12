@@ -51,7 +51,7 @@
    <tbody>
    {#for scheduledMethod in info:schedulerContext.scheduledMethods}
     <tr>
-      <td>{count}.</td>
+      <td>{scheduledMethod_count}.</td>
       <td>
        {#if scheduledMethod.schedules.size > 1}
          <ol type="a">

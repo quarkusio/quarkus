@@ -32,37 +32,37 @@ a.script-heading {
     <thead class="thead-light">
     <tr>
         <th scope="col">
-            <a href="#" onclick="toggleExpanded(this, 'td-create-script-{count}'); return false;" class="script-heading">
+            <a href="#" onclick="toggleExpanded(this, 'td-create-script-{pu_count}'); return false;" class="script-heading">
                 <span class="fa fa-chevron-right icon"></span>
                 <span>Create Script</span>
             </a>
-            <a href="#" onclick="copyToClipboard('create-script-{count}'); return false;" class="float-right badge">
+            <a href="#" onclick="copyToClipboard('create-script-{pu_count}'); return false;" class="float-right badge">
                 <span class="fa fa-clipboard"></span> Copy</a>
         </th>
     </tr>
     </thead>
     <tbody>
     <tr>
-        <td id="td-create-script-{count}" class="hidden">
-            <pre id="create-script-{count}" class="ddl-script">{pu.createDDL}</pre>
+        <td id="td-create-script-{pu_count}" class="hidden">
+            <pre id="create-script-{pu_count}" class="ddl-script">{pu.createDDL}</pre>
         </td>
     </tr>
     <thead class="thead-light">
     <tr>
         <th scope="col">
-            <a href="#" onclick="toggleExpanded(this, 'td-drop-script-{count}'); return false;" class="script-heading">
+            <a href="#" onclick="toggleExpanded(this, 'td-drop-script-{pu_count}'); return false;" class="script-heading">
                 <span class="fa fa-chevron-right icon"></span>
                 <span>Drop Script</span>
             </a>
-            <a href="#" onclick="copyToClipboard('drop-script-{count}'); return false;" class="float-right badge">
+            <a href="#" onclick="copyToClipboard('drop-script-{pu_count}'); return false;" class="float-right badge">
                 <span class="fa fa-clipboard"></span> Copy</a>
         </th>
     </tr>
     </thead>
     <tbody>
     <tr>
-        <td id="td-drop-script-{count}" class="hidden">
-            <pre id="drop-script-{count}" class="ddl-script">{pu.dropDDL}</pre>
+        <td id="td-drop-script-{pu_count}" class="hidden">
+            <pre id="drop-script-{pu_count}" class="ddl-script">{pu.dropDDL}</pre>
         </td>
     </tr>
     </tbody>

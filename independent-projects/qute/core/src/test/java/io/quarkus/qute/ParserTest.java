@@ -168,7 +168,7 @@ public class ParserTest {
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> engine.getTemplate("foo.html"))
                 .withMessage(
-                        "Parser error in template [foo.html] on line 1: mandatory section parameters not declared for {#if}: [Parameter [name=condition, defaultValue=null, optional=false]]")
+                        "Parser error in template [foo.html] on line 1: mandatory section parameters not declared for {#if}: [condition]")
                 .hasFieldOrProperty("origin");
     }
 
@@ -223,7 +223,7 @@ public class ParserTest {
                 + "\n"
                 + " {! My comment !} \n"
                 + "  {#for i in 5}\n" // -> standalone
-                + "{index}:\n"
+                + "{i_index}:\n"
                 + "{/} "; // -> standalone
         assertEquals("\n0:\n1:\n2:\n3:\n4:\n", engine.parse(content).render());
         assertEquals("bar\n", engine.parse("{foo}\n").data("foo", "bar").render());

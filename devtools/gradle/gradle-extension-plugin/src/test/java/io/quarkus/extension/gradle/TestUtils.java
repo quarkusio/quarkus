@@ -41,6 +41,23 @@ public class TestUtils {
                 "}\n";
     }
 
+    public static String getDefaultDeploymentBuildFileContent() throws IOException {
+        return "plugins {\n" +
+                "id 'java'\n" +
+                "}\n" +
+                "group 'org.acme'\n" +
+                "version '1.0.0'\n" +
+                "repositories { \n" +
+                "mavenCentral()\n" +
+                "mavenLocal()\n" +
+                "}\n" +
+                "dependencies {\n" +
+                "implementation enforcedPlatform(\"io.quarkus:quarkus-bom:" + getCurrentQuarkusVersion() + "\")\n" +
+                "implementation \"io.quarkus:quarkus-arc\" \n" +
+                "implementation project(\":runtime\")" +
+                "}\n";
+    }
+
     public static BuildResult runExtensionDescriptorTask(File testProjectDir) {
         BuildResult extensionDescriptorResult = GradleRunner.create()
                 .withPluginClasspath()
@@ -57,10 +74,16 @@ public class TestUtils {
         File runtimeModule = new File(testProjectDir, "runtime");
         runtimeModule.mkdir();
         writeFile(new File(runtimeModule, "build.gradle"), getDefaultGradleBuildFileContent());
+        File runtimeTestFile = new File(runtimeModule, "src/main/java/runtime/Test.java");
+        runtimeTestFile.getParentFile().mkdirs();
+        writeFile(runtimeTestFile, "package runtime; public class Test {}");
 
         File deploymentModule = new File(testProjectDir, "deployment");
         deploymentModule.mkdir();
-        writeFile(new File(deploymentModule, "build.gradle"), "plugins { id 'java'}");
+        writeFile(new File(deploymentModule, "build.gradle"), getDefaultDeploymentBuildFileContent());
+        File deploymentTestFile = new File(deploymentModule, "src/main/java/deployment/Test.java");
+        deploymentTestFile.getParentFile().mkdirs();
+        writeFile(deploymentTestFile, "package deployment; public class Test {}");
 
         writeFile(new File(testProjectDir, "settings.gradle"), "include 'runtime', 'deployment'");
 

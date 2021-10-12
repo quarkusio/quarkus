@@ -8,6 +8,8 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
 
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Any;
@@ -19,8 +21,10 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
+import org.jboss.logmanager.handlers.AsyncHandler;
 import org.wildfly.common.lock.Locks;
 
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.runner.RunnerClassLoader;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.ProfileManager;
@@ -205,6 +209,7 @@ public class ApplicationLifecycleManager {
                 } else {
                     applicationLogger.errorv(rootCause, "Failed to start application (with profile {0})",
                             ProfileManager.getActiveProfile());
+                    ensureConsoleLogsDrained();
                 }
             }
             stateLock.lock();
@@ -232,6 +237,38 @@ public class ApplicationLifecycleManager {
             application.stop(); //this could have already been called
         }
         (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(getExitCode(), null); //this may not be called if shutdown was initiated by a signal
+    }
+
+    // this is needed only when async console logging is enabled
+    private static void ensureConsoleLogsDrained() {
+        AsyncHandler asyncHandler = null;
+        for (Handler handler : InitialConfigurator.DELAYED_HANDLER.getHandlers()) {
+            if (handler instanceof AsyncHandler) {
+                asyncHandler = (AsyncHandler) handler;
+                Handler[] nestedHandlers = asyncHandler.getHandlers();
+                boolean foundNestedConsoleHandler = false;
+                for (Handler nestedHandler : nestedHandlers) {
+                    if (nestedHandler instanceof ConsoleHandler) {
+                        foundNestedConsoleHandler = true;
+                        break;
+                    }
+                }
+                if (!foundNestedConsoleHandler) {
+                    asyncHandler = null;
+                }
+            }
+            if (asyncHandler != null) {
+                break;
+            }
+        }
+        if (asyncHandler != null) {
+            try {
+                // all we can do is wait because the thread that takes records off the queue is a daemon thread and there is no way to interact with its lifecycle
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     /**

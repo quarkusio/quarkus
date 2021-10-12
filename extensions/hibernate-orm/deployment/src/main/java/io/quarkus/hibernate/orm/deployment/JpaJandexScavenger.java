@@ -114,6 +114,12 @@ public final class JpaJandexScavenger {
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, javaType));
         }
 
+        // Converters need to be in the list of model types in order for @Converter#autoApply to work,
+        // but they don't need reflection enabled.
+        for (DotName potentialCdiBeanType : collector.potentialCdiBeanTypes) {
+            allModelClassNames.add(potentialCdiBeanType.toString());
+        }
+
         if (!collector.unindexedClasses.isEmpty()) {
             Set<String> unIgnorableIndexedClasses = collector.unindexedClasses.stream().map(DotName::toString)
                     .collect(Collectors.toSet());
@@ -365,7 +371,6 @@ public final class JpaJandexScavenger {
                             "Annotation " + dotName + " was not expected on a target of kind " + target.kind());
             }
             DotName beanTypeDotName = beanType.name();
-            addClassHierarchyToReflectiveList(collector, beanTypeDotName);
             collector.potentialCdiBeanTypes.add(beanTypeDotName);
         }
     }

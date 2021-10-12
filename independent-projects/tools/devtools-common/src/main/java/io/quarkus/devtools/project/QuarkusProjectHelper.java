@@ -109,8 +109,13 @@ public class QuarkusProjectHelper {
 
     public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, BuildTool buildTool,
             MessageWriter log) {
-        return QuarkusProject.of(projectDir, catalog, getCodestartResourceLoaders(catalog),
-                log, buildTool);
+        return QuarkusProject.builder()
+                .projectDir(projectDir)
+                .extensionCatalog(catalog)
+                .codestartResourceLoaders(getCodestartResourceLoaders(catalog))
+                .buildTool(buildTool)
+                .log(log)
+                .build();
     }
 
     public static QuarkusProject getProject(Path projectDir, ExtensionManager extManager) throws RegistryResolutionException {
@@ -123,8 +128,13 @@ public class QuarkusProjectHelper {
 
     public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, ExtensionManager extManager,
             MessageWriter log) {
-        return QuarkusProject.of(projectDir, catalog, getCodestartResourceLoaders(catalog),
-                log, extManager);
+        return QuarkusProject.builder()
+                .projectDir(projectDir)
+                .extensionCatalog(catalog)
+                .codestartResourceLoaders(getCodestartResourceLoaders(catalog))
+                .extensionManager(extManager)
+                .log(log)
+                .build();
     }
 
     public static ExtensionCatalogResolver getCatalogResolver() throws RegistryResolutionException {

@@ -112,10 +112,16 @@ public class CreateJBangMojo extends AbstractMojo {
                 .catalog(catalog)
                 .artifactResolver(mvn)
                 .build();
-        final CreateJBangProject createJBangProject = new CreateJBangProject(QuarkusProject.of(projectDirPath, catalog,
-                codestartsResourceLoader, log, BuildTool.MAVEN))
-                        .extensions(extensions)
-                        .setValue("noJBangWrapper", noJBangWrapper);
+        final QuarkusProject quarkusProject = QuarkusProject.builder()
+                .projectDir(projectDirPath)
+                .extensionCatalog(catalog)
+                .codestartResourceLoaders(codestartsResourceLoader)
+                .log(log)
+                .buildTool(BuildTool.MAVEN)
+                .build();
+        final CreateJBangProject createJBangProject = new CreateJBangProject(quarkusProject)
+                .extensions(extensions)
+                .setValue("noJBangWrapper", noJBangWrapper);
 
         boolean success;
 

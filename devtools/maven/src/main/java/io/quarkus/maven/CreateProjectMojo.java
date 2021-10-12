@@ -280,8 +280,14 @@ public class CreateProjectMojo extends AbstractMojo {
                     .catalog(catalog)
                     .artifactResolver(mvn)
                     .build();
-            QuarkusProject newProject = QuarkusProject.of(projectDirPath, catalog,
-                    codestartsResourceLoader, log, buildToolEnum);
+            QuarkusProject newProject = QuarkusProject.builder()
+                    .projectDir(projectDirPath)
+                    .extensionCatalog(catalog)
+                    .codestartResourceLoaders(codestartsResourceLoader)
+                    .log(log)
+                    .buildTool(buildToolEnum)
+                    .build();
+
             final CreateProject createProject = new CreateProject(newProject)
                     .groupId(projectGroupId)
                     .artifactId(projectArtifactId)

@@ -110,10 +110,17 @@ public class MavenProjectBuildFile extends BuildFile {
         }
         final MavenProjectBuildFile extensionManager = new MavenProjectBuildFile(projectDir, extensionCatalog,
                 projectModel, deps, managedDeps, projectProps, projectPom == null ? null : mvnResolver);
+
         final List<ResourceLoader> codestartResourceLoaders = codestartLoadersBuilder().catalog(extensionCatalog)
                 .artifactResolver(mvnResolver).build();
-        return QuarkusProject.of(projectDir, extensionCatalog,
-                codestartResourceLoaders, log, extensionManager);
+
+        return QuarkusProject.builder()
+                .projectDir(projectDir)
+                .extensionCatalog(extensionCatalog)
+                .codestartResourceLoaders(codestartResourceLoaders)
+                .extensionManager(extensionManager)
+                .log(log)
+                .build();
     }
 
     private static MavenArtifactResolver getMavenResolver(Path projectDir) {

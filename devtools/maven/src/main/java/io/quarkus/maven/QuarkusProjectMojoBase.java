@@ -85,7 +85,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         validateParameters();
 
         final Path projectDirPath = baseDir();
-        BuildTool buildTool = QuarkusProject.resolveExistingProjectBuildTool(projectDirPath);
+        BuildTool buildTool = BuildTool.fromProject(projectDirPath);
         if (buildTool == null) {
             // it's not Gradle and the pom.xml not found, so we assume there is not project at all
             buildTool = BuildTool.MAVEN;
@@ -101,9 +101,13 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
             }
         } else {
             final List<ResourceLoader> codestartsResourceLoader = getCodestartResourceLoaders(resolveExtensionCatalog());
-            quarkusProject = QuarkusProject.of(baseDir(), resolveExtensionCatalog(),
-                    codestartsResourceLoader,
-                    log, buildTool);
+            quarkusProject = QuarkusProject.builder()
+                    .projectDir(baseDir())
+                    .extensionCatalog(resolveExtensionCatalog())
+                    .codestartResourceLoaders(codestartsResourceLoader)
+                    .buildTool(buildTool)
+                    .log(log)
+                    .build();
         }
 
         doExecute(quarkusProject, getMessageWriter());

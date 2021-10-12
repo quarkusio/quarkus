@@ -49,6 +49,24 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testSecureAccessSuccessPreferredUsernameWrongRolePath() {
+        for (String username : Arrays.asList("alice", "admin")) {
+            RestAssured.given().auth().oauth2(getAccessToken(username, new HashSet<>(Arrays.asList("user", "admin"))))
+                    .when().get("/api/users/preferredUserName/bearer-wrong-role-path")
+                    .then()
+                    .statusCode(403);
+        }
+    }
+
+    @Test
+    public void testAccessAdminResourceWrongRolePath() {
+        RestAssured.given().auth().oauth2(getAccessToken("admin", new HashSet<>(Arrays.asList("admin"))))
+                .when().get("/api/admin/bearer-wrong-role-path")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
     public void testAccessAdminResourceAudienceArray() {
         RestAssured.given().auth().oauth2(getAccessTokenAudienceArray("admin", new HashSet<>(Arrays.asList("admin"))))
                 .when().get("/api/admin/bearer")

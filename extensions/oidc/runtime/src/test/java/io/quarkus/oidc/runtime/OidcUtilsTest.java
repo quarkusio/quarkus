@@ -151,12 +151,8 @@ public class OidcUtilsTest {
     public void testTokenWithCustomRolesWrongPath() throws Exception {
         OidcTenantConfig.Roles rolesCfg = OidcTenantConfig.Roles.fromClaimPath("application-card/embedded/roles");
         InputStream is = getClass().getResourceAsStream("/tokenCustomPath.json");
-        try {
-            OidcUtils.findRoles(null, rolesCfg, read(is));
-            fail("Exception expected at the wrong path");
-        } catch (Exception ex) {
-            // expected
-        }
+        List<String> roles = OidcUtils.findRoles(null, rolesCfg, read(is));
+        assertEquals(0, roles.size());
     }
 
     @Test

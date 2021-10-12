@@ -15,7 +15,7 @@ import picocli.CommandLine.Unmatched;
         CreateExtension.class }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
 public class Create implements Callable<Integer> {
 
-    @CommandLine.Mixin
+    @CommandLine.Mixin(name = "output")
     protected OutputOptionMixin output;
 
     @CommandLine.Mixin

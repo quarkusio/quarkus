@@ -17,7 +17,7 @@ import picocli.CommandLine.Unmatched;
                 ProjectExtensionsRemove.class }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "Options:%n")
 public class ProjectExtensions implements Callable<Integer> {
 
-    @CommandLine.Mixin
+    @CommandLine.Mixin(name = "output")
     protected OutputOptionMixin output;
 
     @CommandLine.Spec

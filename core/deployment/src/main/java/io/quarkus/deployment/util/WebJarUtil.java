@@ -85,10 +85,9 @@ public class WebJarUtil {
                             && isOverride(userApplication.getResolvedPaths(), classLoader, fileName, modulename)) {
                         Path deploymentPath = createResourcesDirectory(userApplication, resourcesArtifact);
                         Path filePath = deploymentPath.resolve(fileName);
-                        try (InputStream override = insertVariables(userApplication,
-                                getOverride(userApplication.getResolvedPaths(), classLoader,
-                                        fileName, modulename, useDefaultQuarkusBranding),
-                                fileName)) {
+                        try (InputStream initialOverride = getOverride(userApplication.getResolvedPaths(), classLoader,
+                                fileName, modulename, useDefaultQuarkusBranding);
+                                InputStream override = insertVariables(userApplication, initialOverride, fileName)) {
                             if (override != null) {
                                 createFile(override, filePath);
                             }
@@ -146,8 +145,9 @@ public class WebJarUtil {
                                 if (entry.isDirectory()) {
                                     Files.createDirectories(filePath);
                                 } else {
-                                    try (InputStream inputStream = insertVariables(userApplication,
-                                            jarFile.getInputStream(entry), fileName)) {
+                                    try (InputStream entryInputStream = jarFile.getInputStream(entry);
+                                            InputStream inputStream = insertVariables(userApplication, entryInputStream,
+                                                    fileName)) {
                                         String modulename = getModuleOverrideName(resourcesArtifact, fileName);
                                         if (IGNORE_LIST.contains(fileName)
                                                 && isOverride(userApplication.getResolvedPaths(), classLoader, fileName,
@@ -250,10 +250,10 @@ public class WebJarUtil {
                             String modulename = getModuleOverrideName(artifact, filename);
                             if (IGNORE_LIST.contains(filename)
                                     && isOverride(userApplication.getResolvedPaths(), classLoader, filename, modulename)) {
-                                try (InputStream resourceAsStream = insertVariables(userApplication,
-                                        getOverride(userApplication.getResolvedPaths(), classLoader,
-                                                filename, modulename, useDefaultQuarkusBranding),
-                                        filename)) {
+                                try (InputStream initialOverride = getOverride(userApplication.getResolvedPaths(), classLoader,
+                                        filename, modulename, useDefaultQuarkusBranding);
+                                        InputStream resourceAsStream = insertVariables(userApplication, initialOverride,
+                                                filename)) {
                                     if (resourceAsStream != null) {
                                         content = IoUtil.readBytes(resourceAsStream); // Override (either developer supplied or Quarkus)
                                     }

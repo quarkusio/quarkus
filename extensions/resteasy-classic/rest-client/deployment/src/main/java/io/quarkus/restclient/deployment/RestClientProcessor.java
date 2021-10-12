@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.SessionScoped;
+import javax.enterprise.inject.spi.InterceptionType;
 import javax.ws.rs.Path;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
@@ -29,6 +30,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
@@ -50,9 +52,12 @@ import org.jboss.resteasy.spi.ResteasyConfiguration;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.InterceptorResolverBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.InterceptorInfo;
 import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -507,6 +512,57 @@ class RestClientProcessor {
             }
         }
         return builder.build();
+    }
+
+    @BuildStep
+    void unremovableInterceptors(List<RestClientBuildItem> restClientInterfaces, BeanArchiveIndexBuildItem beanArchiveIndex,
+            InterceptorResolverBuildItem interceptorResolver, BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+
+        if (restClientInterfaces.isEmpty()) {
+            return;
+        }
+
+        IndexView index = beanArchiveIndex.getIndex();
+        Set<DotName> interceptorBindings = interceptorResolver.getInterceptorBindings();
+        Set<String> unremovableInterceptors = new HashSet<>();
+
+        for (RestClientBuildItem restClient : restClientInterfaces) {
+            ClassInfo restClientClass = index.getClassByName(DotName.createSimple(restClient.getInterfaceName()));
+            if (restClientClass != null) {
+                Set<AnnotationInstance> classLevelBindings = new HashSet<>();
+                for (AnnotationInstance annotationInstance : restClientClass.classAnnotations()) {
+                    if (interceptorBindings.contains(annotationInstance.name())) {
+                        classLevelBindings.add(annotationInstance);
+                    }
+                }
+                for (MethodInfo method : restClientClass.methods()) {
+                    if (Modifier.isStatic(method.flags())) {
+                        continue;
+                    }
+                    Set<AnnotationInstance> bindings = new HashSet<>(classLevelBindings);
+                    for (AnnotationInstance annotationInstance : method.annotations()) {
+                        if (annotationInstance.target().kind() == Kind.METHOD
+                                && interceptorBindings.contains(annotationInstance.name())) {
+                            bindings.add(annotationInstance);
+                        }
+                    }
+                    if (bindings.isEmpty()) {
+                        continue;
+                    }
+                    List<InterceptorInfo> interceptors = interceptorResolver.get().resolve(
+                            InterceptionType.AROUND_INVOKE,
+                            bindings);
+                    if (!interceptors.isEmpty()) {
+                        interceptors.stream().map(InterceptorInfo::getBeanClass).map(Object::toString)
+                                .forEach(unremovableInterceptors::add);
+                    }
+                }
+            }
+        }
+        if (!unremovableInterceptors.isEmpty()) {
+            unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(unremovableInterceptors));
+        }
+
     }
 
     private boolean isRestClientInterface(IndexView index, ClassInfo classInfo) {

@@ -542,22 +542,31 @@ The other form is using the `for` name and can specify the alias used to referen
 
 [source]
 ----
-{#for item in items}
-  {item.name}
+{#for item in items} <1>
+  {item.name} 
 {/for}
 ----
+<1> `item` is the alias used for the iteration element.
 
 It's also possible to access the iteration metadata inside the loop:
 
+* `{count}` - 1-based index
+* `{index}` - zero-based index
+* `{hasNext}` - `true` if the iteration has more elements
+* `{odd}` - `true` if the zero-based index is odd
+* `{even}` - `true` if the zero-based index is even
+* `{indexParity}` - outputs `odd` or `even` based on the zero-based index value
+
+.Iteration Metadata Example
 [source]
 ----
 {#each items}
   {count}. {it.name} <1>
+  {#if hasNext}<br>{/if} <2>
 {/each}
 ----
 <1> `count` represents one-based index. 
-
-TIP: The iteration metadata also include zero-based `index`, `hasNext`, `odd` and `even` properties.
+<2> `<br>` is only rendered if the iteration has more elements.
 
 The `for` statement also works with integers, starting from 1. In the example below, considering that `total = 3`:
 
@@ -575,7 +584,7 @@ And the output will be:
 1:2:3:
 ----
 
-A loop section may define the `{#else}` block that is executed when there are no items to iterate:
+A loop section may also define the `{#else}` block that is executed when there are no items to iterate:
 
 [source]
 ----

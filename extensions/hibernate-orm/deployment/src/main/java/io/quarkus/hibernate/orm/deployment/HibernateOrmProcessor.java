@@ -1016,6 +1016,9 @@ public final class HibernateOrmProcessor {
         if (hibernateOrmConfig.metricsEnabled
                 || (hibernateOrmConfig.statistics.isPresent() && hibernateOrmConfig.statistics.get())) {
             descriptor.getProperties().setProperty(AvailableSettings.GENERATE_STATISTICS, "true");
+            //When statistics are enabled, the default in Hibernate ORM is to also log them after each
+            // session; turn that off as it's very noisy:
+            descriptor.getProperties().setProperty(AvailableSettings.LOG_SESSION_METRICS, "false");
         }
 
         // sql-load-scripts

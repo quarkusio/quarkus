@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.awaitility.Awaitility;
@@ -47,7 +46,6 @@ public class ContinuousTestingMavenTestUtils {
             Awaitility.waitAtMost(1, TimeUnit.MINUTES).pollInterval(50, TimeUnit.MILLISECONDS).until(new Callable<Boolean>() {
                 @Override
                 public Boolean call() throws Exception {
-                    HttpGet get = new HttpGet();
                     TestStatus ts = objectMapper.readValue(url, TestStatus.class);
                     if (ts.getLastRun() > runtToWaitFor) {
                         throw new RuntimeException(

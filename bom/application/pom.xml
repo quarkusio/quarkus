@@ -206,6 +206,8 @@
         <testcontainers.version>1.16.0</testcontainers.version>
         <docker-java.version>3.2.11</docker-java.version> <!-- must be the version Testcontainers use -->
         <aesh-readline.version>2.1</aesh-readline.version>
+        <strimzi-oauth.version>0.8.1</strimzi-oauth.version>
+        <strimzi.oauth.nimbus.version>9.14</strimzi.oauth.nimbus.version>
     </properties>
 
     <dependencyManagement>
@@ -3744,6 +3746,16 @@
                 <groupId>org.apache.zookeeper</groupId>
                 <artifactId>zookeeper</artifactId>
                 <version>${zookeeper.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.strimzi</groupId>
+                <artifactId>kafka-oauth-client</artifactId>
+                <version>${strimzi-oauth.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>${strimzi.oauth.nimbus.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>

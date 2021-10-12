@@ -1,0 +1,321 @@
+{
+  "realm": "kafka-authz",
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 864000,
+  "ssoSessionMaxLifespan": 864000,
+  "enabled": true,
+  "sslRequired": "external",
+  "roles": {
+    "realm": [],
+    "client": {
+      "kafka-cli": [],
+      "kafka": [
+        {
+          "name": "uma_protection",
+          "clientRole": true
+        },
+        {
+          "name": "kafka-user",
+          "clientRole": true
+        }
+      ]
+    }
+  },
+  "groups" : [],
+  "users": [
+    {
+      "username": "service-account-kafka-producer-client",
+      "enabled": true,
+      "realmRoles" : [ "offline_access" ],
+      "email": "service-account-kafka-producer-client@placeholder.org",
+      "serviceAccountClientId": "kafka-producer-client"
+    },
+    {
+      "username": "service-account-kafka-consumer-client",
+      "enabled": true,
+      "realmRoles" : [ "offline_access" ],
+      "email": "service-account-kafka-consumer-client@placeholder.org",
+      "serviceAccountClientId": "kafka-consumer-client"
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "kafka",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "kafka-secret",
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": true,
+      "publicClient": false,
+      "fullScopeAllowed": true,
+      "protocolMappers": [
+        {
+          "name": "kafka audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "kafka",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ],
+      "authorizationSettings": {
+        "allowRemoteResourceManagement": true,
+        "policyEnforcementMode": "ENFORCING",
+        "resources": [
+          {
+            "name": "Group:*",
+            "type": "Group",
+            "ownerManagedAccess": false,
+            "displayName": "Any group",
+            "attributes": {},
+            "uris": [],
+            "scopes": [
+              {
+                "name": "Describe"
+              },
+              {
+                "name": "Read"
+              },
+              {
+                "name": "DescribeConfigs"
+              },
+              {
+                "name": "AlterConfigs"
+              }
+            ]
+          },
+          {
+            "name": "Topic:*",
+            "type": "Topic",
+            "ownerManagedAccess": false,
+            "displayName": "Any topic",
+            "attributes": {},
+            "uris": [],
+            "scopes": [
+              {
+                "name": "Create"
+              },
+              {
+                "name": "Delete"
+              },
+              {
+                "name": "Describe"
+              },
+              {
+                "name": "Write"
+              },
+              {
+                "name": "Read"
+              },
+              {
+                "name": "Alter"
+              },
+              {
+                "name": "DescribeConfigs"
+              },
+              {
+                "name": "AlterConfigs"
+              }
+            ]
+          },
+          {
+            "name" : "Cluster:*",
+            "type" : "Cluster",
+            "ownerManagedAccess" : false,
+            "attributes" : { },
+            "uris" : [ ]
+          },
+          {
+            "name": "Topic:messages",
+            "type": "topic",
+            "scopes": [
+              {
+                "name": "Delete"
+              },
+              {
+                "name": "Describe"
+              },
+              {
+                "name": "Create"
+              },
+              {
+                "name": "Write"
+              },
+              {
+                "name": "Alter"
+              },
+              {
+                "name": "Read"
+              },
+              {
+                "name": "DescribeConfigs"
+              },
+              {
+                "name": "AlterConfigs"
+              }
+            ]
+          }
+        ],
+        "policies": [
+          {
+            "name": "Producer Client",
+            "type": "client",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "clients": "[\"kafka-producer-client\", \"kafka-client\"]"
+            }
+          },
+          {
+            "name": "Consumer Client",
+            "type": "client",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "clients": "[\"kafka-consumer-client\", \"kafka-client\"]"
+            }
+          },
+          {
+            "name": "Producer Client can write to topic 'messages'",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"Topic:messages\"]",
+              "scopes": "[\"Delete\",\"Describe\",\"Create\",\"Write\"]",
+              "applyPolicies": "[\"Producer Client\"]"
+            }
+          },
+          {
+            "name": "Consumer Client can read from topic 'messages'",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"Topic:messages\"]",
+              "scopes": "[\"Describe\",\"Read\"]",
+              "applyPolicies": "[\"Consumer Client\"]"
+            }
+          },
+          {
+            "name": "Consumer Client can use any group",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"Group:*\"]",
+              "scopes": "[\"Describe\",\"Write\",\"Read\"]",
+              "applyPolicies": "[\"Consumer Client\"]"
+            }
+          }
+        ],
+        "scopes": [
+          {
+            "name": "Create"
+          },
+          {
+            "name": "Read"
+          },
+          {
+            "name": "Write"
+          },
+          {
+            "name": "Delete"
+          },
+          {
+            "name": "Alter"
+          },
+          {
+            "name": "Describe"
+          },
+          {
+            "name": "ClusterAction"
+          },
+          {
+            "name": "DescribeConfigs"
+          },
+          {
+            "name": "AlterConfigs"
+          },
+          {
+            "name": "IdempotentWrite"
+          }
+        ],
+        "decisionStrategy": "AFFIRMATIVE"
+      }
+    },
+    {
+      "clientId": "kafka-cli",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "kafka-cli-secret",
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": true,
+      "fullScopeAllowed": true
+    },
+    {
+      "clientId": "kafka-producer-client",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "kafka-producer-client-secret",
+      "publicClient": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "consentRequired" : false,
+      "fullScopeAllowed" : false,
+      "attributes": {
+        "access.token.lifespan": "36000"
+      }
+    },
+    {
+      "clientId": "kafka-consumer-client",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "kafka-consumer-client-secret",
+      "publicClient": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "consentRequired" : false,
+      "fullScopeAllowed" : false,
+      "attributes": {
+        "access.token.lifespan": "36000"
+      }
+    },
+    {
+      "clientId": "kafka-client",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "kafka-client-secret",
+      "publicClient": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "consentRequired" : false,
+      "fullScopeAllowed" : false,
+      "attributes": {
+        "access.token.lifespan": "36000"
+      }
+    }
+  ]
+}

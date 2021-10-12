@@ -19,87 +19,143 @@ import io.quarkus.registry.catalog.json.JsonPlatformReleaseVersion;
 import io.quarkus.registry.catalog.json.JsonPlatformStream;
 import io.quarkus.registry.catalog.selection.OriginPreference;
 import io.quarkus.registry.client.RegistryClientFactory;
-import io.quarkus.registry.client.maven.MavenRegistryClientFactory;
-import io.quarkus.registry.client.spi.RegistryClientEnvironment;
-import io.quarkus.registry.client.spi.RegistryClientFactoryProvider;
 import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.registry.config.RegistryConfig;
-import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
+import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Function;
-import org.eclipse.aether.artifact.DefaultArtifact;
 
 public class ExtensionCatalogResolver {
 
     public static ExtensionCatalogResolver empty() {
-        final ExtensionCatalogResolver resolver = new ExtensionCatalogResolver();
-        resolver.registries = Collections.emptyList();
-        return resolver;
+        return builder().empty();
     }
 
     public static Builder builder() {
-        return new ExtensionCatalogResolver().new Builder();
+        return new Builder();
     }
 
-    public class Builder {
+    public static class Builder {
+        private MessageWriter log;
+        private String configFilePathString;
+        private boolean useRegistryClient = true;
+        private boolean refreshCache;
 
         private MavenArtifactResolver artifactResolver;
-        private boolean built;
+        private RegistriesConfig config;
+        private Path configFilePath;
 
-        private RegistryClientFactory defaultClientFactory;
-        private RegistryClientEnvironment clientEnv;
+        public Builder messageWriter(MessageWriter log) {
+            this.log = log;
+            return this;
+        }
 
-        private Builder() {
+        public Builder useRegistryClient(boolean useRegistryClient) {
+            this.useRegistryClient = useRegistryClient;
+            return this;
+        }
+
+        public Builder configFile(String configFilePath) {
+            this.configFilePathString = configFilePath;
+            return this;
+        }
+
+        public Builder config(RegistriesConfig config) {
+            this.config = config;
+            return this;
+        }
+
+        public Builder refreshCache(boolean refreshCache) {
+            this.refreshCache = refreshCache;
+            return this;
         }
 
         public Builder artifactResolver(MavenArtifactResolver resolver) {
-            assertNotBuilt();
-            artifactResolver = resolver;
+            this.artifactResolver = resolver;
             return this;
         }
 
-        public Builder messageWriter(MessageWriter messageWriter) {
-            assertNotBuilt();
-            log = messageWriter;
-            return this;
-        }
-
-        public Builder config(RegistriesConfig registriesConfig) {
-            assertNotBuilt();
-            config = registriesConfig;
-            return this;
-        }
-
-        public ExtensionCatalogResolver build() throws RegistryResolutionException {
-            assertNotBuilt();
-            built = true;
+        /**
+         * Builder method.
+         *
+         * @return a catalog resolver that uses the provided configuration attributes,
+         *         but does not use the Quarkus Extension Registry.
+         */
+        public ExtensionCatalogResolver empty() {
             completeConfig();
-            buildRegistryClients();
-            return ExtensionCatalogResolver.this;
+            return clearCache(new ExtensionCatalogResolver(this, Collections.emptyList()));
+        }
+
+        /**
+         * Builder method.
+         *
+         * @return a catalog resolver that uses the provided configuration attributes to
+         *         resolve resources against configured Quarkus Extension registries. Note that if
+         *         {@link #useRegistryClient} is {@literal false}, this is equivalent to calling
+         *         {@link #empty()}.
+         */
+        public ExtensionCatalogResolver build() throws RegistryResolutionException {
+            completeConfig();
+            return useRegistryClient
+                    ? clearCache(new ExtensionCatalogResolver(this, buildRegistryClients()))
+                    : clearCache(new ExtensionCatalogResolver(this, Collections.emptyList()));
+        }
+
+        private ExtensionCatalogResolver clearCache(ExtensionCatalogResolver resolver) {
+            if ( refreshCache ) {
+                log.debug("Refreshing registry cache");
+                if (resolver.hasRegistries()) {
+                    try {
+                        for (RegistryExtensionResolver registry : resolver.registries) {
+                            registry.clearCache();
+                        }
+                    } catch (Exception e) {
+                        log.warn("Unable to refresh the registry cache: %s", e.getMessage());
+                    }
+                } else {
+                    log.warn("Skipping refresh. No registries are configured.");
+                }
+            }
+            return resolver;
         }
 
         private void completeConfig() {
-            if (config == null) {
-                config = RegistriesConfigLocator.resolveConfig();
+            if ( useRegistryClient ) { // this is the default
+                String value = System.getProperty("quarkusRegistryClient");
+                if (value == null) {
+                    value = System.getenv("QUARKUS_REGISTRY_CLIENT");
+                }
+                useRegistryClient = value == null || value.isBlank() || Boolean.parseBoolean(value);
             }
+            if (config == null) {
+                // Find tools config file
+                configFilePath = configFilePathString == null
+                        ? RegistriesConfigLocator.locateConfigYaml()
+                        : Paths.get(configFilePathString);
+
+                // read tool configuration
+                config = configFilePath == null
+                        ? RegistriesConfigLocator.resolveConfig()
+                        : RegistriesConfigLocator.load(configFilePath);
+            }
+
             if (log == null) {
                 log = config.isDebug() ? MessageWriter.debug() : MessageWriter.info();
             }
+
             if (artifactResolver == null) {
                 try {
                     artifactResolver = MavenArtifactResolver.builder()
@@ -112,140 +168,81 @@ public class ExtensionCatalogResolver {
             }
         }
 
-        private void buildRegistryClients() throws RegistryResolutionException {
-            registries = new ArrayList<>(config.getRegistries().size());
-            for (RegistryConfig config : config.getRegistries()) {
-                if (!config.isEnabled()) {
+        List<RegistryExtensionResolver> buildRegistryClients() throws RegistryResolutionException {
+            RegistryClientFactoryResolver clientFactoryResolver = new RegistryClientFactoryResolver(this.artifactResolver,
+                    this.log);
+            List<RegistryExtensionResolver> registries = new ArrayList<>(config.getRegistries().size());
+            for (RegistryConfig registry : config.getRegistries()) {
+                if (!registry.isEnabled()) {
                     continue;
                 }
-                final RegistryClientFactory clientFactory = getClientFactory(config);
-                registries
-                        .add(new RegistryExtensionResolver(clientFactory.buildRegistryClient(config), log, registries.size()));
+                final RegistryClientFactory clientFactory = clientFactoryResolver.getClientFactory(registry);
+                registries.add(new RegistryExtensionResolver(
+                        clientFactory.buildRegistryClient(registry), log, registries.size()));
             }
-        }
 
-        private RegistryClientFactory getClientFactory(RegistryConfig config) {
-            if (config.getExtra().isEmpty()) {
-                return getDefaultClientFactory();
-            }
-            Object provider = config.getExtra().get("client-factory-artifact");
-            if (provider != null) {
-                return loadFromArtifact(config, provider);
-            }
-            provider = config.getExtra().get("client-factory-url");
-            if (provider != null) {
-                final URL url;
-                try {
-                    url = new URL((String) provider);
-                } catch (MalformedURLException e) {
-                    throw new IllegalStateException("Failed to translate " + provider + " to URL", e);
-                }
-                return loadFromUrl(url);
-            }
-            return getDefaultClientFactory();
-        }
-
-        public RegistryClientFactory loadFromArtifact(RegistryConfig config, final Object providerValue) {
-            ArtifactCoords providerArtifact = null;
-            try {
-                final String providerStr = (String) providerValue;
-                providerArtifact = ArtifactCoords.fromString(providerStr);
-            } catch (Exception e) {
-                throw new IllegalStateException("Failed to process configuration of " + config.getId()
-                        + " registry: failed to cast " + providerValue + " to String", e);
-            }
-            final File providerJar;
-            try {
-                providerJar = artifactResolver.resolve(new DefaultArtifact(providerArtifact.getGroupId(),
-                        providerArtifact.getArtifactId(), providerArtifact.getClassifier(),
-                        providerArtifact.getType(), providerArtifact.getVersion())).getArtifact().getFile();
-            } catch (BootstrapMavenException e) {
-                throw new IllegalStateException(
-                        "Failed to resolve the registry client factory provider artifact " + providerArtifact, e);
-            }
-            log.debug("Loading registry client factory for %s from %s", config.getId(), providerArtifact);
-            final URL url;
-            try {
-                url = providerJar.toURI().toURL();
-            } catch (MalformedURLException e) {
-                throw new IllegalStateException("Failed to translate " + providerJar + " to URL", e);
-            }
-            return loadFromUrl(url);
-        }
-
-        private RegistryClientFactory loadFromUrl(final URL url) {
-            final ClassLoader originalCl = Thread.currentThread().getContextClassLoader();
-            try {
-                ClassLoader providerCl = new URLClassLoader(new URL[] { url }, originalCl);
-                final Iterator<RegistryClientFactoryProvider> i = ServiceLoader
-                        .load(RegistryClientFactoryProvider.class, providerCl).iterator();
-                if (!i.hasNext()) {
-                    throw new Exception("Failed to locate an implementation of " + RegistryClientFactoryProvider.class.getName()
-                            + " service provider");
-                }
-                final RegistryClientFactoryProvider provider = i.next();
-                if (i.hasNext()) {
-                    final StringBuilder buf = new StringBuilder();
-                    buf.append("Found more than one registry client factory provider "
-                            + provider.getClass().getName());
-                    while (i.hasNext()) {
-                        buf.append(", ").append(i.next().getClass().getName());
-                    }
-                    throw new Exception(buf.toString());
-                }
-                return provider.newRegistryClientFactory(getClientEnv());
-            } catch (Exception e) {
-                throw new IllegalStateException("Failed to load registry client factory from " + url, e);
-            } finally {
-                Thread.currentThread().setContextClassLoader(originalCl);
-            }
-        }
-
-        private RegistryClientFactory getDefaultClientFactory() {
-            return defaultClientFactory == null ? defaultClientFactory = new MavenRegistryClientFactory(artifactResolver, log)
-                    : defaultClientFactory;
-        }
-
-        private RegistryClientEnvironment getClientEnv() {
-            return clientEnv == null ? clientEnv = new RegistryClientEnvironment() {
-
-                @Override
-                public MessageWriter log() {
-                    return log;
-                }
-
-                @Override
-                public MavenArtifactResolver resolver() {
-                    return artifactResolver;
-                }
-            } : clientEnv;
-        }
-
-        private void assertNotBuilt() {
-            if (built) {
-                throw new IllegalStateException("The builder has already built an instance");
-            }
+            return registries;
         }
     }
 
-    private MessageWriter log;
-    private RegistriesConfig config;
-    private List<RegistryExtensionResolver> registries;
+    // << CAN WE GET THIS TO MATCH >> //
 
+    private final MessageWriter log;
+    private final RegistriesConfig config;
+    private final Path configFilePath;
+    private final List<RegistryExtensionResolver> registries;
+
+    private ExtensionCatalogResolver(Builder builder, List<RegistryExtensionResolver> registries) {
+        this.log = builder.log;
+        this.config = builder.config;
+        this.configFilePath = builder.configFilePath;
+        this.registries = registries;
+    }
+
+    /**
+     *
+     * @return
+     */
     public RegistriesConfig getConfig() {
-        return config;
+        return this.config;
     }
 
+    /**
+     * Persist active configuration (in place). Update the configuration that
+     * created this instance with updated/active settings.
+     */
+    public void saveConfig() throws IOException {
+        RegistriesConfigMapperHelper.serialize(config, configFilePath);
+    }
+
+    /**
+     * @return
+     */
+    public MessageWriter getMessageWriter() {
+        return log;
+    }
+
+    /** @return true if extension catalog resolver has registries */
     public boolean hasRegistries() {
         return !registries.isEmpty();
     }
 
+    /**
+     *
+     * @return
+     * @throws RegistryResolutionException
+     */
     public PlatformCatalog resolvePlatformCatalog() throws RegistryResolutionException {
         return resolvePlatformCatalog(null);
     }
 
+    /**
+     *
+     * @param quarkusVersion
+     * @return
+     * @throws RegistryResolutionException
+     */
     public PlatformCatalog resolvePlatformCatalog(String quarkusVersion) throws RegistryResolutionException {
-
         List<PlatformCatalog> catalogs = new ArrayList<>(registries.size());
         for (RegistryExtensionResolver qer : registries) {
             final PlatformCatalog catalog = qer.resolvePlatformCatalog(quarkusVersion);
@@ -262,12 +259,11 @@ public class ExtensionCatalogResolver {
         }
 
         final JsonPlatformCatalog result = new JsonPlatformCatalog();
-
         final List<Platform> collectedPlatforms = new ArrayList<>();
-
         final Set<String> collectedPlatformKeys = new HashSet<>();
         String lastUpdated = null;
         boolean sawUnknownLastUpdate = false;
+
         for (PlatformCatalog c : catalogs) {
             collectPlatforms(c, collectedPlatforms, collectedPlatformKeys);
             if (!sawUnknownLastUpdate) {
@@ -300,10 +296,23 @@ public class ExtensionCatalogResolver {
         }
     }
 
+    /**
+     *
+     * @param registryId
+     * @return
+     * @throws RegistryResolutionException
+     */
     public PlatformCatalog resolvePlatformCatalogFromRegistry(String registryId) throws RegistryResolutionException {
         return registries.get(getRegistryIndex(registryId)).resolvePlatformCatalog();
     }
 
+    /**
+     *
+     * @param registryId
+     * @param quarkusVersion
+     * @return
+     * @throws RegistryResolutionException
+     */
     public PlatformCatalog resolvePlatformCatalogFromRegistry(String registryId, String quarkusVersion)
             throws RegistryResolutionException {
         return quarkusVersion == null ? resolvePlatformCatalogFromRegistry(registryId)
@@ -363,8 +372,8 @@ public class ExtensionCatalogResolver {
         }
     }
 
+    /** @return extension catalog resolved based on discovered configuration */
     public ExtensionCatalog resolveExtensionCatalog() throws RegistryResolutionException {
-
         ensureRegistriesConfigured();
 
         final ExtensionCatalogBuilder catalogBuilder = new ExtensionCatalogBuilder();
@@ -446,6 +455,11 @@ public class ExtensionCatalogResolver {
         metadata.put("origin-preference", originPreference);
     }
 
+    /**
+     * @param quarkusCoreVersion
+     * @return resolved extensionc catalog
+     * @throws RegistryResolutionException
+     */
     public ExtensionCatalog resolveExtensionCatalog(String quarkusCoreVersion) throws RegistryResolutionException {
         if (quarkusCoreVersion == null) {
             return resolveExtensionCatalog();
@@ -470,8 +484,12 @@ public class ExtensionCatalogResolver {
         return catalogBuilder.build();
     }
 
+    /**
+     * @param streamCoords
+     * @return
+     * @throws RegistryResolutionException
+     */
     public ExtensionCatalog resolveExtensionCatalog(PlatformStreamCoords streamCoords) throws RegistryResolutionException {
-
         ensureRegistriesConfigured();
 
         final String platformKey = streamCoords.getPlatformKey();
@@ -549,6 +567,12 @@ public class ExtensionCatalogResolver {
         return JsonCatalogMerger.merge(catalogs);
     }
 
+    /**
+     *
+     * @param preferredPlatforms
+     * @return
+     * @throws RegistryResolutionException
+     */
     @SuppressWarnings("unchecked")
     public ExtensionCatalog resolveExtensionCatalog(Collection<ArtifactCoords> preferredPlatforms)
             throws RegistryResolutionException {
@@ -658,12 +682,6 @@ public class ExtensionCatalogResolver {
                 : resolveExtensionCatalog(quarkusVersion, catalogBuilder, preferredPlatformKeys);
     }
 
-    public void clearRegistryCache() throws RegistryResolutionException {
-        for (RegistryExtensionResolver registry : registries) {
-            registry.clearCache();
-        }
-    }
-
     private void ensureRegistriesConfigured() throws RegistryResolutionException {
         final int registriesTotal = registries.size();
         if (registriesTotal == 0) {
@@ -679,6 +697,13 @@ public class ExtensionCatalogResolver {
         }
     }
 
+    /**
+     *
+     * @param registry
+     * @param catalogBuilder
+     * @param quarkusVersion
+     * @throws RegistryResolutionException
+     */
     public void appendNonPlatformExtensions(RegistryExtensionResolver registry, ExtensionCatalogBuilder catalogBuilder,
             String quarkusVersion) throws RegistryResolutionException {
         final ExtensionCatalog nonPlatformCatalog = registry.resolveNonPlatformExtensions(quarkusVersion);
@@ -821,5 +846,16 @@ public class ExtensionCatalogResolver {
         }
 
         return exclusiveProvider == null ? filtered == null ? registries : filtered : Arrays.asList(exclusiveProvider);
+    }
+
+    /**
+     *
+     * @param bomGroupId
+     * @param bomArtifactId
+     * @param bomVersion
+     * @return
+     */
+    public ExtensionCatalog resolvePlatformDescriptorDirectly(String bomGroupId, String bomArtifactId, String bomVersion) {
+        return null;
     }
 }

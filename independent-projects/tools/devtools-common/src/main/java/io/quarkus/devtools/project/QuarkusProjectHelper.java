@@ -152,7 +152,7 @@ public class QuarkusProjectHelper {
             throws RegistryResolutionException {
         return ExtensionCatalogResolver.builder()
                 .artifactResolver(resolver)
-                .config(toolsConfig())
+                //                .config(toolsConfig())
                 .messageWriter(log)
                 .build();
     }

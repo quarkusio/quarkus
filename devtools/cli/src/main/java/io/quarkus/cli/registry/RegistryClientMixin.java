@@ -118,11 +118,11 @@ public class RegistryClientMixin {
             return;
         }
         log.debug("Refreshing registry cache");
-        try {
-            catalogResolver.clearRegistryCache();
-        } catch (Exception e) {
-            log.warn("Unable to refresh the registry cache: %s", e.getMessage());
-        }
+        //        try {
+        //            catalogResolver.clearRegistryCache();
+        //        } catch (Exception e) {
+        //            log.warn("Unable to refresh the registry cache: %s", e.getMessage());
+        //        }
     }
 
     @Override

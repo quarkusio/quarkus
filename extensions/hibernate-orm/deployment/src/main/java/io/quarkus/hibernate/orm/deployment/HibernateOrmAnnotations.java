@@ -222,4 +222,13 @@ public final class HibernateOrmAnnotations {
             DotName.createSimple("org.hibernate.engine.jdbc.connections.internal.DatasourceConnectionProviderImpl"),
             DotName.createSimple("org.hibernate.engine.jdbc.cursor.internal.StandardRefCursorSupport")));
 
+    public static final List<DotName> JPA_LISTENER_ANNOTATIONS = Collections.unmodifiableList(Arrays.asList(
+            DotName.createSimple("javax.persistence.PostLoad"),
+            DotName.createSimple("javax.persistence.PostPersist"),
+            DotName.createSimple("javax.persistence.PostRemove"),
+            DotName.createSimple("javax.persistence.PostUpdate"),
+            DotName.createSimple("javax.persistence.PrePersist"),
+            DotName.createSimple("javax.persistence.PreRemove"),
+            DotName.createSimple("javax.persistence.PreUpdate")));
+
 }

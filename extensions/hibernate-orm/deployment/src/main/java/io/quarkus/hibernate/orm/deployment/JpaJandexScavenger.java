@@ -84,8 +84,12 @@ public final class JpaJandexScavenger {
         enlistJPAModelClasses(collector, ClassNames.JPA_ENTITY);
         enlistJPAModelClasses(collector, ClassNames.EMBEDDABLE);
         enlistJPAModelClasses(collector, ClassNames.MAPPED_SUPERCLASS);
-        enlistJPAModelClasses(collector, ClassNames.CONVERTER);
         enlistEmbeddedsAndElementCollections(collector);
+
+        enlistPotentialCdiBeanClasses(collector, ClassNames.CONVERTER);
+        for (DotName annotation : HibernateOrmAnnotations.JPA_LISTENER_ANNOTATIONS) {
+            enlistPotentialCdiBeanClasses(collector, annotation);
+        }
 
         for (JpaModelPersistenceUnitContributionBuildItem persistenceUnitContribution : persistenceUnitContributions) {
             enlistExplicitMappings(collector, persistenceUnitContribution);
@@ -126,8 +130,8 @@ public final class JpaJandexScavenger {
             }
         }
 
-        return new JpaModelBuildItem(collector.packages, collector.entityTypes, allModelClassNames,
-                collector.xmlMappingsByPU);
+        return new JpaModelBuildItem(collector.packages, collector.entityTypes, collector.potentialCdiBeanTypes,
+                allModelClassNames, collector.xmlMappingsByPU);
     }
 
     private void enlistExplicitMappings(Collector collector,
@@ -333,6 +337,39 @@ public final class JpaJandexScavenger {
         }
     }
 
+    private void enlistPotentialCdiBeanClasses(Collector collector, DotName dotName) {
+        Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
+
+        if (jpaAnnotations == null) {
+            return;
+        }
+
+        for (AnnotationInstance annotation : jpaAnnotations) {
+            AnnotationTarget target = annotation.target();
+            ClassInfo beanType;
+            switch (target.kind()) {
+                case CLASS:
+                    beanType = target.asClass();
+                    break;
+                case FIELD:
+                    beanType = target.asField().declaringClass();
+                    break;
+                case METHOD:
+                    beanType = target.asMethod().declaringClass();
+                    break;
+                case METHOD_PARAMETER:
+                case TYPE:
+                case RECORD_COMPONENT:
+                default:
+                    throw new IllegalArgumentException(
+                            "Annotation " + dotName + " was not expected on a target of kind " + target.kind());
+            }
+            DotName beanTypeDotName = beanType.name();
+            addClassHierarchyToReflectiveList(collector, beanTypeDotName);
+            collector.potentialCdiBeanTypes.add(beanTypeDotName);
+        }
+    }
+
     /**
      * Add the class to the reflective list with full method and field access.
      * Add the superclasses recursively as well as the interfaces.
@@ -437,6 +474,7 @@ public final class JpaJandexScavenger {
     private static class Collector {
         final Set<String> packages = new HashSet<>();
         final Set<String> entityTypes = new HashSet<>();
+        final Set<DotName> potentialCdiBeanTypes = new HashSet<>();
         final Set<String> modelTypes = new HashSet<>();
         final Set<String> enumTypes = new HashSet<>();
         final Set<String> javaTypes = new HashSet<>();

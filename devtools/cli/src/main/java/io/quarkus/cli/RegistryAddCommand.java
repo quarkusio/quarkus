@@ -1,18 +1,13 @@
 package io.quarkus.cli;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.quarkus.cli.registry.BaseRegistryCommand;
 import io.quarkus.registry.config.RegistriesConfig;
-import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.registry.config.RegistryConfig;
-import io.quarkus.registry.config.json.JsonRegistriesConfig;
 import io.quarkus.registry.config.json.JsonRegistryConfig;
-import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "add", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Add a Quarkus extension registry", description = "%n"
@@ -27,25 +22,9 @@ public class RegistryAddCommand extends BaseRegistryCommand {
 
     @Override
     public Integer call() throws Exception {
+        final RegistriesConfig config = registryClient.getConfig();
 
-        registryClient.refreshRegistryCache(output);
-
-        Path configYaml;
-        if (registryClient.getConfigArg() == null) {
-            configYaml = RegistriesConfigLocator.locateConfigYaml();
-            if (configYaml == null) {
-                configYaml = RegistriesConfigLocator.getDefaultConfigYamlLocation();
-            }
-        } else {
-            configYaml = Paths.get(registryClient.getConfigArg());
-        }
-
-        final RegistriesConfig config;
-        if (Files.exists(configYaml)) {
-            config = RegistriesConfigMapperHelper.deserialize(configYaml, JsonRegistriesConfig.class);
-        } else {
-            config = new JsonRegistriesConfig();
-        }
+        List<RegistryConfig> registries = config.getRegistries();
 
         final Set<String> existingIds = config.getRegistries().stream().map(RegistryConfig::getId).collect(Collectors.toSet());
         boolean persist = false;
@@ -54,7 +33,7 @@ public class RegistryAddCommand extends BaseRegistryCommand {
                 persist = true;
                 final JsonRegistryConfig registry = new JsonRegistryConfig();
                 registry.setId(registryId);
-                config.getRegistries().add(registry);
+                registries.add(registry);
                 output.info("Registry " + registryId + " was added");
             } else {
                 output.info("Registry " + registryId + " was skipped since it is already present");
@@ -62,7 +41,7 @@ public class RegistryAddCommand extends BaseRegistryCommand {
         }
 
         if (persist) {
-            RegistriesConfigMapperHelper.serialize(config, configYaml);
+            registryClient.saveConfig();
         }
 
         return CommandLine.ExitCode.OK;

@@ -161,4 +161,20 @@ public class OutputOptionMixin implements MessageWriter {
                 + ", verbose=" + verbose + "]";
     }
 
+    public static OutputOptionMixin getMixin(CommandSpec mixee) {
+        try {
+            CommandLine.Model.IAnnotatedElement element = mixee.mixinAnnotatedElements().get("output");
+            if (element != null) {
+                return element.getter().get();
+            } else {
+                throw new IllegalStateException(
+                        String.format("CommandSpec %s does not use the OutputOptionMixin with name='output'",
+                                mixee.qualifiedName()));
+            }
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

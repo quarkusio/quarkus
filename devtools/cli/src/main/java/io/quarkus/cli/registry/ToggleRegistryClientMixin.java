@@ -13,7 +13,7 @@ public class ToggleRegistryClientMixin extends RegistryClientMixin {
     }
 
     @Override
-    public boolean enabled() {
+    public boolean useRegistryClient() {
         return useRegistryClient;
     }
 }

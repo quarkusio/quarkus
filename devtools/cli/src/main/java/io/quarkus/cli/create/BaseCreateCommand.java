@@ -206,7 +206,7 @@ public class BaseCreateCommand implements Callable<Integer> {
         CreateProjectHelper.handleSpringConfiguration(values);
         output.debug("Creating an app using the following settings: %s", values);
 
-        QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetVersion, buildTool, output);
+        QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetVersion, buildTool);
 
         // TODO: knock on effect with properties.. here?
         properties.entrySet().forEach(x -> {
@@ -229,7 +229,7 @@ public class BaseCreateCommand implements Callable<Integer> {
      */
     public QuarkusProject getExtensionVersions(BuildTool buildTool, TargetQuarkusVersionGroup targetVersion)
             throws RegistryResolutionException {
-        return registryClient.createQuarkusProject(outputDirectory(), targetVersion, buildTool, output);
+        return registryClient.createQuarkusProject(outputDirectory(), targetVersion, buildTool);
     }
 
     @Override

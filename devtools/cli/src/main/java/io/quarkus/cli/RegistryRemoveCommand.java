@@ -1,17 +1,12 @@
 package io.quarkus.cli;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import io.quarkus.cli.registry.BaseRegistryCommand;
 import io.quarkus.registry.config.RegistriesConfig;
-import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.registry.config.RegistryConfig;
-import io.quarkus.registry.config.json.JsonRegistriesConfig;
-import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "remove", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Remove a Quarkus extension registry", description = "%n"
@@ -26,27 +21,15 @@ public class RegistryRemoveCommand extends BaseRegistryCommand {
 
     @Override
     public Integer call() throws Exception {
+        final RegistriesConfig config = registryClient.getConfig();
 
-        registryClient.refreshRegistryCache(output);
+        final List<RegistryConfig> registries = config.getRegistries();
+        final Map<String, RegistryConfig> registryMap = new LinkedHashMap<>(registries.size());
+        registries.forEach(r -> registryMap.put(r.getId(), r));
 
-        Path configYaml;
-        if (registryClient.getConfigArg() == null) {
-            configYaml = RegistriesConfigLocator.locateConfigYaml();
-            if (configYaml == null) {
-                output.error("Failed to locate the registry client configuration file");
-                return CommandLine.ExitCode.SOFTWARE;
-            }
-        } else {
-            configYaml = Paths.get(registryClient.getConfigArg());
-        }
-
-        final RegistriesConfig config = RegistriesConfigMapperHelper.deserialize(configYaml, JsonRegistriesConfig.class);
-
-        final Map<String, RegistryConfig> registries = new LinkedHashMap<>(config.getRegistries().size());
-        config.getRegistries().forEach(r -> registries.put(r.getId(), r));
         boolean persist = false;
         for (String registryId : registryIds.split(",")) {
-            if (registries.remove(registryId) == null) {
+            if (registryMap.remove(registryId) == null) {
                 output.info("Registry " + registryId + " was not previously configured");
             } else {
                 output.info("Registry " + registryId + " was removed");
@@ -55,9 +38,9 @@ public class RegistryRemoveCommand extends BaseRegistryCommand {
         }
 
         if (persist) {
-            final JsonRegistriesConfig jsonConfig = new JsonRegistriesConfig();
-            jsonConfig.setRegistries(new ArrayList<>(registries.values()));
-            RegistriesConfigMapperHelper.serialize(jsonConfig, configYaml);
+            registries.clear();
+            registries.addAll(registryMap.values());
+            registryClient.saveConfig();
         }
 
         return CommandLine.ExitCode.OK;

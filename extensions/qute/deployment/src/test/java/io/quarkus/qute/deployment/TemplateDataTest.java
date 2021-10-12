@@ -63,7 +63,8 @@ public class TemplateDataTest {
 
     }
 
-    @TemplateData(namespace = "TransactionType")
+    // namespace is TransactionType
+    @TemplateData(namespace = TemplateData.SIMPLENAME)
     public static enum TransactionType {
 
         FOO,

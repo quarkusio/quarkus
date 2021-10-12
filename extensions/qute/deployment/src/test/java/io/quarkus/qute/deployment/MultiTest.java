@@ -23,7 +23,7 @@ public class MultiTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(TemplateDataTest.Foo.class)
+                    .addClass(Foo.class)
                     .addAsResource(new StringAsset("{foo.val} is not {foo.val.setScale(2,roundingMode)}"),
                             "templates/foo.txt"));
 
@@ -33,7 +33,7 @@ public class MultiTest {
     @Test
     public void testCreateMulti() {
         Multi<String> multi = foo.data("roundingMode", RoundingMode.HALF_UP)
-                .data("foo", new TemplateDataTest.Foo(new BigDecimal("123.4563"))).createMulti();
+                .data("foo", new Foo(new BigDecimal("123.4563"))).createMulti();
         assertEquals("123.4563 is not 123.46", multi
                 .collect().in(StringBuffer::new, StringBuffer::append)
                 .onItem().transform(StringBuffer::toString)

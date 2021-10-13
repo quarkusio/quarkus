@@ -13,10 +13,8 @@ import javax.websocket.Extension;
 import org.jboss.logging.Logger;
 
 import io.netty.channel.EventLoopGroup;
-import io.quarkus.arc.Arc;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.quarkus.websockets.client.runtime.ServerWebSocketContainerFactory;
 import io.quarkus.websockets.client.runtime.WebSocketPrincipal;
@@ -56,7 +54,6 @@ public class WebsocketServerRecorder {
                     boolean dispatchToWorker, InetSocketAddress clientBindAddress, WebSocketReconnectHandler reconnectHandler,
                     Supplier<Executor> executorSupplier, List<Extension> installedExtensions, int maxFrameSize,
                     Supplier<Principal> currentUserSupplier) {
-                var identity = Arc.container().instance(CurrentIdentityAssociation.class);
                 return new VertxServerWebSocketContainer(objectIntrospecter, classLoader, eventLoopSupplier,
                         contextSetupHandlers, dispatchToWorker, clientBindAddress, reconnectHandler, executorSupplier,
                         installedExtensions, maxFrameSize, currentUserSupplier) {

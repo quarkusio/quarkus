@@ -60,8 +60,6 @@ Copy the build.gradle, gradle.properties and settings.gradle into the above gene
 
 Execute: gradle wrapper to setup the gradle wrapper (recommended).
 
-The dependency for `quarkus-test-amazon-lambda` will also need to be added to your build.gradle.
-
 For full Gradle details <<gradle, see below>>.
 ====
 
@@ -300,8 +298,8 @@ call must set a specific environment variable:
 
 == Examine the POM and Gradle build
 
-There is nothing special about the POM other than the inclusion of the `quarkus-amazon-lambda` and `quarkus-test-amazon-lambda` extensions
-as a dependencies.  The extension automatically generates everything you might need for your lambda deployment.
+There is nothing special about the POM other than the inclusion of the `quarkus-amazon-lambda` extension
+as a dependency.  The extension automatically generates everything you might need for your lambda deployment.
 
 NOTE: In previous versions of this extension you had to set up your pom or gradle
 to zip up your executable for native deployments, but this is not the case anymore.
@@ -309,8 +307,7 @@ to zip up your executable for native deployments, but this is not the case anymo
 [[gradle]]
 == Gradle build
 
-Similarly for Gradle projects, you also just have to add the `quarkus-amazon-lambda` and
-`quarkus-test-amazon-lambda` dependencies.  The extension automatically generates everything you might need
+Similarly for Gradle projects, you also just have to add the `quarkus-amazon-lambda` dependency.  The extension automatically generates everything you might need
 for your lambda deployment.
 
 Example Gradle dependencies:
@@ -321,8 +318,6 @@ dependencies {
     implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
     implementation 'io.quarkus:quarkus-resteasy'
     implementation 'io.quarkus:quarkus-amazon-lambda'
-
-    testImplementation  "io.quarkus:quarkus-test-amazon-lambda"
 
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation 'io.rest-assured:rest-assured'

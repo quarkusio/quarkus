@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -499,6 +500,14 @@ public class QuteProcessor {
                 .filter(TemplateDataBuildItem::hasNamespace)
                 .collect(Collectors.toMap(TemplateDataBuildItem::getNamespace, Function.identity()));
 
+        Map<String, List<TemplateExtensionMethodBuildItem>> namespaceExtensionMethods = templateExtensionMethods.stream()
+                .filter(TemplateExtensionMethodBuildItem::hasNamespace)
+                .sorted(Comparator.comparingInt(TemplateExtensionMethodBuildItem::getPriority).reversed())
+                .collect(Collectors.groupingBy(TemplateExtensionMethodBuildItem::getNamespace));
+
+        List<TemplateExtensionMethodBuildItem> regularExtensionMethods = templateExtensionMethods.stream()
+                .filter(Predicate.not(TemplateExtensionMethodBuildItem::hasNamespace)).collect(Collectors.toUnmodifiableList());
+
         LookupConfig lookupConfig = new FixedLookupConfig(index, initDefaultMembersFilter(), false);
 
         for (TemplateAnalysis templateAnalysis : templatesAnalysis.getAnalysis()) {
@@ -512,10 +521,10 @@ public class QuteProcessor {
                 if (expression.isLiteral()) {
                     continue;
                 }
-                Match match = validateNestedExpressions(templateAnalysis, null, new HashMap<>(), templateExtensionMethods,
-                        excludes, incorrectExpressions, expression, index, implicitClassToMembersUsed,
-                        templateIdToPathFun, generatedIdsToMatches, checkedTemplate,
-                        lookupConfig, namedBeans, namespaceTemplateData);
+                Match match = validateNestedExpressions(templateAnalysis, null, new HashMap<>(), excludes, incorrectExpressions,
+                        expression, index, implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches,
+                        checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData, regularExtensionMethods,
+                        namespaceExtensionMethods);
                 generatedIdsToMatches.put(expression.getGeneratedId(), match);
             }
             expressionMatches
@@ -573,21 +582,24 @@ public class QuteProcessor {
     }
 
     static Match validateNestedExpressions(TemplateAnalysis templateAnalysis, ClassInfo rootClazz, Map<String, Match> results,
-            List<TemplateExtensionMethodBuildItem> templateExtensionMethods, List<TypeCheckExcludeBuildItem> excludes,
-            BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions, Expression expression, IndexView index,
+            List<TypeCheckExcludeBuildItem> excludes, BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
+            Expression expression, IndexView index,
             Map<DotName, Set<String>> implicitClassToMembersUsed, Function<String, String> templateIdToPathFun,
             Map<Integer, Match> generatedIdsToMatches, CheckedTemplateBuildItem checkedTemplate,
             LookupConfig lookupConfig, Map<String, BeanInfo> namedBeans,
-            Map<String, TemplateDataBuildItem> namespaceTemplateData) {
+            Map<String, TemplateDataBuildItem> namespaceTemplateData,
+            List<TemplateExtensionMethodBuildItem> regularExtensionMethods,
+            Map<String, List<TemplateExtensionMethodBuildItem>> namespaceExtensionMethods) {
 
         // Validate the parameters of nested virtual methods
         for (Expression.Part part : expression.getParts()) {
             if (part.isVirtualMethod()) {
                 for (Expression param : part.asVirtualMethod().getParameters()) {
                     if (!results.containsKey(param.toOriginalString())) {
-                        validateNestedExpressions(templateAnalysis, null, results, templateExtensionMethods, excludes,
+                        validateNestedExpressions(templateAnalysis, null, results, excludes,
                                 incorrectExpressions, param, index, implicitClassToMembersUsed, templateIdToPathFun,
-                                generatedIdsToMatches, checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData);
+                                generatedIdsToMatches, checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData,
+                                regularExtensionMethods, namespaceExtensionMethods);
                     }
                 }
             }
@@ -597,6 +609,7 @@ public class QuteProcessor {
 
         String namespace = expression.getNamespace();
         TemplateDataBuildItem templateData = null;
+        List<TemplateExtensionMethodBuildItem> extensionMethods = null;
 
         if (namespace != null) {
             if (namespace.equals(INJECT_NAMESPACE)) {
@@ -618,8 +631,11 @@ public class QuteProcessor {
                     filter = filter.and(templateData::filter);
                     lookupConfig = new FirstPassLookupConfig(lookupConfig, filter, true);
                 } else {
-                    // All other namespaces are ignored
-                    return putResult(match, results, expression);
+                    extensionMethods = namespaceExtensionMethods.get(namespace);
+                    if (extensionMethods == null) {
+                        // All other namespaces are ignored
+                        return putResult(match, results, expression);
+                    }
                 }
             }
         }
@@ -645,7 +661,29 @@ public class QuteProcessor {
         Iterator<Info> iterator = parts.iterator();
         Info root = iterator.next();
 
-        if (rootClazz == null) {
+        if (extensionMethods != null) {
+            // Namespace is used and at least one namespace extension method exists for the given namespace
+            TemplateExtensionMethodBuildItem extensionMethod = findTemplateExtensionMethod(root, null, extensionMethods,
+                    expression, index, templateIdToPathFun, results);
+            if (extensionMethod != null) {
+                MethodInfo method = extensionMethod.getMethod();
+                ClassInfo returnType = index.getClassByName(method.returnType().name());
+                if (returnType != null) {
+                    match.setValues(returnType, method.returnType());
+                } else {
+                    // Return type not available
+                    return putResult(match, results, expression);
+                }
+            } else {
+                // No namespace extension method found - incorrect expression
+                incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                        String.format("no matching namespace [%s] extension method found", namespace), expression.getOrigin()));
+                match.clearValues();
+                return putResult(match, results, expression);
+            }
+
+        } else if (rootClazz == null) {
+            // No namespace is used or no declarative resolver (extension methods, @TemplateData, etc.)
             if (root.isTypeInfo()) {
                 // E.g. |org.acme.Item|
                 match.setValues(root.asTypeInfo().rawClass, root.asTypeInfo().resolvedType);
@@ -750,7 +788,7 @@ public class QuteProcessor {
 
                 if (member == null) {
                     // Then try to find an etension method
-                    extensionMethod = findTemplateExtensionMethod(info, match.type(), templateExtensionMethods, expression,
+                    extensionMethod = findTemplateExtensionMethod(info, match.type(), regularExtensionMethods, expression,
                             index,
                             templateIdToPathFun, results);
                     if (extensionMethod != null) {
@@ -1086,15 +1124,10 @@ public class QuteProcessor {
                 .entrySet()) {
             Map<String, List<TemplateExtensionMethodBuildItem>> namespaceToMethods = classEntry.getValue();
             for (Entry<String, List<TemplateExtensionMethodBuildItem>> nsEntry : namespaceToMethods.entrySet()) {
-                Map<Integer, List<TemplateExtensionMethodBuildItem>> priorityToMethods = new HashMap<>();
-                for (TemplateExtensionMethodBuildItem method : nsEntry.getValue()) {
-                    List<TemplateExtensionMethodBuildItem> methods = priorityToMethods.get(method.getPriority());
-                    if (methods == null) {
-                        methods = new ArrayList<>();
-                        priorityToMethods.put(method.getPriority(), methods);
-                    }
-                    methods.add(method);
-                }
+
+                Map<Integer, List<TemplateExtensionMethodBuildItem>> priorityToMethods = nsEntry.getValue().stream()
+                        .collect(Collectors.groupingBy(TemplateExtensionMethodBuildItem::getPriority));
+
                 for (Entry<Integer, List<TemplateExtensionMethodBuildItem>> priorityEntry : priorityToMethods.entrySet()) {
                     try (NamespaceResolverCreator namespaceResolverCreator = extensionMethodGenerator
                             .createNamespaceResolver(priorityEntry.getValue().get(0).getMethod().declaringClass(),
@@ -1597,11 +1630,7 @@ public class QuteProcessor {
         }
         String name = info.isProperty() ? info.asProperty().name : info.asVirtualMethod().name;
         for (TemplateExtensionMethodBuildItem extensionMethod : templateExtensionMethods) {
-            if (extensionMethod.hasNamespace()) {
-                // Skip namespace extensions
-                continue;
-            }
-            if (!Types.isAssignableFrom(extensionMethod.getMatchType(), matchType, index)) {
+            if (matchType != null && !Types.isAssignableFrom(extensionMethod.getMatchType(), matchType, index)) {
                 // If "Bar extends Foo" then Bar should be matched for the extension method "int get(Foo)"   
                 continue;
             }
@@ -1610,7 +1639,13 @@ public class QuteProcessor {
                 continue;
             }
             List<Type> parameters = extensionMethod.getMethod().parameters();
-            int realParamSize = parameters.size() - (TemplateExtension.ANY.equals(extensionMethod.getMatchName()) ? 2 : 1);
+            int realParamSize = parameters.size();
+            if (!extensionMethod.hasNamespace()) {
+                realParamSize -= 1;
+            }
+            if (TemplateExtension.ANY.equals(extensionMethod.getMatchName())) {
+                realParamSize -= 1;
+            }
             if (realParamSize > 0 && !info.isVirtualMethod()) {
                 // If method accepts additional params the info must be a virtual method
                 continue;
@@ -1636,7 +1671,7 @@ public class QuteProcessor {
                 // Check parameter types if available
                 boolean matches = true;
                 // Skip base and name param if needed
-                int idx = TemplateExtension.ANY.equals(extensionMethod.getMatchName()) ? 2 : 1;
+                int idx = parameters.size() - realParamSize;
 
                 for (Expression param : virtualMethod.getParameters()) {
 

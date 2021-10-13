@@ -16,24 +16,30 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClientBuilder;
 
 @Recorder
 public class DynamodbRecorder {
-    public RuntimeValue<SyncHttpClientConfig> getSyncConfig(DynamodbConfig config) {
+
+    final DynamodbConfig config;
+
+    public DynamodbRecorder(DynamodbConfig config) {
+        this.config = config;
+    }
+
+    public RuntimeValue<SyncHttpClientConfig> getSyncConfig() {
         return new RuntimeValue<>(config.syncClient);
     }
 
-    public RuntimeValue<NettyHttpClientConfig> getAsyncConfig(DynamodbConfig config) {
+    public RuntimeValue<NettyHttpClientConfig> getAsyncConfig() {
         return new RuntimeValue<>(config.asyncClient);
     }
 
-    public RuntimeValue<AwsConfig> getAwsConfig(DynamodbConfig config) {
+    public RuntimeValue<AwsConfig> getAwsConfig() {
         return new RuntimeValue<>(config.aws);
     }
 
-    public RuntimeValue<SdkConfig> getSdkConfig(DynamodbConfig config) {
+    public RuntimeValue<SdkConfig> getSdkConfig() {
         return new RuntimeValue<>(config.sdk);
     }
 
-    public RuntimeValue<AwsClientBuilder> createSyncBuilder(DynamodbConfig config,
-            RuntimeValue<SdkHttpClient.Builder> transport) {
+    public RuntimeValue<AwsClientBuilder> createSyncBuilder(RuntimeValue<SdkHttpClient.Builder> transport) {
         DynamoDbClientBuilder builder = DynamoDbClient.builder();
         builder.endpointDiscoveryEnabled(config.enableEndpointDiscovery);
 
@@ -43,8 +49,7 @@ public class DynamodbRecorder {
         return new RuntimeValue<>(builder);
     }
 
-    public RuntimeValue<AwsClientBuilder> createAsyncBuilder(DynamodbConfig config,
-            RuntimeValue<SdkAsyncHttpClient.Builder> transport) {
+    public RuntimeValue<AwsClientBuilder> createAsyncBuilder(RuntimeValue<SdkAsyncHttpClient.Builder> transport) {
 
         DynamoDbAsyncClientBuilder builder = DynamoDbAsyncClient.builder();
         builder.endpointDiscoveryEnabled(config.enableEndpointDiscovery);

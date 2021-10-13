@@ -16,7 +16,6 @@ import io.quarkus.amazon.common.runtime.AmazonClientRecorder;
 import io.quarkus.amazon.common.runtime.AmazonClientUrlConnectionTransportRecorder;
 import io.quarkus.amazon.sns.runtime.SnsBuildTimeConfig;
 import io.quarkus.amazon.sns.runtime.SnsClientProducer;
-import io.quarkus.amazon.sns.runtime.SnsConfig;
 import io.quarkus.amazon.sns.runtime.SnsRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
@@ -83,12 +82,12 @@ public class SnsProcessor extends AbstractAmazonServiceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupApacheSyncTransport(List<AmazonClientBuildItem> amazonClients, SnsRecorder recorder,
             AmazonClientApacheTransportRecorder transportRecorder,
-            SnsConfig runtimeConfig, BuildProducer<AmazonClientSyncTransportBuildItem> syncTransports) {
+            BuildProducer<AmazonClientSyncTransportBuildItem> syncTransports) {
 
         createApacheSyncTransportBuilder(amazonClients,
                 transportRecorder,
                 buildTimeConfig.syncClient,
-                recorder.getSyncConfig(runtimeConfig),
+                recorder.getSyncConfig(),
                 syncTransports);
     }
 
@@ -96,12 +95,12 @@ public class SnsProcessor extends AbstractAmazonServiceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupUrlConnectionSyncTransport(List<AmazonClientBuildItem> amazonClients, SnsRecorder recorder,
             AmazonClientUrlConnectionTransportRecorder transportRecorder,
-            SnsConfig runtimeConfig, BuildProducer<AmazonClientSyncTransportBuildItem> syncTransports) {
+            BuildProducer<AmazonClientSyncTransportBuildItem> syncTransports) {
 
         createUrlConnectionSyncTransportBuilder(amazonClients,
                 transportRecorder,
                 buildTimeConfig.syncClient,
-                recorder.getSyncConfig(runtimeConfig),
+                recorder.getSyncConfig(),
                 syncTransports);
     }
 
@@ -109,11 +108,11 @@ public class SnsProcessor extends AbstractAmazonServiceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupNettyAsyncTransport(List<AmazonClientBuildItem> amazonClients, SnsRecorder recorder,
             AmazonClientNettyTransportRecorder transportRecorder,
-            SnsConfig runtimeConfig, BuildProducer<AmazonClientAsyncTransportBuildItem> asyncTransports) {
+            BuildProducer<AmazonClientAsyncTransportBuildItem> asyncTransports) {
 
         createNettyAsyncTransportBuilder(amazonClients,
                 transportRecorder,
-                recorder.getAsyncConfig(runtimeConfig),
+                recorder.getAsyncConfig(),
                 asyncTransports);
     }
 
@@ -121,21 +120,20 @@ public class SnsProcessor extends AbstractAmazonServiceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void createClientBuilders(SnsRecorder recorder,
             AmazonClientRecorder commonRecorder,
-            SnsConfig runtimeConfig,
             List<AmazonClientSyncTransportBuildItem> syncTransports,
             List<AmazonClientAsyncTransportBuildItem> asyncTransports,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
 
         createClientBuilders(commonRecorder,
-                recorder.getAwsConfig(runtimeConfig),
-                recorder.getSdkConfig(runtimeConfig),
+                recorder.getAwsConfig(),
+                recorder.getSdkConfig(),
                 buildTimeConfig.sdk,
                 syncTransports,
                 asyncTransports,
                 SnsClientBuilder.class,
-                (syncTransport) -> recorder.createSyncBuilder(runtimeConfig, syncTransport),
+                (syncTransport) -> recorder.createSyncBuilder(syncTransport),
                 SnsAsyncClientBuilder.class,
-                (asyncTransport) -> recorder.createAsyncBuilder(runtimeConfig, asyncTransport),
+                (asyncTransport) -> recorder.createAsyncBuilder(asyncTransport),
                 syntheticBeans);
     }
 }

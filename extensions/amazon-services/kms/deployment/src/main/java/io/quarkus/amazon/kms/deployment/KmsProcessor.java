@@ -16,7 +16,6 @@ import io.quarkus.amazon.common.runtime.AmazonClientRecorder;
 import io.quarkus.amazon.common.runtime.AmazonClientUrlConnectionTransportRecorder;
 import io.quarkus.amazon.kms.runtime.KmsBuildTimeConfig;
 import io.quarkus.amazon.kms.runtime.KmsClientProducer;
-import io.quarkus.amazon.kms.runtime.KmsConfig;
 import io.quarkus.amazon.kms.runtime.KmsRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
@@ -82,12 +81,12 @@ public class KmsProcessor extends AbstractAmazonServiceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupApacheSyncTransport(List<AmazonClientBuildItem> amazonClients, KmsRecorder recorder,
             AmazonClientApacheTransportRecorder transportRecorder,
-            KmsConfig runtimeConfig, BuildProducer<AmazonClientSyncTransportBuildItem> syncTransports) {
+            BuildProducer<AmazonClientSyncTransportBuildItem> syncTransports) {
 
         createApacheSyncTransportBuilder(amazonClients,
                 transportRecorder,
                 buildTimeConfig.syncClient,
-                recorder.getSyncConfig(runtimeConfig),
+                recorder.getSyncConfig(),
                 syncTransports);
     }
 
@@ -95,12 +94,12 @@ public class KmsProcessor extends AbstractAmazonServiceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupUrlConnectionSyncTransport(List<AmazonClientBuildItem> amazonClients, KmsRecorder recorder,
             AmazonClientUrlConnectionTransportRecorder transportRecorder,
-            KmsConfig runtimeConfig, BuildProducer<AmazonClientSyncTransportBuildItem> syncTransports) {
+            BuildProducer<AmazonClientSyncTransportBuildItem> syncTransports) {
 
         createUrlConnectionSyncTransportBuilder(amazonClients,
                 transportRecorder,
                 buildTimeConfig.syncClient,
-                recorder.getSyncConfig(runtimeConfig),
+                recorder.getSyncConfig(),
                 syncTransports);
     }
 
@@ -108,11 +107,11 @@ public class KmsProcessor extends AbstractAmazonServiceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupNettyAsyncTransport(List<AmazonClientBuildItem> amazonClients, KmsRecorder recorder,
             AmazonClientNettyTransportRecorder transportRecorder,
-            KmsConfig runtimeConfig, BuildProducer<AmazonClientAsyncTransportBuildItem> asyncTransports) {
+            BuildProducer<AmazonClientAsyncTransportBuildItem> asyncTransports) {
 
         createNettyAsyncTransportBuilder(amazonClients,
                 transportRecorder,
-                recorder.getAsyncConfig(runtimeConfig),
+                recorder.getAsyncConfig(),
                 asyncTransports);
     }
 
@@ -120,21 +119,20 @@ public class KmsProcessor extends AbstractAmazonServiceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void createClientBuilders(KmsRecorder recorder,
             AmazonClientRecorder commonRecorder,
-            KmsConfig runtimeConfig,
             List<AmazonClientSyncTransportBuildItem> syncTransports,
             List<AmazonClientAsyncTransportBuildItem> asyncTransports,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
 
         createClientBuilders(commonRecorder,
-                recorder.getAwsConfig(runtimeConfig),
-                recorder.getSdkConfig(runtimeConfig),
+                recorder.getAwsConfig(),
+                recorder.getSdkConfig(),
                 buildTimeConfig.sdk,
                 syncTransports,
                 asyncTransports,
                 KmsClientBuilder.class,
-                (syncTransport) -> recorder.createSyncBuilder(runtimeConfig, syncTransport),
+                (syncTransport) -> recorder.createSyncBuilder(syncTransport),
                 KmsAsyncClientBuilder.class,
-                (asyncTransport) -> recorder.createAsyncBuilder(runtimeConfig, asyncTransport),
+                (asyncTransport) -> recorder.createAsyncBuilder(asyncTransport),
                 syntheticBeans);
     }
 }

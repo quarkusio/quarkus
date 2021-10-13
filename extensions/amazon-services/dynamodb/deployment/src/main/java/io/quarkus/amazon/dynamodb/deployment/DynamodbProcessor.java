@@ -16,7 +16,6 @@ import io.quarkus.amazon.common.runtime.AmazonClientRecorder;
 import io.quarkus.amazon.common.runtime.AmazonClientUrlConnectionTransportRecorder;
 import io.quarkus.amazon.dynamodb.runtime.DynamodbBuildTimeConfig;
 import io.quarkus.amazon.dynamodb.runtime.DynamodbClientProducer;
-import io.quarkus.amazon.dynamodb.runtime.DynamodbConfig;
 import io.quarkus.amazon.dynamodb.runtime.DynamodbRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
@@ -91,12 +90,12 @@ public class DynamodbProcessor extends AbstractAmazonServiceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupApacheSyncTransport(List<AmazonClientBuildItem> amazonClients, DynamodbRecorder recorder,
             AmazonClientApacheTransportRecorder transportRecorder,
-            DynamodbConfig runtimeConfig, BuildProducer<AmazonClientSyncTransportBuildItem> syncTransports) {
+            BuildProducer<AmazonClientSyncTransportBuildItem> syncTransports) {
 
         createApacheSyncTransportBuilder(amazonClients,
                 transportRecorder,
                 buildTimeConfig.syncClient,
-                recorder.getSyncConfig(runtimeConfig),
+                recorder.getSyncConfig(),
                 syncTransports);
     }
 
@@ -104,12 +103,12 @@ public class DynamodbProcessor extends AbstractAmazonServiceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupUrlConnectionSyncTransport(List<AmazonClientBuildItem> amazonClients, DynamodbRecorder recorder,
             AmazonClientUrlConnectionTransportRecorder transportRecorder,
-            DynamodbConfig runtimeConfig, BuildProducer<AmazonClientSyncTransportBuildItem> syncTransports) {
+            BuildProducer<AmazonClientSyncTransportBuildItem> syncTransports) {
 
         createUrlConnectionSyncTransportBuilder(amazonClients,
                 transportRecorder,
                 buildTimeConfig.syncClient,
-                recorder.getSyncConfig(runtimeConfig),
+                recorder.getSyncConfig(),
                 syncTransports);
     }
 
@@ -117,11 +116,11 @@ public class DynamodbProcessor extends AbstractAmazonServiceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupNettyAsyncTransport(List<AmazonClientBuildItem> amazonClients, DynamodbRecorder recorder,
             AmazonClientNettyTransportRecorder transportRecorder,
-            DynamodbConfig runtimeConfig, BuildProducer<AmazonClientAsyncTransportBuildItem> asyncTransports) {
+            BuildProducer<AmazonClientAsyncTransportBuildItem> asyncTransports) {
 
         createNettyAsyncTransportBuilder(amazonClients,
                 transportRecorder,
-                recorder.getAsyncConfig(runtimeConfig),
+                recorder.getAsyncConfig(),
                 asyncTransports);
     }
 
@@ -129,21 +128,20 @@ public class DynamodbProcessor extends AbstractAmazonServiceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void createClientBuilders(DynamodbRecorder recorder,
             AmazonClientRecorder commonRecorder,
-            DynamodbConfig runtimeConfig,
             List<AmazonClientSyncTransportBuildItem> syncTransports,
             List<AmazonClientAsyncTransportBuildItem> asyncTransports,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
 
         createClientBuilders(commonRecorder,
-                recorder.getAwsConfig(runtimeConfig),
-                recorder.getSdkConfig(runtimeConfig),
+                recorder.getAwsConfig(),
+                recorder.getSdkConfig(),
                 buildTimeConfig.sdk,
                 syncTransports,
                 asyncTransports,
                 DynamoDbClientBuilder.class,
-                (syncTransport) -> recorder.createSyncBuilder(runtimeConfig, syncTransport),
+                (syncTransport) -> recorder.createSyncBuilder(syncTransport),
                 DynamoDbAsyncClientBuilder.class,
-                (asyncTransport) -> recorder.createAsyncBuilder(runtimeConfig, asyncTransport),
+                (asyncTransport) -> recorder.createAsyncBuilder(asyncTransport),
                 syntheticBeans);
     }
 }

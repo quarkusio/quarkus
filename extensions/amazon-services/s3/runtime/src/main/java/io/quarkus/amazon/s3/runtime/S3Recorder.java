@@ -18,25 +18,32 @@ import software.amazon.awssdk.services.s3.S3Configuration;
 
 @Recorder
 public class S3Recorder {
-    public RuntimeValue<SyncHttpClientConfig> getSyncConfig(S3Config config) {
+
+    final S3Config config;
+
+    public S3Recorder(S3Config config) {
+        this.config = config;
+    }
+
+    public RuntimeValue<SyncHttpClientConfig> getSyncConfig() {
         return new RuntimeValue<>(config.syncClient);
     }
 
-    public RuntimeValue<NettyHttpClientConfig> getAsyncConfig(S3Config config) {
+    public RuntimeValue<NettyHttpClientConfig> getAsyncConfig() {
         return new RuntimeValue<>(config.asyncClient);
     }
 
-    public RuntimeValue<AwsConfig> getAwsConfig(S3Config config) {
+    public RuntimeValue<AwsConfig> getAwsConfig() {
         return new RuntimeValue<>(config.aws);
     }
 
-    public RuntimeValue<SdkConfig> getSdkConfig(S3Config config) {
+    public RuntimeValue<SdkConfig> getSdkConfig() {
         return new RuntimeValue<>(config.sdk);
     }
 
-    public RuntimeValue<AwsClientBuilder> createSyncBuilder(S3Config config, RuntimeValue<Builder> transport) {
+    public RuntimeValue<AwsClientBuilder> createSyncBuilder(RuntimeValue<Builder> transport) {
         S3ClientBuilder builder = S3Client.builder();
-        configureS3Client(builder, config);
+        configureS3Client(builder);
 
         if (transport != null) {
             builder.httpClientBuilder(transport.getValue());
@@ -44,11 +51,10 @@ public class S3Recorder {
         return new RuntimeValue<>(builder);
     }
 
-    public RuntimeValue<AwsClientBuilder> createAsyncBuilder(S3Config config,
-            RuntimeValue<SdkAsyncHttpClient.Builder> transport) {
+    public RuntimeValue<AwsClientBuilder> createAsyncBuilder(RuntimeValue<SdkAsyncHttpClient.Builder> transport) {
 
         S3AsyncClientBuilder builder = S3AsyncClient.builder();
-        configureS3Client(builder, config);
+        configureS3Client(builder);
 
         if (transport != null) {
             builder.httpClientBuilder(transport.getValue());
@@ -56,7 +62,7 @@ public class S3Recorder {
         return new RuntimeValue<>(builder);
     }
 
-    private void configureS3Client(S3BaseClientBuilder builder, S3Config config) {
+    private void configureS3Client(S3BaseClientBuilder builder) {
         S3Configuration.Builder s3ConfigBuilder = S3Configuration.builder()
                 .accelerateModeEnabled(config.accelerateMode)
                 .checksumValidationEnabled(config.checksumValidation)

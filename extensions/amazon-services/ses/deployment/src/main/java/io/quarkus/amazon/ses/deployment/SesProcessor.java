@@ -87,7 +87,7 @@ public class SesProcessor extends AbstractAmazonServiceProcessor {
         createApacheSyncTransportBuilder(amazonClients,
                 transportRecorder,
                 buildTimeConfig.syncClient,
-                recorder.getSyncConfig(runtimeConfig),
+                recorder.getSyncConfig(),
                 syncTransports);
     }
 
@@ -100,7 +100,7 @@ public class SesProcessor extends AbstractAmazonServiceProcessor {
         createUrlConnectionSyncTransportBuilder(amazonClients,
                 transportRecorder,
                 buildTimeConfig.syncClient,
-                recorder.getSyncConfig(runtimeConfig),
+                recorder.getSyncConfig(),
                 syncTransports);
     }
 
@@ -112,7 +112,7 @@ public class SesProcessor extends AbstractAmazonServiceProcessor {
 
         createNettyAsyncTransportBuilder(amazonClients,
                 transportRecorder,
-                recorder.getAsyncConfig(runtimeConfig),
+                recorder.getAsyncConfig(),
                 asyncTransports);
     }
 
@@ -126,15 +126,15 @@ public class SesProcessor extends AbstractAmazonServiceProcessor {
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
 
         createClientBuilders(commonRecorder,
-                recorder.getAwsConfig(runtimeConfig),
-                recorder.getSdkConfig(runtimeConfig),
+                recorder.getAwsConfig(),
+                recorder.getSdkConfig(),
                 buildTimeConfig.sdk,
                 syncTransports,
                 asyncTransports,
                 SesClientBuilder.class,
-                (syncTransport) -> recorder.createSyncBuilder(runtimeConfig, syncTransport),
+                (syncTransport) -> recorder.createSyncBuilder(syncTransport),
                 SesAsyncClientBuilder.class,
-                (asyncTransport) -> recorder.createAsyncBuilder(runtimeConfig, asyncTransport),
+                (asyncTransport) -> recorder.createAsyncBuilder(asyncTransport),
                 syntheticBeans);
     }
 }

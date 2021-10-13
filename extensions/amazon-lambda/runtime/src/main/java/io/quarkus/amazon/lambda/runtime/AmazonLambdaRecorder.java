@@ -36,6 +36,12 @@ public class AmazonLambdaRecorder {
     private static LambdaInputReader objectReader;
     private static LambdaOutputWriter objectWriter;
 
+    private final LambdaConfig config;
+
+    public AmazonLambdaRecorder(LambdaConfig config) {
+        this.config = config;
+    }
+
     public void setStreamHandlerClass(Class<? extends RequestStreamHandler> handler, BeanContainer container) {
         streamHandlerClass = handler;
         beanContainer = container;
@@ -98,8 +104,7 @@ public class AmazonLambdaRecorder {
             Map<String, Class<? extends RequestHandler<?, ?>>> namedHandlerClasses,
             List<Class<? extends RequestStreamHandler>> unamedStreamHandlerClasses,
             Map<String, Class<? extends RequestStreamHandler>> namedStreamHandlerClasses,
-            BeanContainer container,
-            LambdaConfig config) {
+            BeanContainer container) {
 
         Class<? extends RequestHandler<?, ?>> handlerClass = null;
         Class<? extends RequestStreamHandler> handlerStreamClass = null;

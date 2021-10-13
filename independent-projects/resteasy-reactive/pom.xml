@@ -50,7 +50,7 @@
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <jboss-jaxrs-api_2.1_spec.version>2.0.1.Final</jboss-jaxrs-api_2.1_spec.version>
         <jakarta.json.version>1.1.6</jakarta.json.version>
-        <mutiny.version>1.1.1</mutiny.version>
+        <mutiny.version>1.1.2</mutiny.version>
         <smallrye-common.version>1.6.0</smallrye-common.version>
         <vertx.version>4.1.5</vertx.version>
         <rest-assured.version>4.4.0</rest-assured.version>

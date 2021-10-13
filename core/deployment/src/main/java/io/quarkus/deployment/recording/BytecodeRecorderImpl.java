@@ -143,6 +143,11 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private boolean loadComplete;
 
     public BytecodeRecorderImpl(boolean staticInit, String buildStepName, String methodName, String uniqueHash,
+            boolean useIdentityComparison) {
+        this(staticInit, buildStepName, methodName, uniqueHash, useIdentityComparison, (s) -> null);
+    }
+
+    public BytecodeRecorderImpl(boolean staticInit, String buildStepName, String methodName, String uniqueHash,
             boolean useIdentityComparison, Function<java.lang.reflect.Type, Object> configCreatorFunction) {
         this(
                 Thread.currentThread().getContextClassLoader(),
@@ -154,26 +159,6 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 classCreator -> {
                     return startupMethodCreator(buildStepName, methodName, classCreator);
                 }, useIdentityComparison, configCreatorFunction);
-    }
-
-    private static MethodCreator startupMethodCreator(String buildStepName, String methodName, ClassCreator classCreator) {
-        MethodCreator mainMethod = classCreator.getMethodCreator("deploy", void.class, StartupContext.class);
-
-        // record the build step name
-        if ((buildStepName != null) && (methodName != null)) {
-            mainMethod.invokeVirtualMethod(ofMethod(StartupContext.class, "setCurrentBuildStepName", void.class, String.class),
-                    mainMethod.getMethodParam(0), mainMethod.load(buildStepName + "." + methodName));
-        }
-        return mainMethod;
-    }
-
-    private static ClassCreator startupTaskClassCreator(ClassOutput classOutput, String className) {
-        return ClassCreator.builder().classOutput(classOutput).className(className).superClass(Object.class)
-                .interfaces(StartupTask.class).build();
-    }
-
-    private static String toClassName(String buildStepName, String methodName, String uniqueHash) {
-        return BASE_PACKAGE + buildStepName + "$" + methodName + uniqueHash;
     }
 
     // visible for testing
@@ -207,6 +192,26 @@ public class BytecodeRecorderImpl implements RecorderContext {
         this.methodCreatorFunction = methodCreatorFunction;
         this.useIdentityComparison = useIdentityComparison;
         this.configCreatorFunction = configCreatorFunction;
+    }
+
+    private static MethodCreator startupMethodCreator(String buildStepName, String methodName, ClassCreator classCreator) {
+        MethodCreator mainMethod = classCreator.getMethodCreator("deploy", void.class, StartupContext.class);
+
+        // record the build step name
+        if ((buildStepName != null) && (methodName != null)) {
+            mainMethod.invokeVirtualMethod(ofMethod(StartupContext.class, "setCurrentBuildStepName", void.class, String.class),
+                    mainMethod.getMethodParam(0), mainMethod.load(buildStepName + "." + methodName));
+        }
+        return mainMethod;
+    }
+
+    private static ClassCreator startupTaskClassCreator(ClassOutput classOutput, String className) {
+        return ClassCreator.builder().classOutput(classOutput).className(className).superClass(Object.class)
+                .interfaces(StartupTask.class).build();
+    }
+
+    private static String toClassName(String buildStepName, String methodName, String uniqueHash) {
+        return BASE_PACKAGE + buildStepName + "$" + methodName + uniqueHash;
     }
 
     public boolean isEmpty() {

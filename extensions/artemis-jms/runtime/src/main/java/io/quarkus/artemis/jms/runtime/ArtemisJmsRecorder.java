@@ -12,7 +12,13 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class ArtemisJmsRecorder {
 
-    public Supplier<ConnectionFactory> getConnectionFactorySupplier(ArtemisRuntimeConfig config) {
+    final ArtemisRuntimeConfig config;
+
+    public ArtemisJmsRecorder(ArtemisRuntimeConfig config) {
+        this.config = config;
+    }
+
+    public Supplier<ConnectionFactory> getConnectionFactorySupplier() {
         return new Supplier<ConnectionFactory>() {
             @Override
             public ConnectionFactory get() {

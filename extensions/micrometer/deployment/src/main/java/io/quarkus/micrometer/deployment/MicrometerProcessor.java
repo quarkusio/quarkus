@@ -10,9 +10,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
@@ -29,7 +27,6 @@ import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.AnnotationsTransformer;
-import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -131,50 +128,6 @@ public class MicrometerProcessor {
 
         IndexView index = indexBuildItem.getIndex();
 
-        // Find classes that define MeterRegistries, MeterBinders, and MeterFilters
-        Collection<String> knownRegistries = new HashSet<>();
-        collectNames(index.getAllKnownSubclasses(METER_REGISTRY), knownRegistries);
-
-        Collection<String> knownClasses = new HashSet<>();
-        knownClasses.add(METER_BINDER.toString());
-        collectNames(index.getAllKnownImplementors(METER_BINDER), knownClasses);
-        knownClasses.add(METER_FILTER.toString());
-        collectNames(index.getAllKnownImplementors(METER_FILTER), knownClasses);
-        knownClasses.add(NAMING_CONVENTION.toString());
-        collectNames(index.getAllKnownImplementors(NAMING_CONVENTION), knownClasses);
-
-        Set<String> keepMe = new HashSet<>();
-
-        // Find and keep _producers_ of those MeterRegistries, MeterBinders, and
-        // MeterFilters
-        for (AnnotationInstance annotation : index.getAnnotations(DotNames.PRODUCES)) {
-            AnnotationTarget target = annotation.target();
-            switch (target.kind()) {
-                case METHOD:
-                    MethodInfo method = target.asMethod();
-                    String returnType = method.returnType().name().toString();
-                    if (knownRegistries.contains(returnType)) {
-                        providerClasses.produce(new MicrometerRegistryProviderBuildItem(returnType));
-                        keepMe.add(method.declaringClass().name().toString());
-                    } else if (knownClasses.contains(returnType)) {
-                        keepMe.add(method.declaringClass().name().toString());
-                    }
-                    break;
-                case FIELD:
-                    FieldInfo field = target.asField();
-                    String fieldType = field.type().name().toString();
-                    if (knownRegistries.contains(fieldType)) {
-                        providerClasses.produce(new MicrometerRegistryProviderBuildItem(fieldType));
-                        keepMe.add(field.declaringClass().name().toString());
-                    } else if (knownClasses.contains(fieldType)) {
-                        keepMe.add(field.declaringClass().name().toString());
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-
         reflectiveClasses.produce(createReflectiveBuildItem(COUNTED_ANNOTATION, index));
         reflectiveClasses.produce(createReflectiveBuildItem(TIMED_ANNOTATION, index));
         reflectiveClasses.produce(ReflectiveClassBuildItem
@@ -183,13 +136,7 @@ public class MicrometerProcessor {
                         "org.HdrHistogram.ConcurrentHistogram")
                 .constructors(true).build());
 
-        return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNamesExclusion(keepMe));
-    }
-
-    void collectNames(Collection<ClassInfo> classes, Collection<String> names) {
-        for (ClassInfo info : classes) {
-            names.add(info.name().toString());
-        }
+        return UnremovableBeanBuildItem.beanTypes(METER_REGISTRY, METER_BINDER, METER_FILTER, NAMING_CONVENTION);
     }
 
     @BuildStep(onlyIf = MicrometerEnabled.class)

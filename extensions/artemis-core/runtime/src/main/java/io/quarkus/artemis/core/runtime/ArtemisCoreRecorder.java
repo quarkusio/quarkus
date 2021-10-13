@@ -10,7 +10,13 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class ArtemisCoreRecorder {
 
-    public Supplier<ServerLocator> getServerLocatorSupplier(ArtemisRuntimeConfig config) {
+    final ArtemisRuntimeConfig config;
+
+    public ArtemisCoreRecorder(ArtemisRuntimeConfig config) {
+        this.config = config;
+    }
+
+    public Supplier<ServerLocator> getServerLocatorSupplier() {
         return new Supplier<ServerLocator>() {
             @Override
             public ServerLocator get() {

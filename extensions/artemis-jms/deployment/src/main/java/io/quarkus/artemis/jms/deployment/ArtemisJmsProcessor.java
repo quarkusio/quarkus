@@ -6,7 +6,6 @@ import javax.jms.ConnectionFactory;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.artemis.core.deployment.ArtemisBuildTimeConfig;
 import io.quarkus.artemis.core.deployment.ArtemisJmsBuildItem;
-import io.quarkus.artemis.core.runtime.ArtemisRuntimeConfig;
 import io.quarkus.artemis.jms.runtime.ArtemisJmsRecorder;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -34,11 +33,11 @@ public class ArtemisJmsProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    ArtemisJmsConfiguredBuildItem configure(ArtemisJmsRecorder recorder, ArtemisRuntimeConfig runtimeConfig,
+    ArtemisJmsConfiguredBuildItem configure(ArtemisJmsRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer) {
 
         SyntheticBeanBuildItem connectionFactory = SyntheticBeanBuildItem.configure(ConnectionFactory.class)
-                .supplier(recorder.getConnectionFactorySupplier(runtimeConfig))
+                .supplier(recorder.getConnectionFactorySupplier())
                 .scope(ApplicationScoped.class)
                 .defaultBean()
                 .unremovable()

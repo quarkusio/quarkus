@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -164,15 +165,11 @@ public class ParserTest {
             }
 
         })).build();
-        try {
-            engine.getTemplate("foo.html");
-            fail("No parser error found");
-        } catch (TemplateException expected) {
-            assertNotNull(expected.getOrigin());
-            assertEquals(
-                    "Parser error in template [foo.html] on line 1: mandatory section parameters not declared for {#if}: [Parameter [name=condition, defaultValue=null, optional=false]]",
-                    expected.getMessage());
-        }
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> engine.getTemplate("foo.html"))
+                .withMessage(
+                        "Parser error in template [foo.html] on line 1: mandatory section parameters not declared for {#if}: [Parameter [name=condition, defaultValue=null, optional=false]]")
+                .hasFieldOrProperty("origin");
     }
 
     @Test
@@ -206,11 +203,8 @@ public class ParserTest {
     public void testCdata() {
         Engine engine = Engine.builder().addDefaults().build();
         String jsSnippet = "<script>const foo = function(){alert('bar');};</script>";
-        try {
-            engine.parse("Hello {name} " + jsSnippet);
-            fail();
-        } catch (Exception expected) {
-        }
+        assertThatExceptionOfType(Exception.class)
+                .isThrownBy(() -> engine.parse("Hello {name} " + jsSnippet));
         assertEquals("Hello world <script>const foo = function(){alert('bar');};</script>", engine.parse("Hello {name} {["
                 + jsSnippet
                 + "]}").data("name", "world").render());
@@ -248,12 +242,9 @@ public class ParserTest {
         assertTrue(Parser.isValidIdentifier("foo["));
         assertTrue(Parser.isValidIdentifier("foo^"));
         Engine engine = Engine.builder().addDefaults().build();
-        try {
-            engine.parse("{foo\nfoo}");
-            fail();
-        } catch (Exception expected) {
-            assertEquals("Parser error on line 1: invalid identifier found {foo\nfoo}", expected.getMessage());
-        }
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> engine.parse("{foo\nfoo}"))
+                .withMessage("Parser error on line 1: invalid identifier found {foo\nfoo}");
     }
 
     @Test

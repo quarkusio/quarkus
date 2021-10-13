@@ -37,6 +37,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.release>11</maven.compiler.release>
         <version.junit>5.8.1</version.junit>
+        <version.assertj>3.21.0</version.assertj>
         <version.gizmo>1.0.9.Final</version.gizmo>
         <version.jboss-logging>3.4.2.Final</version.jboss-logging>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
@@ -58,6 +59,11 @@
                 <version>${version.junit}</version>
                 <scope>import</scope>
                 <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>org.assertj</groupId>
+                <artifactId>assertj-core</artifactId>
+                <version>${version.assertj}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus.qute</groupId>

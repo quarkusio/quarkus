@@ -56,6 +56,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
+import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.configuration.PropertiesUtil;
 import io.smallrye.config.Converters;
 import io.smallrye.config.EnvConfigSource;
@@ -392,6 +393,10 @@ public final class BuildTimeConfigurationReader {
                             () -> runtimeDefaultsConfig.getOptionalValue(propertyName, String.class).orElse("")));
                 }
             }
+
+            filterActiveProfileProperties(buildTimeRunTimeVisibleValues);
+            filterActiveProfileProperties(specifiedRunTimeDefaultValues);
+
             return new ReadResult(objectsByRootClass, specifiedRunTimeDefaultValues, buildTimeRunTimeVisibleValues,
                     allBuildTimeValues,
                     buildTimePatternMap, buildTimeRunTimePatternMap, bootstrapPatternMap, runTimePatternMap, allRoots,
@@ -775,6 +780,17 @@ public final class BuildTimeConfigurationReader {
                 builder.withSources(configSource);
             }
             return builder.build();
+        }
+
+        private void filterActiveProfileProperties(final Map<String, String> properties) {
+            Set<String> propertiesToRemove = new HashSet<>();
+            for (String property : properties.keySet()) {
+                String profiledProperty = "%" + ProfileManager.getActiveProfile() + "." + property;
+                if (properties.containsKey(profiledProperty)) {
+                    propertiesToRemove.add(property);
+                }
+            }
+            properties.keySet().removeAll(propertiesToRemove);
         }
     }
 

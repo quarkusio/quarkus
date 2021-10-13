@@ -372,6 +372,14 @@ public class MessageBundleProcessor {
                 .filter(TemplateDataBuildItem::hasNamespace)
                 .collect(Collectors.toMap(TemplateDataBuildItem::getNamespace, Function.identity()));
 
+        Map<String, List<TemplateExtensionMethodBuildItem>> namespaceExtensionMethods = templateExtensionMethods.stream()
+                .filter(TemplateExtensionMethodBuildItem::hasNamespace)
+                .sorted(Comparator.comparingInt(TemplateExtensionMethodBuildItem::getPriority).reversed())
+                .collect(Collectors.groupingBy(TemplateExtensionMethodBuildItem::getNamespace));
+
+        List<TemplateExtensionMethodBuildItem> regularExtensionMethods = templateExtensionMethods.stream()
+                .filter(Predicate.not(TemplateExtensionMethodBuildItem::hasNamespace)).collect(Collectors.toUnmodifiableList());
+
         LookupConfig lookupConfig = new QuteProcessor.FixedLookupConfig(index, QuteProcessor.initDefaultMembersFilter(), false);
 
         // bundle name -> (key -> method)
@@ -474,9 +482,10 @@ public class MessageBundleProcessor {
                                 if (param.hasTypeInfo()) {
                                     Map<String, Match> results = new HashMap<>();
                                     QuteProcessor.validateNestedExpressions(exprEntry.getKey(), defaultBundleInterface,
-                                            results, templateExtensionMethods, excludes, incorrectExpressions, expression,
-                                            index, implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches,
-                                            checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData);
+                                            results, excludes, incorrectExpressions, expression, index,
+                                            implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches,
+                                            checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData,
+                                            regularExtensionMethods, namespaceExtensionMethods);
                                     Match match = results.get(param.toOriginalString());
                                     if (match != null && !match.isEmpty() && !Types.isAssignableFrom(match.type(),
                                             methodParams.get(idx), index)) {

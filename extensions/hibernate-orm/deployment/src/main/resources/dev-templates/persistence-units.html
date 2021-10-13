@@ -22,11 +22,11 @@ a.script-heading {
 {#if info:persistence.persistenceUnits.isEmpty}
 <p>No persistence units found.</p>
 {#else}
-{#for unit in info:persistence.persistenceUnits}
+{#for pu in info:persistence.persistenceUnits}
 <table class="table table-striped">
     <thead class="thead-dark">
     <tr>
-        <th scope="col">Persistence Unit <i class="badge badge-info">{unit}</i></th>
+        <th scope="col">Persistence Unit <i class="badge badge-info">{pu.name}</i></th>
     </tr>
     </thead>
     <thead class="thead-light">
@@ -44,7 +44,7 @@ a.script-heading {
     <tbody>
     <tr>
         <td id="td-create-script-{count}" class="hidden">
-            <pre id="create-script-{count}" class="ddl-script">{info:persistence.createDDLs.get(unit)}</pre>
+            <pre id="create-script-{count}" class="ddl-script">{pu.createDDL}</pre>
         </td>
     </tr>
     <thead class="thead-light">
@@ -62,7 +62,7 @@ a.script-heading {
     <tbody>
     <tr>
         <td id="td-drop-script-{count}" class="hidden">
-            <pre id="drop-script-{count}" class="ddl-script">{info:persistence.dropDDLs.get(unit)}</pre>
+            <pre id="drop-script-{count}" class="ddl-script">{pu.dropDDL}</pre>
         </td>
     </tr>
     </tbody>

@@ -547,7 +547,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         boolean generationNeeded = false;
         for (VariableElement field : fieldsIn(clazz.getEnclosedElements())) {
             final Set<Modifier> mods = field.getModifiers();
-            if (mods.contains(Modifier.PRIVATE) || mods.contains(Modifier.STATIC)) {
+            if (mods.contains(Modifier.PRIVATE) || mods.contains(Modifier.STATIC) || mods.contains(Modifier.FINAL)) {
                 // skip it
                 continue;
             }

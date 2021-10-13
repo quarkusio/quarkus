@@ -39,6 +39,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import javax.inject.Inject;
+
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
@@ -112,6 +114,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private final Map<Class<?>, ProxyFactory<?>> returnValueProxy = new ConcurrentHashMap<>();
 
     private final Map<Class<?>, Object> existingProxyClasses = new ConcurrentHashMap<>();
+    private final Map<Class<?>, NewRecorder> existingRecorderValues = new ConcurrentHashMap<>();
     private final List<BytecodeInstruction> storedMethodCalls = new ArrayList<>();
 
     private final IdentityHashMap<Class<?>, String> classProxies = new IdentityHashMap<>();
@@ -121,6 +124,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
     private final Function<ClassOutput, ClassCreator> classCreatorFunction;
     private final Function<ClassCreator, MethodCreator> methodCreatorFunction;
+    private final Function<java.lang.reflect.Type, Object> configCreatorFunction;
 
     private final List<ObjectLoader> loaders = new ArrayList<>();
     private final Set<Class> classesToUseRecorableConstructor = new HashSet<>();
@@ -139,7 +143,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private boolean loadComplete;
 
     public BytecodeRecorderImpl(boolean staticInit, String buildStepName, String methodName, String uniqueHash,
-            boolean useIdentityComparison) {
+            boolean useIdentityComparison, Function<java.lang.reflect.Type, Object> configCreatorFunction) {
         this(
                 Thread.currentThread().getContextClassLoader(),
                 staticInit,
@@ -149,7 +153,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 },
                 classCreator -> {
                     return startupMethodCreator(buildStepName, methodName, classCreator);
-                }, useIdentityComparison);
+                }, useIdentityComparison, configCreatorFunction);
     }
 
     private static MethodCreator startupMethodCreator(String buildStepName, String methodName, ClassCreator classCreator) {
@@ -180,18 +184,29 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 },
                 classCreator -> {
                     return startupMethodCreator(null, null, classCreator);
-                }, true);
+                }, true, s -> {
+                    try {
+                        if (s instanceof Class) {
+                            return ((Class<?>) s).newInstance();
+                        }
+                        throw new RuntimeException("Not implemented for testing");
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 
-    public BytecodeRecorderImpl(ClassLoader classLoader, boolean staticInit, String className,
+    private BytecodeRecorderImpl(ClassLoader classLoader, boolean staticInit, String className,
             Function<ClassOutput, ClassCreator> classCreatorFunction,
-            Function<ClassCreator, MethodCreator> methodCreatorFunction, boolean useIdentityComparison) {
+            Function<ClassCreator, MethodCreator> methodCreatorFunction, boolean useIdentityComparison,
+            Function<java.lang.reflect.Type, Object> configCreatorFunction) {
         this.classLoader = classLoader;
         this.staticInit = staticInit;
         this.className = className;
         this.classCreatorFunction = classCreatorFunction;
         this.methodCreatorFunction = methodCreatorFunction;
         this.useIdentityComparison = useIdentityComparison;
+        this.configCreatorFunction = configCreatorFunction;
     }
 
     public boolean isEmpty() {
@@ -285,6 +300,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
         if (existingProxyClasses.containsKey(theClass)) {
             return theClass.cast(existingProxyClasses.get(theClass));
         }
+        NewRecorder newRecorder = new NewRecorder(theClass);
+        existingRecorderValues.put(theClass, newRecorder);
 
         InvocationHandler invocationHandler = new InvocationHandler() {
             @Override
@@ -455,6 +472,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
         //the first step is to create list of all these values that need to be placed into the array. We do that
         //here, as well as creating the recorder instances (and also preparing them to be stored in the array)
+
         for (BytecodeInstruction set : storedMethodCalls) {
             if (set instanceof StoredMethodCall) {
                 StoredMethodCall call = (StoredMethodCall) set;
@@ -483,11 +501,13 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 }
             }
         }
+        for (var e : existingRecorderValues.entrySet()) {
+            e.getValue().preWrite();
+        }
 
         //when this is true it is no longer possible to allocate items in the array. this is a guard against programmer error
-
         loadComplete = true;
-        //now we know know many items we have, create the array
+        //now we now know many items we have, create the array
         ResultHandle array = mainMethod.newArray(Object.class, deferredParameterCount);
 
         //this context manages the creation of new methods
@@ -495,6 +515,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
         //allocates a new method
         SplitMethodContext context = new SplitMethodContext(array, mainMethod, file);
 
+        for (var i : this.existingRecorderValues.values()) {
+            i.prepare(context);
+        }
         //now we invoke the actual method call
         for (BytecodeInstruction set : storedMethodCalls) {
 
@@ -509,7 +532,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     //it into a single method
                     call.deferredParameters[i].prepare(context);
                 }
-                final DeferredArrayStoreParameter recorderInstance = classInstanceVariables.get(call.theClass);
+                final DeferredArrayStoreParameter recorderInstance = existingRecorderValues.get(call.theClass);
                 recorderInstance.prepare(context);
                 //write the method invocation. Everything in the instruction group is scoped to a single method
                 context.writeInstruction(new InstructionGroup() {
@@ -1498,7 +1521,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             if (loader.canHandleObject(param, staticInit)) {
                 return new DeferredArrayStoreParameter(param, param.getClass()) {
                     @Override
-                    ResultHandle createValue(MethodContext creator, MethodCreator method, ResultHandle array) {
+                    ResultHandle createValue(MethodContext context, MethodCreator method, ResultHandle array) {
                         return loader.load(method, param, staticInit);
                     }
                 };
@@ -1542,6 +1565,111 @@ public class BytecodeRecorderImpl implements RecorderContext {
             this.theClass = theClass;
             this.returnedProxy = returnedProxy;
             this.proxyId = proxyId;
+        }
+    }
+
+    final class NewRecorder extends DeferredArrayStoreParameter {
+        final Class<?> theClass;
+        final Constructor<?> injectCtor;
+        final List<DeferredParameter> deferredParameters = new ArrayList<>();
+
+        NewRecorder(Class<?> theClass) {
+            super(theClass.getName());
+            this.theClass = theClass;
+            Constructor<?> injectCtor = null;
+            Constructor<?>[] ctors = theClass.getDeclaredConstructors();
+            if (ctors.length == 1) {
+                injectCtor = ctors[0];
+            } else {
+                for (var i : ctors) {
+                    if (i.isAnnotationPresent(Inject.class)) {
+                        if (injectCtor == null) {
+                            injectCtor = i;
+                        } else {
+                            throw new RuntimeException("Multiple @Inject constructors on " + theClass);
+                        }
+                    }
+                }
+                if (injectCtor == null) {
+                    throw new RuntimeException(
+                            "Could not determine constructor for " + theClass + " add @Inject to a constructor");
+                }
+            }
+            this.injectCtor = injectCtor;
+        }
+
+        void preWrite() {
+            if (injectCtor != null) {
+                try {
+                    for (java.lang.reflect.Type param : injectCtor.getGenericParameterTypes()) {
+                        var obj = configCreatorFunction.apply(param);
+                        if (obj instanceof RuntimeValue) {
+                            if (!staticInit) {
+                                var result = findLoaded(((RuntimeValue<?>) obj).getValue());
+                                if (result == null) {
+                                    throw new RuntimeException("Cannot inject object of type " + param);
+                                }
+                                deferredParameters.add(new DeferredParameter() {
+                                    @Override
+                                    void doPrepare(MethodContext context) {
+                                        super.doPrepare(context);
+                                        result.doPrepare(context);
+                                    }
+
+                                    @Override
+                                    ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
+                                        ResultHandle r = result.doLoad(context, method, array);
+                                        return method.newInstance(
+                                                MethodDescriptor.ofConstructor(RuntimeValue.class, Object.class), r);
+                                    }
+                                });
+                            } else {
+                                deferredParameters.add(new DeferredParameter() {
+                                    @Override
+                                    ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
+                                        return method.newInstance(MethodDescriptor.ofConstructor(RuntimeValue.class));
+                                    }
+                                });
+                            }
+                        } else {
+                            var result = findLoaded(obj);
+                            if (result == null) {
+                                throw new RuntimeException("Cannot inject object of type " + param);
+                            }
+                            deferredParameters.add(result);
+                        }
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to prepare injector constructor " + injectCtor + " of bytecode recorder",
+                            e);
+                }
+            }
+        }
+
+        @Override
+        void doPrepare(MethodContext context) {
+            for (var i : deferredParameters) {
+                i.doPrepare(context);
+            }
+            super.doPrepare(context);
+        }
+
+        @Override
+        ResultHandle createValue(MethodContext context, MethodCreator method, ResultHandle array) {
+            if (injectCtor == null) {
+                return method.newInstance(ofConstructor(theClass));
+            } else {
+                try {
+                    List<ResultHandle> handles = new ArrayList<>();
+                    for (var result : deferredParameters) {
+                        handles.add(context.loadDeferred(result));
+                    }
+                    return method.newInstance(ofConstructor(injectCtor.getDeclaringClass(), injectCtor.getParameterTypes()),
+                            handles.toArray(ResultHandle[]::new));
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to injector constructor " + injectCtor + " of bytecode recorder", e);
+                }
+            }
         }
     }
 
@@ -1750,6 +1878,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
         DeferredArrayStoreParameter(String expectedType) {
             returnType = expectedType;
+            if (loadComplete) {
+                throw new RuntimeException("Cannot create new DeferredArrayStoreParameter after array has been allocated");
+            }
             arrayIndex = deferredParameterCount++;
         }
 
@@ -1762,6 +1893,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 returnType = expectedType.getName();
             } else {
                 returnType = null;
+            }
+            if (loadComplete) {
+                throw new RuntimeException("Cannot create new DeferredArrayStoreParameter after array has been allocated");
             }
             arrayIndex = deferredParameterCount++;
         }

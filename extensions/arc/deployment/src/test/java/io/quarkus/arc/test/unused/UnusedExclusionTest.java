@@ -53,7 +53,7 @@ public class UnusedExclusionTest {
                         BeanContainer beanContainer = context.consume(BeanContainerBuildItem.class).getValue();
                         BytecodeRecorderImpl bytecodeRecorder = new BytecodeRecorderImpl(true,
                                 TestRecorder.class.getSimpleName(),
-                                "test", "" + TestRecorder.class.hashCode(), true);
+                                "test", "" + TestRecorder.class.hashCode(), true, s -> null);
                         // We need to use reflection due to some class loading problems
                         Object recorderProxy = bytecodeRecorder.getRecordingProxy(TestRecorder.class);
                         try {

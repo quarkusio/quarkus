@@ -151,6 +151,12 @@ public class UndertowDeploymentRecorder {
 
     }
 
+    final RuntimeValue<HttpConfiguration> httpConfiguration;
+
+    public UndertowDeploymentRecorder(RuntimeValue<HttpConfiguration> httpConfiguration) {
+        this.httpConfiguration = httpConfiguration;
+    }
+
     public static void setHotDeploymentResources(List<Path> resources) {
         hotDeploymentResourcePaths = resources;
     }
@@ -336,7 +342,7 @@ public class UndertowDeploymentRecorder {
     }
 
     public Handler<RoutingContext> startUndertow(ShutdownContext shutdown, ExecutorService executorService,
-            DeploymentManager manager, List<HandlerWrapper> wrappers, HttpConfiguration httpConfiguration,
+            DeploymentManager manager, List<HandlerWrapper> wrappers,
             ServletRuntimeConfig servletRuntimeConfig) throws Exception {
 
         shutdown.addShutdownTask(new Runnable() {
@@ -385,11 +391,11 @@ public class UndertowDeploymentRecorder {
                         event.getBody());
                 exchange.setPushHandler(VertxHttpRecorder.getRootHandler());
 
-                Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
+                Optional<MemorySize> maxBodySize = httpConfiguration.getValue().limits.maxBodySize;
                 if (maxBodySize.isPresent()) {
                     exchange.setMaxEntitySize(maxBodySize.get().asLongValue());
                 }
-                Duration readTimeout = httpConfiguration.readTimeout;
+                Duration readTimeout = httpConfiguration.getValue().readTimeout;
                 exchange.setReadTimeout(readTimeout.toMillis());
 
                 exchange.setUndertowOptions(undertowOptionMap);

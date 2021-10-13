@@ -25,7 +25,6 @@ import io.quarkus.deployment.builditem.ConsoleFormatterBannerBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.runtime.BannerRecorder;
-import io.quarkus.runtime.BannerRuntimeConfig;
 import io.quarkus.runtime.util.ClassPathUtils;
 
 public class BannerProcessor {
@@ -34,10 +33,9 @@ public class BannerProcessor {
 
     @BuildStep(onlyIfNot = { IsTest.class })
     @Record(ExecutionTime.RUNTIME_INIT)
-    public ConsoleFormatterBannerBuildItem recordBanner(BannerRecorder recorder, BannerConfig config,
-            BannerRuntimeConfig bannerRuntimeConfig) {
+    public ConsoleFormatterBannerBuildItem recordBanner(BannerRecorder recorder, BannerConfig config) {
         String bannerText = readBannerFile(config);
-        return new ConsoleFormatterBannerBuildItem(recorder.provideBannerSupplier(bannerText, bannerRuntimeConfig));
+        return new ConsoleFormatterBannerBuildItem(recorder.provideBannerSupplier(bannerText));
     }
 
     @BuildStep

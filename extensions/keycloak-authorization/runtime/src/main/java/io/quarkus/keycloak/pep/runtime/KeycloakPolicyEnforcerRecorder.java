@@ -25,19 +25,22 @@ import io.quarkus.vertx.http.runtime.HttpConfiguration;
 
 @Recorder
 public class KeycloakPolicyEnforcerRecorder {
+    final HttpConfiguration httpConfiguration;
+
+    public KeycloakPolicyEnforcerRecorder(HttpConfiguration httpConfiguration) {
+        this.httpConfiguration = httpConfiguration;
+    }
 
     public Supplier<PolicyEnforcerResolver> setup(OidcConfig oidcConfig, KeycloakPolicyEnforcerConfig config,
-            TlsConfig tlsConfig, HttpConfiguration httpConfiguration) {
-        PolicyEnforcer defaultPolicyEnforcer = createPolicyEnforcer(oidcConfig.defaultTenant, config.defaultTenant, tlsConfig,
-                httpConfiguration);
+            TlsConfig tlsConfig) {
+        PolicyEnforcer defaultPolicyEnforcer = createPolicyEnforcer(oidcConfig.defaultTenant, config.defaultTenant, tlsConfig);
         Map<String, PolicyEnforcer> policyEnforcerTenants = new HashMap<String, PolicyEnforcer>();
         for (Map.Entry<String, KeycloakPolicyEnforcerTenantConfig> tenant : config.namedTenants.entrySet()) {
             OidcTenantConfig oidcTenantConfig = oidcConfig.namedTenants.get(tenant.getKey());
             if (oidcTenantConfig == null) {
                 throw new ConfigurationException("Failed to find a matching OidcTenantConfig for tenant: " + tenant.getKey());
             }
-            policyEnforcerTenants.put(tenant.getKey(), createPolicyEnforcer(oidcTenantConfig, tenant.getValue(), tlsConfig,
-                    httpConfiguration));
+            policyEnforcerTenants.put(tenant.getKey(), createPolicyEnforcer(oidcTenantConfig, tenant.getValue(), tlsConfig));
         }
         return new Supplier<PolicyEnforcerResolver>() {
             @Override
@@ -50,7 +53,7 @@ public class KeycloakPolicyEnforcerRecorder {
 
     private static PolicyEnforcer createPolicyEnforcer(OidcTenantConfig oidcConfig,
             KeycloakPolicyEnforcerTenantConfig keycloakPolicyEnforcerConfig,
-            TlsConfig tlsConfig, HttpConfiguration httpConfiguration) {
+            TlsConfig tlsConfig) {
 
         if (oidcConfig.applicationType == OidcTenantConfig.ApplicationType.WEB_APP
                 && oidcConfig.roles.source.orElse(null) != Source.accesstoken) {

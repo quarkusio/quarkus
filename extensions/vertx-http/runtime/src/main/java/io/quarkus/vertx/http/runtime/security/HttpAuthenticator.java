@@ -140,6 +140,10 @@ public class HttpAuthenticator {
      * @return
      */
     public Uni<Boolean> sendChallenge(RoutingContext routingContext) {
+        //we want to consume any body content if present
+        //challenges won't read the body, and if we don't consume
+        //things can get stuck
+        routingContext.request().resume();
         Uni<Boolean> result = null;
 
         HttpAuthenticationMechanism matchingMech = routingContext.get(HttpAuthenticationMechanism.class.getName());

@@ -4,7 +4,6 @@ import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResourc
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.reflect.Constructor;
@@ -82,7 +81,6 @@ import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.GroovyCacheCleaner;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.RestorableSystemProperties;
 import io.quarkus.test.common.TestClassIndexer;
@@ -127,7 +125,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     private static List<Object> afterAllCallbacks;
     private static Class<?> quarkusTestMethodContextClass;
     private static boolean hasPerTestResources;
-    private static Class<?> currentJUnitTestClass;
     private static List<Function<Class<?>, String>> testHttpEndpointProviders;
 
     private static List<Object> testMethodInvokers;
@@ -209,7 +206,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
         quarkusTestProfile = profile;
         Class<?> requiredTestClass = context.getRequiredTestClass();
-        currentJUnitTestClass = requiredTestClass;
         Closeable testResourceManager = null;
         try {
             final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
@@ -1295,33 +1291,5 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 }
             }
         }
-    }
-
-    static boolean hasPerTestResources(ExtensionContext extensionContext) {
-        return hasPerTestResources(extensionContext.getRequiredTestClass());
-    }
-
-    public static boolean hasPerTestResources(Class<?> requiredTestClass) {
-        while (requiredTestClass != Object.class) {
-            for (QuarkusTestResource testResource : requiredTestClass.getAnnotationsByType(QuarkusTestResource.class)) {
-                if (testResource.restrictToAnnotatedClass()) {
-                    return true;
-                }
-            }
-            // scan for meta-annotations
-            for (Annotation annotation : requiredTestClass.getAnnotations()) {
-                // skip TestResource annotations
-                if (annotation.annotationType() != QuarkusTestResource.class) {
-                    // look for a TestResource on the annotation itself
-                    if (annotation.annotationType().getAnnotationsByType(QuarkusTestResource.class).length > 0) {
-                        // meta-annotations are per-test scoped for now
-                        return true;
-                    }
-                }
-            }
-            // look up
-            requiredTestClass = requiredTestClass.getSuperclass();
-        }
-        return false;
     }
 }

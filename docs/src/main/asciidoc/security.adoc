@@ -261,6 +261,10 @@ See link:security-testing[Security Testing] for more information about testing Q
 === Vault
 Quarkus provides a very comprehensive HashiCorp Vault support, please see the link:vault[Quarkus and HashiCorp Vault] documentation for more information.
 
+== Secure serialization
+
+When using Security along with RESTEasy Reactive and Jackson, Quarkus can limit the fields that are included in JSON serialization based on the configured security. See the link:resteasy-reactive.adoc#secure-serialization[RESTEasy Reactive documentation] for details.
+
 == National Vulnerability Database
 
 Most of Quarkus tags have been registered in link:https://nvd.nist.gov[National Vulnerability Database] (NVD) using a Common Platform Enumeration (CPE) name format.

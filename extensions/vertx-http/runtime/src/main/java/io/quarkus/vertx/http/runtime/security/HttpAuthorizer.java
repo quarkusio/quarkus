@@ -9,8 +9,11 @@ import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
+import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.AuthorizationController;
@@ -25,6 +28,8 @@ import io.vertx.ext.web.RoutingContext;
  */
 @Singleton
 public class HttpAuthorizer {
+
+    private static final Logger log = Logger.getLogger(HttpAuthorizer.class);
 
     @Inject
     HttpAuthenticator httpAuthenticator;
@@ -88,7 +93,6 @@ public class HttpAuthorizer {
     /**
      * Checks that the request is allowed to proceed. If it is then {@link RoutingContext#next()} will
      * be invoked, if not appropriate action will be taken to either report the failure or attempt authentication.
-     *
      */
     public void checkPermission(RoutingContext routingContext) {
         if (!controller.isAuthorizationEnabled()) {
@@ -137,7 +141,12 @@ public class HttpAuthorizer {
                 }, new Consumer<Throwable>() {
                     @Override
                     public void accept(Throwable throwable) {
-                        routingContext.fail(throwable);
+                        if (!routingContext.response().ended()) {
+                            routingContext.fail(throwable);
+                        } else if (!(throwable instanceof AuthenticationFailedException)) {
+                            //don't log auth failure
+                            log.error("Exception occurred during authorization", throwable);
+                        }
                     }
                 });
     }

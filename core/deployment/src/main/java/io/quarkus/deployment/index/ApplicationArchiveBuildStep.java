@@ -167,7 +167,6 @@ public class ApplicationArchiveBuildStep {
                         GACTV.TYPE_JAR);
                 final ResolvedDependency artifact = userMap.get(key);
                 if (artifact == null) {
-                    userMap.keySet().forEach(k -> System.out.println(" - " + k.getClass().getSimpleName() + " " + k));
                     throw new RuntimeException(
                             "Could not resolve artifact " + key + " among the runtime dependencies of the application");
                 }

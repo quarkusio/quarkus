@@ -50,7 +50,7 @@
         <smallrye-opentracing.version>2.0.1</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>5.2.1</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>3.3.0</smallrye-jwt.version>
-        <smallrye-context-propagation.version>1.2.0</smallrye-context-propagation.version>
+        <smallrye-context-propagation.version>1.2.2</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>2.6.0</smallrye-reactive-types-converter.version>
         <smallrye-mutiny-vertx-binding.version>2.14.1</smallrye-mutiny-vertx-binding.version>
@@ -133,7 +133,7 @@
         <netty.version>4.1.68.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.4.2.Final</jboss-logging.version>
-        <mutiny.version>1.1.1</mutiny.version>
+        <mutiny.version>1.1.2</mutiny.version>
         <kafka2.version>2.8.1</kafka2.version>
         <zookeeper.version>3.5.7</zookeeper.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->

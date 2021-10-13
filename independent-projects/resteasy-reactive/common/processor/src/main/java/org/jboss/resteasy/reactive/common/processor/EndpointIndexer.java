@@ -226,7 +226,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 clazz.setClassLevelExceptionMappers(classLevelExceptionMappers);
             }
             List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
-                    clazz.getPathParameters());
+                    clazz.getPathParameters(), clazz.getPath());
             clazz.getMethods().addAll(methods);
 
             // get an InjectableBean view of our class
@@ -263,7 +263,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected List<ResourceMethod> createEndpoints(ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, Set<String> seenMethods,
-            Set<String> pathParameters) {
+            Set<String> pathParameters, String resourceClassPath) {
 
         // $$CDIWrapper suffix is used to generate CDI beans from interfaces, we don't want to create endpoints for them:
         if (currentClassInfo.name().toString().endsWith(CDI_WRAPPER_SUFFIX)) {
@@ -273,12 +273,17 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         List<ResourceMethod> ret = new ArrayList<>();
         String[] classProduces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentClassInfo, PRODUCES));
         String[] classConsumes = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentClassInfo, CONSUMES));
+
         String classSseElementType = null;
         AnnotationInstance classSseElementTypeAnnotation = getAnnotationStore().getAnnotation(currentClassInfo,
                 REST_SSE_ELEMENT_TYPE);
         if (classSseElementTypeAnnotation != null) {
             classSseElementType = classSseElementTypeAnnotation.value().asString();
         }
+
+        BasicResourceClassInfo basicResourceClassInfo = new BasicResourceClassInfo(resourceClassPath, classProduces,
+                classConsumes, pathParameters, classSseElementType);
+
         Set<String> classNameBindings = NameBindingUtil.nameBindingNames(index, currentClassInfo);
 
         for (DotName httpMethod : httpAnnotationToMethod.keySet()) {
@@ -304,8 +309,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                         methodPath = "";
                     }
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
-                            classProduces, classConsumes, classNameBindings, httpMethod, info, methodPath, pathParameters,
-                            classSseElementType);
+                            basicResourceClassInfo, classNameBindings, httpMethod, info, methodPath);
 
                     ret.add(method);
                 }
@@ -334,8 +338,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     }
                 }
                 ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
-                        classProduces, classConsumes, classNameBindings, null, info, methodPath,
-                        pathParameters, classSseElementType);
+                        basicResourceClassInfo, classNameBindings, null, info, methodPath);
                 ret.add(method);
             }
         }
@@ -345,7 +348,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
                 ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
-                        pathParameters));
+                        pathParameters, resourceClassPath));
             }
         }
         List<DotName> interfaces = currentClassInfo.interfaceNames();
@@ -353,7 +356,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             ClassInfo superClass = index.getClassByName(i);
             if (superClass != null) {
                 ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
-                        pathParameters));
+                        pathParameters, resourceClassPath));
             }
         }
         return ret;
@@ -401,13 +404,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     private ResourceMethod createResourceMethod(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
-            String[] classProduces, String[] classConsumes, Set<String> classNameBindings, DotName httpMethod,
-            MethodInfo currentMethodInfo,
-            String methodPath, Set<String> classPathParameters, String classSseElementType) {
+            BasicResourceClassInfo basicResourceClassInfo, Set<String> classNameBindings, DotName httpMethod,
+            MethodInfo currentMethodInfo, String methodPath) {
         try {
             Map<String, Object> methodContext = new HashMap<>();
             methodContext.put(METHOD_CONTEXT_ANNOTATION_STORE, getAnnotationStore());
-            Set<String> pathParameters = new HashSet<>(classPathParameters);
+            Set<String> pathParameters = new HashSet<>(basicResourceClassInfo.getPathParameters());
             URLUtils.parsePathParameters(methodPath, pathParameters);
             Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[currentMethodInfo.parameters().size()];
             MethodParameter[] methodParameters = new MethodParameter[currentMethodInfo.parameters()
@@ -421,7 +423,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
             }
             String[] consumes = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentMethodInfo, CONSUMES),
-                    classConsumes);
+                    basicResourceClassInfo.getConsumes());
             boolean suspended = false;
             boolean sse = false;
             boolean formParamRequired = false;
@@ -502,11 +504,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             addWriterForType(additionalWriters, nonAsyncReturnType);
 
             String[] produces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentMethodInfo, PRODUCES),
-                    classProduces);
+                    basicResourceClassInfo.getProduces());
             produces = applyDefaultProduces(produces, nonAsyncReturnType);
             produces = addDefaultCharsets(produces);
 
-            String sseElementType = classSseElementType;
+            String sseElementType = basicResourceClassInfo.getSseElementType();
             AnnotationInstance sseElementTypeAnnotation = getAnnotationStore().getAnnotation(currentMethodInfo,
                     REST_SSE_ELEMENT_TYPE);
             if (sseElementTypeAnnotation != null) {
@@ -559,7 +561,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
             handleAdditionalMethodProcessing((METHOD) method, currentClassInfo, currentMethodInfo, getAnnotationStore());
             if (resourceMethodCallback != null) {
-                resourceMethodCallback.accept(new ResourceMethodCallbackData(currentMethodInfo, actualEndpointInfo, method));
+                resourceMethodCallback.accept(
+                        new ResourceMethodCallbackData(basicResourceClassInfo, actualEndpointInfo, currentMethodInfo, method));
             }
             return method;
         } catch (Exception e) {
@@ -1255,15 +1258,59 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         public abstract T build();
     }
 
+    public static class BasicResourceClassInfo {
+        private final String path;
+        private final String[] produces;
+        private final String[] consumes;
+        private final Set<String> pathParameters;
+        private final String sseElementType;
+
+        public BasicResourceClassInfo(String path, String[] produces, String[] consumes, Set<String> pathParameters,
+                String sseElementType) {
+            this.path = path;
+            this.produces = produces;
+            this.consumes = consumes;
+            this.pathParameters = pathParameters;
+            this.sseElementType = sseElementType;
+        }
+
+        public String getPath() {
+            return path;
+        }
+
+        public String[] getProduces() {
+            return produces;
+        }
+
+        public String[] getConsumes() {
+            return consumes;
+        }
+
+        public Set<String> getPathParameters() {
+            return pathParameters;
+        }
+
+        public String getSseElementType() {
+            return sseElementType;
+        }
+    }
+
     public static class ResourceMethodCallbackData {
-        private final MethodInfo methodInfo;
+        private final BasicResourceClassInfo basicResourceClassInfo;
         private final ClassInfo actualEndpointInfo;
+        private final MethodInfo methodInfo;
         private final ResourceMethod resourceMethod;
 
-        public ResourceMethodCallbackData(MethodInfo methodInfo, ClassInfo actualEndpointInfo, ResourceMethod resourceMethod) {
+        public ResourceMethodCallbackData(BasicResourceClassInfo basicResourceClassInfo, ClassInfo actualEndpointInfo,
+                MethodInfo methodInfo, ResourceMethod resourceMethod) {
+            this.basicResourceClassInfo = basicResourceClassInfo;
             this.methodInfo = methodInfo;
             this.actualEndpointInfo = actualEndpointInfo;
             this.resourceMethod = resourceMethod;
+        }
+
+        public BasicResourceClassInfo getBasicResourceClassInfo() {
+            return basicResourceClassInfo;
         }
 
         public MethodInfo getMethodInfo() {

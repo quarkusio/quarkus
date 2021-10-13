@@ -21,6 +21,7 @@ import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.core.startup.CustomServerRestHandlers;
 import org.jboss.resteasy.reactive.server.core.startup.RuntimeDeploymentManager;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
@@ -207,6 +208,10 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
                 return new ArcBeanFactory<>(aClass, container);
             }
         };
+    }
+
+    public ServerSerialisers createServerSerialisers() {
+        return new ServerSerialisers();
     }
 
     private static class BlockingInputHandlerSupplier implements Supplier<ServerRestHandler> {

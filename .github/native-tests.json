@@ -92,8 +92,8 @@
         },
         {
             "category": "HTTP",
-            "timeout": 70,
-            "test-modules": "elytron-resteasy, resteasy-jackson, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-web-jackson, vertx-graphql, virtual-http, rest-client",
+            "timeout": 75,
+            "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-web-jackson, vertx-graphql, virtual-http, rest-client",
             "os-name": "ubuntu-latest"
         },
         {

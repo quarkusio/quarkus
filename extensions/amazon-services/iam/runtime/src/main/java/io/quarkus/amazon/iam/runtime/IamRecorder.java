@@ -17,23 +17,29 @@ import software.amazon.awssdk.services.iam.IamClientBuilder;
 @Recorder
 public class IamRecorder {
 
-    public RuntimeValue<SyncHttpClientConfig> getSyncConfig(IamConfig config) {
+    final IamConfig config;
+
+    public IamRecorder(IamConfig config) {
+        this.config = config;
+    }
+
+    public RuntimeValue<SyncHttpClientConfig> getSyncConfig() {
         return new RuntimeValue<>(config.syncClient);
     }
 
-    public RuntimeValue<NettyHttpClientConfig> getAsyncConfig(IamConfig config) {
+    public RuntimeValue<NettyHttpClientConfig> getAsyncConfig() {
         return new RuntimeValue<>(config.asyncClient);
     }
 
-    public RuntimeValue<AwsConfig> getAwsConfig(IamConfig config) {
+    public RuntimeValue<AwsConfig> getAwsConfig() {
         return new RuntimeValue<>(config.aws);
     }
 
-    public RuntimeValue<SdkConfig> getSdkConfig(IamConfig config) {
+    public RuntimeValue<SdkConfig> getSdkConfig() {
         return new RuntimeValue<>(config.sdk);
     }
 
-    public RuntimeValue<AwsClientBuilder> createSyncBuilder(IamConfig config, RuntimeValue<SdkHttpClient.Builder> transport) {
+    public RuntimeValue<AwsClientBuilder> createSyncBuilder(RuntimeValue<SdkHttpClient.Builder> transport) {
         IamClientBuilder builder = IamClient.builder();
         if (transport != null) {
             builder.httpClientBuilder(transport.getValue());
@@ -41,8 +47,7 @@ public class IamRecorder {
         return new RuntimeValue<>(builder);
     }
 
-    public RuntimeValue<AwsClientBuilder> createAsyncBuilder(IamConfig config,
-            RuntimeValue<SdkAsyncHttpClient.Builder> transport) {
+    public RuntimeValue<AwsClientBuilder> createAsyncBuilder(RuntimeValue<SdkAsyncHttpClient.Builder> transport) {
 
         IamAsyncClientBuilder builder = IamAsyncClient.builder();
         if (transport != null) {

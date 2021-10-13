@@ -16,23 +16,29 @@ import software.amazon.awssdk.services.sns.SnsClientBuilder;
 
 @Recorder
 public class SnsRecorder {
-    public RuntimeValue<SyncHttpClientConfig> getSyncConfig(SnsConfig config) {
+    final SnsConfig config;
+
+    public SnsRecorder(SnsConfig config) {
+        this.config = config;
+    }
+
+    public RuntimeValue<SyncHttpClientConfig> getSyncConfig() {
         return new RuntimeValue<>(config.syncClient);
     }
 
-    public RuntimeValue<NettyHttpClientConfig> getAsyncConfig(SnsConfig config) {
+    public RuntimeValue<NettyHttpClientConfig> getAsyncConfig() {
         return new RuntimeValue<>(config.asyncClient);
     }
 
-    public RuntimeValue<AwsConfig> getAwsConfig(SnsConfig config) {
+    public RuntimeValue<AwsConfig> getAwsConfig() {
         return new RuntimeValue<>(config.aws);
     }
 
-    public RuntimeValue<SdkConfig> getSdkConfig(SnsConfig config) {
+    public RuntimeValue<SdkConfig> getSdkConfig() {
         return new RuntimeValue<>(config.sdk);
     }
 
-    public RuntimeValue<AwsClientBuilder> createSyncBuilder(SnsConfig config, RuntimeValue<Builder> transport) {
+    public RuntimeValue<AwsClientBuilder> createSyncBuilder(RuntimeValue<Builder> transport) {
         SnsClientBuilder builder = SnsClient.builder();
 
         if (transport != null) {
@@ -41,8 +47,7 @@ public class SnsRecorder {
         return new RuntimeValue<>(builder);
     }
 
-    public RuntimeValue<AwsClientBuilder> createAsyncBuilder(SnsConfig config,
-            RuntimeValue<SdkAsyncHttpClient.Builder> transport) {
+    public RuntimeValue<AwsClientBuilder> createAsyncBuilder(RuntimeValue<SdkAsyncHttpClient.Builder> transport) {
 
         SnsAsyncClientBuilder builder = SnsAsyncClient.builder();
 

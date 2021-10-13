@@ -24,7 +24,6 @@ import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaRecorder;
 import io.quarkus.amazon.lambda.runtime.FunctionError;
-import io.quarkus.amazon.lambda.runtime.LambdaConfig;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.builder.BuildException;
@@ -182,7 +181,6 @@ public final class AmazonLambdaProcessor {
             Optional<ProvidedAmazonLambdaHandlerBuildItem> providedLambda,
             BeanContainerBuildItem beanContainerBuildItem,
             AmazonLambdaRecorder recorder,
-            LambdaConfig config,
             List<ServiceStartBuildItem> orderServicesFirst, // try to order this after service recorders
             RecorderContext context) {
         if (providedLambda.isPresent()) {
@@ -229,7 +227,7 @@ public final class AmazonLambdaProcessor {
             }
 
             recorder.chooseHandlerClass(unnamed, named, unnamedStreamHandler, namedStreamHandler,
-                    beanContainerBuildItem.getValue(), config);
+                    beanContainerBuildItem.getValue());
         }
     }
 

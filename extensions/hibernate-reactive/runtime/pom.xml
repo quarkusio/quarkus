@@ -32,6 +32,11 @@
             <artifactId>quarkus-reactive-datasource</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-reactive-hibernate-reactive</artifactId>
+            <optional>true</optional> <!-- conditional dependency -->
+        </dependency>
+        <dependency>
             <groupId>org.hibernate.reactive</groupId>
             <artifactId>hibernate-reactive-core</artifactId>
             <exclusions>

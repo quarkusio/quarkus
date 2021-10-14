@@ -2,7 +2,6 @@ package io.quarkus.qute.runtime;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -141,7 +140,7 @@ public class TemplateProducer {
             this.variants = variants;
             this.engine = engine;
             if (variants != null) {
-                setAttribute(TemplateInstance.VARIANTS, new ArrayList<>(variants.variantToTemplate.keySet()));
+                setAttribute(TemplateInstance.VARIANTS, List.copyOf(variants.variantToTemplate.keySet()));
             }
         }
 

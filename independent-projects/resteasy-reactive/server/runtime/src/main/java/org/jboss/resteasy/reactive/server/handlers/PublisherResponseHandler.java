@@ -1,6 +1,9 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import javax.ws.rs.core.MediaType;
 import org.jboss.logging.Logger;
@@ -8,23 +11,36 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.SseUtil;
 import org.jboss.resteasy.reactive.server.core.StreamingUtil;
 import org.jboss.resteasy.reactive.server.jaxrs.OutboundSseEventImpl;
+import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer.Phase;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
+import org.jboss.resteasy.reactive.server.spi.StreamingResponse;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+/**
+ * This handler is used to push streams of data to the client.
+ * This handler is added to the chain in the {@link Phase#AFTER_METHOD_INVOKE} phase and is essentially the terminal phase
+ * of the handler chain, as no other handlers will be called after this one.
+ */
 public class PublisherResponseHandler implements ServerRestHandler {
+
+    private List<StreamingResponseCustomizer> streamingResponseCustomizers = Collections.emptyList();
+
+    public void setStreamingResponseCustomizers(List<StreamingResponseCustomizer> streamingResponseCustomizers) {
+        this.streamingResponseCustomizers = streamingResponseCustomizers;
+    }
 
     private static class SseMultiSubscriber extends AbstractMultiSubscriber {
 
-        SseMultiSubscriber(ResteasyReactiveRequestContext requestContext) {
-            super(requestContext);
+        SseMultiSubscriber(ResteasyReactiveRequestContext requestContext, List<StreamingResponseCustomizer> customizers) {
+            super(requestContext, customizers);
         }
 
         @Override
         public void onNext(Object item) {
             OutboundSseEventImpl event = new OutboundSseEventImpl.BuilderImpl().data(item).build();
-            SseUtil.send(requestContext, event).handle(new BiFunction<Object, Throwable, Object>() {
+            SseUtil.send(requestContext, event, customizers).handle(new BiFunction<Object, Throwable, Object>() {
                 @Override
                 public Object apply(Object v, Throwable t) {
                     if (t != null) {
@@ -48,8 +64,9 @@ public class PublisherResponseHandler implements ServerRestHandler {
         private String nextJsonPrefix;
         private boolean hadItem;
 
-        StreamingMultiSubscriber(ResteasyReactiveRequestContext requestContext, boolean json) {
-            super(requestContext);
+        StreamingMultiSubscriber(ResteasyReactiveRequestContext requestContext, List<StreamingResponseCustomizer> customizers,
+                boolean json) {
+            super(requestContext, customizers);
             this.json = json;
             this.nextJsonPrefix = "[";
             this.hadItem = false;
@@ -58,7 +75,7 @@ public class PublisherResponseHandler implements ServerRestHandler {
         @Override
         public void onNext(Object item) {
             hadItem = true;
-            StreamingUtil.send(requestContext, item, json ? nextJsonPrefix : null)
+            StreamingUtil.send(requestContext, customizers, item, json ? nextJsonPrefix : null)
                     .handle(new BiFunction<Object, Throwable, Object>() {
                         @Override
                         public Object apply(Object v, Throwable t) {
@@ -84,7 +101,7 @@ public class PublisherResponseHandler implements ServerRestHandler {
         @Override
         public void onComplete() {
             if (!hadItem) {
-                StreamingUtil.setHeaders(requestContext, requestContext.serverResponse());
+                StreamingUtil.setHeaders(requestContext, requestContext.serverResponse(), customizers);
             }
             if (json) {
                 String postfix;
@@ -108,10 +125,12 @@ public class PublisherResponseHandler implements ServerRestHandler {
     static abstract class AbstractMultiSubscriber implements Subscriber<Object> {
         protected Subscription subscription;
         protected ResteasyReactiveRequestContext requestContext;
+        protected List<StreamingResponseCustomizer> customizers;
         private boolean weClosed = false;
 
-        AbstractMultiSubscriber(ResteasyReactiveRequestContext requestContext) {
+        AbstractMultiSubscriber(ResteasyReactiveRequestContext requestContext, List<StreamingResponseCustomizer> customizers) {
             this.requestContext = requestContext;
+            this.customizers = customizers;
             // let's make sure we never restart by accident, also make sure we're not marked as completed
             requestContext.restart(AWOL, true);
             requestContext.serverResponse().addCloseHandler(() -> {
@@ -197,10 +216,68 @@ public class PublisherResponseHandler implements ServerRestHandler {
     }
 
     private void handleStreaming(ResteasyReactiveRequestContext requestContext, Publisher<?> result, boolean json) {
-        result.subscribe(new StreamingMultiSubscriber(requestContext, json));
+        result.subscribe(new StreamingMultiSubscriber(requestContext, streamingResponseCustomizers, json));
     }
 
     private void handleSse(ResteasyReactiveRequestContext requestContext, Publisher<?> result) {
-        result.subscribe(new SseMultiSubscriber(requestContext));
+        result.subscribe(new SseMultiSubscriber(requestContext, streamingResponseCustomizers));
+    }
+
+    public interface StreamingResponseCustomizer {
+
+        void customize(StreamingResponse<?> streamingResponse);
+
+        class StatusCustomizer implements StreamingResponseCustomizer {
+
+            private int status;
+
+            public StatusCustomizer(int status) {
+                this.status = status;
+            }
+
+            public StatusCustomizer() {
+            }
+
+            public int getStatus() {
+                return status;
+            }
+
+            public void setStatus(int status) {
+                this.status = status;
+            }
+
+            @Override
+            public void customize(StreamingResponse<?> streamingResponse) {
+                streamingResponse.setStatusCode(status);
+            }
+        }
+
+        class AddHeadersCustomizer implements StreamingResponseCustomizer {
+
+            private Map<String, List<String>> headers;
+
+            public AddHeadersCustomizer(Map<String, List<String>> headers) {
+                this.headers = headers;
+            }
+
+            public AddHeadersCustomizer() {
+            }
+
+            public Map<String, List<String>> getHeaders() {
+                return headers;
+            }
+
+            public void setHeaders(Map<String, List<String>> headers) {
+                this.headers = headers;
+            }
+
+            @SuppressWarnings({ "unchecked", "rawtypes" })
+            @Override
+            public void customize(StreamingResponse<?> streamingResponse) {
+                for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+                    streamingResponse.setResponseHeader(entry.getKey(), (Iterable) entry.getValue());
+                }
+            }
+        }
     }
 }

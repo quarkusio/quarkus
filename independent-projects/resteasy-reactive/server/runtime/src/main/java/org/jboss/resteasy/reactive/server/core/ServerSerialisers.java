@@ -474,7 +474,8 @@ public class ServerSerialisers extends Serialisers {
 
     public static void encodeResponseHeaders(ResteasyReactiveRequestContext requestContext) {
         ServerHttpResponse vertxResponse = requestContext.serverResponse();
-        if (!requestContext.getResponse().isCreated()) {
+        LazyResponse lazyResponse = requestContext.getResponse();
+        if (!lazyResponse.isCreated() && lazyResponse.isPredetermined()) {
             //fast path
             //there is no response, so we just set the content type
             if (requestContext.getResponseEntity() == null) {

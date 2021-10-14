@@ -2,9 +2,11 @@ package io.quarkus.it.resteasy.reactive.kotlin
 
 import io.quarkus.test.common.http.TestHTTPResource
 import io.quarkus.test.junit.QuarkusTest
+import io.restassured.RestAssured
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.util.*
+import java.util.Map
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import javax.ws.rs.client.ClientBuilder
@@ -29,6 +31,15 @@ class FlowResourceTest {
         testSse("suspendStr", 5) {
             assertThat(it).containsExactly("HELLO", "FROM", "KOTLIN", "FLOW")
         }
+    }
+
+    @Test
+    fun testResponseStatusAndHeaders() {
+        RestAssured
+                .get("/flow/str")
+                .then()
+                .statusCode(201)
+                .headers(Map.of("foo", "bar"))
     }
 
     @Test

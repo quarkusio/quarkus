@@ -57,7 +57,7 @@ class SmallRyeJwtProcessor {
     private static final DotName CLAIM_NAME = DotName.createSimple(Claim.class.getName());
     private static final DotName CLAIMS_NAME = DotName.createSimple(Claims.class.getName());
 
-    SmallRyeJWTConfig config;
+    SmallRyeJwtBuildTimeConfig config;
 
     @BuildStep(onlyIf = IsEnabled.class)
     ExtensionSslNativeSupportBuildItem enableSslInNative() {
@@ -175,7 +175,7 @@ class SmallRyeJwtProcessor {
     }
 
     public static class IsEnabled implements BooleanSupplier {
-        SmallRyeJWTConfig config;
+        SmallRyeJwtBuildTimeConfig config;
 
         public boolean getAsBoolean() {
             return config.enabled;

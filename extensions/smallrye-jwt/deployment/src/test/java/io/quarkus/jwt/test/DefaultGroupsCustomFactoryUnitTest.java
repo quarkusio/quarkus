@@ -27,7 +27,8 @@ public class DefaultGroupsCustomFactoryUnitTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
                     .addAsResource("privateKey.pem")
-                    .addAsResource("TokenUserGroup.json"));
+                    .addAsResource("TokenUserGroup.json")
+                    .addAsResource("applicationCustomFactory.properties", "application.properties"));
 
     @BeforeEach
     public void generateToken() throws Exception {

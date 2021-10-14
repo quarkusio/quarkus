@@ -1,6 +1,5 @@
 package io.quarkus.consul.config;
 
-import io.quarkus.consul.config.runtime.ConsulConfig;
 import io.quarkus.consul.config.runtime.ConsulConfigRecorder;
 import io.quarkus.consul.config.runtime.Response;
 import io.quarkus.deployment.Feature;
@@ -32,10 +31,9 @@ public class ConsulConfigProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public RunTimeConfigurationSourceValueBuildItem configure(ConsulConfigRecorder recorder,
-            ConsulConfig consulConfig) {
+    public RunTimeConfigurationSourceValueBuildItem configure(ConsulConfigRecorder recorder) {
         return new RunTimeConfigurationSourceValueBuildItem(
-                recorder.configSources(consulConfig));
+                recorder.configSources());
     }
 
 }

@@ -31,7 +31,7 @@ public class BearerTokenAuthorizationTest {
     @Test
     public void testSecureAccessSuccessPreferredUsername() {
         for (String username : Arrays.asList("alice", "admin")) {
-            RestAssured.given().auth().oauth2(getAccessToken(username, new HashSet<>(Arrays.asList("user", "admin"))))
+            RestAssured.given().auth().oauth2(getAccessToken(username, Set.of("user", "admin")))
                     .when().get("/api/users/preferredUserName/bearer")
                     .then()
                     .statusCode(200)
@@ -41,8 +41,17 @@ public class BearerTokenAuthorizationTest {
 
     @Test
     public void testAccessAdminResource() {
-        RestAssured.given().auth().oauth2(getAccessToken("admin", new HashSet<>(Arrays.asList("admin"))))
+        RestAssured.given().auth().oauth2(getAccessToken("admin", Set.of("admin")))
                 .when().get("/api/admin/bearer")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("admin"));
+    }
+
+    @Test
+    public void testAccessAdminResourceWithCertThumbprint() {
+        RestAssured.given().auth().oauth2(getAccessTokenWithThumbprint("admin", Set.of("admin")))
+                .when().get("/api/admin/bearer-no-introspection")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("admin"));
@@ -51,7 +60,7 @@ public class BearerTokenAuthorizationTest {
     @Test
     public void testSecureAccessSuccessPreferredUsernameWrongRolePath() {
         for (String username : Arrays.asList("alice", "admin")) {
-            RestAssured.given().auth().oauth2(getAccessToken(username, new HashSet<>(Arrays.asList("user", "admin"))))
+            RestAssured.given().auth().oauth2(getAccessToken(username, Set.of("user", "admin")))
                     .when().get("/api/users/preferredUserName/bearer-wrong-role-path")
                     .then()
                     .statusCode(403);
@@ -60,7 +69,7 @@ public class BearerTokenAuthorizationTest {
 
     @Test
     public void testAccessAdminResourceWrongRolePath() {
-        RestAssured.given().auth().oauth2(getAccessToken("admin", new HashSet<>(Arrays.asList("admin"))))
+        RestAssured.given().auth().oauth2(getAccessToken("admin", Set.of("admin")))
                 .when().get("/api/admin/bearer-wrong-role-path")
                 .then()
                 .statusCode(403);
@@ -68,7 +77,7 @@ public class BearerTokenAuthorizationTest {
 
     @Test
     public void testAccessAdminResourceAudienceArray() {
-        RestAssured.given().auth().oauth2(getAccessTokenAudienceArray("admin", new HashSet<>(Arrays.asList("admin"))))
+        RestAssured.given().auth().oauth2(getAccessTokenAudienceArray("admin", Set.of("admin")))
                 .when().get("/api/admin/bearer")
                 .then()
                 .statusCode(200)
@@ -77,7 +86,7 @@ public class BearerTokenAuthorizationTest {
 
     @Test
     public void testDeniedAccessAdminResource() {
-        RestAssured.given().auth().oauth2(getAccessToken("alice", new HashSet<>(Arrays.asList("user"))))
+        RestAssured.given().auth().oauth2(getAccessToken("alice", Set.of("user")))
                 .when().get("/api/admin/bearer")
                 .then()
                 .statusCode(403);
@@ -93,7 +102,7 @@ public class BearerTokenAuthorizationTest {
 
     @Test
     public void testExpiredBearerToken() {
-        String token = getExpiredAccessToken("alice", new HashSet<>(Arrays.asList("user")));
+        String token = getExpiredAccessToken("alice", Set.of("user"));
 
         RestAssured.given().auth().oauth2(token).when()
                 .get("/api/users/me/bearer")
@@ -104,7 +113,7 @@ public class BearerTokenAuthorizationTest {
 
     @Test
     public void testBearerTokenWrongIssuer() {
-        String token = getAccessTokenWrongIssuer("alice", new HashSet<>(Arrays.asList("user")));
+        String token = getAccessTokenWrongIssuer("alice", Set.of("user"));
 
         RestAssured.given().auth().oauth2(token).when()
                 .get("/api/users/me/bearer")
@@ -115,7 +124,7 @@ public class BearerTokenAuthorizationTest {
 
     @Test
     public void testBearerTokenWrongAudience() {
-        String token = getAccessTokenWrongAudience("alice", new HashSet<>(Arrays.asList("user")));
+        String token = getAccessTokenWrongAudience("alice", Set.of("user"));
 
         RestAssured.given().auth().oauth2(token).when()
                 .get("/api/users/me/bearer")
@@ -143,6 +152,15 @@ public class BearerTokenAuthorizationTest {
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
                 .sign();
+    }
+
+    private String getAccessTokenWithThumbprint(String userName, Set<String> groups) {
+        return Jwt.preferredUserName(userName)
+                .groups(groups)
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .jws().thumbprint(OidcWiremockTestResource.getCertificate())
+                .sign("privateKeyWithoutKid.jwk");
     }
 
     private String getAccessTokenWrongAudience(String userName, Set<String> groups) {

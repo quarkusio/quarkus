@@ -26,6 +26,14 @@ public class AdminResource {
         return "granted:" + identity.getRoles();
     }
 
+    @Path("bearer-no-introspection")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String adminNoIntrospection() {
+        return "granted:" + identity.getRoles();
+    }
+
     @Path("bearer-wrong-role-path")
     @GET
     @RolesAllowed("admin")

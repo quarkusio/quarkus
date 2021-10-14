@@ -327,6 +327,7 @@ jobs:
           retention-days: 2
       - name: Upload gc.log
         uses: actions/upload-artifact@v2
+        if: failure()
         with:
           name: "GC log - JDK ${{matrix.java.name}}"
           path: |

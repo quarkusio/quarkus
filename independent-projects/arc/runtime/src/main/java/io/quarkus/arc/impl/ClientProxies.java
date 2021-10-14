@@ -3,6 +3,7 @@ package io.quarkus.arc.impl;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
+import java.util.List;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.spi.Contextual;
 
@@ -20,19 +21,24 @@ public final class ClientProxies {
     }
 
     public static <T> T getDelegate(InjectableBean<T> bean) {
-        Iterable<InjectableContext> contexts = Arc.container().getContexts(bean.getScope());
+        List<InjectableContext> contexts = Arc.container().getContexts(bean.getScope());
         T result = null;
-        InjectableContext selectedContext = null;
-        for (InjectableContext context : contexts) {
-            if (result != null) {
-                if (context.isActive()) {
-                    throw new IllegalArgumentException(
-                            "More than one context object for the given scope: " + selectedContext + " " + context);
-                }
-            } else {
-                result = context.getIfActive(bean, ClientProxies::newCreationalContext);
+        if (contexts.size() == 1) {
+            result = contexts.get(0).getIfActive(bean, ClientProxies::newCreationalContext);
+        } else {
+            InjectableContext selectedContext = null;
+            for (int i = 0; i < contexts.size(); i++) {
+                InjectableContext context = contexts.get(i);
                 if (result != null) {
-                    selectedContext = context;
+                    if (context.isActive()) {
+                        throw new IllegalArgumentException(
+                                "More than one context object for the given scope: " + selectedContext + " " + context);
+                    }
+                } else {
+                    result = context.getIfActive(bean, ClientProxies::newCreationalContext);
+                    if (result != null) {
+                        selectedContext = context;
+                    }
                 }
             }
         }

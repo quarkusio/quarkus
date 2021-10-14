@@ -33,6 +33,10 @@
             <groupId>io.quarkus.security</groupId>
             <artifactId>quarkus-security</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-stork</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -20,6 +20,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jaxrs-client-reactive-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-stork-deployment</artifactId>
+        </dependency>
         <!-- test dependencies: -->
         <dependency>
             <groupId>io.quarkus</groupId>

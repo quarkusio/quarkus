@@ -12,6 +12,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 @ConfigGroup
 public class GrpcClientConfiguration {
 
+    public static final String DNS = "dns";
     /**
      * The gRPC service port.
      */
@@ -28,6 +29,13 @@ public class GrpcClientConfiguration {
      * The SSL/TLS config.
      */
     public SslClientConfig ssl;
+
+    /**
+     * Use a name resolver. Defaults to dns.
+     * If set to "stork", host will be treated as SmallRye Stork service name
+     */
+    @ConfigItem(defaultValue = DNS)
+    public String nameResolver;
 
     /**
      * Whether {@code plain-text} should be used instead of {@code TLS}.
@@ -140,6 +148,7 @@ public class GrpcClientConfiguration {
     /**
      * Use a custom load balancing policy.
      * Accepted values are: {@code pick_value}, {@code round_robin}, {@code grpclb}
+     * This value is ignored if name-resolver is set to 'stork'
      */
     @ConfigItem(defaultValue = "pick_first")
     public String loadBalancingPolicy;

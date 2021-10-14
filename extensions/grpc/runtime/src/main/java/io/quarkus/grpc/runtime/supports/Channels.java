@@ -38,6 +38,7 @@ import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.config.SslClientConfig;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.stork.Stork;
 
 @SuppressWarnings({ "OptionalIsPresent", "Convert2Lambda" })
 public class Channels {
@@ -71,7 +72,17 @@ public class Channels {
 
         String host = config.host;
         int port = config.port;
-        boolean plainText = !config.ssl.trustStore.isPresent();
+        String nameResolver = config.nameResolver;
+
+        String[] resolverSplit = nameResolver.split(":");
+
+        if (GrpcClientConfiguration.DNS.equalsIgnoreCase(resolverSplit[0])) {
+            host = "/" + host; // dns name resolver needs triple slash at the beginning
+        }
+
+        String target = String.format("%s://%s:%d", resolverSplit[0], host, port);
+
+        boolean plainText = config.ssl.trustStore.isEmpty();
         Optional<Boolean> usePlainText = config.plainText;
         if (usePlainText.isPresent()) {
             plainText = usePlainText.get();
@@ -103,8 +114,15 @@ public class Channels {
             context = sslContextBuilder.build();
         }
 
-        NettyChannelBuilder builder = NettyChannelBuilder.forAddress(host, port)
-                .defaultLoadBalancingPolicy(config.loadBalancingPolicy)
+        String loadBalancingPolicy = config.loadBalancingPolicy;
+
+        if (Stork.STORK.equalsIgnoreCase(nameResolver)) {
+            loadBalancingPolicy = Stork.STORK;
+        }
+
+        NettyChannelBuilder builder = NettyChannelBuilder
+                .forTarget(target)
+                .defaultLoadBalancingPolicy(loadBalancingPolicy)
                 .flowControlWindow(config.flowControlWindow.orElse(DEFAULT_FLOW_CONTROL_WINDOW))
                 .keepAliveWithoutCalls(config.keepAliveWithoutCalls)
                 .maxHedgedAttempts(config.maxHedgedAttempts)
@@ -182,6 +200,7 @@ public class Channels {
         config.maxInboundMetadataSize = OptionalInt.empty();
         config.maxRetryAttempts = 0;
         config.maxTraceEvents = OptionalInt.empty();
+        config.nameResolver = GrpcClientConfiguration.DNS;
         config.negotiationType = "PLAINTEXT";
         config.overrideAuthority = Optional.empty();
         config.perRpcBufferLimit = OptionalLong.empty();

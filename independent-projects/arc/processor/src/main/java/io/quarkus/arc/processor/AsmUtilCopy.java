@@ -164,48 +164,35 @@ public class AsmUtilCopy {
 
     /**
      * Returns the Java bytecode signature of a given Jandex Class using the given type argument mappings.
-     * For example, given this class:
-     * 
+     *
+     * For example, given this superclass:
+     *
      * <pre>
      * {@code
      * public class Foo<R> extends Bar<R> implements List<String> {
      * }
      * </pre>
-     * 
-     * This will return <tt>&lt;R:Ljava/lang/Object;>LBar&lt;TR;>;Ljava/util/List&lt;Ljava/lang/String;>;</tt>.
-     * 
-     * @param klass the class you want the signature for.
-     * 
-     * @return a bytecode signature for that class.
-     */
-    public static String getSignature(ClassInfo klass) {
-        return getSignature(klass, NO_ARG_MAPPER);
-    }
-
-    /**
-     * Returns the Java bytecode signature of a given Jandex Class using the given type argument mappings.
-     * For example, given this class:
-     * 
+     *
+     * This will return <tt>&lt;R:Ljava/lang/Object;>LFoo&lt;TR;>;</tt>.
+     * {@code Bar} and {@code List} will be ignored, as they won't be part of the signature of the generated subclass.
+     *
+     * All will be as if the generated subclass was declared like this:
+     *
      * <pre>
      * {@code
-     * public class Foo<R> extends Bar<R> implements List<String> {
+     * public class MyGeneratedClass<R> extends Foo<R> {
      * }
      * </pre>
+     *
+     * @param superClass the superclass of the type you want to generate the signature for.
      * 
-     * This will return <tt>&lt;R:Ljava/lang/Object;>LBar&lt;TR;>;Ljava/util/List&lt;Ljava/lang/String;>;</tt>.
-     * 
-     * @param klass the class you want the signature for.
-     * 
-     * @param typeArgMapper a mapping between type variables and their resolved type.
+     * @param superClassAsType the superclass as a Jandex Type.
      * @return a bytecode signature for that class.
      */
-    public static String getSignature(ClassInfo klass, Function<TypeVariable, Type> typeArgMapper) {
-        StringBuilder signature = new StringBuilder("");
-        toSignature(signature, klass.typeParameters(), typeArgMapper, false);
-        toSignature(signature, klass.superClassType(), typeArgMapper, false);
-        for (Type superinterface : klass.interfaceTypes()) {
-            toSignature(signature, superinterface, typeArgMapper, false);
-        }
+    public static String getGeneratedSubClassSignature(ClassInfo superClass, Type superClassAsType) {
+        StringBuilder signature = new StringBuilder();
+        toSignature(signature, superClass.typeParameters(), NO_ARG_MAPPER, false);
+        toSignature(signature, superClassAsType, NO_ARG_MAPPER, false);
         return signature.toString();
     }
 
@@ -222,21 +209,6 @@ public class AsmUtilCopy {
         }
         if (sb.length() > 0)
             sb.append(">");
-    }
-
-    /**
-     * Returns true if the given class has type parameters or if its superclass or superinterfaces require a signature
-     */
-    public static boolean needsSignature(ClassInfo klass) {
-        if (!klass.typeParameters().isEmpty()
-                || needsSignature(klass.superClassType())) {
-            return true;
-        }
-        for (Type type : klass.interfaceTypes()) {
-            if (needsSignature(type))
-                return true;
-        }
-        return false;
     }
 
     /**

@@ -494,6 +494,16 @@ The Infinispan Client has additional features that were not mentioned here. This
 feature was not tested in a Quarkus environment and they may or may not work. Please let us
 know if you need these added!
 
+== Testing helpers
+
+To start a Infinispan Server for your unit tests, Quarkus provides one `QuarkusTestResourceLifecycleManager` that relies on link:https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html#junit-testing[Infinispan Server Test Container].
+
+- `io.quarkus.test.infinispan.client.InfinispanTestResource` will start a single instance on port 11222 with user 'admin' and password 'password'.
+
+To use them, you need to add the `io.quarkus:quarkus-test-infinispan-client` dependency to your pom.xml.
+
+For more information about the usage of a `QuarkusTestResourceLifecycleManager` please read link:getting-started-testing#quarkus-test-resource[Quarkus test resource].
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-infinispan-client.adoc[opts=optional, leveloffset=+1]

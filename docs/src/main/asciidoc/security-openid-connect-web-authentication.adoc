@@ -577,11 +577,82 @@ Future<void> callQuarkusService() async {
   }
 ----
 
+== Integration with GitHub and other OAuth2 providers
+
+Some well known providers such as `GitHub` or `LinkedIn` are not `OpenId Connect` but `OAuth2` providers which support the `authorization code flow`, for example, link:https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps[GitHub OAuth2] and link:https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow[LinkedIn OAuth2].
+
+The main difference between `OAuth2` and `OpenId Connect` providers is that `OpenId Connect` providers, by building on top of `OAuth2`, return an `ID Token` representing a user authentication, in addition to the standard authorization code flow access and refresh tokens returned by `OAuth2` providers. With `OAuth2` providers, the fact of the user authentication is implicit and is indirectly represented by the access token which represents an authenticated user authorizing the current Quarkus `web-app` application to access some data on behalf of this user.
+
+For example, when working with `GitHub`, the Quarkus endpoint can acquire an access token which will allow it to request a `GitHub` user profile of the current user.
+In fact this is exactly how a standard `OpenId Connect` `UserInfo` acqusition also works - by authenticating into your `OpenId Connect` provider you also give a permission to Quarkus application to acquire your `UserInfo` on your behalf - and it also shows what is meant by `OpenId Connect` being built on top of `OAuth2`.
+
+In order to support the integration with such `OAuth2` servers, `quarkus-oidc` needs to be configured to allow the authorization code flow responses without `IdToken`: `quarkus.oidc.authentication.id-token-required=false`.
+
+The next step is to ensure that the returned access token can be useful to the current Quarkus endpoint.
+If the `OAuth2` provider supports the introspection endpoint then you may be able to use this access token as a source of roles with `quarkus.oidc.roles.source=accesstoken`. If no introspection endpoint is available then at the very least it should be possible to request a user information from this provider with `quarkus.oidc.authentication.user-info-required` - this is the case with `GitHib`.
+
+Also, OAuth2 servers may not support a well-known configuration endpoint in which case the discovery has to be disabled and the authorization, token, and introspection and/or userinfo endpoint paths have to be configured manually.
+
+Here is how you can integrate `quarkus-oidc` with `GitHub` after you have link:https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app[created a GitHub OAuth application]. Configure your Quarkus endpoint like this:
+
+```properties
+quarkus.oidc.auth-server-url=https://github.com/login/oauth
+quarkus.oidc.discovery-enabled=false
+quarkus.oidc.authorization-path=authorize
+quarkus.oidc.token-path=access_token
+quarkus.oidc.user-info-path=https://api.github.com/user
+
+# See https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps
+quarkus.oidc.authentication.scopes=user:email
+
+# Make sure a user info is required
+quarkus.oidc.authentication.user-info-required=true
+
+# Allow the code flow responses without ID tokens
+quarkus.oidc.authentication.id-token-required=false
+
+quarkus.oidc.application-type=web-app
+
+quarkus.oidc.client-id=github_app_clientid
+quarkus.oidc.credentials.secret=github_app_clientsecret
+```
+
+This is all what is needed for an endpoint like this one to return the currently authenticated user's profile with `GET http:localhost:8080/github/userinfo`:
+
+```java
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+
+import io.quarkus.oidc.UserInfo;
+import io.quarkus.security.Authenticated;
+
+@Path("/github")
+@Authenticated
+public class TokenResource {
+
+    @Inject
+    UserInfo userInfo;
+
+    @GET
+    @Path("/userinfo")
+    @Produces("application/json")
+    public String getUserInfo() {
+        return userInfo.getUserInfoString();
+    }
+}
+```
+
+In your own endpoint you can access individual `UserInfo` properties as required.
+
+The last important point is to make sure the callback path you enter in the GitHub OAuth application configuration matches the endpoint path where you'd like the user be redirected to after a successful GitHub authentication and application authorization, in this case it has to be set to `http:localhost:8080/github/userinfo`.
+
 == Cloud Services
 
 === Google Cloud
 
-You can have Quarkus OIDC `web-app` applications access **Google Cloud services** such as **BigQuery** on behalf of the currently authenticated users who have enabled OpenID  Connect (Authorization Code Flow) permissions to such services in their Google Developer Consoles.
+You can have Quarkus OIDC `web-app` applications access **Google Cloud services** such as **BigQuery** on behalf of the currently authenticated users who have enabled OpenID Connect (Authorization Code Flow) permissions to such services in their Google Developer Consoles.
 
 It is super easy to do with https://github.com/quarkiverse[Quarkiverse] https://github.com/quarkiverse/quarkiverse-google-cloud-services[Google Cloud Services], only add
 the https://github.com/quarkiverse/quarkiverse-google-cloud-services/releases/latest[latest tag] service dependency, for example:

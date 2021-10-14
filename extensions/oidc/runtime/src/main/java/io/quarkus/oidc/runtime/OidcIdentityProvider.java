@@ -131,8 +131,12 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
     private Uni<SecurityIdentity> createSecurityIdentityWithOidcServer(RoutingContext vertxContext,
             TokenAuthenticationRequest request, TenantConfigContext resolvedContext, final UserInfo userInfo) {
-        Uni<TokenVerificationResult> tokenUni = verifyTokenUni(resolvedContext,
-                request.getToken().getToken());
+        Uni<TokenVerificationResult> tokenUni = null;
+        if ((request.getToken() instanceof IdTokenCredential) && ((IdTokenCredential) request.getToken()).isInternal()) {
+            tokenUni = verifySelfSignedTokenUni(resolvedContext, request.getToken().getToken());
+        } else {
+            tokenUni = verifyTokenUni(resolvedContext, request.getToken().getToken());
+        }
 
         return tokenUni.onItemOrFailure()
                 .transformToUni(new BiFunction<TokenVerificationResult, Throwable, Uni<? extends SecurityIdentity>>() {
@@ -282,6 +286,14 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     return Uni.createFrom().failure(t);
                 }
             }
+        }
+    }
+
+    private Uni<TokenVerificationResult> verifySelfSignedTokenUni(TenantConfigContext resolvedContext, String token) {
+        try {
+            return Uni.createFrom().item(resolvedContext.provider.verifySelfSignedJwtToken(token));
+        } catch (Throwable t) {
+            return Uni.createFrom().failure(t);
         }
     }
 

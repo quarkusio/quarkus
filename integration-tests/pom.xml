@@ -24,6 +24,9 @@
     </properties>
 
     <!-- modules are in profile test-modules -->
+    <modules>
+        <module>xmlsecurity</module>
+    </modules>
 
     <build>
         <plugins>

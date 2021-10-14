@@ -204,6 +204,7 @@
         <module>vertx-web</module>
 
         <module>awt</module>
+        <module>xmlsecurity</module>
     </modules>
 
     <build>

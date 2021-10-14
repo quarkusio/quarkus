@@ -855,13 +855,13 @@ public class QuteProcessor {
 
         IndexView index = beanArchiveIndex.getIndex();
         Map<MethodInfo, AnnotationInstance> methods = new HashMap<>();
-        Map<ClassInfo, AnnotationInstance> classes = new HashMap<>();
+        Map<DotName, AnnotationInstance> classes = new HashMap<>();
 
         for (AnnotationInstance templateExtension : index.getAnnotations(ExtensionMethodGenerator.TEMPLATE_EXTENSION)) {
             if (templateExtension.target().kind() == Kind.METHOD) {
                 methods.put(templateExtension.target().asMethod(), templateExtension);
             } else if (templateExtension.target().kind() == Kind.CLASS) {
-                classes.put(templateExtension.target().asClass(), templateExtension);
+                classes.put(templateExtension.target().asClass().name(), templateExtension);
             }
         }
 
@@ -876,10 +876,12 @@ public class QuteProcessor {
         }
 
         // Class-level annotations
-        for (Entry<ClassInfo, AnnotationInstance> entry : classes.entrySet()) {
-            ClassInfo clazz = entry.getKey();
+        boolean skippedMethodLevelAnnotation = false;
+        for (Entry<DotName, AnnotationInstance> entry : classes.entrySet()) {
+            ClassInfo clazz = entry.getValue().target().asClass();
             AnnotationValue namespaceValue = entry.getValue().value(ExtensionMethodGenerator.NAMESPACE);
             String namespace = namespaceValue != null ? namespaceValue.asString() : null;
+            List<MethodInfo> found = new ArrayList<>();
             for (MethodInfo method : clazz.methods()) {
                 if (!Modifier.isStatic(method.flags()) || method.returnType().kind() == org.jboss.jandex.Type.Kind.VOID
                         || Modifier.isPrivate(method.flags())
@@ -893,11 +895,20 @@ public class QuteProcessor {
                 }
                 if (methods.containsKey(method)) {
                     // Skip methods annotated with @TemplateExtension - method-level annotation takes precedence
+                    skippedMethodLevelAnnotation = true;
                     continue;
                 }
-                produceExtensionMethod(index, extensionMethods, method, entry.getValue());
+                found.add(method);
                 LOGGER.debugf("Found template extension method %s declared on %s", method,
                         method.declaringClass().name());
+            }
+
+            if (found.isEmpty() && !skippedMethodLevelAnnotation) {
+                throw new IllegalStateException("No template extension methods declared on " + entry.getKey()
+                        + "; a template extension method must be static, non-private and must not return void");
+            }
+            for (MethodInfo method : found) {
+                produceExtensionMethod(index, extensionMethods, method, entry.getValue());
             }
         }
     }

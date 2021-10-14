@@ -1,0 +1,7 @@
+---
+registries:
+- registry.quarkus.io
+- registry.acme.org:
+    descriptor:
+      artifact: "org.acme:acme-quarkus-registry-descriptor::json:2.0"
+- registry.ebullient.dev

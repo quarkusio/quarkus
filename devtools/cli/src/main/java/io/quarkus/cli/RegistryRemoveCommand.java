@@ -1,12 +1,9 @@
 package io.quarkus.cli;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import io.quarkus.cli.registry.BaseRegistryCommand;
-import io.quarkus.registry.config.RegistriesConfig;
-import io.quarkus.registry.config.RegistryConfig;
+import io.quarkus.registry.config.MutableRegistriesConfig;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "remove", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Remove a Quarkus extension registry", description = "%n"
@@ -17,30 +14,24 @@ public class RegistryRemoveCommand extends BaseRegistryCommand {
             + "  Example:%n"
             + "    registry.quarkus.io%n"
             + "    registry.quarkus.acme.com,registry.quarkus.io%n")
-    String registryIds;
+    List<String> registryIds;
 
     @Override
     public Integer call() throws Exception {
-        final RegistriesConfig config = registryClient.getConfig();
-
-        final List<RegistryConfig> registries = config.getRegistries();
-        final Map<String, RegistryConfig> registryMap = new LinkedHashMap<>(registries.size());
-        registries.forEach(r -> registryMap.put(r.getId(), r));
-
         boolean persist = false;
-        for (String registryId : registryIds.split(",")) {
-            if (registryMap.remove(registryId) == null) {
-                output.info("Registry " + registryId + " was not previously configured");
-            } else {
-                output.info("Registry " + registryId + " was removed");
+        final MutableRegistriesConfig config = registryClient.getExtensionCatalogResolver().getConfig().mutable();
+
+        for (String registryId : registryIds) {
+            if (config.removeRegistry(registryId)) {
                 persist = true;
+                output.info("Registry " + registryId + " was removed");
+            } else {
+                output.info("Registry " + registryId + " was not removed; it was not configured.");
             }
         }
 
         if (persist) {
-            registries.clear();
-            registries.addAll(registryMap.values());
-            registryClient.saveConfig();
+            config.persist();
         }
 
         return CommandLine.ExitCode.OK;

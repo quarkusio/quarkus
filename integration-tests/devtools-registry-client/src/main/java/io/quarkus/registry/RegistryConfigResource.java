@@ -10,7 +10,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import io.quarkus.registry.config.RegistriesConfigLocator;
-import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
+import io.quarkus.registry.config.RegistriesConfigMapperHelper;
 
 @Path("/config")
 public class RegistryConfigResource {

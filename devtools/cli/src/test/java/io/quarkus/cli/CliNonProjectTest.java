@@ -21,8 +21,8 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistriesConfigLocator;
+import io.quarkus.registry.config.RegistriesConfigMapperHelper;
 import io.quarkus.registry.config.json.JsonRegistriesConfig;
-import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
 import picocli.CommandLine;
 
 public class CliNonProjectTest {

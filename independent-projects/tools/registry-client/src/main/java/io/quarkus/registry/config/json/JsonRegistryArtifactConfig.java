@@ -5,6 +5,7 @@ import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.config.RegistryArtifactConfig;
 import java.util.Objects;
 
+@Deprecated
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
 public class JsonRegistryArtifactConfig implements RegistryArtifactConfig {
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.registry.config.RegistryMavenRepoConfig;
 import java.util.Objects;
 
+@Deprecated
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class JsonRegistryMavenRepoConfig implements RegistryMavenRepoConfig {
 

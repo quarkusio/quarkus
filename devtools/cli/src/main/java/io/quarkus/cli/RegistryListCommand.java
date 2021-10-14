@@ -19,7 +19,7 @@ public class RegistryListCommand extends BaseRegistryCommand {
 
     @Override
     public Integer call() throws Exception {
-        final RegistriesConfig config = registryClient.getConfig();
+        final RegistriesConfig config = registryClient.getExtensionCatalogResolver().getConfig();
 
         ExtensionCatalogResolver catalogResolver = null;
         if (showStreams) {
@@ -46,10 +46,7 @@ public class RegistryListCommand extends BaseRegistryCommand {
             }
         }
 
-        final String configYaml = registryClient.getToolsConfigSource();
-        if (configYaml != null) {
-            output.info("(Read from " + configYaml + ")");
-        }
+        output.info("(Read from " + config.getSource().describe() + ")");
 
         return CommandLine.ExitCode.OK;
     }

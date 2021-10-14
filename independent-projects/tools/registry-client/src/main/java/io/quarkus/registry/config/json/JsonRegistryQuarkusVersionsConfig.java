@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.registry.config.RegistryQuarkusVersionsConfig;
 import java.util.Objects;
 
+@Deprecated
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
 public class JsonRegistryQuarkusVersionsConfig implements RegistryQuarkusVersionsConfig {
 

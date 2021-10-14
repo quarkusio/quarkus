@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import java.io.IOException;
 
+@Deprecated
 public class JsonRegistryConfigDeserializer extends JsonDeserializer<JsonRegistryConfig> {
 
     @Override

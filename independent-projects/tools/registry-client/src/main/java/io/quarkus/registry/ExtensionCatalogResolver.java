@@ -21,8 +21,8 @@ import io.quarkus.registry.catalog.selection.OriginPreference;
 import io.quarkus.registry.client.RegistryClientFactory;
 import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistriesConfigLocator;
+import io.quarkus.registry.config.RegistriesConfigMapperHelper;
 import io.quarkus.registry.config.RegistryConfig;
-import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -51,7 +52,7 @@ public class ExtensionCatalogResolver {
     public static class Builder {
         private MessageWriter log;
         private String configFilePathString;
-        private boolean useRegistryClient = true;
+        private Boolean useRegistryClient = null;
         private boolean refreshCache;
 
         private MavenArtifactResolver artifactResolver;
@@ -109,13 +110,13 @@ public class ExtensionCatalogResolver {
          */
         public ExtensionCatalogResolver build() throws RegistryResolutionException {
             completeConfig();
-            return useRegistryClient
+            return Objects.requireNonNull(useRegistryClient)
                     ? clearCache(new ExtensionCatalogResolver(this, buildRegistryClients()))
                     : clearCache(new ExtensionCatalogResolver(this, Collections.emptyList()));
         }
 
         private ExtensionCatalogResolver clearCache(ExtensionCatalogResolver resolver) {
-            if ( refreshCache ) {
+            if (refreshCache) {
                 log.debug("Refreshing registry cache");
                 if (resolver.hasRegistries()) {
                     try {
@@ -133,20 +134,21 @@ public class ExtensionCatalogResolver {
         }
 
         private void completeConfig() {
-            if ( useRegistryClient ) { // this is the default
+            if (useRegistryClient == null) {
                 String value = System.getProperty("quarkusRegistryClient");
                 if (value == null) {
                     value = System.getenv("QUARKUS_REGISTRY_CLIENT");
                 }
                 useRegistryClient = value == null || value.isBlank() || Boolean.parseBoolean(value);
             }
+
             if (config == null) {
                 // Find tools config file
                 configFilePath = configFilePathString == null
-                        ? RegistriesConfigLocator.locateConfigYaml()
+                        ? null // allow default location including env vars
                         : Paths.get(configFilePathString);
 
-                // read tool configuration
+                // read tool configuration, store as immutable resource
                 config = configFilePath == null
                         ? RegistriesConfigLocator.resolveConfig()
                         : RegistriesConfigLocator.load(configFilePath);
@@ -200,8 +202,7 @@ public class ExtensionCatalogResolver {
     }
 
     /**
-     *
-     * @return
+     * @return read-only Registry configuration
      */
     public RegistriesConfig getConfig() {
         return this.config;
@@ -216,31 +217,31 @@ public class ExtensionCatalogResolver {
     }
 
     /**
-     * @return
+     * @return MessageWriting
      */
     public MessageWriter getMessageWriter() {
         return log;
     }
 
-    /** @return true if extension catalog resolver has registries */
+    /**
+     * @return true if extension catalog resolver has registries
+     */
     public boolean hasRegistries() {
         return !registries.isEmpty();
     }
 
     /**
-     *
-     * @return
-     * @throws RegistryResolutionException
+     * @return constructed Platform Catalog
+     * @throws RegistryResolutionException if the platform catalog can not be resolved
      */
     public PlatformCatalog resolvePlatformCatalog() throws RegistryResolutionException {
         return resolvePlatformCatalog(null);
     }
 
     /**
-     *
      * @param quarkusVersion
      * @return
-     * @throws RegistryResolutionException
+     * @throws RegistryResolutionException if the platform catalog can not be resolved
      */
     public PlatformCatalog resolvePlatformCatalog(String quarkusVersion) throws RegistryResolutionException {
         List<PlatformCatalog> catalogs = new ArrayList<>(registries.size());

@@ -5,7 +5,7 @@
 
     <description>Override Annotations...</description>
 
-    <entity class="io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly.XmlMappingOnlyEntity" access="FIELD" metadata-complete="true">
+    <entity class="io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly.dirtychecking.MyEntity" access="FIELD" metadata-complete="true">
         <attributes>
             <id name="id">
                 <generated-value />
@@ -24,7 +24,7 @@
         </attributes>
     </entity>
 
-    <entity class="io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly.XmlMappingOnlyOtherEntity" access="FIELD" metadata-complete="true">
+    <entity class="io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly.dirtychecking.MyOtherEntity" access="FIELD" metadata-complete="true">
         <attributes>
             <id name="id">
                 <generated-value />
@@ -32,7 +32,7 @@
         </attributes>
     </entity>
 
-    <embeddable class="io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly.XmlMappingOnlyEmbeddable" access="FIELD" metadata-complete="true">
+    <embeddable class="io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly.dirtychecking.MyEmbeddable" access="FIELD" metadata-complete="true">
         <attributes>
             <basic name="embeddedBasic" />
         </attributes>

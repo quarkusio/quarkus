@@ -1,4 +1,4 @@
-package io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly;
+package io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly.dirtychecking;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,7 +18,7 @@ import io.quarkus.hibernate.orm.PersistenceUnit;
 public class XmlMappingOnlyDirtyCheckingResource {
 
     @Inject
-    @PersistenceUnit("xmlMappingOnly")
+    @PersistenceUnit("xml-mapping-only-dirty-checking")
     EntityManager entityManager;
 
     @GET
@@ -26,7 +26,7 @@ public class XmlMappingOnlyDirtyCheckingResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Transactional
     public String basic() {
-        XmlMappingOnlyEntity entity = persistOneEntity();
+        MyEntity entity = persistOneEntity();
 
         entity = flushClearAndRetrieve(entity);
         String updated = "updated";
@@ -44,12 +44,12 @@ public class XmlMappingOnlyDirtyCheckingResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Transactional
     public String embedded_replace() {
-        XmlMappingOnlyEntity entity = persistOneEntity();
+        MyEntity entity = persistOneEntity();
 
         entity = flushClearAndRetrieve(entity);
         String updated = "updated";
         assertThat(entity.getEmbedded().getEmbeddedBasic()).isNotEqualTo(updated);
-        XmlMappingOnlyEmbeddable updatedEmbeddable = new XmlMappingOnlyEmbeddable();
+        MyEmbeddable updatedEmbeddable = new MyEmbeddable();
         updatedEmbeddable.setEmbeddedBasic(updated);
         entity.setEmbedded(updatedEmbeddable);
 
@@ -64,7 +64,7 @@ public class XmlMappingOnlyDirtyCheckingResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Transactional
     public String embedded_update() {
-        XmlMappingOnlyEntity entity = persistOneEntity();
+        MyEntity entity = persistOneEntity();
 
         entity = flushClearAndRetrieve(entity);
         String updated = "updated";
@@ -82,7 +82,7 @@ public class XmlMappingOnlyDirtyCheckingResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Transactional
     public String elementCollection() {
-        XmlMappingOnlyEntity entity = persistOneEntity();
+        MyEntity entity = persistOneEntity();
 
         entity = flushClearAndRetrieve(entity);
         String updated = "updated";
@@ -100,16 +100,16 @@ public class XmlMappingOnlyDirtyCheckingResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Transactional
     public String oneToOne() {
-        XmlMappingOnlyEntity entity = persistOneEntity();
+        MyEntity entity = persistOneEntity();
 
         entity = flushClearAndRetrieve(entity);
-        XmlMappingOnlyOtherEntity updated = new XmlMappingOnlyOtherEntity();
+        MyOtherEntity updated = new MyOtherEntity();
         entityManager.persist(updated);
         assertThat(entity.getOneToOne()).isNotEqualTo(updated);
         entity.setOneToOne(updated);
 
         entity = flushClearAndRetrieve(entity);
-        updated = entityManager.find(XmlMappingOnlyOtherEntity.class, updated.getId());
+        updated = entityManager.find(MyOtherEntity.class, updated.getId());
         assertThat(entity.getOneToOne()).isEqualTo(updated);
 
         return "OK";
@@ -120,16 +120,16 @@ public class XmlMappingOnlyDirtyCheckingResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Transactional
     public String manyToOne() {
-        XmlMappingOnlyEntity entity = persistOneEntity();
+        MyEntity entity = persistOneEntity();
 
         entity = flushClearAndRetrieve(entity);
-        XmlMappingOnlyOtherEntity updated = new XmlMappingOnlyOtherEntity();
+        MyOtherEntity updated = new MyOtherEntity();
         entityManager.persist(updated);
         assertThat(entity.getManyToOne()).isNotEqualTo(updated);
         entity.setManyToOne(updated);
 
         entity = flushClearAndRetrieve(entity);
-        updated = entityManager.find(XmlMappingOnlyOtherEntity.class, updated.getId());
+        updated = entityManager.find(MyOtherEntity.class, updated.getId());
         assertThat(entity.getManyToOne()).isEqualTo(updated);
 
         return "OK";
@@ -140,16 +140,16 @@ public class XmlMappingOnlyDirtyCheckingResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Transactional
     public String oneToMany() {
-        XmlMappingOnlyEntity entity = persistOneEntity();
+        MyEntity entity = persistOneEntity();
 
         entity = flushClearAndRetrieve(entity);
-        XmlMappingOnlyOtherEntity updated = new XmlMappingOnlyOtherEntity();
+        MyOtherEntity updated = new MyOtherEntity();
         entityManager.persist(updated);
         assertThat(entity.getOneToMany()).doesNotContain(updated);
         entity.getOneToMany().add(updated);
 
         entity = flushClearAndRetrieve(entity);
-        updated = entityManager.find(XmlMappingOnlyOtherEntity.class, updated.getId());
+        updated = entityManager.find(MyOtherEntity.class, updated.getId());
         assertThat(entity.getOneToMany()).contains(updated);
 
         return "OK";
@@ -160,35 +160,35 @@ public class XmlMappingOnlyDirtyCheckingResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Transactional
     public String manyToMany() {
-        XmlMappingOnlyEntity entity = persistOneEntity();
+        MyEntity entity = persistOneEntity();
 
         entity = flushClearAndRetrieve(entity);
-        XmlMappingOnlyOtherEntity updated = new XmlMappingOnlyOtherEntity();
+        MyOtherEntity updated = new MyOtherEntity();
         entityManager.persist(updated);
         assertThat(entity.getManyToMany()).doesNotContain(updated);
         entity.getManyToMany().add(updated);
 
         entity = flushClearAndRetrieve(entity);
-        updated = entityManager.find(XmlMappingOnlyOtherEntity.class, updated.getId());
+        updated = entityManager.find(MyOtherEntity.class, updated.getId());
         assertThat(entity.getManyToMany()).contains(updated);
 
         return "OK";
     }
 
-    private XmlMappingOnlyEntity flushClearAndRetrieve(XmlMappingOnlyEntity entity) {
+    private MyEntity flushClearAndRetrieve(MyEntity entity) {
         entityManager.flush();
         entityManager.clear();
-        return entityManager.find(XmlMappingOnlyEntity.class, entity.getId());
+        return entityManager.find(MyEntity.class, entity.getId());
     }
 
-    private XmlMappingOnlyEntity persistOneEntity() {
-        XmlMappingOnlyEntity entity = new XmlMappingOnlyEntity();
+    private MyEntity persistOneEntity() {
+        MyEntity entity = new MyEntity();
         entity.setBasic("initial");
-        entity.setEmbedded(new XmlMappingOnlyEmbeddable());
+        entity.setEmbedded(new MyEmbeddable());
         entity.getEmbedded().setEmbeddedBasic("initial");
         entity.getElementCollection().add("initial");
 
-        XmlMappingOnlyOtherEntity initialOther = new XmlMappingOnlyOtherEntity();
+        MyOtherEntity initialOther = new MyOtherEntity();
         entityManager.persist(initialOther);
 
         entity.setOneToOne(initialOther);

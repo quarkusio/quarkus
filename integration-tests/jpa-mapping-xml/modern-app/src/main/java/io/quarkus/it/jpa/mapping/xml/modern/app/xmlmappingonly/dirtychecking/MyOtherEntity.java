@@ -1,6 +1,6 @@
-package io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly;
+package io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly.dirtychecking;
 
-public class XmlMappingOnlyOtherEntity {
+public class MyOtherEntity {
 
     private Long id;
 

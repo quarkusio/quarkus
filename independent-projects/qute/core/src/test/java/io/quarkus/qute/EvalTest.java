@@ -1,8 +1,7 @@
 package io.quarkus.qute;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import org.junit.jupiter.api.Test;
 
@@ -28,23 +27,17 @@ public class EvalTest {
 
     @Test
     public void testTemplateParamNotSet() {
-        try {
-            Engine.builder().addDefaults().build().parse("{#eval name='Foo' /}");
-            fail();
-        } catch (TemplateException expected) {
-            assertTrue(expected.getMessage().contains("Parser error"));
-            assertTrue(expected.getMessage().contains("mandatory section parameters not declared"));
-        }
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> Engine.builder().addDefaults().build().parse("{#eval name='Foo' /}"))
+                .withMessageContainingAll("Parser error", "mandatory section parameters not declared");
     }
 
     @Test
     public void testInvalidTemplateContents() {
-        try {
-            Engine.builder().addDefaults().build().parse("{#eval invalid /}").data("invalid", "{foo").render();
-            fail();
-        } catch (TemplateException expected) {
-            assertTrue(expected.getMessage().contains("Parser error in the evaluated template"));
-        }
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> Engine.builder().addDefaults().build().parse("{#eval invalid /}").data("invalid", "{foo")
+                        .render())
+                .withMessageContaining("Parser error in the evaluated template");
     }
 
 }

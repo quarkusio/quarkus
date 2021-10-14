@@ -1,9 +1,9 @@
 package io.quarkus.qute;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -129,37 +129,25 @@ public class LoopSectionTest {
     @Test
     public void testNull() {
         Engine engine = Engine.builder().addDefaults().build();
-        try {
-            engine.parse("{#for i in items}{i}:{/for}").data("items", null).render();
-            fail();
-        } catch (TemplateException expected) {
-            assertTrue(expected.getMessage().contains("{items} resolved to null, use {items.orEmpty} to ignore this error"),
-                    expected.getMessage());
-        }
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> engine.parse("{#for i in items}{i}:{/for}").data("items", null).render())
+                .withMessageContaining("{items} resolved to null, use {items.orEmpty} to ignore this error");
     }
 
     @Test
     public void testNoniterable() {
         Engine engine = Engine.builder().addDefaults().build();
-        try {
-            engine.parse("{#for i in items}{i}:{/for}").data("items", Boolean.TRUE).render();
-            fail();
-        } catch (TemplateException expected) {
-            assertTrue(expected.getMessage().contains("{items} resolved to [java.lang.Boolean] which is not iterable"),
-                    expected.getMessage());
-        }
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> engine.parse("{#for i in items}{i}:{/for}").data("items", Boolean.TRUE).render())
+                .withMessageContaining("{items} resolved to [java.lang.Boolean] which is not iterable");
     }
 
     @Test
     public void testNotFound() {
         Engine engine = Engine.builder().addDefaults().strictRendering(false).build();
-        try {
-            engine.parse("{#for i in items}{i}:{/for}").render();
-            fail();
-        } catch (TemplateException expected) {
-            assertTrue(expected.getMessage().contains("{items} not found, use {items.orEmpty} to ignore this error"),
-                    expected.getMessage());
-        }
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> engine.parse("{#for i in items}{i}:{/for}").render())
+                .withMessageContaining("{items} not found, use {items.orEmpty} to ignore this error");
     }
 
     @Test

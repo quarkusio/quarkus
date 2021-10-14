@@ -19,10 +19,16 @@ import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmHibernateMapping;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmJoinedSubclassEntityType;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmRootEntityType;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmUnionSubclassEntityType;
+import org.hibernate.boot.jaxb.mapping.spi.EntityOrMappedSuperclass;
+import org.hibernate.boot.jaxb.mapping.spi.JaxbConverter;
 import org.hibernate.boot.jaxb.mapping.spi.JaxbEmbeddable;
 import org.hibernate.boot.jaxb.mapping.spi.JaxbEntity;
+import org.hibernate.boot.jaxb.mapping.spi.JaxbEntityListener;
+import org.hibernate.boot.jaxb.mapping.spi.JaxbEntityListeners;
 import org.hibernate.boot.jaxb.mapping.spi.JaxbEntityMappings;
 import org.hibernate.boot.jaxb.mapping.spi.JaxbMappedSuperclass;
+import org.hibernate.boot.jaxb.mapping.spi.JaxbPersistenceUnitDefaults;
+import org.hibernate.boot.jaxb.mapping.spi.JaxbPersistenceUnitMetadata;
 import org.hibernate.boot.jaxb.mapping.spi.ManagedType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -186,20 +192,46 @@ public final class JpaJandexScavenger {
         String packageName = mapping.getPackage();
         String packagePrefix = packageName == null ? "" : packageName + ".";
 
+        JaxbPersistenceUnitMetadata metadata = mapping.getPersistenceUnitMetadata();
+        JaxbPersistenceUnitDefaults defaults = metadata == null ? null : metadata.getPersistenceUnitDefaults();
+        if (defaults != null) {
+            enlistOrmXmlMappingListeners(collector, packagePrefix, defaults.getEntityListeners());
+        }
+
         for (JaxbEntity entity : mapping.getEntity()) {
-            String name = safeGetClassName(packagePrefix, entity, "entity");
-            enlistExplicitClass(collector, name);
-            // The call to 'enlistExplicitClass' above may not
-            // detect that this class is an entity if it is not annotated
-            collector.entityTypes.add(name);
+            enlistOrmXmlMappingManagedClass(collector, packagePrefix, entity, "entity");
         }
         for (JaxbMappedSuperclass mappedSuperclass : mapping.getMappedSuperclass()) {
-            String name = safeGetClassName(packagePrefix, mappedSuperclass, "mapped-superclass");
-            enlistExplicitClass(collector, name);
+            enlistOrmXmlMappingManagedClass(collector, packagePrefix, mappedSuperclass, "mapped-superclass");
         }
         for (JaxbEmbeddable embeddable : mapping.getEmbeddable()) {
             String name = safeGetClassName(packagePrefix, embeddable, "embeddable");
             enlistExplicitClass(collector, name);
+        }
+        for (JaxbConverter converter : mapping.getConverter()) {
+            collector.potentialCdiBeanTypes.add(DotName.createSimple(qualifyIfNecessary(packagePrefix, converter.getClazz())));
+        }
+    }
+
+    private void enlistOrmXmlMappingManagedClass(Collector collector, String packagePrefix, EntityOrMappedSuperclass managed,
+            String nodeName) {
+        String name = safeGetClassName(packagePrefix, managed, nodeName);
+        enlistExplicitClass(collector, name);
+        if (managed instanceof JaxbEntity) {
+            // The call to 'enlistExplicitClass' above may not
+            // detect that this class is an entity if it is not annotated
+            collector.entityTypes.add(name);
+        }
+
+        enlistOrmXmlMappingListeners(collector, packagePrefix, managed.getEntityListeners());
+    }
+
+    private void enlistOrmXmlMappingListeners(Collector collector, String packagePrefix, JaxbEntityListeners entityListeners) {
+        if (entityListeners == null) {
+            return;
+        }
+        for (JaxbEntityListener listener : entityListeners.getEntityListener()) {
+            collector.potentialCdiBeanTypes.add(DotName.createSimple(qualifyIfNecessary(packagePrefix, listener.getClazz())));
         }
     }
 

@@ -854,6 +854,97 @@ serialisation>>.
 
 When using the `quarkus-resteasy-reactive-jackson` extension there are some advanced features that RESTEasy Reactive supports.
 
+[[secure-serialization]]
+===== Secure serialization
+
+When used with Jackson to perform JSON serialization, RESTEasy Reactive provides the ability to limit the set of fields that are serialized based on the roles of the current user.
+This is achieved by simply annotating the fields (or getters) of the POJO being returned with `@io.quarkus.resteasy.reactive.jackson.SecureField`.
+
+A simple example could be the following:
+
+Assume we have a POJO named `Person` which looks like so:
+
+[source,java]
+----
+package org.acme.rest;
+
+import io.quarkus.resteasy.reactive.jackson.SecureField;
+
+public class Person {
+
+    @SecureField("id")
+    private final Long id;
+    private final String first;
+    private final String last;
+
+    public Person(Long id, String first, String last) {
+        this.id = id;
+        this.first = first;
+        this.last = last;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getFirst() {
+        return first;
+    }
+
+    public String getLast() {
+        return last;
+    }
+}
+
+----
+
+A very simple JAX-RS Resource that uses `Person` could be:
+
+[source,java]
+----
+package org.acme.rest;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+@Path("person")
+public class Person {
+
+    @Path("{id}")
+    @GET
+    public Person getPerson(Long id) {
+        return new Person(id, "foo", "bar");
+    }
+}
+----
+
+Assuming security has been set up for the application (see our link:security[guide] for more details), when a user with the `admin` role
+performs an HTTP GET on `/person/1` they will receive:
+
+[source,json]
+----
+{
+  "id": 1,
+  "first": "foo",
+  "last": "bar"
+}
+----
+
+as the response.
+
+Any user however that does not have the `admin` role will receive:
+
+[source,json]
+----
+{
+  "first": "foo",
+  "last": "bar"
+}
+----
+
+NOTE: No additional configuration needs to be applied for this secure serialization to take place. However, users can use the `@io.quarkus.resteasy.reactive.jackson.EnableSecureSerialization` and `@io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization`
+annotation to opt-in or out for specific JAX-RS Resource classes or methods.
+
 ===== @JsonView support
 
 JAX-RS methods can be annotated with https://fasterxml.github.io/jackson-annotations/javadoc/2.10/com/fasterxml/jackson/annotation/JsonView.html[@JsonView]

@@ -36,4 +36,12 @@ public class UsersResource {
     public User preferredUserName() {
         return new User(((JsonWebToken) identity.getPrincipal()).getClaim("preferred_username"));
     }
+
+    @GET
+    @Path("/preferredUserName/bearer-wrong-role-path")
+    @RolesAllowed("user")
+    @Produces(MediaType.APPLICATION_JSON)
+    public User preferredUserNameWrongRolePath() {
+        return new User(((JsonWebToken) identity.getPrincipal()).getClaim("preferred_username"));
+    }
 }

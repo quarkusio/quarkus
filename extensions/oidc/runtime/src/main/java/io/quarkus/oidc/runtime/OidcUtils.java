@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.jboss.logging.Logger;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 
@@ -23,7 +24,6 @@ import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.security.AuthenticationFailedException;
-import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
@@ -33,6 +33,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 public final class OidcUtils {
+    private static final Logger LOG = Logger.getLogger(OidcUtils.class);
+
     public static final String CONFIG_METADATA_ATTRIBUTE = "configuration-metadata";
     public static final String USER_INFO_ATTRIBUTE = "userinfo";
     public static final String INTROSPECTION_ATTRIBUTE = "introspection";
@@ -76,20 +78,20 @@ public final class OidcUtils {
     public static List<String> findRoles(String clientId, OidcTenantConfig.Roles rolesConfig, JsonObject json) {
         // If the user configured a specific path - check and enforce a claim at this path exists
         if (rolesConfig.getRoleClaimPath().isPresent()) {
-            return findClaimWithRoles(rolesConfig, rolesConfig.getRoleClaimPath().get(), json, true);
+            return findClaimWithRoles(rolesConfig, rolesConfig.getRoleClaimPath().get(), json);
         }
 
         // Check 'groups' next
-        List<String> groups = findClaimWithRoles(rolesConfig, Claims.groups.name(), json, false);
+        List<String> groups = findClaimWithRoles(rolesConfig, Claims.groups.name(), json);
         if (!groups.isEmpty()) {
             return groups;
         } else {
             // Finally, check if this token has been issued by Keycloak.
             // Return an empty or populated list of realm and resource access roles
             List<String> allRoles = new LinkedList<>();
-            allRoles.addAll(findClaimWithRoles(rolesConfig, "realm_access/roles", json, false));
+            allRoles.addAll(findClaimWithRoles(rolesConfig, "realm_access/roles", json));
             if (clientId != null) {
-                allRoles.addAll(findClaimWithRoles(rolesConfig, "resource_access/" + clientId + "/roles", json, false));
+                allRoles.addAll(findClaimWithRoles(rolesConfig, "resource_access/" + clientId + "/roles", json));
             }
 
             return allRoles;
@@ -98,8 +100,8 @@ public final class OidcUtils {
     }
 
     private static List<String> findClaimWithRoles(OidcTenantConfig.Roles rolesConfig, String claimPath,
-            JsonObject json, boolean mustExist) {
-        Object claimValue = findClaimValue(claimPath, json, splitClaimPath(claimPath), 0, mustExist);
+            JsonObject json) {
+        Object claimValue = findClaimValue(claimPath, json, splitClaimPath(claimPath), 0);
 
         if (claimValue instanceof JsonArray) {
             return convertJsonArrayToList((JsonArray) claimValue);
@@ -115,18 +117,16 @@ public final class OidcUtils {
         return claimPath.indexOf('/') > 0 ? CLAIM_PATH_PATTERN.split(claimPath) : new String[] { claimPath };
     }
 
-    private static Object findClaimValue(String claimPath, JsonObject json, String[] pathArray, int step, boolean mustExist) {
+    private static Object findClaimValue(String claimPath, JsonObject json, String[] pathArray, int step) {
         Object claimValue = json.getValue(pathArray[step].replace("\"", ""));
         if (claimValue == null) {
-            if (mustExist) {
-                throw new OIDCException("No claim exists at the path " + claimPath + " at the path segment " + pathArray[step]);
-            }
+            LOG.debugf("No claim exists at the path '%s' at the path segment '%s'", claimPath, pathArray[step]);
         } else if (step + 1 < pathArray.length) {
             if (claimValue instanceof JsonObject) {
                 int nextStep = step + 1;
-                return findClaimValue(claimPath, (JsonObject) claimValue, pathArray, nextStep, mustExist);
+                return findClaimValue(claimPath, (JsonObject) claimValue, pathArray, nextStep);
             } else {
-                throw new OIDCException("Claim value at the path " + claimPath + " is not a json object");
+                LOG.debugf("Claim value at the path '%s' is not a json object", claimPath);
             }
         }
 
@@ -176,13 +176,9 @@ public final class OidcUtils {
 
     public static void setSecurityIdentityRoles(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config,
             JsonObject rolesJson) {
-        try {
-            String clientId = config.getClientId().isPresent() ? config.getClientId().get() : null;
-            for (String role : findRoles(clientId, config.getRoles(), rolesJson)) {
-                builder.addRole(role);
-            }
-        } catch (Exception e) {
-            throw new ForbiddenException(e);
+        String clientId = config.getClientId().isPresent() ? config.getClientId().get() : null;
+        for (String role : findRoles(clientId, config.getRoles(), rolesJson)) {
+            builder.addRole(role);
         }
     }
 

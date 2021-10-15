@@ -1,5 +1,7 @@
 package io.quarkus.mailer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.concurrent.CompletionStage;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -65,6 +67,7 @@ public class InjectionTest {
         templates.send1();
         templates.send2().await();
         templates.sendNative().await();
+        assertEquals("<html>Me</html>", MailTemplates.Templates.testNative("Me").templateInstance().render());
     }
 
     @ApplicationScoped

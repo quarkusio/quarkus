@@ -26,6 +26,7 @@ import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Provider;
+import javax.inject.Singleton;
 
 /**
  *
@@ -137,8 +138,12 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
             }
             context.destroy(proxy.arc_bean());
         } else {
-            // Try to destroy a dependent instance
-            creationalContext.destroyDependentInstance(instance);
+            // First try to destroy a dependent instance
+            if (!creationalContext.destroyDependentInstance(instance)) {
+                // If not successful then try the singleton context
+                SingletonContext singletonContext = (SingletonContext) Arc.container().getActiveContext(Singleton.class);
+                singletonContext.destroyInstance(instance);
+            }
         }
     }
 

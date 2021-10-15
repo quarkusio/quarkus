@@ -47,7 +47,7 @@ public class CreationalContextImpl<T> implements CreationalContext<T>, Function<
         return dependentInstances != null && !dependentInstances.isEmpty();
     }
 
-    void destroyDependentInstance(Object dependentInstance) {
+    boolean destroyDependentInstance(Object dependentInstance) {
         synchronized (this) {
             if (dependentInstances != null) {
                 for (Iterator<InstanceHandle<?>> iterator = dependentInstances.iterator(); iterator.hasNext();) {
@@ -55,11 +55,12 @@ public class CreationalContextImpl<T> implements CreationalContext<T>, Function<
                     if (instanceHandle.get() == dependentInstance) {
                         instanceHandle.destroy();
                         iterator.remove();
-                        break;
+                        return true;
                     }
                 }
             }
         }
+        return false;
     }
 
     @Override

@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.Dependent;
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.junit.jupiter.api.Test;
@@ -23,42 +24,72 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class InjectableInstanceTest {
 
     @RegisterExtension
-    public ArcTestContainer container = new ArcTestContainer(Alpha.class, Washcloth.class);
+    public ArcTestContainer container = new ArcTestContainer(Alpha.class, Washcloth.class, Sponge.class);
 
     @Test
     public void testDestroy() {
-        assertFalse(Washcloth.DESTROYED.get());
+        Alpha alpha = Arc.container().instance(Alpha.class).get();
 
-        Arc.container().instance(Alpha.class).get().doSomething();
+        assertFalse(Washcloth.DESTROYED.get());
+        try (InstanceHandle<Washcloth> handle = alpha.washcloth.getHandle()) {
+            InjectableBean<Washcloth> bean = handle.getBean();
+            assertNotNull(bean);
+            assertFalse(Washcloth.CREATED.get());
+            assertEquals(Dependent.class, bean.getScope());
+            handle.get().wash();
+            assertTrue(Washcloth.CREATED.get());
+            // Washcloth has @PreDestroy - the dependent instance should be there
+            assertTrue(((InstanceImpl<?>) alpha.washcloth).hasDependentInstances());
+        }
+        // InstanceHandle#close() should call InstanceHandle#destroy() for @Dependent and should remove the instance from the CC of the Instance
+        assertFalse(((InstanceImpl<?>) alpha.washcloth).hasDependentInstances());
         assertTrue(Washcloth.DESTROYED.get());
+
+        assertFalse(Sponge.DESTROYED.get());
+        Sponge sponge = alpha.sponge.get();
+        assertTrue(Sponge.CREATED.get());
+        alpha.sponge.destroy(sponge);
+        assertTrue(Sponge.DESTROYED.get());
     }
 
     @Singleton
     static class Alpha {
 
         @Inject
-        InjectableInstance<Washcloth> instance;
+        InjectableInstance<Washcloth> washcloth;
+
+        @Inject
+        Instance<Sponge> sponge;
 
         void doSomething() {
-            try (InstanceHandle<Washcloth> handle = instance.getHandle()) {
-                InjectableBean<Washcloth> bean = handle.getBean();
-                assertNotNull(bean);
-                assertFalse(Washcloth.CREATED.get());
-                assertEquals(Dependent.class, bean.getScope());
-                handle.get().wash();
-                assertTrue(Washcloth.CREATED.get());
-                // Washcloth has @PreDestroy - the dependent instance should be there
-                assertTrue(((InstanceImpl<?>) instance).hasDependentInstances());
-            }
 
-            // InstanceHandle.destroy() should remove the instance from the CC of the Instance
-            assertFalse(((InstanceImpl<?>) instance).hasDependentInstances());
         }
 
     }
 
     @Dependent
     static class Washcloth {
+
+        static final AtomicBoolean CREATED = new AtomicBoolean(false);
+        static final AtomicBoolean DESTROYED = new AtomicBoolean(false);
+
+        void wash() {
+        }
+
+        @PostConstruct
+        void create() {
+            CREATED.set(true);
+        }
+
+        @PreDestroy
+        void destroy() {
+            DESTROYED.set(true);
+        }
+
+    }
+
+    @Singleton
+    static class Sponge {
 
         static final AtomicBoolean CREATED = new AtomicBoolean(false);
         static final AtomicBoolean DESTROYED = new AtomicBoolean(false);

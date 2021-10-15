@@ -122,7 +122,7 @@ public class ContainerImageInfoTest {
         Capabilities capabilities = new Capabilities(Collections.emptySet());
         BuildProducer<ContainerImageInfoBuildItem> containerImage = actualImageConfig -> actualContainerImageInfo = actualImageConfig;
         ContainerImageProcessor processor = new ContainerImageProcessor();
-        processor.publishImageInfo(app, containerImageConfig, capabilities, containerImage);
+        processor.publishImageInfo(app, containerImageConfig, Optional.empty(), capabilities, containerImage);
     }
 
     private void thenImageIs(String expectedImage) {

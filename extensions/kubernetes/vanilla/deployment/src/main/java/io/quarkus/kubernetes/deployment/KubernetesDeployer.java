@@ -27,6 +27,7 @@ import io.dekorate.utils.Serialization;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesList;
 import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.openshift.api.model.Route;
@@ -121,6 +122,7 @@ public class KubernetesDeployer {
         final DeploymentTargetEntry selectedTarget;
 
         boolean checkForMissingRegistry = true;
+        boolean checkForNamespaceGroupAlignment = true;
         List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
         if (userSpecifiedDeploymentTargets.isEmpty()) {
             selectedTarget = targets.getEntriesSortedByPriority().get(0);
@@ -145,7 +147,12 @@ public class KubernetesDeployer {
         }
 
         if (OPENSHIFT.equals(selectedTarget.getName())) {
-            checkForMissingRegistry = Capability.CONTAINER_IMAGE_S2I.equals(activeContainerImageCapability);
+            checkForMissingRegistry = Capability.CONTAINER_IMAGE_S2I.equals(activeContainerImageCapability)
+                    || Capability.CONTAINER_IMAGE_OPENSHIFT.equals(activeContainerImageCapability);
+            if (!targets.getEntriesSortedByPriority().get(0).getKind().equals("DeploymentConfig")) {
+                checkForNamespaceGroupAlignment = true;
+            }
+
         } else if (MINIKUBE.equals(selectedTarget.getName())) {
             checkForMissingRegistry = false;
         }
@@ -155,6 +162,16 @@ public class KubernetesDeployer {
                     "A Kubernetes deployment was requested, but the container image to be built will not be pushed to any registry"
                             + " because \"quarkus.container-image.registry\" has not been set. The Kubernetes deployment will only work properly"
                             + " if the cluster is using the local Docker daemon. For that reason 'ImagePullPolicy' is being force-set to 'IfNotPresent'.");
+        }
+
+        //This might also be applicable in other scenarios too (e.g. Knative on Openshift), so we might need to make it slightly more generic.
+        if (checkForNamespaceGroupAlignment) {
+            Config config = Config.autoConfigure(null);
+            if (config.getNamespace() != null && !config.getNamespace().equals(containerImageInfo.getGroup())) {
+                log.warn("An openshift deployment was requested, but the container image group:" + containerImageInfo.getGroup()
+                        + " is not aligned with the currently selected project:" + config.getNamespace() + "."
+                        + "it is strongly advised to align them, or else the image might not be reachable.");
+            }
         }
         return selectedTarget;
     }

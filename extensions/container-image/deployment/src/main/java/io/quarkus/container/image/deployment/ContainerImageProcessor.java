@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.jboss.logging.Logger;
 
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
+import io.quarkus.container.spi.FallbackContainerImageRegistryBuildItem;
 import io.quarkus.container.spi.ImageReference;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -34,7 +35,9 @@ public class ContainerImageProcessor {
 
     @BuildStep
     public void publishImageInfo(ApplicationInfoBuildItem app,
-            ContainerImageConfig containerImageConfig, Capabilities capabilities,
+            ContainerImageConfig containerImageConfig,
+            Optional<FallbackContainerImageRegistryBuildItem> containerImageRegistry,
+            Capabilities capabilities,
             BuildProducer<ContainerImageInfoBuildItem> containerImage) {
 
         ensureSingleContainerImageExtension(capabilities);
@@ -66,7 +69,8 @@ public class ContainerImageProcessor {
             return;
         }
 
-        String registry = containerImageConfig.registry.orElse(null);
+        String registry = containerImageConfig.registry
+                .orElseGet(() -> containerImageRegistry.map(FallbackContainerImageRegistryBuildItem::getRegistry).orElse(null));
         if ((registry != null) && !ImageReference.isValidRegistry(registry)) {
             throw new IllegalArgumentException("The supplied container-image registry '" + registry + "' is invalid");
         }
@@ -83,7 +87,7 @@ public class ContainerImageProcessor {
             throw new IllegalArgumentException("The supplied container-image tag '" + effectiveTag + "' is invalid");
         }
 
-        containerImage.produce(new ContainerImageInfoBuildItem(containerImageConfig.registry,
+        containerImage.produce(new ContainerImageInfoBuildItem(Optional.ofNullable(registry),
                 containerImageConfig.getEffectiveGroup(),
                 effectiveName, effectiveTag,
                 containerImageConfig.additionalTags.orElse(Collections.emptyList())));

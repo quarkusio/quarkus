@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -170,12 +171,20 @@ public class HttpAuthorizer {
 
                         @Override
                         public void onItem(Boolean item) {
-                            routingContext.response().end();
+                            if (!routingContext.response().ended()) {
+                                routingContext.response().end();
+                            }
                         }
 
                         @Override
                         public void onFailure(Throwable failure) {
-                            routingContext.fail(failure);
+                            if (!routingContext.response().ended()) {
+                                routingContext.fail(failure);
+                            } else if (!(failure instanceof IOException)) {
+                                log.error("Failed to send challenge", failure);
+                            } else {
+                                log.debug("Failed to send challenge", failure);
+                            }
                         }
                     });
                 } else {

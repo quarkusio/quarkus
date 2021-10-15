@@ -314,7 +314,7 @@ public class ArcContainerImpl implements ArcContainer {
         Objects.requireNonNull(name);
         requireRunning();
         Set<InjectableBean<?>> resolvedBeans = beansByName.getValue(name);
-        return resolvedBeans.size() != 1 ? InstanceHandleImpl.unavailable()
+        return resolvedBeans.size() != 1 ? EagerInstanceHandle.unavailable()
                 : (InstanceHandle<T>) beanInstanceHandle(resolvedBeans.iterator()
                         .next(), null);
     }
@@ -435,9 +435,8 @@ public class ArcContainerImpl implements ArcContainer {
             if (resetCurrentInjectionPoint) {
                 prev = InjectionPointProvider.set(CurrentInjectionPointProvider.EMPTY);
             }
-
             try {
-                return new InstanceHandleImpl<>(bean, bean.get(creationalContext), creationalContext, parentContext,
+                return new EagerInstanceHandle<>(bean, bean.get(creationalContext), creationalContext, parentContext,
                         destroyLogic);
             } finally {
                 if (resetCurrentInjectionPoint) {
@@ -445,7 +444,7 @@ public class ArcContainerImpl implements ArcContainer {
                 }
             }
         } else {
-            return InstanceHandleImpl.unavailable();
+            return EagerInstanceHandle.unavailable();
         }
     }
 

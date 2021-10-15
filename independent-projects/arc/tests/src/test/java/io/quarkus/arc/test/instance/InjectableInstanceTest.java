@@ -12,6 +12,7 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.impl.InstanceImpl;
 import io.quarkus.arc.test.ArcTestContainer;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
@@ -42,9 +43,10 @@ public class InjectableInstanceTest {
             try (InstanceHandle<Washcloth> handle = instance.getHandle()) {
                 InjectableBean<Washcloth> bean = handle.getBean();
                 assertNotNull(bean);
+                assertFalse(Washcloth.CREATED.get());
                 assertEquals(Dependent.class, bean.getScope());
                 handle.get().wash();
-
+                assertTrue(Washcloth.CREATED.get());
                 // Washcloth has @PreDestroy - the dependent instance should be there
                 assertTrue(((InstanceImpl<?>) instance).hasDependentInstances());
             }
@@ -58,9 +60,15 @@ public class InjectableInstanceTest {
     @Dependent
     static class Washcloth {
 
+        static final AtomicBoolean CREATED = new AtomicBoolean(false);
         static final AtomicBoolean DESTROYED = new AtomicBoolean(false);
 
         void wash() {
+        }
+
+        @PostConstruct
+        void create() {
+            CREATED.set(true);
         }
 
         @PreDestroy

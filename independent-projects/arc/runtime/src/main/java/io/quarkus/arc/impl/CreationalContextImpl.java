@@ -33,7 +33,7 @@ public class CreationalContextImpl<T> implements CreationalContext<T>, Function<
     }
 
     public <I> void addDependentInstance(InjectableBean<I> bean, I instance, CreationalContext<I> ctx) {
-        addDependentInstance(new InstanceHandleImpl<I>(bean, instance, ctx));
+        addDependentInstance(new EagerInstanceHandle<I>(bean, instance, ctx));
     }
 
     public synchronized <I> void addDependentInstance(InstanceHandle<I> instanceHandle) {

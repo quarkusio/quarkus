@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.UnsatisfiedResolutionException;
@@ -155,17 +156,22 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         };
     }
 
-    @SuppressWarnings("unchecked")
     private <H> InstanceHandle<H> getHandle(InjectableBean<H> bean) {
-        InjectionPoint prev = InjectionPointProvider
-                .set(new InjectionPointImpl(injectionPointType, requiredType, requiredQualifiers, targetBean, annotations,
-                        javaMember, position));
-        try {
-            return ArcContainerImpl.beanInstanceHandle(bean, (CreationalContextImpl<H>) creationalContext, false,
-                    this::destroy);
-        } finally {
-            InjectionPointProvider.set(prev);
-        }
+        CreationalContextImpl<H> context = this.creationalContext.child(bean);
+        return new LazyInstanceHandle<>(bean, context, this.creationalContext, new Supplier<H>() {
+
+            @Override
+            public H get() {
+                InjectionPoint prev = InjectionPointProvider
+                        .set(new InjectionPointImpl(injectionPointType, requiredType, requiredQualifiers, targetBean,
+                                annotations, javaMember, position));
+                try {
+                    return bean.get(context);
+                } finally {
+                    InjectionPointProvider.set(prev);
+                }
+            }
+        }, this::destroy);
     }
 
     @SuppressWarnings("unchecked")

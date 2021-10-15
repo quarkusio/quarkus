@@ -11,38 +11,19 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.context.spi.CreationalContext;
 import org.jboss.logging.Logger;
 
-/**
- *
- * @author Martin Kouba
- *
- * @param <T>
- */
-class InstanceHandleImpl<T> implements InstanceHandle<T> {
+abstract class AbstractInstanceHandle<T> implements InstanceHandle<T> {
 
-    private static final Logger LOGGER = Logger.getLogger(InstanceHandleImpl.class.getName());
-
-    @SuppressWarnings("unchecked")
-    public static final <T> InstanceHandle<T> unavailable() {
-        return (InstanceHandle<T>) UNAVAILABLE;
-    }
-
-    static final InstanceHandleImpl<Object> UNAVAILABLE = new InstanceHandleImpl<Object>(null, null, null, null, null);
+    private static final Logger LOGGER = Logger.getLogger(AbstractInstanceHandle.class.getName());
 
     private final InjectableBean<T> bean;
-    private final T instance;
     private final CreationalContext<T> creationalContext;
     private final CreationalContext<?> parentCreationalContext;
     private final AtomicBoolean destroyed;
     private final Consumer<T> destroyLogic;
 
-    InstanceHandleImpl(InjectableBean<T> bean, T instance, CreationalContext<T> creationalContext) {
-        this(bean, instance, creationalContext, null, null);
-    }
-
-    InstanceHandleImpl(InjectableBean<T> bean, T instance, CreationalContext<T> creationalContext,
+    AbstractInstanceHandle(InjectableBean<T> bean, CreationalContext<T> creationalContext,
             CreationalContext<?> parentCreationalContext, Consumer<T> destroyLogic) {
         this.bean = bean;
-        this.instance = instance;
         this.creationalContext = creationalContext;
         this.parentCreationalContext = parentCreationalContext;
         this.destroyed = new AtomicBoolean(false);
@@ -54,7 +35,7 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
         if (destroyed.get()) {
             throw new IllegalStateException("Instance already destroyed");
         }
-        return instance;
+        return instanceInternal();
     }
 
     @Override
@@ -62,11 +43,15 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
         return bean;
     }
 
+    protected abstract boolean isInstanceCreated();
+
+    protected abstract T instanceInternal();
+
     @Override
     public void destroy() {
-        if (instance != null && destroyed.compareAndSet(false, true)) {
+        if (isInstanceCreated() && destroyed.compareAndSet(false, true)) {
             if (destroyLogic != null) {
-                destroyLogic.accept(instance);
+                destroyLogic.accept(instanceInternal());
             } else {
                 if (bean.getScope().equals(Dependent.class)) {
                     destroyInternal();
@@ -87,7 +72,7 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
             parentCreationalContext.release();
         } else {
             try {
-                bean.destroy(instance, creationalContext);
+                bean.destroy(instanceInternal(), creationalContext);
             } catch (Throwable t) {
                 String msg = "Error occurred while destroying instance of bean [%s]";
                 if (LOGGER.isDebugEnabled()) {
@@ -101,8 +86,7 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
 
     @Override
     public String toString() {
-        return "InstanceHandleImpl [bean=" + bean + ", instance=" + instance + ", creationalContext=" + creationalContext
-                + ", parentCreationalContext=" + parentCreationalContext + ", destroyed=" + destroyed + "]";
+        return getClass().getSimpleName() + " [bean=" + bean + ", destroyed=" + destroyed.get() + "]";
     }
 
 }

@@ -2,13 +2,13 @@ package io.quarkus.resteasy.reactive.server.runtime;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Optional;
 import java.util.function.Function;
 
 import javax.ws.rs.Path;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.resteasy.reactive.server.core.Deployment;
 
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 
@@ -42,13 +42,18 @@ public class ResteasyReactiveTestHttpProvider implements TestHttpEndpointProvide
     }
 
     private Optional<String> getAppPath() {
-        Config config = ConfigProvider.getConfig();
-        Optional<String> legacyProperty = config.getOptionalValue("quarkus.rest.path", String.class);
-        if (legacyProperty.isPresent()) {
-            return legacyProperty;
+        try {
+            Class<?> recorderFromTCCL = Thread.currentThread().getContextClassLoader()
+                    .loadClass(ResteasyReactiveRecorder.class.getName());
+            Method getCurrentDeploymentMethod = recorderFromTCCL.getMethod("getCurrentDeployment");
+            Object deploymentObject = getCurrentDeploymentMethod.invoke(null);
+            Class<?> deploymentFromTCCL = Thread.currentThread().getContextClassLoader().loadClass(Deployment.class.getName());
+            Method getPrefixMethod = deploymentFromTCCL.getMethod("getPrefix");
+            String prefix = (String) getPrefixMethod.invoke(deploymentObject);
+            return Optional.of(prefix);
+        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException("Unable to obtain app app", e);
         }
-
-        return config.getOptionalValue("quarkus.resteasy-reactive.path", String.class);
     }
 
     private String getPath(Class<?> aClass) {

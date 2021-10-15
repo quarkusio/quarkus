@@ -90,8 +90,8 @@ public class DeploymentInjectingDependencyVisitor {
         // we need to be able to take into account whether the deployment dependencies are on an optional dependency branch
         // for that we are going to use a custom dependency selector and re-initialize the resolver to use it
         final DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(resolver.getSession());
-        final DeploymentDependencySelector depSelector = new DeploymentDependencySelector(session.getDependencySelector());
-        session.setDependencySelector(depSelector);
+        session.setDependencySelector(
+                DeploymentDependencySelector.ensureDeploymentDependencySelector(session.getDependencySelector()));
         try {
             this.resolver = new MavenArtifactResolver(new BootstrapMavenContext(BootstrapMavenContext.config()
                     .setRepositorySystem(resolver.getSystem())

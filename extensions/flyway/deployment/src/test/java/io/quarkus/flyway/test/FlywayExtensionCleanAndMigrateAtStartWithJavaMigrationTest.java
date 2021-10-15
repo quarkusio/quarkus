@@ -98,7 +98,7 @@ public class FlywayExtensionCleanAndMigrateAtStartWithJavaMigrationTest {
         }
 
         @Override
-        public boolean isStateScript() {
+        public boolean isBaselineMigration() {
             return false;
         }
     }

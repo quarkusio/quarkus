@@ -38,11 +38,6 @@ public final class FeatureDetectorSubstitutions {
     }
 
     @Substitute
-    public boolean isAndroidAvailable() {
-        return false;
-    }
-
-    @Substitute
     public boolean isLog4J2Available() {
         return false;
     }

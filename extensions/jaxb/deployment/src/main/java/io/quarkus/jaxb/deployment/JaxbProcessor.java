@@ -280,8 +280,8 @@ class JaxbProcessor {
                 .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.txw2.TypedXmlWriter"));
 
         List<JaxbFileRootBuildItem> jaxbFileBuildItemFromConfig = new ArrayList<>();
-        if (jaxbConfig.indexPath.isPresent()) {
-            jaxbFileBuildItemFromConfig = jaxbConfig.indexPath.get().stream()
+        if (jaxbConfig.indexPaths.isPresent()) {
+            jaxbFileBuildItemFromConfig = jaxbConfig.indexPaths.get().stream()
                     .map(JaxbFileRootBuildItem::new).collect(Collectors.toList());
         }
 

@@ -14,5 +14,5 @@ public class JaxbConfig {
      * Add other paths of jaxb.index
      */
     @ConfigItem
-    public Optional<List<String>> indexPath;
+    public Optional<List<String>> indexPaths;
 }

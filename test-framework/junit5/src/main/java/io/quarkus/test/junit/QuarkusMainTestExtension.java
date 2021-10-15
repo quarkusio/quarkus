@@ -1,5 +1,6 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResources;
 
 import java.io.Closeable;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
 import io.quarkus.bootstrap.app.StartupAction;
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.deployment.dev.testing.LogCapturingOutputFilter;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
@@ -35,8 +37,6 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
     public static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace
             .create("io.quarkus.test.main.jvm");
-
-    private static Map<String, String> devServicesProps;
 
     PrepareResult prepareResult;
     private static boolean hasPerTestResources;
@@ -159,6 +159,9 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
             return startupAction.runMainClassBlocking(arguments);
         } catch (Throwable e) {
+            if (!InitialConfigurator.DELAYED_HANDLER.isActivated()) {
+                activateLogging();
+            }
 
             try {
                 if (testResourceManager != null) {

@@ -10,43 +10,21 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>io.quarkus.gradle.plugin</artifactId>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-gradle-model</artifactId>
     <packaging>pom</packaging>
-    <name>Quarkus - Gradle Plugin</name>
-    <description>Quarkus - Gradle Plugin</description>
+    <name>Quarkus - Gradle Model</name>
+    <description>Quarkus - Gradle Model</description>
 
     <dependencies>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-gradle-model</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bootstrap-core</artifactId>
-        </dependency>
+        <!-- Compile -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devtools-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-project-core-extension-codestarts</artifactId>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devmode-test-utils</artifactId>
+            <artifactId>quarkus-devtools-testing</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -96,16 +74,16 @@
                         <configuration>
                             <artifacts>
                                 <artifact>
-                                    <file>build/libs/gradle-application-plugin-${project.version}.jar</file>
+                                    <file>build/libs/gradle-model-${project.version}.jar</file>
                                     <type>jar</type>
                                 </artifact>
                                 <artifact>
-                                    <file>build/libs/gradle-application-plugin-${project.version}-javadoc.jar</file>
+                                    <file>build/libs/gradle-model-${project.version}-javadoc.jar</file>
                                     <type>jar</type>
                                     <classifier>javadoc</classifier>
                                 </artifact>
                                 <artifact>
-                                    <file>build/libs/gradle-application-plugin-${project.version}-sources.jar</file>
+                                    <file>build/libs/gradle-model-${project.version}-sources.jar</file>
                                     <type>jar</type>
                                     <classifier>sources</classifier>
                                 </artifact>
@@ -117,5 +95,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

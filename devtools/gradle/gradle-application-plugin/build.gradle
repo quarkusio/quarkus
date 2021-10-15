@@ -2,6 +2,8 @@ dependencies {
     implementation "io.quarkus:quarkus-devtools-common:${version}"
     implementation "io.quarkus:quarkus-core-deployment:${version}"
 
+    implementation project(":gradle-model")
+
     testImplementation "io.quarkus:quarkus-project-core-extension-codestarts:${version}"
     testImplementation "io.quarkus:quarkus-devmode-test-utils:${version}"
     testImplementation "io.quarkus:quarkus-devtools-testing:${version}"

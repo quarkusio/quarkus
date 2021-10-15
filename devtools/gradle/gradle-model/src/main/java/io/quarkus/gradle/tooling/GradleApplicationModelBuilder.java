@@ -1,4 +1,4 @@
-package io.quarkus.gradle.builder;
+package io.quarkus.gradle.tooling;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -49,9 +49,6 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.workspace.DefaultProcessedSources;
 import io.quarkus.bootstrap.workspace.DefaultWorkspaceModule;
 import io.quarkus.bootstrap.workspace.ProcessedSources;
-import io.quarkus.gradle.QuarkusPlugin;
-import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
-import io.quarkus.gradle.dependency.DependencyUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
@@ -82,7 +79,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             }
 
             return project.getConfigurations().create(CLASSPATH_CONFIGURATION).extendsFrom(
-                    project.getConfigurations().getByName(QuarkusPlugin.DEV_MODE_CONFIGURATION_NAME),
+                    project.getConfigurations().getByName(ToolingUtils.DEV_MODE_CONFIGURATION_NAME),
                     project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME),
                     project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
         }
@@ -99,7 +96,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
         deploymentConfiguration = project.getConfigurations().create(DEPLOYMENT_CONFIGURATION)
                 .withDependencies(ds -> ds.addAll(platforms));
-        Configuration implementationDeployment = project.getConfigurations().findByName(ApplicationDeploymentClasspathBuilder
+        Configuration implementationDeployment = project.getConfigurations().findByName(ToolingUtils
                 .toDeploymentConfigurationName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME));
         if (implementationDeployment != null) {
             deploymentConfiguration.extendsFrom(implementationDeployment);
@@ -107,7 +104,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
         if (LaunchMode.TEST.equals(mode)) {
             Configuration testDeploymentConfiguration = project.getConfigurations()
-                    .findByName(ApplicationDeploymentClasspathBuilder
+                    .findByName(ToolingUtils
                             .toDeploymentConfigurationName(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME));
             if (testDeploymentConfiguration != null) {
                 deploymentConfiguration.extendsFrom(testDeploymentConfiguration);
@@ -115,8 +112,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         }
         if (LaunchMode.DEVELOPMENT.equals(mode)) {
             Configuration devDeploymentConfiguration = project.getConfigurations()
-                    .findByName(ApplicationDeploymentClasspathBuilder
-                            .toDeploymentConfigurationName(QuarkusPlugin.DEV_MODE_CONFIGURATION_NAME));
+                    .findByName(ToolingUtils
+                            .toDeploymentConfigurationName(ToolingUtils.DEV_MODE_CONFIGURATION_NAME));
             if (devDeploymentConfiguration != null) {
                 deploymentConfiguration.extendsFrom(devDeploymentConfiguration);
             }
@@ -146,7 +143,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
     public Object buildAll(String modelName, ModelParameter parameter, Project project) {
         final LaunchMode mode = LaunchMode.valueOf(parameter.getMode());
 
-        final List<org.gradle.api.artifacts.Dependency> deploymentDeps = DependencyUtils.getEnforcedPlatforms(project);
+        final List<org.gradle.api.artifacts.Dependency> deploymentDeps = ToolingUtils.getEnforcedPlatforms(project);
         final PlatformImports platformImports = resolvePlatformImports(project, deploymentDeps);
 
         final ResolvedDependency appArtifact = getProjectArtifact(project, mode);
@@ -383,7 +380,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
                 final String classifier = a.getClassifier();
                 if (classifier == null || classifier.isEmpty()) {
-                    final IncludedBuild includedBuild = DependencyUtils.includedBuild(project.getRootProject(), a.getName());
+                    final IncludedBuild includedBuild = ToolingUtils.includedBuild(project.getRootProject(), a.getName());
                     if (includedBuild != null) {
                         final PathList.Builder pathBuilder = PathList.builder();
                         addSubstitutedProject(pathBuilder, includedBuild.getProjectDir());

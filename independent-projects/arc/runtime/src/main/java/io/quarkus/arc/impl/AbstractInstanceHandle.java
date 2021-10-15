@@ -4,7 +4,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InstanceHandle;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.Dependent;
@@ -15,24 +15,29 @@ abstract class AbstractInstanceHandle<T> implements InstanceHandle<T> {
 
     private static final Logger LOGGER = Logger.getLogger(AbstractInstanceHandle.class.getName());
 
+    @SuppressWarnings("rawtypes")
+    private static final AtomicIntegerFieldUpdater<AbstractInstanceHandle> DESTROYED_UPDATER = AtomicIntegerFieldUpdater
+            .newUpdater(AbstractInstanceHandle.class, "destroyed");
+
     private final InjectableBean<T> bean;
     private final CreationalContext<T> creationalContext;
     private final CreationalContext<?> parentCreationalContext;
-    private final AtomicBoolean destroyed;
     private final Consumer<T> destroyLogic;
+
+    // values: 0="not destroyed", 1="destroyed"
+    private volatile int destroyed;
 
     AbstractInstanceHandle(InjectableBean<T> bean, CreationalContext<T> creationalContext,
             CreationalContext<?> parentCreationalContext, Consumer<T> destroyLogic) {
         this.bean = bean;
         this.creationalContext = creationalContext;
         this.parentCreationalContext = parentCreationalContext;
-        this.destroyed = new AtomicBoolean(false);
         this.destroyLogic = destroyLogic;
     }
 
     @Override
     public T get() {
-        if (destroyed.get()) {
+        if (destroyed != 0) {
             throw new IllegalStateException("Instance already destroyed");
         }
         return instanceInternal();
@@ -49,7 +54,7 @@ abstract class AbstractInstanceHandle<T> implements InstanceHandle<T> {
 
     @Override
     public void destroy() {
-        if (isInstanceCreated() && destroyed.compareAndSet(false, true)) {
+        if (isInstanceCreated() && DESTROYED_UPDATER.compareAndSet(this, 0, 1)) {
             if (destroyLogic != null) {
                 destroyLogic.accept(instanceInternal());
             } else {
@@ -86,7 +91,7 @@ abstract class AbstractInstanceHandle<T> implements InstanceHandle<T> {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + " [bean=" + bean + ", destroyed=" + destroyed.get() + "]";
+        return getClass().getSimpleName() + " [bean=" + bean + ", destroyed=" + (destroyed != 0) + "]";
     }
 
 }

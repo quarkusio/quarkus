@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import javax.enterprise.context.ContextNotActiveException;
+import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.enterprise.inject.spi.InjectionPoint;
@@ -171,7 +172,9 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
                     InjectionPointProvider.set(prev);
                 }
             }
-        }, this::destroy);
+        },
+                // If @Dependent we need to remove the instance from the CC of this InjectableInstance
+                Dependent.class.equals(bean.getScope()) ? this::destroy : null);
     }
 
     @SuppressWarnings("unchecked")

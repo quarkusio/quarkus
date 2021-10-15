@@ -14,6 +14,7 @@ import org.jose4j.jwt.consumer.ErrorCodeValidator;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
+import org.jose4j.jwx.HeaderParameterNames;
 import org.jose4j.jwx.JsonWebStructure;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.UnresolvableKeyException;
@@ -224,15 +225,55 @@ public class OidcProvider implements Closeable {
         @Override
         public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext)
                 throws UnresolvableKeyException {
+            Key key = null;
+
+            // Try 'kid' first
             String kid = jws.getKeyIdHeaderValue();
-            if (kid == null) {
-                throw new UnresolvableKeyException("Token 'kid' header is not set");
+            if (kid != null) {
+                key = getKeyWithId(jws, kid);
+                if (key == null) {
+                    // if `kid` was set then the key must exist
+                    throw new UnresolvableKeyException(String.format("JWK with kid '%s' is not available", kid));
+                }
             }
-            Key key = jwks.getKey(kid);
+
+            String thumbprint = null;
             if (key == null) {
-                throw new UnresolvableKeyException(String.format("JWK with kid '%s' is not available", kid));
+                thumbprint = jws.getHeader(HeaderParameterNames.X509_CERTIFICATE_THUMBPRINT);
+                if (thumbprint != null) {
+                    key = getKeyWithThumbprint(jws, thumbprint);
+                    if (key == null) {
+                        // if only `x5t` was set then the key must exist
+                        throw new UnresolvableKeyException(
+                                String.format("JWK with thumprint '%s' is not available", thumbprint));
+                    }
+                }
             }
-            return key;
+
+            if (key == null) {
+                throw new UnresolvableKeyException(
+                        String.format("JWK is not available, neither 'kid' nor 'x5t' token headers are set", kid));
+            } else {
+                return key;
+            }
+        }
+
+        private Key getKeyWithId(JsonWebSignature jws, String kid) {
+            if (kid != null) {
+                return jwks.getKeyWithId(kid);
+            } else {
+                LOG.debug("Token 'kid' header is not set");
+                return null;
+            }
+        }
+
+        private Key getKeyWithThumbprint(JsonWebSignature jws, String thumbprint) {
+            if (thumbprint != null) {
+                return jwks.getKeyWithThumbprint(thumbprint);
+            } else {
+                LOG.debug("Token 'x5t' header is not set");
+                return null;
+            }
         }
 
         public Uni<Void> refresh() {

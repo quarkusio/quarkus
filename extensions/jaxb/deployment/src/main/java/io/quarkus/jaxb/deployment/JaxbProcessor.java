@@ -360,10 +360,7 @@ class JaxbProcessor {
                 if (!line.isEmpty() && !line.startsWith("#")) {
                     String clazz = pkg + line;
 
-                    if (clazz.contains("classes")) {
-                        clazz = clazz.split("classes")[1].substring(1);
-                    }
-
+                    System.out.println("class_dest: " + clazz);
                     Class<?> cl = Class.forName(clazz, false, Thread.currentThread().getContextClassLoader());
 
                     while (cl != Object.class) {

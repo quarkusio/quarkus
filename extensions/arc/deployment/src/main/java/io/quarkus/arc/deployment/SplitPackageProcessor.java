@@ -46,7 +46,6 @@ public class SplitPackageProcessor {
             // Remove the elements from this list when the original issue is fixed
             // so that we can detect further issues.
             return packageName.startsWith("io.fabric8.kubernetes")
-                    || packageName.equals("io.quarkus.hibernate.orm.panache")
                     || packageName.equals("io.quarkus.mongodb.panache.reactive")
                     || packageName.equals("io.quarkus.mongodb.panache");
         }

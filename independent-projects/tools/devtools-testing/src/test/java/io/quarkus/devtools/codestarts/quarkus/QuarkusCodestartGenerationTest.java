@@ -258,6 +258,37 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("arguments: build"));
     }
 
+    @Test
+    public void generateMavenGitLabCI(TestInfo testInfo) throws Throwable {
+        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .addData(getGenerationTestInputData())
+                .noBuildToolWrapper()
+                .addCodestarts(Collections.singletonList("gitlab-ci"))
+                .build();
+        final Path projectDir = testDirPath.resolve("maven-default-java-gitlab");
+        getCatalog().createProject(input).generate(projectDir);
+
+        checkMaven(projectDir);
+        checkGitLabFile(projectDir);
+        checkGitLabFileWithMaven(projectDir);
+    }
+
+    @Test
+    public void generateMavenGitLabGradle(TestInfo testInfo) throws Throwable {
+        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .addData(getGenerationTestInputData())
+                .noBuildToolWrapper()
+                .buildTool(BuildTool.GRADLE)
+                .addCodestarts(Collections.singletonList("gitlab-ci"))
+                .build();
+        final Path projectDir = testDirPath.resolve("gradle-default-java-gitlab");
+        getCatalog().createProject(input).generate(projectDir);
+
+        checkGradle(projectDir);
+        checkGitLabFile(projectDir);
+        checkGitLabFileWithGradle(projectDir);
+    }
+
     private void checkDockerfiles(Path projectDir, BuildTool buildTool) {
         switch (buildTool) {
             case MAVEN:
@@ -364,6 +395,22 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("settings.gradle.kts"))
                 .exists()
                 .satisfies(checkContains("rootProject.name=\"test-codestart\""));
+    }
+
+    private void checkGitLabFile(Path projectDir) {
+        assertThat(projectDir.resolve(".gitlab-ci.yml")).exists();
+    }
+
+    private void checkGitLabFileWithMaven(Path projectDir) {
+        assertThat(projectDir.resolve(".gitlab-ci.yml")).exists()
+                .satisfies(checkContains("build-maven"))
+                .satisfies(checkContains("native-build-maven"));
+    }
+
+    private void checkGitLabFileWithGradle(Path projectDir) {
+        assertThat(projectDir.resolve(".gitlab-ci.yml")).exists()
+                .satisfies(checkContains("build-gradle"))
+                .satisfies(checkContains("native-build-gradle"));
     }
 
     private QuarkusCodestartCatalog getCatalog() {

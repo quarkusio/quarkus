@@ -1,0 +1,116 @@
+variables:
+  {#if buildtool.cli == 'mvn'}
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
+  MAVEN_VERSION: {maven.version}
+  {#else}
+  GRADLE_VERSION: {gradle.version}
+  {/if}
+  JAVA_VERSION: {java.version}
+  GRAALVM_VERSION: {graalvm.version}
+  
+cache:
+  paths:
+    {#if buildtool.cli == 'mvn'}
+    - .m2/repository
+    {#else}
+    - .gradle/wrapper
+    - .gradle/caches
+    {/if}
+
+stages:
+  - build
+  - deploy
+
+{#if buildtool.cli == 'mvn'}
+📦 build-maven:
+  stage: build
+  image: maven:$MAVEN_VERSION-openjdk-$JAVA_VERSION
+  script:
+    - cd $CI_PROJECT_DIR
+    - mvn package
+  artifacts:
+    name: artifacts-build-vm
+    expire_in: 1 days
+    paths:
+      - $CI_PROJECT_DIR/target/
+
+📦 native-build-maven:
+  stage: build
+  image: ghcr.io/graalvm/graalvm-ce:$GRAALVM_VERSION
+  before_script:
+    - curl -O http://mirrors.ibiblio.org/apache/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz
+    - tar xvf apache-maven-$MAVEN_VERSION-bin.tar.gz -C /usr/local
+    - cd /usr/local
+    - ln -s apache-maven-$MAVEN_VERSION maven
+    - export M2_HOME=/usr/local/maven
+    - export PATH='$M2_HOME'/bin:$PATH
+    - export  GRAALVM_HOME=/opt/graalvm-ce-java11-$GRAALVM_VERSION/
+    - gu install native-image
+  script:
+    - cd $CI_PROJECT_DIR
+    - /usr/local/apache-maven-$MAVEN_VERSION/bin/mvn package -Pnative
+  artifacts:
+    name: artifacts-build-native
+    expire_in: 1 days
+    paths:
+      - $CI_PROJECT_DIR/target/
+
+{#else}
+📦 build-gradle:
+  stage: build
+  image:
+    gradle:$GRADLE_VERSION-jdk$JAVA_VERSION
+  script:
+    - cd $CI_PROJECT_DIR
+    - ./gradlew build
+  artifacts:
+    name: artifacts-build-vm
+    expire_in: 1 days
+    paths:
+      - $CI_PROJECT_DIR/build/
+
+📦 native-build-gradle:
+  stage: build
+  image:
+    ghcr.io/graalvm/graalvm-ce:java$JAVA_VERSION-$GRAALVM_VERSION
+  before_script:
+    - gu install native-image
+  script:
+    - ls
+    - cd $CI_PROJECT_DIR
+    - ./gradlew build -Dquarkus.package.type=native
+  artifacts:
+    name: artifacts-build-native
+    expire_in: 1 days
+    paths:
+      - $CI_PROJECT_DIR/build/
+{/if}
+
+🐳 deploy:
+  stage: deploy
+  {#if buildtool.cli == 'mvn'}
+  needs: ["📦 build-maven"]
+  {#else}
+  needs: ["📦 build-gradle"]
+  {/if}
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(printf "%s:%s" "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD" | base64 | tr -d '\n')\" } } }" > /kaniko/.docker/config.json
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/src/main/docker/Dockerfile.jvm --destination $CI_REGISTRY_IMAGE:jvm
+
+🐳 native-deploy-distroless:
+  stage: deploy
+  {#if buildtool.cli == 'mvn'}
+  needs: ["📦 native-build-maven"]
+  {#else}
+  needs: ["📦 native-build-gradle"]
+  {/if}
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(printf "%s:%s" "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD" | base64 | tr -d '\n')\" } } }" > /kaniko/.docker/config.json
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/src/main/docker/Dockerfile.native-distroless --destination $CI_REGISTRY_IMAGE:native

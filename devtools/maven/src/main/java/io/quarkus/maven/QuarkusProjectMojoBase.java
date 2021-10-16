@@ -35,7 +35,6 @@ import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.ToolsConstants;
-import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.platform.tools.maven.MojoMessageWriter;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
@@ -123,27 +122,16 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     }
 
     private ExtensionCatalog resolveExtensionCatalog() throws MojoExecutionException {
-        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
-                ? getExtensionCatalogResolver()
-                : ExtensionCatalogResolver.empty();
-        if (catalogResolver.hasRegistries()) {
-            try {
-                return catalogResolver.resolveExtensionCatalog(getImportedPlatforms());
-            } catch (Exception e) {
-                throw new MojoExecutionException("Failed to resolve the Quarkus extension catalog", e);
-            }
+        final ExtensionCatalogResolver catalogResolver = getExtensionCatalogResolver();
+        try {
+            return catalogResolver.resolveExtensionCatalog(getImportedPlatforms());
+        } catch (Exception e) {
+            throw new MojoExecutionException("Failed to resolve the Quarkus extension catalog", e);
         }
-        return ToolsUtils.mergePlatforms(collectImportedPlatforms(), artifactResolver());
     }
 
     protected ExtensionCatalogResolver getExtensionCatalogResolver() throws MojoExecutionException {
-        if (catalogResolver == null) {
-            try {
-                catalogResolver = QuarkusProjectHelper.getCatalogResolver(artifactResolver(), getMessageWriter());
-            } catch (RegistryResolutionException e) {
-                throw new MojoExecutionException("Failed to initialize Quarkus extension resolver", e);
-            }
-        }
+        catalogResolver = QuarkusProjectHelper.getCatalogResolver(artifactResolver(), getMessageWriter());
         return catalogResolver;
     }
 

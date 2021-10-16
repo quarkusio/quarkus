@@ -15,7 +15,6 @@ import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.maven.ArtifactKey;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
-import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -87,27 +86,26 @@ public class MavenProjectBuildFile extends BuildFile {
         }
 
         final ExtensionCatalog extensionCatalog;
-        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
-                ? QuarkusProjectHelper.getCatalogResolver(mvnResolver, log)
-                : ExtensionCatalogResolver.empty();
-        if (catalogResolver.hasRegistries()) {
-            try {
-                if (!importedPlatforms.isEmpty()) {
-                    extensionCatalog = catalogResolver.resolveExtensionCatalog(importedPlatforms);
-                } else {
-                    extensionCatalog = quarkusVersion == null ? catalogResolver.resolveExtensionCatalog()
-                            : catalogResolver.resolveExtensionCatalog(quarkusVersion);
-                }
-            } catch (RegistryResolutionException e) {
-                throw new RuntimeException("Failed to resolve extension catalog", e);
-            }
+
+        final ArtifactCoords fallbackVersion = ExtensionCatalogResolver.toPlatformBom(quarkusVersion == null
+                ? defaultQuarkusVersion.get()
+                : quarkusVersion);
+
+        final ExtensionCatalogResolver catalogResolver = ExtensionCatalogResolver.builder()
+                .withRegistryClient(QuarkusProjectHelper.isRegistryClientEnabled())
+                .withLog(log)
+                .withResolver(mvnResolver)
+                .withFallbackVersion(fallbackVersion)
+                .build();
+
+        if (importedPlatforms.isEmpty()) {
+            extensionCatalog = quarkusVersion == null
+                    ? catalogResolver.resolveExtensionCatalog()
+                    : catalogResolver.resolveExtensionCatalog(quarkusVersion);
         } else {
-            if (importedPlatforms.isEmpty()) {
-                extensionCatalog = ToolsUtils.resolvePlatformDescriptorDirectly(null, null, quarkusVersion, mvnResolver, log);
-            } else {
-                extensionCatalog = ToolsUtils.mergePlatforms(importedPlatforms, mvnResolver);
-            }
+            extensionCatalog = catalogResolver.resolveExtensionCatalog(importedPlatforms);
         }
+
         final MavenProjectBuildFile extensionManager = new MavenProjectBuildFile(projectDir, extensionCatalog,
                 projectModel, deps, managedDeps, projectProps, projectPom == null ? null : mvnResolver);
 

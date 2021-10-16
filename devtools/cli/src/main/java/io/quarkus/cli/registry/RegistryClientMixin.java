@@ -1,6 +1,5 @@
 package io.quarkus.cli.registry;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 
@@ -23,6 +22,7 @@ import picocli.CommandLine.Model.CommandSpec;
 public class RegistryClientMixin {
     final static boolean VALIDATE = !Boolean.parseBoolean(System.getenv("REGISTRY_CLIENT_TEST"));
 
+    Path config;
     OutputOptionMixin outputOptionMixin;
     ExtensionCatalogResolver projectResolver;
 
@@ -31,7 +31,9 @@ public class RegistryClientMixin {
     boolean refresh = false;
 
     @CommandLine.Option(paramLabel = "CONFIG", names = { "--config" }, description = "Configuration file")
-    String config;
+    void setConfigPath(String config) {
+        this.config = Path.of(config);
+    }
 
     @CommandLine.Spec(CommandLine.Spec.Target.MIXEE)
     CommandSpec mixee;
@@ -43,7 +45,7 @@ public class RegistryClientMixin {
     public String getToolsConfigSource() {
         return config == null
                 ? System.getProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY)
-                : config;
+                : config.toString();
     }
 
     /**
@@ -80,21 +82,12 @@ public class RegistryClientMixin {
 
     public ExtensionCatalogResolver resolver() {
         if (projectResolver == null) {
-            try {
-                projectResolver = ExtensionCatalogResolver.builder()
-                        .messageWriter(log())
-                        .useRegistryClient(useRegistryClient())
-                        .configFile(getToolsConfigSource())
-                        .refreshCache(refresh)
-                        .build();
-            } catch (RegistryResolutionException e) {
-                log().warn("Unable to resolve extension catalog: " + e.getMessage());
-                projectResolver = ExtensionCatalogResolver.builder()
-                        .messageWriter(log())
-                        .useRegistryClient(useRegistryClient())
-                        .configFile(getToolsConfigSource())
-                        .empty();
-            }
+            projectResolver = ExtensionCatalogResolver.builder()
+                    .withLog(log())
+                    .withRegistryClient(useRegistryClient())
+                    .withConfigFile(config)
+                    .withRefresh(refresh)
+                    .build();
         }
         return projectResolver;
     }
@@ -118,8 +111,15 @@ public class RegistryClientMixin {
         // the target version is either an explicit bom, or a stream.
         if (targetVersion.isPlatformSpecified()) {
             ArtifactCoords bom = targetVersion.getPlatformBom();
-            extensionCatalog = resolver()
-                    .resolvePlatformDescriptorDirectly(bom.getGroupId(), bom.getArtifactId(), bom.getVersion());
+            projectResolver = ExtensionCatalogResolver.builder()
+                    .withLog(log())
+                    .withRegistryClient(false)
+                    .withConfigFile(config)
+                    .withRefresh(refresh)
+                    .withFallbackVersion(bom)
+                    .build();
+
+            extensionCatalog = projectResolver.resolveExtensionCatalog();
         } else {
             try {
                 extensionCatalog = resolver().resolveExtensionCatalog(targetVersion.getStream());
@@ -149,10 +149,6 @@ public class RegistryClientMixin {
 
     public ExtensionCatalogResolver getExtensionCatalogResolver() {
         return resolver();
-    }
-
-    public void saveConfig() throws IOException {
-        resolver().saveConfig();
     }
 
     @Override

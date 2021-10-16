@@ -7,7 +7,6 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
-import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -71,15 +70,10 @@ public class QuarkusProjectHelper {
 
     @Deprecated
     public static ExtensionCatalog getExtensionCatalog(String quarkusVersion) {
-        // TODO remove this method once the default registry becomes available
         try {
-            if (registryClientEnabled && getCatalogResolver().hasRegistries()) {
-                return quarkusVersion == null ? catalogResolver.resolveExtensionCatalog()
-                        : catalogResolver.resolveExtensionCatalog(quarkusVersion);
-            } else {
-                return ToolsUtils.resolvePlatformDescriptorDirectly(null, null, quarkusVersion, artifactResolver(),
-                        messageWriter());
-            }
+            return quarkusVersion == null
+                    ? catalogResolver.resolveExtensionCatalog()
+                    : catalogResolver.resolveExtensionCatalog(quarkusVersion);
         } catch (Exception e) {
             throw new RuntimeException("Failed to resolve the Quarkus extension catalog", e);
         }
@@ -137,33 +131,30 @@ public class QuarkusProjectHelper {
                 .build();
     }
 
-    public static ExtensionCatalogResolver getCatalogResolver() throws RegistryResolutionException {
+    public static ExtensionCatalogResolver getCatalogResolver() {
         return catalogResolver == null ? catalogResolver = getCatalogResolver(true, messageWriter())
                 : catalogResolver;
     }
 
-    public static ExtensionCatalogResolver getCatalogResolver(MessageWriter log) throws RegistryResolutionException {
+    public static ExtensionCatalogResolver getCatalogResolver(MessageWriter log) {
         return getCatalogResolver(true, log);
     }
 
-    public static ExtensionCatalogResolver getCatalogResolver(boolean enableRegistryClient, MessageWriter log)
-            throws RegistryResolutionException {
+    public static ExtensionCatalogResolver getCatalogResolver(boolean enableRegistryClient, MessageWriter log) {
         if (catalogResolver == null) {
-            if (enableRegistryClient) {
-                catalogResolver = getCatalogResolver(artifactResolver(), log);
-            } else {
-                catalogResolver = ExtensionCatalogResolver.empty();
-            }
+            catalogResolver = ExtensionCatalogResolver.builder()
+                    .withRegistryClient(enableRegistryClient)
+                    .withLog(log)
+                    .build();
         }
         return catalogResolver;
     }
 
-    public static ExtensionCatalogResolver getCatalogResolver(MavenArtifactResolver resolver, MessageWriter log)
-            throws RegistryResolutionException {
+    public static ExtensionCatalogResolver getCatalogResolver(MavenArtifactResolver resolver, MessageWriter log) {
         return ExtensionCatalogResolver.builder()
-                .artifactResolver(resolver)
-                //                .config(toolsConfig())
-                .messageWriter(log)
+                .withResolver(resolver)
+                .withRegistryClient(isRegistryClientEnabled())
+                .withLog(log)
                 .build();
     }
 

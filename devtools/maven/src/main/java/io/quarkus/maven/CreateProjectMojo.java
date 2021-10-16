@@ -45,12 +45,10 @@ import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.Prompter;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
-import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.platform.tools.maven.MojoMessageWriter;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.registry.config.RegistryConfig;
 
 /**
@@ -209,15 +207,7 @@ public class CreateProjectMojo extends AbstractMojo {
             throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
         }
         final MojoMessageWriter log = new MojoMessageWriter(getLog());
-        ExtensionCatalogResolver catalogResolver;
-        try {
-            catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
-                    ? QuarkusProjectHelper.getCatalogResolver(mvn, log)
-                    : ExtensionCatalogResolver.empty();
-        } catch (RegistryResolutionException e) {
-            // fall back to the default platform
-            catalogResolver = ExtensionCatalogResolver.empty();
-        }
+        ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.getCatalogResolver(mvn, log);
 
         final ExtensionCatalog catalog = resolveExtensionsCatalog(this, bomGroupId, bomArtifactId, bomVersion, catalogResolver,
                 mvn, log);
@@ -334,43 +324,16 @@ public class CreateProjectMojo extends AbstractMojo {
             ExtensionCatalogResolver catalogResolver, MavenArtifactResolver artifactResolver, MessageWriter log)
             throws MojoExecutionException {
 
-        if (!catalogResolver.hasRegistries()) {
-            groupId = getPlatformGroupId(mojo, groupId);
-            artifactId = getPlatformArtifactId(artifactId);
-            version = getPlatformVersion(mojo, version);
-            final StringBuilder buf = new StringBuilder();
-            buf.append("The extension catalog will be narrowed to the ").append(groupId).append(":").append(artifactId)
-                    .append(":").append(version).append(" platform release.");
-            buf.append(
-                    " To enable the complete Quarkiverse extension catalog along with the latest recommended platform releases, please, make sure ");
-            if (QuarkusProjectHelper.isRegistryClientEnabled()) {
-                buf.append("the following registries are accessible from your environment: ");
-                final Iterator<RegistryConfig> iterator = RegistriesConfigLocator.resolveConfig().getRegistries().iterator();
-                int i = 0;
-                while (iterator.hasNext()) {
-                    final RegistryConfig r = iterator.next();
-                    if (r.isEnabled()) {
-                        if (i++ > 0) {
-                            buf.append(", ");
-                        }
-                        buf.append(r.getId());
-                    }
-                }
-
-            } else {
-                buf.append("the extension registry client is enabled.");
-            }
-            log.warn(buf.toString());
-            return ToolsUtils.resolvePlatformDescriptorDirectly(groupId, artifactId, version, artifactResolver, log);
-        }
+        groupId = getPlatformGroupId(mojo, groupId);
+        artifactId = getPlatformArtifactId(artifactId);
+        version = getPlatformVersion(mojo, version);
 
         final ExtensionCatalog catalog;
         try {
             catalog = isBlank(groupId) && isBlank(artifactId) && isBlank(version)
                     ? catalogResolver.resolveExtensionCatalog()
                     : catalogResolver.resolveExtensionCatalog(Collections.singletonList(
-                            new ArtifactCoords(getPlatformGroupId(mojo, groupId), getPlatformArtifactId(artifactId), "pom",
-                                    getPlatformVersion(mojo, version))));
+                            new ArtifactCoords(groupId, artifactId, "pom", version)));
         } catch (RegistryResolutionException e) {
             throw new MojoExecutionException("Failed to resolve the extension catalog", e);
         }

@@ -79,8 +79,8 @@ public class PlatformCatalogLastUpdatedTest {
     private ExtensionCatalogResolver newCatalogResolver(JsonRegistriesConfig config, MavenArtifactResolver mvn)
             throws Exception {
         return ExtensionCatalogResolver.builder()
-                .config(config)
-                .artifactResolver(mvn)
+                .withConfig(config)
+                .withResolver(mvn)
                 .build();
     }
 

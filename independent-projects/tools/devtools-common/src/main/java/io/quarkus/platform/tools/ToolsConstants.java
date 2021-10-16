@@ -1,8 +1,10 @@
 package io.quarkus.platform.tools;
 
+import io.quarkus.registry.Constants;
+
 public interface ToolsConstants {
 
-    String IO_QUARKUS = "io.quarkus";
+    String IO_QUARKUS = Constants.IO_QUARKUS;
 
     String QUARKUS = "quarkus";
     String QUARKUS_CORE_GROUP_ID = IO_QUARKUS;
@@ -10,8 +12,8 @@ public interface ToolsConstants {
 
     String QUARKUS_MAVEN_PLUGIN = "quarkus-maven-plugin";
 
-    String DEFAULT_PLATFORM_BOM_GROUP_ID = IO_QUARKUS + ".platform";
-    String DEFAULT_PLATFORM_BOM_ARTIFACT_ID = "quarkus-bom";
+    String DEFAULT_PLATFORM_BOM_GROUP_ID = Constants.DEFAULT_PLATFORM_BOM_GROUP_ID;
+    String DEFAULT_PLATFORM_BOM_ARTIFACT_ID = Constants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID;
 
     String PROP_QUARKUS_CORE_VERSION = "quarkus-core-version";
 

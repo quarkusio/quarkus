@@ -6,6 +6,10 @@ import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
 
 import com.oracle.svm.core.annotate.AutomaticFeature;
 
+/**
+ * Note that this initialization s not enough if user wants to deserialize actual images
+ * (e.g. from XML). AWT Extension must be loaded for decoding JDK supported image formats.
+ */
 @AutomaticFeature
 public class AwtFeature implements Feature {
     @Override

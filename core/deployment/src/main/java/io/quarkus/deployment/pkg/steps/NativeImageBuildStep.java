@@ -401,7 +401,7 @@ public class NativeImageBuildStep {
             // try system property first - it will be the JAVA_HOME used by the current JVM
             String home = System.getProperty(JAVA_HOME_SYS);
             if (home == null) {
-                // No luck, somewhat a odd JVM not enforcing this property
+                // No luck, somewhat an odd JVM not enforcing this property
                 // try with the JAVA_HOME environment variable
                 home = System.getenv(JAVA_HOME_ENV);
             }
@@ -620,6 +620,10 @@ public class NativeImageBuildStep {
                         "-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
                 nativeImageArgs.add("-H:+JNI");
                 nativeImageArgs.add("-H:+AllowFoldMethods");
+
+                if (nativeConfig.headless) {
+                    nativeImageArgs.add("-J-Djava.awt.headless=true");
+                }
 
                 if (nativeConfig.enableFallbackImages) {
                     nativeImageArgs.add("-H:FallbackThreshold=5");

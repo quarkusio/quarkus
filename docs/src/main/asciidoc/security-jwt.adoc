@@ -153,7 +153,7 @@ will produce undesirable behavior since JWT claims are naturally request scoped.
 <2> Here we inject the JsonWebToken interface, an extension of the java.security.Principal interface that provides access to the claims associated with the current authenticated token.
 <3> @PermitAll is a JSR 250 common security annotation that indicates that the given endpoint is accessible by any caller, authenticated or not.
 <4> Here we inject the JAX-RS SecurityContext to inspect the security state of the call and use a `getResponseString()` function to populate a response string.
-<5> Here we check if the call is insecured by checking the request user/caller `Principal` against null.
+<5> Here we check if the call is insecure by checking the request user/caller `Principal` against null.
 <6> Here we check that the Principal and JsonWebToken have the same name since JsonWebToken does represent the current Principal.
 <7> Here we get the Principal name.
 <8> The reply we build up makes use of the caller name, the `isSecure()` and `getAuthenticationScheme()` states of the request `SecurityContext`, and whether a non-null `JsonWebToken` was injected.

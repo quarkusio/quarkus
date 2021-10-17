@@ -382,7 +382,7 @@ However, there could be cases where JWT tokens must be verified via the introspe
 ----
 quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
 quarkus.oidc.discovery-enabled=false
-# Token Introspection endoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens/introspect
+# Token Introspection endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens/introspect
 quarkus.oidc.introspection-path=/protocol/openid-connect/tokens/introspect
 ----
 
@@ -492,9 +492,9 @@ quarkus.oidc.discovery-enabled=false
 quarkus.oidc.token-path=/protocol/openid-connect/token
 # JWK set endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/certs
 quarkus.oidc.jwks-path=/protocol/openid-connect/certs
-# UserInfo endoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/userinfo
+# UserInfo endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/userinfo
 quarkus.oidc.user-info-path=/protocol/openid-connect/userinfo
-# Token Introspection endoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens/introspect
+# Token Introspection endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens/introspect
 quarkus.oidc.introspection-path=/protocol/openid-connect/tokens/introspect
 ----
 
@@ -787,7 +787,7 @@ Start with adding the following dependency:
 </dependency>
 ----
 
-which provides `io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager` - an implementaion of `io.quarkus.test.common.QuarkusTestResourceLifecycleManager` which starts a Keycloak container.
+which provides `io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager` - an implementation of `io.quarkus.test.common.QuarkusTestResourceLifecycleManager` which starts a Keycloak container.
 
 And configure the Maven Surefire plugin as follows:
 
@@ -797,7 +797,7 @@ And configure the Maven Surefire plugin as follows:
     <artifactId>maven-surefire-plugin</artifactId>
     <configuration>
         <systemPropertyVariables>
-            <!-- or, alternativey, configure 'keycloak.version' -->
+            <!-- or, alternatively, configure 'keycloak.version' -->
             <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
             <!--
               Disable HTTPS if required:
@@ -1033,7 +1033,7 @@ public class ProtectedResource {
 }
 ----
 
-Note that `@TestSecurity` `user` and `roles` attributes are availabe as `TokenIntrospection` `username` and `scope` properties and you can use `io.quarkus.test.security.oidc.TokenIntrospection` to add the additional introspection response properties such as an `email`, etc.
+Note that `@TestSecurity` `user` and `roles` attributes are available as `TokenIntrospection` `username` and `scope` properties and you can use `io.quarkus.test.security.oidc.TokenIntrospection` to add the additional introspection response properties such as an `email`, etc.
 
 == How to check the errors in the logs ==
 
@@ -1067,7 +1067,7 @@ If you work with other Openid Connect providers then please check your provider'
 This property is required if the `service` application is expected to introspect the tokens remotely - which is always the case for the opaque tokens.
 This property is optional if the local Json Web Key token verification only is used.
 
-Nonetheless, setting this propery is encouraged even if the endpoint does not require an access to the remote introspection endpoint. The reasons behind it that `client-id`, if set, can be used to verify the token audience and will also be included in the logs when the token verification fails for the better traceability of the tokens issued to specific clients to be analyzed over a longer period of time.
+Nonetheless, setting this property is encouraged even if the endpoint does not require an access to the remote introspection endpoint. The reasons behind it that `client-id`, if set, can be used to verify the token audience and will also be included in the logs when the token verification fails for the better traceability of the tokens issued to specific clients to be analyzed over a longer period of time.
 
 For example, if your OpenId Connect provider sets a token audience then the following configuration pattern is recommended:
 

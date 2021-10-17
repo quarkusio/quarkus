@@ -111,7 +111,7 @@ This means that requests with an invalid credential will always be rejected, eve
 this behavior and only authenticate when required by setting `quarkus.http.auth.proactive=false`.
 
 If you disable proactive authentication then the authentication process will only be run when an identity is requested,
-either because there are security rules that requires the user to be authenticated, or due to programatic access to the
+either because there are security rules that requires the user to be authenticated, or due to programmatic access to the
 current identity.
 
 Note that if proactive authentication is in use accessing the `SecurityIdentity` is a blocking operation. This is because

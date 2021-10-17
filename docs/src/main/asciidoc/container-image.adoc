@@ -121,7 +121,7 @@ NOTE: If no registry is set (using `quarkus.container-image.registry`) then `doc
 
 == Selecting among multiple extensions
 
-It does not make sense to use multiple extension as part of the same build. When multiple container image extensions are present, an error will be raised to inform the user. The user can either remove the uneeded extensions or select one using `application.properties`.
+It does not make sense to use multiple extension as part of the same build. When multiple container image extensions are present, an error will be raised to inform the user. The user can either remove the unneeded extensions or select one using `application.properties`.
 
 For example, if both `container-image-docker` and `container-image-s2i` are present and the user needs to use `container-image-docker`:
 

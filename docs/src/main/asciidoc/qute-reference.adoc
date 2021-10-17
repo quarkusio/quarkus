@@ -1585,9 +1585,9 @@ As a result, you may encounter template exceptions like `Property "name" not fou
 There are several ways to solve this problem:
 
 * Make use of <<typesafe_templates,type-safe templates>> or <<typesafe_expressions,type-safe expressions>>
-** In this case, an optimized value resolver is generated automatically and used at rutime
+** In this case, an optimized value resolver is generated automatically and used at runtime
 ** This is the preferred solution
-* Annotate the model class with <<template_data,`@TemplateData`>> - a specialized value resolver is generated and used at rutime
+* Annotate the model class with <<template_data,`@TemplateData`>> - a specialized value resolver is generated and used at runtime
 * Annotate the model class with `@io.quarkus.runtime.annotations.RegisterForReflection` to make the reflection-based value resolver work
 
 

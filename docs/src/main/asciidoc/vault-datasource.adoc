@@ -224,7 +224,7 @@ Recompile, start and test the `gift-count` endpoint. You should see `0` again.
 
 The two previous approaches work well and are very popular. However they rely on a well known user configured
 in the application (i.e. the database user), and the security comes from the confidentiality of the password.
-If the password was stolen, we would have to change it in the database and in Vault. Regulary rotating passwords
+If the password was stolen, we would have to change it in the database and in Vault. Regularly rotating passwords
 is actually a very good practice to limit (in time) the impact of getting the password stolen.
 
 A more sophisticated approach consists in letting Vault create and retire database accounts on a regular basis.

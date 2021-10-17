@@ -38,7 +38,7 @@ $ mvn quarkus:dev
 
 The `quay.io/keycloak/keycloak:14.0.0` Keycloak image is used by default to start a container. `quarkus.keycloak.devservices.image-name` can be used to change the Keycloak image used.
 
-Note that by default, `Dev Services for Keycloak` will not start a new container if it finds a container with a `quarkus-dev-service-keycloak` label and connect to it if this label's value matches the value of the `quarkus.keycloak.devservces.service-name` property (default value is `quarkus`). In such cases you will see a slighty different output:
+Note that by default, `Dev Services for Keycloak` will not start a new container if it finds a container with a `quarkus-dev-service-keycloak` label and connect to it if this label's value matches the value of the `quarkus.keycloak.devservices.service-name` property (default value is `quarkus`). In such cases you will see a slighty different output:
 
 [source,shell]
 ----
@@ -64,7 +64,7 @@ By default the Keycloak page can be used to support the development of a link:se
 [[keycloak-authorization-code-grant]]
 ==== Authorization Code Grant
 
-If you set `quarkus.keycloak.devservices.grant.type=code` in `applicatin.properties` (this is a default value) then an `authorization_code` grant will be used to acquire both access and ID tokens. Using this grant is recommended to emulate a typical flow where a `Single Page Application` acquires the tokens and uses them to access Quarkus services.
+If you set `quarkus.keycloak.devservices.grant.type=code` in `application.properties` (this is a default value) then an `authorization_code` grant will be used to acquire both access and ID tokens. Using this grant is recommended to emulate a typical flow where a `Single Page Application` acquires the tokens and uses them to access Quarkus services.
 
 First you will see an option to `Log into Single Page Application`:
 
@@ -112,11 +112,11 @@ You can set the `redirect_uri` value to `*` only for the test purposes, especial
 
 ==== Implicit Grant
 
-If you set `quarkus.keycloak.devservices.grant.type=implicit` in `applicatin.properties` then an `implicit` grant will be used to acquire both access and ID tokens. Use this grant for emulating a `Single Page Application` only if the authorization code grant does not work (for example, a client is configured in Keycloak to support an implicit grant, etc).
+If you set `quarkus.keycloak.devservices.grant.type=implicit` in `application.properties` then an `implicit` grant will be used to acquire both access and ID tokens. Use this grant for emulating a `Single Page Application` only if the authorization code grant does not work (for example, a client is configured in Keycloak to support an implicit grant, etc).
 
 ==== Password Grant
 
-If you set `quarkus.keycloak.devservices.grant.type=password` in `applicatin.properties` then you will see a screen like this one:
+If you set `quarkus.keycloak.devservices.grant.type=password` in `application.properties` then you will see a screen like this one:
 
 image::dev-ui-keycloak-password-grant.png[alt=Dev UI OpenId Connect Keycloak Page - Password Grant,role="center"]
 
@@ -183,7 +183,7 @@ Note that even if you initialize Keycloak from a realm file, it is still needed 
 
 == Disable Dev Services for Keycloak
 
-`Dev Services For Keycloak` will not be activated if either `quarkus.oidc.auth-server-url` is already initialized or the defaut OIDC tenant is disabled with `quarkus.oidc.tenant.enabled=false`, irrespectively of whether you work with Keycloak or not.
+`Dev Services For Keycloak` will not be activated if either `quarkus.oidc.auth-server-url` is already initialized or the default OIDC tenant is disabled with `quarkus.oidc.tenant.enabled=false`, irrespectively of whether you work with Keycloak or not.
 
 If you prefer not to have a `Dev Services for Keycloak` container started or do not work with Keycloak then you can also disable this feature with `quarkus.keycloak.devservices.enabled=false` - it will only be necessary if you expect to start `quarkus:dev` without `quarkus.oidc.auth-server-url`.
 
@@ -216,7 +216,7 @@ image::dev-ui-oidc-devconsole-card.png[alt=Generic Dev UI OpenId Connect Card,ro
 
 Follow the link and you'll be able log in to your provider, get the tokens and test the application. The experience will be the same as described in the <<keycloak-authorization-code-grant,Authorization Code Grant for Keycloak>> section, where `Dev Services for Keycloak` container has been started, especially if you work with Keycloak (please also pay attention to a `redirect_uri` note in that section).
 
-If you work with other providers then a Dev UI experience described in the <<keycloak-authorization-code-grant,Authorization Code Grant for Keycloak>> section might differ slightly. For example, an access token may not be in a JWT format so it won't be possibe to show its internal content, though all providers should return an ID Token as JWT.
+If you work with other providers then a Dev UI experience described in the <<keycloak-authorization-code-grant,Authorization Code Grant for Keycloak>> section might differ slightly. For example, an access token may not be in a JWT format so it won't be possible to show its internal content, though all providers should return an ID Token as JWT.
 
 Some providers such as `Auth0` do not support a standard RP initiated logout so a logout option will also be hidden.
 

@@ -45,5 +45,5 @@ complete list of externalized variables for use is given in the following table:
 |\{quickstarts-tree-url}|{quickstarts-tree-url}| Quickstarts URL to main source tree root; used for referencing directories.
 
 |\{graalvm-version}|{graalvm-version}| Recommended GraalVM version to use.
-|\{graalvm-flavor}|{graalvm-flavor}| The full flavor of GraaVM to use e.g. `19.3.1-java11`. Make sure to use a `java11` version.
+|\{graalvm-flavor}|{graalvm-flavor}| The full flavor of GraalVM to use e.g. `19.3.1-java11`. Make sure to use a `java11` version.
 |===

@@ -12,7 +12,7 @@ The Quarkus extension ecosystem consists of the Quarkus extensions developed and
 == Quarkus Platform
 
 The fundamental promise of a Quarkus platform is any combination of the Quarkus extensions the platform consists of can be used in the same application without causing any conflict for each other.
-Each organization creating their Quarkus platform may establish their own criterions for the extensions to be accepted into the platform and the means to guarantee the compatibility between the accepted extensions.
+Each organization creating their Quarkus platform may establish their own criteria for the extensions to be accepted into the platform and the means to guarantee the compatibility between the accepted extensions.
 
 === Quarkus Platform Artifacts
 

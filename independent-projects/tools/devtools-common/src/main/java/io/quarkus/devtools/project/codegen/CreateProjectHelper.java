@@ -1,16 +1,22 @@
 package io.quarkus.devtools.project.codegen;
 
-import javax.lang.model.SourceVersion;
+import static java.util.Objects.requireNonNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import static java.util.Objects.requireNonNull;
+import javax.lang.model.SourceVersion;
 
 public class CreateProjectHelper {
 
@@ -81,9 +87,10 @@ public class CreateProjectHelper {
 
         if (matcher.matches()) {
             int versionExtracted = Integer.parseInt(matcher.group(1));
-            System.out.println("version: " + versionExtracted);
+            int version = JAVA_VERSIONS_LTS.stream()
+                    .filter(e -> e.equals(versionExtracted))
+                    .findFirst().orElse(DEFAULT_JAVA_VERSION);
 
-            int version = JAVA_VERSIONS_LTS.stream().filter(e -> e.equals(versionExtracted)).findFirst().orElse(DEFAULT_JAVA_VERSION);
             values.put(ProjectGenerator.JAVA_TARGET, String.valueOf(version));
         } else {
             values.put(ProjectGenerator.JAVA_TARGET, String.valueOf(DEFAULT_JAVA_VERSION));

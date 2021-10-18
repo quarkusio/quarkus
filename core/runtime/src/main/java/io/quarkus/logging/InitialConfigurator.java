@@ -9,11 +9,21 @@ import org.jboss.logmanager.handlers.ConsoleHandler;
 
 import io.quarkus.bootstrap.graal.ImageInfo;
 import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
+import io.quarkus.runtime.logging.LoggingSetupRecorder;
 
-/**
- *
- */
 public final class InitialConfigurator implements EmbeddedConfigurator {
+
+    public InitialConfigurator() {
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                if (!QuarkusDelayedHandler.INSTANCE.isActivated()) {
+                    LoggingSetupRecorder.handleFailedStart();
+                }
+            }
+        }));
+    }
 
     @Override
     public Level getMinimumLevelOf(final String loggerName) {

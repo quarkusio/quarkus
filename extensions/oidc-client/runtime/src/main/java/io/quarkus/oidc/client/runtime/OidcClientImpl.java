@@ -88,6 +88,11 @@ public class OidcClientImpl implements OidcClient {
                 HttpRequest<Buffer> request = client.postAbs(tokenRequestUri);
                 request.putHeader(HttpHeaders.CONTENT_TYPE.toString(),
                         HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
+                if (oidcConfig.headers != null) {
+                    for (Map.Entry<String, String> headerEntry : oidcConfig.headers.entrySet()) {
+                        request.putHeader(headerEntry.getKey(), headerEntry.getValue());
+                    }
+                }
                 if (clientSecretBasicAuthScheme != null) {
                     request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
                 } else if (clientJwtKey != null) {

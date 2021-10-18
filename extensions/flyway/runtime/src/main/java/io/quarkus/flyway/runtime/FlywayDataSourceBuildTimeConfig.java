@@ -1,6 +1,6 @@
 package io.quarkus.flyway.runtime;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,9 +41,9 @@ public final class FlywayDataSourceBuildTimeConfig {
      *
      * @return {@link FlywayDataSourceBuildTimeConfig}
      */
-    public static final FlywayDataSourceBuildTimeConfig defaultConfig() {
+    public static FlywayDataSourceBuildTimeConfig defaultConfig() {
         FlywayDataSourceBuildTimeConfig defaultConfig = new FlywayDataSourceBuildTimeConfig();
-        defaultConfig.locations = Arrays.asList(DEFAULT_LOCATION);
+        defaultConfig.locations = Collections.singletonList(DEFAULT_LOCATION);
         return defaultConfig;
     }
 }

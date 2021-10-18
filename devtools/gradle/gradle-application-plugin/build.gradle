@@ -1,3 +1,8 @@
+plugins {
+    id 'java-gradle-plugin'
+    id 'com.gradle.plugin-publish'
+}
+
 dependencies {
     implementation "io.quarkus:quarkus-devtools-common:${version}"
     implementation "io.quarkus:quarkus-core-deployment:${version}"
@@ -20,4 +25,10 @@ gradlePlugin {
             description = 'Builds a Quarkus application, and provides helpers to launch dev-mode, the Quarkus CLI, building of native images'
         }
     }
+}
+
+pluginBundle {
+    website = 'https://quarkus.io/'
+    vcsUrl = 'https://github.com/quarkusio/quarkus'
+    tags = ['quarkus', 'quarkusio', 'graalvm']
 }

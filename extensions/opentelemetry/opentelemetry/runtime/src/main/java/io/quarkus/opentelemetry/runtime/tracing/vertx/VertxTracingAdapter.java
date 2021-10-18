@@ -4,6 +4,7 @@ import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_FLAVOR;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_HOST;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_METHOD;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_ROUTE;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_SCHEME;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_STATUS_CODE;
@@ -107,12 +108,7 @@ public class VertxTracingAdapter extends TracingOptions implements VertxTracer<S
             currentSpan.setAttribute(HTTP_CLIENT_IP, extractClientIP(httpServerRequest));
             currentSpan.setAttribute(HTTP_USER_AGENT, httpServerRequest.getHeader(USER_AGENT));
 
-            String contentLength = httpServerRequest.getHeader(CONTENT_LENGTH);
-            if (contentLength != null && contentLength.length() > 0 && Long.parseLong(contentLength) > 0) {
-                currentSpan.setAttribute(SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH, Long.valueOf(contentLength));
-            } else {
-                currentSpan.setAttribute(SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH, httpServerRequest.bytesRead());
-            }
+            setRequestCommonAttributes(httpServerRequest, currentSpan);
         }
 
         openTelemetryContext = openTelemetryContext.with(currentSpan);
@@ -131,6 +127,30 @@ public class VertxTracingAdapter extends TracingOptions implements VertxTracer<S
             }
         }
         return operationName;
+    }
+
+    private void setResponseCommonAttributes(final HttpServerResponse httpServerResponse,
+            final Span span) {
+        span.setAttribute(HTTP_STATUS_CODE, httpServerResponse.getStatusCode());
+
+        String contentLength = httpServerResponse.headers().get(CONTENT_LENGTH);
+
+        if (contentLength != null && contentLength.length() > 0 && Long.parseLong(contentLength) > 0) {
+            span.setAttribute(HTTP_RESPONSE_CONTENT_LENGTH, Long.valueOf(contentLength));
+        } else {
+            span.setAttribute(SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH, httpServerResponse.bytesWritten());
+        }
+    }
+
+    private void setRequestCommonAttributes(final HttpServerRequest httpServerRequest,
+            final Span span) {
+        String contentLength = httpServerRequest.getHeader(CONTENT_LENGTH);
+
+        if (contentLength != null && contentLength.length() > 0 && Long.parseLong(contentLength) > 0) {
+            span.setAttribute(SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH, Long.valueOf(contentLength));
+        } else {
+            span.setAttribute(SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH, httpServerRequest.bytesRead());
+        }
     }
 
     @Override
@@ -153,7 +173,7 @@ public class VertxTracingAdapter extends TracingOptions implements VertxTracer<S
         if (response != null) {
             if (response instanceof HttpServerResponse) {
                 HttpServerResponse httpServerResponse = (HttpServerResponse) response;
-                span.setAttribute(HTTP_STATUS_CODE, httpServerResponse.getStatusCode());
+                setResponseCommonAttributes(httpServerResponse, span);
 
                 // Update Span name if parameterized path present
                 String pathTemplate = context.getLocal("UrlPathTemplate");
@@ -210,6 +230,8 @@ public class VertxTracingAdapter extends TracingOptions implements VertxTracer<S
             // Add attributes
             outgoingSpan.setAttribute(HTTP_METHOD, httpServerRequest.method().name());
             outgoingSpan.setAttribute(HTTP_URL, httpServerRequest.uri());
+
+            setRequestCommonAttributes(httpServerRequest, outgoingSpan);
         }
 
         openTelemetryContext = openTelemetryContext.with(outgoingSpan);
@@ -241,7 +263,7 @@ public class VertxTracingAdapter extends TracingOptions implements VertxTracer<S
                 HttpServerResponse httpServerResponse = (HttpServerResponse) response;
 
                 // Add attributes
-                span.setAttribute(HTTP_STATUS_CODE, httpServerResponse.getStatusCode());
+                setResponseCommonAttributes(httpServerResponse, span);
             }
         }
 

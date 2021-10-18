@@ -9,6 +9,7 @@ import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseContext;
 import javax.ws.rs.client.ClientResponseFilter;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
@@ -83,6 +84,13 @@ public class ClientTracingFilter implements ClientRequestFilter, ClientResponseF
             }
 
             clientSpan.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, responseContext.getStatus());
+            clientSpan.setAttribute(SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH, responseContext.getLength());
+
+            String requestContentLength = requestContext.getHeaderString(HttpHeaders.CONTENT_LENGTH);
+
+            if (requestContentLength != null && requestContentLength.length() > 0 && Long.parseLong(requestContentLength) > 0) {
+                clientSpan.setAttribute(SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH, Long.valueOf(requestContentLength));
+            }
 
             if (!responseContext.getStatusInfo().getFamily().equals(Response.Status.Family.SUCCESSFUL)) {
                 // TODO Is this ok as we don't have an exception to call recordException() with?

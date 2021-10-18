@@ -4,6 +4,8 @@ import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_CLIENT_IP;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_FLAVOR;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_HOST;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_SCHEME;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_STATUS_CODE;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_TARGET;
@@ -52,9 +54,10 @@ public class VertxOpenTelemetryTest {
 
     @Test
     void trace() throws NoSuchFieldException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+        String expectedResponse = "Hello Tracer!";
         RestAssured.when().get("/tracer").then()
                 .statusCode(200)
-                .body(is("Hello Tracer!"));
+                .body(is(expectedResponse));
 
         List<SpanData> spans = testSpanExporter.getFinishedSpanItems();
 
@@ -71,6 +74,8 @@ public class VertxOpenTelemetryTest {
         assertEquals("http", spans.get(1).getAttributes().get(HTTP_SCHEME));
         assertEquals("localhost:8081", spans.get(1).getAttributes().get(HTTP_HOST));
         assertEquals("127.0.0.1", spans.get(1).getAttributes().get(HTTP_CLIENT_IP));
+        assertEquals(0, spans.get(1).getAttributes().get(HTTP_REQUEST_CONTENT_LENGTH));
+        assertEquals(expectedResponse.length(), spans.get(1).getAttributes().get(HTTP_RESPONSE_CONTENT_LENGTH));
         assertThat(textMapPropagators, arrayContainingInAnyOrder(W3CTraceContextPropagator.getInstance(),
                 W3CBaggagePropagator.getInstance()));
         assertThat(idGenerator, instanceOf(IdGenerator.random().getClass()));

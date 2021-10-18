@@ -11,6 +11,9 @@ OpenId Connect Dev Console
 var port = {config:property('quarkus.http.port')};
 
 {#if info:oidcApplicationType is 'service'}
+    var devRoot = '{devRootAppend}';
+    var encodedDevRoot = devRoot.replaceAll("/", "%2F");
+
     {#if info:oidcGrantType is 'implicit' || info:oidcGrantType is 'code'}
     var accessToken;
     var idToken;
@@ -81,13 +84,13 @@ var port = {config:property('quarkus.http.port')};
       {#if info:oidcGrantType is 'implicit'}
         window.location.href = '{info:authorizationUrl}'
           + "?client_id=" + '{info:clientId}'
-          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + "%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider"
+          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider"
           + "&scope=openid&response_type=token id_token&response_mode=query&prompt=login"
           + "&nonce=" + makeid();
       {#else}
         window.location.href = '{info:authorizationUrl}'
           + "?client_id=" + '{info:clientId}'
-          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + "%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider"
+          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider"
           + "&scope=openid&response_type=code&response_mode=query&prompt=login"
           + "&nonce=" + makeid();
       {/if}    
@@ -166,7 +169,7 @@ var port = {config:property('quarkus.http.port')};
         localStorage.removeItem('authorized');
     
         window.location.assign('{info:logoutUrl??}'
-          + "?post_logout_redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + "%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider");
+          + "?post_logout_redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider");
     }
         
     function exchangeCodeForTokens(code){
@@ -176,7 +179,7 @@ var port = {config:property('quarkus.http.port')};
               client: '{info:clientId}',
               clientSecret: '{info:clientSecret}',
               authorizationCode: code,
-              redirectUri: "http://localhost:" + port + "/q/dev/io.quarkus.quarkus-oidc/provider"
+              redirectUri: "http://localhost:" + port + devRoot + "/io.quarkus.quarkus-oidc/provider"
             },
             function(data, status){
                 var tokens = JSON.parse(data);
@@ -229,7 +232,6 @@ var port = {config:property('quarkus.http.port')};
           return token;
         }
     }
-    
     {/if}
 {/if}
 

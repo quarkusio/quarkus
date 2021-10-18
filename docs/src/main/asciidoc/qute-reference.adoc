@@ -88,29 +88,27 @@ TIP: The `Engine` is able to cache the definitions so that it's not necessary to
 
 The dynamic parts of a template include comments, expressions, sections and unparsed character data.
 
-==== Comments 
-A comment starts with `{!` and ends with `!}`, e.g. `{! This is a comment !}`.
-It could be multi-line and may contain expressions and sections: `{! {#if true} !}`.
-Of course, the content of a comment is completely ignored.
+Comments::
+A comment starts with the sequence `{!` and ends with the sequence `!}`, e.g. `{! This is a comment !}`.
+Can be multiline and may contain expressions and sections: `{! {#if true} !}`.
+The content of a comment is completely ignored when rendering the output.
 
-[[blocks_expressions]]
-==== Expressions
+Expressions::
 An <<expressions,expression>> outputs an evaluated value. 
 It consists of one or more parts.
-A part may represent simple properties: `{foo}`, `{item.name}` or virtual methods: `{item.get(name)}`, `{name ?: 'John'}`.
-An expression may start with a namespace: `{inject:colors}`.
+A part may represent simple properties: `{foo}`, `{item.name}`, and virtual methods: `{item.get(name)}`, `{name ?: 'John'}`.
+An expression may also start with a namespace: `{inject:colors}`.
 
-[[blocks_sections]]
-==== Sections
-A <<sections,section>> may contain text, expressions and nested sections: `{#if foo}{foo.name}{/if}`.
+Sections::
+A <<sections,section>> may contain static text, expressions and nested sections: `{#if foo.active}{foo.name}{/if}`.
 The name in the closing tag is optional: `{#if active}ACTIVE!{/}`.
-It can be empty: `{#myTag image=true /}`.
-A section may declare nested section blocks: `{#if item.valid} Valid. {#else} Invalid. {/if}` and decide which block to render.
+A section can be empty: `{#myTag image=true /}`.
+A section may also declare nested section blocks: `{#if item.valid} Valid. {#else} Invalid. {/if}` and decide which block to render.
 
-==== Unparsed Character Data
-It is used to mark the content that should be rendered but not parsed.
-It starts with `{|` and ends with `|}`: `{| <script>if(true){alert('Qute is cute!')};</script> |}`, and could be multi-line.
-
+Unparsed Character Data::
+It is used to mark the content that should be rendered but _not parsed_.
+It starts with the sequence `{|`  and ends with the sequence `|}`: `{| <script>if(true){alert('Qute is cute!')};</script> |}`, and could be multi-line.
++
 NOTE: Previously, unparsed character data had to start with `{[` and end with `]}`. This syntax is still supported but we encourage users to switch to the new syntax to avoid some common collisions with constructs from other languages.
 
 [[identifiers]]
@@ -214,14 +212,18 @@ In this case, all whitespace characters from a standalone line will be printed t
 [[expressions]]
 === Expressions
 
-An expression outputs a value.
-It consists of one or more parts separated by dot (dot notation) or square brackets (bracket notation).
-In the `object.property` (dot notation) syntax, the `property` must be a <<identifiers,valid identifier>>.
-In the `object[property_name]` (bracket notation) syntax, the `property_name` has to be a non-null <<literals, literal>> value. 
-An expression could start with an optional namespace followed by a colon (`:`).
-A valid namespace consist of alphanumeric characters and underscores.
+An expression is evaluated and outputs the value.
+It has one or more parts, where each part represents either a property accessor (aka Field Access Expression) or a virtual method invocation (aka Method Invocation Expression).
 
-.Expressions Example
+When accessing the properties you can either use the dot notation or bracket notation.
+In the `object.property` (dot notation) syntax, the `property` must be a <<identifiers,valid identifier>>.
+In the `object[property_name]` (bracket notation) syntax, the `property_name` has to be a non-null <<literals, literal>> value.
+
+An expression can start with an optional namespace followed by a colon (`:`).
+A valid namespace consist of alphanumeric characters and underscores.
+Namespace expressions are resolved differently - see also <<expression_resolution>>.
+
+.Property Accessor Examples
 [source]
 ----
 {name} <1>
@@ -234,11 +236,12 @@ A valid namespace consist of alphanumeric characters and underscores.
 <3> equivalent to `{item.name}` but using the bracket notation
 <4> namespace `global`, one part: `colors`
 
-A part of an expression could be a _virtual method_ in which case the name can be followed by a list of comma-separated parameters in parentheses. 
+A part of an expression can be a _virtual method_ in which case the name can be followed by a list of comma-separated parameters in parentheses. 
 A parameter of a virtual method can be either a nested expression or a <<literals, literal>> value.
-We call it "virtual" because it does not have to be backed by a real Java method.
+We call these method _"virtual"_ because they does not have to be backed by a real Java method.
+You can learn more about virtual methods in the <<virtual_methods,following section>>.
 
-.Virtual Methods Example
+.Virtual Method Example
 [source]
 ----
 {item.getLabels(1)} <1>
@@ -276,6 +279,7 @@ We call it "virtual" because it does not have to be backed by a real Java method
 
 |===
 
+[[expression_resolution]]
 ==== Resolution
 
 The first part of the expression is always resolved against the <<current_context_object, current context object>>.
@@ -300,7 +304,7 @@ This could be useful to access data for which the key is overridden:
 <html>
 {item.name} <1>
 <ul>
-{#for item in item.getDerivedItems()} <2>
+{#for item in item.derivedItems} <2>
   <li>
   {item.name} <3> 
   is derived from
@@ -426,6 +430,7 @@ If you need to render the unescaped value:
 <1> `title` that resolves to `Expressions & Escapes` will be rendered as `Expressions &amp;amp; Escapes`
 <2> `paragraph` that resolves to `<p>My text!</p>` will be rendered as `<p>My text!</p>`
 
+[[virtual_methods]]
 ==== Virtual Methods
 
 A virtual method is a *part of an expression* that looks like a regular Java method invocation.
@@ -486,12 +491,16 @@ If a part of an expression resolves to a `Uni`, a `CompletionStage` is first cre
 
 It can happen that an expression may not be evaluated at runtime.
 For example, if there is an expression `{person.age}` and there is no property `age` declared on the `Person` class.
-Qute outputs the special constant `NOT_FOUND` in this case by default.
-However, it's possible to change the default strategy via the `quarkus.qute.property-not-found-strategy` as described in the <<configuration-reference>>.
+The behavior differs based on whether the <<strict_rendering>> is enabled or not.
+
+If enabled then a missing property will always result in a `TemplateException` and the rendering is aborted.
+You can use _default values_ and _safe expressions_ in order to suppress the error.
+
+If disabled then the special constant `NOT_FOUND` is written to the output by default.
+
+TIP: In Quarkus, it's possible to change the default strategy via the `quarkus.qute.property-not-found-strategy` as described in the <<configuration-reference>>.
 
 NOTE: Similar errors are detected at build time if <<typesafe_expressions>> and <<typesafe_templates>> are used.
-
-TIP: Alternatively, the _elvis operator_ can be used to output the default value in case the property cannot be resolved or resolves to `null`: `{person.age ?: 10}` would output `10`. And for the loop section, the `orEmpty` resolver can be used. See also <<built-in-resolvers>>.
 
 [[sections]]
 === Sections
@@ -542,22 +551,31 @@ The other form is using the `for` name and can specify the alias used to referen
 
 [source]
 ----
-{#for item in items}
-  {item.name}
+{#for item in items} <1>
+  {item.name} 
 {/for}
 ----
+<1> `item` is the alias used for the iteration element.
 
 It's also possible to access the iteration metadata inside the loop:
 
+* `{count}` - 1-based index
+* `{index}` - zero-based index
+* `{hasNext}` - `true` if the iteration has more elements
+* `{odd}` - `true` if the zero-based index is odd
+* `{even}` - `true` if the zero-based index is even
+* `{indexParity}` - outputs `odd` or `even` based on the zero-based index value
+
+.Iteration Metadata Example
 [source]
 ----
 {#each items}
   {count}. {it.name} <1>
+  {#if hasNext}<br>{/if} <2>
 {/each}
 ----
 <1> `count` represents one-based index. 
-
-TIP: The iteration metadata also include zero-based `index`, `hasNext`, `odd` and `even` properties.
+<2> `<br>` is only rendered if the iteration has more elements.
 
 The `for` statement also works with integers, starting from 1. In the example below, considering that `total = 3`:
 
@@ -575,7 +593,7 @@ And the output will be:
 1:2:3:
 ----
 
-A loop section may define the `{#else}` block that is executed when there are no items to iterate:
+A loop section may also define the `{#else}` block that is executed when there are no items to iterate:
 
 [source]
 ----
@@ -1035,6 +1053,7 @@ engineBuilder.addParserHook(new ParserHook() {
 ----
 <1> Escape all occurences of `${`.
 
+[[strict_rendering]]
 ==== Strict Rendering
 
 The strict rendering enables the developers to catch insidious errors caused by typos and invalid expressions.
@@ -1616,9 +1635,9 @@ As a result, you may encounter template exceptions like `Property "name" not fou
 There are several ways to solve this problem:
 
 * Make use of <<typesafe_templates,type-safe templates>> or <<typesafe_expressions,type-safe expressions>>
-** In this case, an optimized value resolver is generated automatically and used at rutime
+** In this case, an optimized value resolver is generated automatically and used at runtime
 ** This is the preferred solution
-* Annotate the model class with <<template_data,`@TemplateData`>> - a specialized value resolver is generated and used at rutime
+* Annotate the model class with <<template_data,`@TemplateData`>> - a specialized value resolver is generated and used at runtime
 * Annotate the model class with `@io.quarkus.runtime.annotations.RegisterForReflection` to make the reflection-based value resolver work
 
 

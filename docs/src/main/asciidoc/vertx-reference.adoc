@@ -250,6 +250,18 @@ Consider these endpoints:
 
 [source,java]
 ----
+package org.acme.vertx;
+
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.json.JsonArray;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
+
 @Path("/hello")
 @Produces(MediaType.APPLICATION_JSON)
 public class VertxJsonResource {
@@ -284,11 +296,11 @@ http://localhost:8080/hello/Quarkus/array returns:
 
 This works equally well when the JSON content is a request body or is wrapped in a `Uni`, `Multi`, `CompletionStage` or `Publisher`.
 
-== Deploying verticles
+== Using verticles
 
 link:https://vertx.io/docs/vertx-core/java/#_verticles[Verticles] is "a simple, scalable, actor-like deployment and concurrency model" provided by _Vert.x_.
 This model does not claim to be a strict actor-model implementation, but it shares similarities, especially concerning concurrency, scaling, and deployment.
-To use this model, you write and _deploy_ verticles, communicating with each other by sending messages on the event bus.
+To use this model, you write and _deploy_ verticles, communicating by sending messages on the event bus.
 
 You can deploy _verticles_ in Quarkus.
 It supports:
@@ -296,7 +308,9 @@ It supports:
 * _bare_ verticle - Java classes extending `io.vertx.core.AbstractVerticle`
 * _Mutiny_ verticle - Java classes extending `io.smallrye.mutiny.vertx.core.AbstractVerticle`
 
-To deploy verticles, use the regular Vert.x API:
+=== Deploying verticles
+
+To deploy verticles, use the `deployVerticle` method:
 
 [source, java]
 ----
@@ -307,12 +321,18 @@ vertx.deployVerticle(MyVerticle.class.getName(), ar -> { });
 vertx.deployVerticle(new MyVerticle(), ar -> { });
 ----
 
+If you use the Mutiny-variant of Vert.x, be aware that the `deployVerticle` method returns a `Uni`, and you would need to trigger a subscription to make the actual deployment.
+
 NOTE: An example explaining how to deploy verticles during the initialization of the application will follow.
 
-You can also pass deployment options to configure the verticle as well as set the number of instances.
+=== Using @ApplicationScoped Beans as Verticle
 
-Verticles are not _beans_ by default.
-However, you can implement them as _ApplicationScoped_ beans and get injection support:
+In general, Vert.x verticles are not CDI beans.
+And so cannot use injection.
+However, in Quarkus, you can deploy verticles as beans.
+Note that in this case, CDI (Arc in Quarkus) is responsible for creating the instance.
+
+The following snippet provides an example:
 
 [source, java]
 ----
@@ -338,7 +358,7 @@ public class MyBeanVerticle extends AbstractVerticle {
 }
 ----
 
-You don't have to inject the `vertx` instance but instead, leverage the instance stored in the protected field of `AbstractVerticle`.
+You don't have to inject the `vertx` instance; instead, leverage the protected field from `AbstractVerticle`.
 
 Then, deploy the verticle instances with:
 
@@ -371,6 +391,70 @@ public void init(@Observes StartupEvent e, Vertx vertx, Instance<AbstractVerticl
     }
 }
 ----
+
+=== Using multiple verticles instances
+
+When using `@ApplicationScoped`, you will get a single instance for your verticle.
+Having multiple instances of verticles can be helpful to share the load among them.
+Each of them will be associated with a different I/O thread (Vert.x event loop).
+
+To deploy multiple instances of your verticle, use the `@Dependent` scope instead of `@ApplicationScoped`:
+
+[source, java]
+----
+package org.acme.verticle;
+
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.vertx.core.AbstractVerticle;
+
+import javax.enterprise.context.Dependent;
+import javax.inject.Inject;
+
+@Dependent
+public class MyVerticle extends AbstractVerticle {
+
+    @Override
+    public Uni<Void> asyncStart() {
+        return vertx.eventBus().consumer("address")
+                .handler(m -> m.reply("Hello from " + this))
+                .completionHandler();
+    }
+}
+----
+
+Then, deploy your verticle as follows:
+
+[source, java]
+----
+package org.acme.verticle;
+
+import io.quarkus.runtime.StartupEvent;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.mutiny.core.Vertx;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Instance;
+import javax.inject.Inject;
+
+@ApplicationScoped
+public class MyApp {
+
+    void init(@Observes StartupEvent ev, Vertx vertx, Instance<MyVerticle> verticles) {
+        vertx
+                .deployVerticle(verticles::get, new DeploymentOptions().setInstances(2))
+                .await().indefinitely();
+    }
+}
+
+----
+
+The `init` method receives an `Instance<MyVerticle>`.
+Then, you pass a supplier to the `deployVerticle` method.
+The supplier is just calling the `get()` method.
+Thanks to the `@Dependent` scope, it returns a new instance on every call.
+Finally, you pass the desired number of instances to the `DeploymentOptions`, such as two in the previous example.
+It will call the supplier twice, which will create two instances of your verticle.
 
 [#eventbus]
 == Using the event bus

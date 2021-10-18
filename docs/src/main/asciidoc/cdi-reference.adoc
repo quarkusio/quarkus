@@ -593,7 +593,7 @@ public class TracerConfiguration {
 }
 ----
 
-TIP: `@IfBuildProperty` and `@UnlessBuildProperty` are repeatable annotations, i.e. a bean will only be enabled if **all** of the conditions defined by these annotations are satisifed.
+TIP: `@IfBuildProperty` and `@UnlessBuildProperty` are repeatable annotations, i.e. a bean will only be enabled if **all** of the conditions defined by these annotations are satisfied.
 
 If instead, it is required that the `RealTracer` bean is only used if the `some.tracer.enabled` property is not `false`, then `@UnlessBuildProperty` would be ideal. The code would look like:
 

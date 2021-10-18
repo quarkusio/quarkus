@@ -62,6 +62,9 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
         INSTANCE.persistenceUnits.clear();
         INSTANCE.createDDLs.clear();
         INSTANCE.dropDDLs.clear();
+        INSTANCE.managedEntities.clear();
+        INSTANCE.namedQueries.clear();
+        INSTANCE.namedNativeQueries.clear();
     }
 
     private static String generateDDL(SchemaExport.Action action, Metadata metadata, ServiceRegistry serviceRegistry,

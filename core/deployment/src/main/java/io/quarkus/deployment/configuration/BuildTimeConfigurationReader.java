@@ -6,6 +6,7 @@ import static io.quarkus.deployment.util.ReflectUtil.reportError;
 import static io.quarkus.deployment.util.ReflectUtil.toError;
 import static io.quarkus.deployment.util.ReflectUtil.typeOfParameter;
 import static io.quarkus.deployment.util.ReflectUtil.unwrapInvocationTargetException;
+import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
 import static java.util.stream.Collectors.toSet;
 
 import java.lang.reflect.Constructor;
@@ -56,6 +57,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
+import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.configuration.PropertiesUtil;
 import io.smallrye.config.Converters;
 import io.smallrye.config.EnvConfigSource;
@@ -374,7 +376,7 @@ public final class BuildTimeConfigurationReader {
                     if (matched != null) {
                         // it's a specified run-time default (record for later)
                         specifiedRunTimeDefaultValues.put(propertyName, Expressions.withoutExpansion(
-                                () -> config.getOptionalValue(propertyName, String.class).orElse("")));
+                                () -> runtimeDefaultsConfig.getOptionalValue(propertyName, String.class).orElse("")));
 
                         continue;
                     }
@@ -392,6 +394,10 @@ public final class BuildTimeConfigurationReader {
                             () -> runtimeDefaultsConfig.getOptionalValue(propertyName, String.class).orElse("")));
                 }
             }
+
+            filterActiveProfileProperties(buildTimeRunTimeVisibleValues);
+            filterActiveProfileProperties(specifiedRunTimeDefaultValues);
+
             return new ReadResult(objectsByRootClass, specifiedRunTimeDefaultValues, buildTimeRunTimeVisibleValues,
                     allBuildTimeValues,
                     buildTimePatternMap, buildTimeRunTimePatternMap, bootstrapPatternMap, runTimePatternMap, allRoots,
@@ -728,12 +734,12 @@ public final class BuildTimeConfigurationReader {
         }
 
         /**
-         * We collect all properties from ConfigSources, because Config#getPropertyNames exclude the active profiled
-         * properties, meaning that the property is written in the default config source unprofiled. This may cause
-         * issues if we run with a different profile and fallback to defaults.
+         * We collect all properties from eligible ConfigSources, because Config#getPropertyNames exclude the active
+         * profiled properties, meaning that the property is written in the default config source without the profile
+         * prefix. This may cause issues if we run with a different profile and fallback to defaults.
          *
          * We also filter the properties coming from the System with the registered roots, because we don't want to
-         * record properties set by the compiling JVM (or other properties set that are only related to the build).
+         * record properties set by the compiling JVM (or other properties that are only related to the build).
          */
         private Set<String> getAllProperties(final Set<String> registeredRoots) {
             Set<String> properties = new HashSet<>();
@@ -757,9 +763,11 @@ public final class BuildTimeConfigurationReader {
 
         /**
          * Use this Config instance to record the specified runtime default values. We cannot use the main Config
-         * instance because it may record values coming from the EnvSource in build time. We do exclude the properties
-         * coming from the EnvSource, but a call to getValue may still provide values coming from the EnvSource, so we
-         * need to exclude it from sources when recoding values.
+         * instance because it may record values coming from the EnvSource in build time. Environment variable values
+         * may be completely different between build and runtime, so it doesn't make sense to record these.
+         *
+         * We do exclude the properties coming from the EnvSource, but a call to getValue may still provide a result
+         * coming from the EnvSource, so we need to exclude it from the sources when recording values for runtime.
          *
          * We also do not want to completely exclude the EnvSource, because it may provide values for the build. This
          * is only specific when recording the defaults.
@@ -767,7 +775,9 @@ public final class BuildTimeConfigurationReader {
          * @return a new SmallRye instance without the EnvSources.
          */
         private SmallRyeConfig getConfigForRuntimeDefaults() {
-            SmallRyeConfigBuilder builder = ConfigUtils.emptyConfigBuilder();
+            SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
+            builder.withDefaultValue(SMALLRYE_CONFIG_PROFILE, ProfileManager.getActiveProfile());
+            builder.addDefaultInterceptors();
             for (ConfigSource configSource : config.getConfigSources()) {
                 if (configSource instanceof EnvConfigSource) {
                     continue;
@@ -775,6 +785,17 @@ public final class BuildTimeConfigurationReader {
                 builder.withSources(configSource);
             }
             return builder.build();
+        }
+
+        private void filterActiveProfileProperties(final Map<String, String> properties) {
+            Set<String> propertiesToRemove = new HashSet<>();
+            for (String property : properties.keySet()) {
+                String profiledProperty = "%" + ProfileManager.getActiveProfile() + "." + property;
+                if (properties.containsKey(profiledProperty)) {
+                    propertiesToRemove.add(property);
+                }
+            }
+            properties.keySet().removeAll(propertiesToRemove);
         }
     }
 

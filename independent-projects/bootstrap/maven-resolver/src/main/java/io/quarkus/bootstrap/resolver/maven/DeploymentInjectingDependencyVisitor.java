@@ -90,8 +90,8 @@ public class DeploymentInjectingDependencyVisitor {
         // we need to be able to take into account whether the deployment dependencies are on an optional dependency branch
         // for that we are going to use a custom dependency selector and re-initialize the resolver to use it
         final DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(resolver.getSession());
-        final DeploymentDependencySelector depSelector = new DeploymentDependencySelector(session.getDependencySelector());
-        session.setDependencySelector(depSelector);
+        session.setDependencySelector(
+                DeploymentDependencySelector.ensureDeploymentDependencySelector(session.getDependencySelector()));
         try {
             this.resolver = new MavenArtifactResolver(new BootstrapMavenContext(BootstrapMavenContext.config()
                     .setRepositorySystem(resolver.getSystem())
@@ -640,27 +640,29 @@ public class DeploymentInjectingDependencyVisitor {
     public static PathCollection getResolvedPaths(Artifact artifact, WorkspaceModule module, boolean preferWorkspacePaths) {
         if (preferWorkspacePaths && module != null) {
             final PathList.Builder pathBuilder = PathList.builder();
-            for (ProcessedSources src : module.getMainSources()) {
-                if (src.getDestinationDir().exists()) {
-                    final Path p = src.getDestinationDir().toPath();
-                    if (!pathBuilder.contains(p)) {
-                        pathBuilder.add(p);
-                    }
-                }
-            }
-            for (ProcessedSources src : module.getMainResources()) {
-                if (src.getDestinationDir().exists()) {
-                    final Path p = src.getDestinationDir().toPath();
-                    if (!pathBuilder.contains(p)) {
-                        pathBuilder.add(p);
-                    }
-                }
+            if ("tests".equals(artifact.getClassifier())) {
+                collectResolvedPaths(pathBuilder, module.getTestSources());
+                collectResolvedPaths(pathBuilder, module.getTestResources());
+            } else {
+                collectResolvedPaths(pathBuilder, module.getMainSources());
+                collectResolvedPaths(pathBuilder, module.getMainResources());
             }
             if (!pathBuilder.isEmpty()) {
                 return pathBuilder.build();
             }
         }
         return artifact.getFile() == null ? PathList.empty() : PathList.of(artifact.getFile().toPath());
+    }
+
+    private static void collectResolvedPaths(final PathList.Builder pathBuilder, Collection<ProcessedSources> srcs) {
+        for (ProcessedSources src : srcs) {
+            if (src.getDestinationDir().exists()) {
+                final Path p = src.getDestinationDir().toPath();
+                if (!pathBuilder.contains(p)) {
+                    pathBuilder.add(p);
+                }
+            }
+        }
     }
 
     private static String toGactv(Artifact a) {

@@ -90,6 +90,7 @@
         <!-- Align various dependencies that are not really part of the bom-->
         <findbugs.version>3.0.2</findbugs.version>
         <jsoup.version>1.14.2</jsoup.version>
+        <junit4.version>4.13.2</junit4.version>
         <wagon-provider-api.version>3.4.3</wagon-provider-api.version>
 
         <!-- The image to use for tests that run Keycloak -->
@@ -117,6 +118,7 @@
         <webjar.font-awesome.version>5.15.2</webjar.font-awesome.version>
         <webjar.jquery.version>3.5.1</webjar.jquery.version>
         <webjar.codemirror.version>5.62.0</webjar.codemirror.version>
+        <webjar.mermaid.version>8.9.1</webjar.mermaid.version>
 
         <!-- revapi API check -->
         <revapi-maven-plugin.version>0.12.1</revapi-maven-plugin.version>

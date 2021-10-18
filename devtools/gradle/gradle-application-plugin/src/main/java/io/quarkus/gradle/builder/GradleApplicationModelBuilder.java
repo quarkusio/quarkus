@@ -24,6 +24,8 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.FileTree;
 import org.gradle.api.initialization.IncludedBuild;
 import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
@@ -321,7 +323,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         if (artifactFiles != null) {
             // detect FS paths that aren't provided by the resolved artifacts
             for (File f : configuration.getFiles()) {
-                if (artifactFiles.contains(f)) {
+                if (artifactFiles.contains(f) || !f.exists()) {
                     continue;
                 }
                 // here we are trying to represent a direct FS path dependency
@@ -469,7 +471,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             if (Files.isDirectory(artifactPath)) {
                 processQuarkusDir(artifactBuilder, artifactPath.resolve(BootstrapConstants.META_INF), modelBuilder);
             } else {
-                try (FileSystem artifactFs = FileSystems.newFileSystem(artifactPath, null)) {
+                try (FileSystem artifactFs = FileSystems.newFileSystem(artifactPath, (ClassLoader) null)) {
                     processQuarkusDir(artifactBuilder, artifactFs.getPath(BootstrapConstants.META_INF), modelBuilder);
                 } catch (IOException e) {
                     throw new RuntimeException("Failed to process " + artifactPath, e);
@@ -481,103 +483,79 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
     private static void initProjectModule(Project project, DefaultWorkspaceModule module, SourceSet sourceSet, boolean test) {
 
         module.setBuildFiles(PathList.of(project.getBuildFile().toPath()));
-        final List<Path> allJavaDirs = new ArrayList<>(2);
-        sourceSet.getAllJava().getSourceDirectories().forEach(f -> {
-            if (f.exists()) {
-                allJavaDirs.add(f.toPath());
+
+        final FileCollection allClassesDirs = sourceSet.getOutput().getClassesDirs();
+        // some plugins do not add source directories to source sets and they may be missing from sourceSet.getAllJava()
+        // see https://github.com/quarkusio/quarkus/issues/20755
+        final TaskCollection<AbstractCompile> compileTasks = project.getTasks().withType(AbstractCompile.class);
+        compileTasks.forEach(t -> {
+            if (!t.getEnabled()) {
+                return;
             }
+            final FileTree source = t.getSource();
+            if (source.isEmpty()) {
+                return;
+            }
+            final File destDir = t.getDestinationDirectory().getAsFile().get();
+            if (!allClassesDirs.contains(destDir)) {
+                return;
+            }
+            final List<File> srcDirs = new ArrayList<>(1);
+            source.visit(a -> {
+                // we are looking for the root dirs containing sources
+                if (a.getRelativePath().getSegments().length == 1) {
+                    final File srcDir = a.getFile().getParentFile();
+                    if (srcDirs.add(srcDir)) {
+                        DefaultProcessedSources sources = new DefaultProcessedSources(srcDir, destDir,
+                                Collections.singletonMap("compiler", t.getName()));
+                        if (test) {
+                            module.addTestSources(sources);
+                        } else {
+                            module.addMainSources(sources);
+                        }
+                    }
+                }
+            });
         });
 
-        if (!allJavaDirs.isEmpty()) {
-            final TaskCollection<AbstractCompile> compileTasks = project.getTasks().withType(AbstractCompile.class);
-            compileTasks.forEach(t -> {
-                String compiler = t.getName();
-                if (compiler.startsWith("compile")) {
-                    compiler = compiler.substring("compile".length()).toLowerCase();
-                }
-
-                final File destDir = t.getDestinationDirectory().getAsFile().get();
-
-                final List<Path> srcDirs = new ArrayList<>(1);
-                for (File f : t.getSource().getFiles()) {
-                    if (!f.exists()) {
-                        return;
-                    }
-                    final Path p = f.toPath();
-                    int i = 0;
-                    while (i < srcDirs.size()) {
-                        if (p.startsWith(srcDirs.get(i))) {
-                            break;
-                        }
-                        ++i;
-                    }
-                    if (i < srcDirs.size()) {
-                        continue;
-                    }
-                    for (Path srcDir : allJavaDirs) {
-                        if (p.startsWith(srcDir)) {
-                            srcDirs.add(srcDir);
-                            DefaultProcessedSources sources = new DefaultProcessedSources(srcDir.toFile(), destDir,
-                                    Collections.singletonMap("compiler", compiler));
-                            if (test) {
-                                module.addTestSources(sources);
-                            } else {
-                                module.addMainSources(sources);
-                            }
-                            break;
-                        }
+        final File resourcesOutputDir = sourceSet.getOutput().getResourcesDir();
+        final TaskCollection<ProcessResources> resources = project.getTasks().withType(ProcessResources.class);
+        resources.forEach(t -> {
+            if (!t.getEnabled()) {
+                return;
+            }
+            final FileCollection source = t.getSource();
+            if (source.isEmpty()) {
+                return;
+            }
+            final File destDir = t.getDestinationDir();
+            if (!destDir.equals(resourcesOutputDir)) {
+                return;
+            }
+            final List<File> srcDirs = new ArrayList<>(1);
+            source.getAsFileTree().visit(a -> {
+                // we are looking for the root dirs containing sources
+                if (a.getRelativePath().getSegments().length == 1) {
+                    final File srcDir = a.getFile().getParentFile();
+                    if (srcDirs.add(srcDir)) {
+                        addResources(module, srcDir, destDir, test);
                     }
                 }
             });
-        }
-
-        final List<Path> allResourcesDirs = new ArrayList<>(1);
-        final List<Path> addedSrcDirs = new ArrayList<>(1);
-        final File outputDir = sourceSet.getOutput().getResourcesDir();
-        for (File resourcesDir : sourceSet.getResources().getSourceDirectories()) {
-            allResourcesDirs.add(resourcesDir.toPath());
-            addResources(module, resourcesDir, outputDir, test, addedSrcDirs);
-        }
-
-        if (!allResourcesDirs.isEmpty()) {
-            final TaskCollection<ProcessResources> resources = project.getTasks().withType(ProcessResources.class);
-            resources.forEach(t -> {
-                final File destDir = t.getDestinationDir();
-                for (File f : t.getSource().getFiles()) {
-                    if (!f.exists()) {
-                        return;
-                    }
-                    final Path p = f.toPath();
-                    int i = 0;
-                    while (i < addedSrcDirs.size()) {
-                        if (p.startsWith(addedSrcDirs.get(i))) {
-                            break;
-                        }
-                        ++i;
-                    }
-                    if (i < addedSrcDirs.size()) {
-                        continue;
-                    }
-                    for (Path srcDir : allResourcesDirs) {
-                        if (p.startsWith(srcDir)) {
-                            addResources(module, srcDir.toFile(), destDir, test, addedSrcDirs);
-                            break;
-                        }
-                    }
-                }
-            });
+        });
+        // there could be a task generating resources
+        if (resourcesOutputDir.exists() && (test ? module.getTestResources().isEmpty() : module.getMainResources().isEmpty())) {
+            sourceSet.getResources().getSrcDirs().forEach(srcDir -> addResources(module, srcDir, resourcesOutputDir, test));
         }
     }
 
-    private static void addResources(DefaultWorkspaceModule module, File srcDir, final File destDir, boolean test,
-            Collection<Path> addedSrcDirs) {
+    private static void addResources(DefaultWorkspaceModule module, File srcDir, final File destDir, boolean test) {
         final DefaultProcessedSources resrc = new DefaultProcessedSources(srcDir, destDir);
         if (test) {
             module.addTestResources(resrc);
         } else {
             module.addMainResources(resrc);
         }
-        addedSrcDirs.add(srcDir.toPath());
     }
 
     private void addSubstitutedProject(PathList.Builder paths, File projectFile) {

@@ -2,9 +2,7 @@ package io.quarkus.mailer.runtime;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -21,13 +19,11 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
 
     private final MutinyMailerImpl mailer;
     private final TemplateInstance templateInstance;
-    private final Map<String, Object> data;
     private Mail mail;
 
     MailTemplateInstanceImpl(MutinyMailerImpl mailer, TemplateInstance templateInstance) {
         this.mailer = mailer;
         this.templateInstance = templateInstance;
-        this.data = new HashMap<>();
         this.mail = new Mail();
     }
 
@@ -93,7 +89,7 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
 
     @Override
     public MailTemplateInstance data(String key, Object value) {
-        this.data.put(key, value);
+        this.templateInstance.data(key, value);
         return this;
     }
 
@@ -101,6 +97,11 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
     public MailTemplateInstance setAttribute(String key, Object value) {
         this.templateInstance.setAttribute(key, value);
         return this;
+    }
+
+    @Override
+    public TemplateInstance templateInstance() {
+        return templateInstance;
     }
 
     @Override
@@ -118,8 +119,7 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
                                         @Override
                                         public CompletionStage<? extends String> get() {
                                             return templateInstance
-                                                    .setAttribute(TemplateInstance.SELECTED_VARIANT, variant).data(data)
-                                                    .renderAsync();
+                                                    .setAttribute(TemplateInstance.SELECTED_VARIANT, variant).renderAsync();
                                         }
                                     })));
                 }

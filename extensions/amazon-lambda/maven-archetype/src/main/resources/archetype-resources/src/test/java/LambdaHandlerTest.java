@@ -15,8 +15,9 @@ public class LambdaHandlerTest {
         // you test your lambas by invoking on http://localhost:8081
         // this works in dev mode too
 
-        Person in = new Person();
+        InputObject in = new InputObject();
         in.setName("Stu");
+        in.setGreeting("Hello");
         given()
                 .contentType("application/json")
                 .accept("application/json")

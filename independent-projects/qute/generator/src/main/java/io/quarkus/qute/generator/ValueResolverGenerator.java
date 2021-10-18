@@ -193,8 +193,12 @@ public class ValueResolverGenerator {
             if (namespace.isBlank()) {
                 namespace = null;
             }
-            if (namespace != null && namespace.equals(TemplateData.UNDERSCORED_FQCN)) {
-                namespace = clazzName.replace(".", "_").replace("$", "_");
+            if (namespace != null) {
+                if (namespace.equals(TemplateData.UNDERSCORED_FQCN)) {
+                    namespace = underscoredFullyQualifiedName(clazzName);
+                } else if (namespace.equals(TemplateData.SIMPLENAME)) {
+                    namespace = simpleName(clazz);
+                }
             }
         }
 
@@ -1101,7 +1105,7 @@ public class ValueResolverGenerator {
      * @param clazz
      * @return the simple name for the given top-level or nested class
      */
-    static String simpleName(ClassInfo clazz) {
+    public static String simpleName(ClassInfo clazz) {
         switch (clazz.nestingType()) {
             case TOP_LEVEL:
                 return simpleName(clazz.name());
@@ -1196,6 +1200,10 @@ public class ValueResolverGenerator {
 
     public static boolean isVarArgs(MethodInfo method) {
         return (method.flags() & 0x00000080) != 0;
+    }
+
+    public static String underscoredFullyQualifiedName(String name) {
+        return name.replace(".", "_").replace("$", "_");
     }
 
     private static class Match {

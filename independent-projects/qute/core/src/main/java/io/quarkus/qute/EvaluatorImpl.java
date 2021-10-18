@@ -54,9 +54,10 @@ class EvaluatorImpl implements Evaluator {
             parts = expression.getParts().iterator();
             List<NamespaceResolver> matching = namespaceResolvers.get(expression.getNamespace());
             if (matching == null) {
-                String msg = "No namespace resolver found for: " + expression.getNamespace();
-                LOGGER.errorf(msg);
-                return CompletedStage.failure(new TemplateException(msg));
+                return CompletedStage.failure(new TemplateException(expression.getOrigin(),
+                        String.format("No namespace resolver found for [%s] in expression {%s} in template %s on line %s",
+                                expression.getNamespace(), expression.toOriginalString(),
+                                expression.getOrigin().getTemplateId(), expression.getOrigin().getLine())));
             }
             EvalContext context = new EvalContextImpl(false, null, parts.next(), resolutionContext);
             if (matching.size() == 1) {
@@ -203,7 +204,7 @@ class EvaluatorImpl implements Evaluator {
         } else {
             propertyMessage = "Property not found";
         }
-        return new TemplateException(
+        return new TemplateException(expression.getOrigin(),
                 String.format("%s in expression {%s} in template %s on line %s", propertyMessage, expression.toOriginalString(),
                         expression.getOrigin().getTemplateId(), expression.getOrigin().getLine()));
     }

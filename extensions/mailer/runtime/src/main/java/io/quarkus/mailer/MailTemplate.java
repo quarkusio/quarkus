@@ -2,6 +2,8 @@ package io.quarkus.mailer;
 
 import java.io.File;
 
+import io.quarkus.mailer.reactive.ReactiveMailer;
+import io.quarkus.qute.TemplateInstance;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -72,7 +74,25 @@ public interface MailTemplate {
          */
         MailTemplateInstance setAttribute(String key, Object value);
 
+        /**
+         * Sends all e-mail definitions based on available template variants, i.e. {@code text/html} and {@code text/plain}
+         * template variants.
+         * 
+         * @return a {@link Uni} indicating when the mails have been sent
+         * @see ReactiveMailer#send(Mail...)
+         */
         Uni<Void> send();
+
+        /**
+         * The returned instance does not represent a specific template but a delegating template.
+         * <p>
+         * You can select the corresponding variant via {@link TemplateInstance#setAttribute(String, Object)} where the
+         * attribute key is {@link TemplateInstance#SELECTED_VARIANT}. If no variant is selected, the default instance is used.
+         * 
+         * @return the underlying template instance
+         */
+        TemplateInstance templateInstance();
+
     }
 
 }

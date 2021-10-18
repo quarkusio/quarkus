@@ -6,7 +6,6 @@ import java.util.Base64;
 import javax.enterprise.context.ApplicationScoped;
 
 import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.consumer.InvalidJwtException;
 
 import io.quarkus.arc.AlternativePriority;
 import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
@@ -22,9 +21,10 @@ public class TestJWTCallerPrincipalFactory extends JWTCallerPrincipalFactory {
     @Override
     public JWTCallerPrincipal parse(String token, JWTAuthContextInfo authContextInfo) throws ParseException {
         try {
+            Thread.sleep(5000);
             String json = new String(Base64.getUrlDecoder().decode(token.split("\\.")[1]), StandardCharsets.UTF_8);
             return new DefaultJWTCallerPrincipal(JwtClaims.parse(json));
-        } catch (InvalidJwtException ex) {
+        } catch (Exception ex) {
             throw new ParseException(ex.getMessage());
         }
     }

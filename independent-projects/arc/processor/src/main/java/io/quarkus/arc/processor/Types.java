@@ -215,7 +215,7 @@ public final class Types {
                     .invokeStaticMethod(MethodDescriptors.THREAD_CURRENT_THREAD);
             tccl = creator.invokeVirtualMethod(MethodDescriptors.THREAD_GET_TCCL, currentThread);
         }
-        return creator.invokeStaticMethod(MethodDescriptors.CL_FOR_NAME, creator.load(className), creator.load(true), tccl);
+        return creator.invokeStaticMethod(MethodDescriptors.CL_FOR_NAME, creator.load(className), creator.load(false), tccl);
     }
 
     static Type getProviderType(ClassInfo classInfo) {

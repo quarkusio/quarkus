@@ -1,11 +1,10 @@
 package io.quarkus.deployment;
 
 import java.nio.file.Path;
-import java.util.Map;
 
-import io.quarkus.bootstrap.model.AppModel;
+import org.eclipse.microprofile.config.Config;
+
 import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.util.BootstrapUtils;
 
 public class CodeGenContext {
     private final ApplicationModel model;
@@ -13,25 +12,15 @@ public class CodeGenContext {
     private final Path workDir;
     private final Path inputDir;
     private final boolean redirectIO;
-    private final Map<String, String> properties;
+    private final Config config;
 
-    public CodeGenContext(ApplicationModel model, Path outDir, Path workDir, Path inputDir, boolean redirectIO,
-            Map<String, String> properties) {
+    public CodeGenContext(ApplicationModel model, Path outDir, Path workDir, Path inputDir, boolean redirectIO, Config config) {
         this.model = model;
         this.outDir = outDir;
         this.workDir = workDir;
         this.inputDir = inputDir;
         this.redirectIO = redirectIO;
-        this.properties = properties;
-    }
-
-    /**
-     * @deprecated in favor of {@link #applicationModel()}
-     * @return
-     */
-    @Deprecated
-    public AppModel appModel() {
-        return BootstrapUtils.convert(model);
+        this.config = config;
     }
 
     public ApplicationModel applicationModel() {
@@ -54,7 +43,7 @@ public class CodeGenContext {
         return redirectIO;
     }
 
-    public Map<String, String> properties() {
-        return properties;
+    public Config config() {
+        return config;
     }
 }

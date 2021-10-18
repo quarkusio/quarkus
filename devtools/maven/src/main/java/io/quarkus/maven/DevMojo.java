@@ -150,6 +150,7 @@ public class DevMojo extends AbstractMojo {
             "install",
             "deploy");
     private static final String QUARKUS_GENERATE_CODE_GOAL = "generate-code";
+    private static final String QUARKUS_GENERATE_CODE_TESTS_GOAL = "generate-code-tests";
 
     private static final String ORG_APACHE_MAVEN_PLUGINS = "org.apache.maven.plugins";
     private static final String MAVEN_COMPILER_PLUGIN = "maven-compiler-plugin";
@@ -399,8 +400,8 @@ public class DevMojo extends AbstractMojo {
                         getLog().info("Changes detected to " + changed + ", restarting dev mode");
                         final DevModeRunner newRunner;
                         try {
-                            triggerCompile(false);
-                            triggerCompile(true);
+                            triggerCompile(false, false);
+                            triggerCompile(true, false);
                             newRunner = new DevModeRunner();
                         } catch (Exception e) {
                             getLog().info("Could not load changed pom.xml file, changes not applied", e);
@@ -478,9 +479,13 @@ public class DevMojo extends AbstractMojo {
         boolean compileNeeded = true;
         boolean testCompileNeeded = true;
         boolean prepareNeeded = true;
+        boolean prepareTestsNeeded = true;
         for (String goal : session.getGoals()) {
-            if (goal.endsWith("quarkus:prepare")) {
+            if (goal.endsWith("quarkus:generate-code")) {
                 prepareNeeded = false;
+            }
+            if (goal.endsWith("quarkus:generate-code-tests")) {
+                prepareTestsNeeded = false;
             }
 
             if (POST_COMPILE_PHASES.contains(goal)) {
@@ -498,14 +503,11 @@ public class DevMojo extends AbstractMojo {
 
         //if the user did not compile we run it for them
         if (compileNeeded) {
-            if (prepareNeeded) {
-                triggerPrepare();
-            }
-            triggerCompile(false);
+            triggerCompile(false, prepareNeeded);
         }
         if (testCompileNeeded) {
             try {
-                triggerCompile(true);
+                triggerCompile(true, prepareTestsNeeded);
             } catch (Throwable t) {
                 getLog().error("Test compile failed, you will need to fix your tests before you can use continuous testing", t);
             }
@@ -516,9 +518,10 @@ public class DevMojo extends AbstractMojo {
         executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_TOOLCHAINS_PLUGIN, "toolchain", Collections.emptyMap());
     }
 
-    private void triggerPrepare() throws MojoExecutionException {
+    private void triggerPrepare(boolean test) throws MojoExecutionException {
         final PluginDescriptor pluginDescr = getPluginDescriptor();
-        executeIfConfigured(pluginDescr.getGroupId(), pluginDescr.getArtifactId(), QUARKUS_GENERATE_CODE_GOAL,
+        executeIfConfigured(pluginDescr.getGroupId(), pluginDescr.getArtifactId(),
+                test ? QUARKUS_GENERATE_CODE_TESTS_GOAL : QUARKUS_GENERATE_CODE_GOAL,
                 Collections.singletonMap("mode", LaunchMode.DEVELOPMENT.name()));
     }
 
@@ -526,8 +529,12 @@ public class DevMojo extends AbstractMojo {
         return (PluginDescriptor) getPluginContext().get("pluginDescriptor");
     }
 
-    private void triggerCompile(boolean test) throws MojoExecutionException {
+    private void triggerCompile(boolean test, boolean prepareNeeded) throws MojoExecutionException {
         handleResources(test);
+
+        if (prepareNeeded) {
+            triggerPrepare(test);
+        }
 
         // compile the Kotlin sources if needed
         executeIfConfigured(ORG_JETBRAINS_KOTLIN, KOTLIN_MAVEN_PLUGIN, test ? "test-compile" : "compile",

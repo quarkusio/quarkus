@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -59,6 +60,7 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runtime.ApplicationLifecycleManager;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 
@@ -186,16 +188,18 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     }
 
     private void startCodeGenWatcher(QuarkusClassLoader classLoader, List<CodeGenData> codeGens,
-            Map<String, String> properties) {
+            Map<String, String> propertyMap) {
 
         Collection<FSWatchUtil.Watcher> watchers = new ArrayList<>();
+        Properties properties = new Properties();
+        properties.putAll(propertyMap);
         for (CodeGenData codeGen : codeGens) {
             watchers.add(new FSWatchUtil.Watcher(codeGen.sourceDir, codeGen.provider.inputExtension(),
                     modifiedPaths -> {
                         try {
                             CodeGenerator.trigger(classLoader,
                                     codeGen,
-                                    curatedApplication.getApplicationModel(), properties);
+                                    curatedApplication.getApplicationModel(), properties, LaunchMode.DEVELOPMENT);
                         } catch (Exception any) {
                             log.warn("Code generation failed", any);
                         }

@@ -3,7 +3,7 @@ package io.quarkus.maven;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
+import java.util.Properties;
 import java.util.function.Consumer;
 
 import org.apache.maven.plugin.MojoExecutionException;
@@ -19,7 +19,10 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.runtime.LaunchMode;
 
-@Mojo(name = "generate-code", defaultPhase = LifecyclePhase.GENERATE_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
+// in the PROCESS_RESOURCES phase because we want the config to be available
+// by the time code gen providers are triggered (the resources plugin copies the config files
+// to the destination location at the beginning of this phase)
+@Mojo(name = "generate-code", defaultPhase = LifecyclePhase.PROCESS_RESOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class GenerateCodeMojo extends QuarkusBootstrapMojo {
 
     /**
@@ -72,14 +75,14 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
             final Method initAndRun = codeGenerator.getMethod("initAndRun", ClassLoader.class, PathsCollection.class,
                     Path.class,
                     Path.class,
-                    Consumer.class, ApplicationModel.class, Map.class);
+                    Consumer.class, ApplicationModel.class, Properties.class, String.class);
             initAndRun.invoke(null, deploymentClassLoader,
                     PathsCollection.of(sourcesDir),
                     generatedSourcesDir(test),
                     buildDir().toPath(),
                     sourceRegistrar,
                     curatedApplication.getApplicationModel(),
-                    mavenProject().getProperties());
+                    mavenProject().getProperties(), launchMode.name());
         } catch (Exception any) {
             throw new MojoExecutionException("Quarkus code generation phase has failed", any);
         } finally {

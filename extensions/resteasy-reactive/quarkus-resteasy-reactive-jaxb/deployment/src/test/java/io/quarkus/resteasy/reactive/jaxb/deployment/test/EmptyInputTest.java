@@ -1,12 +1,11 @@
-package io.quarkus.resteasy.reactive.jsonb.deployment.test;
+package io.quarkus.resteasy.reactive.jaxb.deployment.test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.equalTo;
 
-import java.util.function.Supplier;
-
-import javax.json.bind.annotation.JsonbCreator;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -21,35 +20,29 @@ public class EmptyInputTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(GreetingResource.class, Greeting.class);
-                }
-            });
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class, Greeting.class));
 
     @Test
     public void emptyBlocking() {
-        RestAssured.with().contentType(ContentType.JSON).post("/greeting/blocking")
-                .then().statusCode(200).body(equalTo("null"));
+        RestAssured.with().contentType(ContentType.XML).post("/greeting/blocking")
+                .then().statusCode(200);
     }
 
     @Test
     public void emptyNonBlocking() {
-        RestAssured.with().contentType(ContentType.JSON).post("/greeting/nonBlocking")
-                .then().statusCode(200).body(equalTo("null"));
+        RestAssured.with().contentType(ContentType.XML).post("/greeting/nonBlocking")
+                .then().statusCode(200);
     }
 
     @Test
     public void nonEmptyBlocking() {
-        RestAssured.with().contentType(ContentType.JSON).body("{\"message\": \"Hi\"}").post("/greeting/blocking")
+        RestAssured.with().contentType(ContentType.XML).body(new Greeting("Hi")).post("/greeting/blocking")
                 .then().statusCode(200).body(equalTo("Hi"));
     }
 
     @Test
     public void nonEmptyNonBlocking() {
-        RestAssured.with().contentType(ContentType.JSON).body("{\"message\": \"Hey\"}").post("/greeting/nonBlocking")
+        RestAssured.with().contentType(ContentType.XML).body(new Greeting("Hey")).post("/greeting/nonBlocking")
                 .then().statusCode(200).body(equalTo("Hey"));
     }
 
@@ -76,17 +69,27 @@ public class EmptyInputTest {
         }
     }
 
+    @XmlRootElement
     public static class Greeting {
 
+        @XmlElement
         private final String message;
 
-        @JsonbCreator
         public Greeting(String message) {
             this.message = message;
         }
 
+        private Greeting() {
+            message = null;
+        }
+
         public String getMessage() {
             return message;
+        }
+
+        /** Creates a new instance, will only be used by Jaxb. */
+        private static Greeting newInstance() {
+            return new Greeting();
         }
     }
 }

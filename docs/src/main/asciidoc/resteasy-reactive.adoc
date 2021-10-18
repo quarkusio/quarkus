@@ -1065,6 +1065,25 @@ Essentially what this class does is force Jackson to not include quotes in the f
 
 It is important to note that this customization is only performed for the serialization of the JAX-RS methods that use `@CustomSerialization(UnquotedFields.class)`.
 
+=== XML serialisation
+
+[[xml]]
+
+To enable XML support, add the `quarkus-resteasy-reactive-jaxb` extension to your project.
+
+.Table Context object
+|===
+|GAV|Usage
+
+|`io.quarkus:quarkus-resteasy-reactive-jaxb`
+|https://javaee.github.io/jaxb-v2/[XML support]
+
+|===
+
+Importing this module will allow HTTP message bodies to be read from XML
+and serialised to XML, for <<resource-types,all the types not already registered with a more specific
+serialisation>>.
+
 == More advanced usage
 
 Here are some more advanced topics that you may not need to know about initially, but

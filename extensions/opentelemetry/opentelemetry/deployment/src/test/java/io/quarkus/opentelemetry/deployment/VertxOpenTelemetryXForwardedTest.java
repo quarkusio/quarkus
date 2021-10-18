@@ -21,6 +21,8 @@ public class VertxOpenTelemetryXForwardedTest {
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(MdcEntry.class)
+                    .addClass(TestMdcCapturer.class)
                     .addClass(TestSpanExporter.class)
                     .addClass(TracerRouter.class));
 

@@ -22,6 +22,8 @@ public class NonAppEndpointsEnabledTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .overrideConfigKey("quarkus.opentelemetry.tracer.suppress-non-application-uris", "false")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(MdcEntry.class)
+                    .addClass(TestMdcCapturer.class)
                     .addClass(TracerRouter.class)
                     .addClass(TestSpanExporter.class));
 

@@ -16,7 +16,8 @@ public class OpenTelemetryDevModeTest {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestSpanExporter.class, TracerRouter.class, HelloResource.class)
+                    .addClasses(MdcEntry.class, TestMdcCapturer.class, TestSpanExporter.class, TracerRouter.class,
+                            HelloResource.class)
                     .add(new StringAsset(ContinuousTestingTestUtils.appProperties("")), "application.properties"));
 
     @Test

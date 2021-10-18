@@ -21,9 +21,9 @@ public final class TestUtil {
     public static Object getSharedState(OpenTelemetry openTelemetry)
             throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         TracerProvider tracerProvider = openTelemetry.getTracerProvider();
-        Method unobfuscateMethod = tracerProvider.getClass().getDeclaredMethod("unobfuscate");
-        unobfuscateMethod.setAccessible(true);
-        SdkTracerProvider sdkTracerProvider = (SdkTracerProvider) unobfuscateMethod.invoke(tracerProvider);
+        Method unObfuscateMethod = tracerProvider.getClass().getDeclaredMethod("unobfuscate");
+        unObfuscateMethod.setAccessible(true);
+        SdkTracerProvider sdkTracerProvider = (SdkTracerProvider) unObfuscateMethod.invoke(tracerProvider);
         Field privateSharedStateField = sdkTracerProvider.getClass().getDeclaredField("sharedState");
         privateSharedStateField.setAccessible(true);
         return privateSharedStateField.get(sdkTracerProvider);
@@ -56,7 +56,6 @@ public final class TestUtil {
     public static TextMapPropagator[] getTextMapPropagators(OpenTelemetry openTelemetry)
             throws NoSuchFieldException, IllegalAccessException {
         TextMapPropagator textMapPropagator = openTelemetry.getPropagators().getTextMapPropagator();
-        System.out.println(textMapPropagator);
         Field privatePropagatorsField = textMapPropagator.getClass().getDeclaredField("textPropagators");
         privatePropagatorsField.setAccessible(true);
         return (TextMapPropagator[]) privatePropagatorsField.get(textMapPropagator);

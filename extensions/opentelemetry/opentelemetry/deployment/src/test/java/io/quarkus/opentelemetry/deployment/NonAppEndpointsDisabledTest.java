@@ -21,6 +21,8 @@ public class NonAppEndpointsDisabledTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(MdcEntry.class)
+                    .addClass(TestMdcCapturer.class)
                     .addClass(TracerRouter.class)
                     .addClass(TestSpanExporter.class));
 

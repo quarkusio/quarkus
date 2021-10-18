@@ -17,7 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -40,6 +42,8 @@ public class VertxOpenTelemetryTest {
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(MdcEntry.class)
+                    .addClass(TestMdcCapturer.class)
                     .addClass(TestSpanExporter.class)
                     .addClass(TracerRouter.class)
                     .addClass(TestUtil.class));
@@ -50,6 +54,9 @@ public class VertxOpenTelemetryTest {
     @Inject
     OpenTelemetry openTelemetry;
 
+    @Inject
+    TestMdcCapturer testMdcCapturer;
+
     @Test
     void trace() throws NoSuchFieldException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         RestAssured.when().get("/tracer").then()
@@ -57,10 +64,21 @@ public class VertxOpenTelemetryTest {
                 .body(is("Hello Tracer!"));
 
         List<SpanData> spans = testSpanExporter.getFinishedSpanItems();
+        List<MdcEntry> mdcEntries = testMdcCapturer.getCapturedMdcEntries();
 
         TextMapPropagator[] textMapPropagators = TestUtil.getTextMapPropagators(openTelemetry);
         IdGenerator idGenerator = TestUtil.getIdGenerator(openTelemetry);
         Sampler sampler = TestUtil.getSampler(openTelemetry);
+
+        List<MdcEntry> expectedMdcEntries = spans.stream()
+                .map(spanData -> new MdcEntry(spanData.getSpanContext().isSampled(),
+                        spanData.getParentSpanContext().isValid() ? spanData.getParentSpanId() : "null",
+                        spanData.getSpanId(),
+                        spanData.getTraceId()))
+                .collect(Collectors.collectingAndThen(Collectors.toList(), l -> {
+                    Collections.reverse(l);
+                    return l;
+                }));
 
         assertEquals(2, spans.size());
         assertEquals("io.quarkus.vertx.opentelemetry", spans.get(0).getName());
@@ -76,5 +94,7 @@ public class VertxOpenTelemetryTest {
         assertThat(idGenerator, instanceOf(IdGenerator.random().getClass()));
         assertThat(sampler.getDescription(), stringContainsInOrder("ParentBased", "AlwaysOnSampler"));
         assertNotNull(spans.get(1).getAttributes().get(HTTP_USER_AGENT));
+        assertEquals(expectedMdcEntries, mdcEntries);
+
     }
 }

@@ -32,7 +32,8 @@ public final class RunnerClassLoader extends ClassLoader {
     private final Set<String> nonExistentResources;
     // the following two fields go hand in hand - they need to both be populated from the same data
     // in order for the resource loading to work properly
-    private final Set<String> fullyIndexedDirectories;
+    // normally this field would be a set, but it only contains 2 elements, so making it a list is actually better
+    private final List<String> fullyIndexedDirectories;
     private final Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap;
 
     //Mutations protected by synchronization on the field value itself:
@@ -42,7 +43,7 @@ public final class RunnerClassLoader extends ClassLoader {
 
     RunnerClassLoader(ClassLoader parent, Map<String, ClassLoadingResource[]> resourceDirectoryMap,
             Set<String> parentFirstPackages, Set<String> nonExistentResources,
-            Set<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap) {
+            List<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap) {
         super(parent);
         this.resourceDirectoryMap = resourceDirectoryMap;
         this.parentFirstPackages = parentFirstPackages;

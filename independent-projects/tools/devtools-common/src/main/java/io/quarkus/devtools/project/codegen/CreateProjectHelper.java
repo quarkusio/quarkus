@@ -18,6 +18,9 @@ import java.util.stream.Collectors;
 import javax.lang.model.SourceVersion;
 
 public class CreateProjectHelper {
+
+    private static final Set<String> JAVA_VERSIONS_LTS = Set.of("11", "17");
+    private static final String DEFAULT_JAVA_VERSION = "11";
     private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
 
     public static final String DEFAULT_GROUP_ID = "org.acme";
@@ -78,10 +81,13 @@ public class CreateProjectHelper {
 
         Matcher matcher = JAVA_VERSION_PATTERN
                 .matcher(javaTarget != null ? javaTarget : System.getProperty("java.version", ""));
-        if (matcher.matches() && Integer.parseInt(matcher.group(1)) < 11) {
-            values.put(ProjectGenerator.JAVA_TARGET, "8");
+
+        if (matcher.matches()) {
+            String versionExtracted = matcher.group(1);
+            String version = JAVA_VERSIONS_LTS.contains(versionExtracted) ? versionExtracted : DEFAULT_JAVA_VERSION;
+            values.put(ProjectGenerator.JAVA_TARGET, version);
         } else {
-            values.put(ProjectGenerator.JAVA_TARGET, "11");
+            values.put(ProjectGenerator.JAVA_TARGET, DEFAULT_JAVA_VERSION);
         }
     }
 

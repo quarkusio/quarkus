@@ -31,7 +31,7 @@ To complete this guide, you need:
 
 == Architecture
 
-In this example, we build a very simple microservice which offers three endpoints:
+In this example, we build a very simple microservice which offers two endpoints:
 
 * `/api/users/me`
 * `/api/admin`

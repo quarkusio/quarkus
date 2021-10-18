@@ -5,11 +5,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.jupiter.api.Test;
@@ -40,9 +44,9 @@ public class QuarkusPluginTest {
         project.getPluginManager().apply("base");
 
         TaskContainer tasks = project.getTasks();
-
-        assertThat(tasks.getByName(BasePlugin.ASSEMBLE_TASK_NAME).getDependsOn())
-                .contains(tasks.getByName(QuarkusPlugin.QUARKUS_BUILD_TASK_NAME));
+        Task assemble = tasks.getByName(BasePlugin.ASSEMBLE_TASK_NAME);
+        assertThat(getDependantProvidedTaskName(assemble))
+                .contains(QuarkusPlugin.QUARKUS_BUILD_TASK_NAME);
     }
 
     @Test
@@ -53,10 +57,13 @@ public class QuarkusPluginTest {
 
         TaskContainer tasks = project.getTasks();
 
-        assertThat(tasks.getByName(QuarkusPlugin.QUARKUS_BUILD_TASK_NAME).getDependsOn())
-                .contains(tasks.getByName(JavaPlugin.CLASSES_TASK_NAME));
-        assertThat(tasks.getByName(QuarkusPlugin.QUARKUS_DEV_TASK_NAME).getDependsOn())
-                .contains(tasks.getByName(JavaPlugin.CLASSES_TASK_NAME));
+        Task quarkusBuild = tasks.getByName(QuarkusPlugin.QUARKUS_BUILD_TASK_NAME);
+        assertThat(getDependantProvidedTaskName(quarkusBuild))
+                .contains(JavaPlugin.CLASSES_TASK_NAME);
+
+        Task quarkusDev = tasks.getByName(QuarkusPlugin.QUARKUS_DEV_TASK_NAME);
+        assertThat(getDependantProvidedTaskName(quarkusDev))
+                .contains(JavaPlugin.CLASSES_TASK_NAME);
     }
 
     @Test
@@ -75,5 +82,17 @@ public class QuarkusPluginTest {
                 new File(project.getBuildDir(), "classes/scala/main"),
                 new File(project.getBuildDir(), "classes/scala/test"));
 
+    }
+
+    private static final List<String> getDependantProvidedTaskName(Task task) {
+        List<String> dependantTaskNames = new ArrayList<>();
+        for (Object t : task.getDependsOn()) {
+            try {
+                dependantTaskNames.add(((Provider<Task>) t).get().getName());
+            } catch (ClassCastException e) {
+                // Nothing to do here
+            }
+        }
+        return dependantTaskNames;
     }
 }

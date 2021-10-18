@@ -83,8 +83,6 @@ public class CreateProjectHelper {
         Matcher matcher = JAVA_VERSION_PATTERN
                 .matcher(javaTarget != null ? javaTarget : System.getProperty("java.version", ""));
 
-        System.out.println("version: " + System.getProperty("java.version", ""));
-
         if (matcher.matches()) {
             int versionExtracted = Integer.parseInt(matcher.group(1));
             int version = JAVA_VERSIONS_LTS.stream()

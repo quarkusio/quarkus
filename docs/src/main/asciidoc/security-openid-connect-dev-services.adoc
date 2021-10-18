@@ -299,6 +299,10 @@ Additionally, the extension should produce a `io.quarkus.oidc.deployment.devserv
 
 Please follow the link:dev-ui[Dev UI] tutorial as well as check the `extensions/oidc/deployment` sources for more ideas.
 
+== Non Application Root Path Considerations
+
+This document refers to the `http://localhost:8080/q/dev` Dev UI URL in several places where `q` is a default non application root path. If you customize `quarkus.http.root-path` and/or `quarkus.http.non-application-root-path` properties then replace `q` accordingly, please see https://quarkus.io/blog/path-resolution-in-quarkus/[Path Resolution in Quarkus] for more information.
+
 == References
 
 * link:dev-ui[Dev UI]

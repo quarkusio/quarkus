@@ -15,6 +15,7 @@ import static java.util.Objects.requireNonNull;
 public class CreateProjectHelper {
 
     private static final List<Integer> JAVA_VERSIONS_LTS = List.of(8, 11, 17);
+    private static final int DEFAULT_JAVA_VERSION = 11;
     private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
 
     public static final String DEFAULT_GROUP_ID = "org.acme";
@@ -76,9 +77,16 @@ public class CreateProjectHelper {
         Matcher matcher = JAVA_VERSION_PATTERN
                 .matcher(javaTarget != null ? javaTarget : System.getProperty("java.version", ""));
 
-        int versionExtracted = Integer.parseInt(matcher.group(1));
-        if (JAVA_VERSIONS_LTS.contains(versionExtracted)) {
-            values.put(ProjectGenerator.JAVA_TARGET, String.valueOf(versionExtracted));
+        System.out.println("version: " + System.getProperty("java.version", ""));
+
+        if (matcher.matches()) {
+            int versionExtracted = Integer.parseInt(matcher.group(1));
+            System.out.println("version: " + versionExtracted);
+
+            int version = JAVA_VERSIONS_LTS.stream().filter(e -> e.equals(versionExtracted)).findFirst().orElse(DEFAULT_JAVA_VERSION);
+            values.put(ProjectGenerator.JAVA_TARGET, String.valueOf(version));
+        } else {
+            values.put(ProjectGenerator.JAVA_TARGET, String.valueOf(DEFAULT_JAVA_VERSION));
         }
     }
 

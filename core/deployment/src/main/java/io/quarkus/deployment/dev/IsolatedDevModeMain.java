@@ -40,7 +40,7 @@ import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
@@ -110,7 +110,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                 }
                                 //this sucks, but when we get here logging is gone
                                 //so we just setup basic console logging
-                                InitialConfigurator.DELAYED_HANDLER.addHandler(new ConsoleHandler(
+                                QuarkusDelayedHandler.INSTANCE.addHandler(new ConsoleHandler(
                                         ConsoleHandler.Target.SYSTEM_OUT,
                                         new ColorPatternFormatter("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n")));
                                 consoleContext.reset(new ConsoleCommand(' ', "Restarts the application", "to restart", 0, null,
@@ -161,7 +161,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                         if (RuntimeUpdatesProcessor.INSTANCE != null) {
                             Thread.currentThread().setContextClassLoader(curatedApplication.getBaseRuntimeClassLoader());
                             try {
-                                if (!InitialConfigurator.DELAYED_HANDLER.isActivated()) {
+                                if (!QuarkusDelayedHandler.INSTANCE.isActivated()) {
                                     Class<?> cl = Thread.currentThread().getContextClassLoader()
                                             .loadClass(LoggingSetupRecorder.class.getName());
                                     cl.getMethod("handleFailedStart").invoke(null);

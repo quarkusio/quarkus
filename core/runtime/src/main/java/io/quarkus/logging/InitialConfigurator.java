@@ -1,18 +1,19 @@
-package io.quarkus.bootstrap.logging;
+package io.quarkus.logging;
 
-import io.quarkus.bootstrap.graal.ImageInfo;
 import java.util.logging.Handler;
 import java.util.logging.Level;
+
 import org.jboss.logmanager.EmbeddedConfigurator;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
+
+import io.quarkus.bootstrap.graal.ImageInfo;
+import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 
 /**
  *
  */
 public final class InitialConfigurator implements EmbeddedConfigurator {
-
-    public static final QuarkusDelayedHandler DELAYED_HANDLER = new QuarkusDelayedHandler();
 
     @Override
     public Level getMinimumLevelOf(final String loggerName) {
@@ -33,7 +34,7 @@ public final class InitialConfigurator implements EmbeddedConfigurator {
                         createDefaultHandler()
                 };
             } else {
-                return new Handler[] { DELAYED_HANDLER };
+                return new Handler[] { QuarkusDelayedHandler.INSTANCE };
             }
         } else {
             return EmbeddedConfigurator.NO_HANDLERS;

@@ -24,7 +24,7 @@ import org.jboss.logging.Logger;
 import org.jboss.logmanager.handlers.AsyncHandler;
 import org.wildfly.common.lock.Locks;
 
-import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.bootstrap.runner.RunnerClassLoader;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.ProfileManager;
@@ -240,7 +240,7 @@ public class ApplicationLifecycleManager {
     // this is needed only when async console logging is enabled
     private static void ensureConsoleLogsDrained() {
         AsyncHandler asyncHandler = null;
-        for (Handler handler : InitialConfigurator.DELAYED_HANDLER.getHandlers()) {
+        for (Handler handler : QuarkusDelayedHandler.INSTANCE.getHandlers()) {
             if (handler instanceof AsyncHandler) {
                 asyncHandler = (AsyncHandler) handler;
                 Handler[] nestedHandlers = asyncHandler.getHandlers();

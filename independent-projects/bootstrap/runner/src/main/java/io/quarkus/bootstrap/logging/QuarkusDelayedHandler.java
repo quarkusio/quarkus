@@ -45,6 +45,8 @@ import org.jboss.logmanager.formatters.PatternFormatter;
 @SuppressWarnings({ "unused", "WeakerAccess" })
 public class QuarkusDelayedHandler extends ExtHandler {
 
+    public static final QuarkusDelayedHandler INSTANCE = new QuarkusDelayedHandler();
+
     /**
      * This is a system property that can be used to help debug startup issues if TRACE and DEBUG logs are being
      * dropped due to the queue limit being exceeded.

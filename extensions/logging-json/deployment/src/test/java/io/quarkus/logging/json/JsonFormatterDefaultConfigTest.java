@@ -17,7 +17,6 @@ import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -43,7 +42,7 @@ public class JsonFormatterDefaultConfigTest {
         LogManager logManager = LogManager.getLogManager();
         assertThat(logManager).isInstanceOf(org.jboss.logmanager.LogManager.class);
 
-        QuarkusDelayedHandler delayedHandler = InitialConfigurator.DELAYED_HANDLER;
+        QuarkusDelayedHandler delayedHandler = QuarkusDelayedHandler.INSTANCE;
         assertThat(Logger.getLogger("").getHandlers()).contains(delayedHandler);
         assertThat(delayedHandler.getLevel()).isEqualTo(Level.ALL);
 

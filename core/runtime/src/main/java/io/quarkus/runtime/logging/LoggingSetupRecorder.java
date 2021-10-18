@@ -38,7 +38,7 @@ import org.jboss.logmanager.handlers.PeriodicSizeRotatingFileHandler;
 import org.jboss.logmanager.handlers.SizeRotatingFileHandler;
 import org.jboss.logmanager.handlers.SyslogHandler;
 
-import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.dev.console.CurrentAppExceptionHighlighter;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
@@ -206,8 +206,8 @@ public class LoggingSetupRecorder {
             }
         }
 
-        InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
-        InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+        QuarkusDelayedHandler.INSTANCE.setAutoFlush(false);
+        QuarkusDelayedHandler.INSTANCE.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
     }
 
     public static void initializeBuildTimeLogging(LogConfig config, LogBuildTimeConfig buildConfig,
@@ -268,8 +268,8 @@ public class LoggingSetupRecorder {
                 addNamedHandlersToCategory(categoryConfig, namedHandlers, categoryLogger, errorManager);
             }
         }
-        InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
-        InitialConfigurator.DELAYED_HANDLER.setBuildTimeHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+        QuarkusDelayedHandler.INSTANCE.setAutoFlush(false);
+        QuarkusDelayedHandler.INSTANCE.setBuildTimeHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
     }
 
     private static Level getLogLevel(String categoryName, CategoryConfig categoryConfig, Map<String, CategoryConfig> categories,
@@ -338,7 +338,7 @@ public class LoggingSetupRecorder {
                     handlerName));
         }
         namedHandlers.put(handlerName, handler);
-        InitialConfigurator.DELAYED_HANDLER.addLoggingCloseTask(new Runnable() {
+        QuarkusDelayedHandler.INSTANCE.addLoggingCloseTask(new Runnable() {
             @Override
             public void run() {
                 handler.close();
@@ -353,7 +353,7 @@ public class LoggingSetupRecorder {
             Handler handler = namedHandlers.get(categoryNamedHandler);
             if (handler != null) {
                 categoryLogger.addHandler(handler);
-                InitialConfigurator.DELAYED_HANDLER.addLoggingCloseTask(new Runnable() {
+                QuarkusDelayedHandler.INSTANCE.addLoggingCloseTask(new Runnable() {
                     @Override
                     public void run() {
                         categoryLogger.removeHandler(handler);
@@ -371,8 +371,8 @@ public class LoggingSetupRecorder {
             final ConsoleHandler handler = new ConsoleHandler(new PatternFormatter(
                     "%d{HH:mm:ss,SSS} %-5p [%c{1.}] %s%e%n"));
             handler.setLevel(Level.INFO);
-            InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
-            InitialConfigurator.DELAYED_HANDLER.setHandlers(new Handler[] { handler });
+            QuarkusDelayedHandler.INSTANCE.setAutoFlush(false);
+            QuarkusDelayedHandler.INSTANCE.setHandlers(new Handler[] { handler });
         }
     }
 

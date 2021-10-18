@@ -1,7 +1,7 @@
 package io.quarkus.bootstrap.runner;
 
 import io.quarkus.bootstrap.graal.ImageInfo;
-import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.logging.Handler;
@@ -123,7 +123,7 @@ public class Timing {
             /**
              * We can safely close log handlers after stop time has been printed.
              */
-            Handler[] handlers = InitialConfigurator.DELAYED_HANDLER.clearHandlers();
+            Handler[] handlers = QuarkusDelayedHandler.INSTANCE.clearHandlers();
             for (Handler handler : handlers) {
                 try {
                     handler.close();

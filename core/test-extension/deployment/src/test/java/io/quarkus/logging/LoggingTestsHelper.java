@@ -11,7 +11,6 @@ import java.util.logging.Logger;
 
 import org.junit.jupiter.api.Assertions;
 
-import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 
 public class LoggingTestsHelper {
@@ -20,7 +19,7 @@ public class LoggingTestsHelper {
         LogManager logManager = LogManager.getLogManager();
         assertThat(logManager).isInstanceOf(org.jboss.logmanager.LogManager.class);
 
-        QuarkusDelayedHandler delayedHandler = InitialConfigurator.DELAYED_HANDLER;
+        QuarkusDelayedHandler delayedHandler = QuarkusDelayedHandler.INSTANCE;
         assertThat(Logger.getLogger("").getHandlers()).contains(delayedHandler);
         assertThat(delayedHandler.getLevel()).isEqualTo(Level.ALL);
 

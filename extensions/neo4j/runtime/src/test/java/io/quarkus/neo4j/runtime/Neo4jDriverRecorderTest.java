@@ -9,7 +9,7 @@ import java.util.logging.LogRecord;
 import org.graalvm.nativeimage.ImageInfo;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.ssl.SslContextConfiguration;
 import io.quarkus.test.InMemoryLogHandler;
@@ -94,7 +94,7 @@ class Neo4jDriverRecorderTest {
     @Test
     void shouldWarnWhenEncryptionIsNotPossible() {
         var capturingHandler = new InMemoryLogHandler(r -> r.getLoggerName().contains("Neo4jDriverRecorder"));
-        InitialConfigurator.DELAYED_HANDLER.addHandler(capturingHandler);
+        QuarkusDelayedHandler.INSTANCE.addHandler(capturingHandler);
         try {
             runTestPretendingToBeInNativeImageWithoutSSL(() -> {
                 var recorder = new Neo4jDriverRecorder();
@@ -113,7 +113,7 @@ class Neo4jDriverRecorderTest {
                                 "Native SSL is disabled, communication between this client and the Neo4j server cannot be encrypted."));
             });
         } finally {
-            InitialConfigurator.DELAYED_HANDLER.removeHandler(capturingHandler);
+            QuarkusDelayedHandler.INSTANCE.removeHandler(capturingHandler);
         }
     }
 }

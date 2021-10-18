@@ -3,8 +3,8 @@ plugins {
 }
 
 subprojects {
-    apply plugin: 'java-gradle-plugin'
-    apply plugin: 'com.gradle.plugin-publish'
+
+    apply plugin: 'java-library'
     apply plugin: 'maven-publish'
 
     if (JavaVersion.current().isJava9Compatible()) {
@@ -55,12 +55,6 @@ subprojects {
 
     javadoc {
         options.addStringOption('encoding', 'UTF-8')
-    }
-
-    pluginBundle {
-        website = 'https://quarkus.io/'
-        vcsUrl = 'https://github.com/quarkusio/quarkus'
-        tags = ['quarkus', 'quarkusio', 'graalvm']
     }
 }
 

@@ -2,13 +2,13 @@ package io.quarkus.it.jpa.postgresql;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.nativeimage.ClassInclusionReport;
 
 /**
  * Test various JPA operations running in native mode
  */
-@NativeImageTest
+@QuarkusIntegrationTest
 public class JPAFunctionalityInGraalITCase extends JPAFunctionalityTest {
 
     @Test

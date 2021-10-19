@@ -1,7 +1,7 @@
 package io.quarkus.it.mongodb.panache.transaction;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 class NativeMongodbPanacheTransactionIT extends MongodbPanacheTransactionTest {
 }

@@ -1,8 +1,8 @@
 package io.quarkus.vertx.graphql.it;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 class VertxGraphqlIT extends VertxGraphqlTest {
 
 }

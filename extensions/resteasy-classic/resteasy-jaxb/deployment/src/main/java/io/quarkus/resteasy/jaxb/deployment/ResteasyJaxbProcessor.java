@@ -8,6 +8,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.resteasy.annotations.providers.jaxb.Wrapped;
 import org.jboss.resteasy.annotations.providers.jaxb.WrappedMap;
+import org.jboss.resteasy.api.validation.ConstraintType;
 
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -23,11 +24,13 @@ public class ResteasyJaxbProcessor {
             WrappedMap.class);
 
     @BuildStep
-    void processAnnotations(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+    void addReflectiveClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             CombinedIndexBuildItem combinedIndexBuildItem) {
-        IndexView index = combinedIndexBuildItem.getIndex();
+        // Handle RESTEasy Validation API classes
+        addReflectiveClass(reflectiveClass, true, true, ConstraintType.Type.class.getName());
 
         // Handle RESTEasy annotations usage.
+        IndexView index = combinedIndexBuildItem.getIndex();
         for (Class annotationClazz : RESTEASY_JAXB_ANNOTATIONS) {
             DotName annotation = DotName.createSimple(annotationClazz.getName());
 

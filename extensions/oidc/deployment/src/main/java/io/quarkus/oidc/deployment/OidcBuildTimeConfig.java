@@ -16,6 +16,11 @@ public class OidcBuildTimeConfig {
     public boolean enabled;
 
     /**
+     * Dev UI configuration.
+     */
+    @ConfigItem
+    public DevUiConfig devui;
+    /**
      * Enable the registration of the Default TokenIntrospection and UserInfo Cache implementation bean.
      * Note it only allows to use the default implementation, one needs to configure it in order to activate it,
      * please see {@link OidcConfig#tokenCache}.

@@ -64,7 +64,7 @@ By default the Keycloak page can be used to support the development of a link:se
 [[keycloak-authorization-code-grant]]
 ==== Authorization Code Grant
 
-If you set `quarkus.keycloak.devservices.grant.type=code` in `application.properties` (this is a default value) then an `authorization_code` grant will be used to acquire both access and ID tokens. Using this grant is recommended to emulate a typical flow where a `Single Page Application` acquires the tokens and uses them to access Quarkus services.
+If you set `quarkus.oidc.devui.grant.type=code` in `application.properties` (this is a default value) then an `authorization_code` grant will be used to acquire both access and ID tokens. Using this grant is recommended to emulate a typical flow where a `Single Page Application` acquires the tokens and uses them to access Quarkus services.
 
 First you will see an option to `Log into Single Page Application`:
 
@@ -112,11 +112,11 @@ You can set the `redirect_uri` value to `*` only for the test purposes, especial
 
 ==== Implicit Grant
 
-If you set `quarkus.keycloak.devservices.grant.type=implicit` in `application.properties` then an `implicit` grant will be used to acquire both access and ID tokens. Use this grant for emulating a `Single Page Application` only if the authorization code grant does not work (for example, a client is configured in Keycloak to support an implicit grant, etc).
+If you set `quarkus.oidc.devui.grant.type=implicit` in `application.properties` then an `implicit` grant will be used to acquire both access and ID tokens. Use this grant for emulating a `Single Page Application` only if the authorization code grant does not work (for example, a client is configured in Keycloak to support an implicit grant, etc).
 
 ==== Password Grant
 
-If you set `quarkus.keycloak.devservices.grant.type=password` in `application.properties` then you will see a screen like this one:
+If you set `quarkus.oidc.devui.grant.type=password` in `application.properties` then you will see a screen like this one:
 
 image::dev-ui-keycloak-password-grant.png[alt=Dev UI OpenId Connect Keycloak Page - Password Grant,role="center"]
 
@@ -136,7 +136,7 @@ A token is acquired from Keycloak using a `password` grant and is sent to the se
 
 ==== Client Credentials Grant
 
-If you set `quarkus.keycloak.devservices.grant.type=client` then a `client_credentials` grant will be used to acquire a token, with the page showing no `User` field in this case:
+If you set `quarkus.oidc.devui.grant.type=client` then a `client_credentials` grant will be used to acquire a token, with the page showing no `User` field in this case:
 
 image::dev-ui-keycloak-client-credentials-grant.png[alt=Dev UI OpenId Connect Keycloak Page - Client Credentials Grant,role="center"]
 

@@ -115,6 +115,11 @@
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
+         <dependency>
+            <groupId>io.dekorate</groupId>
+            <artifactId>servicebinding-annotations</artifactId>
+            <classifier>noapt</classifier>
+        </dependency>
 
         <!-- needed for the customization of the build chain -->
         <dependency>

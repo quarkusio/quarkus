@@ -3,6 +3,8 @@ package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
+import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_GROUP;
+import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.VANILLA_KUBERNETES_PRIORITY;
@@ -44,24 +46,36 @@ import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 public class VanillaKubernetesProcessor {
 
     @BuildStep
-    public void checkVanillaKubernetes(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
+    public void checkVanillaKubernetes(ApplicationInfoBuildItem applicationInfo, KubernetesConfig config,
+            BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
+            BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
         List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
-        if (userSpecifiedDeploymentTargets.isEmpty()) {
+        if (userSpecifiedDeploymentTargets.isEmpty() || userSpecifiedDeploymentTargets.contains(KUBERNETES)) {
             // when nothing was selected by the user, we enable vanilla Kubernetes by
             // default
             deploymentTargets
                     .produce(
-                            new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT, VANILLA_KUBERNETES_PRIORITY, true));
-        }
+                            new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT, DEPLOYMENT_GROUP,
+                                    DEPLOYMENT_VERSION,
+                                    VANILLA_KUBERNETES_PRIORITY, true));
 
-        deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT,
-                VANILLA_KUBERNETES_PRIORITY, userSpecifiedDeploymentTargets.contains(KUBERNETES)));
+            String name = ResourceNameUtil.getResourceName(config, applicationInfo);
+            resourceMeta.produce(new KubernetesResourceMetadataBuildItem(KUBERNETES, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,
+                    DEPLOYMENT, name));
+
+        } else {
+            deploymentTargets
+                    .produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT, DEPLOYMENT_GROUP,
+                            DEPLOYMENT_VERSION,
+                            VANILLA_KUBERNETES_PRIORITY, false));
+        }
     }
 
     @BuildStep

@@ -52,7 +52,7 @@ public final class ServiceBinding {
 
         if (type == null) {
             throw new IllegalArgumentException("Directory '" + bindingDirectory
-                    + "' does not represent a valid Service ServiceBinding directory as it does specify a type");
+                    + "' does not represent a valid Service ServiceBinding directory as it does not specify a type");
         }
 
         this.name = name;

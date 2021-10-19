@@ -17,7 +17,6 @@ import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import picocli.CommandLine;
-import picocli.CommandLine.Mixin;
 
 @CommandLine.Command(name = "extension", sortOptions = false, mixinStandardHelpOptions = false, showDefaultValues = true, header = "Create a Quarkus extension project", description = "%n"
         + "Quarkus extensions are built from multiple modules: runtime, deployment, integration-test and "
@@ -72,7 +71,7 @@ public class CreateExtension extends BaseCreateCommand {
     @CommandLine.Spec
     protected CommandLine.Model.CommandSpec spec;
 
-    @Mixin
+    @CommandLine.Mixin
     ExtensionGAVMixin gav = new ExtensionGAVMixin();
 
     @CommandLine.ArgGroup(order = 1, heading = "%nQuarkus version:%n")

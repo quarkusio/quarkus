@@ -17,7 +17,6 @@ import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.registry.RegistryResolutionException;
 import picocli.CommandLine;
-import picocli.CommandLine.Mixin;
 
 @CommandLine.Command(name = "list", aliases = "ls", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "List platforms and extensions. ", footer = {
         "%nList modes:%n",
@@ -29,7 +28,7 @@ import picocli.CommandLine.Mixin;
                 "The CLI release will be used if this command is invoked outside of a project and no other release is specified.%n" }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "%nOptions:%n")
 public class ProjectExtensionsList extends BaseBuildCommand implements Callable<Integer> {
 
-    @Mixin
+    @CommandLine.Mixin
     RunModeOption runMode;
 
     @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version (absolute):%n")

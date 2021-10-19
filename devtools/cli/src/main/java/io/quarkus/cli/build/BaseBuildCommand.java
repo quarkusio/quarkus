@@ -15,7 +15,7 @@ public class BaseBuildCommand {
     @CommandLine.Spec
     protected CommandLine.Model.CommandSpec spec;
 
-    @CommandLine.Mixin
+    @CommandLine.Mixin(name = "output")
     protected OutputOptionMixin output;
 
     @CommandLine.Mixin

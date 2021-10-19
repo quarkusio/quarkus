@@ -13,6 +13,8 @@ new layer atop this familiar framework.  This guide will not dive in to the spec
 covered in the link:hibernate-orm-panache[Hibernate ORM with Panache guide].  In this guide, we'll cover the Kotlin specific changes
 needed to use Hibernate ORM with Panache in your Kotlin-based Quarkus applications.
 
+NOTE: Using the kotlin version of Hibernate ORM with Panache, note that the `PanacheEntity`, `PanacheQuery` and `PanacheRepository` are in a different package: `io.quarkus.hibernate.orm.panache.kotlin`.
+
 == First: an example
 
 As we saw in the Hibernate with Panache guide, it allows us to extend the functionality in our entities and repositories (also known as DAOs) with some automatically
@@ -61,6 +63,36 @@ between the Java and Kotlin variants and allows for both to be used unambiguousl
 In the Kotlin version, we've simply moved the bulk of the link:https://www.martinfowler.com/eaaCatalog/activeRecord.html[`active record pattern`]
 functionality to the `companion object`.  Apart from this slight change, we can then work with our types in ways that map easily
 from the Java side of world.
+
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `hibernate-orm-panache-kotlin-quickstart` {quickstarts-tree-url}/hibernate-orm-panache-kotlin-quickstart[directory].
+
+
+== Setting up and configuring Hibernate ORM with Panache and Kotlin
+
+To get started using Hibernate ORM with Panache and Kotlin, you can, generally, follow the steps laid out in the Java tutorial. The biggest
+change to configuring your project is the Quarkus artifact to include.  You can, of course, keep the Java version if you
+need but if all you need are the Kotlin APIs then include the following dependency instead:
+
+[source,xml]
+----
+<dependencies>
+    <!-- Hibernate ORM specific dependencies -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-hibernate-orm-panache-kotlin</artifactId>  // <1>
+    </dependency>
+</dependencies>
+----
+<1>  Note the addition of `-kotlin` on the end.  Generally you'll only need this version but if your project will be using
+both Java and Kotlin code, you can safely include both artifacts.
 
 
 == Using the repository pattern
@@ -178,22 +210,3 @@ For more examples, please consult the link:hibernate-orm-panache[Java version] f
 are the same and work identically except for some Kotlin-specific tweaks to make things feel more natural to
 Kotlin developers.  These tweaks include things like better use of nullability and the lack of `Optional` on API
 methods.
-
-== Setting up and configuring Hibernate ORM with Panache
-
-To get started using Hibernate ORM with Panache with Kotlin, you can, generally, follow the steps laid out in the Java tutorial.  The biggest
-change to configuring your project is the Quarkus artifact to include.  You can, of course, keep the Java version if you
-need but if all you need are the Kotlin APIs then include the following dependency instead:
-
-[source,xml]
-----
-<dependencies>
-    <!-- Hibernate ORM specific dependencies -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-hibernate-orm-panache-kotlin</artifactId>  // <1>
-    </dependency>
-</dependencies>
-----
-<1>  Note the addition of `-kotlin` on the end.  Generally you'll only need this version but if your project will be using
-both Java and Kotlin code, you can safely include both artifacts.

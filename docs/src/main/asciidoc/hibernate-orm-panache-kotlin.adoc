@@ -13,7 +13,7 @@ new layer atop this familiar framework.  This guide will not dive in to the spec
 covered in the link:hibernate-orm-panache[Hibernate ORM with Panache guide].  In this guide, we'll cover the Kotlin specific changes
 needed to use Hibernate ORM with Panache in your Kotlin-based Quarkus applications.
 
-NOTE: Using the kotlin version of Hibernate ORM with Panache, note that the `PanacheEntity`, `PanacheQuery` and `PanacheRepository` are in a different package: `io.quarkus.hibernate.orm.panache.kotlin`.
+NOTE: When using the kotlin version of Hibernate ORM with Panache, note that the `PanacheEntity`, `PanacheQuery` and `PanacheRepository` are in a different package: `io.quarkus.hibernate.orm.panache.kotlin`.
 
 == First: an example
 

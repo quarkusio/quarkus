@@ -23,6 +23,10 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
 
     private static final String REL = "remove";
 
+    public DeleteMethodImplementor(boolean isResteasyClassic) {
+        super(isResteasyClassic);
+    }
+
     /**
      * Generate JAX-RS DELETE method that exposes {@link RestDataResource#delete(Object)}.
      * Generated code looks more or less like this:

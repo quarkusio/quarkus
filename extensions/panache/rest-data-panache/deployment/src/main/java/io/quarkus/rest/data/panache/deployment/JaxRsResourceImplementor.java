@@ -35,17 +35,17 @@ class JaxRsResourceImplementor {
 
     private final List<MethodImplementor> methodImplementors;
 
-    JaxRsResourceImplementor(boolean withValidation) {
+    JaxRsResourceImplementor(boolean withValidation, boolean isResteasyClassic) {
         this.methodImplementors = Arrays.asList(
-                new GetMethodImplementor(),
-                new GetHalMethodImplementor(),
-                new ListMethodImplementor(),
-                new ListHalMethodImplementor(),
-                new AddMethodImplementor(withValidation),
-                new AddHalMethodImplementor(withValidation),
-                new UpdateMethodImplementor(withValidation),
-                new UpdateHalMethodImplementor(withValidation),
-                new DeleteMethodImplementor());
+                new GetMethodImplementor(isResteasyClassic),
+                new GetHalMethodImplementor(isResteasyClassic),
+                new ListMethodImplementor(isResteasyClassic),
+                new ListHalMethodImplementor(isResteasyClassic),
+                new AddMethodImplementor(withValidation, isResteasyClassic),
+                new AddHalMethodImplementor(withValidation, isResteasyClassic),
+                new UpdateMethodImplementor(withValidation, isResteasyClassic),
+                new UpdateHalMethodImplementor(withValidation, isResteasyClassic),
+                new DeleteMethodImplementor(isResteasyClassic));
     }
 
     /**

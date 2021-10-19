@@ -36,6 +36,10 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
 
     private final SortImplementor sortImplementor = new SortImplementor();
 
+    public ListMethodImplementor(boolean isResteasyClassic) {
+        super(isResteasyClassic);
+    }
+
     /**
      * Generate JAX-RS GET method that exposes {@link RestDataResource#list(Page, Sort)}.
      * Generated pseudo-code with enabled pagination is shown below. If pagination is disabled pageIndex and pageSize

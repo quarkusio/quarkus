@@ -12,7 +12,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 
-import org.jboss.resteasy.links.LinkResource;
+import org.jboss.logging.Logger;
 
 import io.quarkus.gizmo.AnnotatedElement;
 import io.quarkus.gizmo.AnnotationCreator;
@@ -30,6 +30,14 @@ import io.quarkus.rest.data.panache.runtime.sort.SortQueryParamValidator;
  * A standard JAX-RS method implementor.
  */
 public abstract class StandardMethodImplementor implements MethodImplementor {
+
+    private static final Logger LOGGER = Logger.getLogger(StandardMethodImplementor.class);
+
+    private final boolean isResteasyClassic;
+
+    protected StandardMethodImplementor(boolean isResteasyClassic) {
+        this.isResteasyClassic = isResteasyClassic;
+    }
 
     /**
      * Implement exposed JAX-RS method.
@@ -78,9 +86,21 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
     }
 
     protected void addLinksAnnotation(AnnotatedElement element, String entityClassName, String rel) {
-        AnnotationCreator linkResource = element.addAnnotation(LinkResource.class);
-        linkResource.addValue("entityClassName", entityClassName);
-        linkResource.addValue("rel", rel);
+        if (isResteasyClassic) {
+            AnnotationCreator linkResource = element.addAnnotation("org.jboss.resteasy.links.LinkResource");
+            linkResource.addValue("entityClassName", entityClassName);
+            linkResource.addValue("rel", rel);
+        } else {
+            AnnotationCreator linkResource = element.addAnnotation("io.quarkus.resteasy.reactive.links.RestLink");
+            Class<?> entityClass;
+            try {
+                entityClass = Thread.currentThread().getContextClassLoader().loadClass(entityClassName);
+                linkResource.addValue("entityType", entityClass);
+                linkResource.addValue("rel", rel);
+            } catch (ClassNotFoundException e) {
+                LOGGER.error("Unable to create links for entity: '" + entityClassName + "'", e);
+            }
+        }
     }
 
     protected void addPathAnnotation(AnnotatedElement element, String value) {

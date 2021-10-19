@@ -19,6 +19,7 @@ import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.Constants;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -58,7 +59,7 @@ public class RegistryConfigImpl implements RegistryConfig {
         this.nonPlatformExtensions = builder.nonPlatformExtensions;
         this.mavenConfig = builder.mavenConfig;
         this.versionsConfig = builder.versionsConfig;
-        this.extra = builder.extra;
+        this.extra = Collections.unmodifiableMap(builder.extra);
     }
 
     @Override

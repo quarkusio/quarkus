@@ -1,10 +1,12 @@
 package io.quarkus.registry.catalog.json;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.quarkus.registry.catalog.PlatformReleaseVersion;
 import java.util.Objects;
 
+@Deprecated
 @JsonSerialize(using = JsonPlatformReleaseVersionSerializer.class)
 @JsonDeserialize(using = JsonPlatformReleaseVersionDeserializer.class)
 public class JsonPlatformReleaseVersion implements PlatformReleaseVersion {
@@ -19,12 +21,14 @@ public class JsonPlatformReleaseVersion implements PlatformReleaseVersion {
         this.version = Objects.requireNonNull(version);
     }
 
+    @JsonIgnore
+    public String getVersion() {
+        return version;
+    }
+
     @Override
     public int compareTo(PlatformReleaseVersion o) {
-        if (o instanceof JsonPlatformReleaseVersion) {
-            return version.compareTo(((JsonPlatformReleaseVersion) o).version);
-        }
-        return 0;
+        return version.compareTo(o.getVersion());
     }
 
     @Override
@@ -32,11 +36,11 @@ public class JsonPlatformReleaseVersion implements PlatformReleaseVersion {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (o == null || !(o instanceof PlatformReleaseVersion)) {
             return false;
         }
-        JsonPlatformReleaseVersion that = (JsonPlatformReleaseVersion) o;
-        return Objects.equals(version, that.version);
+        PlatformReleaseVersion that = (PlatformReleaseVersion) o;
+        return Objects.equals(version, that.getVersion());
     }
 
     @Override

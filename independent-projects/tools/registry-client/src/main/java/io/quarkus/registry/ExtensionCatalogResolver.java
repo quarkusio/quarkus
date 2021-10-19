@@ -149,15 +149,15 @@ public abstract class ExtensionCatalogResolver {
             ExtensionCatalogResolver resolver;
             try {
                 resolver = Objects.requireNonNull(useRegistryClient)
-                        ? new RegistryClientCatalogResolver(this)
-                        : new FallbackCatalogResolver(this);
+                        ? new ExtensionCatalogRegistryResolver(this)
+                        : new ExtensionCatalogFallbackResolver(this);
             } catch (RegistryResolutionException e) {
                 Optional<RegistriesConfig> value = lazyConfig.test();
                 log.warn("Unable to resolve registries using the current client configuration: %s",
                         value.isPresent()
                                 ? value.get().getSource().describe()
                                 : String.format("Unknown. Cause: ", e.getMessage()));
-                resolver = new FallbackCatalogResolver(this);
+                resolver = new ExtensionCatalogFallbackResolver(this);
             }
 
             if (refreshCache) {

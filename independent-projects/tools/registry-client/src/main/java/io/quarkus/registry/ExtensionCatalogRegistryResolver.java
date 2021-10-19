@@ -11,32 +11,40 @@ import io.quarkus.registry.config.RegistryConfig;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
-public class RegistryClientCatalogResolver extends ExtensionCatalogResolver {
+public class ExtensionCatalogRegistryResolver extends ExtensionCatalogResolver {
 
     private final List<RegistryExtensionResolver> registries;
     private final RegistriesConfig config;
     private final MavenArtifactResolver resolver;
 
-    RegistryClientCatalogResolver(Builder builder) throws RegistryResolutionException {
+    ExtensionCatalogRegistryResolver(Builder builder) throws RegistryResolutionException {
         super(builder);
+
         // Force resolution and generate the build clients
-        this.config = getConfig();
+        this.config = Objects.requireNonNull(getConfig());
         this.resolver = resolver();
 
         // Generate registry clients
-        this.registries = new ArrayList<>(config.getRegistries().size());
+        this.registries = resolveRegistryClients(config);
+    }
+
+    protected List<RegistryExtensionResolver> resolveRegistryClients(RegistriesConfig config)
+            throws RegistryResolutionException {
+        List<RegistryExtensionResolver> registries = new ArrayList<>(config.getRegistries().size());
         RegistryClientFactoryResolver clientFactoryResolver = new RegistryClientFactoryResolver(this.resolver,
                 this.log);
-
         for (RegistryConfig registry : config.getRegistries()) {
             if (!registry.isEnabled()) {
                 continue;
             }
             RegistryClientFactory clientFactory = clientFactoryResolver.getClientFactory(registry);
+
             registries.add(new RegistryExtensionResolver(
                     clientFactory.buildRegistryClient(registry), log, registries.size()));
         }
+        return registries;
     }
 
     @Override

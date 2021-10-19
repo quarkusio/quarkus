@@ -1,14 +1,19 @@
-package io.quarkus.registry.catalog.json;
+package io.quarkus.registry;
 
 import io.quarkus.maven.ArtifactKey;
 import io.quarkus.registry.catalog.Category;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.catalog.ExtensionCatalogImpl;
+import io.quarkus.registry.catalog.ExtensionImpl;
 import io.quarkus.registry.catalog.ExtensionOrigin;
 import io.quarkus.registry.catalog.Platform;
 import io.quarkus.registry.catalog.PlatformCatalog;
 import io.quarkus.registry.catalog.PlatformRelease;
 import io.quarkus.registry.catalog.PlatformStream;
+import io.quarkus.registry.catalog.json.JsonPlatform;
+import io.quarkus.registry.catalog.json.JsonPlatformCatalog;
+import io.quarkus.registry.catalog.json.JsonPlatformStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,10 +22,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@Deprecated
-public class JsonCatalogMerger {
+/**
+ * Utility for merging catalog data.
+ * Shared only within the package (between ExtensionCatalogResolvers)
+ */
+class CatalogMergeUtility {
 
-    public static ExtensionCatalog merge(List<ExtensionCatalog> catalogs) {
+    static ExtensionCatalog merge(List<ExtensionCatalog> catalogs) {
 
         if (catalogs.isEmpty()) {
             throw new IllegalArgumentException("No catalogs provided");
@@ -34,15 +42,16 @@ public class JsonCatalogMerger {
             return roots.get(0);
         }
 
-        final JsonExtensionCatalog combined = new JsonExtensionCatalog();
+        final ExtensionCatalogImpl.Builder combined = new ExtensionCatalogImpl.Builder();
 
         final Map<String, Category> categories = new LinkedHashMap<>();
         final Map<String, ExtensionOrigin> derivedFrom = new LinkedHashMap<>();
         final Map<ArtifactKey, Extension> extensions = new LinkedHashMap<>();
         final Map<String, Object> metadata = new HashMap<>();
+
         for (ExtensionCatalog catalog : roots) {
             if (combined.getBom() == null) {
-                combined.setBom(catalog.getBom());
+                combined.withBom(catalog.getBom());
             }
 
             if (catalog.getId() != null) {
@@ -54,26 +63,30 @@ public class JsonCatalogMerger {
             catalog.getExtensions().forEach(e -> {
                 final Extension copy = extensions.get(e.getArtifact().getKey());
                 if (copy == null) {
-                    extensions.put(e.getArtifact().getKey(), JsonExtension.copy(e));
+                    extensions.put(e.getArtifact().getKey(), ExtensionImpl.builder(e));
                 } else {
                     copy.getOrigins().addAll(e.getOrigins());
                 }
             });
+
             catalog.getMetadata().entrySet().forEach(entry -> metadata.putIfAbsent(entry.getKey(), entry.getValue()));
 
-            if (combined.getQuarkusCoreVersion() == null && catalog.getQuarkusCoreVersion() != null) {
-                combined.setQuarkusCoreVersion(catalog.getQuarkusCoreVersion());
+            if (combined.getQuarkusCoreVersion() == null
+                    && catalog.getQuarkusCoreVersion() != null) {
+                combined.withQuarkusCoreVersion(catalog.getQuarkusCoreVersion());
             }
-            if (combined.getUpstreamQuarkusCoreVersion() == null && catalog.getUpstreamQuarkusCoreVersion() != null
+
+            if (combined.getUpstreamQuarkusCoreVersion() == null
+                    && catalog.getUpstreamQuarkusCoreVersion() != null
                     && !combined.getQuarkusCoreVersion().equals(catalog.getUpstreamQuarkusCoreVersion())) {
-                combined.setUpstreamQuarkusCoreVersion(catalog.getUpstreamQuarkusCoreVersion());
+                combined.withUpstreamQuarkusCoreVersion(catalog.getUpstreamQuarkusCoreVersion());
             }
         }
 
-        combined.setCategories(new ArrayList<>(categories.values()));
-        combined.setDerivedFrom(new ArrayList<>(derivedFrom.values()));
-        combined.setExtensions(new ArrayList<>(extensions.values()));
-        combined.setMetadata(metadata);
+        combined.withCategories(new ArrayList<>(categories.values()))
+                .withDerivedFrom(new ArrayList<>(derivedFrom.values()))
+                .withExtensions(new ArrayList<>(extensions.values()))
+                .withMetadata(metadata);
         return combined;
     }
 

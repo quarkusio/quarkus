@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+@Deprecated
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
 public class JsonPlatformCatalog extends JsonEntityWithAnySupport implements PlatformCatalog {
 

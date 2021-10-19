@@ -1,0 +1,325 @@
+  {
+  "id": "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE",
+  "platform": true,
+  "bom": "io.quarkus:quarkus-bom::pom:999-FAKE",
+  "derived-from": [],
+  "extensions": [
+    {
+      "name": "RESTEasy Reactive",
+      "description": "Reactive implementation of JAX-RS with additional features. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.",
+      "metadata": {
+        "short-name": "resteasy-reactive",
+        "keywords": [
+          "jaxrs",
+          "web",
+          "rest"
+        ],
+        "categories": [
+          "web",
+          "reactive"
+        ],
+        "status": "experimental",
+        "codestart": {
+          "name": "resteasy-reactive",
+          "languages": [
+            "java",
+            "kotlin",
+            "scala"
+          ],
+          "artifact": "io.quarkus:fake-artifact"
+        },
+        "built-with-quarkus-core": "999-FAKE"
+      },
+      "artifact": "io.quarkus:quarkus-resteasy-reactive::jar:999-FAKE",
+      "origins": [
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
+      ]
+    },
+    {
+      "name": "YAML Configuration",
+      "description": "Use YAML to configure your Quarkus application",
+      "metadata": {
+        "keywords": [
+          "config",
+          "configuration",
+          "yaml"
+        ],
+        "categories": [
+          "core"
+        ],
+        "status": "stable",
+        "guide": "https://quarkus.io/guides/config#yaml",
+        "codestart": {
+          "name": "config-yaml",
+          "kind": "core",
+          "languages": [
+            "java",
+            "kotlin"
+          ],
+          "artifact": "io.quarkus:fake-artifact"
+        },
+        "built-with-quarkus-core": "999-FAKE"
+      },
+      "artifact": "io.quarkus:quarkus-config-yaml::jar:999-FAKE",
+      "origins": [
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
+      ]
+    },
+    {
+      "name": "RESTEasy JAX-RS",
+      "description": "REST endpoint framework implementing JAX-RS and more",
+      "metadata": {
+        "short-name": "jax-rs",
+        "keywords": [
+          "resteasy",
+          "jaxrs",
+          "web",
+          "rest"
+        ],
+        "guide": "https://quarkus.io/guides/rest-json",
+        "categories": [
+          "web"
+        ],
+        "status": "stable",
+        "codestart": {
+          "name": "resteasy",
+          "languages": [
+            "java",
+            "kotlin",
+            "scala"
+          ],
+          "artifact": "io.quarkus:fake-artifact"
+        },
+        "built-with-quarkus-core": "999-FAKE"
+      },
+      "artifact": "io.quarkus:quarkus-resteasy::jar:999-FAKE",
+      "origins": [
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
+      ]
+    },
+    {
+      "name": "Quarkus Extension for Spring Web API",
+      "description": "Use Spring Web annotations to create your REST services",
+      "metadata": {
+        "keywords": [
+          "spring-web",
+          "spring"
+        ],
+        "guide": "https://quarkus.io/guides/spring-web",
+        "categories": [
+          "compatibility"
+        ],
+        "status": "preview",
+        "codestart": {
+          "name": "spring-web",
+          "languages": [
+            "java",
+            "kotlin",
+            "scala"
+          ],
+          "artifact": "io.quarkus:fake-artifact"
+        },
+        "built-with-quarkus-core": "999-FAKE"
+      },
+      "artifact": "io.quarkus:quarkus-spring-web::jar:999-FAKE",
+      "origins": [
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
+      ]
+    },
+    {
+      "name": "Kotlin",
+      "description": "Write your services in Kotlin",
+      "metadata": {
+        "keywords": [
+          "kotlin"
+        ],
+        "guide": "https://quarkus.io/guides/kotlin",
+        "categories": [
+          "alt-languages"
+        ],
+        "status": "preview",
+        "codestart": {
+          "name": "kotlin",
+          "kind": "core",
+          "artifact": "io.quarkus:fake-artifact"
+        },
+        "built-with-quarkus-core": "999-FAKE"
+      },
+      "artifact": "io.quarkus:quarkus-kotlin::jar:999-FAKE",
+      "origins": [
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
+      ]
+    },
+    {
+      "name": "Scala",
+      "description": "Write your services in Scala",
+      "metadata": {
+        "keywords": [
+          "scala"
+        ],
+        "categories": [
+          "alt-languages"
+        ],
+        "status": "preview",
+        "codestart": {
+          "name": "scala",
+          "kind": "core",
+          "artifact": "io.quarkus:fake-artifact"
+        },
+        "built-with-quarkus-core": "999-FAKE"
+      },
+      "artifact": "io.quarkus:quarkus-scala::jar:999-FAKE",
+      "origins": [
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
+      ]
+    }
+  ],
+  "categories": [
+    {
+      "id": "web",
+      "name": "Web",
+      "description": "Everything you need for REST endpoints, HTTP and web formats like JSON",
+      "metadata": {
+        "pinned": [
+          "io.quarkus:quarkus-resteasy",
+          "io.quarkus:quarkus-resteasy-jackson",
+          "io.quarkus:quarkus-resteasy-jsonb"
+        ]
+      }
+    },
+    {
+      "id": "data",
+      "name": "Data",
+      "description": "Accessing and managing your data (RDBMS, NoSQL, caching, transaction management, etc)",
+      "metadata": {
+        "pinned": [
+          "io.quarkus:quarkus-hibernate-orm",
+          "io.quarkus:quarkus-hibernate-orm-panache",
+          "io.quarkus:quarkus-jdbc-postgresql",
+          "io.quarkus:quarkus-jdbc-mariadb",
+          "io.quarkus:quarkus-jdbc-mysql",
+          "io.quarkus:quarkus-jdbc-mssql",
+          "io.quarkus:quarkus-jdbc-db2",
+          "io.quarkus:quarkus-jdbc-h2",
+          "io.quarkus:quarkus-jdbc-derby"
+        ]
+      }
+    },
+    {
+      "id": "messaging",
+      "name": "Messaging",
+      "description": "Send and receives message to various messaging systems (AMQP, KAfka etc)",
+      "metadata": {
+        "pinned": [
+          "io.quarkus:quarkus-smallrye-reactive-messaging",
+          "io.quarkus:quarkus-smallrye-reactive-messaging-amqp",
+          "io.quarkus:quarkus-smallrye-reactive-messaging-kafka",
+          "io.quarkus:quarkus-smallrye-reactive-messaging-mqtt"
+        ]
+      }
+    },
+    {
+      "id": "core",
+      "name": "Core",
+      "description": "Core Quarkus components: engine, logging, etc.",
+      "metadata": {
+        "pinned": [
+          "io.quarkus:quarkus-config-yaml",
+          "io.quarkus:quarkus-logging-json"
+        ]
+      }
+    },
+    {
+      "id": "reactive",
+      "name": "Reactive",
+      "description": "Non blocking stack and connectors",
+      "metadata": {
+        "pinned": [
+          "io.quarkus:quarkus-vertx",
+          "io.quarkus:quarkus-mutiny"
+        ]
+      }
+    },
+    {
+      "id": "cloud",
+      "name": "Cloud",
+      "description": "Useful for Cloud Native deployments platforms like Kubernetes and cloud providers",
+      "metadata": {
+        "pinned": [
+          "io.quarkus:quarkus-kubernetes",
+          "io.quarkus:quarkus-openshift",
+          "io.quarkus:quarkus-smallrye-health",
+          "io.quarkus:quarkus-smallrye-fault-tolerance"
+        ]
+      }
+    },
+    {
+      "id": "observability",
+      "name": "Observability",
+      "description": "Metrics, tracing, etc",
+      "metadata": {}
+    },
+    {
+      "id": "security",
+      "name": "Security",
+      "description": "Everything you need to secure your application",
+      "metadata": {
+        "pinned": [
+          "io.quarkus:quarkus-oidc",
+          "io.quarkus:quarkus-smallrye-jwt"
+        ]
+      }
+    },
+    {
+      "id": "serialization",
+      "name": "Serialization",
+      "description": "Serializing and deserializing various formats",
+      "metadata": {}
+    },
+    {
+      "id": "miscellaneous",
+      "name": "Miscellaneous",
+      "description": "Mixed bag of good stuff",
+      "metadata": {}
+    },
+    {
+      "id": "compatibility",
+      "name": "Compatibility",
+      "description": "Support for alternative programming models on Quarkus",
+      "metadata": {}
+    },
+    {
+      "id": "alt-languages",
+      "name": "Alternative languages",
+      "description": "Support for other JVM based languages",
+      "metadata": {}
+    }
+  ],
+  "metadata": {
+    "project": {
+      "properties": {
+        "doc-root": "https://quarkus.io",
+        "rest-assured-version": "4.3.2",
+        "compiler-plugin-version": "3.8.1",
+        "surefire-plugin-version": "3.0.0-M5",
+        "kotlin-version": "1.4.31",
+        "scala-version": "2.12.13",
+        "scala-plugin-version": "4.4.0",
+        "quarkus-core-version": "999-FAKE",
+        "maven-plugin-groupId": "io.quarkus",
+        "maven-plugin-artifactId": "quarkus-maven-plugin",
+        "maven-plugin-version": "999-FAKE",
+        "gradle-plugin-id": "io.quarkus",
+        "gradle-plugin-version": "999-FAKE",
+        "supported-maven-versions": "[3.6.2,)",
+        "proposed-maven-version": "3.8.1",
+        "maven-wrapper-version": "0.7.7",
+        "gradle-wrapper-version": "7.2"
+      }
+    },
+    "codestarts-artifacts": [
+      "io.quarkus:fake-artifact::jar:999-FAKE"
+    ]
+  },
+  "quarkus-core-version": "999-FAKE"
+}

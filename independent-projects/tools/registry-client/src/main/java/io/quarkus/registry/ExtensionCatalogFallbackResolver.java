@@ -26,12 +26,12 @@ import org.eclipse.aether.artifact.DefaultArtifact;
  * It is used when using the registry client has been disabled, or when there
  * was a problem resolving the registry configuration.
  */
-public class FallbackCatalogResolver extends ExtensionCatalogResolver {
+public class ExtensionCatalogFallbackResolver extends ExtensionCatalogResolver {
 
     ArtifactCoords fallbackBom;
     ExtensionCatalog platformCatalog;
 
-    public FallbackCatalogResolver(Builder builder) {
+    ExtensionCatalogFallbackResolver(Builder builder) {
         super(builder);
         Objects.requireNonNull(getConfig());
         this.fallbackBom = builder.fallbackBom;
@@ -46,6 +46,7 @@ public class FallbackCatalogResolver extends ExtensionCatalogResolver {
     public ExtensionCatalog resolveExtensionCatalog() throws RegistryResolutionException {
         Objects.requireNonNull(fallbackBom,
                 "The Quarkus platform groupId, artifactId, and version must be specified to resolve resources without the registry client.");
+
         if (platformCatalog == null) {
             platformCatalog = findPlatformJson(fallbackBom);
         }

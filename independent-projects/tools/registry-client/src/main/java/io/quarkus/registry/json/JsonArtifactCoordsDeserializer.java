@@ -1,18 +1,16 @@
-package io.quarkus.registry.catalog.json;
+package io.quarkus.registry.json;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
+import io.quarkus.maven.ArtifactCoords;
 import java.io.IOException;
 
-@Deprecated
-public class JsonPlatformReleaseVersionDeserializer extends JsonDeserializer<JsonPlatformReleaseVersion> {
-
+public class JsonArtifactCoordsDeserializer extends JsonDeserializer<ArtifactCoords> {
     @Override
-    public JsonPlatformReleaseVersion deserialize(JsonParser p, DeserializationContext ctxt)
+    public ArtifactCoords deserialize(JsonParser p, DeserializationContext ctxt)
             throws IOException, JsonProcessingException {
-        return JsonPlatformReleaseVersion.fromString(p.getText());
+        return ArtifactCoords.fromString(p.getText());
     }
-
 }

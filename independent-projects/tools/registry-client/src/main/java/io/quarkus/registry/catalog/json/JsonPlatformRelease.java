@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 
+@Deprecated
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
 public class JsonPlatformRelease extends JsonEntityWithAnySupport implements PlatformRelease {
 

@@ -7,8 +7,6 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,6 +20,11 @@ import org.junit.jupiter.api.Test;
  * TODO: compare with *.json.DevToolsConfigSerializationTest
  */
 public class DevToolsConfigSerializationTest {
+    static Path baseDir = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
+            .resolve("src/test/resources/devtools-config");
+    static Path writeDir = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
+            .resolve("target/test-serialization");
+
     @Test
     public void testIdOnly() throws Exception {
         final RegistriesConfig config = RegistriesConfigImpl.builder()
@@ -292,21 +295,14 @@ public class DevToolsConfigSerializationTest {
                 line = reader.readLine();
             }
         }
-        List<String> expected = Files.readAllLines(resolveConfigPath(configName));
+        List<String> expected = Files.readAllLines(baseDir.resolve(configName));
         assertThat(lines).isEqualTo(expected);
     }
 
     private static void assertDeserializedMatches(String configName, RegistriesConfig expected) throws Exception {
-        RegistriesConfig actual = RegistriesConfigMapperHelper.deserialize(resolveConfigPath(configName),
+        RegistriesConfig actual = RegistriesConfigMapperHelper.deserialize(baseDir.resolve(configName),
                 RegistriesConfigImpl.class);
         assertThat(actual).isEqualTo(expected);
-    }
-
-    private static Path resolveConfigPath(String configName) throws URISyntaxException {
-        final URL configUrl = Thread.currentThread().getContextClassLoader().getResource("devtools-config/" + configName);
-        assertThat(configUrl).isNotNull();
-        final Path path = Paths.get(configUrl.toURI());
-        return path;
     }
 
     public static class Custom {

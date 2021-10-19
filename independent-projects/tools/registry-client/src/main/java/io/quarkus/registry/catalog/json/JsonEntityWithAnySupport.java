@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import java.util.HashMap;
 import java.util.Map;
 
+@Deprecated
 abstract class JsonEntityWithAnySupport {
 
     private Map<String, Object> metadata = new HashMap<>(0);

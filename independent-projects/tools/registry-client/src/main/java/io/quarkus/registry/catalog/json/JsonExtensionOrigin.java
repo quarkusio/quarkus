@@ -6,6 +6,7 @@ import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.catalog.ExtensionOrigin;
 import java.util.Objects;
 
+@Deprecated
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class JsonExtensionOrigin implements ExtensionOrigin {
 

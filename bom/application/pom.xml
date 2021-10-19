@@ -167,7 +167,7 @@
         <artemis.version>2.17.0</artemis.version>
         <proton-j.version>0.33.10</proton-j.version>
         <okhttp.version>3.14.9</okhttp.version>
-        <sentry.version>5.2.3</sentry.version>
+        <sentry.version>5.2.4</sentry.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kubernetes-client.version>5.9.0</kubernetes-client.version>
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>

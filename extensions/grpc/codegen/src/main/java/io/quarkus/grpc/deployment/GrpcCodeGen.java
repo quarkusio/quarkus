@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -25,6 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.codehaus.plexus.util.io.RawInputStreamFacade;
+import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -70,7 +70,8 @@ public class GrpcCodeGen implements CodeGenProvider {
 
     @Override
     public boolean trigger(CodeGenContext context) throws CodeGenException {
-        if (TRUE.toString().equalsIgnoreCase(System.getProperties().getProperty("grpc.codegen.skip", "false"))) {
+        if (TRUE.toString().equalsIgnoreCase(System.getProperties().getProperty("grpc.codegen.skip", "false"))
+                || context.config().getOptionalValue("quarkus.grpc.codegen.skip", Boolean.class).orElse(false)) {
             log.info("Skipping " + this.getClass() + " invocation on user's request");
             return false;
         }
@@ -125,10 +126,10 @@ public class GrpcCodeGen implements CodeGenProvider {
     }
 
     private Collection<String> gatherImports(Path workDir, CodeGenContext context) throws CodeGenException {
-        Map<String, String> properties = context.properties();
+        Config properties = context.config();
 
-        String scanForImports = properties.getOrDefault("quarkus.generate-code.grpc.scan-for-imports",
-                "com.google.protobuf:protobuf-java");
+        String scanForImports = properties.getOptionalValue("quarkus.generate-code.grpc.scan-for-imports", String.class)
+                .orElse("com.google.protobuf:protobuf-java");
 
         if ("none".equals(scanForImports.toLowerCase(Locale.getDefault()))) {
             return Collections.emptyList();

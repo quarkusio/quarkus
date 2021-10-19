@@ -5,7 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.function.Consumer;
 
@@ -13,21 +13,25 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.codegen.CodeGenData;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.PropertiesConfigSource;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * A set of methods to initialize and execute {@link CodeGenProvider}s.
  */
 public class CodeGenerator {
 
-    // used by Gradle
+    // used by Gradle and Maven
     public static void initAndRun(ClassLoader classLoader,
             PathsCollection sourceParentDirs, Path generatedSourcesDir, Path buildDir,
-            Consumer<Path> sourceRegistrar,
-            ApplicationModel appModel, Map<String, String> properties) throws CodeGenException {
+            Consumer<Path> sourceRegistrar, ApplicationModel appModel, Properties properties,
+            String launchMode) throws CodeGenException {
         List<CodeGenData> generators = init(classLoader, sourceParentDirs, generatedSourcesDir, buildDir, sourceRegistrar);
         for (CodeGenData generator : generators) {
             generator.setRedirectIO(true);
-            trigger(classLoader, generator, appModel, properties);
+            trigger(classLoader, generator, appModel, properties, LaunchMode.valueOf(launchMode));
         }
     }
 
@@ -82,14 +86,21 @@ public class CodeGenerator {
     public static boolean trigger(ClassLoader deploymentClassLoader,
             CodeGenData data,
             ApplicationModel appModel,
-            Map<String, String> properties) throws CodeGenException {
+            Properties properties,
+            LaunchMode launchMode) throws CodeGenException {
         return callWithClassloader(deploymentClassLoader, () -> {
-            CodeGenProvider provider = data.provider;
 
+            final PropertiesConfigSource pcs = new PropertiesConfigSource(properties, "Build system");
+
+            final SmallRyeConfig config = ConfigUtils.configBuilder(false, launchMode)
+                    .withProfile(launchMode.getDefaultProfile())
+                    .withSources(pcs)
+                    .build();
+
+            CodeGenProvider provider = data.provider;
             return Files.isDirectory(data.sourceDir)
                     && provider.trigger(
-                            new CodeGenContext(appModel, data.outPath, data.buildDir, data.sourceDir, data.redirectIO,
-                                    properties));
+                            new CodeGenContext(appModel, data.outPath, data.buildDir, data.sourceDir, data.redirectIO, config));
         });
     }
 

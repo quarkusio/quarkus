@@ -61,6 +61,7 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String ADD_EXTENSION_TASK_NAME = "addExtension";
     public static final String REMOVE_EXTENSION_TASK_NAME = "removeExtension";
     public static final String QUARKUS_GENERATE_CODE_TASK_NAME = "quarkusGenerateCode";
+    public static final String QUARKUS_GENERATE_CODE_DEV_TASK_NAME = "quarkusGenerateCodeDev";
     public static final String QUARKUS_GENERATE_CODE_TESTS_TASK_NAME = "quarkusGenerateCodeTests";
     public static final String QUARKUS_BUILD_TASK_NAME = "quarkusBuild";
     public static final String QUARKUS_DEV_TASK_NAME = "quarkusDev";
@@ -106,6 +107,9 @@ public class QuarkusPlugin implements Plugin<Project> {
         tasks.create(REMOVE_EXTENSION_TASK_NAME, QuarkusRemoveExtension.class);
 
         QuarkusGenerateCode quarkusGenerateCode = tasks.create(QUARKUS_GENERATE_CODE_TASK_NAME, QuarkusGenerateCode.class);
+        QuarkusGenerateCode quarkusGenerateCodeDev = tasks.create(QUARKUS_GENERATE_CODE_DEV_TASK_NAME,
+                QuarkusGenerateCode.class);
+        quarkusGenerateCodeDev.setDevMode(true);
         QuarkusGenerateCode quarkusGenerateCodeTests = tasks.create(QUARKUS_GENERATE_CODE_TESTS_TASK_NAME,
                 QuarkusGenerateCode.class);
         quarkusGenerateCodeTests.setTest(true);
@@ -148,8 +152,8 @@ public class QuarkusPlugin implements Plugin<Project> {
                     project.afterEvaluate(this::afterEvaluate);
                     ConfigurationContainer configurations = project.getConfigurations();
                     JavaCompile compileJavaTask = (JavaCompile) tasks.getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME);
-
-                    compileJavaTask.dependsOn(quarkusGenerateCode);
+                    compileJavaTask.mustRunAfter(quarkusGenerateCodeDev);
+                    compileJavaTask.mustRunAfter(quarkusGenerateCode);
 
                     JavaCompile compileTestJavaTask = (JavaCompile) tasks.getByName(JavaPlugin.COMPILE_TEST_JAVA_TASK_NAME);
                     compileTestJavaTask.dependsOn(quarkusGenerateCodeTests);
@@ -158,7 +162,12 @@ public class QuarkusPlugin implements Plugin<Project> {
                     Task resourcesTask = tasks.getByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
                     Task testClassesTask = tasks.getByName(JavaPlugin.TEST_CLASSES_TASK_NAME);
                     Task testResourcesTask = tasks.getByName(JavaPlugin.PROCESS_TEST_RESOURCES_TASK_NAME);
-                    quarkusDev.dependsOn(classesTask, resourcesTask, testClassesTask, testResourcesTask, quarkusGenerateCode,
+
+                    quarkusGenerateCode.dependsOn(resourcesTask);
+                    quarkusGenerateCodeDev.dependsOn(resourcesTask);
+                    quarkusGenerateCodeTests.dependsOn(resourcesTask);
+
+                    quarkusDev.dependsOn(classesTask, resourcesTask, testClassesTask, testResourcesTask, quarkusGenerateCodeDev,
                             quarkusGenerateCodeTests);
                     quarkusRemoteDev.dependsOn(classesTask, resourcesTask);
                     quarkusTest.dependsOn(classesTask, resourcesTask, testClassesTask, testResourcesTask, quarkusGenerateCode,
@@ -172,6 +181,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                     SourceSet testSourceSet = sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME);
 
                     quarkusGenerateCode.setSourcesDirectories(getSourcesParents(mainSourceSet));
+                    quarkusGenerateCodeDev.setSourcesDirectories(getSourcesParents(mainSourceSet));
                     quarkusGenerateCodeTests.setSourcesDirectories(getSourcesParents(testSourceSet));
 
                     nativeTestSourceSet.setCompileClasspath(
@@ -224,7 +234,8 @@ public class QuarkusPlugin implements Plugin<Project> {
 
         project.getPlugins().withId("org.jetbrains.kotlin.jvm", plugin -> {
             quarkusDev.shouldPropagateJavaCompilerArgs(false);
-            tasks.getByName("compileKotlin").dependsOn(quarkusGenerateCode);
+            tasks.getByName("compileKotlin").mustRunAfter(quarkusGenerateCode);
+            tasks.getByName("compileKotlin").mustRunAfter(quarkusGenerateCodeDev);
             tasks.getByName("compileTestKotlin").dependsOn(quarkusGenerateCodeTests);
         });
     }
@@ -341,10 +352,14 @@ public class QuarkusPlugin implements Plugin<Project> {
             final Task jarTask = dep.getTasks().findByName(JavaPlugin.JAR_TASK_NAME);
             if (jarTask != null) {
                 final Task quarkusPrepare = project.getTasks().findByName(QUARKUS_GENERATE_CODE_TASK_NAME);
+                final Task quarkusPrepareDev = project.getTasks().findByName(QUARKUS_GENERATE_CODE_DEV_TASK_NAME);
                 final Task quarkusPrepareTests = project.getTasks().findByName(QUARKUS_GENERATE_CODE_TESTS_TASK_NAME);
                 quarkusBuild.dependsOn(jarTask);
                 if (quarkusPrepare != null) {
                     quarkusPrepare.dependsOn(jarTask);
+                }
+                if (quarkusPrepareDev != null) {
+                    quarkusPrepareDev.dependsOn(jarTask);
                 }
                 if (quarkusPrepareTests != null) {
                     quarkusPrepareTests.dependsOn(jarTask);

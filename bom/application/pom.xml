@@ -1655,6 +1655,11 @@
                 <artifactId>quarkus-grpc-codegen</artifactId>
                 <version>${project.version}</version>
             </dependency>
+             <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>vertx-mutiny-generator</artifactId>
+                <version>${smallrye-mutiny-vertx-binding.version}</version>
+            </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-grpc-stubs</artifactId>

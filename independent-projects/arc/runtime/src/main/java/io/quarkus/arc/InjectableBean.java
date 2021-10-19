@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.Set;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.InjectionPoint;
 
@@ -111,6 +112,15 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
      * @return whether or not the bean is a default bean
      */
     default boolean isDefaultBean() {
+        return false;
+    }
+
+    /**
+     * Suppressed beans cannot be obtained by programmatic lookup via {@link Instance}.
+     * 
+     * @return {@code true} if the bean should be suppressed
+     */
+    default boolean isSuppressed() {
         return false;
     }
 

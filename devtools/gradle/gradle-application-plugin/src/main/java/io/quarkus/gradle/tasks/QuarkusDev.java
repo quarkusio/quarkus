@@ -2,8 +2,6 @@ package io.quarkus.gradle.tasks;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -13,7 +11,6 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -23,8 +20,6 @@ import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ProjectDependency;
-import org.gradle.api.artifacts.ResolvedArtifact;
-import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.JavaPluginExtension;
@@ -253,7 +248,6 @@ public class QuarkusDev extends QuarkusTask {
         builder.applicationName(project.getName());
         if (project.getVersion() != null) {
             builder.applicationVersion(project.getVersion().toString());
-
         }
 
         builder.sourceEncoding(getSourceEncoding());
@@ -292,11 +286,6 @@ public class QuarkusDev extends QuarkusTask {
                 });
             }
         }
-
-        //we also want to add the Gradle plugin to the class path
-        //this allows us to just directly use classes, without messing around copying them
-        //to the runner jar
-        addGradlePluginDeps(builder);
 
         JavaPluginConvention javaPluginConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
         if (javaPluginConvention != null) {
@@ -496,74 +485,6 @@ public class QuarkusDev extends QuarkusTask {
     private java.util.Optional<JavaCompile> getJavaCompileTask() {
         return java.util.Optional
                 .ofNullable((JavaCompile) getProject().getTasks().getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME));
-    }
-
-    private ResolvedDependency findQuarkusPluginDependency(Set<ResolvedDependency> dependencies) {
-        for (ResolvedDependency rd : dependencies) {
-            if ("io.quarkus.gradle.plugin".equals(rd.getModuleName())) {
-                return rd;
-            } else {
-                Set<ResolvedDependency> children = rd.getChildren();
-                if (children != null) {
-                    ResolvedDependency quarkusPluginDependency = findQuarkusPluginDependency(children);
-                    if (quarkusPluginDependency != null) {
-                        return quarkusPluginDependency;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    private void addGradlePluginDeps(GradleDevModeLauncher.Builder builder) {
-        boolean foundQuarkusPlugin = false;
-        Project prj = getProject();
-        while (prj != null && !foundQuarkusPlugin) {
-            final Set<ResolvedDependency> firstLevelDeps = prj.getBuildscript().getConfigurations().getByName("classpath")
-                    .getResolvedConfiguration().getFirstLevelModuleDependencies();
-
-            if (firstLevelDeps.isEmpty()) {
-                // TODO this looks weird
-            } else {
-                ResolvedDependency quarkusPluginDependency = findQuarkusPluginDependency(firstLevelDeps);
-                if (quarkusPluginDependency != null) {
-                    quarkusPluginDependency.getAllModuleArtifacts().stream()
-                            .map(ResolvedArtifact::getFile)
-                            .forEach(f -> addToClassPaths(builder, f));
-
-                    foundQuarkusPlugin = true;
-
-                    break;
-                }
-            }
-            prj = prj.getParent();
-        }
-        if (!foundQuarkusPlugin) {
-            // that's weird, the project may include the plugin but not have it on its classpath
-            // this may happen when running the plugin's tests
-            // so here we check the property set in the Quarkus functional tests
-            final String pluginUnderTestMetaData = System.getProperty("plugin-under-test-metadata.properties");
-            if (pluginUnderTestMetaData != null) {
-                final Path p = Paths.get(pluginUnderTestMetaData);
-                if (Files.exists(p)) {
-                    final Properties props = new Properties();
-                    try (InputStream is = Files.newInputStream(p)) {
-                        props.load(is);
-                    } catch (IOException e) {
-                        throw new IllegalStateException("Failed to read " + p, e);
-                    }
-                    final String classpath = props.getProperty("implementation-classpath");
-                    for (String cpElement : classpath.split(File.pathSeparator)) {
-                        final File f = new File(cpElement);
-                        if (f.exists()) {
-                            addToClassPaths(builder, f);
-                        }
-                    }
-                }
-            } else {
-                throw new IllegalStateException("Unable to find quarkus-gradle-plugin dependency in " + getProject());
-            }
-        }
     }
 
     private void addToClassPaths(GradleDevModeLauncher.Builder classPathManifest, File file) {

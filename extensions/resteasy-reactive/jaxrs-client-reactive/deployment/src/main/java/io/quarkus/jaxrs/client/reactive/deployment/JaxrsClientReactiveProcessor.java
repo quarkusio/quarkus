@@ -666,7 +666,7 @@ public class JaxrsClientReactiveProcessor {
                                 } else if (param.parameterType == ParameterType.HEADER) {
                                     // headers are added at the invocation builder level
                                     MethodDescriptor handleHeaderDescriptor = MethodDescriptor.ofMethod(subName,
-                                            subMethod.getName() + "$$" + subMethodIndex + "$$handleHeader$$" + paramIdx,
+                                            subMethod.getName() + "$$" + subMethodIndex + "$$handleHeader$$param" + paramIdx,
                                             Invocation.Builder.class,
                                             Invocation.Builder.class, param.type);
                                     MethodCreator handleHeaderMethod = sub.getMethodCreator(handleHeaderDescriptor);
@@ -678,6 +678,21 @@ public class JaxrsClientReactiveProcessor {
                                             handleHeaderMethod.getMethodParam(1));
                                     handleHeaderMethod.returnValue(invocationBuilderRef);
                                     invocationBuilderEnrichers.put(handleHeaderDescriptor, paramValue);
+                                } else if (param.parameterType == ParameterType.COOKIE) {
+                                    // cookies are added at the invocation builder level
+                                    MethodDescriptor handleCookieDescriptor = MethodDescriptor.ofMethod(subName,
+                                            subMethod.getName() + "$$" + subMethodIndex + "$$handleCookie$$param" + paramIdx,
+                                            Invocation.Builder.class,
+                                            Invocation.Builder.class, param.type);
+                                    MethodCreator handleCookieMethod = sub.getMethodCreator(handleCookieDescriptor);
+
+                                    AssignableResultHandle invocationBuilderRef = handleCookieMethod
+                                            .createVariable(Invocation.Builder.class);
+                                    handleCookieMethod.assign(invocationBuilderRef, handleCookieMethod.getMethodParam(0));
+                                    addCookieParam(handleCookieMethod, invocationBuilderRef, param.name,
+                                            handleCookieMethod.getMethodParam(1));
+                                    handleCookieMethod.returnValue(invocationBuilderRef);
+                                    invocationBuilderEnrichers.put(handleCookieDescriptor, paramValue);
                                 } else if (param.parameterType == ParameterType.FORM) {
                                     formParams = createIfAbsent(subMethodCreator, formParams);
                                     subMethodCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
@@ -741,7 +756,7 @@ public class JaxrsClientReactiveProcessor {
                                             subMethod.getName() + "$$" + subMethodIndex + "$$handleHeader$$" + paramIdx,
                                             Invocation.Builder.class,
                                             Invocation.Builder.class, param.type);
-                                    MethodCreator handleHeaderMethod = c.getMethodCreator(handleHeaderDescriptor);
+                                    MethodCreator handleHeaderMethod = sub.getMethodCreator(handleHeaderDescriptor);
 
                                     AssignableResultHandle invocationBuilderRef = handleHeaderMethod
                                             .createVariable(Invocation.Builder.class);
@@ -749,6 +764,22 @@ public class JaxrsClientReactiveProcessor {
                                     addHeaderParam(handleHeaderMethod, invocationBuilderRef, param.name,
                                             handleHeaderMethod.getMethodParam(1));
                                     handleHeaderMethod.returnValue(invocationBuilderRef);
+                                    invocationBuilderEnrichers.put(handleHeaderDescriptor,
+                                            subMethodCreator.getMethodParam(paramIdx));
+                                } else if (param.parameterType == ParameterType.COOKIE) {
+                                    // cookies are added at the invocation builder level
+                                    MethodDescriptor handleHeaderDescriptor = MethodDescriptor.ofMethod(subName,
+                                            subMethod.getName() + "$$" + subMethodIndex + "$$handleCookie$$" + paramIdx,
+                                            Invocation.Builder.class,
+                                            Invocation.Builder.class, param.type);
+                                    MethodCreator handleCookieMethod = sub.getMethodCreator(handleHeaderDescriptor);
+
+                                    AssignableResultHandle invocationBuilderRef = handleCookieMethod
+                                            .createVariable(Invocation.Builder.class);
+                                    handleCookieMethod.assign(invocationBuilderRef, handleCookieMethod.getMethodParam(0));
+                                    addCookieParam(handleCookieMethod, invocationBuilderRef, param.name,
+                                            handleCookieMethod.getMethodParam(1));
+                                    handleCookieMethod.returnValue(invocationBuilderRef);
                                     invocationBuilderEnrichers.put(handleHeaderDescriptor,
                                             subMethodCreator.getMethodParam(paramIdx));
                                 } else if (param.parameterType == ParameterType.FORM) {
@@ -907,6 +938,21 @@ public class JaxrsClientReactiveProcessor {
                                     handleHeaderMethod.getMethodParam(1));
                             handleHeaderMethod.returnValue(invocationBuilderRef);
                             invocationBuilderEnrichers.put(handleHeaderDescriptor, methodCreator.getMethodParam(paramIdx));
+                        } else if (param.parameterType == ParameterType.COOKIE) {
+                            // headers are added at the invocation builder level
+                            MethodDescriptor handleHeaderDescriptor = MethodDescriptor.ofMethod(name,
+                                    method.getName() + "$$" + methodIndex + "$$handleCookie$$" + paramIdx,
+                                    Invocation.Builder.class,
+                                    Invocation.Builder.class, param.type);
+                            MethodCreator handleCookieMethod = c.getMethodCreator(handleHeaderDescriptor);
+
+                            AssignableResultHandle invocationBuilderRef = handleCookieMethod
+                                    .createVariable(Invocation.Builder.class);
+                            handleCookieMethod.assign(invocationBuilderRef, handleCookieMethod.getMethodParam(0));
+                            addCookieParam(handleCookieMethod, invocationBuilderRef, param.name,
+                                    handleCookieMethod.getMethodParam(1));
+                            handleCookieMethod.returnValue(invocationBuilderRef);
+                            invocationBuilderEnrichers.put(handleHeaderDescriptor, methodCreator.getMethodParam(paramIdx));
                         } else if (param.parameterType == ParameterType.FORM) {
                             formParams = createIfAbsent(methodCreator, formParams);
                             methodCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
@@ -996,18 +1042,33 @@ public class JaxrsClientReactiveProcessor {
             if (Modifier.isStatic(field.flags())) {
                 continue;
             }
-            if (!Modifier.isPublic(field.flags())) {
-                throw new IllegalArgumentException("Non-public field found in a multipart form data class "
+
+            String fieldName = field.name();
+            ResultHandle fieldValue = null;
+            String getterName = "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+            for (MethodInfo method : formClass.methods()) {
+                if (method.name().equals(getterName) && method.returnType().name().equals(field.type().name())
+                        && method.parameters().isEmpty() && Modifier.isPublic(method.flags())
+                        && !Modifier.isStatic(method.flags())) {
+                    fieldValue = methodCreator.invokeVirtualMethod(method, methodParam);
+                    break;
+                }
+            }
+            if ((fieldValue == null) && Modifier.isPublic(field.flags())) {
+                fieldValue = methodCreator.readInstanceField(field, methodParam);
+
+            }
+            if (fieldValue == null) {
+                throw new IllegalArgumentException("Non-public field '" + fieldName
+                        + "' without a getter, found in a multipart form data class '"
                         + formClassType.name()
-                        + ". Rest Client Reactive only supports multipart form classes with a list of public fields");
+                        + "'. Rest Client Reactive only supports multipart form classes with fields that are public or have public getters.");
             }
 
             String formParamName = formParamName(field);
             String partType = formPartType(field);
 
             Type fieldType = field.type();
-
-            ResultHandle fieldValue = methodCreator.readInstanceField(field, methodParam);
 
             switch (fieldType.kind()) {
                 case CLASS:

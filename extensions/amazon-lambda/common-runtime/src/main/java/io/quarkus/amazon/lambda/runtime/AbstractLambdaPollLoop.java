@@ -49,12 +49,12 @@ public abstract class AbstractLambdaPollLoop {
             @Override
             public void run() {
                 try {
-                    if (!LambdaHotReplacementRecorder.enabled && launchMode == LaunchMode.DEVELOPMENT) {
+                    if (!LambdaHotReplacementRecorder.enabled
+                            && (launchMode == LaunchMode.DEVELOPMENT || launchMode == LaunchMode.NORMAL)) {
                         // when running with continuous testing, this method fails
                         // because currentApplication is not set when running as an
                         // auxiliary application.  So, just skip it if hot replacement enabled.
-                        // this is only needed in lambda JVM mode anyways to make sure
-                        // quarkus has started.
+                        // This method is called to determine if Quarkus is started and ready to receive requests.
                         checkQuarkusBootstrapped();
                     }
                     URL requestUrl = AmazonLambdaApi.invocationNext(baseUrl);

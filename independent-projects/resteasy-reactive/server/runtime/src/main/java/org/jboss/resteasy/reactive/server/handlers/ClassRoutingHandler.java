@@ -109,10 +109,14 @@ public class ClassRoutingHandler implements ServerRestHandler {
         if (!target.value.getConsumes().isEmpty()) {
             String contentType = serverRequest.getRequestHeader(HttpHeaders.CONTENT_TYPE);
             if (contentType != null) {
-                if (MediaTypeHelper.getFirstMatch(
-                        target.value.getConsumes(),
-                        Collections.singletonList(MediaType.valueOf(contentType))) == null) {
-                    throw new NotSupportedException("The content-type header value did not match the value in @Consumes");
+                try {
+                    if (MediaTypeHelper.getFirstMatch(
+                            target.value.getConsumes(),
+                            Collections.singletonList(MediaType.valueOf(contentType))) == null) {
+                        throw new NotSupportedException("The content-type header value did not match the value in @Consumes");
+                    }
+                } catch (IllegalArgumentException e) {
+                    throw new NotSupportedException("The content-type header value did not correspond to a valid media type");
                 }
             }
         }

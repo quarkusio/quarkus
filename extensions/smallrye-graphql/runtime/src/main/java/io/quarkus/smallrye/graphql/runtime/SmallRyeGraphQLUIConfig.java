@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.graphql.deployment;
+package io.quarkus.smallrye.graphql.runtime;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -12,12 +12,12 @@ public class SmallRyeGraphQLUIConfig {
      * By default, this URL will be resolved as a path relative to `${quarkus.http.non-application-root-path}`.
      */
     @ConfigItem(defaultValue = "graphql-ui")
-    String rootPath;
+    public String rootPath;
 
     /**
      * Always include the UI. By default this will only be included in dev and test.
      * Setting this to true will also include the UI in Prod
      */
     @ConfigItem(defaultValue = "false")
-    boolean alwaysInclude;
+    public boolean alwaysInclude;
 }

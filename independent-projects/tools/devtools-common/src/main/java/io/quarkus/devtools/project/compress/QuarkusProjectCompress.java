@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.commons.compress.archivers.zip.UnixStat;
@@ -17,11 +15,7 @@ import org.apache.commons.compress.archivers.zip.ZipLong;
 
 public final class QuarkusProjectCompress {
 
-    private static final List<String> EXECUTABLES = Collections.unmodifiableList(Arrays.asList(
-            "gradlew",
-            "gradlew.bat",
-            "mvnw",
-            "mvnw.bat"));
+    private static final List<String> EXECUTABLES = List.of("gradlew", "mvnw");
 
     // Visible for testing
     static final int DIR_UNIX_MODE = UnixStat.DIR_FLAG | UnixStat.DEFAULT_DIR_PERM;

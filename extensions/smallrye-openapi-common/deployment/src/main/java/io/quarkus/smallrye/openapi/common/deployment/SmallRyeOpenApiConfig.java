@@ -3,6 +3,7 @@ package io.quarkus.smallrye.openapi.common.deployment;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -123,6 +124,12 @@ public final class SmallRyeOpenApiConfig {
      */
     @ConfigItem
     public Optional<String> openApiVersion;
+
+    /**
+     * Specify the list of global servers that provide connectivity information
+     */
+    @ConfigItem
+    public Optional<Set<String>> servers;
 
     /**
      * Set the title in Info tag in the Schema document

@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-Quarkus extensions may declare in their descriptors (`META-INF/quarkus-extension.properties` found in the runtime extension JAR artifact) that they provide certain capabilities. A capability represents a technical aspect, e.g. an implementation of some functionality or a specification. Each capability has a name which should follow the Java package naming convetion, e.g. `io.quarkus.rest`.
+Quarkus extensions may declare in their descriptors (`META-INF/quarkus-extension.properties` found in the runtime extension JAR artifact) that they provide certain capabilities. A capability represents a technical aspect, e.g. an implementation of some functionality or a specification. Each capability has a name which should follow the Java package naming convention, e.g. `io.quarkus.rest`.
 
 IMPORTANT: Only a single provider of any given capability is allowed in an application. If more than one provider of a capability is detected, the application build will fail with the corresponding error message.
 

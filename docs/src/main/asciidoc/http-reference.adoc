@@ -246,7 +246,7 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-confi
 |Date and time, in Common Log Format format                                   | `%t`     | `%{DATE_TIME}`
 |Remote user that was authenticated                                           | `%u`     | `%{REMOTE_USER}`
 |Requested URL path                                                           | `%U`     | `%{REQUEST_URL}`
-|Request relative path                                                        | `%R`     | `%{RELATIVE_PATH}`
+|Request relative path                                                        | `%R`     | `%{REQUEST_PATH}`
 |Local server name                                                            | `%v`     | `%{LOCAL_SERVER_NAME}`
 |Time taken to process the request, in millis                                 | `%D`     | `%{RESPONSE_TIME}`
 |Time taken to process the request, in seconds                                | `%T`     |

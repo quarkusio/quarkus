@@ -51,6 +51,8 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLConfig;
+import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLConfigMapping;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRecorder;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRuntimeConfig;
 import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;

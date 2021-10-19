@@ -240,7 +240,7 @@ public class CustomObjectMapper {
     ObjectMapper objectMapper(Instance<ObjectMapperCustomizer> customizers) {
         ObjectMapper mapper = myObjectMapper(); // Custom `ObjectMapper`
 
-        // Apply all ObjectMapperCustomerizer beans (incl. Quarkus)
+        // Apply all ObjectMapperCustomizer beans (incl. Quarkus)
         for (ObjectMapperCustomizer customizer : customizers) {
             customizer.customize(mapper);
         }

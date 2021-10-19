@@ -12,6 +12,7 @@ import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,6 +23,7 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
+@Disabled
 public class RandomPortTest {
 
     @RegisterExtension

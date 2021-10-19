@@ -23,8 +23,9 @@ public class ContentLengthTestCase {
         for (int i = 0; i < 10000; ++i) {
             sb.append("Hello World");
         }
-        RestAssured.given().body(sb.toString()).post("/length/cl").then().header("Content-Length",
-                Matchers.equalTo(Integer.toString(sb.length())));
+        RestAssured.given().body(sb.toString()).post("/length/cl").then()
+                .header("Content-Length", Matchers.equalTo(Integer.toString(sb.length()))).and()
+                .header("Transfer-Encoding", Matchers.not("chunked"));
     }
 
     @Test
@@ -33,8 +34,9 @@ public class ContentLengthTestCase {
         for (int i = 0; i < 10; ++i) {
             sb.append("A");
         }
-        RestAssured.given().body(sb.toString()).post("/length").then().header("Content-Length",
-                Matchers.equalTo(Integer.toString(sb.length())));
+        RestAssured.given().body(sb.toString()).post("/length").then()
+                .header("Content-Length", Matchers.equalTo(Integer.toString(sb.length()))).and()
+                .header("Transfer-Encoding", Matchers.not("chunked"));
     }
 
     @Test
@@ -43,6 +45,8 @@ public class ContentLengthTestCase {
         for (int i = 0; i < 101; ++i) {
             sb.append("A");
         }
-        RestAssured.given().body(sb.toString()).post("/length").then().header("Content-Length", Matchers.nullValue());
+        RestAssured.given().body(sb.toString()).post("/length").then()
+                .header("Content-Length", Matchers.nullValue()).and()
+                .header("Transfer-Encoding", "chunked");
     }
 }

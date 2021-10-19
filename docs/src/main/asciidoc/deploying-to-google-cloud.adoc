@@ -95,7 +95,14 @@ When done, the output will display the URL of your application (target url), you
 
 You can choose to let `gcloud` build your application for you, this is the simplest way to deploy to App Engine.
 
-Just launch `gcloud app deploy` in the root of your project, it will upload all your project files (the list can be reduced via the  `.gcloudignore` file),
+In this case, you need to configure your application to be packaged as an uber-jar in your `application.properties` file:
+
+[source, properties]
+----
+quarkus.package.type=uber-jar
+----
+
+Then, you can just launch `gcloud app deploy` in the root of your project, it will upload all your project files (the list can be reduced via the  `.gcloudignore` file),
 package your JAR via Maven (or Gradle) and launch it on App Engine.
 
 When done, the output will display the URL of your application (target url), you can use it with curl or directly open it in your browser using `gcloud app browse`.
@@ -115,7 +122,7 @@ First, add the plugin to your `pom.xml`:
     <configuration>
         <projectId>GCLOUD_CONFIG</projectId> <1>
         <version>gettingstarted</version>
-        <artifact>${project.build.directory}/getting-started-${project.version}-runner.jar</artifact> <2>
+        <artifact>${project.build.directory}/quarkus-app/quarkus-run.jar</artifact> <2>
     </configuration>
 </plugin>
 ----

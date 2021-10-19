@@ -17,6 +17,9 @@ public class CustomTenantResolver implements TenantResolver {
         if (path.endsWith("bearer")) {
             return "bearer";
         }
+        if (path.endsWith("bearer-wrong-role-path")) {
+            return "bearer-wrong-role-path";
+        }
         return null;
     }
 }

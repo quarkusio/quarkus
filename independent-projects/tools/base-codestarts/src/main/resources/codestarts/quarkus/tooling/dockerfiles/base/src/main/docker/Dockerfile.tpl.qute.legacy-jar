@@ -2,7 +2,7 @@
     {#quarkusbuild}{buildtool.cli} {buildtool.cmd.package-legacy-jar}{/quarkusbuild}
     {#image}{dockerfile.legacy-jar.from} {/image}
     {#args}
-ARG JAVA_PACKAGE={dockerfile.legacy-jar.java-package}
+ARG JAVA_PACKAGE=java-{java.version}-openjdk-headless
 ARG RUN_JAVA_VERSION={dockerfile.legacy-jar.run-java-version}
     {/args}
     {#copy}

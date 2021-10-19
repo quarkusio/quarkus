@@ -2,7 +2,7 @@
     {#quarkusbuild}{buildtool.cli} {buildtool.cmd.package}{/quarkusbuild}
     {#image}{dockerfile.jvm.from} {/image}
     {#args}
-ARG JAVA_PACKAGE={dockerfile.jvm.java-package}
+ARG JAVA_PACKAGE=java-{java.version}-openjdk-headless
 ARG RUN_JAVA_VERSION={dockerfile.jvm.run-java-version}
     {/args}
     {#copy}

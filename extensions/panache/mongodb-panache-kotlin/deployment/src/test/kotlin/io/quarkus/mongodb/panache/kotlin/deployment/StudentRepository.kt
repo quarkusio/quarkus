@@ -2,10 +2,9 @@ package io.quarkus.mongodb.panache.kotlin.deployment
 
 import com.mongodb.client.MongoCollection
 import com.mongodb.client.MongoDatabase
-import io.quarkus.mongodb.panache.PanacheUpdate
+import io.quarkus.mongodb.panache.common.PanacheUpdate
 import io.quarkus.mongodb.panache.kotlin.PanacheMongoRepositoryBase
 import io.quarkus.mongodb.panache.kotlin.PanacheQuery
-import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations
 import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations.Companion.INSTANCE
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort

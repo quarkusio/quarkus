@@ -145,13 +145,6 @@ class MongodbPanacheResourceTest {
         Assertions.assertNotNull(list.get(0).getTitle());
         Assertions.assertNull(list.get(0).getDetails());
 
-        // magic query find("author", author)
-        list = get(endpoint + "/legacy-search/Victor Hugo").as(LIST_OF_BOOK_TYPE_REF);
-        Assertions.assertEquals(2, list.size());
-        // we have a projection (legacy annotation) so we should not have the details field but we should have the title thanks to @BsonProperty
-        Assertions.assertNotNull(list.get(0).getTitle());
-        Assertions.assertNull(list.get(0).getDetails());
-
         // magic query find("{'author':?1,'title':?1}", author, title)
         BookDTO book = get(endpoint + "/search?author=Victor Hugo&title=Notre-Dame de Paris").as(BookDTO.class);
         Assertions.assertNotNull(book);

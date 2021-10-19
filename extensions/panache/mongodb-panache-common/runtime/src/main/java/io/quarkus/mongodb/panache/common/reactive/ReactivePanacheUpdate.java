@@ -10,7 +10,7 @@ import io.smallrye.mutiny.Uni;
  *
  * Use one of its methods to perform the update query.
  */
-public interface ReactivePanacheUpdate extends io.quarkus.mongodb.panache.reactive.ReactivePanacheUpdate {
+public interface ReactivePanacheUpdate {
     /**
      * Execute the update query with the update document.
      *

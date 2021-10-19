@@ -45,9 +45,7 @@ public class SplitPackageProcessor {
         public boolean test(String packageName) {
             // Remove the elements from this list when the original issue is fixed
             // so that we can detect further issues.
-            return packageName.startsWith("io.fabric8.kubernetes")
-                    || packageName.equals("io.quarkus.mongodb.panache.reactive")
-                    || packageName.equals("io.quarkus.mongodb.panache");
+            return packageName.startsWith("io.fabric8.kubernetes");
         }
     };
 

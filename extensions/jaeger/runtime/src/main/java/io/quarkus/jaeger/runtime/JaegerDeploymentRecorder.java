@@ -58,7 +58,7 @@ public class JaegerDeploymentRecorder {
         // Usually the tracer will be registered only here, although consumers
         // could register a different tracer in the code which runs before this class.
         // This is also used in tests.
-        if (!GlobalTracer.isRegistered()) {
+        if (!GlobalTracer.isRegistered() && !jaeger.disableTracerRegistration) {
             log.debugf("Registering tracer to GlobalTracer %s", quarkusTracer);
             GlobalTracer.register(quarkusTracer);
         }

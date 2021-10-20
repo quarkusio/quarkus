@@ -265,7 +265,11 @@ public class AeshConsole extends QuarkusConsole {
     }
 
     private StringBuilder gotoLine(StringBuilder builder, int line) {
-        return builder.append("\033[").append(line).append(";").append(0).append("H");
+        return gotoCoords(builder, line, 0);
+    }
+
+    private StringBuilder gotoCoords(StringBuilder builder, int line, int col) {
+        return builder.append("\033[").append(line).append(";").append(col).append("H");
     }
 
     int countLines(String s) {
@@ -347,14 +351,14 @@ public class AeshConsole extends QuarkusConsole {
                     newCursorPos = trailing;
                 }
                 int usedBlankSpace = 0;
-                gotoLine(buffer, size.getHeight());
                 if (cursorPos > 1 && lines == 0) {
-                    gotoLine(buffer, size.getHeight() - bottomBlankSpace);
+                    gotoCoords(buffer, size.getHeight() - bottomBlankSpace - totalStatusLines - 1, cursorPos + 1);
                     buffer.append(s);
                     lastWriteCursorX = newCursorPos;
                     //partial line, just write it
                     writeQueue.add(buffer.toString());
                 } else {
+                    gotoLine(buffer, size.getHeight());
                     if (lines == 0) {
                         lines++;
                     }
@@ -367,8 +371,9 @@ public class AeshConsole extends QuarkusConsole {
                     int appendLines = Math.max(Math.min(cursorPos > 1 ? lines - 1 : lines, totalStatusLines), 1);
                     appendLines -= usedBlankSpace;
                     clearStatusMessages(buffer);
-                    buffer.append("\033[").append(size.getHeight() - totalStatusLines - originalBlank).append(";")
-                            .append(lastWriteCursorX)
+                    buffer.append("\033[").append(size.getHeight() - totalStatusLines - originalBlank - (cursorPos > 0 ? 1 : 0))
+                            .append(";")
+                            .append(cursorPos + 1)
                             .append("H");
                     buffer.append(s);
                     buffer.append("\033[").append(size.getHeight()).append(";").append(0).append("H");

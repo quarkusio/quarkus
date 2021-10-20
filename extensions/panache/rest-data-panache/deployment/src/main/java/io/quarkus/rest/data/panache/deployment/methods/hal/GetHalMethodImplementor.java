@@ -22,6 +22,10 @@ public final class GetHalMethodImplementor extends HalMethodImplementor {
 
     private static final String RESOURCE_METHOD_NAME = "get";
 
+    public GetHalMethodImplementor(boolean isResteasyClassic) {
+        super(isResteasyClassic);
+    }
+
     /**
      * Expose {@link RestDataResource#get(Object)} via HAL JAX-RS method.
      * Generated code looks more or less like this:

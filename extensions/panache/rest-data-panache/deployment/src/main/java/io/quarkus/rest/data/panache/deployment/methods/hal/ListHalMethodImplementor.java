@@ -36,6 +36,10 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
 
     private final SortImplementor sortImplementor = new SortImplementor();
 
+    public ListHalMethodImplementor(boolean isResteasyClassic) {
+        super(isResteasyClassic);
+    }
+
     /**
      * Expose {@link RestDataResource#list(Page, Sort)} via HAL JAX-RS method.
      * Generated pseudo-code with enabled pagination is shown below. If pagination is disabled pageIndex and pageSize

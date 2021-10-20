@@ -1,8 +1,7 @@
-package io.quarkus.resteasy.reactive.server.deployment;
+package io.quarkus.resteasy.reactive.spi;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.resteasy.reactive.spi.GeneratedJaxRsResourceBuildItem;
 
 public class GeneratedJaxRsResourceGizmoAdaptor implements ClassOutput {
 

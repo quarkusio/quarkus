@@ -3,8 +3,7 @@ package io.quarkus.rest.data.panache.deployment;
 import java.util.Arrays;
 import java.util.List;
 
-import org.jboss.resteasy.links.impl.EL;
-
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.deployment.Capabilities;
@@ -29,6 +28,10 @@ import io.quarkus.rest.data.panache.runtime.hal.HalEntityWrapperJsonbSerializer;
 import io.quarkus.rest.data.panache.runtime.hal.HalLink;
 import io.quarkus.rest.data.panache.runtime.hal.HalLinkJacksonSerializer;
 import io.quarkus.rest.data.panache.runtime.hal.HalLinkJsonbSerializer;
+import io.quarkus.rest.data.panache.runtime.resource.RESTEasyClassicResourceLinksProvider;
+import io.quarkus.rest.data.panache.runtime.resource.RESTEasyReactiveResourceLinksProvider;
+import io.quarkus.resteasy.reactive.spi.GeneratedJaxRsResourceBuildItem;
+import io.quarkus.resteasy.reactive.spi.GeneratedJaxRsResourceGizmoAdaptor;
 
 public class RestDataProcessor {
 
@@ -38,11 +41,40 @@ public class RestDataProcessor {
     }
 
     @BuildStep
+    void supportingBuildItems(Capabilities capabilities,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItemBuildProducer) {
+        boolean isResteasyClassicAvailable = capabilities.isPresent(Capability.RESTEASY);
+        boolean isResteasyReactiveAvailable = capabilities.isPresent(Capability.RESTEASY_REACTIVE);
+
+        if (!isResteasyClassicAvailable && !isResteasyReactiveAvailable) {
+            throw new IllegalStateException(
+                    "REST Data Panache can only work if 'quarkus-resteasy' or 'quarkus-resteasy-reactive-links' is present");
+        }
+
+        String className = isResteasyClassicAvailable ? RESTEasyClassicResourceLinksProvider.class.getName()
+                : RESTEasyReactiveResourceLinksProvider.class.getName();
+        additionalBeanBuildItemBuildProducer
+                .produce(AdditionalBeanBuildItem.builder().addBeanClass(className).setUnremovable().build());
+
+        if (isResteasyClassicAvailable) {
+            runtimeInitializedClassBuildItemBuildProducer
+                    .produce(new RuntimeInitializedClassBuildItem("org.jboss.resteasy.links.impl.EL"));
+        }
+    }
+
+    @BuildStep
     void implementResources(CombinedIndexBuildItem index, List<RestDataResourceBuildItem> resourceBuildItems,
             List<ResourcePropertiesBuildItem> resourcePropertiesBuildItems, Capabilities capabilities,
-            BuildProducer<GeneratedBeanBuildItem> implementationsProducer) {
-        ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
-        JaxRsResourceImplementor jaxRsResourceImplementor = new JaxRsResourceImplementor(hasValidatorCapability(capabilities));
+            BuildProducer<GeneratedBeanBuildItem> resteasyClassicImplementationsProducer,
+            BuildProducer<GeneratedJaxRsResourceBuildItem> resteasyReactiveImplementationsProducer) {
+
+        boolean isResteasyClassic = capabilities.isPresent(Capability.RESTEASY);
+
+        ClassOutput classOutput = isResteasyClassic ? new GeneratedBeanGizmoAdaptor(resteasyClassicImplementationsProducer)
+                : new GeneratedJaxRsResourceGizmoAdaptor(resteasyReactiveImplementationsProducer);
+        JaxRsResourceImplementor jaxRsResourceImplementor = new JaxRsResourceImplementor(hasValidatorCapability(capabilities),
+                isResteasyClassic);
         ResourcePropertiesProvider resourcePropertiesProvider = new ResourcePropertiesProvider(index.getIndex());
 
         for (RestDataResourceBuildItem resourceBuildItem : resourceBuildItems) {
@@ -77,11 +109,6 @@ public class RestDataProcessor {
                 HalLinkJsonbSerializer.class.getName()));
     }
 
-    @BuildStep
-    RuntimeInitializedClassBuildItem el() {
-        return new RuntimeInitializedClassBuildItem(EL.class.getCanonicalName());
-    }
-
     private ResourceProperties getResourceProperties(ResourcePropertiesProvider resourcePropertiesProvider,
             ResourceMetadata resourceMetadata, List<ResourcePropertiesBuildItem> resourcePropertiesBuildItems) {
         for (ResourcePropertiesBuildItem resourcePropertiesBuildItem : resourcePropertiesBuildItems) {
@@ -99,6 +126,8 @@ public class RestDataProcessor {
 
     private boolean hasHalCapability(Capabilities capabilities) {
         return capabilities.isPresent(Capability.RESTEASY_JSON_JSONB)
-                || capabilities.isPresent(Capability.RESTEASY_JSON_JACKSON);
+                || capabilities.isPresent(Capability.RESTEASY_JSON_JACKSON)
+                || capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JSONB)
+                || capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JACKSON);
     }
 }

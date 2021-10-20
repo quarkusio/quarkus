@@ -130,7 +130,8 @@ public class OidcClientImpl implements OidcClient {
             if (expiresInValue != null) {
                 long accessTokenExpiresIn = expiresInValue instanceof Number ? ((Number) expiresInValue).longValue()
                         : Long.parseLong(expiresInValue.toString());
-                accessTokenExpiresAt = Instant.now().getEpochSecond() + accessTokenExpiresIn;
+                accessTokenExpiresAt = oidcConfig.absoluteExpiresIn ? accessTokenExpiresIn
+                        : Instant.now().getEpochSecond() + accessTokenExpiresIn;
             } else {
                 accessTokenExpiresAt = getExpiresJwtClaim(accessToken);
             }

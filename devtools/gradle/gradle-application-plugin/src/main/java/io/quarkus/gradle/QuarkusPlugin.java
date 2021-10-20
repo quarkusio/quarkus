@@ -158,7 +158,7 @@ public class QuarkusPlugin implements Plugin<Project> {
 
                     tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, JavaCompile.class,
                             compileJava -> {
-                                compileJava.dependsOn(quarkusGenerateCode);
+                                compileJava.mustRunAfter(quarkusGenerateCode);
                                 compileJava.mustRunAfter(quarkusGenerateCodeDev);
                             });
                     tasks.named(JavaPlugin.COMPILE_TEST_JAVA_TASK_NAME, JavaCompile.class,

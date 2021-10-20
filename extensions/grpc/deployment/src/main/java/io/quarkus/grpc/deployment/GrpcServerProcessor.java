@@ -84,6 +84,7 @@ import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerBuildTimeConfig;
 import io.quarkus.grpc.runtime.health.GrpcHealthEndpoint;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
+import io.quarkus.grpc.runtime.stork.GrpcStorkRecorder;
 import io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
@@ -565,6 +566,12 @@ public class GrpcServerProcessor {
                 log.warn("Only Micrometer-based metrics system is supported by quarkus-grpc");
             }
         }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void setUpStork(GrpcStorkRecorder storkRecorder) {
+        storkRecorder.init();
     }
 
     @BuildStep

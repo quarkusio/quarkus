@@ -1,18 +1,18 @@
 package io.quarkus.registry.config.json;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import java.io.IOException;
 
+@Deprecated
 public class JsonRegistryConfigDeserializer extends JsonDeserializer<JsonRegistryConfig> {
 
     @Override
     public JsonRegistryConfig deserialize(JsonParser p, DeserializationContext ctxt)
-            throws IOException, JsonProcessingException {
+            throws IOException {
         if (p.getCurrentToken() == JsonToken.VALUE_STRING) {
             return new JsonRegistryConfig(p.getText());
         } else if (p.getCurrentToken() == JsonToken.START_OBJECT) {

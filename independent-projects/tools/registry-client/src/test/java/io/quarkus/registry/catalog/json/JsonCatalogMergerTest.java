@@ -6,6 +6,7 @@ import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.catalog.Platform;
 import io.quarkus.registry.catalog.PlatformCatalog;
 import io.quarkus.registry.catalog.PlatformRelease;
+import io.quarkus.registry.catalog.PlatformReleaseVersion;
 import io.quarkus.registry.catalog.PlatformStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,6 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+@Deprecated
 public class JsonCatalogMergerTest {
 
     @Test
@@ -31,7 +33,7 @@ public class JsonCatalogMergerTest {
         p.addStream(s);
         JsonPlatformRelease r = new JsonPlatformRelease();
         r.setQuarkusCoreVersion("2.0.0");
-        r.setVersion(JsonPlatformReleaseVersion.fromString("2.2.2"));
+        r.setVersion(PlatformReleaseVersion.fromString("2.2.2"));
         r.setMemberBoms(Collections.singletonList(ArtifactCoords.fromString("org.acme:acme-quarkus-bom::pom:2.2.2")));
         s.addRelease(r);
 
@@ -40,7 +42,7 @@ public class JsonCatalogMergerTest {
         p.addStream(s);
         r = new JsonPlatformRelease();
         r.setQuarkusCoreVersion("1.0.1");
-        r.setVersion(JsonPlatformReleaseVersion.fromString("1.1.2"));
+        r.setVersion(PlatformReleaseVersion.fromString("1.1.2"));
         r.setMemberBoms(Collections.singletonList(ArtifactCoords.fromString("org.acme:acme-quarkus-bom::pom:1.1.2")));
         s.addRelease(r);
 
@@ -54,7 +56,7 @@ public class JsonCatalogMergerTest {
         p.addStream(s);
         r = new JsonPlatformRelease();
         r.setQuarkusCoreVersion("2.0.1");
-        r.setVersion(JsonPlatformReleaseVersion.fromString("2.2.3"));
+        r.setVersion(PlatformReleaseVersion.fromString("2.2.3"));
         r.setMemberBoms(Collections.singletonList(ArtifactCoords.fromString("org.acme:acme-quarkus-bom::pom:2.2.3")));
         s.addRelease(r);
 
@@ -63,7 +65,7 @@ public class JsonCatalogMergerTest {
         p.addStream(s);
         r = new JsonPlatformRelease();
         r.setQuarkusCoreVersion("1.0.0");
-        r.setVersion(JsonPlatformReleaseVersion.fromString("1.1.1"));
+        r.setVersion(PlatformReleaseVersion.fromString("1.1.1"));
         r.setMemberBoms(Collections.singletonList(ArtifactCoords.fromString("org.acme:acme-quarkus-bom::pom:1.1.1")));
         s.addRelease(r);
 
@@ -79,10 +81,10 @@ public class JsonCatalogMergerTest {
         assertThat(stream.getReleases().size()).isEqualTo(2);
         Iterator<PlatformRelease> releases = stream.getReleases().iterator();
         PlatformRelease release = releases.next();
-        assertThat(release.getVersion()).isEqualTo(JsonPlatformReleaseVersion.fromString("2.2.2"));
+        assertThat(release.getVersion()).isEqualTo(PlatformReleaseVersion.fromString("2.2.2"));
         assertThat(release.getQuarkusCoreVersion()).isEqualTo("2.0.0");
         release = releases.next();
-        assertThat(release.getVersion()).isEqualTo(JsonPlatformReleaseVersion.fromString("2.2.3"));
+        assertThat(release.getVersion()).isEqualTo(PlatformReleaseVersion.fromString("2.2.3"));
         assertThat(release.getQuarkusCoreVersion()).isEqualTo("2.0.1");
 
         stream = streams.next();
@@ -90,10 +92,10 @@ public class JsonCatalogMergerTest {
         assertThat(stream.getReleases().size()).isEqualTo(2);
         releases = stream.getReleases().iterator();
         release = releases.next();
-        assertThat(release.getVersion()).isEqualTo(JsonPlatformReleaseVersion.fromString("1.1.2"));
+        assertThat(release.getVersion()).isEqualTo(PlatformReleaseVersion.fromString("1.1.2"));
         assertThat(release.getQuarkusCoreVersion()).isEqualTo("1.0.1");
         release = releases.next();
-        assertThat(release.getVersion()).isEqualTo(JsonPlatformReleaseVersion.fromString("1.1.1"));
+        assertThat(release.getVersion()).isEqualTo(PlatformReleaseVersion.fromString("1.1.1"));
         assertThat(release.getQuarkusCoreVersion()).isEqualTo("1.0.0");
     }
 }

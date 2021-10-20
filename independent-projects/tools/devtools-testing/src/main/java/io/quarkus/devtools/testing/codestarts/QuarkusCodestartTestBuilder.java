@@ -4,8 +4,6 @@ import static io.quarkus.devtools.testing.RegistryClientTestHelper.disableRegist
 import static io.quarkus.devtools.testing.RegistryClientTestHelper.enableRegistryClientTestConfig;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getBuiltWithQuarkusCore;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import io.quarkus.devtools.codestarts.DataKey;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Language;
@@ -17,9 +15,6 @@ import io.quarkus.maven.ArtifactKey;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoaders;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
-import io.quarkus.registry.catalog.json.JsonExtension;
-import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
@@ -199,10 +194,9 @@ public class QuarkusCodestartTestBuilder {
             final ArrayList<Extension> extensions = new ArrayList<>();
             for (URL url : Collections
                     .list(Thread.currentThread().getContextClassLoader().getResources("META-INF/quarkus-extension.yaml"))) {
-                final ObjectMapper mapper = JsonCatalogMapperHelper.initMapper(new YAMLMapper());
-                final JsonExtension extension = ResourceLoaders.processAsPath(url, path -> {
+                final Extension extension = ResourceLoaders.processAsPath(url, path -> {
                     try {
-                        return JsonCatalogMapperHelper.deserialize(mapper, path, JsonExtension.class);
+                        return Extension.fromFile(path);
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -218,11 +212,11 @@ public class QuarkusCodestartTestBuilder {
             final ExtensionCatalog extensionCatalog = QuarkusProjectHelper
                     .getExtensionCatalog(quarkusVersion);
             disableRegistryClientTestConfig();
-            if (!(extensionCatalog instanceof JsonExtensionCatalog)) {
+            if (!(extensionCatalog instanceof ExtensionCatalog.Mutable)) {
                 throw new IllegalStateException("Problem with the given ExtensionCatalog type");
             }
             extensions.addAll(extensionCatalog.getExtensions());
-            ((JsonExtensionCatalog) extensionCatalog).setExtensions(extensions);
+            ((ExtensionCatalog.Mutable) extensionCatalog).setExtensions(extensions);
             this.extensionCatalog = extensionCatalog;
         } catch (IOException e) {
             throw new IllegalStateException("Error while reading standalone extension catalog", e);

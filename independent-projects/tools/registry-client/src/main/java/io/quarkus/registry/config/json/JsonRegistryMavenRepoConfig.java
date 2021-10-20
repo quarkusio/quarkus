@@ -4,8 +4,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.registry.config.RegistryMavenRepoConfig;
 import java.util.Objects;
 
+@Deprecated
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class JsonRegistryMavenRepoConfig implements RegistryMavenRepoConfig {
+public class JsonRegistryMavenRepoConfig implements RegistryMavenRepoConfig.Mutable {
 
     private String id;
     private String url;
@@ -15,8 +16,9 @@ public class JsonRegistryMavenRepoConfig implements RegistryMavenRepoConfig {
         return id;
     }
 
-    public void setId(String id) {
+    public Mutable setId(String id) {
         this.id = id;
+        return this;
     }
 
     @Override
@@ -24,8 +26,9 @@ public class JsonRegistryMavenRepoConfig implements RegistryMavenRepoConfig {
         return url;
     }
 
-    public void setUrl(String url) {
+    public Mutable setUrl(String url) {
         this.url = url;
+        return this;
     }
 
     @Override
@@ -48,5 +51,15 @@ public class JsonRegistryMavenRepoConfig implements RegistryMavenRepoConfig {
             return false;
         JsonRegistryMavenRepoConfig other = (JsonRegistryMavenRepoConfig) obj;
         return Objects.equals(id, other.id) && Objects.equals(url, other.url);
+    }
+
+    public Mutable mutable() {
+        return new JsonRegistryMavenRepoConfig()
+                .setId(this.id)
+                .setUrl(this.url);
+    }
+
+    public JsonRegistryMavenRepoConfig build() {
+        return this;
     }
 }

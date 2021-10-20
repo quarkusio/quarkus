@@ -6,8 +6,9 @@ import io.quarkus.registry.config.RegistryMavenConfig;
 import io.quarkus.registry.config.RegistryMavenRepoConfig;
 import java.util.Objects;
 
+@Deprecated
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class JsonRegistryMavenConfig implements RegistryMavenConfig {
+public class JsonRegistryMavenConfig implements RegistryMavenConfig.Mutable {
 
     private RegistryMavenRepoConfig repo;
 
@@ -17,8 +18,9 @@ public class JsonRegistryMavenConfig implements RegistryMavenConfig {
         return repo;
     }
 
-    public void setRepository(RegistryMavenRepoConfig repo) {
+    public Mutable setRepository(RegistryMavenRepoConfig repo) {
         this.repo = repo;
+        return this;
     }
 
     @Override
@@ -44,5 +46,14 @@ public class JsonRegistryMavenConfig implements RegistryMavenConfig {
             return false;
         JsonRegistryMavenConfig other = (JsonRegistryMavenConfig) obj;
         return Objects.equals(repo, other.repo);
+    }
+
+    public Mutable mutable() {
+        return new JsonRegistryMavenConfig()
+                .setRepository(this.repo);
+    }
+
+    public JsonRegistryMavenConfig build() {
+        return this;
     }
 }

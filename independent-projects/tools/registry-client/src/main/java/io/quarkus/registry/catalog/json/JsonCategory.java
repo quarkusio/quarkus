@@ -2,12 +2,14 @@ package io.quarkus.registry.catalog.json;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.registry.catalog.Category;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+@Deprecated
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-public class JsonCategory implements Category {
+public class JsonCategory implements Category.Mutable {
 
     protected String id;
     protected String name;
@@ -20,8 +22,9 @@ public class JsonCategory implements Category {
         return id;
     }
 
-    public void setId(String id) {
+    public Mutable setId(String id) {
         this.id = id;
+        return this;
     }
 
     @Override
@@ -29,8 +32,9 @@ public class JsonCategory implements Category {
         return name;
     }
 
-    public void setName(String name) {
+    public Mutable setName(String name) {
         this.name = name;
+        return this;
     }
 
     @Override
@@ -38,8 +42,9 @@ public class JsonCategory implements Category {
         return description;
     }
 
-    public void setDescription(String description) {
+    public Mutable setDescription(String description) {
         this.description = description;
+        return this;
     }
 
     @Override
@@ -47,8 +52,21 @@ public class JsonCategory implements Category {
         return metadata == null ? metadata = new HashMap<>() : metadata;
     }
 
-    public void setMetadata(Map<String, Object> metadata) {
-        this.metadata = metadata;
+    public Mutable setMetadata(Map<String, Object> newValues) {
+        if (newValues != Collections.EMPTY_MAP) { // don't keep the empty map
+            metadata = newValues;
+        }
+        return this;
+    }
+
+    public Mutable setMetadata(String key, Object value) {
+        getMetadata().put(key, value);
+        return this;
+    }
+
+    public Mutable removeMetadata(String key) {
+        getMetadata().remove(key);
+        return this;
     }
 
     @Override
@@ -66,5 +84,15 @@ public class JsonCategory implements Category {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    @Override
+    public Mutable mutable() {
+        return this;
+    }
+
+    @Override
+    public JsonCategory build() {
+        return this;
     }
 }

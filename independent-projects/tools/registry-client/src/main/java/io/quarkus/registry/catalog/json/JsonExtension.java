@@ -13,8 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+@Deprecated
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-public class JsonExtension implements Extension {
+public class JsonExtension implements Extension.Mutable {
 
     public static JsonExtension copy(Extension e) {
         final JsonExtension copy = new JsonExtension();
@@ -39,16 +40,19 @@ public class JsonExtension implements Extension {
     private String artifactId;
     private String version;
 
-    public void setGroupId(String groupId) {
+    public Extension.Mutable setGroupId(String groupId) {
         this.groupId = groupId;
+        return this;
     }
 
-    public void setArtifactId(String artifactId) {
+    public Extension.Mutable setArtifactId(String artifactId) {
         this.artifactId = artifactId;
+        return this;
     }
 
-    public void setVersion(String version) {
+    public Extension.Mutable setVersion(String version) {
         this.version = version;
+        return this;
     }
 
     @Override
@@ -56,8 +60,9 @@ public class JsonExtension implements Extension {
         return name;
     }
 
-    public void setName(String name) {
+    public Extension.Mutable setName(String name) {
         this.name = name;
+        return this;
     }
 
     @Override
@@ -65,8 +70,9 @@ public class JsonExtension implements Extension {
         return description;
     }
 
-    public void setDescription(String description) {
+    public Extension.Mutable setDescription(String description) {
         this.description = description;
+        return this;
     }
 
     @Override
@@ -77,12 +83,14 @@ public class JsonExtension implements Extension {
         return artifact;
     }
 
-    public void setArtifact(ArtifactCoords coords) {
+    public Extension.Mutable setArtifact(ArtifactCoords coords) {
         this.artifact = coords;
+        return this;
     }
 
-    public void setOrigins(List<ExtensionOrigin> origins) {
+    public Extension.Mutable setOrigins(List<ExtensionOrigin> origins) {
         this.origins = origins;
+        return this;
     }
 
     @Override
@@ -97,18 +105,20 @@ public class JsonExtension implements Extension {
         return metadata == null ? metadata = new HashMap<>() : metadata;
     }
 
-    public void setMetadata(Map<String, Object> metadata) {
-        this.metadata = metadata;
-    }
-
-    public Extension addMetadata(String key, Object value) {
-        this.getMetadata().put(key, value);
+    public Extension.Mutable setMetadata(Map<String, Object> newValues) {
+        if (newValues != Collections.EMPTY_MAP) { // don't keep the empty map
+            metadata = newValues;
+        }
         return this;
-
     }
 
-    public Extension removeMetadata(String key) {
-        this.getMetadata().remove(key);
+    public Extension.Mutable setMetadata(String key, Object value) {
+        getMetadata().put(key, value);
+        return this;
+    }
+
+    public Extension.Mutable removeMetadata(String key) {
+        getMetadata().remove(key);
         return this;
     }
 
@@ -132,5 +142,15 @@ public class JsonExtension implements Extension {
     @Override
     public int hashCode() {
         return Objects.hash(artifact);
+    }
+
+    @Override
+    public Extension build() {
+        return this;
+    }
+
+    @Override
+    public Extension.Mutable mutable() {
+        return copy(this);
     }
 }

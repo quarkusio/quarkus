@@ -4,7 +4,8 @@ import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.config.RegistryDescriptorConfig;
 import java.util.Objects;
 
-public class JsonRegistryDescriptorConfig implements RegistryDescriptorConfig {
+@Deprecated
+public class JsonRegistryDescriptorConfig implements RegistryDescriptorConfig.Mutable {
 
     private ArtifactCoords artifact;
 
@@ -13,8 +14,9 @@ public class JsonRegistryDescriptorConfig implements RegistryDescriptorConfig {
         return artifact;
     }
 
-    public void setArtifact(ArtifactCoords artifact) {
+    public Mutable setArtifact(ArtifactCoords artifact) {
         this.artifact = artifact;
+        return this;
     }
 
     @Override
@@ -32,5 +34,14 @@ public class JsonRegistryDescriptorConfig implements RegistryDescriptorConfig {
             return false;
         JsonRegistryDescriptorConfig other = (JsonRegistryDescriptorConfig) obj;
         return Objects.equals(artifact, other.artifact);
+    }
+
+    public Mutable mutable() {
+        return new JsonRegistryDescriptorConfig()
+                .setArtifact(artifact);
+    }
+
+    public RegistryDescriptorConfig build() {
+        return this;
     }
 }

@@ -8,12 +8,12 @@ import io.quarkus.registry.catalog.PlatformStream;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+@Deprecated
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-public class JsonPlatform extends JsonEntityWithAnySupport implements Platform {
+public class JsonPlatform extends JsonEntityWithAnySupport implements Platform.Mutable {
 
     private String platformKey;
     private String name;
@@ -24,8 +24,9 @@ public class JsonPlatform extends JsonEntityWithAnySupport implements Platform {
         return platformKey;
     }
 
-    public void setPlatformKey(String platformKey) {
+    public JsonPlatform setPlatformKey(String platformKey) {
         this.platformKey = platformKey;
+        return this;
     }
 
     @Override
@@ -33,8 +34,9 @@ public class JsonPlatform extends JsonEntityWithAnySupport implements Platform {
         return name;
     }
 
-    public void setName(String name) {
+    public JsonPlatform setName(String name) {
         this.name = name;
+        return this;
     }
 
     @Override
@@ -49,17 +51,27 @@ public class JsonPlatform extends JsonEntityWithAnySupport implements Platform {
         return streams == null ? null : streams.get(id);
     }
 
-    public void setStreams(List<PlatformStream> streams) {
-        for (PlatformStream s : streams) {
+    @Override
+    public JsonPlatform setStreams(Collection<PlatformStream> newValues) {
+        for (PlatformStream s : newValues) {
             addStream(s);
         }
+        return this;
     }
 
-    public void addStream(PlatformStream stream) {
+    @JsonIgnore
+    public JsonPlatform addStream(PlatformStream stream) {
         if (streams == null) {
             streams = new LinkedHashMap<>();
         }
         streams.put(stream.getId(), stream);
+        return this;
+    }
+
+    @Override
+    public JsonPlatform setMetadata(Map<String, Object> metadata) {
+        super.setMetadata(metadata);
+        return this;
     }
 
     @Override
@@ -84,4 +96,13 @@ public class JsonPlatform extends JsonEntityWithAnySupport implements Platform {
         return platformKey + streams;
     }
 
+    @Override
+    public Mutable mutable() {
+        return this;
+    }
+
+    @Override
+    public JsonPlatform build() {
+        return this;
+    }
 }

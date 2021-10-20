@@ -9,12 +9,12 @@ import io.quarkus.registry.catalog.PlatformStream;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+@Deprecated
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-public class JsonPlatformStream extends JsonEntityWithAnySupport implements PlatformStream {
+public class JsonPlatformStream extends JsonEntityWithAnySupport implements PlatformStream.Mutable {
 
     private String id;
     private String name;
@@ -25,8 +25,9 @@ public class JsonPlatformStream extends JsonEntityWithAnySupport implements Plat
         return id;
     }
 
-    public void setId(String id) {
+    public JsonPlatformStream setId(String id) {
         this.id = id;
+        return this;
     }
 
     @Override
@@ -34,8 +35,9 @@ public class JsonPlatformStream extends JsonEntityWithAnySupport implements Plat
         return name;
     }
 
-    public void setName(String name) {
+    public JsonPlatformStream setName(String name) {
         this.name = name;
+        return this;
     }
 
     @Override
@@ -50,20 +52,40 @@ public class JsonPlatformStream extends JsonEntityWithAnySupport implements Plat
         return releases == null ? null : releases.get(version);
     }
 
-    public void setReleases(List<PlatformRelease> releases) {
+    public JsonPlatformStream setReleases(Collection<PlatformRelease> newValues) {
         if (this.releases != null) {
             this.releases.clear();
         }
-        for (PlatformRelease r : releases) {
+        for (PlatformRelease r : newValues) {
             addRelease(r);
         }
+        return this;
     }
 
-    public void addRelease(PlatformRelease platformRelease) {
+    public Mutable addRelease(PlatformRelease platformRelease) {
         if (releases == null) {
             releases = new LinkedHashMap<>();
         }
         releases.put(platformRelease.getVersion(), platformRelease);
+        return this;
+    }
+
+    @Override
+    public JsonPlatformStream setMetadata(Map<String, Object> metadata) {
+        super.setMetadata(metadata);
+        return this;
+    }
+
+    @Override
+    public JsonPlatformStream setMetadata(String name, Object value) {
+        super.setMetadata(name, value);
+        return this;
+    }
+
+    @Override
+    public JsonPlatformStream removeMetadata(String key) {
+        super.removeMetadata(key);
+        return this;
     }
 
     @Override
@@ -88,4 +110,13 @@ public class JsonPlatformStream extends JsonEntityWithAnySupport implements Plat
         return id + releases;
     }
 
+    @Override
+    public Mutable mutable() {
+        return this;
+    }
+
+    @Override
+    public JsonPlatformStream build() {
+        return this;
+    }
 }

@@ -13,6 +13,6 @@ public interface RegistryPlatformExtensionsResolver {
      * @return catalog of extensions that represents the platform
      * @throws RegistryResolutionException in case of a failure
      */
-    ExtensionCatalog resolvePlatformExtensions(ArtifactCoords platformCoords)
+    ExtensionCatalog.Mutable resolvePlatformExtensions(ArtifactCoords platformCoords)
             throws RegistryResolutionException;
 }

@@ -6,8 +6,9 @@ import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.catalog.ExtensionOrigin;
 import java.util.Objects;
 
+@Deprecated
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-public class JsonExtensionOrigin implements ExtensionOrigin {
+public class JsonExtensionOrigin implements ExtensionOrigin.Mutable {
 
     protected String id;
     protected boolean platform;
@@ -18,8 +19,9 @@ public class JsonExtensionOrigin implements ExtensionOrigin {
         return id;
     }
 
-    public void setId(String id) {
+    public Mutable setId(String id) {
         this.id = id;
+        return this;
     }
 
     @Override
@@ -27,8 +29,9 @@ public class JsonExtensionOrigin implements ExtensionOrigin {
         return bom;
     }
 
-    public void setBom(ArtifactCoords bom) {
+    public Mutable setBom(ArtifactCoords bom) {
         this.bom = bom;
+        return this;
     }
 
     @Override
@@ -36,8 +39,9 @@ public class JsonExtensionOrigin implements ExtensionOrigin {
         return platform;
     }
 
-    public void setPlatform(boolean platform) {
+    public Mutable setPlatform(boolean platform) {
         this.platform = platform;
+        return this;
     }
 
     @Override
@@ -67,5 +71,15 @@ public class JsonExtensionOrigin implements ExtensionOrigin {
         buf.append("platform=").append(platform);
         buf.append(" boms=").append(bom);
         return buf.append(']').toString();
+    }
+
+    @Override
+    public ExtensionOrigin build() {
+        return this;
+    }
+
+    @Override
+    public ExtensionOrigin.Mutable mutable() {
+        return this;
     }
 }

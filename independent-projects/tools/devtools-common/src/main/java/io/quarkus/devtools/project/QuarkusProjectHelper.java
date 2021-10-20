@@ -12,7 +12,6 @@ import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.config.RegistriesConfig;
-import io.quarkus.registry.config.RegistriesConfigLocator;
 import java.nio.file.Path;
 
 public class QuarkusProjectHelper {
@@ -158,7 +157,9 @@ public class QuarkusProjectHelper {
     }
 
     public static RegistriesConfig toolsConfig() {
-        return toolsConfig == null ? toolsConfig = RegistriesConfigLocator.resolveConfig() : toolsConfig;
+        return toolsConfig == null
+                ? toolsConfig = RegistriesConfig.resolveConfig()
+                : toolsConfig;
     }
 
     public static void setToolsConfig(RegistriesConfig config) {

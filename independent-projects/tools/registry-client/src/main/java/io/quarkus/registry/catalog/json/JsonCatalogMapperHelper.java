@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.registry.json.JsonArtifactCoordsMixin;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -15,6 +16,7 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+@Deprecated
 public class JsonCatalogMapperHelper {
 
     private static ObjectMapper mapper;

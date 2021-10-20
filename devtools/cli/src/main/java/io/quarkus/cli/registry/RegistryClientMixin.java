@@ -16,7 +16,6 @@ import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.config.RegistriesConfig;
-import io.quarkus.registry.config.RegistriesConfigLocator;
 import picocli.CommandLine;
 
 public class RegistryClientMixin {
@@ -42,8 +41,10 @@ public class RegistryClientMixin {
         return config;
     }
 
-    public RegistriesConfig resolveConfig() {
-        return config == null ? RegistriesConfigLocator.resolveConfig() : RegistriesConfigLocator.load(Paths.get(config));
+    public RegistriesConfig resolveConfig() throws RegistryResolutionException {
+        return config == null
+                ? RegistriesConfig.resolveConfig()
+                : RegistriesConfig.resolveFromFile(Paths.get(config));
     }
 
     public QuarkusProject createQuarkusProject(Path projectRoot, TargetQuarkusVersionGroup targetVersion, BuildTool buildTool,

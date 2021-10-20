@@ -1,0 +1,13 @@
+{
+  "platforms" : [ {
+    "platform-key" : "io.quarkus",
+    "streams" : [ {
+      "id" : "999-SNAPSHOT",
+      "releases" : [ {
+        "version" : "999-SNAPSHOT",
+        "member-boms" : [ "io.quarkus:quarkus-bom::pom:999-SNAPSHOT" ],
+        "quarkus-core-version" : "999-SNAPSHOT"
+      } ]
+    } ]
+  } ]
+}

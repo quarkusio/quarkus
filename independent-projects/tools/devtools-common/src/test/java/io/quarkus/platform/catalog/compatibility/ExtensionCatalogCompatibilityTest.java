@@ -8,8 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.catalog.json.JsonExtension;
-import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,15 +25,13 @@ public class ExtensionCatalogCompatibilityTest {
     @Test
     public void testEmpty() throws Exception {
 
-        final JsonExtensionCatalog catalog = new JsonExtensionCatalog();
-
-        catalog.addExtension(new ExtensionBuilder(ArtifactCoords.fromString("org.acme:a-classic:1.0"))
-                .addCapability("classic")
-                .build());
-
-        catalog.addExtension(new ExtensionBuilder(ArtifactCoords.fromString("org.acme:a-reactive:1.0"))
-                .addCapability("reactive")
-                .build());
+        final ExtensionCatalog catalog = ExtensionCatalog.builder()
+                .addExtension(new ExtensionBuilder(ArtifactCoords.fromString("org.acme:a-classic:1.0"))
+                        .addCapability("classic")
+                        .build())
+                .addExtension(new ExtensionBuilder(ArtifactCoords.fromString("org.acme:a-reactive:1.0"))
+                        .addCapability("reactive")
+                        .build());
 
         final ExtensionCatalogCompatibility catalogCompat = ExtensionCatalogCompatibility.forCatalog(catalog);
         assertTrue(catalogCompat.isEmpty());
@@ -44,7 +40,7 @@ public class ExtensionCatalogCompatibilityTest {
     @Test
     public void testDirectCapabilityConflict() throws Exception {
 
-        final JsonExtensionCatalog catalog = new JsonExtensionCatalog();
+        final ExtensionCatalog.Mutable catalog = ExtensionCatalog.builder();
 
         final ArtifactCoords aClassic = ArtifactCoords.fromString("org.acme:a-classic:1.0");
         catalog.addExtension(extensionBuilder(aClassic)
@@ -64,7 +60,7 @@ public class ExtensionCatalogCompatibilityTest {
                 .addCapability("reactive")
                 .build());
 
-        final Map<ArtifactCoords, ExtensionCompatibility> compatMap = compatMap(catalog);
+        final Map<ArtifactCoords, ExtensionCompatibility> compatMap = compatMap(catalog.build());
         assertFalse(compatMap.isEmpty());
         assertIncompatibleWith(compatMap.get(aClassic), aReactive);
         assertIncompatibleWith(compatMap.get(aReactive), aClassic);
@@ -74,7 +70,7 @@ public class ExtensionCatalogCompatibilityTest {
     @Test
     public void testTransitiveCapabilityConflict() throws Exception {
 
-        final JsonExtensionCatalog catalog = new JsonExtensionCatalog();
+        final ExtensionCatalog.Mutable catalog = ExtensionCatalog.builder();
 
         final ArtifactCoords aClassic = ArtifactCoords.fromString("org.acme:a-classic:1.0");
         catalog.addExtension(extensionBuilder(aClassic)
@@ -108,7 +104,7 @@ public class ExtensionCatalogCompatibilityTest {
                 .addDependency(aReactive)
                 .build());
 
-        final Map<ArtifactCoords, ExtensionCompatibility> compatMap = compatMap(catalog);
+        final Map<ArtifactCoords, ExtensionCompatibility> compatMap = compatMap(catalog.build());
         assertFalse(compatMap.isEmpty());
         assertIncompatibleWith(compatMap.get(aClassic), aReactive, bReactive, cReactive);
         assertIncompatibleWith(compatMap.get(aReactive), aClassic, bClassic, cClassic);
@@ -144,7 +140,7 @@ public class ExtensionCatalogCompatibilityTest {
 
     private static class ExtensionBuilder {
 
-        private final JsonExtension e = new JsonExtension();
+        private final Extension.Mutable e = Extension.builder();
 
         ExtensionBuilder(ArtifactCoords coords) {
             e.setArtifact(coords);

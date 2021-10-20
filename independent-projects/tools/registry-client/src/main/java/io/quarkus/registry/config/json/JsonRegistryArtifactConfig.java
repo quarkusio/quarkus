@@ -5,8 +5,9 @@ import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.config.RegistryArtifactConfig;
 import java.util.Objects;
 
+@Deprecated
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-public class JsonRegistryArtifactConfig implements RegistryArtifactConfig {
+public class JsonRegistryArtifactConfig implements RegistryArtifactConfig.Mutable {
 
     protected boolean disabled;
     protected ArtifactCoords artifact;
@@ -16,8 +17,10 @@ public class JsonRegistryArtifactConfig implements RegistryArtifactConfig {
         return disabled;
     }
 
-    public void setDisabled(boolean disabled) {
+    @Override
+    public RegistryArtifactConfig.Mutable setDisabled(boolean disabled) {
         this.disabled = disabled;
+        return this;
     }
 
     @Override
@@ -25,8 +28,22 @@ public class JsonRegistryArtifactConfig implements RegistryArtifactConfig {
         return artifact;
     }
 
-    public void setArtifact(ArtifactCoords artifact) {
+    @Override
+    public RegistryArtifactConfig.Mutable setArtifact(ArtifactCoords artifact) {
         this.artifact = artifact;
+        return this;
+    }
+
+    @Override
+    public RegistryArtifactConfig.Mutable mutable() {
+        return new JsonRegistryArtifactConfig()
+                .setArtifact(this.artifact)
+                .setDisabled(this.disabled);
+    }
+
+    @Override
+    public RegistryArtifactConfig build() {
+        return this;
     }
 
     @Override

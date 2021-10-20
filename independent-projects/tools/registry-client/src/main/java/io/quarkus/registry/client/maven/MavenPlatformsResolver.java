@@ -5,8 +5,6 @@ import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.Constants;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.PlatformCatalog;
-import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
-import io.quarkus.registry.catalog.json.JsonPlatformCatalog;
 import io.quarkus.registry.client.RegistryPlatformsResolver;
 import io.quarkus.registry.config.RegistryPlatformsConfig;
 import java.io.IOException;
@@ -31,7 +29,7 @@ public class MavenPlatformsResolver implements RegistryPlatformsResolver {
     }
 
     @Override
-    public PlatformCatalog resolvePlatforms(String quarkusVersion) throws RegistryResolutionException {
+    public PlatformCatalog.Mutable resolvePlatforms(String quarkusVersion) throws RegistryResolutionException {
         final ArtifactCoords baseCoords = config.getArtifact();
         final Artifact catalogArtifact = new DefaultArtifact(baseCoords.getGroupId(), baseCoords.getArtifactId(),
                 quarkusVersion, baseCoords.getType(), baseCoords.getVersion());
@@ -44,9 +42,9 @@ public class MavenPlatformsResolver implements RegistryPlatformsResolver {
             return null;
         }
         final Path jsonFile = artifactResult.getArtifact().getFile().toPath();
-        final JsonPlatformCatalog catalog;
+        final PlatformCatalog.Mutable catalog;
         try {
-            catalog = JsonCatalogMapperHelper.deserialize(jsonFile, JsonPlatformCatalog.class);
+            catalog = PlatformCatalog.mutableFromFile(jsonFile);
         } catch (IOException e) {
             throw new RegistryResolutionException(
                     "Failed to load platform catalog from " + jsonFile, e);
@@ -65,7 +63,7 @@ public class MavenPlatformsResolver implements RegistryPlatformsResolver {
                      * fmt.setTimeZone(timezone);
                      * final Date date = fmt.parse(lastUpdated);
                      */
-                    catalog.getMetadata().put(Constants.LAST_UPDATED, lastUpdated);
+                    catalog.setMetadata(Constants.LAST_UPDATED, lastUpdated);
                 }
             }
         } catch (Exception e) {

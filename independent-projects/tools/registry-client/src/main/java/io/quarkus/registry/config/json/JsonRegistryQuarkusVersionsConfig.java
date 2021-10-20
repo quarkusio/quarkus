@@ -4,8 +4,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.registry.config.RegistryQuarkusVersionsConfig;
 import java.util.Objects;
 
+@Deprecated
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-public class JsonRegistryQuarkusVersionsConfig implements RegistryQuarkusVersionsConfig {
+public class JsonRegistryQuarkusVersionsConfig implements RegistryQuarkusVersionsConfig.Mutable {
 
     private String recognizedVersionsExpression;
     private boolean exclusiveProvider;
@@ -15,8 +16,9 @@ public class JsonRegistryQuarkusVersionsConfig implements RegistryQuarkusVersion
         return recognizedVersionsExpression;
     }
 
-    public void setRecognizedVersionsExpression(String recognizedVersionsExpression) {
+    public Mutable setRecognizedVersionsExpression(String recognizedVersionsExpression) {
         this.recognizedVersionsExpression = recognizedVersionsExpression;
+        return this;
     }
 
     @Override
@@ -24,8 +26,21 @@ public class JsonRegistryQuarkusVersionsConfig implements RegistryQuarkusVersion
         return exclusiveProvider;
     }
 
-    public void setExclusiveProvider(boolean exclusiveProvider) {
+    public Mutable setExclusiveProvider(boolean exclusiveProvider) {
         this.exclusiveProvider = exclusiveProvider;
+        return this;
+    }
+
+    @Override
+    public Mutable mutable() {
+        return new JsonRegistryQuarkusVersionsConfig()
+                .setExclusiveProvider(this.exclusiveProvider)
+                .setRecognizedVersionsExpression(this.recognizedVersionsExpression);
+    }
+
+    @Override
+    public RegistryQuarkusVersionsConfig build() {
+        return this;
     }
 
     @Override

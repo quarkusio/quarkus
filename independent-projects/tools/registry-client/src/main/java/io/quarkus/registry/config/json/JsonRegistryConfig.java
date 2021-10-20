@@ -11,13 +11,15 @@ import io.quarkus.registry.config.RegistryMavenConfig;
 import io.quarkus.registry.config.RegistryNonPlatformExtensionsConfig;
 import io.quarkus.registry.config.RegistryPlatformsConfig;
 import io.quarkus.registry.config.RegistryQuarkusVersionsConfig;
+import io.quarkus.registry.json.JsonBooleanTrueFilter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+@Deprecated
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-public class JsonRegistryConfig implements RegistryConfig {
+public class JsonRegistryConfig implements RegistryConfig.Mutable {
 
     private String id;
     private boolean enabled = true;
@@ -42,8 +44,9 @@ public class JsonRegistryConfig implements RegistryConfig {
         return id;
     }
 
-    public void setId(String id) {
+    public Mutable setId(String id) {
         this.id = Objects.requireNonNull(id);
+        return this;
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = JsonBooleanTrueFilter.class)
@@ -52,8 +55,9 @@ public class JsonRegistryConfig implements RegistryConfig {
         return enabled;
     }
 
-    public void setEnabled(boolean enabled) {
+    public Mutable setEnabled(boolean enabled) {
         this.enabled = enabled;
+        return this;
     }
 
     @Override
@@ -61,8 +65,9 @@ public class JsonRegistryConfig implements RegistryConfig {
         return updatePolicy;
     }
 
-    public void setUpdatePolicy(String updatePolicy) {
+    public Mutable setUpdatePolicy(String updatePolicy) {
         this.updatePolicy = updatePolicy;
+        return this;
     }
 
     @Override
@@ -71,8 +76,9 @@ public class JsonRegistryConfig implements RegistryConfig {
         return descriptor;
     }
 
-    public void setDescriptor(RegistryDescriptorConfig descriptor) {
+    public Mutable setDescriptor(RegistryDescriptorConfig descriptor) {
         this.descriptor = descriptor;
+        return this;
     }
 
     @JsonDeserialize(as = JsonRegistryPlatformsConfig.class)
@@ -81,8 +87,9 @@ public class JsonRegistryConfig implements RegistryConfig {
         return platforms;
     }
 
-    public void setPlatforms(RegistryPlatformsConfig platforms) {
+    public Mutable setPlatforms(RegistryPlatformsConfig platforms) {
         this.platforms = platforms;
+        return this;
     }
 
     @JsonDeserialize(as = JsonRegistryNonPlatformExtensionsConfig.class)
@@ -91,8 +98,9 @@ public class JsonRegistryConfig implements RegistryConfig {
         return nonPlatformExtensions;
     }
 
-    public void setNonPlatformExtensions(RegistryNonPlatformExtensionsConfig nonPlatformExtensions) {
+    public Mutable setNonPlatformExtensions(RegistryNonPlatformExtensionsConfig nonPlatformExtensions) {
         this.nonPlatformExtensions = nonPlatformExtensions;
+        return this;
     }
 
     boolean isIdOnly() {
@@ -112,8 +120,9 @@ public class JsonRegistryConfig implements RegistryConfig {
         return mavenConfig;
     }
 
-    public void setMaven(RegistryMavenConfig mavenConfig) {
+    public Mutable setMaven(RegistryMavenConfig mavenConfig) {
         this.mavenConfig = mavenConfig;
+        return this;
     }
 
     @JsonDeserialize(as = JsonRegistryQuarkusVersionsConfig.class)
@@ -122,8 +131,9 @@ public class JsonRegistryConfig implements RegistryConfig {
         return versionsConfig;
     }
 
-    public void setQuarkusVersions(RegistryQuarkusVersionsConfig quarkusVersions) {
+    public Mutable setQuarkusVersions(RegistryQuarkusVersionsConfig quarkusVersions) {
         this.versionsConfig = quarkusVersions;
+        return this;
     }
 
     @JsonAnyGetter
@@ -132,16 +142,19 @@ public class JsonRegistryConfig implements RegistryConfig {
         return extra == null ? Collections.emptyMap() : extra;
     }
 
-    public void setExtra(Map<String, Object> extra) {
+    public Mutable setExtra(Map<String, Object> extra) {
         this.extra = extra;
+        return this;
     }
 
+    @Override
     @JsonAnySetter
-    public void setAny(String name, Object value) {
+    public Mutable setExtra(String name, Object value) {
         if (extra == null) {
             extra = new HashMap<>();
         }
         extra.put(name, value);
+        return this;
     }
 
     public String toString() {
@@ -177,5 +190,23 @@ public class JsonRegistryConfig implements RegistryConfig {
                 && Objects.equals(nonPlatformExtensions, other.nonPlatformExtensions)
                 && Objects.equals(platforms, other.platforms) && Objects.equals(updatePolicy, other.updatePolicy)
                 && Objects.equals(versionsConfig, other.versionsConfig);
+    }
+
+    @Override
+    public RegistryConfig.Mutable mutable() {
+        return new JsonRegistryConfig()
+                .setExtra(this.extra)
+                .setId(this.id)
+                .setEnabled(this.enabled)
+                .setUpdatePolicy(this.updatePolicy)
+                .setDescriptor(this.descriptor)
+                .setPlatforms(this.platforms)
+                .setNonPlatformExtensions(this.nonPlatformExtensions)
+                .setMaven(this.mavenConfig)
+                .setQuarkusVersions(this.versionsConfig);
+    }
+
+    public JsonRegistryConfig build() {
+        return this;
     }
 }

@@ -4,17 +4,23 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.quarkus.registry.config.ConfigSource;
 import io.quarkus.registry.config.RegistriesConfig;
+import io.quarkus.registry.config.RegistriesConfigMapperHelper;
 import io.quarkus.registry.config.RegistryConfig;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+@Deprecated
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-public class JsonRegistriesConfig implements RegistriesConfig {
+public class JsonRegistriesConfig implements RegistriesConfig.Mutable {
 
     private boolean debug;
     private List<RegistryConfig> registries = new ArrayList<>();
+    private ConfigSource configSource = ConfigSource.MANUAL;
 
     @Override
     @JsonDeserialize(contentUsing = JsonRegistryConfigDeserializer.class)
@@ -23,16 +29,25 @@ public class JsonRegistriesConfig implements RegistriesConfig {
         return registries;
     }
 
-    public void setRegistries(List<RegistryConfig> registries) {
+    public Mutable setRegistries(List<RegistryConfig> registries) {
         if (registries == null) {
             this.registries.clear();
         } else {
             this.registries = registries;
         }
+        return this;
     }
 
-    public void addRegistry(RegistryConfig registry) {
-        registries.add(registry);
+    @Override
+    public Mutable setRegistry(String registryId) {
+        addRegistry(registryId);
+        return this;
+    }
+
+    @Override
+    public Mutable setRegistry(RegistryConfig config) {
+        addRegistry(config);
+        return this;
     }
 
     @Override
@@ -40,8 +55,9 @@ public class JsonRegistriesConfig implements RegistriesConfig {
         return debug;
     }
 
-    public void setDebug(boolean debug) {
+    public Mutable setDebug(boolean debug) {
         this.debug = debug;
+        return this;
     }
 
     @JsonIgnore
@@ -81,5 +97,59 @@ public class JsonRegistriesConfig implements RegistriesConfig {
             }
         }
         return buf.append(']').toString();
+    }
+
+    @Override
+    public boolean addRegistry(String registryId) {
+        final JsonRegistryConfig registry = new JsonRegistryConfig();
+        registry.setId(registryId);
+        return addRegistry(registry);
+    }
+
+    @Override
+    public boolean addRegistry(RegistryConfig config) {
+        if (registries.stream().anyMatch(r -> r.getId().equals(config.getId()))) {
+            return false;
+        }
+        return registries.add(config);
+    }
+
+    @Override
+    public boolean removeRegistry(String registryId) {
+        return registries.removeIf(r -> r.getId().equals(registryId));
+    }
+
+    @Override
+    @JsonIgnore
+    public ConfigSource getSource() {
+        return configSource;
+    }
+
+    @JsonIgnore
+    JsonRegistriesConfig setSource(ConfigSource configSource) {
+        // package private.
+        // Source isn't known during deserialization. Must be added post-construction.
+        this.configSource = configSource;
+        return this;
+    }
+
+    @Override
+    public void persist() {
+        throw new UnsupportedOperationException("Not here yet");
+    }
+
+    @Override
+    public void persist(Path targetFile) throws IOException {
+        RegistriesConfigMapperHelper.serialize(this, targetFile);
+    }
+
+    @Override
+    public Mutable mutable() {
+        return this;
+    }
+
+    @Override
+    public RegistriesConfig build() {
+        return this;
     }
 }

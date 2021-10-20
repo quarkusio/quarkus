@@ -8,10 +8,12 @@ import io.quarkus.registry.catalog.PlatformRelease;
 import io.quarkus.registry.catalog.PlatformReleaseVersion;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 
+@Deprecated
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-public class JsonPlatformRelease extends JsonEntityWithAnySupport implements PlatformRelease {
+public class JsonPlatformRelease extends JsonEntityWithAnySupport implements PlatformRelease.Mutable {
 
     private PlatformReleaseVersion version;
     private Collection<ArtifactCoords> memberBoms;
@@ -19,14 +21,15 @@ public class JsonPlatformRelease extends JsonEntityWithAnySupport implements Pla
     private String upstreamQuarkusCoreVersion;
 
     @Override
-    @JsonDeserialize(as = JsonPlatformReleaseVersion.class)
-    @JsonSerialize(as = JsonPlatformReleaseVersion.class)
+    @JsonDeserialize(as = PlatformReleaseVersion.class)
+    @JsonSerialize(as = PlatformReleaseVersion.class)
     public PlatformReleaseVersion getVersion() {
         return version;
     }
 
-    public void setVersion(PlatformReleaseVersion version) {
+    public JsonPlatformRelease setVersion(PlatformReleaseVersion version) {
         this.version = version;
+        return this;
     }
 
     @Override
@@ -34,8 +37,9 @@ public class JsonPlatformRelease extends JsonEntityWithAnySupport implements Pla
         return memberBoms == null ? Collections.emptyList() : memberBoms;
     }
 
-    public void setMemberBoms(Collection<ArtifactCoords> memberBoms) {
+    public JsonPlatformRelease setMemberBoms(Collection<ArtifactCoords> memberBoms) {
         this.memberBoms = memberBoms;
+        return this;
     }
 
     @Override
@@ -43,8 +47,9 @@ public class JsonPlatformRelease extends JsonEntityWithAnySupport implements Pla
         return quarkusCoreVersion;
     }
 
-    public void setQuarkusCoreVersion(String quarkusCoreVersion) {
+    public JsonPlatformRelease setQuarkusCoreVersion(String quarkusCoreVersion) {
         this.quarkusCoreVersion = quarkusCoreVersion;
+        return this;
     }
 
     @Override
@@ -52,8 +57,27 @@ public class JsonPlatformRelease extends JsonEntityWithAnySupport implements Pla
         return upstreamQuarkusCoreVersion;
     }
 
-    public void setUpstreamQuarkusCoreVersion(String quarkusCoreVersion) {
+    public JsonPlatformRelease setUpstreamQuarkusCoreVersion(String quarkusCoreVersion) {
         this.upstreamQuarkusCoreVersion = quarkusCoreVersion;
+        return this;
+    }
+
+    @Override
+    public JsonPlatformRelease setMetadata(Map<String, Object> metadata) {
+        super.setMetadata(metadata);
+        return this;
+    }
+
+    @Override
+    public JsonPlatformRelease setMetadata(String name, Object value) {
+        super.setMetadata(name, value);
+        return this;
+    }
+
+    @Override
+    public JsonPlatformRelease removeMetadata(String key) {
+        super.removeMetadata(key);
+        return this;
     }
 
     @Override
@@ -76,5 +100,15 @@ public class JsonPlatformRelease extends JsonEntityWithAnySupport implements Pla
     @Override
     public String toString() {
         return version.toString() + memberBoms;
+    }
+
+    @Override
+    public JsonPlatformRelease mutable() {
+        return this;
+    }
+
+    @Override
+    public JsonPlatformRelease build() {
+        return this;
     }
 }

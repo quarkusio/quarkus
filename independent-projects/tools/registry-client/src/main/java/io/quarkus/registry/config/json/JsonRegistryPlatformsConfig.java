@@ -1,19 +1,34 @@
 package io.quarkus.registry.config.json;
 
+import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.config.RegistryPlatformsConfig;
 import java.util.Objects;
 
-public class JsonRegistryPlatformsConfig extends JsonRegistryArtifactConfig implements RegistryPlatformsConfig {
+@Deprecated
+public class JsonRegistryPlatformsConfig extends JsonRegistryArtifactConfig implements RegistryPlatformsConfig.Mutable {
 
     private Boolean extensionCatalogsIncluded;
+
+    @Override
+    public RegistryPlatformsConfig.Mutable setDisabled(boolean disabled) {
+        super.setDisabled(disabled);
+        return this;
+    }
+
+    @Override
+    public RegistryPlatformsConfig.Mutable setArtifact(ArtifactCoords artifact) {
+        super.setArtifact(artifact);
+        return this;
+    }
 
     @Override
     public Boolean getExtensionCatalogsIncluded() {
         return extensionCatalogsIncluded;
     }
 
-    public void setExtensionCatalogsIncluded(Boolean extensionCatalogsIncluded) {
+    public RegistryPlatformsConfig.Mutable setExtensionCatalogsIncluded(Boolean extensionCatalogsIncluded) {
         this.extensionCatalogsIncluded = extensionCatalogsIncluded;
+        return this;
     }
 
     @Override
@@ -34,5 +49,18 @@ public class JsonRegistryPlatformsConfig extends JsonRegistryArtifactConfig impl
             return false;
         JsonRegistryPlatformsConfig other = (JsonRegistryPlatformsConfig) obj;
         return Objects.equals(extensionCatalogsIncluded, other.extensionCatalogsIncluded);
+    }
+
+    @Override
+    public RegistryPlatformsConfig.Mutable mutable() {
+        return new JsonRegistryPlatformsConfig()
+                .setArtifact(this.artifact)
+                .setExtensionCatalogsIncluded(this.extensionCatalogsIncluded)
+                .setDisabled(this.disabled);
+    }
+
+    @Override
+    public RegistryPlatformsConfig build() {
+        return this;
     }
 }

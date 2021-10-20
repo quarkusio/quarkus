@@ -203,8 +203,8 @@
         <avro.version>1.10.2</avro.version>
         <apicurio-registry.version>2.0.1.Final</apicurio-registry.version>
         <jacoco.version>0.8.7</jacoco.version>
-        <testcontainers.version>1.16.0</testcontainers.version>
-        <docker-java.version>3.2.11</docker-java.version> <!-- must be the version Testcontainers use -->
+        <testcontainers.version>1.16.1</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
+        <docker-java.version>3.2.12</docker-java.version> <!-- must be the version Testcontainers use -->
         <aesh-readline.version>2.1</aesh-readline.version>
         <strimzi-oauth.version>0.8.1</strimzi-oauth.version>
         <strimzi.oauth.nimbus.version>9.14</strimzi.oauth.nimbus.version>

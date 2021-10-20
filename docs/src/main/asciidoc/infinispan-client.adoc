@@ -494,6 +494,40 @@ The Infinispan Client has additional features that were not mentioned here. This
 feature was not tested in a Quarkus environment and they may or may not work. Please let us
 know if you need these added!
 
+== Dev Services for Infinispan
+
+When you use the infinispan-client extension in dev mode or in test, Quarkus automatically starts an Infinispan server and configure your application.
+
+=== Enabling / Disabling Dev Services for Infinispan
+
+Dev Services for Infinispan is automatically enabled unless:
+
+- `quarkus.infinispan-client.devservices.enabled` is set to `false`
+- the `quarkus.infinispan-client.server-list` is configured
+
+Dev Services for Infinispan relies on Docker to start the broker.
+If your environment does not support Docker, you will need to start the broker manually, or connect to an already running broker.
+You can configure the broker address using `quarkus.infinispan-client.server-list`.
+
+== Shared server
+
+Quarkus will share the Infinispan broker if you have multiple applications running in dev mode.
+Dev Services for Infinispan implements a _service discovery_ mechanism for your multiple Quarkus applications running in _dev_ mode to share a single broker.
+
+NOTE: Dev Services for Infinispan starts the container with the `quarkus-dev-service-infinispan` label which is used to identify the container.
+
+If you need multiple (shared) Infinispan server, you can configure the `quarkus.infinispan-client.devservices.service-name` attribute and indicate the server name.
+It looks for a container with the same value, or starts a new one if none can be found.
+The default service name is `infinispan`.
+
+Sharing is enabled by default in dev mode, but disabled in test mode.
+You can disable the sharing with `quarkus.infinispan-client.devservices.shared=false`.
+
+== Setting the port
+
+By default, Dev Services for Infinispan picks a random port and configures the application.
+You can set the port by configuring the `quarkus.infinispan-client.devservices.port` property.
+
 == Testing helpers
 
 To start a Infinispan Server for your unit tests, Quarkus provides one `QuarkusTestResourceLifecycleManager` that relies on link:https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html#junit-testing[Infinispan Server Test Container].

@@ -113,7 +113,7 @@ The first approach is by providing the properties within the `src/main/resources
 ----
 quarkus.application.name=myservice // <1>
 quarkus.opentelemetry.enabled=true // <2>
-quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://localhost:55680 // <3>
+quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://localhost:4317 // <3>
 
 quarkus.opentelemetry.tracer.exporter.otlp.headers=Authorization=Bearer my_secret // <4>
 ----
@@ -181,7 +181,7 @@ services:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
       - "13133:13133" # Health_check extension
-      - "4317"        # OTLP gRPC receiver
+      - "4317:4317"   # OTLP gRPC receiver
       - "55680:55680" # OTLP gRPC receiver alternative port
     depends_on:
       - jaeger-all-in-one

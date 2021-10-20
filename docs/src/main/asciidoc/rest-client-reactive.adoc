@@ -97,8 +97,7 @@ public class Country {
 }
 ----
 
-The model above is only a subset of the fields provided by the service (thus the `@JsonIgnoreProperties` annotation),
-but it suffices for the purposes of this guide.
+The model above is only a subset of the fields provided by the service, but it suffices for the purposes of this guide.
 
 == Create the interface
 

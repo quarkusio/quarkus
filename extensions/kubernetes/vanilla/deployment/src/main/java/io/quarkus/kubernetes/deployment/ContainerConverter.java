@@ -9,11 +9,12 @@ import io.dekorate.kubernetes.config.ContainerBuilder;
 public class ContainerConverter {
 
     public static Container convert(Map.Entry<String, ContainerConfig> e) {
-        return convert(e.getValue()).withName(e.getKey()).build();
+        return convert(e.getKey(), e.getValue()).build();
     }
 
-    private static ContainerBuilder convert(ContainerConfig c) {
+    private static ContainerBuilder convert(String name, ContainerConfig c) {
         ContainerBuilder b = new ContainerBuilder();
+        b.withName(name);
         c.image.ifPresent(b::withImage);
         c.workingDir.ifPresent(b::withWorkingDir);
         c.command.ifPresent(w -> b.withCommand(w.toArray(new String[0])));
@@ -27,6 +28,14 @@ public class ContainerConverter {
         b.addAllToEnvVars(c.convertToEnvs());
         c.ports.entrySet().forEach(e -> b.addToPorts(PortConverter.convert(e)));
         c.mounts.entrySet().forEach(e -> b.addToMounts(MountConverter.convert(e)));
+
+        if (c.resources.requests.memory.isPresent() || c.resources.requests.cpu.isPresent()) {
+            b.withNewRequestResources(c.resources.requests.memory.orElse(null), c.resources.requests.cpu.orElse(null));
+        }
+
+        if (c.resources.limits.memory.isPresent() || c.resources.limits.cpu.isPresent()) {
+            b.withNewLimitResources(c.resources.limits.memory.orElse(null), c.resources.limits.cpu.orElse(null));
+        }
         return b;
     }
 }

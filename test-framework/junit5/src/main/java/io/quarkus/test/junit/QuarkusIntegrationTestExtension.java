@@ -91,7 +91,7 @@ public class QuarkusIntegrationTestExtension
         boolean reloadTestResources = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
                 && (hasPerTestResources || QuarkusTestExtension.hasPerTestResources(extensionContext));
         if ((state == null && !failedBoot) || wrongProfile || reloadTestResources) {
-            if (wrongProfile) {
+            if (wrongProfile || reloadTestResources) {
                 if (state != null) {
                     try {
                         state.close();

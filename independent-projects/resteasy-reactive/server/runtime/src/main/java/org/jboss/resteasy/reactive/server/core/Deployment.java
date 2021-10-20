@@ -40,6 +40,7 @@ public class Deployment {
     private final List<ServerRestHandler> preMatchHandlers;
     private final List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers;
     private final List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers;
+    private final boolean resumeOn404;
 
     public Deployment(ExceptionMapping exceptionMapping, ContextResolvers contextResolvers,
             ServerSerialisers serialisers,
@@ -49,7 +50,7 @@ public class Deployment {
             ThreadSetupAction threadSetupAction, RequestContextFactory requestContextFactory,
             List<ServerRestHandler> preMatchHandlers,
             List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers,
-            List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers) {
+            List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers, boolean resumeOn404) {
         this.exceptionMapping = exceptionMapping;
         this.contextResolvers = contextResolvers;
         this.serialisers = serialisers;
@@ -64,6 +65,7 @@ public class Deployment {
         this.preMatchHandlers = preMatchHandlers;
         this.classMappers = classMappers;
         this.runtimeConfigurableServerRestHandlers = runtimeConfigurableServerRestHandlers;
+        this.resumeOn404 = resumeOn404;
     }
 
     public Supplier<Application> getApplicationSupplier() {
@@ -92,6 +94,10 @@ public class Deployment {
 
     public EntityWriter getDynamicEntityWriter() {
         return dynamicEntityWriter;
+    }
+
+    public boolean isResumeOn404() {
+        return resumeOn404;
     }
 
     /**

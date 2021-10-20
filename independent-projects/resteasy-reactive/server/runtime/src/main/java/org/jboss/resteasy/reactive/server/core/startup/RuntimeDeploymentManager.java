@@ -145,7 +145,8 @@ public class RuntimeDeploymentManager {
                     .getValue();
             Map<String, RequestMapper<RuntimeResource>> mappersByMethod = RuntimeMappingDeployment
                     .buildClassMapper(perClassMappers);
-            ClassRoutingHandler classRoutingHandler = new ClassRoutingHandler(mappersByMethod, classTemplateNameCount);
+            ClassRoutingHandler classRoutingHandler = new ClassRoutingHandler(mappersByMethod, classTemplateNameCount,
+                    info.isResumeOn404());
 
             int maxMethodTemplateNameCount = 0;
             for (TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> i : perClassMappers.values()) {
@@ -206,7 +207,7 @@ public class RuntimeDeploymentManager {
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
                 prefix, paramConverterProviders, configurationImpl, applicationSupplier,
                 threadSetupAction, requestContextFactory, preMatchHandlers, classMappers,
-                runtimeConfigurableServerRestHandlers);
+                runtimeConfigurableServerRestHandlers, info.isResumeOn404());
     }
 
     private void addRuntimeConfigurableHandlers(RuntimeResource runtimeResource,

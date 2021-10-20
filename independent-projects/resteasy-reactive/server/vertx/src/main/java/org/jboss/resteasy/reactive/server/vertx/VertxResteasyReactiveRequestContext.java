@@ -122,6 +122,12 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     }
 
     @Override
+    public boolean resumeExternalProcessing() {
+        context.next();
+        return true;
+    }
+
+    @Override
     public String getRequestHeader(CharSequence name) {
         return request.headers().get(name);
     }

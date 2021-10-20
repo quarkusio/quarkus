@@ -12,7 +12,7 @@ A lot of web applications are monotonous CRUD applications with REST APIs that a
 To streamline this task, REST Data with Panache extension can generate the basic CRUD endpoints for your entities and repositories.
 
 While this extension is still experimental and provides a limited feature set, we hope to get an early feedback for it.
-Currently this extension supports Hibernate ORM and MongoDB with Panache and can generate CRUD resources that work with `application/json` and `application/hal+json` content.
+Currently, this extension supports Hibernate ORM and MongoDB with Panache and can generate CRUD resources that work with `application/json` and `application/hal+json` content.
 
 include::./status-include.adoc[]
 
@@ -23,7 +23,7 @@ include::./status-include.adoc[]
 * Add the required dependencies to your `pom.xml`
 ** Hibernate ORM REST Data with Panache extension (`quarkus-hibernate-orm-rest-data-panache`)
 ** A JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
-** One of the RESTEasy JSON serialization extensions (`quarkus-resteasy-reactive-jackson` or `quarkus-resteasy-reactive-jsonb`)
+** One of the RESTEasy JSON serialization extensions (the extension supports both RESTEasy Classic and RESTEasy Reactive)
 
 [source,xml]
 ----
@@ -36,10 +36,18 @@ include::./status-include.adoc[]
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-jdbc-postgresql</artifactId>
     </dependency>
+   <!-- Use these if you are using RESTEasy Reactive -->
     <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
     </dependency>
+    <!-- Use this if you are going to use RESTEasy Classic -->
+    <!--
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy-jackson</artifactId>
+    </dependency>
+    -->
 </dependencies>
 ----
 
@@ -59,10 +67,26 @@ include::./status-include.adoc[]
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-mongodb-rest-data-panache</artifactId>
     </dependency>
+   <!-- Use these if you are using RESTEasy Reactive -->
     <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
     </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy-reactive-links</artifactId>
+    </dependency>
+    <!-- Use this if you are going to use RESTEasy Classic -->
+    <!--
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy-jackson</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.jboss.resteasy</groupId>
+        <artifactId>resteasy-links</artifactId>
+    </dependency>
+    -->
 </dependencies>
 ----
 

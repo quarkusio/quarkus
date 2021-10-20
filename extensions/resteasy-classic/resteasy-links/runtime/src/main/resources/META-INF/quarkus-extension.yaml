@@ -1,0 +1,15 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "RESTEasy Links"
+metadata:
+  keywords:
+  - "resteasy-links"
+  - "resteasy"
+  - "jaxrs"
+  - "links"
+  categories:
+  - "web"
+  - "serialization"
+  status: "stable"
+  config:
+  - "quarkus.resteasy."

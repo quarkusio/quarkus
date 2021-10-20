@@ -153,28 +153,7 @@ public class AugmentActionImpl implements AugmentAction {
                 }).toArray(Class[]::new);
         BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, targets);
 
-        String debugSourcesDir = BootstrapDebug.DEBUG_SOURCES_DIR;
-        if (debugSourcesDir != null) {
-            for (GeneratedClassBuildItem i : result.consumeMulti(GeneratedClassBuildItem.class)) {
-                try {
-                    if (i.getSource() != null) {
-                        File debugPath = new File(debugSourcesDir);
-                        if (!debugPath.exists()) {
-                            debugPath.mkdir();
-                        }
-                        File sourceFile = new File(debugPath, i.getName() + ".zig");
-                        sourceFile.getParentFile().mkdirs();
-                        Files.write(sourceFile.toPath(), i.getSource().getBytes(StandardCharsets.UTF_8),
-                                StandardOpenOption.CREATE);
-                        log.infof("Wrote source: %s", sourceFile.getAbsolutePath());
-                    } else {
-                        log.infof("Source not available: %s", i.getName());
-                    }
-                } catch (Exception t) {
-                    log.errorf(t, "Failed to write debug source file: %s", i.getName());
-                }
-            }
-        }
+        writeDebugSourceFile(result);
         try {
             BiConsumer<Object, BuildResult> consumer = (BiConsumer<Object, BuildResult>) Class
                     .forName(resultHandler, false, classLoader)
@@ -195,6 +174,26 @@ public class AugmentActionImpl implements AugmentAction {
         BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, ArtifactResultBuildItem.class,
                 DeploymentResultBuildItem.class);
 
+        writeDebugSourceFile(result);
+
+        JarBuildItem jarBuildItem = result.consumeOptional(JarBuildItem.class);
+        NativeImageBuildItem nativeImageBuildItem = result.consumeOptional(NativeImageBuildItem.class);
+        List<ArtifactResultBuildItem> artifactResultBuildItems = result.consumeMulti(ArtifactResultBuildItem.class);
+        BuildSystemTargetBuildItem buildSystemTargetBuildItem = result.consume(BuildSystemTargetBuildItem.class);
+
+        // this depends on the fact that the order in which we can obtain MultiBuildItems is the same as they are produced
+        // we want to write result of the final artifact created
+        ArtifactResultBuildItem lastResult = artifactResultBuildItems.get(artifactResultBuildItems.size() - 1);
+        writeArtifactResultMetadataFile(buildSystemTargetBuildItem, lastResult);
+
+        return new AugmentResult(artifactResultBuildItems.stream()
+                .map(a -> new ArtifactResult(a.getPath(), a.getType(), a.getMetadata()))
+                .collect(Collectors.toList()),
+                jarBuildItem != null ? jarBuildItem.toJarResult() : null,
+                nativeImageBuildItem != null ? nativeImageBuildItem.getPath() : null);
+    }
+
+    private void writeDebugSourceFile(BuildResult result) {
         String debugSourcesDir = BootstrapDebug.DEBUG_SOURCES_DIR;
         if (debugSourcesDir != null) {
             for (GeneratedClassBuildItem i : result.consumeMulti(GeneratedClassBuildItem.class)) {
@@ -217,22 +216,6 @@ public class AugmentActionImpl implements AugmentAction {
                 }
             }
         }
-
-        JarBuildItem jarBuildItem = result.consumeOptional(JarBuildItem.class);
-        NativeImageBuildItem nativeImageBuildItem = result.consumeOptional(NativeImageBuildItem.class);
-        List<ArtifactResultBuildItem> artifactResultBuildItems = result.consumeMulti(ArtifactResultBuildItem.class);
-        BuildSystemTargetBuildItem buildSystemTargetBuildItem = result.consume(BuildSystemTargetBuildItem.class);
-
-        // this depends on the fact that the order in which we can obtain MultiBuildItems is the same as they are produced
-        // we want to write result of the final artifact created
-        ArtifactResultBuildItem lastResult = artifactResultBuildItems.get(artifactResultBuildItems.size() - 1);
-        writeArtifactResultMetadataFile(buildSystemTargetBuildItem, lastResult);
-
-        return new AugmentResult(artifactResultBuildItems.stream()
-                .map(a -> new ArtifactResult(a.getPath(), a.getType(), a.getMetadata()))
-                .collect(Collectors.toList()),
-                jarBuildItem != null ? jarBuildItem.toJarResult() : null,
-                nativeImageBuildItem != null ? nativeImageBuildItem.getPath() : null);
     }
 
     private void writeArtifactResultMetadataFile(BuildSystemTargetBuildItem outputTargetBuildItem,

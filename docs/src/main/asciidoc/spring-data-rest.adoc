@@ -66,6 +66,8 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+Furthermore, the following dependency needs to be added
+
 For the tests you will also need REST Assured. Add it to the `pom.xml`:
 [source,xml]
 ----

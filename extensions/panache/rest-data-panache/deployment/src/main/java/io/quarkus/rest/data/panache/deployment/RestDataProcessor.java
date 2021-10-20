@@ -1,6 +1,7 @@
 package io.quarkus.rest.data.panache.deployment;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -30,6 +31,10 @@ import io.quarkus.rest.data.panache.runtime.hal.HalLinkJacksonSerializer;
 import io.quarkus.rest.data.panache.runtime.hal.HalLinkJsonbSerializer;
 import io.quarkus.rest.data.panache.runtime.resource.RESTEasyClassicResourceLinksProvider;
 import io.quarkus.rest.data.panache.runtime.resource.RESTEasyReactiveResourceLinksProvider;
+import io.quarkus.rest.data.panache.runtime.sort.SortQueryParamFilter;
+import io.quarkus.rest.data.panache.runtime.sort.SortQueryParamValidator;
+import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.GeneratedJaxRsResourceBuildItem;
 import io.quarkus.resteasy.reactive.spi.GeneratedJaxRsResourceGizmoAdaptor;
 
@@ -43,7 +48,9 @@ public class RestDataProcessor {
     @BuildStep
     void supportingBuildItems(Capabilities capabilities,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
-            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItemBuildProducer) {
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItemBuildProducer,
+            BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProviderBuildItemBuildProducer,
+            BuildProducer<ContainerRequestFilterBuildItem> containerRequestFilterBuildItemBuildProducer) {
         boolean isResteasyClassicAvailable = capabilities.isPresent(Capability.RESTEASY);
         boolean isResteasyReactiveAvailable = capabilities.isPresent(Capability.RESTEASY_REACTIVE);
 
@@ -60,6 +67,12 @@ public class RestDataProcessor {
         if (isResteasyClassicAvailable) {
             runtimeInitializedClassBuildItemBuildProducer
                     .produce(new RuntimeInitializedClassBuildItem("org.jboss.resteasy.links.impl.EL"));
+            resteasyJaxrsProviderBuildItemBuildProducer
+                    .produce(new ResteasyJaxrsProviderBuildItem(SortQueryParamFilter.class.getName()));
+        } else {
+            containerRequestFilterBuildItemBuildProducer
+                    .produce(new ContainerRequestFilterBuildItem.Builder(SortQueryParamFilter.class.getName())
+                            .setNameBindingNames(Collections.singleton(SortQueryParamValidator.class.getName())).build());
         }
     }
 

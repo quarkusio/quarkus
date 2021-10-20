@@ -158,24 +158,30 @@ public class VertxOutputStream extends AsyncOutputStream {
             return ret;
         }
 
-        int rem = len;
-        int idx = off;
-        ByteBuf buffer = pooledBuffer;
         CompletionStage<Void> ret = CompletableFuture.completedFuture(null);
-        if (buffer == null) {
-            pooledBuffer = buffer = allocator.allocateBuffer();
+        int bufferSize = allocator.getBufferSize();
+        int bufferCount = len / bufferSize;
+        int remainder = len % bufferSize;
+        if (remainder != 0) {
+            bufferCount = bufferCount + 1;
         }
-        while (rem > 0) {
-            int toWrite = Math.min(rem, buffer.writableBytes());
-            buffer.writeBytes(b, idx, toWrite);
-            rem -= toWrite;
-            idx += toWrite;
-            if (!buffer.isWritable()) {
-                ByteBuf tmpBuf = buffer;
-                this.pooledBuffer = buffer = allocator.allocateBuffer();
-                ret = ret.thenCompose(v -> response.writeNonBlocking(tmpBuf, false));
+
+        if (bufferCount == 1) {
+            pooledBuffer = allocator.allocateBuffer();
+            pooledBuffer.writeBytes(b);
+        } else {
+            for (int i = 0; i < bufferCount - 1; i++) {
+                int bufferIndex = i;
+                ret = ret.thenCompose(v -> {
+                    ByteBuf tmpBuf = allocator.allocateBuffer();
+                    tmpBuf.writeBytes(b, bufferIndex * bufferSize, bufferSize);
+                    return response.writeNonBlocking(tmpBuf, false);
+                });
             }
+            pooledBuffer = allocator.allocateBuffer();
+            pooledBuffer.writeBytes(b, (bufferCount - 1) * bufferSize, remainder);
         }
+
         return ret.thenCompose(v -> asyncUpdateWritten(len));
     }
 

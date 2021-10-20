@@ -6,7 +6,7 @@
     <parent>
         <artifactId>quarkus-rest-client-reactive-jackson-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>2.4.0.Final</version>
     </parent>
     <artifactId>quarkus-rest-client-reactive-jackson-deployment</artifactId>
     <name>Quarkus - REST Client Reactive Jackson - Deployment</name>

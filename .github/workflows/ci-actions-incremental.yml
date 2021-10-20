@@ -611,7 +611,7 @@ jobs:
         uses: DeLaGuardo/setup-graalvm@master
         if: startsWith(matrix.os-name, 'windows')
         with:
-          graalvm-version: '21.2.0.java11'
+          graalvm-version: '21.3.0.java11'
       - name: Install native-image component
         if: startsWith(matrix.os-name, 'windows')
         run: |

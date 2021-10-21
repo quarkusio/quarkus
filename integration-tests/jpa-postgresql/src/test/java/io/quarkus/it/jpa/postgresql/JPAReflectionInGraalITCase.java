@@ -4,7 +4,7 @@ import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 
 /**
@@ -12,7 +12,7 @@ import io.restassured.RestAssured;
  *
  * @author Emmanuel Bernard emmanuel@hibernate.org
  */
-@NativeImageTest
+@QuarkusIntegrationTest
 public class JPAReflectionInGraalITCase {
 
     @Test

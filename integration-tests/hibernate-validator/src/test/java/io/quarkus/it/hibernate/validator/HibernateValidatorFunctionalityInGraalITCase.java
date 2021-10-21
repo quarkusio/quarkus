@@ -1,11 +1,11 @@
 package io.quarkus.it.hibernate.validator;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 /**
  * Test various Bean Validation operations running in native mode
  */
-@NativeImageTest
+@QuarkusIntegrationTest
 public class HibernateValidatorFunctionalityInGraalITCase extends HibernateValidatorFunctionalityTest {
 
     @Override

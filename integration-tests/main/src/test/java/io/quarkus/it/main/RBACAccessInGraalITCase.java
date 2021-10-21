@@ -1,10 +1,10 @@
 package io.quarkus.it.main;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
  */
-@NativeImageTest
+@QuarkusIntegrationTest
 public class RBACAccessInGraalITCase extends RBACAccessTest {
 }

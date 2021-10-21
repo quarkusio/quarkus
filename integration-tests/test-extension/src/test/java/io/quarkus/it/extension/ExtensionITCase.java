@@ -1,11 +1,11 @@
 package io.quarkus.it.extension;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 /**
  * Native image tests
  */
-@NativeImageTest
+@QuarkusIntegrationTest
 public class ExtensionITCase extends ExtensionTestCase {
 
 }

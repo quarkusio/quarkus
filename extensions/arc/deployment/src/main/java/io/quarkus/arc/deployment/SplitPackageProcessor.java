@@ -61,7 +61,7 @@ public class SplitPackageProcessor {
         Map<String, Set<ApplicationArchive>> packageToArchiveMap = new HashMap<>();
 
         // build up exclusion predicates from user defined config and extensions
-        List<Predicate> packageSkipPredicates = new ArrayList<>();
+        List<Predicate<String>> packageSkipPredicates = new ArrayList<>();
         if (config.ignoredSplitPackages.isPresent()) {
             packageSkipPredicates.addAll(initPredicates(config.ignoredSplitPackages.get()));
         }

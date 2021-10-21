@@ -861,6 +861,57 @@ class Consumer {
 
 TIP: It is also possible to clear the cached value via `io.quarkus.arc.InjectableInstance.clearCache()`. In this case, you'll need to inject the Quarkus-specific `io.quarkus.arc.InjectableInstance` instead of `javax.enterprise.inject.Instance`.
 
+=== Declaratively Choose Beans That Can Be Obtained by Programmatic Lookup
+
+It is sometimes useful to narrow down the set of beans that can be obtained by programmatic lookup via `javax.enterprise.inject.Instance`.
+Typically, a user needs to choose the appropriate implementation of an interface based on a runtime configuration property.
+
+Imagine that we have two beans implementing the interface `org.acme.Service`.
+You can't inject the `org.acme.Service` directly unless your implementations declare a CDI qualifier.
+However, you can inject the `Instance<Service>` instead, then iterate over all implementations and choose the correct one manually.
+Alternatively, you can use the `@LookupIfProperty` and `@LookupUnlessProperty` annotations.
+`@LookupIfProperty` indicates that a bean should only be obtained if a runtime configuration property matches the provided value.
+`@LookupUnlessProperty`, on the other hand, indicates that a bean should only be obtained if a runtime configuration property does not match the provided value.
+
+.`@LookupIfProperty` Example
+[source,java]
+----
+interface Service {
+    String name();
+ }
+ 
+ @LookupIfProperty(name = "service.foo.enabled", stringValue = "true")
+ @ApplicationScoped
+ class ServiceFoo implements Service {
+ 
+    public String name() {
+       return "foo";
+    }
+ }
+ 
+ @ApplicationScoped
+ class ServiceBar {
+ 
+    public String name() {
+       return "bar";
+    }
+ }
+ 
+ @ApplicationScoped
+ class Client {
+ 
+    @Inject
+    Instance<Service> service;
+    
+    void printServiceName() {
+       // This will print "bar" if the property "service.foo.enabled" is set to "false"
+       // If "service.foo.enabled" is set to "true" then service.get() would result in AmbiguousResolutionException
+       System.out.println(service.get().name());
+    }
+ }
+----
+
+
 [[build_time_apis]]
 == Build Time Extensions
 

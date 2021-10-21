@@ -18,7 +18,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.AmbiguousResolutionException;
@@ -233,7 +235,11 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
     }
 
     private Set<InjectableBean<?>> resolve() {
-        return ArcContainerImpl.instance().getResolvedBeans(requiredType, requiredQualifiers.toArray(EMPTY_ANNOTATION_ARRAY));
+        return ArcContainerImpl.instance()
+                .getResolvedBeans(requiredType, requiredQualifiers.toArray(EMPTY_ANNOTATION_ARRAY))
+                .stream()
+                .filter(Predicate.not(InjectableBean::isSuppressed))
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     class InstanceIterator implements Iterator<T> {

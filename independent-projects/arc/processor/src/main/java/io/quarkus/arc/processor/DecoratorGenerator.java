@@ -46,7 +46,7 @@ public class DecoratorGenerator extends BeanGenerator {
             Set<String> existingClasses, Map<BeanInfo, String> beanToGeneratedName,
             Predicate<DotName> injectionPointAnnotationsPredicate) {
         super(annotationLiterals, applicationClassPredicate, privateMembers, generateSources, reflectionRegistration,
-                existingClasses, beanToGeneratedName, injectionPointAnnotationsPredicate);
+                existingClasses, beanToGeneratedName, injectionPointAnnotationsPredicate, Collections.emptyList());
     }
 
     /**

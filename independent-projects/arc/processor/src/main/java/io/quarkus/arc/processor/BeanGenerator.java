@@ -47,6 +47,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.enterprise.context.spi.Contextual;
@@ -88,11 +90,13 @@ public class BeanGenerator extends AbstractGenerator {
     protected final Set<String> existingClasses;
     protected final Map<BeanInfo, String> beanToGeneratedName;
     protected final Predicate<DotName> injectionPointAnnotationsPredicate;
+    protected final List<Function<BeanInfo, Consumer<BytecodeCreator>>> suppressConditionGenerators;
 
     public BeanGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
             PrivateMembersCollector privateMembers, boolean generateSources, ReflectionRegistration reflectionRegistration,
-            Set<String> existingClasses,
-            Map<BeanInfo, String> beanToGeneratedName, Predicate<DotName> injectionPointAnnotationsPredicate) {
+            Set<String> existingClasses, Map<BeanInfo, String> beanToGeneratedName,
+            Predicate<DotName> injectionPointAnnotationsPredicate,
+            List<Function<BeanInfo, Consumer<BytecodeCreator>>> suppressConditionGenerators) {
         super(generateSources);
         this.annotationLiterals = annotationLiterals;
         this.applicationClassPredicate = applicationClassPredicate;
@@ -101,6 +105,7 @@ public class BeanGenerator extends AbstractGenerator {
         this.existingClasses = existingClasses;
         this.beanToGeneratedName = beanToGeneratedName;
         this.injectionPointAnnotationsPredicate = injectionPointAnnotationsPredicate;
+        this.suppressConditionGenerators = suppressConditionGenerators;
     }
 
     /**
@@ -337,6 +342,7 @@ public class BeanGenerator extends AbstractGenerator {
             implementIsDefaultBean(bean, beanCreator);
         }
 
+        implementIsSuppressed(bean, beanCreator);
         implementEquals(bean, beanCreator);
         implementHashCode(bean, beanCreator);
 
@@ -439,6 +445,7 @@ public class BeanGenerator extends AbstractGenerator {
             implementIsDefaultBean(bean, beanCreator);
         }
         implementGetKind(beanCreator, InjectableBean.Kind.PRODUCER_METHOD);
+        implementIsSuppressed(bean, beanCreator);
         implementEquals(bean, beanCreator);
         implementHashCode(bean, beanCreator);
 
@@ -527,6 +534,7 @@ public class BeanGenerator extends AbstractGenerator {
             implementIsDefaultBean(bean, beanCreator);
         }
         implementGetKind(beanCreator, InjectableBean.Kind.PRODUCER_FIELD);
+        implementIsSuppressed(bean, beanCreator);
         implementEquals(bean, beanCreator);
         implementHashCode(bean, beanCreator);
 
@@ -1765,6 +1773,17 @@ public class BeanGenerator extends AbstractGenerator {
     protected void implementSupplierGet(ClassCreator beanCreator) {
         MethodCreator get = beanCreator.getMethodCreator("get", Object.class).setModifiers(ACC_PUBLIC);
         get.returnValue(get.getThis());
+    }
+
+    protected void implementIsSuppressed(BeanInfo bean, ClassCreator beanCreator) {
+        MethodCreator isSuppressed = beanCreator.getMethodCreator("isSuppressed", boolean.class).setModifiers(ACC_PUBLIC);
+        for (Function<BeanInfo, Consumer<BytecodeCreator>> generator : suppressConditionGenerators) {
+            Consumer<BytecodeCreator> condition = generator.apply(bean);
+            if (condition != null) {
+                condition.accept(isSuppressed);
+            }
+        }
+        isSuppressed.returnValue(isSuppressed.load(false));
     }
 
     private String getProxyTypeName(BeanInfo bean, String baseName) {

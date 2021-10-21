@@ -90,7 +90,7 @@ public class RuntimeDeploymentManager {
         RuntimeInterceptorDeployment interceptorDeployment = new RuntimeInterceptorDeployment(info, configurationImpl,
                 closeTaskHandler);
         ResourceLocatorHandler resourceLocatorHandler = new ResourceLocatorHandler(
-                new Function<Class<?>, BeanFactory.BeanInstance<?>>() {
+                new Function<>() {
                     @Override
                     public BeanFactory.BeanInstance<?> apply(Class<?> aClass) {
                         return info.getFactoryCreator().apply(aClass).createInstance();
@@ -122,8 +122,7 @@ public class RuntimeDeploymentManager {
 
         for (ResourceClass clazz : resourceClasses) {
             URITemplate classTemplate = new URITemplate(clazz.getPath(), true);
-            Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> perClassMappers = mappers
-                    .get(classTemplate);
+            var perClassMappers = mappers.get(classTemplate);
             if (perClassMappers == null) {
                 mappers.put(classTemplate, perClassMappers = new HashMap<>());
             }
@@ -136,20 +135,17 @@ public class RuntimeDeploymentManager {
             }
 
         }
-        List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers = new ArrayList<>();
-        for (Map.Entry<URITemplate, Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>>> entry : mappers
-                .entrySet()) {
+        List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers = new ArrayList<>(mappers.size());
+        for (var entry : mappers.entrySet()) {
             URITemplate classTemplate = entry.getKey();
             int classTemplateNameCount = classTemplate.countPathParamNames();
-            Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> perClassMappers = entry
-                    .getValue();
-            Map<String, RequestMapper<RuntimeResource>> mappersByMethod = RuntimeMappingDeployment
-                    .buildClassMapper(perClassMappers);
+            var perClassMappers = entry.getValue();
+            var mappersByMethod = RuntimeMappingDeployment.buildClassMapper(perClassMappers);
             ClassRoutingHandler classRoutingHandler = new ClassRoutingHandler(mappersByMethod, classTemplateNameCount,
                     info.isResumeOn404());
 
             int maxMethodTemplateNameCount = 0;
-            for (TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> i : perClassMappers.values()) {
+            for (var i : perClassMappers.values()) {
                 for (URITemplate j : i.keySet()) {
                     maxMethodTemplateNameCount = Math.max(maxMethodTemplateNameCount, j.countPathParamNames());
                 }
@@ -159,7 +155,7 @@ public class RuntimeDeploymentManager {
                             maxMethodTemplateNameCount + classTemplateNameCount)));
         }
 
-        List<ServerRestHandler> abortHandlingChain = new ArrayList<>();
+        List<ServerRestHandler> abortHandlingChain = new ArrayList<>(3);
 
         if (interceptorDeployment.getGlobalInterceptorHandler() != null) {
             abortHandlingChain.add(interceptorDeployment.getGlobalInterceptorHandler());

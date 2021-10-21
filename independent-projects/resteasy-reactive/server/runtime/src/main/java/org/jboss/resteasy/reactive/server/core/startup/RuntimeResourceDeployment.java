@@ -91,7 +91,9 @@ import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class RuntimeResourceDeployment {
 
-    public static final ServerRestHandler[] EMPTY_REST_HANDLER_ARRAY = new ServerRestHandler[0];
+    private static final ServerRestHandler[] EMPTY_REST_HANDLER_ARRAY = new ServerRestHandler[0];
+    @SuppressWarnings("rawtypes")
+    private static final MessageBodyWriter[] EMPTY_MESSAGE_BODY_WRITERS = new MessageBodyWriter[0];
 
     private static final Logger log = Logger.getLogger(RuntimeResourceDeployment.class);
 
@@ -386,7 +388,7 @@ public class RuntimeResourceDeployment {
                         } else {
                             //multiple writers, we try them in the proper order which had already been created
                             handlers.add(new FixedProducesHandler(mediaType,
-                                    new FixedEntityWriterArray(buildTimeWriters.toArray(new MessageBodyWriter[0]),
+                                    new FixedEntityWriterArray(buildTimeWriters.toArray(EMPTY_MESSAGE_BODY_WRITERS),
                                             serialisers)));
                             score.add(ScoreSystem.Category.Writer,
                                     ScoreSystem.Diagnostic.WriterBuildTimeMultiple(buildTimeWriters));

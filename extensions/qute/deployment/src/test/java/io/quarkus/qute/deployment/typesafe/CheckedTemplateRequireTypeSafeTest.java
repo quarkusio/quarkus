@@ -27,6 +27,7 @@ public class CheckedTemplateRequireTypeSafeTest {
                     .addAsResource(new StringAsset(
                             "Hello {name}!"
                                     + "{any} "
+                                    + "{inject:fool.getJoke(null)} "
                                     + "{inject:fool.getJoke(identifier)} "
                                     + "{#each name.chars.iterator}"
                                     + "{! {index} is not considered an error because the binding is registered by the loop section !}"

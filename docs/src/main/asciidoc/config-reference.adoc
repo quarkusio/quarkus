@@ -82,8 +82,9 @@ IMPORTANT: Environment variables in the `.env` file are not available via the `S
 
 The Quarkus Application configuration file is loaded from the classpath resources, for instance
 `src/main/resources/application.properties`, `src/test/resources/application.properties` or from a `jar` dependency that
-contains an `application.properties` entry. Additionally, the configuration file may also reside in
-`$PWD/config/application.properties`. The loading starts from the config folder and then classpath order
+contains an `application.properties` entry. Each `application.properties` found is treated as a separate `ConfigSource`
+and follow the same rules as every other source (override per property). Additionally, the configuration file may also
+reside in `$PWD/config/application.properties`. The loading starts from the config folder and then classpath order
 (`application.properties` files in the application sources will have priority on the classloader loading order).
 
 .`application.properties`

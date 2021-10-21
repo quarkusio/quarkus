@@ -24,7 +24,6 @@ import java.util.stream.IntStream;
 
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -44,6 +43,7 @@ import io.quarkus.extest.runtime.config.TestRunTimeConfig;
 import io.quarkus.extest.runtime.config.named.PrefixNamedConfig;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
+import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
 
 /**
@@ -316,11 +316,15 @@ public class ConfiguredBeanTest {
 
     @Test
     public void buildTimeDefaults() {
-        // Source is only initialized once in runtime.
-        Assertions.assertEquals(1, OverrideBuildTimeConfigSource.counter.get());
-        // Test that build configRoot are not overridden by properties in runtime.
+        // Source is only initialized twice (one for static init and another one for runtime)
+        Assertions.assertEquals(2, OverrideBuildTimeConfigSource.counter.get());
+        // Test that build configRoot are not overridden by properties set in static or runtime init
         Assertions.assertEquals(1234567891L, buildAndRunTimeConfig.allValues.longPrimitive);
-        Assertions.assertEquals(0, ConfigProvider.getConfig().getValue("quarkus.btrt.all-values.long-primitive", Long.class));
+
+        ConfigValue value = config.getConfigValue("quarkus.btrt.all-values.long-primitive");
+        Assertions.assertEquals("1234567891", value.getValue());
+        Assertions.assertEquals("PropertiesConfigSource[source=Build time config]", value.getConfigSourceName());
+        Assertions.assertEquals(Integer.MAX_VALUE, value.getConfigSourceOrdinal());
     }
 
     @Test
@@ -335,11 +339,15 @@ public class ConfiguredBeanTest {
         Optional<ConfigSource> source = config.getConfigSource("PropertiesConfigSource[source=Specified default values]");
         assertTrue(source.isPresent());
         ConfigSource defaultValues = source.get();
-
         assertEquals(Integer.MIN_VALUE + 100, defaultValues.getOrdinal());
 
-        // Should be the first
-        ConfigSource applicationProperties = config.getConfigSources().iterator().next();
+        ConfigSource applicationProperties = null;
+        for (ConfigSource configSource : config.getConfigSources()) {
+            if (configSource.getName().contains("application.properties")) {
+                applicationProperties = configSource;
+                break;
+            }
+        }
         assertNotNull(applicationProperties);
         assertEquals(1000, applicationProperties.getOrdinal());
 

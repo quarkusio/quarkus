@@ -1,5 +1,6 @@
 package io.quarkus.oidc.deployment.devservices.keycloak;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
@@ -11,13 +12,16 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
+import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.oidc.deployment.devservices.AbstractDevConsoleProcessor;
 import io.quarkus.oidc.deployment.devservices.OidcAuthorizationCodePostHandler;
+import io.quarkus.oidc.deployment.devservices.OidcPasswordClientCredHandler;
 import io.quarkus.oidc.deployment.devservices.OidcTestServiceHandler;
 
 public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
 
-    KeycloakBuildTimeConfig config;
+    KeycloakBuildTimeConfig keycloakConfig;
+    OidcBuildTimeConfig oidcConfig;
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
@@ -36,7 +40,8 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     console,
                     "Keycloak",
                     (String) configProps.get().getProperties().get("quarkus.oidc.application-type"),
-                    config.devservices.grant.type.getGrantType(),
+                    oidcConfig.devui.grant.type.isPresent() ? oidcConfig.devui.grant.type.get().getGrantType()
+                            : keycloakConfig.devservices.grant.type.getGrantType(),
                     (String) configProps.get().getProperties().get("quarkus.oidc.client-id"),
                     (String) configProps.get().getProperties().get("quarkus.oidc.credentials.secret"),
                     realmUrl + "/protocol/openid-connect/auth",
@@ -53,13 +58,12 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
         if (configProps.isPresent() && configProps.get().getProperties().containsKey("keycloak.url")) {
             @SuppressWarnings("unchecked")
             Map<String, String> users = (Map<String, String>) configProps.get().getProperties().get("oidc.users");
-            devConsoleRoute.produce(
-                    new DevConsoleRouteBuildItem("testService", "POST", new KeycloakDevConsolePostHandler(users)));
+            Duration webClientTimeout = oidcConfig.devui.webClienTimeout.isPresent() ? oidcConfig.devui.webClienTimeout.get()
+                    : KeycloakDevServicesProcessor.capturedDevServicesConfiguration.webClienTimeout;
             produceDevConsoleRouteItems(devConsoleRoute,
-                    new OidcTestServiceHandler(KeycloakDevServicesProcessor.vertxInstance,
-                            KeycloakDevServicesProcessor.capturedDevServicesConfiguration.webClienTimeout),
-                    new OidcAuthorizationCodePostHandler(KeycloakDevServicesProcessor.vertxInstance,
-                            KeycloakDevServicesProcessor.capturedDevServicesConfiguration.webClienTimeout));
+                    new OidcTestServiceHandler(KeycloakDevServicesProcessor.vertxInstance, webClientTimeout),
+                    new OidcAuthorizationCodePostHandler(KeycloakDevServicesProcessor.vertxInstance, webClientTimeout),
+                    new OidcPasswordClientCredHandler(KeycloakDevServicesProcessor.vertxInstance, webClientTimeout, users));
         }
     }
 }

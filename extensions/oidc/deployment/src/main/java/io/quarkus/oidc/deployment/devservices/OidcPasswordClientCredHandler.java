@@ -1,27 +1,37 @@
-package io.quarkus.oidc.deployment.devservices.keycloak;
+package io.quarkus.oidc.deployment.devservices;
 
+import java.time.Duration;
 import java.util.Map;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
-import io.quarkus.oidc.deployment.devservices.OidcDevServicesUtils;
 import io.vertx.core.MultiMap;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
-public class KeycloakDevConsolePostHandler extends DevConsolePostHandler {
-    private static final Logger LOG = Logger.getLogger(KeycloakDevConsolePostHandler.class);
+public class OidcPasswordClientCredHandler extends DevConsolePostHandler {
+    private static final Logger LOG = Logger.getLogger(OidcPasswordClientCredHandler.class);
     Map<String, String> users;
 
-    public KeycloakDevConsolePostHandler(Map<String, String> users) {
+    Vertx vertxInstance;
+    Duration timeout;
+
+    public OidcPasswordClientCredHandler(Vertx vertxInstance, Duration timeout) {
+        this(vertxInstance, timeout, Map.of());
+    }
+
+    public OidcPasswordClientCredHandler(Vertx vertxInstance, Duration timeout, Map<String, String> users) {
+        this.vertxInstance = vertxInstance;
+        this.timeout = timeout;
         this.users = users;
     }
 
     @Override
     protected void handlePostAsync(RoutingContext event, MultiMap form) throws Exception {
-        WebClient client = OidcDevServicesUtils.createWebClient(KeycloakDevServicesProcessor.vertxInstance);
+        WebClient client = OidcDevServicesUtils.createWebClient(vertxInstance);
         String tokenUrl = form.get("tokenUrl");
 
         try {
@@ -31,11 +41,15 @@ public class KeycloakDevConsolePostHandler extends DevConsolePostHandler {
                         tokenUrl, form.get("user"), form.get("client"));
 
                 String userName = form.get("user");
+                String password = users.get(userName);
+                if (password == null) {
+                    password = form.get("password");
+                }
                 token = OidcDevServicesUtils.getPasswordAccessToken(client, tokenUrl,
                         form.get("client"), form.get("clientSecret"),
                         userName,
-                        users.get(userName),
-                        KeycloakDevServicesProcessor.capturedDevServicesConfiguration.webClienTimeout);
+                        password,
+                        timeout);
             } else {
                 LOG.infof("Using a client_credentials grant to get a token token from '%s' with client id '%s'",
                         tokenUrl, form.get("client"));
@@ -43,7 +57,7 @@ public class KeycloakDevConsolePostHandler extends DevConsolePostHandler {
                 token = OidcDevServicesUtils.getClientCredAccessToken(client, tokenUrl,
                         form.get("client"),
                         form.get("clientSecret"),
-                        KeycloakDevServicesProcessor.capturedDevServicesConfiguration.webClienTimeout);
+                        timeout);
             }
             LOG.infof("Test token: %s", token);
             if (form.get("serviceUrl") != null) {
@@ -53,7 +67,7 @@ public class KeycloakDevConsolePostHandler extends DevConsolePostHandler {
                 event.put("result", token);
             }
         } catch (Throwable t) {
-            LOG.errorf("Token can not be acquired from Keycloak: %s", t.toString());
+            LOG.errorf("Token can not be acquired from OpenId Connect provider: %s", t.toString());
         } finally {
             client.close();
         }

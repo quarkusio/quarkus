@@ -1,8 +1,5 @@
 package io.quarkus.openshift.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG;
-import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG_GROUP;
-import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -19,13 +16,18 @@ public class OpenshiftProcessor {
     public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, OpenshiftConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
+
+        String kind = config.getDepoymentResourceKind();
+        String group = config.getDepoymentResourceGroup();
+        String version = config.getDepoymentResourceVersion();
+
         deploymentTargets
                 .produce(
-                        new KubernetesDeploymentTargetBuildItem(OPENSHIFT, DEPLOYMENT_CONFIG, DEPLOYMENT_CONFIG_GROUP,
-                                DEPLOYMENT_CONFIG_VERSION, true));
+                        new KubernetesDeploymentTargetBuildItem(OPENSHIFT, kind, group,
+                                version, true));
 
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        resourceMeta.produce(new KubernetesResourceMetadataBuildItem(OPENSHIFT, DEPLOYMENT_CONFIG_GROUP,
-                DEPLOYMENT_CONFIG_VERSION, DEPLOYMENT_CONFIG, name));
+        resourceMeta.produce(new KubernetesResourceMetadataBuildItem(OPENSHIFT, group,
+                version, kind, name));
     }
 }

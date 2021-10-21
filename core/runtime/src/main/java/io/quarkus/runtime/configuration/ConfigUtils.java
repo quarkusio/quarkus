@@ -100,7 +100,10 @@ public final class ConfigUtils {
 
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         builder.withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem().getConfigSources(classLoader));
-        builder.withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath().getConfigSources(classLoader));
+        if (!runTime || launchMode.isDevOrTest()) {
+            // this is not needed in prod mode as we have already captured all the properties in the generated Config
+            builder.withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath().getConfigSources(classLoader));
+        }
         if (launchMode.isDevOrTest() && (runTime || bootstrap)) {
             builder.withSources(new RuntimeOverrideConfigSource(classLoader));
         }

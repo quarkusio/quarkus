@@ -19,6 +19,7 @@
         <module>quarkus-resteasy-reactive-jackson</module>
         <module>quarkus-resteasy-reactive-jackson-common</module>
         <module>quarkus-resteasy-reactive-jsonb</module>
+        <module>quarkus-resteasy-reactive-jaxb</module>
         <module>quarkus-resteasy-reactive-qute</module>
         <module>quarkus-resteasy-reactive-servlet</module>
         <module>jaxrs-client-reactive</module>

@@ -1013,6 +1013,8 @@ public abstract class ResteasyReactiveRequestContext
         return getResourceLocatorPathParam(name, previousResource.prev);
     }
 
+    public abstract boolean resumeExternalProcessing();
+
     static class PreviousResource {
 
         public PreviousResource(RuntimeResource locatorTarget, Object locatorPathParamValues, PreviousResource prev) {

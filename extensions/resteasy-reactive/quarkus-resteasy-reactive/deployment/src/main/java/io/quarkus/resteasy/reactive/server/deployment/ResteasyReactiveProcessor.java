@@ -614,6 +614,7 @@ public class ResteasyReactiveProcessor {
     @Record(value = ExecutionTime.STATIC_INIT, useIdentityComparisonForParameters = false)
     public void setupDeployment(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             BeanContainerBuildItem beanContainerBuildItem,
+            Capabilities capabilities,
             ResteasyReactiveConfig config,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             ResteasyReactiveRecorder recorder,
@@ -742,10 +743,18 @@ public class ResteasyReactiveProcessor {
         quarkusRestDeploymentInfoBuildItemBuildProducer
                 .produce(new ResteasyReactiveDeploymentInfoBuildItem(deploymentInfo));
 
+        boolean servletPresent = false;
+        int orderAdd = 1;
+        if (capabilities.isPresent("io.quarkus.servlet")) {
+            //if servlet is present we run RR before the default route
+            //otherwise we run after it
+            orderAdd = -1;
+            servletPresent = true;
+        }
         RuntimeValue<Deployment> deployment = recorder.createDeployment(deploymentInfo,
                 beanContainerBuildItem.getValue(), shutdownContext, vertxConfig,
                 requestContextFactoryBuildItem.map(RequestContextFactoryBuildItem::getFactory).orElse(null),
-                initClassFactory, launchModeBuildItem.getLaunchMode());
+                initClassFactory, launchModeBuildItem.getLaunchMode(), servletPresent);
 
         quarkusRestDeploymentBuildItemBuildProducer
                 .produce(new ResteasyReactiveDeploymentBuildItem(deployment, deploymentPath));
@@ -755,7 +764,7 @@ public class ResteasyReactiveProcessor {
 
             // Exact match for resources matched to the root path
             routes.produce(RouteBuildItem.builder()
-                    .orderedRoute(deploymentPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1).handler(handler).build());
+                    .orderedRoute(deploymentPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + orderAdd).handler(handler).build());
             String matchPath = deploymentPath;
             if (matchPath.endsWith("/")) {
                 matchPath += "*";
@@ -764,7 +773,7 @@ public class ResteasyReactiveProcessor {
             }
             // Match paths that begin with the deployment path
             routes.produce(
-                    RouteBuildItem.builder().orderedRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1)
+                    RouteBuildItem.builder().orderedRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + orderAdd)
                             .handler(handler).build());
         }
     }

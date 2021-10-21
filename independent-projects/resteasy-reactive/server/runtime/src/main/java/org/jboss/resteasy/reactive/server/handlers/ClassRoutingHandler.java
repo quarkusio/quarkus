@@ -29,10 +29,12 @@ public class ClassRoutingHandler implements ServerRestHandler {
 
     private final Map<String, RequestMapper<RuntimeResource>> mappers;
     private final int parameterOffset;
+    final boolean resumeOn404;
 
-    public ClassRoutingHandler(Map<String, RequestMapper<RuntimeResource>> mappers, int parameterOffset) {
+    public ClassRoutingHandler(Map<String, RequestMapper<RuntimeResource>> mappers, int parameterOffset, boolean resumeOn404) {
         this.mappers = mappers;
         this.parameterOffset = parameterOffset;
+        this.resumeOn404 = resumeOn404;
     }
 
     @Override
@@ -201,9 +203,15 @@ public class ClassRoutingHandler implements ServerRestHandler {
     }
 
     private void throwNotFound(ResteasyReactiveRequestContext requestContext) {
+        if (resumeOn404) {
+            if (requestContext.resumeExternalProcessing()) {
+                return;
+            }
+        }
         // the exception mapper needs access to request scoped beans, so make sure we have the context
         requestContext.requireCDIRequestScope();
         throw new NotFoundException("Unable to find matching target resource method");
+
     }
 
     private String getRemaining(ResteasyReactiveRequestContext requestContext) {

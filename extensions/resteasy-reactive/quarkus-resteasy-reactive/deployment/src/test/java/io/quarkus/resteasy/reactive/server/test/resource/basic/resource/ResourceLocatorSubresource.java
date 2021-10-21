@@ -2,12 +2,15 @@ package io.quarkus.resteasy.reactive.server.test.resource.basic.resource;
 
 import java.util.List;
 
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestPath;
 import org.junit.jupiter.api.Assertions;
 
 public class ResourceLocatorSubresource {
@@ -51,5 +54,18 @@ public class ResourceLocatorSubresource {
         for (Object ancestor : uri.getMatchedResources())
             LOG.debugv("   {0}", ancestor.getClass().getName());
         return new ResourceLocatorSubresource2();
+    }
+
+    @GET
+    @Path("/subresource3")
+    public String getValueFromBeanParam(@BeanParam Params params) {
+        return params.param + " and " + params.value;
+    }
+
+    public static class Params {
+        @RestPath
+        String param;
+        @QueryParam("value")
+        String value;
     }
 }

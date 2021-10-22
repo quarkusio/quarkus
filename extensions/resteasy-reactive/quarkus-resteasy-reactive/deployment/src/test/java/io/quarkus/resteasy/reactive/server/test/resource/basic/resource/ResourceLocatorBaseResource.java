@@ -46,4 +46,9 @@ public class ResourceLocatorBaseResource {
                 });
     }
 
+    @Path("sub3/{param}/resources")
+    public ResourceLocatorSubresource getSubresource() {
+        return new ResourceLocatorSubresource();
+    }
+
 }

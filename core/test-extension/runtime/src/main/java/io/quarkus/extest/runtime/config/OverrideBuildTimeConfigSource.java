@@ -6,11 +6,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
+import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.smallrye.config.common.MapBackedConfigSource;
 
 /**
  * Override a build time property in runtime.
  */
+@StaticInitSafe
 public class OverrideBuildTimeConfigSource extends MapBackedConfigSource {
     public static AtomicInteger counter = new AtomicInteger(0);
 

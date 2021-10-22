@@ -9,10 +9,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.common.mapper.TypeRef;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 @QuarkusTestResource(KafkaSaslTestResource.class)
 public class KafkaSaslIT {
 

@@ -511,9 +511,11 @@ that resolve to one of the mentioned return types.
 
 === Setting other response properties
 
+==== Manually setting the response
+
 If you need to set more properties on the HTTP response than just the body, such as the status code
-or headers, you can make your method return the link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse`]
-type:
+or headers, you can make your method return `org.jboss.resteasy.reactive.RestResponse` from a resource method.
+An example of this could look like:
 
 [source,java]
 ----
@@ -552,6 +554,34 @@ public class Endpoint {
 
 NOTE: You can also use the JAX-RS type link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`] but it is
 not strongly typed to your entity.
+
+==== Using annotations
+
+Alternatively, if you only need to set the status code and / or HTTP headers with static values, you can use `@org.jboss.resteasy.reactive.ResponseStatus` and /or `ResponseHeader` respectively.
+An example of this could look like:
+
+[source,java]
+----
+package org.acme.rest;
+
+import org.jboss.resteasy.reactive.Header;
+import org.jboss.resteasy.reactive.ResponseHeaders;
+import org.jboss.resteasy.reactive.ResponseStatus;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+@Path("")
+public class Endpoint {
+
+    @ResponseStatus(201)
+    @ResponseHeader(name = "X-FroMage", value = "Camembert")
+    @GET
+    public String hello() {
+        return "Hello, World!";
+    }
+}
+----
 
 === Async/reactive support
 
@@ -854,6 +884,97 @@ serialisation>>.
 
 When using the `quarkus-resteasy-reactive-jackson` extension there are some advanced features that RESTEasy Reactive supports.
 
+[[secure-serialization]]
+===== Secure serialization
+
+When used with Jackson to perform JSON serialization, RESTEasy Reactive provides the ability to limit the set of fields that are serialized based on the roles of the current user.
+This is achieved by simply annotating the fields (or getters) of the POJO being returned with `@io.quarkus.resteasy.reactive.jackson.SecureField`.
+
+A simple example could be the following:
+
+Assume we have a POJO named `Person` which looks like so:
+
+[source,java]
+----
+package org.acme.rest;
+
+import io.quarkus.resteasy.reactive.jackson.SecureField;
+
+public class Person {
+
+    @SecureField("id")
+    private final Long id;
+    private final String first;
+    private final String last;
+
+    public Person(Long id, String first, String last) {
+        this.id = id;
+        this.first = first;
+        this.last = last;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getFirst() {
+        return first;
+    }
+
+    public String getLast() {
+        return last;
+    }
+}
+
+----
+
+A very simple JAX-RS Resource that uses `Person` could be:
+
+[source,java]
+----
+package org.acme.rest;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+@Path("person")
+public class Person {
+
+    @Path("{id}")
+    @GET
+    public Person getPerson(Long id) {
+        return new Person(id, "foo", "bar");
+    }
+}
+----
+
+Assuming security has been set up for the application (see our link:security[guide] for more details), when a user with the `admin` role
+performs an HTTP GET on `/person/1` they will receive:
+
+[source,json]
+----
+{
+  "id": 1,
+  "first": "foo",
+  "last": "bar"
+}
+----
+
+as the response.
+
+Any user however that does not have the `admin` role will receive:
+
+[source,json]
+----
+{
+  "first": "foo",
+  "last": "bar"
+}
+----
+
+NOTE: No additional configuration needs to be applied for this secure serialization to take place. However, users can use the `@io.quarkus.resteasy.reactive.jackson.EnableSecureSerialization` and `@io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization`
+annotation to opt-in or out for specific JAX-RS Resource classes or methods.
+
 ===== @JsonView support
 
 JAX-RS methods can be annotated with https://fasterxml.github.io/jackson-annotations/javadoc/2.10/com/fasterxml/jackson/annotation/JsonView.html[@JsonView]
@@ -943,6 +1064,25 @@ public static class UnquotedFields implements BiFunction<ObjectMapper, Type, Obj
 Essentially what this class does is force Jackson to not include quotes in the field names.
 
 It is important to note that this customization is only performed for the serialization of the JAX-RS methods that use `@CustomSerialization(UnquotedFields.class)`.
+
+=== XML serialisation
+
+[[xml]]
+
+To enable XML support, add the `quarkus-resteasy-reactive-jaxb` extension to your project.
+
+.Table Context object
+|===
+|GAV|Usage
+
+|`io.quarkus:quarkus-resteasy-reactive-jaxb`
+|https://javaee.github.io/jaxb-v2/[XML support]
+
+|===
+
+Importing this module will allow HTTP message bodies to be read from XML
+and serialised to XML, for <<resource-types,all the types not already registered with a more specific
+serialisation>>.
 
 == More advanced usage
 

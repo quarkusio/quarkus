@@ -19,6 +19,7 @@
         <module>scheduler</module>
         <module>quartz</module>
         <module>jaxp</module>
+        <module>smallrye-stork</module>
 
         <!-- Configuration -->
         <module>config-yaml</module>

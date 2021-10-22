@@ -13,7 +13,7 @@ import javax.enterprise.context.spi.CreationalContext;
 
 abstract class AbstractSharedContext implements InjectableContext, InjectableContext.ContextState {
 
-    private final ComputingCache<String, ContextInstanceHandle<?>> instances;
+    protected final ComputingCache<String, ContextInstanceHandle<?>> instances;
 
     public AbstractSharedContext() {
         this.instances = new ComputingCache<>();

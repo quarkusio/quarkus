@@ -100,7 +100,7 @@ triage:
         - integration-tests/hibernate-validator/
     - labels: [area/jaeger]
       title: "jaeger"
-      notify: [kenfinnigan]
+      notify: [radcortez]
       directories:
         - extensions/jaeger/
     - labels: [area/jackson]
@@ -140,12 +140,12 @@ triage:
         - integration-tests/smallrye-graphql-client/
     - labels: [area/tracing, area/smallrye]
       title: "(trace|tracing)"
-      notify: [kenfinnigan, Ladicek]
+      notify: [radcortez, Ladicek]
       directories:
         - extensions/smallrye-opentracing/
     - labels: [area/tracing]
       title: "(trace|opentelemetry)"
-      notify: [kenfinnigan]
+      notify: [radcortez]
       notifyInPullRequest: true
       directories:
         - extensions/opentelemetry/
@@ -164,7 +164,7 @@ triage:
         - extensions/smallrye-metrics
     - labels: [area/metrics]
       title: "micrometer"
-      notify: [ebullient, kenfinnigan]
+      notify: [ebullient]
       notifyInPullRequest: true
       directories:
         - extensions/micrometer
@@ -200,7 +200,7 @@ triage:
         - extensions/resteasy-qute/
     - labels: [area/reactive-messaging, area/smallrye]
       title: "reactive.messaging"
-      notify: [cescoffier, kenfinnigan, phillip-kruger, michalszynkiewicz, ozangunalp]
+      notify: [cescoffier, phillip-kruger, michalszynkiewicz, ozangunalp]
       directories:
         - extensions/smallrye-reactive-messaging
     - labels: [area/rest-client]
@@ -328,6 +328,7 @@ triage:
         - core/deployment/src/main/java/io/quarkus/deployment/configuration/
         - core/runtime/src/main/java/io/quarkus/runtime/configuration/
     - labels: [area/core]
+      notify: [aloubyansky, gsmet, geoand, radcortez, Sanne, stuartwdouglas]
       directories:
         - core/
     - labels: [area/dependencies]

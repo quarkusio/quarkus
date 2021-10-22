@@ -119,7 +119,6 @@ import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.HttpMethodSecurityInfo;
@@ -179,7 +178,7 @@ public class UndertowBuildStep {
             ShutdownContextBuildItem shutdown,
             Consumer<DefaultRouteBuildItem> undertowProducer,
             BuildProducer<RouteBuildItem> routeProducer,
-            ExecutorBuildItem executorBuildItem, HttpConfiguration httpConfiguration,
+            ExecutorBuildItem executorBuildItem,
             ServletRuntimeConfig servletRuntimeConfig,
             ServletContextPathBuildItem servletContextPathBuildItem,
             Capabilities capabilities) throws Exception {
@@ -189,7 +188,7 @@ public class UndertowBuildStep {
         }
         Handler<RoutingContext> ut = recorder.startUndertow(shutdown, executorBuildItem.getExecutorProxy(),
                 servletDeploymentManagerBuildItem.getDeploymentManager(),
-                wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()), httpConfiguration,
+                wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()),
                 servletRuntimeConfig);
 
         if (servletContextPathBuildItem.getServletContextPath().equals("/")) {

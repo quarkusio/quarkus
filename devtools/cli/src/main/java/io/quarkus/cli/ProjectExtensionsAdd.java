@@ -10,12 +10,11 @@ import io.quarkus.cli.build.BuildSystemRunner;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
-import picocli.CommandLine.Mixin;
 
 @CommandLine.Command(name = "add", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Add extension(s) to this project.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "%nOptions:%n")
 public class ProjectExtensionsAdd extends BaseBuildCommand implements Callable<Integer> {
 
-    @Mixin
+    @CommandLine.Mixin
     RunModeOption runMode;
 
     @CommandLine.Parameters(arity = "1", paramLabel = "EXTENSION", description = "extensions to add to this project")

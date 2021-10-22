@@ -6,7 +6,6 @@ import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -273,7 +272,6 @@ public class QuarkusBootstrapProvider implements Closeable {
                     version = coordsArr[4];
                 }
             }
-            Path path = null;
             if (version == null) {
                 for (Artifact dep : mojo.mavenProject().getArtifacts()) {
                     if (dep.getArtifactId().equals(artifactId)
@@ -281,9 +279,6 @@ public class QuarkusBootstrapProvider implements Closeable {
                             && dep.getClassifier().equals(classifier)
                             && dep.getType().equals(type)) {
                         version = dep.getVersion();
-                        if (dep.getFile() != null) {
-                            path = dep.getFile().toPath();
-                        }
                         break;
                     }
                 }

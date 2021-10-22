@@ -18,12 +18,17 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import javax.enterprise.context.ContextNotActiveException;
+import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Provider;
+import javax.inject.Singleton;
 
 /**
  *
@@ -135,8 +140,12 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
             }
             context.destroy(proxy.arc_bean());
         } else {
-            // Try to destroy a dependent instance
-            creationalContext.destroyDependentInstance(instance);
+            // First try to destroy a dependent instance
+            if (!creationalContext.destroyDependentInstance(instance)) {
+                // If not successful then try the singleton context
+                SingletonContext singletonContext = (SingletonContext) Arc.container().getActiveContext(Singleton.class);
+                singletonContext.destroyInstance(instance);
+            }
         }
     }
 
@@ -155,17 +164,24 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         };
     }
 
-    @SuppressWarnings("unchecked")
     private <H> InstanceHandle<H> getHandle(InjectableBean<H> bean) {
-        InjectionPoint prev = InjectionPointProvider
-                .set(new InjectionPointImpl(injectionPointType, requiredType, requiredQualifiers, targetBean, annotations,
-                        javaMember, position));
-        try {
-            return ArcContainerImpl.beanInstanceHandle(bean, (CreationalContextImpl<H>) creationalContext, false,
-                    this::destroy);
-        } finally {
-            InjectionPointProvider.set(prev);
-        }
+        CreationalContextImpl<H> context = this.creationalContext.child(bean);
+        return new LazyInstanceHandle<>(bean, context, this.creationalContext, new Supplier<H>() {
+
+            @Override
+            public H get() {
+                InjectionPoint prev = InjectionPointProvider
+                        .set(new InjectionPointImpl(injectionPointType, requiredType, requiredQualifiers, targetBean,
+                                annotations, javaMember, position));
+                try {
+                    return bean.get(context);
+                } finally {
+                    InjectionPointProvider.set(prev);
+                }
+            }
+        },
+                // If @Dependent we need to remove the instance from the CC of this InjectableInstance
+                Dependent.class.equals(bean.getScope()) ? this::destroy : null);
     }
 
     @SuppressWarnings("unchecked")
@@ -219,7 +235,11 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
     }
 
     private Set<InjectableBean<?>> resolve() {
-        return ArcContainerImpl.instance().getResolvedBeans(requiredType, requiredQualifiers.toArray(EMPTY_ANNOTATION_ARRAY));
+        return ArcContainerImpl.instance()
+                .getResolvedBeans(requiredType, requiredQualifiers.toArray(EMPTY_ANNOTATION_ARRAY))
+                .stream()
+                .filter(Predicate.not(InjectableBean::isSuppressed))
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     class InstanceIterator implements Iterator<T> {

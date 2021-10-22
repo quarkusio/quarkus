@@ -56,8 +56,8 @@
         },
         {
             "category": "Messaging1",
-            "timeout": 100,
-            "test-modules": "kafka, kafka-ssl, kafka-sasl, kafka-avro, kafka-avro-apicurio2, kafka-snappy, kafka-streams, reactive-messaging-kafka",
+            "timeout": 110,
+            "test-modules": "kafka, kafka-ssl, kafka-sasl, kafka-avro, kafka-avro-apicurio2, kafka-snappy, kafka-streams, reactive-messaging-kafka, kafka-oauth-keycloak",
             "os-name": "ubuntu-latest"
         },
         {
@@ -92,8 +92,8 @@
         },
         {
             "category": "HTTP",
-            "timeout": 70,
-            "test-modules": "elytron-resteasy, resteasy-jackson, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-web-jackson, vertx-graphql, virtual-http, rest-client",
+            "timeout": 75,
+            "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-web-jackson, vertx-graphql, virtual-http, rest-client",
             "os-name": "ubuntu-latest"
         },
         {

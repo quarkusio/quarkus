@@ -26,7 +26,6 @@ import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -58,16 +57,11 @@ class SmallRyeJwtProcessor {
     private static final DotName CLAIM_NAME = DotName.createSimple(Claim.class.getName());
     private static final DotName CLAIMS_NAME = DotName.createSimple(Claims.class.getName());
 
-    SmallRyeJWTConfig config;
+    SmallRyeJwtBuildTimeConfig config;
 
     @BuildStep(onlyIf = IsEnabled.class)
     ExtensionSslNativeSupportBuildItem enableSslInNative() {
         return new ExtensionSslNativeSupportBuildItem(Feature.SMALLRYE_JWT);
-    }
-
-    @BuildStep(onlyIf = IsEnabled.class)
-    EnableAllSecurityServicesBuildItem security() {
-        return new EnableAllSecurityServicesBuildItem();
     }
 
     @BuildStep(onlyIf = IsEnabled.class)
@@ -181,7 +175,7 @@ class SmallRyeJwtProcessor {
     }
 
     public static class IsEnabled implements BooleanSupplier {
-        SmallRyeJWTConfig config;
+        SmallRyeJwtBuildTimeConfig config;
 
         public boolean getAsBoolean() {
             return config.enabled;

@@ -394,8 +394,10 @@ public class JarResultBuildStep {
             for (Map.Entry<String, Set<Dependency>> entry : duplicateCatcher.entrySet()) {
                 if (entry.getValue().size() > 1) {
                     if (explained.add(entry.getValue())) {
-                        log.warn("Dependencies with duplicate files detected. The dependencies " + entry.getValue()
-                                + " contain duplicate files, e.g. " + entry.getKey());
+                        if (!"module-info.class".endsWith(entry.getKey())) {
+                            log.warn("Dependencies with duplicate files detected. The dependencies " + entry.getValue()
+                                    + " contain duplicate files, e.g. " + entry.getKey());
+                        }
                     }
                 }
             }

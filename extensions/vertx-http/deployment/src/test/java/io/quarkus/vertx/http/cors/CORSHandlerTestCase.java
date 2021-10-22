@@ -47,7 +47,6 @@ public class CORSHandlerTestCase {
                 .header("Access-Control-Request-Method", methods)
                 .header("Access-Control-Request-Headers", headers)
                 .when()
-                .log().headers()
                 .get("/test").then()
                 .statusCode(200)
                 .header("Access-Control-Allow-Origin", origin)

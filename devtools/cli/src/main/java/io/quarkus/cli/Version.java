@@ -12,25 +12,23 @@ import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.smallrye.common.classloader.ClassPathUtils;
 import picocli.CommandLine;
-import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
-import picocli.CommandLine.Spec;
 
 @CommandLine.Command(name = "version", sortOptions = false, header = "Display version information.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "Options:%n")
 public class Version implements CommandLine.IVersionProvider, Callable<Integer> {
 
     private static String version;
 
-    @Mixin
+    @CommandLine.Mixin(name = "output")
     OutputOptionMixin output;
 
-    @Mixin
+    @CommandLine.Mixin
     HelpOption helpOption;
 
     @CommandLine.ArgGroup(exclusive = false, validate = false)
     protected PropertiesOptions propertiesOptions = new PropertiesOptions();
 
-    @Spec
+    @CommandLine.Spec
     CommandSpec spec;
 
     @CommandLine.Option(order = 3, names = {

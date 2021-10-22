@@ -59,7 +59,7 @@ public class FlywayFunctionalityResource {
     @GET
     @Path("create-schemas")
     public boolean returnCreateSchema() {
-        return flyway.getConfiguration().getCreateSchemas();
+        return flyway.getConfiguration().isCreateSchemas();
     }
 
     @GET

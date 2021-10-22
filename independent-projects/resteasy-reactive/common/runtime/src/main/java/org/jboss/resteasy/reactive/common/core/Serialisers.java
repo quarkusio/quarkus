@@ -1,7 +1,6 @@
 package org.jboss.resteasy.reactive.common.core;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -188,7 +187,8 @@ public abstract class Serialisers {
     protected List<MessageBodyWriter<?>> toMessageBodyWriters(List<ResourceWriter> resourceWriters) {
         List<MessageBodyWriter<?>> ret = new ArrayList<>(resourceWriters.size());
         Set<Class<? extends MessageBodyWriter>> alreadySeenClasses = new HashSet<>(resourceWriters.size());
-        for (ResourceWriter resourceWriter : resourceWriters) {
+        for (int i = 0; i < resourceWriters.size(); i++) {
+            ResourceWriter resourceWriter = resourceWriters.get(i);
             MessageBodyWriter<?> instance = resourceWriter.instance();
             Class<? extends MessageBodyWriter> instanceClass = instance.getClass();
             if (alreadySeenClasses.contains(instanceClass)) {
@@ -217,49 +217,6 @@ public abstract class Serialisers {
             // we sort here because the spec mentions that the writers closer to the requested java type are tried first
             mediaTypeMatchingWriters.sort(ResourceWriter.ResourceWriterComparator.INSTANCE);
             ret.addAll(mediaTypeMatchingWriters);
-        }
-    }
-
-    public abstract BuiltinWriter[] getBuiltinWriters();
-
-    public abstract BuiltinReader[] getBuiltinReaders();
-
-    public void registerBuiltins(RuntimeType constraint) {
-        for (BuiltinWriter builtinWriter : getBuiltinWriters()) {
-            if (builtinWriter.constraint == null || builtinWriter.constraint == constraint) {
-                MessageBodyWriter<?> writer;
-                try {
-                    writer = builtinWriter.writerClass.getDeclaredConstructor().newInstance();
-                } catch (InstantiationException | IllegalAccessException | NoSuchMethodException
-                        | InvocationTargetException e) {
-                    e.printStackTrace();
-                    continue;
-                }
-                ResourceWriter resourceWriter = new ResourceWriter();
-                resourceWriter.setConstraint(builtinWriter.constraint);
-                resourceWriter.setMediaTypeStrings(Collections.singletonList(builtinWriter.mediaType));
-                // FIXME: we could still support beans
-                resourceWriter.setFactory(new UnmanagedBeanFactory<MessageBodyWriter<?>>(writer));
-                addWriter(builtinWriter.entityClass, resourceWriter);
-            }
-        }
-        for (BuiltinReader builtinReader : getBuiltinReaders()) {
-            if (builtinReader.constraint == null || builtinReader.constraint == constraint) {
-                MessageBodyReader<?> reader;
-                try {
-                    reader = builtinReader.readerClass.getDeclaredConstructor().newInstance();
-                } catch (InstantiationException | IllegalAccessException | NoSuchMethodException
-                        | InvocationTargetException e) {
-                    e.printStackTrace();
-                    continue;
-                }
-                ResourceReader resourceReader = new ResourceReader();
-                resourceReader.setConstraint(builtinReader.constraint);
-                resourceReader.setMediaTypeStrings(Collections.singletonList(builtinReader.mediaType));
-                // FIXME: we could still support beans
-                resourceReader.setFactory(new UnmanagedBeanFactory<MessageBodyReader<?>>(reader));
-                addReader(builtinReader.entityClass, resourceReader);
-            }
         }
     }
 

@@ -19,6 +19,7 @@ public class ConfigMappingTest {
                     .addClasses(DefaultContentTypeResource.class, Greeting.class)
 
                     .addAsResource(new StringAsset("quarkus.smallrye-openapi.open-api-version=3.0.3\n"
+                            + "quarkus.smallrye-openapi.servers=http:\\//www.server1.com,http:\\//www.server2.com\n"
                             + "quarkus.smallrye-openapi.info-title=My API\n"
                             + "quarkus.smallrye-openapi.info-version=1.2.3\n"
                             + "quarkus.smallrye-openapi.info-description=My Description\n"
@@ -39,6 +40,10 @@ public class ConfigMappingTest {
                 .log().body().and()
                 .body("openapi",
                         Matchers.equalTo("3.0.3"))
+                .body("servers[0].url",
+                        Matchers.startsWith("http://www.server"))
+                .body("servers[1].url",
+                        Matchers.startsWith("http://www.server"))
                 .body("info.title",
                         Matchers.equalTo("My API"))
                 .body("info.description",

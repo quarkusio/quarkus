@@ -25,7 +25,8 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
 
     private final boolean withValidation;
 
-    public AddMethodImplementor(boolean withValidation) {
+    public AddMethodImplementor(boolean withValidation, boolean isResteasyClassic) {
+        super(isResteasyClassic);
         this.withValidation = withValidation;
     }
 

@@ -25,7 +25,6 @@ import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
@@ -74,8 +73,7 @@ public class ResteasyStandaloneBuildStep {
             ResteasyStandaloneBuildItem standalone,
             Optional<RequireVirtualHttpBuildItem> requireVirtual,
             ExecutorBuildItem executorBuildItem,
-            ResteasyVertxConfig resteasyVertxConfig,
-            HttpConfiguration httpConfiguration) throws Exception {
+            ResteasyVertxConfig resteasyVertxConfig) throws Exception {
 
         if (standalone == null) {
             return;
@@ -85,7 +83,7 @@ public class ResteasyStandaloneBuildStep {
         // Handler used for both the default and non-default deployment path (specified as application path or resteasyConfig.path)
         // Routes use the order VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1 to ensure the default route is called before the resteasy one
         Handler<RoutingContext> handler = recorder.vertxRequestHandler(vertx.getVertx(),
-                executorBuildItem.getExecutorProxy(), httpConfiguration, resteasyVertxConfig);
+                executorBuildItem.getExecutorProxy(), resteasyVertxConfig);
         // Exact match for resources matched to the root path
         routes.produce(
                 RouteBuildItem.builder().orderedRoute(standalone.deploymentRootPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1)

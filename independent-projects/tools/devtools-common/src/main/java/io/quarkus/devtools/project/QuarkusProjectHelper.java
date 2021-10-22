@@ -14,7 +14,6 @@ import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistriesConfigLocator;
 import java.nio.file.Path;
-import java.util.Arrays;
 
 public class QuarkusProjectHelper {
 
@@ -41,21 +40,7 @@ public class QuarkusProjectHelper {
     }
 
     public static BuildTool detectExistingBuildTool(Path projectDirPath) {
-        if (projectDirPath.resolve("pom.xml").toFile().exists()) {
-            return BuildTool.MAVEN;
-        } else if (projectDirPath.resolve("build.gradle").toFile().exists()) {
-            return BuildTool.GRADLE;
-        } else if (projectDirPath.resolve("build.gradle.kts").toFile().exists()) {
-            return BuildTool.GRADLE_KOTLIN_DSL;
-        } else if (projectDirPath.resolve("jbang").toFile().exists()) {
-            return BuildTool.JBANG;
-        } else if (projectDirPath.resolve("src").toFile().isDirectory()) {
-            String[] files = projectDirPath.resolve("src").toFile().list();
-            if (files != null && Arrays.asList(files).stream().anyMatch(x -> x.contains(".java"))) {
-                return BuildTool.JBANG;
-            }
-        }
-        return null;
+        return BuildTool.fromProject(projectDirPath);
     }
 
     public static QuarkusProject getProject(Path projectDir) {

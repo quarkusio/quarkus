@@ -91,7 +91,7 @@ public class QuarkusIntegrationTestExtension
         boolean reloadTestResources = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
                 && (hasPerTestResources || QuarkusTestExtension.hasPerTestResources(extensionContext));
         if ((state == null && !failedBoot) || wrongProfile || reloadTestResources) {
-            if (wrongProfile) {
+            if (wrongProfile || reloadTestResources) {
                 if (state != null) {
                     try {
                         state.close();
@@ -219,7 +219,7 @@ public class QuarkusIntegrationTestExtension
         Class<?> c = testInstance.getClass();
         while (c != Object.class) {
             for (Field f : c.getDeclaredFields()) {
-                if (f.getType().equals(QuarkusIntegrationTest.Context.class)) {
+                if (f.getType().equals(DevServicesContext.class)) {
                     try {
                         f.setAccessible(true);
                         f.set(testInstance, createTestContext());
@@ -242,7 +242,7 @@ public class QuarkusIntegrationTestExtension
         }
     }
 
-    private QuarkusIntegrationTest.Context createTestContext() {
+    private DevServicesContext createTestContext() {
         Map<String, String> devServicesPropsCopy = devServicesProps.isEmpty() ? Collections.emptyMap()
                 : Collections.unmodifiableMap(devServicesProps);
         return new DefaultQuarkusIntegrationTestContext(devServicesPropsCopy);
@@ -293,7 +293,7 @@ public class QuarkusIntegrationTestExtension
         }
     }
 
-    private static class DefaultQuarkusIntegrationTestContext implements QuarkusIntegrationTest.Context {
+    private static class DefaultQuarkusIntegrationTestContext implements DevServicesContext {
 
         private final Map<String, String> map;
 

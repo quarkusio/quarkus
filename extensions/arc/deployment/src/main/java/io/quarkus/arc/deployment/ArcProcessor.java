@@ -147,6 +147,7 @@ public class ArcProcessor {
             List<AdditionalBeanBuildItem> additionalBeans,
             List<ResourceAnnotationBuildItem> resourceAnnotations,
             List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations,
+            List<SuppressConditionGeneratorBuildItem> suppressConditionGenerators,
             Optional<TestClassPredicateBuildItem> testClassPredicate,
             Capabilities capabilities,
             CustomScopeAnnotationsBuildItem customScopes,
@@ -349,6 +350,10 @@ public class ArcProcessor {
                     arcConfig.excludeTypes.get())) {
                 builder.addExcludeType(predicate);
             }
+        }
+
+        for (SuppressConditionGeneratorBuildItem generator : suppressConditionGenerators) {
+            builder.addSuppressConditionGenerator(generator.getGenerator());
         }
 
         BeanProcessor beanProcessor = builder.build();

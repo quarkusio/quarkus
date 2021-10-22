@@ -6,7 +6,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
-public interface ServerHttpResponse {
+public interface ServerHttpResponse extends StreamingResponse<ServerHttpResponse> {
 
     ServerHttpResponse setStatusCode(int code);
 

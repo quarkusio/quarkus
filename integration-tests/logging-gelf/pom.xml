@@ -262,7 +262,6 @@
             </activation>
             <!-- add some custom config, the rest comes from parent -->
             <properties>
-                <quarkus.native.enable-all-security-services>true</quarkus.native.enable-all-security-services>
                 <quarkus.native.enable-https-url-handler>true</quarkus.native.enable-https-url-handler>
             </properties>
         </profile>

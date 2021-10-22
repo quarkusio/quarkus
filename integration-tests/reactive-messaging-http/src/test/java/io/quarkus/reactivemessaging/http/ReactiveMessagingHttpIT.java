@@ -1,7 +1,7 @@
 package io.quarkus.reactivemessaging.http;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class ReactiveMessagingHttpIT extends ReactiveMessagingHttpTest {
 }

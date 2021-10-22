@@ -1,5 +1,6 @@
 package io.quarkus.bootstrap.runner;
 
+import io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThread;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -21,6 +22,8 @@ public class QuarkusEntryPoint {
 
     public static void main(String... args) throws Throwable {
         System.setProperty("java.util.logging.manager", org.jboss.logmanager.LogManager.class.getName());
+        System.setProperty("java.util.concurrent.ForkJoinPool.common.threadFactory",
+                "io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThreadFactory");
         Timing.staticInitStarted(false);
         doRun(args);
     }
@@ -42,12 +45,15 @@ public class QuarkusEntryPoint {
                     24_576)) {
                 app = SerializedApplication.read(in, appRoot);
             }
+            final RunnerClassLoader appRunnerClassLoader = app.getRunnerClassLoader();
             try {
-                Thread.currentThread().setContextClassLoader(app.getRunnerClassLoader());
-                Class<?> mainClass = app.getRunnerClassLoader().loadClass(app.getMainClass());
+                Thread.currentThread().setContextClassLoader(appRunnerClassLoader);
+                QuarkusForkJoinWorkerThread.setQuarkusAppClassloader(appRunnerClassLoader);
+                Class<?> mainClass = appRunnerClassLoader.loadClass(app.getMainClass());
                 mainClass.getMethod("main", String[].class).invoke(null, args);
             } finally {
-                app.getRunnerClassLoader().close();
+                QuarkusForkJoinWorkerThread.setQuarkusAppClassloader(null);
+                appRunnerClassLoader.close();
             }
         }
     }

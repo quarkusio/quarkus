@@ -143,9 +143,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                         synchronized (this) {
                             if (isRequestScopeManagementRequired()) {
                                 if (requestScopeActivated) {
-                                    if (position != handlers.length) {
-                                        disasociateRequestScope = true;
-                                    }
+                                    disasociateRequestScope = true;
                                     requestScopeActivated = false;
                                 }
                             } else {
@@ -176,6 +174,10 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
             // we need to make sure we don't close the underlying stream in the event loop if the task
             // has been offloaded to the executor
             if ((position == handlers.length && !processingSuspended) || aborted) {
+                if (requestScopeActivated) {
+                    requestScopeDeactivated();
+                    currentRequestScope.deactivate();
+                }
                 close();
             } else {
                 if (disasociateRequestScope) {

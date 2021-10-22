@@ -43,9 +43,11 @@ public abstract class AbstractDevConsoleProcessor {
     }
 
     protected void produceDevConsoleRouteItems(BuildProducer<DevConsoleRouteBuildItem> devConsoleRoute,
-            DevConsolePostHandler testServiceWithToken, DevConsolePostHandler exchangeCodeForTokens) {
+            DevConsolePostHandler testServiceWithToken,
+            DevConsolePostHandler exchangeCodeForTokens,
+            DevConsolePostHandler passwordClientCredHandler) {
         devConsoleRoute.produce(new DevConsoleRouteBuildItem("testServiceWithToken", "POST", testServiceWithToken));
         devConsoleRoute.produce(new DevConsoleRouteBuildItem("exchangeCodeForTokens", "POST", exchangeCodeForTokens));
-
+        devConsoleRoute.produce(new DevConsoleRouteBuildItem("testService", "POST", passwordClientCredHandler));
     }
 }

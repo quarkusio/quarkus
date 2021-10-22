@@ -547,8 +547,8 @@ act accordingly:
         }
     }
 
-    @CacheResult(name = "foo")
-    private Integer callRemote(int val)  {
+    @CacheResult(cacheName = "foo")
+    public Integer callRemote(int val)  {
 
         try {
             Integer val = remoteWebServer.getResult(val); //<2>
@@ -583,8 +583,8 @@ the exception bubble out of the called method and catch it at the caller side:
            System.out.println("Got an exception");
    }
 
-   @CacheResult(name = "foo")
-   private Integer callRemote(int val) throws Exception { // <2>
+   @CacheResult(cacheName = "foo")
+   public Integer callRemote(int val) throws Exception { // <2>
 
       Integer val = remoteWebServer.getResult(val);  //<3>
       return val;

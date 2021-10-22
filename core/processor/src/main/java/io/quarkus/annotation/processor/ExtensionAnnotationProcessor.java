@@ -38,6 +38,7 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.PackageElement;
@@ -304,6 +305,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
             final String binaryName = processingEnv.getElementUtils().getBinaryName(clazz).toString();
             if (processorClassNames.add(binaryName)) {
+                validateRecordBuildSteps(clazz);
                 recordConfigJavadoc(clazz);
                 generateAccessor(clazz);
                 final StringBuilder rbn = getRelativeBinaryName(clazz, new StringBuilder());
@@ -318,6 +320,42 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                     processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
                             "Failed to create " + rbn + " in " + pkg + ": " + e1, clazz);
                 }
+            }
+        }
+    }
+
+    private void validateRecordBuildSteps(TypeElement clazz) {
+        for (Element e : clazz.getEnclosedElements()) {
+            if (e.getKind() != ElementKind.METHOD) {
+                continue;
+            }
+            ExecutableElement ex = (ExecutableElement) e;
+            if (!isAnnotationPresent(ex, Constants.ANNOTATION_BUILD_STEP)) {
+                continue;
+            }
+            if (!isAnnotationPresent(ex, Constants.ANNOTATION_RECORD)) {
+                continue;
+            }
+
+            boolean hasRecorder = false;
+            boolean allTypesResolvable = true;
+            for (VariableElement parameter : ex.getParameters()) {
+                String parameterClassName = parameter.asType().toString();
+                TypeElement parameterTypeElement = processingEnv.getElementUtils().getTypeElement(parameterClassName);
+                if (parameterTypeElement == null) {
+                    allTypesResolvable = false;
+                } else {
+                    if (isAnnotationPresent(parameterTypeElement, Constants.ANNOTATION_RECORDER)) {
+                        hasRecorder = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasRecorder && allTypesResolvable) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Build Step '" + clazz.getQualifiedName() + "#"
+                        + ex.getSimpleName()
+                        + "' which is annotated with '@Record' does not contain a method parameter whose type is annotated with '@Recorder'.");
             }
         }
     }
@@ -509,7 +547,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         boolean generationNeeded = false;
         for (VariableElement field : fieldsIn(clazz.getEnclosedElements())) {
             final Set<Modifier> mods = field.getModifiers();
-            if (mods.contains(Modifier.PRIVATE) || mods.contains(Modifier.STATIC)) {
+            if (mods.contains(Modifier.PRIVATE) || mods.contains(Modifier.STATIC) || mods.contains(Modifier.FINAL)) {
                 // skip it
                 continue;
             }

@@ -18,6 +18,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.SimpleObjectIdResolver;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -54,6 +55,8 @@ public class JacksonProcessor {
     private static final DotName JSON_DESERIALIZE = DotName.createSimple(JsonDeserialize.class.getName());
 
     private static final DotName JSON_SERIALIZE = DotName.createSimple(JsonSerialize.class.getName());
+
+    private static final DotName JSON_AUTO_DETECT = DotName.createSimple(JsonAutoDetect.class.getName());
 
     private static final DotName JSON_CREATOR = DotName.createSimple("com.fasterxml.jackson.annotation.JsonCreator");
 
@@ -165,6 +168,14 @@ public class JacksonProcessor {
                 // the Deserializers are constructed internally by Jackson using a no-args constructor
                 reflectiveClass
                         .produce(new ReflectiveClassBuildItem(false, false, nullsUsingValue.asClass().name().toString()));
+            }
+        }
+
+        for (AnnotationInstance creatorInstance : index.getAnnotations(JSON_AUTO_DETECT)) {
+            if (creatorInstance.target().kind().equals(CLASS)) {
+                reflectiveClass
+                        .produce(
+                                new ReflectiveClassBuildItem(true, true, creatorInstance.target().asClass().name().toString()));
             }
         }
 

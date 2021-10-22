@@ -45,6 +45,7 @@ public class QuarkusGenerateCode extends QuarkusTask {
     private Consumer<Path> sourceRegistrar = (p) -> {
     };
     private boolean test = false;
+    private boolean devMode = false;
 
     public QuarkusGenerateCode() {
         super("Performs Quarkus pre-build preparations, such as sources generation");
@@ -88,7 +89,8 @@ public class QuarkusGenerateCode extends QuarkusTask {
     public void prepareQuarkus() {
         getLogger().lifecycle("preparing quarkus application");
 
-        final ApplicationModel appModel = extension().getApplicationModel(test ? LaunchMode.TEST : LaunchMode.NORMAL);
+        LaunchMode launchMode = test ? LaunchMode.TEST : devMode ? LaunchMode.DEVELOPMENT : LaunchMode.NORMAL;
+        final ApplicationModel appModel = extension().getApplicationModel(launchMode);
         final Properties realProperties = getBuildSystemProperties(appModel.getAppArtifact());
 
         Path buildDir = getProject().getBuildDir().toPath();
@@ -124,7 +126,7 @@ public class QuarkusGenerateCode extends QuarkusTask {
                 Optional<Method> initAndRun = Arrays.stream(codeGenerator.getMethods())
                         .filter(m -> m.getName().equals(INIT_AND_RUN))
                         .findAny();
-                if (!initAndRun.isPresent()) {
+                if (initAndRun.isEmpty()) {
                     throw new GradleException("Failed to find " + INIT_AND_RUN + " method in " + CodeGenerator.class.getName());
                 }
 
@@ -134,7 +136,8 @@ public class QuarkusGenerateCode extends QuarkusTask {
                         buildDir,
                         sourceRegistrar,
                         appCreationContext.getApplicationModel(),
-                        realProperties);
+                        realProperties,
+                        launchMode.name());
 
             }
         } catch (BootstrapException | IllegalAccessException | InvocationTargetException | ClassNotFoundException e) {
@@ -148,5 +151,9 @@ public class QuarkusGenerateCode extends QuarkusTask {
 
     public void setTest(boolean test) {
         this.test = test;
+    }
+
+    public void setDevMode(boolean devMode) {
+        this.devMode = devMode;
     }
 }

@@ -26,19 +26,19 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Spec;
 
 public class BaseCreateCommand implements Callable<Integer> {
-    @Mixin
+    @CommandLine.Mixin
     protected RunModeOption runMode;
 
-    @Mixin
+    @CommandLine.Mixin(name = "output")
     protected OutputOptionMixin output;
 
-    @Mixin
+    @CommandLine.Mixin
     ToggleRegistryClientMixin registryClient;
 
     @CommandLine.Mixin
     protected HelpOption helpOption;
 
-    @Spec
+    @CommandLine.Spec
     protected CommandSpec spec;
 
     @CommandLine.Option(paramLabel = "OUTPUT-DIR", names = { "-o",

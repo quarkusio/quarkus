@@ -90,7 +90,7 @@ class VertxHttpProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     FilterBuildItem cors(CORSRecorder recorder, HttpConfiguration configuration) {
-        return new FilterBuildItem(recorder.corsHandler(configuration), FilterBuildItem.CORS);
+        return new FilterBuildItem(recorder.corsHandler(), FilterBuildItem.CORS);
     }
 
     @BuildStep
@@ -209,8 +209,8 @@ class VertxHttpProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    BodyHandlerBuildItem bodyHandler(VertxHttpRecorder recorder, HttpConfiguration httpConfiguration) {
-        return new BodyHandlerBuildItem(recorder.createBodyHandler(httpConfiguration));
+    BodyHandlerBuildItem bodyHandler(VertxHttpRecorder recorder) {
+        return new BodyHandlerBuildItem(recorder.createBodyHandler());
     }
 
     @BuildStep
@@ -222,7 +222,7 @@ class VertxHttpProcessor {
             VertxWebRouterBuildItem httpRouteRouter,
             HttpRootPathBuildItem httpRootPathBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            HttpBuildTimeConfig httpBuildTimeConfig, HttpConfiguration httpConfiguration,
+            HttpBuildTimeConfig httpBuildTimeConfig,
             List<RequireBodyHandlerBuildItem> requireBodyHandlerBuildItems,
             BodyHandlerBuildItem bodyHandlerBuildItem,
             BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer,
@@ -283,7 +283,7 @@ class VertxHttpProcessor {
                 httpRouteRouter.getMutinyRouter(),
                 httpRootPathBuildItem.getRootPath(),
                 launchMode.getLaunchMode(),
-                !requireBodyHandlerBuildItems.isEmpty(), bodyHandler, httpConfiguration, gracefulShutdownFilter,
+                !requireBodyHandlerBuildItems.isEmpty(), bodyHandler, gracefulShutdownFilter,
                 shutdownConfig, executorBuildItem.getExecutorProxy());
 
         return new ServiceStartBuildItem("vertx-http");
@@ -303,7 +303,7 @@ class VertxHttpProcessor {
             CoreVertxBuildItem vertx,
             ShutdownContextBuildItem shutdown,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            HttpBuildTimeConfig httpBuildTimeConfig, HttpConfiguration httpConfiguration,
+            HttpBuildTimeConfig httpBuildTimeConfig,
             Optional<RequireVirtualHttpBuildItem> requireVirtual,
             EventLoopCountBuildItem eventLoopCount,
             List<WebsocketSubProtocolsBuildItem> websocketSubProtocols,
@@ -316,7 +316,7 @@ class VertxHttpProcessor {
         boolean startSocket = (!startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL)
                 && (requireVirtual.isEmpty() || !requireVirtual.get().isAlwaysVirtual());
         recorder.startServer(vertx.getVertx(), shutdown,
-                httpBuildTimeConfig, httpConfiguration, launchMode.getLaunchMode(), startVirtual, startSocket,
+                launchMode.getLaunchMode(), startVirtual, startSocket,
                 eventLoopCount.getEventLoopCount(),
                 websocketSubProtocols.stream().map(bi -> bi.getWebsocketSubProtocols())
                         .collect(Collectors.toList()),

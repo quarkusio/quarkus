@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
@@ -17,13 +18,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -43,6 +43,8 @@ import io.quarkus.extest.runtime.config.TestRunTimeConfig;
 import io.quarkus.extest.runtime.config.named.PrefixNamedConfig;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
+import io.smallrye.config.ConfigValue;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * Test driver for the test-extension
@@ -58,7 +60,7 @@ public class ConfiguredBeanTest {
                     .addAsResource("application.properties"));
 
     @Inject
-    Config config;
+    SmallRyeConfig config;
     @Inject
     ConfiguredBean configuredBean;
 
@@ -314,11 +316,15 @@ public class ConfiguredBeanTest {
 
     @Test
     public void buildTimeDefaults() {
-        // Source is only initialized once in runtime.
-        Assertions.assertEquals(1, OverrideBuildTimeConfigSource.counter.get());
-        // Test that build configRoot are not overridden by properties in runtime.
+        // Source is only initialized twice (one for static init and another one for runtime)
+        Assertions.assertEquals(2, OverrideBuildTimeConfigSource.counter.get());
+        // Test that build configRoot are not overridden by properties set in static or runtime init
         Assertions.assertEquals(1234567891L, buildAndRunTimeConfig.allValues.longPrimitive);
-        Assertions.assertEquals(0, ConfigProvider.getConfig().getValue("quarkus.btrt.all-values.long-primitive", Long.class));
+
+        ConfigValue value = config.getConfigValue("quarkus.btrt.all-values.long-primitive");
+        Assertions.assertEquals("1234567891", value.getValue());
+        Assertions.assertEquals("PropertiesConfigSource[source=Build time config]", value.getConfigSourceName());
+        Assertions.assertEquals(Integer.MAX_VALUE, value.getConfigSourceOrdinal());
     }
 
     @Test
@@ -330,36 +336,32 @@ public class ConfiguredBeanTest {
 
     @Test
     public void testConfigDefaultValuesSourceOrdinal() {
-        ConfigSource defaultValues = null;
+        Optional<ConfigSource> source = config.getConfigSource("PropertiesConfigSource[source=Specified default values]");
+        assertTrue(source.isPresent());
+        ConfigSource defaultValues = source.get();
+        assertEquals(Integer.MIN_VALUE + 100, defaultValues.getOrdinal());
+
+        ConfigSource applicationProperties = null;
         for (ConfigSource configSource : config.getConfigSources()) {
-            if (configSource.getName().contains("PropertiesConfigSource[source=Specified default values]")) {
-                defaultValues = configSource;
+            if (configSource.getName().contains("application.properties")) {
+                applicationProperties = configSource;
                 break;
             }
         }
-        assertNotNull(defaultValues);
-        assertEquals(Integer.MIN_VALUE + 100, defaultValues.getOrdinal());
-
-        // Should be the first
-        ConfigSource applicationProperties = config.getConfigSources().iterator().next();
         assertNotNull(applicationProperties);
         assertEquals(1000, applicationProperties.getOrdinal());
 
-        assertEquals("1234", defaultValues.getValue("my.prop"));
+        assertEquals("1234", defaultValues.getValue("%test.my.prop"));
+        assertNull(defaultValues.getValue("my.prop"));
         assertEquals("1234", applicationProperties.getValue("my.prop"));
     }
 
     @Test
     public void testProfileDefaultValuesSource() {
-        ConfigSource defaultValues = null;
-        for (ConfigSource configSource : config.getConfigSources()) {
-            if (configSource.getName().contains("PropertiesConfigSource[source=Specified default values]")) {
-                defaultValues = configSource;
-                break;
-            }
-        }
-        assertNotNull(defaultValues);
-        assertEquals("1234", defaultValues.getValue("my.prop"));
+        Optional<ConfigSource> source = config.getConfigSource("PropertiesConfigSource[source=Specified default values]");
+        assertTrue(source.isPresent());
+        ConfigSource defaultValues = source.get();
+
         assertEquals("1234", defaultValues.getValue("%prod.my.prop"));
         assertEquals("5678", defaultValues.getValue("%dev.my.prop"));
         assertEquals("1234", defaultValues.getValue("%test.my.prop"));

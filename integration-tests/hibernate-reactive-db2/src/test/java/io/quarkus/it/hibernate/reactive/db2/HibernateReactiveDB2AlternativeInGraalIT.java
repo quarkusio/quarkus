@@ -1,7 +1,7 @@
 package io.quarkus.it.hibernate.reactive.db2;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class HibernateReactiveDB2AlternativeInGraalIT extends HibernateReactiveDB2AlternativeTest {
 }

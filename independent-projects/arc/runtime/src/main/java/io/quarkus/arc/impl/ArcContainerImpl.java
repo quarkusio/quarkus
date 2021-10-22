@@ -78,7 +78,7 @@ public class ArcContainerImpl implements ArcContainer {
     private final Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings;
     private final Map<String, Set<String>> qualifierNonbindingMembers;
 
-    private final Map<Class<? extends Annotation>, Collection<InjectableContext>> contexts;
+    private final Map<Class<? extends Annotation>, List<InjectableContext>> contexts;
     private final ManagedContext requestContext;
     private final InjectableContext applicationContext;
     private final InjectableContext singletonContext;
@@ -162,7 +162,7 @@ public class ArcContainerImpl implements ArcContainer {
     private void putContext(InjectableContext context) {
         Collection<InjectableContext> values = contexts.get(context.getScope());
         if (values == null) {
-            contexts.put(context.getScope(), Collections.singleton(context));
+            contexts.put(context.getScope(), Collections.singletonList(context));
         } else {
             List<InjectableContext> multi = new ArrayList<>(values.size() + 1);
             multi.addAll(values);
@@ -216,7 +216,7 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     @Override
-    public Collection<InjectableContext> getContexts(Class<? extends Annotation> scopeType) {
+    public List<InjectableContext> getContexts(Class<? extends Annotation> scopeType) {
         requireRunning();
         return contexts.getOrDefault(scopeType, Collections.emptyList());
     }
@@ -314,7 +314,7 @@ public class ArcContainerImpl implements ArcContainer {
         Objects.requireNonNull(name);
         requireRunning();
         Set<InjectableBean<?>> resolvedBeans = beansByName.getValue(name);
-        return resolvedBeans.size() != 1 ? InstanceHandleImpl.unavailable()
+        return resolvedBeans.size() != 1 ? EagerInstanceHandle.unavailable()
                 : (InstanceHandle<T>) beanInstanceHandle(resolvedBeans.iterator()
                         .next(), null);
     }
@@ -435,9 +435,8 @@ public class ArcContainerImpl implements ArcContainer {
             if (resetCurrentInjectionPoint) {
                 prev = InjectionPointProvider.set(CurrentInjectionPointProvider.EMPTY);
             }
-
             try {
-                return new InstanceHandleImpl<>(bean, bean.get(creationalContext), creationalContext, parentContext,
+                return new EagerInstanceHandle<>(bean, bean.get(creationalContext), creationalContext, parentContext,
                         destroyLogic);
             } finally {
                 if (resetCurrentInjectionPoint) {
@@ -445,7 +444,7 @@ public class ArcContainerImpl implements ArcContainer {
                 }
             }
         } else {
-            return InstanceHandleImpl.unavailable();
+            return EagerInstanceHandle.unavailable();
         }
     }
 

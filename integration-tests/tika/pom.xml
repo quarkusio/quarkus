@@ -99,10 +99,6 @@
                     <name>native</name>
                 </property>
             </activation>
-            <!-- add some custom config, the rest comes from parent -->
-            <properties>
-                <quarkus.native.add-all-charsets>true</quarkus.native.add-all-charsets>
-            </properties>
         </profile>
     </profiles>
 

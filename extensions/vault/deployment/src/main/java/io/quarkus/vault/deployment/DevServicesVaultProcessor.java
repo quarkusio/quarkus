@@ -132,7 +132,7 @@ public class DevServicesVaultProcessor {
 
         boolean needToStart = !ConfigUtils.isPropertyPresent(URL_CONFIG_KEY);
         if (!needToStart) {
-            log.debug("Not starting devservices for default Vault client as url have been provided");
+            log.debug("Not starting devservices for default Vault client as url has been provided");
             return null;
         }
 

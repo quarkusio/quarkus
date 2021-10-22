@@ -49,7 +49,7 @@ public final class TypeCheckExcludeBuildItem extends MultiBuildItem {
         public final int numberOfParameters;
 
         public TypeCheck(String name, ClassInfo clazz, int parameters) {
-            this.name = name;
+            this.name = Objects.requireNonNull(name, "Name must not be null");
             this.clazz = clazz;
             this.numberOfParameters = parameters;
         }
@@ -68,7 +68,7 @@ public final class TypeCheckExcludeBuildItem extends MultiBuildItem {
         }
 
         public boolean classNameEquals(DotName name) {
-            return clazz.name().equals(name);
+            return clazz != null ? clazz.name().equals(name) : false;
         }
 
     }

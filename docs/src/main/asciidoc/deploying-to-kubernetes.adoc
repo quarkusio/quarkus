@@ -1201,7 +1201,7 @@ If the resource name does not match the application name (or the overridden name
 If the name of the container does not match the application name (or the overridden name), container specific configuration will be ignored.
 ====
 
-== Service Binding
+== Service Binding [[service_binding]]
 
 Quarkus supports binding services to applications via the link:https://github.com/k8s-service-bindings/spec[Service Binding Specification for Kubernetes].
 Specifically Quarkus implements the link:https://github.com/k8s-service-bindings/spec#application-projection[Application Projection] part of the specification, thus allowing
@@ -1260,6 +1260,50 @@ Quarkus knows where in the file system to look for these files (as it consults t
 An example of what the file system looks like can be seen link:https://github.com/quarkusio/quarkus/tree/e7efe6b3efba91b9c4ae26f9318f8397e23e7505/integration-tests/kubernetes-service-binding-jdbc/src/test/resources/k8s-sb[here].
 In that example, the `k8s-sb` directory is meant to be the root of all service bindings. Only one binding which exists in that case and it is named `fruit-db`. This binding has a `type` file indicating that it is a `postgresql` database
 while the other files provide the necessary connection information.
+
+=== Generating ServiceBinding resources
+The <<service_binding, Service Binding>> covers, how the application will consume the bound service. 
+However, we still haven't touched on how the actual binding happens. The binding is the responsibility of the Service Binding Operator. The user provides a `ServiceBinding` resource which expresses which application will bound to which services and the operator is responsible for mounting the required files to container.
+
+A `ServiceBinding` looks like:
+
+[source,yaml]
+----
+apiVersion: binding.operators.coreos.com/v1alpha1
+kind: ServiceBinding
+metadata:
+  name: binding-request
+  namespace: service-binding-demo
+spec:
+  application:
+    name: java-app
+    group: apps
+    version: v1
+    resource: deployments
+  services:
+  - group: postgresql.baiju.dev
+    version: v1alpha1
+    kind: Database
+    name: db-demo
+    id: postgresDB
+----
+
+The `quarkus-kubernetes-service-binding` extension provides a more compact way of expressing this information:
+
+[source,properties]
+----
+quarkus.kubernetes-service-binding.services.postgresDB.api-version=postgresql.baiju.dev/v1alpha1
+quarkus.kubernetes-service-binding.services.postgresDB.kind=Database
+quarkus.kubernetes-service-binding.services.postgresDB.name=db-demo
+----
+
+By adding the above configuration properties inside your `application.properties` the `quarkus-kubernetes` in cooperation with the `quarkus-kubernetes-service-binding` extension will generate the `ServiceBinding` for you.
+And this is something that is meant to work regardles of the kubernets flavour you are using, so it's expected to also work for Openshift and Knative, without any additional action from the user.
+
+NOTE: This feature has limited applicability, as currently there are not many operators / custom resources bindable by the Service Binding Operator.
+
+ALSO NOTE: Advanced, features (e.g. `ServiceBiniding` mappings) are not yet supported.
+
 
 [TIP]
 ====

@@ -389,7 +389,7 @@ public final class RunTimeConfigurationGenerator {
             cc.getFieldCreator(C_BUILD_TIME_CONFIG_SOURCE)
                     .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
             final ResultHandle buildTimeConfigSource = clinit.newInstance(PCS_NEW, buildTimeValues,
-                    clinit.load("Build time config"), clinit.load(100));
+                    clinit.load("Build time config"), clinit.load(Integer.MAX_VALUE));
             clinit.writeStaticField(C_BUILD_TIME_CONFIG_SOURCE, buildTimeConfigSource);
 
             // the build time run time visible default values config source
@@ -483,7 +483,7 @@ public final class RunTimeConfigurationGenerator {
                             reinit.load(entry.getValue()));
                 }
                 final ResultHandle buildTimeConfigSource = reinit.newInstance(PCS_NEW, buildTimeValues,
-                        reinit.load("Build time config = Reloaded"), reinit.load(100));
+                        reinit.load("Build time config = Reloaded"), reinit.load(Integer.MAX_VALUE));
                 // the build time config, which is for user use only (not used by us other than for loading converters)
                 final ResultHandle buildTimeBuilder = reinit.invokeStaticMethod(CU_CONFIG_BUILDER, reinit.load(true),
                         reinit.load(launchMode));

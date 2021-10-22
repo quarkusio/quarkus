@@ -18,8 +18,8 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.resteasy.reactive.server.deployment.GeneratedJaxRsResourceGizmoAdaptor;
 import io.quarkus.resteasy.reactive.spi.GeneratedJaxRsResourceBuildItem;
+import io.quarkus.resteasy.reactive.spi.GeneratedJaxRsResourceGizmoAdaptor;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class GeneratedJaxRsResourceTest {

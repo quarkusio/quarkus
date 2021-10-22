@@ -1,17 +1,14 @@
 package io.quarkus.extension.gradle;
 
-import java.io.File;
-
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
+import org.gradle.api.tasks.TaskProvider;
 
 import io.quarkus.extension.gradle.tasks.ExtensionDescriptorTask;
 
@@ -32,13 +29,16 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
 
     private void registerTasks(Project project, QuarkusExtensionConfiguration quarkusExt) {
         TaskContainer tasks = project.getTasks();
-        ExtensionDescriptorTask extensionDescriptorTask = tasks.create(EXTENSION_DESCRIPTOR_TASK_NAME,
+        TaskProvider<ExtensionDescriptorTask> extensionDescriptorTask = tasks.register(EXTENSION_DESCRIPTOR_TASK_NAME,
                 ExtensionDescriptorTask.class, task -> {
                     JavaPluginConvention convention = project.getConvention().getPlugin(JavaPluginConvention.class);
-                    File resourcesDir = convention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput()
-                            .getResourcesDir();
-                    task.setResourcesDir(resourcesDir);
+                    SourceSet mainSourceSet = convention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+                    task.setOutputResourcesDir(mainSourceSet.getOutput().getResourcesDir());
+                    task.setInputResourcesDir(mainSourceSet.getResources().getSourceDirectories().getAsPath());
                     task.setQuarkusExtensionConfiguration(quarkusExt);
+                    Configuration classpath = project.getConfigurations()
+                            .getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+                    task.setClasspath(classpath);
                 });
 
         project.getPlugins().withType(
@@ -47,29 +47,31 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
                     Task jarTask = tasks.getByName(JavaPlugin.JAR_TASK_NAME);
                     jarTask.dependsOn(extensionDescriptorTask);
 
-                    Configuration annotationProcessorConfiguration = project.getConfigurations()
-                            .getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME);
-                    addAnnotationProcessorDependency(annotationProcessorConfiguration, project.getDependencies());
+                    addAnnotationProcessorDependency(project);
                 });
 
-        Project deploymentProject = findDeploymentProject(project, quarkusExt);
-        if (deploymentProject != null) {
-            deploymentProject.getPlugins().withType(
-                    JavaPlugin.class,
-                    javaPlugin -> {
-                        Configuration deploymentAnnotationProcessorConfiguration = deploymentProject.getConfigurations()
-                                .getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME);
-                        addAnnotationProcessorDependency(deploymentAnnotationProcessorConfiguration,
-                                deploymentProject.getDependencies());
-                    });
-        }
+        project.afterEvaluate(innerProject -> {
+            //This must be run after the extension has been configured
+            Project deploymentProject = findDeploymentProject(project, quarkusExt);
+            if (deploymentProject != null) {
+                deploymentProject.getPlugins().withType(
+                        JavaPlugin.class,
+                        javaPlugin -> {
+                            addAnnotationProcessorDependency(deploymentProject);
+                        });
+            }
+        });
     }
 
-    private void addAnnotationProcessorDependency(Configuration configuration, DependencyHandler dependencyHandler) {
-        configuration
-                .withDependencies(dependencies -> {
-                    Dependency annotationProcessor = dependencyHandler.create(QUARKUS_ANNOTATION_PROCESSOR);
-                    dependencies.add(annotationProcessor);
+    private void addAnnotationProcessorDependency(Project project) {
+        project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
+                .getResolutionStrategy().eachDependency(d -> {
+                    if ("io.quarkus".equals(d.getRequested().getGroup())
+                            && "quarkus-core".equals(d.getRequested().getName())
+                            && !d.getRequested().getVersion().isEmpty()) {
+                        project.getDependencies().add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME,
+                                QUARKUS_ANNOTATION_PROCESSOR + ':' + d.getRequested().getVersion());
+                    }
                 });
     }
 

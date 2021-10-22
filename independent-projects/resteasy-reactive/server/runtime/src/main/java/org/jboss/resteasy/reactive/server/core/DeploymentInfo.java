@@ -33,6 +33,7 @@ public class DeploymentInfo {
     private String applicationPath;
     private List<HandlerChainCustomizer> globalHandlerCustomers = new ArrayList<>();
     private boolean developmentMode;
+    private boolean resumeOn404;
 
     public ResourceInterceptors getInterceptors() {
         return interceptors;
@@ -175,6 +176,15 @@ public class DeploymentInfo {
 
     public DeploymentInfo setDevelopmentMode(boolean developmentMode) {
         this.developmentMode = developmentMode;
+        return this;
+    }
+
+    public boolean isResumeOn404() {
+        return resumeOn404;
+    }
+
+    public DeploymentInfo setResumeOn404(boolean resumeOn404) {
+        this.resumeOn404 = resumeOn404;
         return this;
     }
 }

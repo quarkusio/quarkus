@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
@@ -32,7 +32,7 @@ public class ApplicationPropertiesConfigSourceLoader extends AbstractLocationCon
 
         @Override
         protected List<ConfigSource> tryFileSystem(final URI uri, final int ordinal) {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
     }
 
@@ -46,7 +46,7 @@ public class ApplicationPropertiesConfigSourceLoader extends AbstractLocationCon
 
         @Override
         protected List<ConfigSource> tryClassPath(final URI uri, final int ordinal, final ClassLoader classLoader) {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
     }
 }

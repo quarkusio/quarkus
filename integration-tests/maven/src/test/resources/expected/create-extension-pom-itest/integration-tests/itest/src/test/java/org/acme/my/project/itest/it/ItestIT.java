@@ -1,8 +1,8 @@
 package org.acme.my.project.itest.it;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 class ItestIT extends ItestTest {
 
 }

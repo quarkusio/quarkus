@@ -7,9 +7,9 @@ metadata:
   - "jwt"
   - "json-web-token"
   - "rbac"
+  - "security"
   guide: "https://quarkus.io/guides/security-jwt"
   categories:
-  - "web"
   - "security"
   status: "stable"
   config:

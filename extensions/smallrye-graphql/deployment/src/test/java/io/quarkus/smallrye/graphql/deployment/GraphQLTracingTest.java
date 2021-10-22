@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +24,7 @@ public class GraphQLTracingTest extends AbstractGraphQLTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
                             BusinessException.class)
+                    .addAsResource(new StringAsset("quarkus.jaeger.disable-tracer-registration=true"), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     static MockTracer mockTracer = new MockTracer();

@@ -86,7 +86,6 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
 import io.smallrye.openapi.api.OpenApiDocument;
@@ -179,8 +178,7 @@ public class SmallRyeOpenApiProcessor {
             OpenApiRuntimeConfig openApiRuntimeConfig,
             ShutdownContextBuildItem shutdownContext,
             SmallRyeOpenApiConfig openApiConfig,
-            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
-            HttpConfiguration httpConfiguration) {
+            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem) {
         /*
          * <em>Ugly Hack</em>
          * In dev mode, we pass a classloader to load the up to date OpenAPI document.
@@ -209,7 +207,7 @@ public class SmallRyeOpenApiProcessor {
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(OASFilter.class).setRuntimeInit()
                 .supplier(recorder.autoSecurityFilterSupplier(autoSecurityFilter)).done());
 
-        Handler<RoutingContext> handler = recorder.handler(openApiRuntimeConfig, httpConfiguration);
+        Handler<RoutingContext> handler = recorder.handler(openApiRuntimeConfig);
         return nonApplicationRootPathBuildItem.routeBuilder()
                 .route(openApiConfig.path)
                 .routeConfigKey("quarkus.smallrye-openapi.path")

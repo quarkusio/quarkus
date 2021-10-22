@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>io.quarkus</groupId>
+        <artifactId>io.quarkus.gradle.plugin.parent</artifactId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-gradle-model</artifactId>
+    <packaging>pom</packaging>
+    <name>Quarkus - Gradle Model</name>
+    <description>Quarkus - Gradle Model</description>
+
+    <dependencies>
+        <!-- Compile -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devtools-testing</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>gradle</id>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <executable>${gradle.executable}</executable>
+                            <arguments>
+                                <argument>clean</argument>
+                                <argument>${gradle.task}</argument>
+                                <argument>-Pdescription=${project.description}</argument>
+                                <argument>-Dmaven.repo.local=${settings.localRepository}</argument>
+                                <argument>-S</argument>
+                                <argument>--stacktrace</argument>
+                                <argument>--no-daemon</argument>
+                            </arguments>
+                            <environmentVariables>
+                                <MAVEN_REPO_LOCAL>${settings.localRepository}</MAVEN_REPO_LOCAL>
+                                <GRADLE_OPTS>${env.MAVEN_OPTS}</GRADLE_OPTS>
+                            </environmentVariables>
+                            <skip>${skip.gradle.build}</skip>
+                        </configuration>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-artifacts</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attach-artifact</goal>
+                        </goals>
+                        <configuration>
+                            <artifacts>
+                                <artifact>
+                                    <file>build/libs/gradle-model-${project.version}.jar</file>
+                                    <type>jar</type>
+                                </artifact>
+                                <artifact>
+                                    <file>build/libs/gradle-model-${project.version}-javadoc.jar</file>
+                                    <type>jar</type>
+                                    <classifier>javadoc</classifier>
+                                </artifact>
+                                <artifact>
+                                    <file>build/libs/gradle-model-${project.version}-sources.jar</file>
+                                    <type>jar</type>
+                                    <classifier>sources</classifier>
+                                </artifact>
+                            </artifacts>
+                            <skipAttach>${skip.gradle.build}</skipAttach>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

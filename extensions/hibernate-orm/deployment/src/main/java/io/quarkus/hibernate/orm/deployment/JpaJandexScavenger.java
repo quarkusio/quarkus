@@ -198,7 +198,17 @@ public final class JpaJandexScavenger {
         if (name == null) {
             throw new IllegalArgumentException("Missing attribute '" + nodeName + ".class'");
         }
-        return packagePrefix + name;
+        return qualifyIfNecessary(packagePrefix, name);
+    }
+
+    // See org.hibernate.cfg.annotations.reflection.internal.XMLContext.buildSafeClassName(java.lang.String, java.lang.String)
+    private static String qualifyIfNecessary(String packagePrefix, String name) {
+        if (name.indexOf('.') < 0) {
+            return packagePrefix + name;
+        } else {
+            // The class name is already qualified; don't apply the package prefix.
+            return name;
+        }
     }
 
     private void enlistHbmXmlMapping(Collector collector, JaxbHbmHibernateMapping mapping) {

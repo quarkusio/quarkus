@@ -35,7 +35,7 @@ final class TypeInfos {
         List<Info> infos = new ArrayList<>();
         boolean splitParts = true;
         for (Expression.Part part : expression.getParts()) {
-            if (splitParts) {
+            if (splitParts && part.getTypeInfo().contains(TYPE_INFO_SEPARATOR)) {
                 List<String> infoParts = Expressions.splitTypeInfoParts(part.getTypeInfo());
                 for (String infoPart : infoParts) {
                     infos.add(create(infoPart, part, index, templateIdToPathFun, expression.getOrigin()));
@@ -88,7 +88,7 @@ final class TypeInfos {
             if (part.isVirtualMethod() || Expressions.isVirtualMethod(typeInfo)) {
                 return new VirtualMethodInfo(typeInfo, part.asVirtualMethod(), hint);
             }
-            return new PropertyInfo(typeInfo, part, hint);
+            return new PropertyInfo(part.getName(), part, hint);
         }
     }
 

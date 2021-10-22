@@ -3,9 +3,6 @@ package io.quarkus.annotation.processor;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalDouble;
@@ -22,7 +19,7 @@ import io.quarkus.annotation.processor.generate_doc.ConfigDocItem;
 
 final public class Constants {
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    public static TypeReference<List<ConfigDocItem>> LIST_OF_CONFIG_ITEMS_TYPE_REF = new TypeReference<List<ConfigDocItem>>() {
+    public static TypeReference<List<ConfigDocItem>> LIST_OF_CONFIG_ITEMS_TYPE_REF = new TypeReference<>() {
     };
 
     public static final char DOT = '.';
@@ -49,6 +46,7 @@ final public class Constants {
 
     public static final String ANNOTATION_TEMPLATE = "io.quarkus.runtime.annotations.Template";
     public static final String ANNOTATION_RECORDER = "io.quarkus.runtime.annotations.Recorder";
+    public static final String ANNOTATION_RECORD = "io.quarkus.deployment.annotations.Record";
 
     public static final String MEMORY_SIZE_TYPE = "io.quarkus.runtime.configuration.MemorySize";
     public static final String ANNOTATION_CONFIG_ITEM = "io.quarkus.runtime.annotations.ConfigItem";
@@ -60,8 +58,18 @@ final public class Constants {
     public static final String ANNOTATION_CONFIG_DOC_MAP_KEY = "io.quarkus.runtime.annotations.ConfigDocMapKey";
     public static final String ANNOTATION_CONFIG_DOC_SECTION = "io.quarkus.runtime.annotations.ConfigDocSection";
 
-    public static final Set<String> SUPPORTED_ANNOTATIONS_TYPES;
-    public static final Map<String, String> ALIASED_TYPES;
+    public static final Set<String> SUPPORTED_ANNOTATIONS_TYPES = Set.of(ANNOTATION_BUILD_STEP, ANNOTATION_CONFIG_GROUP,
+            ANNOTATION_CONFIG_ROOT, ANNOTATION_TEMPLATE, ANNOTATION_RECORDER);
+
+    public static final Map<String, String> ALIASED_TYPES = Map.of(
+            OptionalLong.class.getName(), Long.class.getName(),
+            OptionalInt.class.getName(), Integer.class.getName(),
+            OptionalDouble.class.getName(), Double.class.getName(),
+            "java.lang.Class<?>", "class name",
+            "java.net.InetSocketAddress", "host:port",
+            Path.class.getName(), "path",
+            String.class.getName(), "string");
+
     private static final Properties SYSTEM_PROPERTIES = System.getProperties();
 
     private static final String DOCS_SRC_MAIN_ASCIIDOC_GENERATED = "/target/asciidoc/generated/config/";
@@ -104,25 +112,5 @@ final public class Constants {
             +
             "If no suffix is given, assume bytes.\n" +
             "====\n";
-
-    static {
-        final Map<String, String> aliasedTypes = new HashMap<>();
-        aliasedTypes.put(OptionalLong.class.getName(), Long.class.getName());
-        aliasedTypes.put(OptionalInt.class.getName(), Integer.class.getName());
-        aliasedTypes.put(OptionalDouble.class.getName(), Double.class.getName());
-        aliasedTypes.put("java.lang.Class<?>", "class name");
-        aliasedTypes.put("java.net.InetSocketAddress", "host:port");
-        aliasedTypes.put(Path.class.getName(), "path");
-        aliasedTypes.put(String.class.getName(), "string");
-        ALIASED_TYPES = Collections.unmodifiableMap(aliasedTypes);
-
-        final Set<String> supportedAnnotationTypes = new HashSet<>();
-        supportedAnnotationTypes.add(ANNOTATION_BUILD_STEP);
-        supportedAnnotationTypes.add(ANNOTATION_CONFIG_GROUP);
-        supportedAnnotationTypes.add(ANNOTATION_CONFIG_ROOT);
-        supportedAnnotationTypes.add(ANNOTATION_TEMPLATE);
-        supportedAnnotationTypes.add(ANNOTATION_RECORDER);
-        SUPPORTED_ANNOTATIONS_TYPES = Collections.unmodifiableSet(supportedAnnotationTypes);
-    }
 
 }

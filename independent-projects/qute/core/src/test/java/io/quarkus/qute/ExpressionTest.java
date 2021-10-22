@@ -1,10 +1,9 @@
 package io.quarkus.qute;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import io.quarkus.qute.Expression.Part;
 import java.util.Arrays;
@@ -46,18 +45,15 @@ public class ExpressionTest {
         verify("name[['value']", null, null, name("name"), name("value"));
         verify("name[false]]", null, null, name("name"), name("false"));
         verify("name[1l]", null, null, name("name"), name("1"));
-        try {
-            verify("name['value'][1][null]", null, null);
-            fail();
-        } catch (TemplateException expected) {
-            assertTrue(expected.getMessage().contains("Null value"));
-        }
-        try {
-            verify("name[value]", null, null);
-            fail();
-        } catch (TemplateException expected) {
-            assertTrue(expected.getMessage().contains("Non-literal value"));
-        }
+
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> verify("name['value'][1][null]", null, null))
+                .withMessageContaining("Null value");
+
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> verify("name[value]", null, null))
+                .withMessageContaining("Non-literal value");
+
         verify("name[1l]['foo']", null, null, name("name"), name("1"), name("foo"));
         verify("foo[\"name.dot\"].value", null, null, name("foo"), name("name.dot"), name("value"));
         verify("list[100] or 'NOT_FOUND'", null, null, name("list"), name("100"),
@@ -103,8 +99,7 @@ public class ExpressionTest {
         assertEquals("call(|java.util.List<org.acme.Label>|,bar)", parts.get(1));
     }
 
-    private void verify(String value, String namespace, CompletedStage<Object> literalValue, Part... parts)
-            throws InterruptedException, ExecutionException {
+    private void verify(String value, String namespace, CompletedStage<Object> literalValue, Part... parts) {
         ExpressionImpl exp = ExpressionImpl.from(value);
         assertEquals(namespace, exp.getNamespace());
         assertEquals(Arrays.asList(parts), exp.getParts());

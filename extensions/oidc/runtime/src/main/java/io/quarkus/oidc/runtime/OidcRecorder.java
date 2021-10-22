@@ -126,6 +126,7 @@ public class OidcRecorder {
         return t;
     }
 
+    @SuppressWarnings("resource")
     private Uni<TenantConfigContext> createTenantContext(Vertx vertx, OidcTenantConfig oidcConfig, TlsConfig tlsConfig,
             String tenantId) {
         if (!oidcConfig.tenantId.isPresent()) {
@@ -155,8 +156,12 @@ public class OidcRecorder {
             }
             // JWK and introspection endpoints have to be set for both 'web-app' and 'service' applications  
             if (!oidcConfig.jwksPath.isPresent() && !oidcConfig.introspectionPath.isPresent()) {
-                throw new OIDCException(
-                        "Either 'jwks-path' or 'introspection-path' properties must be set when the discovery is disabled.");
+                if (!oidcConfig.authentication.isIdTokenRequired() && oidcConfig.authentication.isUserInfoRequired()) {
+                    LOG.debugf("tenant %s supports only UserInfo", oidcConfig.tenantId.get());
+                } else {
+                    throw new OIDCException(
+                            "Either 'jwks-path' or 'introspection-path' properties must be set when the discovery is disabled.");
+                }
             }
         }
 
@@ -180,7 +185,7 @@ public class OidcRecorder {
 
         if (oidcConfig.tokenStateManager.strategy != Strategy.KEEP_ALL_TOKENS) {
 
-            if (oidcConfig.authentication.userInfoRequired || oidcConfig.roles.source.orElse(null) == Source.userinfo) {
+            if (oidcConfig.authentication.isUserInfoRequired() || oidcConfig.roles.source.orElse(null) == Source.userinfo) {
                 throw new ConfigurationException(
                         "UserInfo is required but DefaultTokenStateManager is configured to not keep the access token");
             }

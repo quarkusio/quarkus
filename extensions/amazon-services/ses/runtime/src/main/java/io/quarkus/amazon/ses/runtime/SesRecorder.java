@@ -17,23 +17,29 @@ import software.amazon.awssdk.services.ses.SesClientBuilder;
 @Recorder
 public class SesRecorder {
 
-    public RuntimeValue<SyncHttpClientConfig> getSyncConfig(SesConfig config) {
+    final SesConfig config;
+
+    public SesRecorder(SesConfig config) {
+        this.config = config;
+    }
+
+    public RuntimeValue<SyncHttpClientConfig> getSyncConfig() {
         return new RuntimeValue<>(config.syncClient);
     }
 
-    public RuntimeValue<NettyHttpClientConfig> getAsyncConfig(SesConfig config) {
+    public RuntimeValue<NettyHttpClientConfig> getAsyncConfig() {
         return new RuntimeValue<>(config.asyncClient);
     }
 
-    public RuntimeValue<AwsConfig> getAwsConfig(SesConfig config) {
+    public RuntimeValue<AwsConfig> getAwsConfig() {
         return new RuntimeValue<>(config.aws);
     }
 
-    public RuntimeValue<SdkConfig> getSdkConfig(SesConfig config) {
+    public RuntimeValue<SdkConfig> getSdkConfig() {
         return new RuntimeValue<>(config.sdk);
     }
 
-    public RuntimeValue<AwsClientBuilder> createSyncBuilder(SesConfig config, RuntimeValue<SdkHttpClient.Builder> transport) {
+    public RuntimeValue<AwsClientBuilder> createSyncBuilder(RuntimeValue<SdkHttpClient.Builder> transport) {
         SesClientBuilder builder = SesClient.builder();
         if (transport != null) {
             builder.httpClientBuilder(transport.getValue());
@@ -41,8 +47,7 @@ public class SesRecorder {
         return new RuntimeValue<>(builder);
     }
 
-    public RuntimeValue<AwsClientBuilder> createAsyncBuilder(SesConfig config,
-            RuntimeValue<SdkAsyncHttpClient.Builder> transport) {
+    public RuntimeValue<AwsClientBuilder> createAsyncBuilder(RuntimeValue<SdkAsyncHttpClient.Builder> transport) {
 
         SesAsyncClientBuilder builder = SesAsyncClient.builder();
         if (transport != null) {

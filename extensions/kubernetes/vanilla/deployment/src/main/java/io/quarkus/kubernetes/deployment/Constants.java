@@ -5,18 +5,26 @@ public final class Constants {
     public static final String KUBERNETES = "kubernetes";
     public static final String MINIKUBE = "minikube";
     public static final String DEPLOYMENT = "Deployment";
+    public static final String DEPLOYMENT_GROUP = "apps";
+    public static final String DEPLOYMENT_VERSION = "v1";
     static final String DOCKER = "docker";
 
     public static final String OPENSHIFT = "openshift";
     public static final String DEPLOYMENT_CONFIG = "DeploymentConfig";
+    public static final String DEPLOYMENT_CONFIG_GROUP = "apps.openshift.io";
+    public static final String DEPLOYMENT_CONFIG_VERSION = "v1";
+
     public static final String ROUTE = "Route";
     public static final String ROUTE_API_GROUP = "route.openshift.io/v1";
+
     static final String OPENSHIFT_APP_RUNTIME = "app.openshift.io/runtime";
     static final String S2I = "s2i";
     static final String DEFAULT_S2I_IMAGE_NAME = "s2i-java"; //refers to the Dekorate default image.
 
     static final String KNATIVE = "knative";
-    static final String SERVICE = "Service";
+    static final String KNATIVE_SERVICE = "Service";
+    static final String KNATIVE_SERVICE_GROUP = "serving.knative.dev";
+    static final String KNATIVE_SERVICE_VERSION = "v1";
 
     static final String OLD_DEPLOYMENT_TARGET = "kubernetes.deployment.target";
     static final String DEPLOYMENT_TARGET = "quarkus.kubernetes.deployment-target";

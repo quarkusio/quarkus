@@ -15,6 +15,10 @@
     <name>Quarkus - Integration Tests - Gradle tooling</name>
     <description>Quarkus - Integration Tests - Gradle tooling</description>
 
+    <properties>
+        <mapstruct.version>1.4.2.Final</mapstruct.version>
+    </properties>
+
     <dependencies>
         <!-- All the following dependencies shall enforce the right build order
              and proper upstream/downstream detection for incremental build.

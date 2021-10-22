@@ -20,6 +20,7 @@
         <module>resteasy-jsonb</module>
         <module>resteasy-jackson</module>
         <module>resteasy-jaxb</module>
+        <module>resteasy-links</module>
         <module>resteasy-mutiny-common</module>
         <module>resteasy-mutiny</module>
         <module>resteasy-qute</module>

@@ -62,6 +62,13 @@ public class OidcClientTest {
     }
 
     @Test
+    public void testEchoTokensNonStandardResponseWithoutHeader() {
+        RestAssured.when().get("/frontend/echoTokenNonStandardResponseWithoutHeader")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
     public void testEchoTokensRefreshTokenOnly() {
         RestAssured.given().queryParam("refreshToken", "shared_refresh_token")
                 .when().get("/frontend/echoRefreshTokenOnly")

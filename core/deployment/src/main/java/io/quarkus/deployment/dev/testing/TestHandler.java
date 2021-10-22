@@ -10,6 +10,7 @@ import io.quarkus.deployment.steps.BannerProcessor;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.runtime.BannerRecorder;
 import io.quarkus.runtime.BannerRuntimeConfig;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 
@@ -26,7 +27,7 @@ public class TestHandler implements BiConsumer<Object, BuildResult> {
         ConfigInstantiator.handleObject(bannerConfig);
         ConfigInstantiator.handleObject(bannerRuntimeConfig);
         LoggingSetupRecorder.handleFailedStart(new BannerProcessor()
-                .recordBanner(new BannerRecorder(), bannerConfig, bannerRuntimeConfig).getBannerSupplier());
+                .recordBanner(new BannerRecorder(new RuntimeValue<>(bannerRuntimeConfig)), bannerConfig).getBannerSupplier());
         Logger.getLogger("io.quarkus.test").info("Quarkus continuous testing mode started");
 
     }

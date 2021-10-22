@@ -14,6 +14,7 @@ import org.jose4j.jwt.consumer.ErrorCodeValidator;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
+import org.jose4j.jwx.HeaderParameterNames;
 import org.jose4j.jwx.JsonWebStructure;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.UnresolvableKeyException;
@@ -34,17 +35,19 @@ public class OidcProvider implements Closeable {
 
     private static final Logger LOG = Logger.getLogger(OidcProvider.class);
     private static final String ANY_ISSUER = "any";
-    private static final String[] SUPPORTED_ALGORITHMS = new String[] { SignatureAlgorithm.RS256.getAlgorithm(),
+    private static final String[] ASYMMETRIC_SUPPORTED_ALGORITHMS = new String[] { SignatureAlgorithm.RS256.getAlgorithm(),
             SignatureAlgorithm.RS384.getAlgorithm(),
             SignatureAlgorithm.RS512.getAlgorithm(),
             SignatureAlgorithm.ES256.getAlgorithm(),
             SignatureAlgorithm.ES384.getAlgorithm(),
             SignatureAlgorithm.ES512.getAlgorithm() };
-    private static final AlgorithmConstraints ALGORITHM_CONSTRAINTS = new AlgorithmConstraints(
-            AlgorithmConstraints.ConstraintType.PERMIT, SUPPORTED_ALGORITHMS);
+    private static final AlgorithmConstraints ASYMMETRIC_ALGORITHM_CONSTRAINTS = new AlgorithmConstraints(
+            AlgorithmConstraints.ConstraintType.PERMIT, ASYMMETRIC_SUPPORTED_ALGORITHMS);
+    private static final AlgorithmConstraints SYMMETRIC_ALGORITHM_CONSTRAINTS = new AlgorithmConstraints(
+            AlgorithmConstraints.ConstraintType.PERMIT, SignatureAlgorithm.HS256.getAlgorithm());
 
     final OidcProviderClient client;
-    final RefreshableVerificationKeyResolver keyResolver;
+    final RefreshableVerificationKeyResolver asymmetricKeyResolver;
     final OidcTenantConfig oidcConfig;
     final String issuer;
     final String[] audience;
@@ -52,7 +55,8 @@ public class OidcProvider implements Closeable {
     public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks) {
         this.client = client;
         this.oidcConfig = oidcConfig;
-        this.keyResolver = jwks == null ? null : new JsonWebKeyResolver(jwks, oidcConfig.token.forcedJwkRefreshInterval);
+        this.asymmetricKeyResolver = jwks == null ? null
+                : new JsonWebKeyResolver(jwks, oidcConfig.token.forcedJwkRefreshInterval);
 
         this.issuer = checkIssuerProp();
         this.audience = checkAudienceProp();
@@ -61,7 +65,7 @@ public class OidcProvider implements Closeable {
     public OidcProvider(String publicKeyEnc, OidcTenantConfig oidcConfig) {
         this.client = null;
         this.oidcConfig = oidcConfig;
-        this.keyResolver = new LocalPublicKeyResolver(publicKeyEnc);
+        this.asymmetricKeyResolver = new LocalPublicKeyResolver(publicKeyEnc);
         this.issuer = checkIssuerProp();
         this.audience = checkAudienceProp();
     }
@@ -82,12 +86,21 @@ public class OidcProvider implements Closeable {
         return audienceProp != null ? audienceProp.toArray(new String[] {}) : null;
     }
 
+    public TokenVerificationResult verifySelfSignedJwtToken(String token) throws InvalidJwtException {
+        return verifyJwtTokenInternal(token, SYMMETRIC_ALGORITHM_CONSTRAINTS, new SymmetricKeyResolver());
+    }
+
     public TokenVerificationResult verifyJwtToken(String token) throws InvalidJwtException {
+        return verifyJwtTokenInternal(token, ASYMMETRIC_ALGORITHM_CONSTRAINTS, asymmetricKeyResolver);
+    }
+
+    private TokenVerificationResult verifyJwtTokenInternal(String token, AlgorithmConstraints algConstraints,
+            VerificationKeyResolver verificationKeyResolver) throws InvalidJwtException {
         JwtConsumerBuilder builder = new JwtConsumerBuilder();
 
-        builder.setVerificationKeyResolver(keyResolver);
+        builder.setVerificationKeyResolver(verificationKeyResolver);
 
-        builder.setJwsAlgorithmConstraints(ALGORITHM_CONSTRAINTS);
+        builder.setJwsAlgorithmConstraints(algConstraints);
 
         builder.setRequireExpirationTime();
         builder.setRequireIssuedAt();
@@ -128,18 +141,19 @@ public class OidcProvider implements Closeable {
     }
 
     public Uni<TokenVerificationResult> refreshJwksAndVerifyJwtToken(String token) {
-        return keyResolver.refresh().onItem().transformToUni(new Function<Void, Uni<? extends TokenVerificationResult>>() {
+        return asymmetricKeyResolver.refresh().onItem()
+                .transformToUni(new Function<Void, Uni<? extends TokenVerificationResult>>() {
 
-            @Override
-            public Uni<? extends TokenVerificationResult> apply(Void v) {
-                try {
-                    return Uni.createFrom().item(verifyJwtToken(token));
-                } catch (Throwable t) {
-                    return Uni.createFrom().failure(t);
-                }
-            }
+                    @Override
+                    public Uni<? extends TokenVerificationResult> apply(Void v) {
+                        try {
+                            return Uni.createFrom().item(verifyJwtToken(token));
+                        } catch (Throwable t) {
+                            return Uni.createFrom().failure(t);
+                        }
+                    }
 
-        });
+                });
     }
 
     public Uni<TokenIntrospection> introspectToken(String token) {
@@ -211,15 +225,55 @@ public class OidcProvider implements Closeable {
         @Override
         public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext)
                 throws UnresolvableKeyException {
+            Key key = null;
+
+            // Try 'kid' first
             String kid = jws.getKeyIdHeaderValue();
-            if (kid == null) {
-                throw new UnresolvableKeyException("Token 'kid' header is not set");
+            if (kid != null) {
+                key = getKeyWithId(jws, kid);
+                if (key == null) {
+                    // if `kid` was set then the key must exist
+                    throw new UnresolvableKeyException(String.format("JWK with kid '%s' is not available", kid));
+                }
             }
-            Key key = jwks.getKey(kid);
+
+            String thumbprint = null;
             if (key == null) {
-                throw new UnresolvableKeyException(String.format("JWK with kid '%s' is not available", kid));
+                thumbprint = jws.getHeader(HeaderParameterNames.X509_CERTIFICATE_THUMBPRINT);
+                if (thumbprint != null) {
+                    key = getKeyWithThumbprint(jws, thumbprint);
+                    if (key == null) {
+                        // if only `x5t` was set then the key must exist
+                        throw new UnresolvableKeyException(
+                                String.format("JWK with thumprint '%s' is not available", thumbprint));
+                    }
+                }
             }
-            return key;
+
+            if (key == null) {
+                throw new UnresolvableKeyException(
+                        String.format("JWK is not available, neither 'kid' nor 'x5t' token headers are set", kid));
+            } else {
+                return key;
+            }
+        }
+
+        private Key getKeyWithId(JsonWebSignature jws, String kid) {
+            if (kid != null) {
+                return jwks.getKeyWithId(kid);
+            } else {
+                LOG.debug("Token 'kid' header is not set");
+                return null;
+            }
+        }
+
+        private Key getKeyWithThumbprint(JsonWebSignature jws, String thumbprint) {
+            if (thumbprint != null) {
+                return jwks.getKeyWithThumbprint(thumbprint);
+            } else {
+                LOG.debug("Token 'x5t' header is not set");
+                return null;
+            }
         }
 
         public Uni<Void> refresh() {
@@ -259,6 +313,14 @@ public class OidcProvider implements Closeable {
             return key;
         }
 
+    }
+
+    private class SymmetricKeyResolver implements VerificationKeyResolver {
+        @Override
+        public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext)
+                throws UnresolvableKeyException {
+            return KeyUtils.createSecretKeyFromSecret(oidcConfig.credentials.secret.get());
+        }
     }
 
     public OidcConfigurationMetadata getMetadata() {

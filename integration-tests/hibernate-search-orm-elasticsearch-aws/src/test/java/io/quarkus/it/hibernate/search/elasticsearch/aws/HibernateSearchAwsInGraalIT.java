@@ -1,8 +1,8 @@
 package io.quarkus.it.hibernate.search.elasticsearch.aws;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class HibernateSearchAwsInGraalIT extends HibernateSearchAwsTest {
 
 }

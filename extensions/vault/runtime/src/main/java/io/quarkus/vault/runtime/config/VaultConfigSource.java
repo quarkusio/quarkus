@@ -15,7 +15,9 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.vault.VaultException;
 import io.quarkus.vault.VaultKVSecretEngine;
+import io.quarkus.vault.runtime.VaultIOException;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 
 public class VaultConfigSource implements ConfigSource {
@@ -24,6 +26,7 @@ public class VaultConfigSource implements ConfigSource {
 
     private AtomicReference<VaultCacheEntry<Map<String, String>>> cache = new AtomicReference<>(null);
     private VaultBootstrapConfig vaultBootstrapConfig;
+    private volatile boolean firstTime = true;
 
     public VaultConfigSource(VaultBootstrapConfig vaultBootstrapConfig) {
         this.vaultBootstrapConfig = vaultBootstrapConfig;
@@ -73,21 +76,51 @@ public class VaultConfigSource implements ConfigSource {
 
         Map<String, String> properties = new HashMap<>();
 
-        try {
-            // default kv paths
-            vaultBootstrapConfig.secretConfigKvPath.ifPresent(strings -> fetchSecrets(strings, null, properties));
-
-            // prefixed kv paths
-            vaultBootstrapConfig.secretConfigKvPathPrefix.forEach((key, value) -> fetchSecrets(value.paths, key, properties));
-
-            log.debug("loaded " + properties.size() + " properties from vault");
-        } catch (RuntimeException e) {
-            return tryReturnLastKnownValue(e, cacheEntry);
+        if (firstTime) {
+            log.debug("fetch secrets first time with attempts = " + vaultBootstrapConfig.mpConfigInitialAttempts);
+            fetchSecretsFirstTime(properties);
+            firstTime = false;
+        } else {
+            try {
+                fetchSecrets(properties);
+                log.debug("refreshed " + properties.size() + " properties from vault");
+            } catch (RuntimeException e) {
+                return tryReturnLastKnownValue(e, cacheEntry);
+            }
         }
 
         cache.set(new VaultCacheEntry(properties));
         return properties;
+    }
 
+    private void fetchSecretsFirstTime(Map<String, String> properties) {
+        VaultIOException last = null;
+        for (int i = 0; i < vaultBootstrapConfig.mpConfigInitialAttempts; i++) {
+            try {
+                if (i > 0) {
+                    log.debug("retrying to fetch secrets");
+                }
+                fetchSecrets(properties);
+                log.debug("loaded " + properties.size() + " properties from vault");
+                return;
+            } catch (VaultIOException e) {
+                log.debug("attempt " + (i + 1) + " to fetch secrets from vault failed with: " + e);
+                last = e;
+            }
+        }
+        if (last == null) {
+            throw new VaultException("unexpected");
+        } else {
+            throw last;
+        }
+    }
+
+    private void fetchSecrets(Map<String, String> properties) {
+        // default kv paths
+        vaultBootstrapConfig.secretConfigKvPath.ifPresent(strings -> fetchSecrets(strings, null, properties));
+
+        // prefixed kv paths
+        vaultBootstrapConfig.secretConfigKvPathPrefix.forEach((key, value) -> fetchSecrets(value.paths, key, properties));
     }
 
     private void fetchSecrets(List<String> paths, String prefix, Map<String, String> properties) {

@@ -1,11 +1,11 @@
 package io.quarkus.it.infinispan.client;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 /**
  * @author William Burns
  */
-@NativeImageTest
+@QuarkusIntegrationTest
 public class InfinispanClientFunctionalityInGraalITCase extends InfinispanClientFunctionalityTest {
 
 }

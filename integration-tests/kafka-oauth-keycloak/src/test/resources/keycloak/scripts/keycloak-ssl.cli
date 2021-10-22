@@ -1,0 +1,4 @@
+embed-server --server-config=standalone-ha.xml
+/core-service=management/security-realm=UndertowRealm:add()
+/core-service=management/security-realm=UndertowRealm/server-identity=ssl:add(keystore-path=certs/keycloak.server.keystore.p12, keystore-relative-to=jboss.server.config.dir, keystore-password=changeit)
+/subsystem=undertow/server=default-server/https-listener=https:write-attribute(name=security-realm, value=UndertowRealm)

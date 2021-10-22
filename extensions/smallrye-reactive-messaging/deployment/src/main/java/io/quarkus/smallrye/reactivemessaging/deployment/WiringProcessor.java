@@ -1,12 +1,14 @@
 package io.quarkus.smallrye.reactivemessaging.deployment;
 
-import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.*;
 import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.find;
 import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.getConnectorAttributes;
 import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.getConnectorName;
+import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.hasConnector;
 import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.isEmitter;
 import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.isInboundConnector;
 import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.isOutboundConnector;
+import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.produceIncomingChannel;
+import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.produceOutgoingChannel;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -16,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.commonmark.parser.Parser;
+import org.commonmark.renderer.html.HtmlRenderer;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.logging.Logger;
@@ -135,6 +139,8 @@ public class WiringProcessor {
     void generateDocumentationItem(BuildProducer<ConfigDescriptionBuildItem> config,
             List<ConnectorManagedChannelBuildItem> channels, List<ConnectorBuildItem> connectors)
             throws ClassNotFoundException {
+        Parser markdownParser = Parser.builder().build();
+        HtmlRenderer renderer = HtmlRenderer.builder().build();
         for (ConnectorManagedChannelBuildItem channel : channels) {
             ConnectorBuildItem connector = find(connectors, channel.getConnector(), channel.getDirection());
             String prefix = "mp.messaging."
@@ -146,7 +152,8 @@ public class WiringProcessor {
                             toType(attribute.type()),
                             attribute.defaultValue().equalsIgnoreCase(ConnectorAttribute.NO_VALUE) ? null
                                     : attribute.defaultValue(),
-                            attribute.description(), attribute.type(), Collections.emptyList(), ConfigPhase.RUN_TIME);
+                            renderer.render(markdownParser.parse(attribute.description())),
+                            attribute.type(), Collections.emptyList(), ConfigPhase.RUN_TIME);
                     config.produce(cfg);
                 }
             }

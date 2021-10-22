@@ -10,6 +10,7 @@ import java.util.function.BooleanSupplier;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.Neo4jContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -127,7 +128,8 @@ class Neo4jDevServicesProcessor {
             return null;
         }
 
-        var neo4jContainer = new Neo4jContainer<>(configuration.imageName);
+        var neo4jContainer = new Neo4jContainer<>(
+                DockerImageName.parse(configuration.imageName).asCompatibleSubstituteFor("neo4j"));
         configuration.additionalEnv.forEach(neo4jContainer::addEnv);
         neo4jContainer.start();
         return neo4jContainer;

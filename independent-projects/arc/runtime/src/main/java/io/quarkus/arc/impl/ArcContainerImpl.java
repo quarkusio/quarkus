@@ -344,7 +344,7 @@ public class ArcContainerImpl implements ArcContainer {
     public String toString() {
         return "ArcContainerImpl [id=" + id + ", running=" + running + ", beans=" + beans.size() + ", observers="
                 + observers.size() + ", scopes="
-                + getScopes() + "]";
+                + contexts.size() + "]";
     }
 
     public synchronized void shutdown() {
@@ -829,7 +829,7 @@ public class ArcContainerImpl implements ArcContainer {
 
     private static final class Resolvable {
 
-        private static final Set<Type> BUILT_IN_TYPES = new HashSet<>(Arrays.asList(Event.class, Instance.class));
+        private static final Set<Type> BUILT_IN_TYPES = Set.of(Event.class, Instance.class);
         private static final Annotation[] ANY_QUALIFIER = { Any.Literal.INSTANCE };
 
         final Type requiredType;

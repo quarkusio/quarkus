@@ -144,7 +144,7 @@
         <aws-lambda-java-events.version>3.10.0</aws-lambda-java-events.version>
         <aws-lambda-serverless-java-container.version>1.6</aws-lambda-serverless-java-container.version>
         <aws-xray.version>2.10.0</aws-xray.version>
-        <awssdk.version>2.17.66</awssdk.version>
+        <awssdk.version>2.17.67</awssdk.version>
         <aws-alexa-sdk.version>2.40.0</aws-alexa-sdk.version>
         <azure-functions-java-library.version>1.4.2</azure-functions-java-library.version>
         <kotlin.version>1.5.31</kotlin.version>

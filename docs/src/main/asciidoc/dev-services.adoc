@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::./attributes.adoc[]
 
 Quarkus supports the automatic provisioning of unconfigured services in development and test mode. We refer to this capability
-as Dev Services. From a developers perspective this means that if you include an extension and don't configure it then
+as Dev Services. From a developer's perspective this means that if you include an extension and don't configure it then
 Quarkus will automatically start the relevant service (usually using https://www.testcontainers.org/[Testcontainers] behind the scenes) and wire up your
 application to use this service.
 
@@ -88,3 +88,21 @@ the server address has not been explicitly configured. More information can be f
 link:vault#dev-services[Vault Guide].
 
 include::{generated-dir}/config/quarkus-vault-config-group-config-dev-services-config.adoc[opts=optional, leveloffset=+1]
+
+
+== Neo4j
+
+The Neo4j Dev Service will be enabled when the `quarkus-neo4j` extension is present in your application, and
+the server address has not been explicitly configured. More information can be found at the
+link:neo4j#dev-services[Neo4j Guide].
+
+include::{generated-dir}/config/quarkus-neo4j-config-group-config-dev-services-config.adoc[opts=optional, leveloffset=+1]
+
+
+== Infinispan
+
+The Infinispan Dev Service will be enabled when the `quarkus-infinispan-client` extension is present in your application, and
+the server address has not been explicitly configured. More information can be found at the
+link:infinispan-client#dev-services[Infinispan Guide].
+
+include::{generated-dir}/config/quarkus-infinispan-client-config-group-config-dev-services-config.adoc[opts=optional, leveloffset=+1]

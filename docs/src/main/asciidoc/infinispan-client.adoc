@@ -494,6 +494,7 @@ The Infinispan Client has additional features that were not mentioned here. This
 feature was not tested in a Quarkus environment and they may or may not work. Please let us
 know if you need these added!
 
+[[dev-services]]
 == Dev Services for Infinispan
 
 When you use the infinispan-client extension in dev mode or in test, Quarkus automatically starts an Infinispan server and configure your application.

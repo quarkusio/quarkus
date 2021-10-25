@@ -12,6 +12,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Produce;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
@@ -30,7 +31,8 @@ class DevServicesConfigBuildStep {
     @BuildStep
     @Produce(ServiceStartBuildItem.class)
     DevServicesLauncherConfigResultBuildItem setup(BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfig,
-            List<DevServicesConfigResultBuildItem> devServicesConfigResultBuildItems) {
+            List<DevServicesConfigResultBuildItem> devServicesConfigResultBuildItems,
+            CuratedApplicationShutdownBuildItem shutdownBuildItem) {
         Map<String, String> newProperties = new HashMap<>(devServicesConfigResultBuildItems.stream().collect(
                 Collectors.toMap(DevServicesConfigResultBuildItem::getKey, DevServicesConfigResultBuildItem::getValue)));
         Config config = ConfigProvider.getConfig();
@@ -45,6 +47,13 @@ class DevServicesConfigBuildStep {
                     newProperties.put(entry.getKey(), entry.getValue());
                 }
             }
+        } else {
+            shutdownBuildItem.addCloseTask(new Runnable() {
+                @Override
+                public void run() {
+                    oldConfig = null;
+                }
+            }, true);
         }
         for (Map.Entry<String, String> entry : newProperties.entrySet()) {
             runtimeConfig.produce(new RunTimeConfigurationDefaultBuildItem(entry.getKey(), entry.getValue()));

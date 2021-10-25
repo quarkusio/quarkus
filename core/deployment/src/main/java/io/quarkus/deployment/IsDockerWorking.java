@@ -71,7 +71,10 @@ public class IsDockerWorking implements BooleanSupplier {
 
         @Override
         public Result get() {
-            StartupLogCompressor compressor = new StartupLogCompressor("Checking Docker Environment", Optional.empty(), null);
+            //testcontainers uses the Unreliables library to test if docker is started
+            //this runs in threads that start with 'ducttape'
+            StartupLogCompressor compressor = new StartupLogCompressor("Checking Docker Environment", Optional.empty(), null,
+                    (s) -> s.getName().startsWith("ducttape"));
             try {
                 Class<?> dockerClientFactoryClass = Thread.currentThread().getContextClassLoader()
                         .loadClass("org.testcontainers.DockerClientFactory");

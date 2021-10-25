@@ -217,7 +217,6 @@ public class OidcClientRecorder {
 
         @Override
         public void close() throws IOException {
-            throw new DisabledOidcClientException(message);
         }
     }
 }

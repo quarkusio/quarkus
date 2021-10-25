@@ -41,6 +41,13 @@ public class OidcClientConfig extends OidcCommonConfig {
     @ConfigItem
     public Optional<Duration> refreshTokenTimeSkew = Optional.empty();
 
+    /**
+     * If the access token 'expires_in' property should be checked as an absolute time value
+     * as opposed to a duration relative to the current time.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean absoluteExpiresIn;
+
     public Grant grant = new Grant();
 
     @ConfigGroup
@@ -211,5 +218,13 @@ public class OidcClientConfig extends OidcCommonConfig {
 
     public void setHeaders(Map<String, String> headers) {
         this.headers = headers;
+    }
+
+    public boolean isAbsoluteExpiresIn() {
+        return absoluteExpiresIn;
+    }
+
+    public void setAbsoluteExpiresIn(boolean absoluteExpiresIn) {
+        this.absoluteExpiresIn = absoluteExpiresIn;
     }
 }

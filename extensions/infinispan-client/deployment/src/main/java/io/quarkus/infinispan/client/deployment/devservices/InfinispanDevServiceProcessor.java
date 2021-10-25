@@ -206,6 +206,8 @@ public class InfinispanDevServiceProcessor {
             if (serviceName != null) {
                 withLabel(DEV_SERVICE_LABEL, serviceName);
             }
+            withUser(DEFAULT_USERNAME);
+            withPassword(InfinispanDevServiceProcessor.DEFAULT_PASSWORD);
         }
 
         @Override

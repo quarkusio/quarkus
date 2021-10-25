@@ -624,11 +624,9 @@ framework you plan to use.
 
 === Enabling Metrics with Micrometer
 
-Micrometer is the recommended metrics framework in Quarkus applications since Quarkus 1.9.
+Micrometer is the recommended metrics framework in Quarkus applications.
 
 To enable Micrometer metrics in your application, you need to add the following to your pom.xml.
-
-For Quarkus 1.11+:
 
 [source,xml]
 ----
@@ -639,24 +637,6 @@ For Quarkus 1.11+:
 <dependency>
   <groupId>io.quarkus</groupId>
   <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
-</dependency>
-----
-
-For Quarkus < 1.11:
-
-[source,xml]
-----
-<dependency>
-  <groupId>com.datastax.oss</groupId>
-  <artifactId>java-driver-metrics-micrometer</artifactId>
-</dependency>
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-micrometer</artifactId>
-</dependency>
-<dependency>
-  <groupId>io.micrometer</groupId>
-  <artifactId>micrometer-registry-prometheus</artifactId>
 </dependency>
 ----
 

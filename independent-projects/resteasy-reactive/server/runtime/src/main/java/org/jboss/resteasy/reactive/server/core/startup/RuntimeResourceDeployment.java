@@ -490,7 +490,7 @@ public class RuntimeResourceDeployment {
                         extractor = new NullParamExtractor();
                     }
                 } else {
-                    extractor = new PathParamExtractor(index, encoded);
+                    extractor = new PathParamExtractor(index, encoded, single);
                 }
                 return extractor;
             case CONTEXT:

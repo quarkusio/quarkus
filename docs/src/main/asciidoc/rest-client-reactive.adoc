@@ -286,10 +286,8 @@ And the service as follows:
 ----
 package org.acme.rest.client;
 
-import io.smallrye.common.annotation.Blocking;
 import org.jboss.resteasy.reactive.RestPath;
 
-import javax.annotation.PostConstruct;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import java.net.URI;
@@ -300,10 +298,9 @@ import org.eclipse.microprofile.rest.client.RestClientBuilder;
 @Path("/country")
 public class CountriesResource {
 
-    private CountriesService countriesService;
+    private final CountriesService countriesService;
 
-    @PostConstruct
-    public void setUp(){
+    public CountriesResource() {
         countriesService = RestClientBuilder.newBuilder()
             .baseUri(URI.create("https://restcountries.eu/rest"))
             .build(CountriesService.class);
@@ -311,7 +308,6 @@ public class CountriesResource {
 
     @GET
     @Path("/name/{name}")
-    @Blocking
     public Set<Country> name(String name) {
         return countriesService.getByName(name);
     }

@@ -162,7 +162,12 @@ public class QuarkusPlugin implements Plugin<Project> {
                                 compileJava.mustRunAfter(quarkusGenerateCodeDev);
                             });
                     tasks.named(JavaPlugin.COMPILE_TEST_JAVA_TASK_NAME, JavaCompile.class,
-                            compileTestJava -> compileTestJava.dependsOn(quarkusGenerateCodeTests));
+                            compileTestJava -> {
+                                compileTestJava.dependsOn(quarkusGenerateCodeTests);
+                                if (project.getGradle().getStartParameter().getTaskNames().contains(QUARKUS_DEV_TASK_NAME)) {
+                                    compileTestJava.getOptions().setFailOnError(false);
+                                }
+                            });
 
                     TaskProvider<Task> classesTask = tasks.named(JavaPlugin.CLASSES_TASK_NAME);
                     TaskProvider<Task> resourcesTask = tasks.named(JavaPlugin.PROCESS_RESOURCES_TASK_NAME);

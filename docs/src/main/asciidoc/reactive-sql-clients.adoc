@@ -197,13 +197,6 @@ client.query("DROP TABLE IF EXISTS fruits").execute()
     .await().indefinitely();
 ----
 
-[IMPORTANT]
-.Breaking Change in Quarkus 1.5
-====
-Vert.x 3.9, integrated in Quarkus 1.5, introduces a breaking change regarding the `query` methods.
-To retrieve the result you need to call `.execute()`.
-====
-
 NOTE: Wondering why we need block until the latest query is completed?
 This code is part of a `@PostConstruct` method and Quarkus invokes it synchronously.
 As a consequence, returning prematurely could lead to serving requests while the database is not ready yet.

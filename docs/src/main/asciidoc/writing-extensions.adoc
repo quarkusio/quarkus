@@ -940,8 +940,6 @@ to be 'Application Archives', and will therefore get indexed. This is done via t
 example the ArC extension registers `META-INF/beans.xml`, which means that all archives on the class path with a `beans.xml`
 file will be indexed.
 
-NOTE: `BuildStep.applicationArchiveMarkers()` is deprecated and will be removed at some point post Quarkus 1.1. Extensions are encouraged to use `io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem` instead.
-
 ==== Using Thread's Context Class Loader
 
 The build step will be run with a TCCL that can load user classes from the deployment in a transformer-safe way.

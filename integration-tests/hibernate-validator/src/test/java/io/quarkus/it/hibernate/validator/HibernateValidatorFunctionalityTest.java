@@ -206,6 +206,18 @@ public class HibernateValidatorFunctionalityTest {
     }
 
     @Test
+    public void testRestEndPointValidationUsingXmlMediaTypeWithComponents() {
+        // The components of MediaType like "charset" should be ignored.
+        RestAssured.given()
+                .header("Accept", "application/xml;charset=UTF8")
+                .get("/hibernate-validator/test/rest-end-point-validation/plop/")
+                .then()
+                .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
+                .contentType(ContentType.XML)
+                .body("violationReport.parameterViolations.message", containsString("numeric value out of bounds"));
+    }
+
+    @Test
     public void testRestEndPointReturnValueValidation() {
         // https://github.com/quarkusio/quarkus/issues/9174
         // Constraint validation exceptions thrown by Resteasy and related to return values

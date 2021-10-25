@@ -29,15 +29,30 @@ public final class ValidatorMediaTypeUtil {
     public static Optional<MediaType> getAcceptMediaType(List<MediaType> mediaTypesFromRequest,
             List<MediaType> mediaTypesFromProducesAnnotation) {
 
-        Optional<MediaType> mediaType = mediaTypesFromRequest.stream()
-                // It's supported
-                .filter(SUPPORTED_MEDIA_TYPES::contains)
-                // It's included in the `@Produces` annotation
-                .filter(mediaTypesFromProducesAnnotation::contains)
-                .findFirst()
-                // if none is found, then return the first from the annotation
-                .or(mediaTypesFromProducesAnnotation.stream()::findFirst);
+        for (MediaType mediaType : mediaTypesFromRequest) {
+            // It's supported and is included in the `@Produces` annotation
+            if (isMediaTypeInList(mediaType, SUPPORTED_MEDIA_TYPES)
+                    && isMediaTypeInList(mediaType, mediaTypesFromProducesAnnotation)) {
+                return Optional.of(mediaType);
+            }
+        }
 
-        return mediaType;
+        // if none is found, then return the first from the annotation or empty if no produces annotation
+        if (mediaTypesFromProducesAnnotation.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(mediaTypesFromProducesAnnotation.get(0));
+    }
+
+    private static boolean isMediaTypeInList(MediaType mediaType, List<MediaType> list) {
+        for (MediaType item : list) {
+            if (mediaType.getType().equalsIgnoreCase(item.getType())
+                    && mediaType.getSubtype().equalsIgnoreCase(item.getSubtype())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -62,7 +62,7 @@ amqp-port=5672 # <2>
 amqp-username=my-username # <3>
 amqp-password=my-password # <4>
 
-mp.messaging.incoming.prices.connector=smallrye-amqp #5
+mp.messaging.incoming.prices.connector=smallrye-amqp # <5>
 ----
 1. Configures the broker/router host name. You can do it per channel (using the `host` attribute) or globally using `amqp-host`
 2. Configures the broker/router port. You can do it per channel (using the `port` attribute) or globally using `amqp-port`. The default is `5672`.

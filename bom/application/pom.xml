@@ -1281,6 +1281,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging-rabbitmq</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-metrics</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -4790,6 +4795,11 @@
                         <artifactId>slf4j-log4j12</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-reactive-messaging-rabbitmq</artifactId>
+                <version>${smallrye-reactive-messaging.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>

@@ -63,7 +63,7 @@
         {
             "category": "Messaging2",
             "timeout": 70,
-            "test-modules": "artemis-core, artemis-jms, reactive-messaging-amqp, reactive-messaging-http",
+            "test-modules": "artemis-core, artemis-jms, reactive-messaging-amqp, reactive-messaging-http, reactive-messaging-rabbitmq",
             "os-name": "ubuntu-latest"
         },
         {

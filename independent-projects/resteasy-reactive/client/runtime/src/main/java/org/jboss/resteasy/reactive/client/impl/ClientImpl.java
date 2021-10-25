@@ -70,6 +70,7 @@ public class ClientImpl implements Client {
     private static final Logger log = Logger.getLogger(ClientImpl.class); // TODO: remove
 
     private static final int DEFAULT_CONNECT_TIMEOUT = 15000;
+    private static final int DEFAULT_CONNECTION_POOL_SIZE = 20;
 
     final ClientContext clientContext;
     final boolean closeVertx;
@@ -125,10 +126,13 @@ public class ClientImpl implements Client {
         }
 
         Object connectionPoolSize = configuration.getProperty(CONNECTION_POOL_SIZE);
-        if (connectionPoolSize != null) {
-            log.infof("Setting connectionPoolSize to %d s", connectionPoolSize);
-            options.setMaxPoolSize((int) connectionPoolSize);
+        if (connectionPoolSize == null) {
+            connectionPoolSize = DEFAULT_CONNECTION_POOL_SIZE;
+        } else {
+            log.debugf("Setting connectionPoolSize to %d s", connectionPoolSize);
         }
+        options.setMaxPoolSize((int) connectionPoolSize);
+
         this.httpClient = this.vertx.createHttpClient(options);
         handlerChain = new HandlerChain(followRedirects);
     }

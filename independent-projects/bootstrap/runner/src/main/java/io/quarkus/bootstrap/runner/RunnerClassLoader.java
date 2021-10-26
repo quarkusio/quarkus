@@ -1,6 +1,7 @@
 package io.quarkus.bootstrap.runner;
 
 import java.net.URL;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -22,6 +23,8 @@ import java.util.Set;
  * while also preventing the lookup of the entire classpath for missing resources in known directories (like META-INF/services).
  */
 public final class RunnerClassLoader extends ClassLoader {
+
+    private final ProtectionDomain applicationDomain;
 
     /**
      * A map of resources by dir name. Root dir/default package is represented by the empty string
@@ -50,6 +53,7 @@ public final class RunnerClassLoader extends ClassLoader {
         this.nonExistentResources = nonExistentResources;
         this.fullyIndexedDirectories = fullyIndexedDirectories;
         this.directlyIndexedResourcesIndexMap = directlyIndexedResourcesIndexMap;
+        this.applicationDomain = new ProtectionDomain(null, null, this, null);
     }
 
     @Override
@@ -94,7 +98,7 @@ public final class RunnerClassLoader extends ClassLoader {
                 }
                 definePackage(packageName, resources);
                 try {
-                    return defineClass(name, data, 0, data.length, resource.getProtectionDomain());
+                    return defineClass(name, data, 0, data.length, this.applicationDomain);
                 } catch (LinkageError e) {
                     loaded = findLoadedClass(name);
                     if (loaded != null) {

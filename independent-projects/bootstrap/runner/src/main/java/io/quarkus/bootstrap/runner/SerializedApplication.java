@@ -160,9 +160,6 @@ public class SerializedApplication {
             RunnerClassLoader runnerClassLoader = new RunnerClassLoader(ClassLoader.getSystemClassLoader(),
                     resourceDirectoryTracker.getResult(), parentFirstPackages,
                     nonExistentResources, FULLY_INDEXED_PATHS, directlyIndexedResourcesIndexMap);
-            for (ClassLoadingResource classLoadingResource : allClassLoadingResources) {
-                classLoadingResource.init(runnerClassLoader);
-            }
             return new SerializedApplication(runnerClassLoader, mainClass);
         }
     }

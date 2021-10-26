@@ -9,9 +9,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.security.CodeSource;
-import java.security.ProtectionDomain;
-import java.security.cert.Certificate;
 import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -32,8 +29,6 @@ public class JarResource implements ClassLoadingResource {
     private final Lock readLock;
     private final Lock writeLock;
 
-    private volatile ProtectionDomain protectionDomain;
-
     //Guarded by the read/write lock; open/close operations on the JarFile require the exclusive lock,
     //while using an existing open reference can use the shared lock.
     //If a lock is acquired, and as long as it's owned, we ensure that the zipFile reference
@@ -48,22 +43,6 @@ public class JarResource implements ClassLoadingResource {
         final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
         this.readLock = readWriteLock.readLock();
         this.writeLock = readWriteLock.writeLock();
-    }
-
-    @Override
-    public void init(ClassLoader runnerClassLoader) {
-        final URL url;
-        try {
-            String path = jarPath.toAbsolutePath().toString();
-            if (!path.startsWith("/")) {
-                path = '/' + path;
-            }
-            URI uri = new URI("file", null, path, null);
-            url = uri.toURL();
-        } catch (URISyntaxException | MalformedURLException e) {
-            throw new RuntimeException("Unable to create protection domain for " + jarPath, e);
-        }
-        this.protectionDomain = new ProtectionDomain(new CodeSource(url, (Certificate[]) null), null, runnerClassLoader, null);
     }
 
     @Override
@@ -127,11 +106,6 @@ public class JarResource implements ClassLoadingResource {
     @Override
     public ManifestInfo getManifestInfo() {
         return manifestInfo;
-    }
-
-    @Override
-    public ProtectionDomain getProtectionDomain() {
-        return protectionDomain;
     }
 
     private JarFile readLockAcquireAndGetJarReference() {

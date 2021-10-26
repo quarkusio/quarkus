@@ -73,6 +73,7 @@ Then the service interface name is: `hello.Greeter`, the Mutiny stub name is: `h
 [source, java]
 ----
 import io.quarkus.grpc.GrpcClient;
+import io.smallrye.mutiny.Uni;
 
 import hello.Greeter;
 
@@ -102,7 +103,6 @@ public class ExampleResource {
 
 [source, java]
 ----
----
 import io.quarkus.grpc.GrpcClient;
 
 import hello.GreeterGrpc.GreeterBlockingStub;
@@ -153,6 +153,7 @@ import io.grpc.examples.streaming.MutinyStreamingGrpc;
 import io.quarkus.grpc.GrpcClient;
 
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;

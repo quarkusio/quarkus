@@ -37,7 +37,7 @@ Edit the `pom.xml` file to add the Quarkus gRPC extension dependency (just under
 By default the `quarkus-grpc` extension relies on reactive programming model, in this guide we will follow reactive approach.
 Under the dependencies section of your `pom.xml` file replace the `quarkus-resteasy` dependency with:
 
-[source,bash]
+[source,xml]
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -187,6 +187,7 @@ import io.quarkus.example.Greeter;
 import io.quarkus.example.HelloReply;
 import io.quarkus.example.HelloRequest;
 import io.quarkus.grpc.GrpcService;
+import io.smallrye.mutiny.Uni;
 
 @GrpcService <1>
 public class HelloService implements Greeter {  <2>
@@ -262,6 +263,7 @@ package org.acme;
 import io.quarkus.example.Greeter;
 import io.quarkus.example.HelloRequest;
 import io.quarkus.grpc.GrpcClient;
+import io.smallrye.mutiny.Uni;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

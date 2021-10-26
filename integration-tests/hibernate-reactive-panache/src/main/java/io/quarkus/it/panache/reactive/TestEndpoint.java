@@ -1454,7 +1454,7 @@ public class TestEndpoint {
 
     @ReactiveTransactional
     @GET
-    @Path("projection")
+    @Path("projection1")
     public Uni<String> testProjection() {
         return Person.count()
                 .flatMap(count -> {
@@ -1493,6 +1493,25 @@ public class TestEndpoint {
 
                                 return "OK";
                             });
+                });
+    }
+
+    @ReactiveTransactional
+    @GET
+    @Path("projection2")
+    public Uni<String> testProjection2() {
+        String ownerName = "Julie";
+        String catName = "Bubulle";
+        CatOwner catOwner = new CatOwner(ownerName);
+        return catOwner.persist()
+                .chain(() -> new Cat(catName, catOwner).persist())
+                .chain(() -> Cat.find("name", catName)
+                        .project(CatDto.class)
+                        .<CatDto> firstResult())
+                .map(cat -> {
+                    Assertions.assertEquals(catName, cat.name);
+                    Assertions.assertEquals(ownerName, cat.ownerName);
+                    return "OK";
                 });
     }
 

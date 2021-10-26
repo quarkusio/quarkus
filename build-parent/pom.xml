@@ -107,6 +107,13 @@
         <!-- Note: this version is also set in quarkus-bom but BOMs don't contribute to pluginManagement or properties -->
         <jacoco.version>0.8.7</jacoco.version>
 
+
+        <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
+        <docker-maven-plugin.version>0.37.0</docker-maven-plugin.version>
+        <formatter-maven-plugin.version>2.16.0</formatter-maven-plugin.version>
+        <impsort-maven-plugin.version>1.6.2</impsort-maven-plugin.version>
+        <maven-invoker-plugin.version>3.2.2</maven-invoker-plugin.version>
+        <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
 
         <!--TODO: remove when switched back to quarkus-maven-plugin for grpc stubs-->
@@ -427,6 +434,10 @@
                                     <requireMavenVersion>
                                         <version>${supported-maven-versions}</version>
                                     </requireMavenVersion>
+                                    <requirePluginVersions>
+                                        <phases>compile</phases>
+                                        <unCheckedPluginList>io.quarkus:quarkus-bootstrap-maven-plugin,io.quarkus:quarkus-platform-descriptor-json-plugin,io.quarkus:quarkus-maven-plugin</unCheckedPluginList>
+                                    </requirePluginVersions>
                                     <bannedDependencies>
                                         <excludes>
                                             <!-- Use Jakarta artifacts instead of JBoss specific ones -->
@@ -580,7 +591,7 @@
                 <plugin>
                     <groupId>io.fabric8</groupId>
                     <artifactId>docker-maven-plugin</artifactId>
-                    <version>0.37.0</version>
+                    <version>${docker-maven-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-javadoc-plugin</artifactId>
@@ -598,7 +609,7 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.16.0</version>
+                    <version>${formatter-maven-plugin.version}</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
@@ -617,7 +628,7 @@
                 <plugin>
                     <groupId>net.revelc.code</groupId>
                     <artifactId>impsort-maven-plugin</artifactId>
-                    <version>1.6.2</version>
+                    <version>${impsort-maven-plugin.version}</version>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
                         <cachedir>.cache</cachedir>
@@ -628,13 +639,8 @@
                     </configuration>
                 </plugin>
                 <plugin>
-                    <groupId>com.google.code.maven-replacer-plugin</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>1.5.3</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-resources-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>${maven-resources-plugin.version}</version>
                     <configuration>
                         <nonFilteredFileExtensions>
                             <nonFilteredFileExtension>eot</nonFilteredFileExtension>
@@ -686,7 +692,12 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-invoker-plugin</artifactId>
-                    <version>3.2.2</version>
+                    <version>${maven-invoker-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.asciidoctor</groupId>
+                    <artifactId>asciidoctor-maven-plugin</artifactId>
+                    <version>${asciidoctor-maven-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>

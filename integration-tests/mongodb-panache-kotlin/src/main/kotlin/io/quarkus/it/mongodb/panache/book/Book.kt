@@ -1,6 +1,6 @@
 package io.quarkus.it.mongodb.panache.book
 
-import io.quarkus.mongodb.panache.MongoEntity
+import io.quarkus.mongodb.panache.common.MongoEntity
 import org.bson.codecs.pojo.annotations.BsonIgnore
 import org.bson.codecs.pojo.annotations.BsonProperty
 import org.bson.types.ObjectId

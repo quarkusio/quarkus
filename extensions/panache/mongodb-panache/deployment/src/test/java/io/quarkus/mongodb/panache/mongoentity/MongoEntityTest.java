@@ -16,14 +16,10 @@ public class MongoEntityTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(
-                            LegacyMongoEntityEntity.class,
-                            LegacyMongoEntityRepository.class,
                             MongoEntityEntity.class,
                             MongoEntityRepository.class)
                     .addAsResource("application.properties"));
 
-    @Inject
-    LegacyMongoEntityRepository legacyMongoEntityRepository;
     @Inject
     MongoEntityRepository mongoEntityRepository;
 
@@ -33,9 +29,4 @@ public class MongoEntityTest {
         assertEquals("mongoEntity", mongoEntityRepository.mongoDatabase().getName());
     }
 
-    @Test
-    public void testLegacyMongoEntity() {
-        assertEquals("legacyMongoEntity", LegacyMongoEntityEntity.mongoDatabase().getName());
-        assertEquals("legacyMongoEntity", legacyMongoEntityRepository.mongoDatabase().getName());
-    }
 }

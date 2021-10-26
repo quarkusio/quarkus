@@ -103,6 +103,8 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
     //the main entry point, but loaded inside the augmentation class loader
     @Override
     public void accept(CuratedApplication o, Map<String, Object> params) {
+        System.setProperty("java.nio.channels.DefaultThreadPool.threadFactory",
+                "io.quarkus.dev.io.NioThreadPoolThreadFactory");
         Timing.staticInitStarted(o.getBaseRuntimeClassLoader(), false);
         try {
             curatedApplication = o;

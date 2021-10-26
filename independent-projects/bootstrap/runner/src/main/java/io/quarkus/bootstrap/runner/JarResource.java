@@ -4,6 +4,8 @@ import io.smallrye.common.io.jar.JarEntries;
 import io.smallrye.common.io.jar.JarFiles;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -42,6 +44,19 @@ public class JarResource implements ClassLoadingResource {
     //Likewise, opening a JarFile requires the exclusive lock.
     private volatile JarFile zipFile;
 
+    // use a VarHandle to access the protectionDomain as the value is written only by the main thread
+    // and all other threads simply read the value, and thus we can use the Release / Acquire access mode
+    private static final VarHandle PROTECTION_DOMAIN_VH;
+
+    static {
+        try {
+            PROTECTION_DOMAIN_VH = MethodHandles.lookup().findVarHandle(JarResource.class, "protectionDomain",
+                    ProtectionDomain.class);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new Error(e);
+        }
+    }
+
     public JarResource(ManifestInfo manifestInfo, Path jarPath) {
         this.manifestInfo = manifestInfo;
         this.jarPath = jarPath;
@@ -63,7 +78,8 @@ public class JarResource implements ClassLoadingResource {
         } catch (URISyntaxException | MalformedURLException e) {
             throw new RuntimeException("Unable to create protection domain for " + jarPath, e);
         }
-        this.protectionDomain = new ProtectionDomain(new CodeSource(url, (Certificate[]) null), null, runnerClassLoader, null);
+        PROTECTION_DOMAIN_VH.setRelease(this,
+                new ProtectionDomain(new CodeSource(url, (Certificate[]) null), null, runnerClassLoader, null));
     }
 
     @Override
@@ -131,7 +147,7 @@ public class JarResource implements ClassLoadingResource {
 
     @Override
     public ProtectionDomain getProtectionDomain() {
-        return protectionDomain;
+        return (ProtectionDomain) PROTECTION_DOMAIN_VH.getAcquire(this);
     }
 
     private JarFile readLockAcquireAndGetJarReference() {

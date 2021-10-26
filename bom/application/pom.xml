@@ -2920,6 +2920,12 @@
                 <groupId>io.jaegertracing</groupId>
                 <artifactId>jaeger-thrift</artifactId>
                 <version>${jaeger.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.tomcat.embed</groupId>
+                        <artifactId>tomcat-embed-core</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.jaegertracing</groupId>
@@ -2933,6 +2939,10 @@
                     <exclusion>
                         <groupId>javax.annotation</groupId>
                         <artifactId>javax.annotation-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.tomcat.embed</groupId>
+                        <artifactId>tomcat-embed-core</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

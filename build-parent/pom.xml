@@ -516,6 +516,8 @@
                                             <exclude>org.jboss.resteasy:resteasy-context-propagation</exclude>
                                             <exclude>com.google.android:annotations</exclude>
                                             <exclude>org.codehaus.mojo:animal-sniffer-annotations</exclude>
+                                            <!-- Includes its own copy of an old version of the servlet API-->
+                                            <exclude>org.apache.tomcat.embed:tomcat-embed-core</exclude>
                                         </excludes>
                                         <includes>
                                             <!-- this is for REST Assured -->

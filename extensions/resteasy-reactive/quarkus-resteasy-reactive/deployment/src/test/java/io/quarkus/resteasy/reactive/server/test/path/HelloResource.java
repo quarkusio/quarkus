@@ -1,7 +1,11 @@
 package io.quarkus.resteasy.reactive.server.test.path;
 
+import java.util.List;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.core.PathSegment;
 
 /**
  * Per spec:
@@ -24,5 +28,11 @@ public class HelloResource {
     @Path("/nested")
     public String nested() {
         return "world hello";
+    }
+
+    @GET
+    @Path("other/{keyword:.*}")
+    public String searchByKeywords(@PathParam("keyword") List<PathSegment> keywords) {
+        return keywords.toString();
     }
 }

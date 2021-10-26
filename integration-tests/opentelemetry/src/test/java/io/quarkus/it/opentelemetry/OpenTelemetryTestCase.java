@@ -328,8 +328,8 @@ public class OpenTelemetryTestCase {
                 .statusCode(200)
                 .body("message", equalTo("Chained trace"));
 
-        Awaitility.await().atMost(Duration.ofMinutes(2)).until(() -> getSpans().size() == 1);
-        Map<String, Object> spanData = getSpans().get(0);
+        Awaitility.await().atMost(Duration.ofMinutes(2)).until(() -> getSpans().size() == 2);
+        Map<String, Object> spanData = getSpans().get(1);
         Assertions.assertNotNull(spanData);
         Assertions.assertNotNull(spanData.get("spanId"));
 
@@ -353,7 +353,11 @@ public class OpenTelemetryTestCase {
         Assertions.assertNotNull(spanData.get("attr_http.client_ip"));
         Assertions.assertNotNull(spanData.get("attr_http.user_agent"));
 
-        //TODO Update this when we support internal methods being traced
+        // CDI call
+        spanData = getSpans().get(0);
+        Assertions.assertEquals("TracedService.call", spanData.get("name"));
+        Assertions.assertEquals(SpanKind.INTERNAL.toString(), spanData.get("kind"));
+        Assertions.assertEquals(getSpans().get(1).get("spanId"), spanData.get("parent_spanId"));
     }
 
     @Test

@@ -1,6 +1,5 @@
 package io.quarkus.security.runtime.interceptor;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -33,8 +32,13 @@ public class SecurityHandler {
                     .onItem().transformToUni(new UniContinuation(ic));
         } else if (CompletionStage.class.isAssignableFrom(returnType)) {
             return constrainer.nonBlockingCheck(ic.getMethod(), ic.getParameters())
-                    .subscribeAsCompletionStage()
-                    .thenApply(new CompletionStageContinuation(ic));
+                    .onItem().transformToUni((s) -> {
+                        try {
+                            return Uni.createFrom().completionStage((CompletionStage<?>) ic.proceed());
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }).subscribeAsCompletionStage();
         } else if (Multi.class.isAssignableFrom(returnType)) {
             return constrainer.nonBlockingCheck(ic.getMethod(), ic.getParameters())
                     .onItem().transformToMulti(new MultiContinuation(ic));
@@ -61,23 +65,6 @@ public class SecurityHandler {
                 return (Uni<?>) ic.proceed();
             } catch (Exception e) {
                 return Uni.createFrom().failure(e);
-            }
-        }
-    }
-
-    private static class CompletionStageContinuation implements Function<Object, CompletionStage<?>> {
-        private final InvocationContext ic;
-
-        CompletionStageContinuation(InvocationContext invocationContext) {
-            ic = invocationContext;
-        }
-
-        @Override
-        public CompletionStage<?> apply(Object o) {
-            try {
-                return (CompletionStage<?>) ic.proceed();
-            } catch (Exception e) {
-                return CompletableFuture.failedFuture(e);
             }
         }
     }

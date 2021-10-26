@@ -141,7 +141,7 @@ public class MongoClientProcessor {
 
         List<ReflectiveClassBuildItem> reflectiveClass = reflectiveClassNames.stream()
                 .map(s -> new ReflectiveClassBuildItem(true, true, false, s))
-                .collect(Collectors.toCollection(() -> new ArrayList<>()));
+                .collect(Collectors.toCollection(ArrayList::new));
         // ChangeStreamDocument needs to be registered for reflection with its fields.
         reflectiveClass.add(new ReflectiveClassBuildItem(true, true, true, ChangeStreamDocument.class.getName()));
         return reflectiveClass;
@@ -222,6 +222,7 @@ public class MongoClientProcessor {
             BsonDiscriminatorBuildItem bsonDiscriminator,
             CommandListenerBuildItem commandListener,
             List<MongoConnectionPoolListenerBuildItem> connectionPoolListenerProvider,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemProducer,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
         List<Supplier<ConnectionPoolListener>> poolListenerList = new ArrayList<>(connectionPoolListenerProvider.size());
@@ -229,12 +230,25 @@ public class MongoClientProcessor {
             poolListenerList.add(item.getConnectionPoolListener());
         }
 
+        List<String> codecProviderClassNames = codecProvider.getCodecProviderClassNames();
+        AdditionalBeanBuildItem.Builder additionalBeansBuilder = AdditionalBeanBuildItem.builder();
+        additionalBeansBuilder.setDefaultScope(DotNames.SINGLETON);
+        for (String name : codecProviderClassNames) {
+            additionalBeansBuilder.addBeanClass(name);
+        }
+        for (String name : propertyCodecProvider.getPropertyCodecProviderClassNames()) {
+            additionalBeansBuilder.addBeanClass(name);
+        }
+        for (String name : commandListener.getCommandListenerClassNames()) {
+            additionalBeansBuilder.addBeanClass(name);
+        }
+        additionalBeanBuildItemProducer.produce(additionalBeansBuilder.build());
+
         // create MongoClientSupport as a synthetic bean as it's used in AbstractMongoClientProducer
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(MongoClientSupport.class)
                 .scope(Singleton.class)
-                .supplier(recorder.mongoClientSupportSupplier(codecProvider.getCodecProviderClassNames(),
-                        propertyCodecProvider.getPropertyCodecProviderClassNames(),
-                        bsonDiscriminator.getBsonDiscriminatorClassNames(), commandListener.getCommandListenerClassNames(),
+                .supplier(recorder.mongoClientSupportSupplier(
+                        bsonDiscriminator.getBsonDiscriminatorClassNames(),
                         poolListenerList, sslNativeConfig.isExplicitlyDisabled()))
                 .done());
     }

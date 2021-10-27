@@ -14,7 +14,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.processor.JandexUtil;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
-import org.jboss.resteasy.reactive.common.util.ReflectionBeanFactoryCreator;
+import org.jboss.resteasy.reactive.common.reflection.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 

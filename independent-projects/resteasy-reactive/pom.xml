@@ -58,6 +58,7 @@
         <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
         <jackson.version>2.12.5</jackson.version>
         <smallrye-stork.version>1.0.0.Alpha7</smallrye-stork.version>
+        <jakarta.validation-api.version>2.0.2</jakarta.validation-api.version>
     </properties>
 
     <modules>
@@ -279,6 +280,11 @@
                 <artifactId>jboss-jaxb-api_2.3_spec</artifactId>
                 <version>${jboss-jaxb-api_2.3_spec.version}</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.validation</groupId>
+                <artifactId>jakarta.validation-api</artifactId>
+                <version>${jakarta.validation-api.version}</version>
             </dependency>
         </dependencies>
 

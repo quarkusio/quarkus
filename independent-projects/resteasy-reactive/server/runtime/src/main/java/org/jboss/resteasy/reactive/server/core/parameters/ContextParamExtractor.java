@@ -33,6 +33,10 @@ public class ContextParamExtractor implements ParameterExtractor {
         }
     }
 
+    public ContextParamExtractor(Class<?> type) {
+        this.type = type;
+    }
+
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {
         // NOTE: Same list for CDI at ContextProducers and in EndpointIndexer.CONTEXT_TYPES

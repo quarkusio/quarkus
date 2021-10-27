@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.common.util;
+package org.jboss.resteasy.reactive.common.reflection;
 
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 

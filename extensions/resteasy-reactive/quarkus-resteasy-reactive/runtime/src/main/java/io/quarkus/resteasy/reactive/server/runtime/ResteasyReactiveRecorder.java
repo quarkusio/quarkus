@@ -31,6 +31,7 @@ import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.util.RuntimeResourceVisitor;
 import org.jboss.resteasy.reactive.server.util.ScoreSystem;
+import org.jboss.resteasy.reactive.server.vertx.BlockingInputHandler;
 import org.jboss.resteasy.reactive.server.vertx.ResteasyReactiveVertxHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;

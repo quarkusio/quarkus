@@ -97,11 +97,18 @@ final class TypeInfos {
         DotName rawClassName = rawClassName(val);
         ClassInfo clazz = index.getClassByName(rawClassName);
         if (clazz == null) {
-            throw new TemplateException(
-                    "Class [" + rawClassName + "] used in the parameter declaration in template ["
-                            + templateIdToPathFun.apply(expressionOrigin.getTemplateGeneratedId()) + "] on line "
-                            + expressionOrigin.getLine()
-                            + " was not found in the application index. Make sure it is spelled correctly.");
+            if (!rawClassName.toString().contains(".")) {
+                // Try the java.lang prefix for a name without package
+                rawClassName = DotName.createSimple(Types.JAVA_LANG_PREFIX + rawClassName.toString());
+                clazz = index.getClassByName(rawClassName);
+            }
+            if (clazz == null) {
+                throw new TemplateException(
+                        "Class [" + rawClassName + "] used in the parameter declaration in template ["
+                                + templateIdToPathFun.apply(expressionOrigin.getTemplateGeneratedId()) + "] on line "
+                                + expressionOrigin.getLine()
+                                + " was not found in the application index. Make sure it is spelled correctly.");
+            }
         }
         return clazz;
     }

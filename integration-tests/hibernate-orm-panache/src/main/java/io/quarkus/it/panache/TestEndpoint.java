@@ -175,6 +175,57 @@ public class TestEndpoint {
         NamedQueryWith2QueriesEntity.find("#NamedQueryWith2QueriesEntity.getAll1").list();
         NamedQueryWith2QueriesEntity.find("#NamedQueryWith2QueriesEntity.getAll2").list();
 
+        Assertions.assertEquals(1, Person.count("#Person.countAll"));
+        Assertions.assertEquals(1, Person.count("#Person.countByName", Parameters.with("name", "stef").map()));
+        Assertions.assertEquals(1, Person.count("#Person.countByName", Parameters.with("name", "stef")));
+        Assertions.assertEquals(1, Person.count("#Person.countByName.ordinal", "stef"));
+
+        Assertions.assertEquals(1, Person.update("#Person.updateAllNames", Parameters.with("name", "stef2").map()));
+        persons = Person.find("#Person.getByName", Parameters.with("name", "stef2")).list();
+        Assertions.assertEquals(1, persons.size());
+
+        Assertions.assertEquals(1, Person.update("#Person.updateAllNames", Parameters.with("name", "stef3")));
+        persons = Person.find("#Person.getByName", Parameters.with("name", "stef3")).list();
+        Assertions.assertEquals(1, persons.size());
+
+        Assertions.assertEquals(1, Person.update("#Person.updateNameById",
+                Parameters.with("name", "stef2").and("id", person.id).map()));
+        persons = Person.find("#Person.getByName", Parameters.with("name", "stef2")).list();
+        Assertions.assertEquals(1, persons.size());
+
+        Assertions.assertEquals(1, Person.update("#Person.updateNameById",
+                Parameters.with("name", "stef3").and("id", person.id)));
+        persons = Person.find("#Person.getByName", Parameters.with("name", "stef3")).list();
+        Assertions.assertEquals(1, persons.size());
+
+        Assertions.assertEquals(1, Person.update("#Person.updateNameById.ordinal", "stef", person.id));
+        persons = Person.find("#Person.getByName", Parameters.with("name", "stef")).list();
+        Assertions.assertEquals(1, persons.size());
+
+        Dog.deleteAll();
+        Assertions.assertEquals(1, Person.delete("#Person.deleteAll"));
+        Assertions.assertEquals(0, Person.find("").list().size());
+
+        person = makeSavedPerson();
+        Dog.deleteAll();
+        Assertions.assertEquals(1, Person.find("").list().size());
+        Assertions.assertEquals(1, Person.delete("#Person.deleteById", Parameters.with("id", person.id).map()));
+        Assertions.assertEquals(0, Person.find("").list().size());
+
+        person = makeSavedPerson();
+        Dog.deleteAll();
+        Assertions.assertEquals(1, Person.find("").list().size());
+        Assertions.assertEquals(1, Person.delete("#Person.deleteById", Parameters.with("id", person.id)));
+        Assertions.assertEquals(0, Person.find("").list().size());
+
+        person = makeSavedPerson();
+        Dog.deleteAll();
+        Assertions.assertEquals(1, Person.find("").list().size());
+        Assertions.assertEquals(1, Person.delete("#Person.deleteById.ordinal", person.id));
+        Assertions.assertEquals(0, Person.find("").list().size());
+
+        person = makeSavedPerson();
+
         //empty query
         persons = Person.find("").list();
         Assertions.assertEquals(1, persons.size());

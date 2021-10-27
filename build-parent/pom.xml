@@ -148,6 +148,7 @@
         <enforce-test-deps-scope.skip>${enforcer.skip}</enforce-test-deps-scope.skip>
 
         <surefire.argLine.additional></surefire.argLine.additional>
+        <os-maven-plugin.version>1.7.0</os-maven-plugin.version>
     </properties>
 
     <dependencyManagement>

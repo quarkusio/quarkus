@@ -8,6 +8,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
@@ -51,6 +52,7 @@ public class EngineProducer {
     private final List<String> suffixes;
     private final String basePath;
     private final String tagPath;
+    private final Pattern templatePathExclude;
 
     public EngineProducer(QuteContext context, QuteConfig config, QuteRuntimeConfig runtimeConfig,
             Event<EngineBuilder> builderReady, Event<Engine> engineReady, ContentTypes contentTypes, LaunchMode launchMode) {
@@ -59,6 +61,7 @@ public class EngineProducer {
         this.basePath = "templates/";
         this.tagPath = basePath + TAGS;
         this.tags = context.getTags();
+        this.templatePathExclude = config.templatePathExclude;
 
         LOGGER.debugf("Initializing Qute [templates: %s, tags: %s, resolvers: %s", context.getTemplatePaths(), tags,
                 context.getResolverClasses());
@@ -186,19 +189,22 @@ public class EngineProducer {
         }
     }
 
-    /**
-     * @param path
-     * @return the optional reader
-     */
     private Optional<TemplateLocation> locate(String path) {
         URL resource = null;
         String templatePath = basePath + path;
         LOGGER.debugf("Locate template for %s", templatePath);
+        if (templatePathExclude.matcher(path).matches()) {
+            return Optional.empty();
+        }
         resource = locatePath(templatePath);
         if (resource == null) {
             // Try path with suffixes
             for (String suffix : suffixes) {
-                templatePath = basePath + path + "." + suffix;
+                String pathWithSuffix = path + "." + suffix;
+                if (templatePathExclude.matcher(pathWithSuffix).matches()) {
+                    continue;
+                }
+                templatePath = basePath + pathWithSuffix;
                 resource = locatePath(templatePath);
                 if (resource != null) {
                     break;

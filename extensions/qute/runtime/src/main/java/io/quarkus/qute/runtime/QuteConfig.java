@@ -3,6 +3,7 @@ package io.quarkus.qute.runtime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -43,5 +44,17 @@ public class QuteConfig {
      */
     @ConfigItem
     public Optional<List<String>> typeCheckExcludes;
+
+    /**
+     * This regular expression is used to exclude template files from the {@code templates} directory. Excluded templates are
+     * neither parsed nor validated during build and are not available at runtime.
+     * <p>
+     * The matched input is the file path relative from the {@code templates} directory and the
+     * {@code /} is used as a path separator.
+     * <p>
+     * By default, the hidden files are excluded. The name of a hidden file starts with a dot.
+     */
+    @ConfigItem(defaultValue = "^\\..*|.*\\/\\..*$")
+    public Pattern templatePathExclude;
 
 }

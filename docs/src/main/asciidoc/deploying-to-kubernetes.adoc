@@ -1204,7 +1204,7 @@ If the name of the container does not match the application name (or the overrid
 == Service Binding [[service_binding]]
 
 Quarkus supports binding services to applications via the link:https://github.com/k8s-service-bindings/spec[Service Binding Specification for Kubernetes].
-Specifically Quarkus implements the link:https://github.com/k8s-service-bindings/spec#application-projection[Application Projection] part of the specification, thus allowing
+Specifically Quarkus implements the link:https://github.com/k8s-service-bindings/spec#workload-projection[Workload Projection] part of the specification, thus allowing
 applications running in appropriately configured Kubernetes clusters to consume services (such as a Database or a Broker) without the need for user configuration.
 
 Currently, the following Quarkus extensions (and extensions that depend on these) support this feature:
@@ -1307,5 +1307,5 @@ ALSO NOTE: Advanced, features (e.g. `ServiceBiniding` mappings) are not yet supp
 
 [TIP]
 ====
-For more details on how the discovery of the available properties works, please read the link:https://github.com/k8s-service-bindings/spec#application-projection[Application Projection] part of the Service Binding specification.
+For more details on how the discovery of the available properties works, please read the link:https://github.com/k8s-service-bindings/spec#workload-projection[Workload Projection] part of the Service Binding specification.
 ====

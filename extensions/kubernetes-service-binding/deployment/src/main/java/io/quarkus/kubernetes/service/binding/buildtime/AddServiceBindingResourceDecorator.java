@@ -1,7 +1,7 @@
 
 package io.quarkus.kubernetes.service.binding.buildtime;
 
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
@@ -16,19 +16,22 @@ public class AddServiceBindingResourceDecorator extends ResourceProvidingDecorat
     private final String kind;
     private final String name;
     private final KubernetesServiceBindingConfig config;
+    private final List<KubernetesServiceBindingBuildItem> services;
 
     public AddServiceBindingResourceDecorator(String group, String version, String kind, String name,
-            KubernetesServiceBindingConfig config) {
+            KubernetesServiceBindingConfig config,
+            List<KubernetesServiceBindingBuildItem> services) {
         this.group = group;
         this.version = version;
         this.kind = kind;
         this.name = name;
         this.config = config;
+        this.services = services;
     }
 
     @Override
     public void visit(KubernetesListFluent<?> list) {
-        if (config.services.isEmpty()) {
+        if (services.isEmpty()) {
             return;
         }
 
@@ -42,20 +45,19 @@ public class AddServiceBindingResourceDecorator extends ResourceProvidingDecorat
                 .withBindAsFiles(config.bindAsFiles)
                 .withMountPath(config.mountPath.orElse(null));
 
-        for (Map.Entry<String, ServiceConfig> entry : config.services.entrySet()) {
-            String id = entry.getKey();
-            ServiceConfig service = entry.getValue();
-            String group = service.apiVersion.contains("/")
-                    ? Optional.ofNullable(service.apiVersion).map(a -> a.split("/")[0]).orElse(null)
+        for (KubernetesServiceBindingBuildItem service : services) {
+            String group = service.getApiVersion().contains("/")
+                    ? Optional.ofNullable(service.getApiVersion()).map(a -> a.split("/")[0]).orElse(null)
                     : "";
-            String version = service.apiVersion.contains("/")
-                    ? Optional.ofNullable(service.apiVersion).map(a -> a.split("/")[1]).orElse(null)
-                    : service.apiVersion;
+            String version = service.getApiVersion().contains("/")
+                    ? Optional.ofNullable(service.getApiVersion()).map(a -> a.split("/")[1]).orElse(null)
+                    : service.getApiVersion();
+
             spec = spec.addNewService()
                     .withGroup(group)
                     .withVersion(version)
-                    .withKind(service.kind)
-                    .withName(service.name.orElse(id))
+                    .withKind(service.getKind())
+                    .withName(service.getName())
                     .endService();
         }
 

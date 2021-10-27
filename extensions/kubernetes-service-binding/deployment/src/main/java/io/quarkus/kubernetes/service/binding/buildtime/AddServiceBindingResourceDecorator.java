@@ -55,7 +55,7 @@ public class AddServiceBindingResourceDecorator extends ResourceProvidingDecorat
                     .withGroup(group)
                     .withVersion(version)
                     .withKind(service.kind)
-                    .withName(service.name)
+                    .withName(service.name.orElse(id))
                     .endService();
         }
 

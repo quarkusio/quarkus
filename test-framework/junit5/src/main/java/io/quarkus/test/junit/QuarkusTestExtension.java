@@ -476,7 +476,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         Method actualTestMethod = null;
 
         // go up the class hierarchy to fetch the proper test method
-        Class<?> c = actualTestClass;
+        Class<?> c = resolveDeclaringClass(originalTestMethod, actualTestClass);
         List<Class<?>> parameterTypesFromTccl = new ArrayList<>(originalParameterTypes.length);
         for (Class<?> type : originalParameterTypes) {
             if (type.isPrimitive()) {
@@ -487,14 +487,12 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             }
         }
         Class<?>[] parameterTypes = parameterTypesFromTccl.toArray(new Class[0]);
-        while (c != Object.class) {
-            try {
+        try {
+            if (c != null) {
                 actualTestMethod = c.getDeclaredMethod(originalTestMethod.getName(), parameterTypes);
-                break;
-            } catch (NoSuchMethodException ignored) {
-
             }
-            c = c.getSuperclass();
+        } catch (NoSuchMethodException ignored) {
+
         }
         if (actualTestMethod == null) {
             throw new RuntimeException("Could not find method " + originalTestMethod + " on test class");
@@ -932,32 +930,50 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     private Method determineTCCLExtensionMethod(Method originalMethod, Class<?> c)
             throws ClassNotFoundException {
-
-        Method newMethod = null;
-        while (c != Object.class) {
-            if (c.getName().equals(originalMethod.getDeclaringClass().getName())) {
-                try {
-                    Class<?>[] originalParameterTypes = originalMethod.getParameterTypes();
-                    List<Class<?>> parameterTypesFromTccl = new ArrayList<>(originalParameterTypes.length);
-                    for (Class<?> type : originalParameterTypes) {
-                        if (type.isPrimitive()) {
-                            parameterTypesFromTccl.add(type);
-                        } else {
-                            parameterTypesFromTccl
-                                    .add(Class.forName(type.getName(), true,
-                                            Thread.currentThread().getContextClassLoader()));
-                        }
-                    }
-                    newMethod = c.getDeclaredMethod(originalMethod.getName(),
-                            parameterTypesFromTccl.toArray(new Class[0]));
-                    break;
-                } catch (NoSuchMethodException ignored) {
-
+        Class<?> declaringClass = resolveDeclaringClass(originalMethod, c);
+        if (declaringClass == null) {
+            return null;
+        }
+        try {
+            Class<?>[] originalParameterTypes = originalMethod.getParameterTypes();
+            List<Class<?>> parameterTypesFromTccl = new ArrayList<>(originalParameterTypes.length);
+            for (Class<?> type : originalParameterTypes) {
+                if (type.isPrimitive()) {
+                    parameterTypesFromTccl.add(type);
+                } else {
+                    parameterTypesFromTccl
+                            .add(Class.forName(type.getName(), true,
+                                    Thread.currentThread().getContextClassLoader()));
                 }
             }
-            c = c.getSuperclass();
+            return declaringClass.getDeclaredMethod(originalMethod.getName(),
+                    parameterTypesFromTccl.toArray(new Class[0]));
+        } catch (NoSuchMethodException ignored) {
+
         }
-        return newMethod;
+
+        return null;
+    }
+
+    private Class<?> resolveDeclaringClass(Method method, Class<?> c) {
+        if (c == Object.class || c == null) {
+            return null;
+        }
+
+        if (c.getName().equals(method.getDeclaringClass().getName())) {
+            return c;
+        }
+        Class<?> declaringClass = resolveDeclaringClass(method, c.getSuperclass());
+        if (declaringClass != null) {
+            return declaringClass;
+        }
+        for (Class<?> anInterface : c.getInterfaces()) {
+            declaringClass = resolveDeclaringClass(method, anInterface);
+            if (declaringClass != null) {
+                return declaringClass;
+            }
+        }
+        return null;
     }
 
     @Override

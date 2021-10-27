@@ -297,7 +297,18 @@ triage:
         - integration-tests/google-cloud-functions
     - labels: [area/mandrel]
       titleBody: "mandrel"
-      notify: [galderz, zakkak]
+      notify: [galderz, zakkak, Karm]
+    - labels: [area/graphics]
+      expression: |
+              matches("sun.font", titleBody)
+              || matches("sun.java2d", titleBody)
+              || matches("javax.imageio", titleBody)
+              || matches("sun.awt", titleBody)
+      notify: [galderz, zakkak, Karm]
+      notifyInPullRequest: true
+      directories:
+        - extensions/awt/
+        - integration-tests/awt/
     - labels: [area/artemis]
       directories:
         - extensions/artemis-core/

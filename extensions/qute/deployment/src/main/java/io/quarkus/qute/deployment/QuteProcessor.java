@@ -1171,7 +1171,8 @@ public class QuteProcessor {
     void collectTemplates(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<TemplatePathBuildItem> templatePaths,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResources)
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
+            QuteConfig config)
             throws IOException {
         ApplicationArchive applicationArchive = applicationArchivesBuildItem.getRootArchive();
         String basePath = "templates";
@@ -1185,9 +1186,10 @@ public class QuteProcessor {
                 break;
             }
         }
-        LOGGER.debugf("Found templates dir: %s", templatesPath);
         if (templatesPath != null) {
-            scan(templatesPath, templatesPath, basePath + "/", watchedPaths, templatePaths, nativeImageResources);
+            LOGGER.debugf("Found templates dir: %s", templatesPath);
+            scan(templatesPath, templatesPath, basePath + "/", watchedPaths, templatePaths, nativeImageResources,
+                    config.templatePathExclude);
         }
     }
 
@@ -2048,7 +2050,8 @@ public class QuteProcessor {
 
     private void scan(Path root, Path directory, String basePath, BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<TemplatePathBuildItem> templatePaths,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResources)
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
+            Pattern templatePathExclude)
             throws IOException {
         try (Stream<Path> files = Files.list(directory)) {
             Iterator<Path> iter = files.iterator();
@@ -2060,11 +2063,15 @@ public class QuteProcessor {
                     if (File.separatorChar != '/') {
                         templatePath = templatePath.replace(File.separatorChar, '/');
                     }
+                    if (templatePathExclude.matcher(templatePath).matches()) {
+                        LOGGER.debugf("Template file exluded: %s", filePath);
+                        continue;
+                    }
                     produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources, basePath, templatePath,
                             filePath);
                 } else if (Files.isDirectory(filePath)) {
                     LOGGER.debugf("Scan directory: %s", filePath);
-                    scan(root, filePath, basePath, watchedPaths, templatePaths, nativeImageResources);
+                    scan(root, filePath, basePath, watchedPaths, templatePaths, nativeImageResources, templatePathExclude);
                 }
             }
         }

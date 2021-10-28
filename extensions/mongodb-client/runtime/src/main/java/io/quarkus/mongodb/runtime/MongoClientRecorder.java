@@ -2,6 +2,7 @@ package io.quarkus.mongodb.runtime;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import javax.enterprise.inject.Default;
@@ -39,27 +40,32 @@ public class MongoClientRecorder {
         };
     }
 
+    /** Helper to lazily create Mongo clients. */
+    static final class MongoClientSupplier<T> implements Supplier<T> {
+        private final Function<MongoClients, T> producer;
+
+        MongoClientSupplier(Function<MongoClients, T> producer) {
+            this.producer = producer;
+        }
+
+        @Override
+        public T get() {
+            // The beans defined in io.quarkus.mongodb.deployment.MongoClientProcessor.createBlockingSyntheticBean and
+            // io.quarkus.mongodb.deployment.MongoClientProcessor.createReactiveSyntheticBean are ApplicationScoped,
+            // so no need to cache the result here.
+            MongoClients mongoClients = Arc.container().instance(MongoClients.class).get();
+            return producer.apply(mongoClients);
+        }
+    }
+
     public Supplier<MongoClient> mongoClientSupplier(String clientName,
             @SuppressWarnings("unused") MongodbConfig mongodbConfig) {
-        MongoClient mongoClient = Arc.container().instance(MongoClients.class).get().createMongoClient(clientName);
-        return new Supplier<MongoClient>() {
-            @Override
-            public MongoClient get() {
-                return mongoClient;
-            }
-        };
+        return new MongoClientSupplier<>(mongoClients -> mongoClients.createMongoClient(clientName));
     }
 
     public Supplier<ReactiveMongoClient> reactiveMongoClientSupplier(String clientName,
             @SuppressWarnings("unused") MongodbConfig mongodbConfig) {
-        ReactiveMongoClient reactiveMongoClient = Arc.container().instance(MongoClients.class).get()
-                .createReactiveMongoClient(clientName);
-        return new Supplier<ReactiveMongoClient>() {
-            @Override
-            public ReactiveMongoClient get() {
-                return reactiveMongoClient;
-            }
-        };
+        return new MongoClientSupplier<>(mongoClients -> mongoClients.createReactiveMongoClient(clientName));
     }
 
     public RuntimeValue<MongoClient> getClient(String name) {

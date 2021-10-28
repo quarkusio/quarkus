@@ -1,7 +1,6 @@
 package io.quarkus.mongodb;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import javax.inject.Inject;
 
@@ -12,7 +11,6 @@ import org.eclipse.microprofile.metrics.Tag;
 import org.eclipse.microprofile.metrics.annotation.RegistryType;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -23,10 +21,8 @@ import io.quarkus.mongodb.metrics.ConnectionPoolGauge;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class MongoMetricsTest extends MongoTestBase {
-
-    @Inject
-    MongoClient client;
+/** Variation of {@link io.quarkus.mongodb.MongoMetricsTest} to verify lazy client initialization. */
+public class MongoLazyTest extends MongoTestBase {
 
     @Inject
     @RegistryType(type = MetricRegistry.Type.VENDOR)
@@ -37,31 +33,14 @@ public class MongoMetricsTest extends MongoTestBase {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MongoTestBase.class))
             .withConfigurationResource("application-metrics-mongo.properties");
 
-    @AfterEach
-    void cleanup() {
-        if (client != null) {
-            client.close();
-        }
-    }
-
     @Test
-    void testMetricsInitialization() {
+    void testLazyClientCreation() {
         // Clients are created lazily, this metric should not be present yet
         assertThat(getGaugeValueOrNull("mongodb.connection-pool.size", getTags())).isNull();
         assertThat(getGaugeValueOrNull("mongodb.connection-pool.checked-out-count", getTags())).isNull();
 
-        // Just need to execute something so that an connection is opened
-        String name = client.listDatabaseNames().first();
-
-        assertEquals(1L, getGaugeValueOrNull("mongodb.connection-pool.size", getTags()));
-        assertEquals(0L, getGaugeValueOrNull("mongodb.connection-pool.checked-out-count", getTags()));
-
-        client.close();
-        assertEquals(0L, getGaugeValueOrNull("mongodb.connection-pool.size", getTags()));
-        assertEquals(0L, getGaugeValueOrNull("mongodb.connection-pool.checked-out-count", getTags()));
-
         // doing this here instead of in another method in order to avoid messing with the initialization stats
-        assertThat(Arc.container().instance(MongoClient.class).get()).isNotNull();
+        assertThat(Arc.container().instance(MongoClient.class).get()).isNull();
         assertThat(Arc.container().instance(ReactiveMongoClient.class).get()).isNull();
     }
 

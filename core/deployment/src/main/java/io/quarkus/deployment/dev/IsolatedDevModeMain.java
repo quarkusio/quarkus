@@ -86,7 +86,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
 
-            boolean augmentDone = false;
             //ok, we have resolved all the deps
             try {
                 StartupAction start = augmentAction.createInitialRuntimeApplication();
@@ -141,7 +140,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                         });
 
                 startCodeGenWatcher(deploymentClassLoader, codeGens, context.getBuildSystemProperties());
-                augmentDone = true;
                 runner = start.runMainClass(context.getArgs());
                 firstStartCompleted = true;
             } catch (Throwable t) {
@@ -151,9 +149,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 }
                 if (!(rootCause instanceof BindException)) {
                     deploymentProblem = t;
-                    if (!augmentDone) {
-                        log.error("Failed to start quarkus", t);
-                    }
                     if (!context.isAbortOnFailedStart()) {
                         //we need to set this here, while we still have the correct TCCL
                         //this is so the config is still valid, and we can read HTTP config from application.properties
@@ -168,8 +163,11 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                     cl.getMethod("handleFailedStart").invoke(null);
                                 }
                                 RuntimeUpdatesProcessor.INSTANCE.startupFailed();
+                                //try and wait till logging is setup
+                                log.error("Failed to start quarkus", t);
                             } catch (Exception e) {
                                 close();
+                                log.error("Failed to start quarkus", t);
                                 log.error("Failed to recover after failed start", e);
                                 //this is the end of the road, we just exit
                                 //generally we only hit this if something is already listening on the HTTP port
@@ -177,6 +175,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                 System.exit(1);
                             }
                         }
+                    } else {
+                        log.error("Failed to start quarkus", t);
                     }
                 }
             }

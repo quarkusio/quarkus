@@ -37,7 +37,7 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
     private static final Path testDirPath = Paths.get("target/quarkus-codestart-build-test");
 
     private static final Set<String> EXCLUDED = Sets.newHashSet("spring-web-codestart", "picocli-codestart",
-            "hibernate-orm-codestart");
+            "hibernate-orm-codestart", "reactive-messaging");
 
     @BeforeAll
     static void setUp() throws IOException {

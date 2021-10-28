@@ -234,16 +234,6 @@ public class QuarkusPlugin implements Plugin<Project> {
                         testSourceSet.getJava().srcDir(
                                 new File(generatedTestSourceSet.getJava().getClassesDirectory().get().getAsFile(), provider));
                     }
-
-                    // enable the Panache annotation processor on the classpath, if it's found among the dependencies
-                    configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
-                            .getResolutionStrategy().eachDependency(d -> {
-                                if ("quarkus-panache-common".equals(d.getTarget().getName())
-                                        && "io.quarkus".equals(d.getTarget().getGroup())) {
-                                    project.getDependencies().add("annotationProcessor", d.getRequested().getGroup() + ":"
-                                            + d.getRequested().getName() + ":" + d.getRequested().getVersion());
-                                }
-                            });
                 });
 
         project.getPlugins().withId("org.jetbrains.kotlin.jvm", plugin -> {
@@ -266,6 +256,13 @@ public class QuarkusPlugin implements Plugin<Project> {
                             .declareConditionalDependencies(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
                     deploymentClasspathBuilder.createBuildClasspath(implementationExtensions,
                             JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
+                    // enable the Panache annotation processor on the classpath, if it's found among the dependencies
+                    for (ExtensionDependency extension : implementationExtensions) {
+                        if ("quarkus-panache-common".equals(extension.getName()) && "io.quarkus".equals(extension.getGroup())) {
+                            project.getDependencies().add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME,
+                                    extension.asDependencyNotation());
+                        }
+                    }
                 });
         project.getConfigurations().getByName(DEV_MODE_CONFIGURATION_NAME).getIncoming().beforeResolve((devDependencies) -> {
             Set<ExtensionDependency> devModeExtensions = conditionalDependenciesEnabler

@@ -14,7 +14,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
  * Relocation of the Config configurations to the Quarkus namespace is done in
  * {@link io.quarkus.runtime.configuration.ConfigUtils#configBuilder}.
  */
-@ConfigRoot(name = ConfigItem.PARENT, phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+@ConfigRoot(name = ConfigItem.PARENT, phase = ConfigPhase.RUN_TIME)
 public class ConfigConfig {
     /**
      * Additional config locations to be loaded with the Config. The configuration support multiple locations

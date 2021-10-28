@@ -244,7 +244,7 @@ The extension provides helpers to check the content:
 - You can use `AbstractPathAssert.satisfies(checkContains("some content"))` or any Path assert on the return of the methods above to also check the file contains a specific content.
 - `assertThatGeneratedTreeMatchSnapshots()`  lets you compare the project file structure (tree) for a specific language against its snapshot.
 
-NOTE: In order to first generate or update existing snapshots, you need to add `-Dsnap` when running the tests. They need to be added as part of the commit, else the tests will not pass on the CI.
+NOTE: In order to first generate or update existing snapshots files on your local filesystem, you need to add `-Dsnap` when running the tests locally while developing the codestart. They need to be added as part of the commit, else the tests will not pass on the CI.
 
 === Writing tips
 

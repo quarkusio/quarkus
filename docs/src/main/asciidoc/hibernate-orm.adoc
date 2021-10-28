@@ -755,10 +755,6 @@ The team believes this isn't a big deal as it's trivial to inject the Session vi
 handling the binding into a ThreadLocal yourself, making this a legacy feature.
 This limitation might be resolved in the future, if someone opens a ticket for it and provides a reasonable use case to justify the need.
 
-JPA Callbacks::
-Annotations allowing for application callbacks on entity lifecycle events defined by JPA such as `@javax.persistence.PostUpdate`, `@javax.persistence.PostLoad`, `@javax.persistence.PostPersist`, etc... are currently not processed.
-This limitation could be resolved in a future version, depending on user demand.
-
 === Other notable differences
 
 Format of `import.sql`::

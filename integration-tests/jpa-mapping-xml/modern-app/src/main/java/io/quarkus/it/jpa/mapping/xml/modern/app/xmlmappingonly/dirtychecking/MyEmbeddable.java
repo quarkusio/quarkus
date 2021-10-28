@@ -1,6 +1,6 @@
-package io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly;
+package io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly.dirtychecking;
 
-public class XmlMappingOnlyEmbeddable {
+public class MyEmbeddable {
 
     private String embeddedBasic;
 

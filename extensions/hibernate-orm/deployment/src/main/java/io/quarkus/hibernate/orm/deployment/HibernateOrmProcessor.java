@@ -596,6 +596,7 @@ public final class HibernateOrmProcessor {
 
         // Some user-injectable beans are retrieved programmatically and shouldn't be removed
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(AttributeConverter.class));
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(jpaModel.getPotentialCdiBeanClassNames()));
     }
 
     @Consume(InterceptedStaticMethodsTransformersRegisteredBuildItem.class)

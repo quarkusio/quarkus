@@ -14,6 +14,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
 
@@ -52,6 +54,18 @@ public class HibernateOrmAnnotationsTest {
         jpaMappingAnnotations.removeIf(name -> name.toString().startsWith("javax.persistence.metamodel."));
 
         assertThat(HibernateOrmAnnotations.JPA_MAPPING_ANNOTATIONS)
+                .containsExactlyInAnyOrderElementsOf(jpaMappingAnnotations);
+    }
+
+    @Test
+    public void testNoMissingJpaListenerAnnotation() {
+        Set<DotName> jpaMappingAnnotations = findRuntimeAnnotations(jpaIndex);
+        Pattern listenerAnnotationNamePattern = Pattern.compile(".*\\.(Pre|Post)[^.]+");
+        jpaMappingAnnotations = jpaMappingAnnotations.stream()
+                .filter(name -> listenerAnnotationNamePattern.matcher(name.toString()).matches())
+                .collect(Collectors.toSet());
+
+        assertThat(HibernateOrmAnnotations.JPA_LISTENER_ANNOTATIONS)
                 .containsExactlyInAnyOrderElementsOf(jpaMappingAnnotations);
     }
 

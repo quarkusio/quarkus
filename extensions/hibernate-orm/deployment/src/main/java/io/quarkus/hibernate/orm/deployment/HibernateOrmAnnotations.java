@@ -1,7 +1,5 @@
 package io.quarkus.hibernate.orm.deployment;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.jboss.jandex.DotName;
@@ -11,7 +9,7 @@ public final class HibernateOrmAnnotations {
     private HibernateOrmAnnotations() {
     }
 
-    public static final List<DotName> PACKAGE_ANNOTATIONS = Collections.unmodifiableList(Arrays.asList(
+    public static final List<DotName> PACKAGE_ANNOTATIONS = List.of(
             DotName.createSimple("org.hibernate.annotations.AnyMetaDef"),
             DotName.createSimple("org.hibernate.annotations.AnyMetaDefs"),
             DotName.createSimple("org.hibernate.annotations.FetchProfile"),
@@ -27,9 +25,9 @@ public final class HibernateOrmAnnotations {
             DotName.createSimple("org.hibernate.annotations.NamedQueries"),
             DotName.createSimple("org.hibernate.annotations.NamedQuery"),
             DotName.createSimple("org.hibernate.annotations.TypeDef"),
-            DotName.createSimple("org.hibernate.annotations.TypeDefs")));
+            DotName.createSimple("org.hibernate.annotations.TypeDefs"));
 
-    public static final List<DotName> JPA_MAPPING_ANNOTATIONS = Collections.unmodifiableList(Arrays.asList(
+    public static final List<DotName> JPA_MAPPING_ANNOTATIONS = List.of(
             DotName.createSimple("javax.persistence.Access"),
             DotName.createSimple("javax.persistence.AssociationOverride"),
             DotName.createSimple("javax.persistence.AssociationOverrides"),
@@ -120,9 +118,9 @@ public final class HibernateOrmAnnotations {
             DotName.createSimple("javax.persistence.Temporal"),
             DotName.createSimple("javax.persistence.Transient"),
             DotName.createSimple("javax.persistence.UniqueConstraint"),
-            DotName.createSimple("javax.persistence.Version")));
+            DotName.createSimple("javax.persistence.Version"));
 
-    public static final List<DotName> HIBERNATE_MAPPING_ANNOTATIONS = Collections.unmodifiableList(Arrays.asList(
+    public static final List<DotName> HIBERNATE_MAPPING_ANNOTATIONS = List.of(
             DotName.createSimple("org.hibernate.annotations.AccessType"),
             DotName.createSimple("org.hibernate.annotations.Any"),
             DotName.createSimple("org.hibernate.annotations.AnyMetaDef"),
@@ -216,10 +214,19 @@ public final class HibernateOrmAnnotations {
             DotName.createSimple("org.hibernate.annotations.UpdateTimestamp"),
             DotName.createSimple("org.hibernate.annotations.ValueGenerationType"),
             DotName.createSimple("org.hibernate.annotations.Where"),
-            DotName.createSimple("org.hibernate.annotations.WhereJoinTable")));
+            DotName.createSimple("org.hibernate.annotations.WhereJoinTable"));
 
-    public static final List<DotName> ANNOTATED_WITH_INJECT_SERVICE = Collections.unmodifiableList(Arrays.asList(
+    public static final List<DotName> ANNOTATED_WITH_INJECT_SERVICE = List.of(
             DotName.createSimple("org.hibernate.engine.jdbc.connections.internal.DatasourceConnectionProviderImpl"),
-            DotName.createSimple("org.hibernate.engine.jdbc.cursor.internal.StandardRefCursorSupport")));
+            DotName.createSimple("org.hibernate.engine.jdbc.cursor.internal.StandardRefCursorSupport"));
+
+    public static final List<DotName> JPA_LISTENER_ANNOTATIONS = List.of(
+            DotName.createSimple("javax.persistence.PostLoad"),
+            DotName.createSimple("javax.persistence.PostPersist"),
+            DotName.createSimple("javax.persistence.PostRemove"),
+            DotName.createSimple("javax.persistence.PostUpdate"),
+            DotName.createSimple("javax.persistence.PrePersist"),
+            DotName.createSimple("javax.persistence.PreRemove"),
+            DotName.createSimple("javax.persistence.PreUpdate"));
 
 }

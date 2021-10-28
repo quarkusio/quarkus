@@ -94,6 +94,14 @@ public class ExtensionDependency {
         return String.join(":", this.extensionId.getGroup(), this.extensionId.getName());
     }
 
+    public String getGroup() {
+        return extensionId.getGroup();
+    }
+
+    public String getName() {
+        return extensionId.getName();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o)

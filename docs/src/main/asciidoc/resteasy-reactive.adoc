@@ -56,7 +56,7 @@ import javax.ws.rs.Path;
 public class Endpoint {
 
     @GET
-    public String hello(){
+    public String hello() {
         return "Hello, World!";
     }
 }
@@ -97,7 +97,7 @@ public class Endpoint {
 
     @Path("hello")
     @GET
-    public String hello(){
+    public String hello() {
         return "Hello, World!";
     }
 }
@@ -178,7 +178,7 @@ import javax.ws.rs.Path;
 public class Endpoint {
 
     @FROMAGE
-    public String hello(){
+    public String hello() {
         return "Hello, Cheese World!";
     }
 }
@@ -291,7 +291,7 @@ public class Endpoint {
                             @RestCookie String level,
                             @RestHeader("X-Cheese-Secret-Handshake")
                             String secretHandshake,
-                            @RestForm String smell){
+                            @RestForm String smell) {
         return type + "/" + variant + "/" + age + "/" + level + "/" + secretHandshake + "/" + smell;
     }
 }
@@ -331,12 +331,12 @@ public class Endpoint {
 
     @Path("{name}/{age:\\d+}")
     @GET
-    public String personalisedHello(String name, int age){
+    public String personalisedHello(String name, int age) {
         return "Hello " + name + " is your age really " + age + "?";
     }
 
     @GET
-    public String genericHello(){
+    public String genericHello() {
         return "Hello stranger";
     }
 }
@@ -607,7 +607,7 @@ import io.smallrye.mutiny.Uni;
 public class Endpoint {
 
     @GET
-    public Uni<Book> culinaryGuide(){
+    public Uni<Book> culinaryGuide() {
         return Book.findByIsbn("978-2081229297");
     }
 }
@@ -845,7 +845,7 @@ public class Endpoint {
 
     SecurityContext security;
 
-    Endpoint(SecurityContext security){
+    Endpoint(SecurityContext security) {
         this.security = security;
     }
 
@@ -902,7 +902,7 @@ import io.quarkus.resteasy.reactive.jackson.SecureField;
 
 public class Person {
 
-    @SecureField("id")
+    @SecureField(rolesAllowed = "admin")
     private final Long id;
     private final String first;
     private final String last;
@@ -925,7 +925,6 @@ public class Person {
         return last;
     }
 }
-
 ----
 
 A very simple JAX-RS Resource that uses `Person` could be:
@@ -1778,7 +1777,7 @@ public class Endpoint {
     @GET
     public String convertions(Converter converter, Constructor constructor,
                               int primitive, ValueOf valueOf, 
-                              @RestQuery List<Constructor> list){
+                              @RestQuery List<Constructor> list) {
         return converter + "/" + constructor + "/" + primitive 
                + "/" + valueOf + "/" + list;
     }
@@ -1824,7 +1823,7 @@ public class Endpoint {
     private String resource = "Some resource";
     
     @GET
-    public Response get(Request request){
+    public Response get(Request request) {
         // first evaluate preconditions
         ResponseBuilder conditionalResponse = request.evaluatePreconditions(date, tag);
         if(conditionalResponse != null)
@@ -1837,7 +1836,7 @@ public class Endpoint {
     }
 
     @PUT
-    public Response put(Request request, String body){
+    public Response put(Request request, String body) {
         // first evaluate preconditions
         ResponseBuilder conditionalResponse = request.evaluatePreconditions(date, tag);
         if(conditionalResponse != null)
@@ -1951,19 +1950,19 @@ public class Endpoint {
 
     @Produces({MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
     @GET
-    public FroMage get(){
+    public FroMage get() {
         return new FroMage("Morbier");
     }
 
     @Consumes(MediaType.TEXT_PLAIN)
     @PUT
-    public FroMage putString(String cheese){
+    public FroMage putString(String cheese) {
         return new FroMage(cheese);
     }
 
     @Consumes(MediaType.APPLICATION_JSON)
     @PUT
-    public FroMage putJson(FroMage fromage){
+    public FroMage putJson(FroMage fromage) {
         return fromage;
     }
 }

@@ -200,7 +200,7 @@
         <webjars-locator-core.version>0.46</webjars-locator-core.version>
         <log4j2-jboss-logmanager.version>1.0.0.Final</log4j2-jboss-logmanager.version>
         <log4j-jboss-logmanager.version>1.2.2.Final</log4j-jboss-logmanager.version>
-        <avro.version>1.10.2</avro.version>
+        <avro.version>1.11.0</avro.version>
         <apicurio-registry.version>2.0.1.Final</apicurio-registry.version>
         <jacoco.version>0.8.7</jacoco.version>
         <testcontainers.version>1.16.2</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->

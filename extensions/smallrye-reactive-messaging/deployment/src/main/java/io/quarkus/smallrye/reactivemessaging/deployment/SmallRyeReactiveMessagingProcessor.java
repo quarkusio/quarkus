@@ -323,32 +323,37 @@ public class SmallRyeReactiveMessagingProcessor {
     }
 
     @BuildStep
-    public void enableMetrics(BuildProducer<AnnotationsTransformerBuildItem> transformers,
-            Optional<MetricsCapabilityBuildItem> metricsCapability,
+    public AnnotationsTransformerBuildItem enableMetrics(Optional<MetricsCapabilityBuildItem> metricsCapability,
             ReactiveMessagingConfiguration configuration) {
         boolean isMetricEnabled = metricsCapability.isPresent() && configuration.metricsEnabled;
         boolean useMicrometer = isMetricEnabled && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER);
-        if (!isMetricEnabled || useMicrometer) {
-            LOGGER.debug("Metrics Enabled: " + isMetricEnabled + "; Using Micrometer: " + useMicrometer);
+        LOGGER.debug("Metrics Enabled: " + isMetricEnabled + "; Using Micrometer: " + useMicrometer);
+        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+            }
 
-            // Remove the MetricDecorator that requires the MP Metrics API
-            AnnotationsTransformerBuildItem veto = new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-                @Override
-                public boolean appliesTo(AnnotationTarget.Kind kind) {
-                    return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
-                }
-
-                @Override
-                public void transform(AnnotationsTransformer.TransformationContext ctx) {
-                    if (ctx.getTarget().asClass().name().equals(ReactiveMessagingDotNames.METRIC_DECORATOR)) {
+            @Override
+            public void transform(AnnotationsTransformer.TransformationContext ctx) {
+                // Remove the MicrometerDecorator that requires the Micrometer API
+                if (ctx.getTarget().asClass().name().equals(ReactiveMessagingDotNames.MICROMETER_DECORATOR)) {
+                    if (!isMetricEnabled || !useMicrometer) {
                         ctx.transform()
                                 .removeAll()
                                 .add(Vetoed.class).done();
                     }
                 }
-            });
-            transformers.produce(veto);
-        }
+                // Remove the MetricDecorator that requires the MP Metrics API
+                if (ctx.getTarget().asClass().name().equals(ReactiveMessagingDotNames.METRIC_DECORATOR)) {
+                    if (!isMetricEnabled || useMicrometer) {
+                        ctx.transform()
+                                .removeAll()
+                                .add(Vetoed.class).done();
+                    }
+                }
+            }
+        });
     }
 
     @BuildStep

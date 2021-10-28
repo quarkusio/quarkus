@@ -1010,7 +1010,7 @@ Default realm name is `quarkus` and client id - `quarkus-web-app` - set `keycloa
 
 Please see link:security-openid-connect#integration-testing-security-annotation[Use TestingSecurity with injected JsonWebToken] section for more information about using `@TestSecurity` and `@OidcSecurity` annotations for testing the `web-app` application endpoint code which depends on the injected ID and access `JsonWebToken` as well as `UserInfo` and `OidcConfigurationMetadata`.
 
-=== How to check the errors in the logs ==
+=== How to check the errors in the logs
 
 Please enable `io.quarkus.oidc.runtime.OidcProvider` `TRACE` level logging to see more details about the token verification errors:
 

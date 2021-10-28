@@ -171,12 +171,21 @@ Example configuration:
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
 quarkus.oidc.client-id=backend-service
 quarkus.oidc.client-secret=secret
+
+# Tell Dev Services for Keycloak to import the realm file
+# This property is not effective when running the application in JVM or Native modes
+
+quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 ----
 
+NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures that `Dev Services for Keycloak` will launch a container for you when the application is run in a dev mode. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information.
+
 === Starting and Configuring the Keycloak Server
+
+NOTE: Do not start the Keycloak server when you run the application in a dev mode - `Dev Services for Keycloak` will launch a container. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information.
 
 To start a Keycloak Server you can use Docker and just run the following command:
 
@@ -197,13 +206,18 @@ NOTE: If you want to use the Keycloak Admin Client to configure your server from
 [[keycloak-dev-mode]]
 === Running the Application in Dev mode
 
-To run the application in a dev mode, use `./mvnw clean compile quarkus:dev`.
+To run the application in a dev mode, use `./mvnw clean compile quarkus:dev`. link:security-openid-connect-dev-services[Dev Services for Keycloak] will launch a Keycloak container and import a `quarkus-realm.json`.
 
-You have already started a Keycloak server and imported a custom realm file. Now open a link:security-openid-connect-dev-services#dev-ui-all-oidc-providers[OpenId Connect Dev UI].
+Open a link:dev-ui[Dev UI] available at http://localhost:8080/q/dev[/q/dev] and click on a `Provider: Keycloak` link in an `OpenId Connect` `Dev UI` card.
 
-You will be asked to login into a `Single Page Application` provided by `OpenId Connect Dev UI`. Click on `Keycloak Admin` - it will open a Keycloak Login screen in a different tab, login as `admin:admin`, select a `quarkus` realm and update a `backend-service` client's `Valid Redirect URIs` to accept either `*` or `http://localhost:8080/q/dev/io.quarkus.quarkus-oidc/provider` redirect URL.
+You will be asked to login into a `Single Page Application` provided by `OpenId Connect Dev UI`:
 
-Now login into Keycloak from the link:security-openid-connect-dev-services#keycloak-authorization-code-grant[OpenId Connect Dev UI] page as `alice:alice` - accessing the `/api/admin` will return `403` and `/api/users/me` - `200` as `alice` only has a `user` role. Logout and login as `admin:admin` - accessing both `/api/admin` and `/api/users/me` will return `200` since `admin` has both `admin` and `user` roles.
+ * Login as `alice` (password: `alice`) who has a `user` role
+ ** accessing `/api/admin` will return `403`
+ ** accessing `/api/users/me` will return `200`
+ * Logout and login as `admin` (password: `admin`) who has both `admin` and `user` roles
+ ** accessing `/api/admin` will return `200`
+ ** accessing `/api/users/me` will return `200`
 
 === Running the Application in JVM mode
 
@@ -258,7 +272,7 @@ order to access the application resources:
 [source,bash]
 ----
 export access_token=$(\
-    curl -X POST http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/token \
+    curl --insecure -X POST https://localhost:8543/auth/realms/quarkus/protocol/openid-connect/token \
     --user backend-service:secret \
     -H 'content-type: application/x-www-form-urlencoded' \
     -d 'username=alice&password=alice&grant_type=password' | jq --raw-output '.access_token' \
@@ -294,7 +308,7 @@ In order to access the admin endpoint you should obtain a token for the `admin` 
 [source,bash]
 ----
 export access_token=$(\
-    curl -X POST http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/token \
+    curl --insecure -X POST https://localhost:8543/auth/realms/quarkus/protocol/openid-connect/token \
     --user backend-service:secret \
     -H 'content-type: application/x-www-form-urlencoded' \
     -d 'username=admin&password=admin&grant_type=password' | jq --raw-output '.access_token' \
@@ -1048,7 +1062,7 @@ public class ProtectedResource {
 
 Note that `@TestSecurity` `user` and `roles` attributes are available as `TokenIntrospection` `username` and `scope` properties and you can use `io.quarkus.test.security.oidc.TokenIntrospection` to add the additional introspection response properties such as an `email`, etc.
 
-=== How to check the errors in the logs ==
+=== How to check the errors in the logs
 
 Please enable `io.quarkus.oidc.runtime.OidcProvider` `TRACE` level logging to see more details about the token verification errors:
 

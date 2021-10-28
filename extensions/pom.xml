@@ -202,9 +202,6 @@
         <module>google-cloud-functions</module>
         <module>grpc-common</module>
 
-        <!-- Relocations -->
-        <module>vertx-web</module>
-
         <module>awt</module>
     </modules>
 

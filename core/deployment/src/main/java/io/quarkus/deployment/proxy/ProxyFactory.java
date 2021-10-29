@@ -137,8 +137,13 @@ public class ProxyFactory<T> {
             if (methodInfo.getName().equals("finalize") && methodInfo.getParameterCount() == 0) {
                 continue;
             }
-            if (!Modifier.isStatic(methodInfo.getModifiers()) &&
-                    !Modifier.isFinal(methodInfo.getModifiers()) &&
+            int modifiers = methodInfo.getModifiers();
+            if (Modifier.isPublic(modifiers) && Modifier.isFinal(modifiers) && !Modifier.isStatic(modifiers)
+                    && clazz != Object.class) {
+                throw new RuntimeException("Public method " + methodInfo + " cannot be proxied as it is final");
+            }
+            if (!Modifier.isStatic(modifiers) &&
+                    !Modifier.isFinal(modifiers) &&
                     !methodInfo.getName().equals("<init>")) {
                 methods.add(methodInfo);
             }

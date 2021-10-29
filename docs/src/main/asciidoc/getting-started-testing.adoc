@@ -506,34 +506,95 @@ import io.quarkus.test.junit.QuarkusTestProfile.TestResourceEntry;
 
 public class MockGreetingProfile implements QuarkusTestProfile {
 
+    /**
+     * Returns additional config to be applied to the test. This
+     * will override any existing config (including in application.properties),
+     * however existing config will be merged with this (i.e. application.properties
+     * config will still take effect, unless a specific config key has been overridden).
+     *
+     * Here we are changing the JAX-RS root path.
+     */
     @Override
-    public Map<String, String> getConfigOverrides() { <1>
+    public Map<String, String> getConfigOverrides() {
         return Collections.singletonMap("quarkus.resteasy.path","/api");
     }
 
+    /**
+     * Returns enabled alternatives.
+     *
+     * This has the same effect as setting the 'quarkus.arc.selected-alternatives' config key,
+     * however it may be more convenient.
+     */
     @Override
-    public Set<Class<?>> getEnabledAlternatives() { <2>
+    public Set<Class<?>> getEnabledAlternatives() {
         return Collections.singleton(MockGreetingService.class);
     }
 
-
+    /**
+     * Allows the default config profile to be overridden. This basically just sets the quarkus.test.profile system
+     * property before the test is run.
+     *
+     * Here we are setting the profile to test-mocked
+     */
     @Override
-    public String getConfigProfile() { <3>
-        return "test";
+    public String getConfigProfile() {
+        return "test-mocked";
     }
 
+    /**
+     * Additional {@link QuarkusTestResourceLifecycleManager} classes (along with their init params) to be used from this
+     * specific test profile.
+     *
+     * If this method is not overridden, then only the {@link QuarkusTestResourceLifecycleManager} classes enabled via the {@link io.quarkus.test.common.QuarkusTestResource} class
+     * annotation will be used for the tests using this profile (which is the same behavior as tests that don't use a profile at all).
+     */
     @Override
-    public List<TestResourceEntry> testResources() { <4>
-        return Collections.singletonList(new TestResourceEntry(CustomWireMockServerManager.class));
+    public List<TestResourceEntry> testResources() {
+        return Collections.singletonList(new TestResourceEntry(CustomWireMockServerManager.class)); <4>
+    }
+
+
+    /**
+     * If this is returns true then only the test resources returned from {@link #testResources()} will be started,
+     * global annotated test resources will be ignored.
+     */
+    default boolean disableGlobalTestResources() {
+        return false;
+    }
+
+    /**
+     * The tags this profile is associated with.
+     * When the {@code quarkus.test.profile.tags} System property is set (its value is a comma separated list of strings)
+     * then Quarkus will only execute tests that are annotated with a {@code @TestProfile} that has at least one of the
+     * supplied (via the aforementioned system property) tags.
+     */
+    default Set<String> tags() {
+        return Collections.emptySet();
+    }
+
+    /**
+     * The command line parameters that are passed to the main method on startup.
+     */
+    default String[] commandLineParameters() {
+        return new String[0];
+    }
+
+    /**
+     * If the main method should be run
+     */
+    default boolean runMainMethod() {
+        return false;
+    }
+
+    /**
+     * If this method returns true then all {@code StartupEvent} and {@code ShutdownEvent} observers declared on application
+     * beans should be disabled.
+     */
+    default boolean disableApplicationLifecycleObservers() {
+        return false;
     }
 }
 ----
-<1> This method allows us to override configuration properties. Here we are changing the JAX-RS root path.
-<2> This method allows us to enable CDI `@Alternative` beans. This makes it easy to mock out certain beans functionality.
-<3> This can be used to change the config profile. As this default is `test` this does nothing, but is included for completeness.
-<4> This method allows us to apply **additional** `QuarkusTestResourceLifecycleManager` classes, specific for this profile only. If this
-method is not overridden, then only the `QuarkusTestResourceLifecycleManager` classes enabled via the `@QuarkusTestResource` class
-annotation will be used for the tests using this profile (which is the same behavior as tests that don't use a profile at all).
 
 Now we have defined our profile we need to include it on our test class. We do this with `@TestProfile(MockGreetingProfile.class)`.
 

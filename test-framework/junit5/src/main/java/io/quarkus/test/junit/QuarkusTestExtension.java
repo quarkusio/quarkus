@@ -74,6 +74,7 @@ import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.deployment.builditem.TestClassBeanBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.dev.testing.TracingHandler;
+import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.runtime.configuration.ProfileManager;
@@ -236,7 +237,19 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             populateCallbacks(startupAction.getClassLoader());
             populateTestMethodInvokers(startupAction.getClassLoader());
 
-            runningQuarkusApplication = startupAction.run();
+            if (profileInstance == null || !profileInstance.runMainMethod()) {
+                runningQuarkusApplication = startupAction
+                        .run(profileInstance == null ? new String[0] : profileInstance.commandLineParameters());
+            } else {
+
+                Class<?> lifecycleManager = Class.forName(ApplicationLifecycleManager.class.getName(), true,
+                        startupAction.getClassLoader());
+                lifecycleManager.getDeclaredMethod("setDefaultExitCodeHandler", Consumer.class).invoke(null,
+                        (Consumer<Integer>) integer -> {
+                        });
+                runningQuarkusApplication = startupAction
+                        .runMainClass(profileInstance.commandLineParameters());
+            }
             String patternString = runningQuarkusApplication.getConfigValue("quarkus.test.class-clone-pattern", String.class)
                     .orElse("java\\..*");
             clonePattern = Pattern.compile(patternString);

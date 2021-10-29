@@ -43,7 +43,7 @@
         <microprofile-lra.version>1.0</microprofile-lra.version>
         <smallrye-common.version>1.8.0</smallrye-common.version>
         <smallrye-config.version>2.6.0</smallrye-config.version>
-        <smallrye-health.version>3.1.1</smallrye-health.version>
+        <smallrye-health.version>3.1.2</smallrye-health.version>
         <smallrye-metrics.version>3.0.3</smallrye-metrics.version>
         <smallrye-open-api.version>2.1.15</smallrye-open-api.version>
         <smallrye-graphql.version>1.3.5</smallrye-graphql.version>

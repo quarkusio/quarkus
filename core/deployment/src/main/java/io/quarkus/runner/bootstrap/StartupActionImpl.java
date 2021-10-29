@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
@@ -161,24 +161,30 @@ public class StartupActionImpl implements StartupAction {
         Thread.currentThread().setContextClassLoader(runtimeClassLoader);
         final String className = buildResult.consume(MainClassBuildItem.class).getClassName();
         try {
-            CompletableFuture<Integer> result = new CompletableFuture<>();
+            AtomicInteger result = new AtomicInteger();
             Class<?> lifecycleManager = Class.forName(ApplicationLifecycleManager.class.getName(), true, runtimeClassLoader);
+            Method getCurrentApplication = lifecycleManager.getDeclaredMethod("getCurrentApplication");
+            Object oldApplication = getCurrentApplication.invoke(null);
             lifecycleManager.getDeclaredMethod("setDefaultExitCodeHandler", Consumer.class).invoke(null,
                     new Consumer<Integer>() {
                         @Override
                         public void accept(Integer integer) {
-                            result.complete(integer);
+                            result.set(integer);
                         }
                     });
             // force init here
             Class<?> appClass = Class.forName(className, true, runtimeClassLoader);
             Method start = appClass.getMethod("main", String[].class);
             start.invoke(null, (Object) (args == null ? new String[0] : args));
-            Integer returnVal = result.get();
             Class<?> q = Class.forName(Quarkus.class.getName(), true, runtimeClassLoader);
             q.getMethod("blockingExit").invoke(null);
-
-            return returnVal;
+            Object newApplication = getCurrentApplication.invoke(null);
+            if (oldApplication == newApplication) {
+                //quarkus was not actually started by the main method
+                //just return
+                return 0;
+            }
+            return result.get();
         } finally {
             runtimeClassLoader.close();
             Thread.currentThread().setContextClassLoader(old);

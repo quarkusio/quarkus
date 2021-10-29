@@ -314,6 +314,10 @@ public class ApplicationLifecycleManager {
         }
     }
 
+    public static Application getCurrentApplication() {
+        return currentApplication;
+    }
+
     /**
      *
      * @return The current exit code that would be reported if the application exits

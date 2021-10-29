@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -227,7 +228,8 @@ public class VertxHttpRecorder {
             doServerStart(vertx, buildConfig, config, LaunchMode.DEVELOPMENT, new Supplier<Integer>() {
                 @Override
                 public Integer get() {
-                    return ProcessorInfo.availableProcessors() * 2; //this is dev mode, so the number of IO threads not always being 100% correct does not really matter in this case
+                    return ProcessorInfo.availableProcessors()
+                            * 2; //this is dev mode, so the number of IO threads not always being 100% correct does not really matter in this case
                 }
             }, null, false);
         } catch (Exception e) {
@@ -359,6 +361,38 @@ public class VertxHttpRecorder {
                     event.next();
                 }
             });
+        }
+        // Headers sent on any request, regardless of the response
+        Map<String, HeaderConfig> headers = httpConfiguration.header;
+        if (!headers.isEmpty()) {
+            // Creates a handler for each header entry
+            for (Map.Entry<String, HeaderConfig> entry : headers.entrySet()) {
+                var name = entry.getKey();
+                var config = entry.getValue();
+                if (config.methods.isEmpty()) {
+                    httpRouteRouter.route(config.path)
+                            .order(Integer.MIN_VALUE)
+                            .handler(new Handler<RoutingContext>() {
+                                @Override
+                                public void handle(RoutingContext event) {
+                                    event.response().headers().add(name, config.value);
+                                    event.next();
+                                }
+                            });
+                } else {
+                    for (String method : config.methods.get()) {
+                        httpRouteRouter.route(HttpMethod.valueOf(method.toUpperCase(Locale.ROOT)), config.path)
+                                .order(Integer.MIN_VALUE)
+                                .handler(new Handler<RoutingContext>() {
+                                    @Override
+                                    public void handle(RoutingContext event) {
+                                        event.response().headers().add(name, config.value);
+                                        event.next();
+                                    }
+                                });
+                    }
+                }
+            }
         }
 
         Handler<HttpServerRequest> root;

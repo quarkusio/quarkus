@@ -6,7 +6,7 @@ import java.util.List;
 import org.hibernate.boot.cfgxml.internal.CfgXmlAccessServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
-import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
+import org.hibernate.engine.jdbc.batch.internal.UnmodifiableBatchBuilderInitiator;
 import org.hibernate.engine.jdbc.connections.internal.MultiTenantConnectionProviderInitiator;
 import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
 import org.hibernate.engine.jdbc.dialect.internal.DialectResolverInitiator;
@@ -75,7 +75,9 @@ public final class StandardHibernateORMInitiatorListProvider implements InitialI
 
         // Custom one!
         serviceInitiators.add(DialectFactoryInitiator.INSTANCE);
-        serviceInitiators.add(BatchBuilderInitiator.INSTANCE);
+
+        // Non-default implementation: optimised for lack of JMX management
+        serviceInitiators.add(UnmodifiableBatchBuilderInitiator.INSTANCE);
         serviceInitiators.add(JdbcServicesInitiator.INSTANCE);
         serviceInitiators.add(RefCursorSupportInitiator.INSTANCE);
 

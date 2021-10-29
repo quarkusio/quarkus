@@ -20,6 +20,7 @@ import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.ProjectDependency;
+import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -256,13 +257,6 @@ public class QuarkusPlugin implements Plugin<Project> {
                             .declareConditionalDependencies(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
                     deploymentClasspathBuilder.createBuildClasspath(implementationExtensions,
                             JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
-                    // enable the Panache annotation processor on the classpath, if it's found among the dependencies
-                    for (ExtensionDependency extension : implementationExtensions) {
-                        if ("quarkus-panache-common".equals(extension.getName()) && "io.quarkus".equals(extension.getGroup())) {
-                            project.getDependencies().add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME,
-                                    extension.asDependencyNotation());
-                        }
-                    }
                 });
         project.getConfigurations().getByName(DEV_MODE_CONFIGURATION_NAME).getIncoming().beforeResolve((devDependencies) -> {
             Set<ExtensionDependency> devModeExtensions = conditionalDependenciesEnabler
@@ -275,6 +269,21 @@ public class QuarkusPlugin implements Plugin<Project> {
                             .declareConditionalDependencies(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME);
                     deploymentClasspathBuilder.createBuildClasspath(testExtensions,
                             JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME);
+                });
+        project.getConfigurations().getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME).getIncoming()
+                .beforeResolve(annotationProcessors -> {
+                    Set<ResolvedArtifact> compileClasspathArtifacts = project.getConfigurations()
+                            .getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME).getResolvedConfiguration()
+                            .getResolvedArtifacts();
+
+                    // enable the Panache annotation processor on the classpath, if it's found among the dependencies
+                    for (ResolvedArtifact artifact : compileClasspathArtifacts) {
+                        if ("quarkus-panache-common".equals(artifact.getName())
+                                && "io.quarkus".equals(artifact.getModuleVersion().getId().getGroup())) {
+                            project.getDependencies().add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME,
+                                    "io.quarkus:quarkus-panache-common:" + artifact.getModuleVersion().getId().getVersion());
+                        }
+                    }
                 });
     }
 

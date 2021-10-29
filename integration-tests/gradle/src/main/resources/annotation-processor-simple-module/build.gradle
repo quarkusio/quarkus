@@ -13,6 +13,7 @@ test {
 }
 
 repositories {
+    mavenCentral()
     if (System.properties.containsKey('maven.repo.local')) {
         maven {
             url System.properties.get('maven.repo.local')
@@ -20,7 +21,6 @@ repositories {
     } else {
         mavenLocal()
     }
-    mavenCentral()
 }
 
 dependencies {
@@ -28,6 +28,7 @@ dependencies {
     implementation 'io.quarkus:quarkus-resteasy'
     implementation 'io.quarkus:quarkus-resteasy-jackson'
     implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+    implementation 'io.quarkus:quarkus-hibernate-orm-panache'
 
     annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
 

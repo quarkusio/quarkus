@@ -435,10 +435,12 @@
                                     <requireMavenVersion>
                                         <version>${supported-maven-versions}</version>
                                     </requireMavenVersion>
+                                    <!-- Disabled due to https://issues.apache.org/jira/browse/MENFORCER-359 (3.0.0-M3)
+                                         3.0.0 suffers from https://issues.apache.org/jira/browse/MENFORCER-394, so we need to wait for a fixed release.
                                     <requirePluginVersions>
                                         <phases>compile</phases>
                                         <unCheckedPluginList>io.quarkus:quarkus-bootstrap-maven-plugin,io.quarkus:quarkus-platform-descriptor-json-plugin,io.quarkus:quarkus-maven-plugin</unCheckedPluginList>
-                                    </requirePluginVersions>
+                                    </requirePluginVersions>-->
                                     <bannedDependencies>
                                         <excludes>
                                             <!-- Use Jakarta artifacts instead of JBoss specific ones -->

@@ -16,6 +16,9 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
 
 import io.quarkus.gradle.tooling.ToolingUtils;
+import io.quarkus.gradle.tooling.dependency.DependencyUtils;
+import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 
 public class ConditionalDependenciesEnabler {
@@ -81,9 +84,9 @@ public class ConditionalDependenciesEnabler {
             allRuntimeArtifacts.add(artifact);
             ExtensionDependency extension = DependencyUtils.getExtensionInfoOrNull(project, artifact);
             if (extension != null) {
-                allExtensions.put(extension.extensionId, extension);
-                for (Dependency conditionalDep : extension.conditionalDependencies) {
-                    if (!DependencyUtils.exists(allRuntimeArtifacts, conditionalDep)) {
+                allExtensions.put(extension.getExtensionId(), extension);
+                for (Dependency conditionalDep : extension.getConditionalDependencies()) {
+                    if (!exists(allRuntimeArtifacts, conditionalDep)) {
                         queueConditionalDependency(extension, conditionalDep);
                     }
                 }
@@ -102,10 +105,10 @@ public class ConditionalDependenciesEnabler {
                     && conditionalDep.getVersion().equals(artifact.getModuleVersion().getId().getVersion())
                     && artifact.getModuleVersion().getId().getGroup().equals(conditionalDep.getGroup())) {
                 final ExtensionDependency extensionDependency = DependencyUtils.getExtensionInfoOrNull(project, artifact);
-                if (extensionDependency != null && (extensionDependency.dependencyConditions.isEmpty()
-                        || DependencyUtils.exist(allRuntimeArtifacts, extensionDependency.dependencyConditions))) {
+                if (extensionDependency != null && (extensionDependency.getDependencyConditions().isEmpty()
+                        || exist(allRuntimeArtifacts, extensionDependency.getDependencyConditions()))) {
                     satisfied = true;
-                    enableConditionalDependency(extensionDependency.extensionId);
+                    enableConditionalDependency(extensionDependency.getExtensionId());
                     break;
                 }
             }
@@ -122,9 +125,9 @@ public class ConditionalDependenciesEnabler {
                 continue;
             }
             extensionDependency.setConditional(true);
-            allExtensions.put(extensionDependency.extensionId, extensionDependency);
-            for (Dependency cd : extensionDependency.conditionalDependencies) {
-                if (!DependencyUtils.exists(allRuntimeArtifacts, cd)) {
+            allExtensions.put(extensionDependency.getExtensionId(), extensionDependency);
+            for (Dependency cd : extensionDependency.getConditionalDependencies()) {
+                if (!exists(allRuntimeArtifacts, cd)) {
                     queueConditionalDependency(extensionDependency, cd);
                 }
             }
@@ -154,6 +157,23 @@ public class ConditionalDependenciesEnabler {
             return;
         }
         extensions.forEach(e -> e.importConditionalDependency(project.getDependencies(), dependency));
+    }
+
+    private static boolean exist(Set<ResolvedArtifact> runtimeArtifacts, List<ArtifactKey> dependencies) {
+        final Set<ArtifactKey> rtKeys = new HashSet<>(runtimeArtifacts.size());
+        runtimeArtifacts.forEach(r -> rtKeys.add(
+                new GACT(r.getModuleVersion().getId().getGroup(), r.getName(), r.getClassifier(), r.getExtension())));
+        return rtKeys.containsAll(dependencies);
+    }
+
+    private static boolean exists(Set<ResolvedArtifact> runtimeArtifacts, Dependency dependency) {
+        for (ResolvedArtifact runtimeArtifact : runtimeArtifacts) {
+            ModuleVersionIdentifier artifactId = runtimeArtifact.getModuleVersion().getId();
+            if (artifactId.getGroup().equals(dependency.getGroup()) && artifactId.getName().equals(dependency.getName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static GACT getFeatureKey(ModuleVersionIdentifier version) {

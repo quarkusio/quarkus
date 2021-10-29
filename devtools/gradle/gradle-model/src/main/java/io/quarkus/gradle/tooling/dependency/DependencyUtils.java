@@ -1,4 +1,4 @@
-package io.quarkus.gradle.dependency;
+package io.quarkus.gradle.tooling.dependency;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -9,15 +9,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ExternalDependency;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
@@ -33,7 +32,6 @@ import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.GACT;
 
 public class DependencyUtils {
 
@@ -61,29 +59,6 @@ public class DependencyUtils {
         return configurationCopy;
     }
 
-    public static Dependency create(DependencyHandler dependencies, String conditionalDependency) {
-        AppArtifactCoords dependencyCoords = AppArtifactCoords.fromString(conditionalDependency);
-        return dependencies.create(String.join(":", dependencyCoords.getGroupId(), dependencyCoords.getArtifactId(),
-                dependencyCoords.getVersion()));
-    }
-
-    public static boolean exist(Set<ResolvedArtifact> runtimeArtifacts, List<ArtifactKey> dependencies) {
-        final Set<ArtifactKey> rtKeys = new HashSet<>(runtimeArtifacts.size());
-        runtimeArtifacts.forEach(r -> rtKeys.add(
-                new GACT(r.getModuleVersion().getId().getGroup(), r.getName(), r.getClassifier(), r.getExtension())));
-        return rtKeys.containsAll(dependencies);
-    }
-
-    public static boolean exists(Set<ResolvedArtifact> runtimeArtifacts, Dependency dependency) {
-        for (ResolvedArtifact runtimeArtifact : runtimeArtifacts) {
-            ModuleVersionIdentifier artifactId = runtimeArtifact.getModuleVersion().getId();
-            if (artifactId.getGroup().equals(dependency.getGroup()) && artifactId.getName().equals(dependency.getName())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public static boolean isTestFixtureDependency(Dependency dependency) {
         if (!(dependency instanceof ModuleDependency)) {
             return false;
@@ -103,11 +78,6 @@ public class DependencyUtils {
 
     public static String asDependencyNotation(AppArtifactCoords artifactCoords) {
         return String.join(":", artifactCoords.getGroupId(), artifactCoords.getArtifactId(), artifactCoords.getVersion());
-    }
-
-    public static String asCapabilityNotation(AppArtifactCoords artifactCoords) {
-        return String.join(":", artifactCoords.getGroupId(), artifactCoords.getArtifactId() + "-capability",
-                artifactCoords.getVersion());
     }
 
     public static ExtensionDependency getExtensionInfoOrNull(Project project, ResolvedArtifact artifact) {
@@ -164,7 +134,7 @@ public class DependencyUtils {
                     .splitByWhitespace(extensionProperties.getProperty(BootstrapConstants.CONDITIONAL_DEPENDENCIES));
             conditionalDependencies = new ArrayList<>(deps.length);
             for (String conditionalDep : deps) {
-                conditionalDependencies.add(DependencyUtils.create(project.getDependencies(), conditionalDep));
+                conditionalDependencies.add(create(project.getDependencies(), conditionalDep));
             }
         } else {
             conditionalDependencies = Collections.emptyList();
@@ -178,5 +148,30 @@ public class DependencyUtils {
         }
         return new ExtensionDependency(exentionId, deploymentModule, conditionalDependencies,
                 constraints == null ? Collections.emptyList() : Arrays.asList(constraints));
+    }
+
+    public static Dependency create(DependencyHandler dependencies, String conditionalDependency) {
+        AppArtifactCoords dependencyCoords = AppArtifactCoords.fromString(conditionalDependency);
+        return dependencies.create(String.join(":", dependencyCoords.getGroupId(), dependencyCoords.getArtifactId(),
+                dependencyCoords.getVersion()));
+    }
+
+    public static void addLocalDeploymentDependency(String deploymentConfigurationName, LocalExtensionDependency extension,
+            DependencyHandler dependencies) {
+        dependencies.add(deploymentConfigurationName,
+                dependencies.project(Collections.singletonMap("path", extension.findDeploymentModulePath())));
+    }
+
+    public static void requireDeploymentDependency(String deploymentConfigurationName, ExtensionDependency extension,
+            DependencyHandler dependencies) {
+        ExternalDependency dependency = (ExternalDependency) dependencies.add(deploymentConfigurationName,
+                extension.asDependencyNotation());
+        dependency.capabilities(
+                handler -> handler.requireCapability(asCapabilityNotation(extension.getDeploymentModule())));
+    }
+
+    public static String asCapabilityNotation(AppArtifactCoords artifactCoords) {
+        return String.join(":", artifactCoords.getGroupId(), artifactCoords.getArtifactId() + "-capability",
+                artifactCoords.getVersion());
     }
 }

@@ -8,12 +8,14 @@ import java.util.Set;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.ExternalDependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 
 import io.quarkus.gradle.tooling.ToolingUtils;
+import io.quarkus.gradle.tooling.dependency.DependencyUtils;
+import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
+import io.quarkus.gradle.tooling.dependency.LocalExtensionDependency;
 
 public class ApplicationDeploymentClasspathBuilder {
 
@@ -36,16 +38,17 @@ public class ApplicationDeploymentClasspathBuilder {
 
         // Add conditional extensions
         for (ExtensionDependency knownExtension : knownExtensions) {
-            if (knownExtension.isConditional) {
+            if (knownExtension.isConditional()) {
                 extensions.add(knownExtension);
             }
         }
         for (ExtensionDependency extension : extensions) {
             if (extension instanceof LocalExtensionDependency) {
-                addLocalDeploymentDependency(deploymentConfigurationName, (LocalExtensionDependency) extension, dependencies);
+                DependencyUtils.addLocalDeploymentDependency(deploymentConfigurationName, (LocalExtensionDependency) extension,
+                        dependencies);
             } else {
-                requireDeploymentDependency(deploymentConfigurationName, extension, dependencies);
-                if (!alreadyProcessed.add(extension.extensionId)) {
+                DependencyUtils.requireDeploymentDependency(deploymentConfigurationName, extension, dependencies);
+                if (!alreadyProcessed.add(extension.getExtensionId())) {
                     continue;
                 }
                 extension.installDeploymentVariant(dependencies);
@@ -88,20 +91,6 @@ public class ApplicationDeploymentClasspathBuilder {
             }
         }
         return extensions;
-    }
-
-    private void addLocalDeploymentDependency(String deploymentConfigurationName, LocalExtensionDependency extension,
-            DependencyHandler dependencies) {
-        dependencies.add(deploymentConfigurationName,
-                dependencies.project(Collections.singletonMap("path", extension.findDeploymentModulePath())));
-    }
-
-    private void requireDeploymentDependency(String deploymentConfigurationName, ExtensionDependency extension,
-            DependencyHandler dependencies) {
-        ExternalDependency dependency = (ExternalDependency) dependencies.add(deploymentConfigurationName,
-                extension.asDependencyNotation());
-        dependency.capabilities(
-                handler -> handler.requireCapability(DependencyUtils.asCapabilityNotation(extension.deploymentModule)));
     }
 
     private ExtensionDependency getExtensionOrNull(String group, String artifact, String version,

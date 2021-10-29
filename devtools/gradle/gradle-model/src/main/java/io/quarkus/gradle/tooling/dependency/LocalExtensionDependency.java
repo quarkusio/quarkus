@@ -1,4 +1,4 @@
-package io.quarkus.gradle.dependency;
+package io.quarkus.gradle.tooling.dependency;
 
 import java.util.List;
 

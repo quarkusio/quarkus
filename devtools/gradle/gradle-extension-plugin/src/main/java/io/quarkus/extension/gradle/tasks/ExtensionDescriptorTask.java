@@ -301,7 +301,7 @@ public class ExtensionDescriptorTask extends DefaultTask {
         return null;
     }
 
-    private boolean isExtension(Path extensionFile) {
+    private static boolean isExtension(Path extensionFile) {
         final Path p = extensionFile.resolve(BootstrapConstants.DESCRIPTOR_PATH);
         return Files.exists(p);
     }

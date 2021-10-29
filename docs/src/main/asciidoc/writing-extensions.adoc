@@ -566,7 +566,7 @@ dependencies {
 
 [WARNING]
 ====
-This plugin is still experimental, it does not validate the extension dependencies as the equivalent Maven plugin does. Unit tests are not supported by the plugin for the moment.
+This plugin is still experimental, it does not validate the extension dependencies as the equivalent Maven plugin does.
 ====
 
 === Build Step Processors

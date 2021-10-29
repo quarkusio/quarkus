@@ -1,20 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-extensions-parent</artifactId>
+        <artifactId>quarkus-spring-web-parent-aggregator</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-spring-web-parent-aggregator</artifactId>
-    <name>Quarkus - Spring Web - Parent - Aggregator</name>
+    <artifactId>quarkus-spring-web-parent</artifactId>
+    <name>Quarkus - Spring Web</name>
     <packaging>pom</packaging>
     <modules>
-        <module>core</module>
-        <module>resteasy-classic</module>
+        <module>deployment</module>
+        <module>runtime</module>
+        <module>common-runtime</module>
     </modules>
+
+    
 </project>

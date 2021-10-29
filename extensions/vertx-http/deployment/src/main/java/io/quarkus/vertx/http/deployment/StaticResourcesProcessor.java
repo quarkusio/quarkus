@@ -1,7 +1,6 @@
 package io.quarkus.vertx.http.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -106,21 +105,12 @@ public class StaticResourcesProcessor {
     }
 
     @BuildStep
-    @Record(STATIC_INIT)
-    public void staticInit(Optional<StaticResourcesBuildItem> staticResources,
-            StaticResourcesRecorder recorder) throws Exception {
-        if (staticResources.isPresent()) {
-            recorder.staticInit(staticResources.get().getPaths());
-        }
-    }
-
-    @BuildStep
     @Record(RUNTIME_INIT)
     public void runtimeInit(Optional<StaticResourcesBuildItem> staticResources, StaticResourcesRecorder recorder,
             CoreVertxBuildItem vertx, BeanContainerBuildItem beanContainer, BuildProducer<DefaultRouteBuildItem> defaultRoutes)
             throws Exception {
         if (staticResources.isPresent()) {
-            defaultRoutes.produce(new DefaultRouteBuildItem(recorder.start()));
+            defaultRoutes.produce(new DefaultRouteBuildItem(recorder.start(staticResources.get().getPaths())));
         }
     }
 

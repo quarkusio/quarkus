@@ -578,7 +578,22 @@ public class NativeImageBuildStep {
                     enableHttpsUrlHandler = true;
                 }
 
+                /*
+                 * Instruct GraalVM / Mandrel parse compiler graphs twice, once for the static analysis and once again
+                 * for the AOT compilation.
+                 *
+                 * We do this because single parsing significantly increases memory usage at build time
+                 * see https://github.com/oracle/graal/issues/3435 and
+                 * https://github.com/graalvm/mandrel/issues/304#issuecomment-952070568 for more details.
+                 *
+                 * Note: This option must come before the invocation of
+                 * {@code handleAdditionalProperties(nativeImageArgs)} to ensure that devs and advanced users can
+                 * override it by passing -Dquarkus.native.additional-build-args=-H:+ParseOnce
+                 */
+                nativeImageArgs.add("-H:-ParseOnce");
+
                 handleAdditionalProperties(nativeImageArgs);
+
                 nativeImageArgs.add(
                         "-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
                 nativeImageArgs.add("-H:+JNI");

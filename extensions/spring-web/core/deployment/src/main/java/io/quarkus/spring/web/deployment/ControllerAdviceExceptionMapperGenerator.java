@@ -12,7 +12,9 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
@@ -29,9 +31,9 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.spring.web.runtime.ResponseEntityConverter;
+import io.quarkus.spring.web.runtime.common.ResponseEntityConverter;
 
-class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractExceptionMapperGenerator {
+class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGenerator {
 
     private static final DotName RESPONSE_ENTITY = DotName.createSimple("org.springframework.http.ResponseEntity");
 
@@ -54,14 +56,9 @@ class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractException
 
     private final boolean isResteasyClassic;
 
-    ControllerAdviceAbstractExceptionMapperGenerator(MethodInfo controllerAdviceMethod, DotName exceptionDotName,
+    ControllerAdviceExceptionMapperGenerator(MethodInfo controllerAdviceMethod, DotName exceptionDotName,
             ClassOutput classOutput, TypesUtil typesUtil, boolean isResteasyClassic) {
-        super(exceptionDotName, classOutput);
-
-        // TODO: remove this restriction
-        if (!isResteasyClassic) {
-            throw new IllegalStateException("Currently Spring Web can only work with RESTEasy Classic");
-        }
+        super(exceptionDotName, classOutput, isResteasyClassic);
 
         this.controllerAdviceMethod = controllerAdviceMethod;
         this.typesUtil = typesUtil;
@@ -80,6 +77,10 @@ class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractException
      */
     @Override
     protected void preGenerateMethodBody(ClassCreator cc) {
+        if (!isResteasyClassic) {
+            return;
+        }
+
         int notAllowedParameterIndex = -1;
         for (int i = 0; i < parameterTypes.size(); i++) {
             Type parameterType = parameterTypes.get(i);
@@ -197,14 +198,23 @@ class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractException
 
         String responseContentTypeResolverClassName = isResteasyClassic
                 ? "io.quarkus.spring.web.runtime.ResteasyClassicResponseContentTypeResolver"
-                : "io.quarkus.spring.web.runtime.ResteasyReactiveResponseContentTypeResolver"; // doesn't exist yet
+                : "io.quarkus.spring.web.runtime.ResteasyReactiveResponseContentTypeResolver";
         ResultHandle contentTypeResolver = methodCreator
                 .newInstance(MethodDescriptor.ofConstructor(responseContentTypeResolverClassName));
+
+        if (isResteasyClassic) {
+            return methodCreator.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(responseContentTypeResolverClassName, "resolve", MediaType.class,
+                            HttpHeaders.class, String[].class),
+                    contentTypeResolver,
+                    methodCreator.readInstanceField(httpHeadersField, methodCreator.getThis()),
+                    methodCreator.marshalAsArray(String.class, supportedMediaTypes));
+        }
         return methodCreator.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(responseContentTypeResolverClassName, "resolve", MediaType.class,
                         HttpHeaders.class, String[].class),
                 contentTypeResolver,
-                methodCreator.readInstanceField(httpHeadersField, methodCreator.getThis()),
+                getBeanFromArc(methodCreator, HttpHeaders.class.getName()),
                 methodCreator.marshalAsArray(String.class, supportedMediaTypes));
     }
 
@@ -219,14 +229,34 @@ class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractException
 
         String[] parameterTypesStr = new String[parameterTypes.size()];
         ResultHandle[] parameterTypeHandles = new ResultHandle[parameterTypes.size()];
-        for (int i = 0; i < parameterTypes.size(); i++) {
-            Type parameterType = parameterTypes.get(i);
-            parameterTypesStr[i] = parameterType.name().toString();
-            if (typesUtil.isAssignable(Exception.class, parameterType.name())) {
-                parameterTypeHandles[i] = toResponse.getMethodParam(i);
-            } else {
-                parameterTypeHandles[i] = toResponse.readInstanceField(parameterTypeToField.get(parameterType),
-                        toResponse.getThis());
+        if (isResteasyClassic) {
+            for (int i = 0; i < parameterTypes.size(); i++) {
+                Type parameterType = parameterTypes.get(i);
+                parameterTypesStr[i] = parameterType.name().toString();
+                if (typesUtil.isAssignable(Exception.class, parameterType.name())) {
+                    parameterTypeHandles[i] = toResponse.getMethodParam(i);
+                } else {
+                    parameterTypeHandles[i] = toResponse.readInstanceField(parameterTypeToField.get(parameterType),
+                            toResponse.getThis());
+                }
+            }
+        } else {
+            for (int i = 0; i < parameterTypes.size(); i++) {
+                Type parameterType = parameterTypes.get(i);
+                parameterTypesStr[i] = parameterType.name().toString();
+                if (typesUtil.isAssignable(Exception.class, parameterType.name())) {
+                    parameterTypeHandles[i] = toResponse.getMethodParam(i);
+                } else if (typesUtil.isAssignable(UriInfo.class, parameterType.name())) {
+                    parameterTypeHandles[i] = getBeanFromArc(toResponse, UriInfo.class.getName());
+                } else if (typesUtil.isAssignable(Request.class, parameterType.name())) {
+                    parameterTypeHandles[i] = getBeanFromArc(toResponse, Request.class.getName());
+                } else {
+                    throw new IllegalArgumentException(
+                            "Parameter type '" + parameterType.name() + "' is not supported for method '"
+                                    + controllerAdviceMethod.name() + "' of class '"
+                                    + controllerAdviceMethod.declaringClass().name()
+                                    + "'");
+                }
             }
         }
 
@@ -237,18 +267,35 @@ class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractException
     }
 
     private ResultHandle controllerAdviceInstance(MethodCreator toResponse) {
-        ResultHandle controllerAdviceClass = toResponse.loadClass(declaringClassName);
+        if (isResteasyClassic) {
+            ResultHandle controllerAdviceClass = toResponse.loadClass(declaringClassName);
 
-        ResultHandle container = toResponse
+            ResultHandle container = toResponse
+                    .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
+            ResultHandle instance = toResponse.invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
+                            Annotation[].class),
+                    container, controllerAdviceClass, toResponse.loadNull());
+            ResultHandle bean = toResponse.invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
+                    instance);
+            return toResponse.checkCast(bean, controllerAdviceMethod.declaringClass().name().toString());
+        } else {
+            return toResponse.checkCast(getBeanFromArc(toResponse, declaringClassName),
+                    controllerAdviceMethod.declaringClass().name().toString());
+        }
+    }
+
+    private ResultHandle getBeanFromArc(MethodCreator methodCreator, String beanClassName) {
+        ResultHandle container = methodCreator
                 .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
-        ResultHandle instance = toResponse.invokeInterfaceMethod(
+        ResultHandle instance = methodCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                         Annotation[].class),
-                container, controllerAdviceClass, toResponse.loadNull());
-        ResultHandle bean = toResponse.invokeInterfaceMethod(
+                container, methodCreator.loadClass(beanClassName), methodCreator.loadNull());
+        return methodCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
                 instance);
-        return toResponse.checkCast(bean, controllerAdviceMethod.declaringClass().name().toString());
     }
 
     private int getAnnotationStatusOrDefault(int defaultValue) {

@@ -1,4 +1,4 @@
-package io.quarkus.spring.web.runtime;
+package io.quarkus.spring.web.runtime.common;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -21,7 +21,7 @@ public class ResponseEntityConverter {
         Response.ResponseBuilder responseBuilder = Response.status(responseEntity.getStatusCodeValue())
                 .entity(responseEntity.getBody());
         var jaxRsHeaders = toJaxRsHeaders(responseEntity.getHeaders());
-        if (!jaxRsHeaders.containsKey(HttpHeaders.CONTENT_TYPE)) {
+        if (!jaxRsHeaders.containsKey(HttpHeaders.CONTENT_TYPE) && (defaultMediaType != null)) {
             jaxRsHeaders.put(HttpHeaders.CONTENT_TYPE, Collections.singletonList(defaultMediaType.toString()));
         }
         for (var entry : jaxRsHeaders.entrySet()) {

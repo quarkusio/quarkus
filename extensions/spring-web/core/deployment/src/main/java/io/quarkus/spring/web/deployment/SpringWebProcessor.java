@@ -7,6 +7,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.ws.rs.Priorities;
+import javax.ws.rs.core.HttpHeaders;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -15,8 +18,8 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
-import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -24,6 +27,7 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -31,6 +35,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarn
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.jaxrs.spi.deployment.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 
 public class SpringWebProcessor {
 
@@ -102,10 +107,12 @@ public class SpringWebProcessor {
     }
 
     @BuildStep
-    public void generateExceptionMapperProviders(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+    public void exceptionHandlingSupport(CombinedIndexBuildItem index,
             BuildProducer<GeneratedClassBuildItem> generatedExceptionMappers,
             BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer,
+            BuildProducer<ExceptionMapperBuildItem> exceptionMapperProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeanProducer,
             Capabilities capabilities) {
 
         boolean isResteasyClassicAvailable = capabilities.isPresent(Capability.RESTEASY_JSON_JACKSON);
@@ -120,15 +127,18 @@ public class SpringWebProcessor {
 
         // Look for all exception classes that are annotated with @ResponseStatus
 
-        IndexView index = beanArchiveIndexBuildItem.getIndex();
+        IndexView indexView = index.getIndex();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedExceptionMappers, true);
-        generateMappersForResponseStatusOnException(providersProducer, index, classOutput, typesUtil,
+        generateMappersForResponseStatusOnException(providersProducer, exceptionMapperProducer, indexView, classOutput,
+                typesUtil,
                 isResteasyClassicAvailable);
-        generateMappersForExceptionHandlerInControllerAdvice(providersProducer, reflectiveClassProducer, index, classOutput,
+        generateMappersForExceptionHandlerInControllerAdvice(providersProducer, exceptionMapperProducer,
+                reflectiveClassProducer, unremovableBeanProducer, indexView, classOutput,
                 typesUtil, isResteasyClassicAvailable);
     }
 
     private void generateMappersForResponseStatusOnException(BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer,
+            BuildProducer<ExceptionMapperBuildItem> exceptionMapperProducer,
             IndexView index, ClassOutput classOutput, TypesUtil typesUtil, boolean isResteasyClassic) {
         Collection<AnnotationInstance> responseStatusInstances = index
                 .getAnnotations(RESPONSE_STATUS);
@@ -141,19 +151,24 @@ public class SpringWebProcessor {
             if (AnnotationTarget.Kind.CLASS != instance.target().kind()) {
                 continue;
             }
-            if (!typesUtil.isAssignable(Exception.class, instance.target().asClass().name())) {
+            DotName dotName = instance.target().asClass().name();
+            if (!typesUtil.isAssignable(Exception.class, dotName)) {
                 continue;
             }
 
             String name = new ResponseStatusOnExceptionGenerator(instance.target().asClass(), classOutput, isResteasyClassic)
                     .generate();
             providersProducer.produce(new ResteasyJaxrsProviderBuildItem(name));
+            exceptionMapperProducer.produce(
+                    new ExceptionMapperBuildItem(name, dotName.toString(), Priorities.USER, false));
         }
     }
 
     private void generateMappersForExceptionHandlerInControllerAdvice(
             BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer, IndexView index, ClassOutput classOutput,
+            BuildProducer<ExceptionMapperBuildItem> exceptionMapperProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeanProducer, IndexView index, ClassOutput classOutput,
             TypesUtil typesUtil, boolean isResteasyClassic) {
 
         AnnotationInstance controllerAdviceInstance = getSingleControllerAdviceInstance(index);
@@ -187,11 +202,20 @@ public class SpringWebProcessor {
             // we need to generate one JAX-RS ExceptionMapper per Exception type
             Type[] handledExceptionTypes = exceptionHandlerInstance.value().asClassArray();
             for (Type handledExceptionType : handledExceptionTypes) {
-                String name = new ControllerAdviceAbstractExceptionMapperGenerator(method, handledExceptionType.name(),
+                String name = new ControllerAdviceExceptionMapperGenerator(method, handledExceptionType.name(),
                         classOutput, typesUtil, isResteasyClassic).generate();
                 providersProducer.produce(new ResteasyJaxrsProviderBuildItem(name));
+                exceptionMapperProducer.produce(
+                        new ExceptionMapperBuildItem(name, handledExceptionType.name().toString(), Priorities.USER, false));
             }
 
+        }
+
+        // allow access to HttpHeaders from Arc.container()
+        if (!isResteasyClassic) {
+            unremovableBeanProducer.produce(
+                    UnremovableBeanBuildItem.beanClassNames("org.jboss.resteasy.reactive.server.injection.ContextProducers",
+                            HttpHeaders.class.getName()));
         }
     }
 

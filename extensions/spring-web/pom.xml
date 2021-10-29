@@ -16,5 +16,6 @@
     <modules>
         <module>core</module>
         <module>resteasy-classic</module>
+        <module>resteasy-reactive</module>
     </modules>
 </project>

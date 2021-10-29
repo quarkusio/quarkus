@@ -26,9 +26,12 @@ abstract class AbstractExceptionMapperGenerator {
     protected final DotName exceptionDotName;
     protected final ClassOutput classOutput;
 
-    AbstractExceptionMapperGenerator(DotName exceptionDotName, ClassOutput classOutput) {
+    private final boolean isResteasyClassic;
+
+    AbstractExceptionMapperGenerator(DotName exceptionDotName, ClassOutput classOutput, boolean isResteasyClassic) {
         this.exceptionDotName = exceptionDotName;
         this.classOutput = classOutput;
+        this.isResteasyClassic = isResteasyClassic;
     }
 
     abstract void generateMethodBody(MethodCreator toResponse);
@@ -36,8 +39,6 @@ abstract class AbstractExceptionMapperGenerator {
     String generate() {
         String generatedClassName = "io.quarkus.spring.web.mappers." + exceptionDotName.withoutPackagePrefix() + "_Mapper_"
                 + HashUtil.sha1(exceptionDotName.toString());
-        String generatedSubtypeClassName = "io.quarkus.spring.web.mappers.Subtype" + exceptionDotName.withoutPackagePrefix()
-                + "Mapper_" + HashUtil.sha1(exceptionDotName.toString());
         String exceptionClassName = exceptionDotName.toString();
 
         try (ClassCreator cc = ClassCreator.builder()
@@ -64,15 +65,20 @@ abstract class AbstractExceptionMapperGenerator {
             }
         }
 
-        // additionally generate a dummy subtype to get past the RESTEasy's ExceptionMapper check for synthetic classes
-        try (ClassCreator cc = ClassCreator.builder()
-                .classOutput(classOutput).className(generatedSubtypeClassName)
-                .superClass(generatedClassName)
-                .build()) {
-            cc.addAnnotation(Provider.class);
-        }
+        if (isResteasyClassic) {
+            String generatedSubtypeClassName = "io.quarkus.spring.web.mappers.Subtype" + exceptionDotName.withoutPackagePrefix()
+                    + "Mapper_" + HashUtil.sha1(exceptionDotName.toString());
+            // additionally generate a dummy subtype to get past the RESTEasy's ExceptionMapper check for synthetic classes
+            try (ClassCreator cc = ClassCreator.builder()
+                    .classOutput(classOutput).className(generatedSubtypeClassName)
+                    .superClass(generatedClassName)
+                    .build()) {
+                cc.addAnnotation(Provider.class);
+            }
 
-        return generatedSubtypeClassName;
+            return generatedSubtypeClassName;
+        }
+        return generatedClassName;
     }
 
     protected void preGenerateMethodBody(ClassCreator cc) {
@@ -93,6 +99,7 @@ abstract class AbstractExceptionMapperGenerator {
         return 500; // the default value of @ResponseStatus
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     private int enumValueToHttpStatus(String enumValue) {
         try {
             Class<?> httpStatusClass = Class.forName("org.springframework.http.HttpStatus");

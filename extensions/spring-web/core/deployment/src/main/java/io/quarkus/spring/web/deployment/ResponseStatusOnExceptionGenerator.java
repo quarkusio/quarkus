@@ -12,12 +12,10 @@ import io.quarkus.gizmo.ResultHandle;
 class ResponseStatusOnExceptionGenerator extends AbstractExceptionMapperGenerator {
 
     private final ClassInfo exceptionClassInfo;
-    private final boolean isResteasyClassic;
 
     ResponseStatusOnExceptionGenerator(ClassInfo exceptionClassInfo, ClassOutput classOutput, boolean isResteasyClassic) {
-        super(exceptionClassInfo.name(), classOutput);
+        super(exceptionClassInfo.name(), classOutput, isResteasyClassic);
         this.exceptionClassInfo = exceptionClassInfo;
-        this.isResteasyClassic = isResteasyClassic;
     }
 
     void generateMethodBody(MethodCreator toResponse) {

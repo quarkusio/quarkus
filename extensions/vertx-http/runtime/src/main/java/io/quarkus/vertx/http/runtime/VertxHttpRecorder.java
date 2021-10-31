@@ -598,30 +598,30 @@ public class VertxHttpRecorder {
     private static void setHttpServerTiming(InsecureRequests insecureRequests, HttpServerOptions httpServerOptions,
             HttpServerOptions sslConfig,
             HttpServerOptions domainSocketOptions, boolean auxiliaryApplication) {
-        String serverListeningMessage = "Listening on: ";
+        StringBuilder serverListeningMessage = new StringBuilder("Listening on: ");
         int socketCount = 0;
 
         if (httpServerOptions != null && !InsecureRequests.DISABLED.equals(insecureRequests)) {
-            serverListeningMessage += String.format(
-                    "http://%s:%s", httpServerOptions.getHost(), actualHttpPort);
+            serverListeningMessage.append(String.format(
+                    "http://%s:%s", httpServerOptions.getHost(), actualHttpPort));
             socketCount++;
         }
 
         if (sslConfig != null) {
             if (socketCount > 0) {
-                serverListeningMessage += " and ";
+                serverListeningMessage.append(" and ");
             }
-            serverListeningMessage += String.format("https://%s:%s", sslConfig.getHost(), actualHttpsPort);
+            serverListeningMessage.append(String.format("https://%s:%s", sslConfig.getHost(), actualHttpsPort));
             socketCount++;
         }
 
         if (domainSocketOptions != null) {
             if (socketCount > 0) {
-                serverListeningMessage += " and ";
+                serverListeningMessage.append(" and ");
             }
-            serverListeningMessage += String.format("unix:%s", domainSocketOptions.getHost());
+            serverListeningMessage.append(String.format("unix:%s", domainSocketOptions.getHost()));
         }
-        Timing.setHttpServer(serverListeningMessage, auxiliaryApplication);
+        Timing.setHttpServer(serverListeningMessage.toString(), auxiliaryApplication);
     }
 
     /**

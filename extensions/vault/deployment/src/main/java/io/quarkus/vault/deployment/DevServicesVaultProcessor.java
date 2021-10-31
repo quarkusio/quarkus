@@ -125,14 +125,14 @@ public class DevServicesVaultProcessor {
             return null;
         }
 
-        if (!isDockerWorking.getAsBoolean()) {
-            log.warn("Please configure Vault URL or get a working docker instance");
-            return null;
-        }
-
         boolean needToStart = !ConfigUtils.isPropertyPresent(URL_CONFIG_KEY);
         if (!needToStart) {
             log.debug("Not starting devservices for default Vault client as url has been provided");
+            return null;
+        }
+
+        if (!isDockerWorking.getAsBoolean()) {
+            log.warn("Please configure Vault URL or get a working docker instance");
             return null;
         }
 

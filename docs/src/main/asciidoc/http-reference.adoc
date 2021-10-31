@@ -186,24 +186,8 @@ quarkus.http.cors=true
 If the filter is enabled and an HTTP request is identified as cross-origin, the CORS policy and headers defined using the
 following properties will be applied before passing the request on to its actual target (servlet, JAX-RS resource, etc.):
 
-[cols="<m,<m,<2",options="header"]
-|===
-|Property Name|Default|Description
-|quarkus.http.cors.origins|*|The comma-separated list of origins allowed for CORS. Values starting and ending with '/'' will be treated as regular expressions. The filter allows any origin if this is not set or set to '*'.
-|quarkus.http.cors.methods|*|The comma-separated list of HTTP methods allowed for CORS. The filter allows any method if this is
-not set or set to '*'.
-|quarkus.http.cors.headers|*|The comma-separated list of HTTP headers allowed for CORS. The filter allows any header if this is
-not set or set to '*'.
-|quarkus.http.cors.exposed-headers|*|The comma-separated list of HTTP headers exposed in CORS. The filter allows any headers to be exposed if this is
-not set or set to '*'.
-|quarkus.http.cors.access-control-max-age||The duration (see note below) indicating how long the results of a pre-flight request can be cached.
-This value will be returned in a `Access-Control-Max-Age` response header.
-|quarkus.http.cors.access-control-allow-credentials||Boolean value to tell the browsers to expose the response to front-end JavaScript code
-when the request’s credentials mode Request.credentials is “include”
-|===
 
-
-include::duration-format-note.adoc[]
+include::{generated-dir}/config/quarkus-vertx-http-config-group-cors-cors-config.adoc[leveloffset=+1, opts=optional]
 
 Here's what a full CORS filter configuration could look like, including a regular expression defining an allowed origin:
 

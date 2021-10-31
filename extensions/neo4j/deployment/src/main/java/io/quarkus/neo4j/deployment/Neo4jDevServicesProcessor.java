@@ -54,7 +54,8 @@ class Neo4jDevServicesProcessor {
             BuildProducer<DevServicesConfigResultBuildItem> devServicePropertiesProducer,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem) {
+            LoggingSetupBuildItem loggingSetupBuildItem,
+            GlobalDevServicesConfig globalDevServicesConfig) {
 
         var configuration = new Neo4jDevServiceConfig(neo4jBuildTimeConfig.devservices);
 
@@ -70,7 +71,7 @@ class Neo4jDevServicesProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "Neo4j Dev Services Starting:", consoleInstalledBuildItem,
                 loggingSetupBuildItem);
         try {
-            var neo4jContainer = startNeo4j(configuration, launchMode);
+            var neo4jContainer = startNeo4j(configuration, globalDevServicesConfig.timeout);
             if (neo4jContainer != null) {
                 devServicePropertiesProducer.produce(
                         new DevServicesConfigResultBuildItem(NEO4J_URI, neo4jContainer.getBoltUrl()));
@@ -106,7 +107,7 @@ class Neo4jDevServicesProcessor {
         return new Neo4jDevServiceBuildItem();
     }
 
-    private Neo4jContainer<?> startNeo4j(Neo4jDevServiceConfig configuration, LaunchModeBuildItem launchMode) {
+    private Neo4jContainer<?> startNeo4j(Neo4jDevServiceConfig configuration, Optional<Duration> timeout) {
 
         if (!configuration.devServicesEnabled) {
             log.debug("Not starting Dev Services for Neo4j, as it has been disabled in the config.");
@@ -131,6 +132,7 @@ class Neo4jDevServicesProcessor {
         var neo4jContainer = new Neo4jContainer<>(
                 DockerImageName.parse(configuration.imageName).asCompatibleSubstituteFor("neo4j"));
         configuration.additionalEnv.forEach(neo4jContainer::addEnv);
+        timeout.ifPresent(neo4jContainer::withStartupTimeout);
         neo4jContainer.start();
         return neo4jContainer;
     }

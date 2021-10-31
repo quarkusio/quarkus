@@ -16,6 +16,9 @@ All this functionality is part of the Quarkus `deployment` modules, so does not 
 way. If you want to disable all Dev Services you can use the `quarkus.devservices.enabled=false` config property, although
 in most cases this is not necessary as simply configuring the service will result in the Dev Service being disabled automatically.
 
+Note that the default startup timeout is 60s, if this is not enough you can increase it with the `quarkus.devservices.timeout` property.
+
+
 This page lists all the Dev Services that Quarkus supports.
 
 NOTE: In order to use Dev Services you will generally need a working Docker environment (remote environments are supported).

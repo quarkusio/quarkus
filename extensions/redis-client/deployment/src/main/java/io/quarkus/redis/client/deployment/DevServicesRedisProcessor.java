@@ -4,6 +4,7 @@ import static io.quarkus.redis.client.runtime.RedisClientUtil.isDefault;
 import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
 
 import java.io.Closeable;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -66,7 +67,8 @@ public class DevServicesRedisProcessor {
             BuildProducer<DevServicesConfigResultBuildItem> devConfigProducer, RedisBuildTimeConfig config,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem) {
+            LoggingSetupBuildItem loggingSetupBuildItem,
+            GlobalDevServicesConfig devServicesConfig) {
 
         Map<String, DevServiceConfiguration> currentDevServicesConfiguration = new HashMap<>(config.additionalDevServices);
         currentDevServicesConfiguration.put(RedisClientUtil.DEFAULT_CLIENT, config.defaultDevService);
@@ -100,7 +102,7 @@ public class DevServicesRedisProcessor {
                 String connectionName = entry.getKey();
                 StartResult startResult = startContainer(connectionName, entry.getValue().devservices,
                         launchMode.getLaunchMode(),
-                        devServicesSharedNetworkBuildItem.isPresent());
+                        devServicesSharedNetworkBuildItem.isPresent(), devServicesConfig.timeout);
                 if (startResult == null) {
                     continue;
                 }
@@ -139,7 +141,7 @@ public class DevServicesRedisProcessor {
     }
 
     private StartResult startContainer(String connectionName, DevServicesConfig devServicesConfig, LaunchMode launchMode,
-            boolean useSharedNetwork) {
+            boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!devServicesConfig.enabled) {
             // explicitly disabled
             log.debug("Not starting devservices for " + (isDefault(connectionName) ? "default redis client" : connectionName)
@@ -173,6 +175,7 @@ public class DevServicesRedisProcessor {
         Supplier<StartResult> defaultRedisServerSupplier = () -> {
             QuarkusPortRedisContainer redisContainer = new QuarkusPortRedisContainer(dockerImageName, devServicesConfig.port,
                     launchMode == DEVELOPMENT ? devServicesConfig.serviceName : null, useSharedNetwork);
+            timeout.ifPresent(redisContainer::withStartupTimeout);
             redisContainer.start();
             String redisHost = REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort();
             return new StartResult(redisHost,

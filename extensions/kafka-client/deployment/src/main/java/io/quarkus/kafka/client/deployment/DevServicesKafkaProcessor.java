@@ -82,7 +82,7 @@ public class DevServicesKafkaProcessor {
             BuildProducer<DevServicesConfigResultBuildItem> devServicePropertiesProducer,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem) {
+            LoggingSetupBuildItem loggingSetupBuildItem, GlobalDevServicesConfig devServicesConfig) {
 
         KafkaDevServiceCfg configuration = getConfiguration(kafkaClientBuildTimeConfig);
 
@@ -101,7 +101,8 @@ public class DevServicesKafkaProcessor {
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         try {
 
-            kafkaBroker = startKafka(configuration, launchMode, devServicesSharedNetworkBuildItem.isPresent());
+            kafkaBroker = startKafka(configuration, launchMode, devServicesSharedNetworkBuildItem.isPresent(),
+                    devServicesConfig.timeout);
             bootstrapServers = null;
             if (kafkaBroker != null) {
                 closeable = kafkaBroker.getCloseable();
@@ -199,7 +200,7 @@ public class DevServicesKafkaProcessor {
     }
 
     private KafkaBroker startKafka(KafkaDevServiceCfg config,
-            LaunchModeBuildItem launchMode, boolean useSharedNetwork) {
+            LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting dev services for Kafka, as it has been disabled in the config.");
@@ -235,6 +236,7 @@ public class DevServicesKafkaProcessor {
                     config.fixedExposedPort,
                     launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
                     useSharedNetwork);
+            timeout.ifPresent(container::withStartupTimeout);
             container.start();
 
             return new KafkaBroker(

@@ -3,6 +3,7 @@ package io.quarkus.infinispan.client.deployment.devservices;
 import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
 
 import java.io.Closeable;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -59,7 +60,7 @@ public class InfinispanDevServiceProcessor {
             BuildProducer<DevServicesConfigResultBuildItem> devConfigProducer, InfinispanClientDevServiceBuildTimeConfig config,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem) {
+            LoggingSetupBuildItem loggingSetupBuildItem, GlobalDevServicesConfig devServicesConfig) {
 
         // figure out if we need to shut down and restart existing Infinispan containers
         // if not and the Infinispan containers have already started we just return
@@ -88,7 +89,7 @@ public class InfinispanDevServiceProcessor {
         try {
             StartResult startResult = startContainer(config.devService.devservices,
                     launchMode.getLaunchMode(),
-                    devServicesSharedNetworkBuildItem.isPresent());
+                    devServicesSharedNetworkBuildItem.isPresent(), devServicesConfig.timeout);
             if (startResult == null) {
                 compressor.close();
                 return;
@@ -134,7 +135,7 @@ public class InfinispanDevServiceProcessor {
 
     private StartResult startContainer(
             InfinispanDevServicesConfig devServicesConfig, LaunchMode launchMode,
-            boolean useSharedNetwork) {
+            boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!devServicesConfig.enabled) {
             // explicitly disabled
             log.debug("Not starting devservices for Infinispan as it has been disabled in the config");
@@ -161,6 +162,7 @@ public class InfinispanDevServiceProcessor {
         Supplier<StartResult> defaultInfinispanServerSupplier = () -> {
             QuarkusInfinispanContainer infinispanContainer = new QuarkusInfinispanContainer(devServicesConfig.port,
                     launchMode == DEVELOPMENT ? devServicesConfig.serviceName : null, useSharedNetwork);
+            timeout.ifPresent(infinispanContainer::withStartupTimeout);
             infinispanContainer.start();
             String serverList = infinispanContainer.getHost() + ":" + infinispanContainer.getPort();
             String user = infinispanContainer.getUser();

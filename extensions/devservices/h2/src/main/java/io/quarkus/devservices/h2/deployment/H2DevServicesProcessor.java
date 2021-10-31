@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -29,7 +30,7 @@ public class H2DevServicesProcessor {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt port, LaunchMode launchMode) {
+                    OptionalInt port, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 try {
                     final Server tcpServer = Server.createTcpServer("-tcpPort",
                             port.isPresent() ? String.valueOf(port.getAsInt()) : "0");

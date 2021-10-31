@@ -1,6 +1,7 @@
 package io.quarkus.vault.deployment;
 
 import java.io.Closeable;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -47,7 +48,8 @@ public class DevServicesVaultProcessor {
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             LaunchModeBuildItem launchMode,
             CuratedApplicationShutdownBuildItem closeBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem) {
+            LoggingSetupBuildItem loggingSetupBuildItem,
+            GlobalDevServicesConfig devServicesConfig) {
 
         DevServicesConfig currentDevServicesConfiguration = config.devservices;
 
@@ -77,7 +79,7 @@ public class DevServicesVaultProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "Vault Dev Services Starting:", consoleInstalledBuildItem,
                 loggingSetupBuildItem);
         try {
-            startResult = startContainer(currentDevServicesConfiguration);
+            startResult = startContainer(currentDevServicesConfiguration, devServicesConfig.timeout);
             compressor.close();
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
@@ -118,7 +120,7 @@ public class DevServicesVaultProcessor {
         }
     }
 
-    private StartResult startContainer(DevServicesConfig devServicesConfig) {
+    private StartResult startContainer(DevServicesConfig devServicesConfig, Optional<Duration> timeout) {
         if (!devServicesConfig.enabled) {
             // explicitly disabled
             log.debug("Not starting devservices for Vault as it has been disabled in the config");
@@ -151,6 +153,7 @@ public class DevServicesVaultProcessor {
             vaultContainer.withInitCommand("secrets enable pki");
         }
 
+        timeout.ifPresent(vaultContainer::withStartupTimeout);
         vaultContainer.start();
 
         String url = "http://" + vaultContainer.getHost() + ":" + vaultContainer.getPort();

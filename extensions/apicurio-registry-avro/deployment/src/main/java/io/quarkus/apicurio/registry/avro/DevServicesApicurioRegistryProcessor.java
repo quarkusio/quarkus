@@ -1,5 +1,6 @@
 package io.quarkus.apicurio.registry.avro;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
@@ -63,7 +64,7 @@ public class DevServicesApicurioRegistryProcessor {
             BuildProducer<DevServicesConfigResultBuildItem> devServicesConfiguration,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem) {
+            LoggingSetupBuildItem loggingSetupBuildItem, GlobalDevServicesConfig devServicesConfig) {
 
         ApicurioRegistryDevServiceCfg configuration = getConfiguration(apicurioRegistryDevServices);
 
@@ -81,7 +82,7 @@ public class DevServicesApicurioRegistryProcessor {
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         try {
             apicurioRegistry = startApicurioRegistry(configuration, launchMode,
-                    devServicesSharedNetworkBuildItem.isPresent());
+                    devServicesSharedNetworkBuildItem.isPresent(), devServicesConfig.timeout);
             if (apicurioRegistry == null) {
                 compressor.close();
                 return;
@@ -133,7 +134,7 @@ public class DevServicesApicurioRegistryProcessor {
     }
 
     private ApicurioRegistry startApicurioRegistry(ApicurioRegistryDevServiceCfg config, LaunchModeBuildItem launchMode,
-            boolean useSharedNetwork) {
+            boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting dev services for Apicurio Registry, as it has been disabled in the config.");
@@ -163,6 +164,7 @@ public class DevServicesApicurioRegistryProcessor {
                             DockerImageName.parse(config.imageName), config.fixedExposedPort,
                             launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
                             useSharedNetwork);
+                    timeout.ifPresent(container::withStartupTimeout);
                     container.start();
 
                     return new ApicurioRegistry(container.getUrl(), container);

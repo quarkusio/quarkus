@@ -1,7 +1,6 @@
 package io.quarkus.narayana.jta.runtime;
 
 import java.time.Duration;
-import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -22,7 +21,7 @@ public final class TransactionManagerConfiguration {
      * The default transaction timeout
      */
     @ConfigItem(defaultValue = "60")
-    public Optional<Duration> defaultTransactionTimeout;
+    public Duration defaultTransactionTimeout;
 
     /**
      * The directory name of location of the transaction logs.

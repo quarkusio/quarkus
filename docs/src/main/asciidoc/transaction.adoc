@@ -30,7 +30,8 @@ Add the following to your `pom.xml`:
 
 == Starting and stopping transactions: defining your boundaries
 
-You can define your transaction boundaries the easy way, or the less easy way :)
+You can define your transaction boundaries either declarativly with `@Transactional` or programmatically with `QuarkusTransaction`. You can also use
+the JTA `UserTransaction` API directly, however this is less user friendly than `QuarkusTransaction`.
 
 === Declarative approach
 
@@ -142,7 +143,99 @@ work is really done, and not just until the reactive method returns.
 If you need to propagate your transaction context across your reactive pipeline, please see the
 xref:context-propagation.adoc[Context Propagation guide].
 
-=== API approach
+=== Programmatic Approach
+
+You can use static methods on `QuarkusTransaction` to define transaction boundaries. This provides two different options,
+a functional approach that allows you to run a lambda within the scope of a transaction, or by using explicit `begin`,
+`commit` and `rollback` methods.
+
+[source,java]
+----
+import io.quarkus.narayana.jta.QuarkusTransaction;
+import io.quarkus.narayana.jta.RunOptions;
+
+public class TransactionExample {
+
+    public void beginExample() {
+        QuarkusTransaction.begin();
+        //do work
+        QuarkusTransaction.commit();
+
+        QuarkusTransaction.begin(QuarkusTransaction.beginOptions()
+                .timeout(10));
+        //do work
+        QuarkusTransaction.rollback();
+    }
+
+    public void lambdaExample() {
+        QuarkusTransaction.run(() -> {
+            //do work
+        });
+
+
+        int result = QuarkusTransaction.call(QuarkusTransaction.runOptions()
+                .timeout(10)
+                .exceptionHandler((throwable) -> {
+                    if (throwable instanceof SomeException) {
+                        return RunOptions.ExceptionResult.COMMIT;
+                    }
+                    return RunOptions.ExceptionResult.ROLLBACK;
+                })
+                .semantic(RunOptions.Semantic.SUSPEND_EXISTING), () -> {
+            //do work
+            return 0;
+        });
+    }
+}
+----
+
+The above example shows a few different ways the API can be used. The first method simply calls begin, does some work and commits it.
+This created transaction is tied to the CDI request scope, so if it is still active when the request scope is destroyed then it will
+be automatically rolled back. This removes the need to explicitly catch exceptions and call `rollback`, and acts as a safety net
+against inadvertent transaction leaks, however it does mean that this can only be used when the request scope is active. The second
+example in the method calls begin with a timeout option, and then rolls back the transaction.
+
+The second example shows the use of lambda scoped transactions, the first just runs a `Runnable` within a transaction, the second,
+runs `Callable` with some specific options. In particular the `exceptionHandler` method can be used to control if the transaction
+is rolled back or not on exception, and the `semantic` method controls the behaviour if an existing transaction is already started.
+
+The following semantics are supported:
+
+
+DISALLOW_EXISTING::
+
+ If a transaction is already associated with the current thread a `QuarkusTransactionException` will be thrown,
+ otherwise a new transaction is started, and follows all the normal lifecycle rules.
+
+JOIN_EXISTING::
+
+If no transaction is active then a new transaction will be started, and committed when the method ends.
+If an exception is thrown the exception handler registered by `#exceptionHandler(Function)` will be called to
+decide if the TX should be committed or rolled back.
+If an existing transaction is active then the method is run in the context of the existing transaction. If an
+exception is thrown the exception handler will be called, however
+a result of `ExceptionResult#ROLLBACK` will result in the TX marked as rollback only, while a result of
+`ExceptionResult#COMMIT` will result in no action being taken.
+
+REQUIRE_NEW::
+
+This is the default semantic.
+If an existing transaction is already associated with the current thread then the transaction is suspended, and
+resumed once
+the current transaction is complete.
+A new transaction is started after the existing transaction is suspended, and follows all the normal lifecycle rules.
+
+SUSPEND_EXISTING::
+
+If no transaction is active then this semantic is basically a no-op.
+If a transaction is active then it is suspended, and resumed after the task is run.
+The exception handler will never be consulted when this semantic is in use, specifying both an exception handler and
+this semantic is considered an error.
+This semantic allows for code to easily be run outside the scope of a transaction.
+
+
+
+=== Legacy API approach
 
 The less easy way is to inject a `UserTransaction` and use the various transaction demarcation methods.
 

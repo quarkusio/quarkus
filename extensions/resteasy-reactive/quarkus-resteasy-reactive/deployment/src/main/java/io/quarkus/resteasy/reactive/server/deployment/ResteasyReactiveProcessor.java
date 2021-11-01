@@ -165,7 +165,6 @@ import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -868,11 +867,11 @@ public class ResteasyReactiveProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     public void applyRuntimeConfig(ResteasyReactiveRuntimeRecorder recorder,
             Optional<ResteasyReactiveDeploymentBuildItem> deployment,
-            HttpConfiguration httpConf, ResteasyReactiveServerRuntimeConfig resteasyReactiveServerRuntimeConf) {
+            ResteasyReactiveServerRuntimeConfig resteasyReactiveServerRuntimeConf) {
         if (!deployment.isPresent()) {
             return;
         }
-        recorder.configure(deployment.get().getDeployment(), httpConf, resteasyReactiveServerRuntimeConf);
+        recorder.configure(deployment.get().getDeployment(), resteasyReactiveServerRuntimeConf);
     }
 
     @BuildStep

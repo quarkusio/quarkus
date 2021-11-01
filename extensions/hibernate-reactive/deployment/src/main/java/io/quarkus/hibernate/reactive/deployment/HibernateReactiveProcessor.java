@@ -43,7 +43,6 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.hibernate.orm.deployment.Dialects;
@@ -64,6 +63,7 @@ import io.quarkus.hibernate.reactive.runtime.ReactiveSessionFactoryProducer;
 import io.quarkus.hibernate.reactive.runtime.ReactiveSessionProducer;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 public final class HibernateReactiveProcessor {
 
@@ -139,7 +139,7 @@ public final class HibernateReactiveProcessor {
             if (provider == null ||
                     provider.equals(FastBootHibernateReactivePersistenceProvider.class.getCanonicalName()) ||
                     provider.equals(FastBootHibernateReactivePersistenceProvider.IMPLEMENTATION_NAME)) {
-                throw new ConfigurationError(
+                throw new ConfigurationException(
                         "Cannot use persistence.xml with Hibernate Reactive in Quarkus. Must use application.properties instead.");
             }
         }
@@ -306,11 +306,13 @@ public final class HibernateReactiveProcessor {
                     hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(importFile));
                 } else if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
                     //raise exception if explicit file is not present (i.e. not the default)
-                    throw new ConfigurationError(
+                    String propertyName = HibernateOrmConfig.puPropertyKey(persistenceUnitConfigName, "sql-load-script");
+                    throw new ConfigurationException(
                             "Unable to find file referenced in '"
-                                    + HibernateOrmConfig.puPropertyKey(persistenceUnitConfigName, "sql-load-script") + "="
+                                    + propertyName + "="
                                     + String.join(",", persistenceUnitConfig.sqlLoadScript.get())
-                                    + "'. Remove property or add file to your path.");
+                                    + "'. Remove property or add file to your path.",
+                            Collections.singleton(propertyName));
                 }
             }
 

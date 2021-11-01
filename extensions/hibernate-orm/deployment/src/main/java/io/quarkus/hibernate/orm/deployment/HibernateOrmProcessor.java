@@ -104,7 +104,6 @@ import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -870,7 +869,7 @@ public final class HibernateOrmProcessor {
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors) {
         if (!descriptors.isEmpty()) {
             if (hibernateOrmConfig.isAnyPropertySet() || !hibernateOrmConfig.persistenceUnits.isEmpty()) {
-                throw new ConfigurationError(
+                throw new ConfigurationException(
                         "Hibernate ORM configuration present in persistence.xml and Quarkus config file at the same time\n"
                                 + "If you use persistence.xml remove all " + HIBERNATE_ORM_CONFIG_PREFIX
                                 + "* properties from the Quarkus config file.");
@@ -1104,7 +1103,7 @@ public final class HibernateOrmProcessor {
                     nativeImageResources.produce(new NativeImageResourceBuildItem(importFile));
                 } else if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
                     //raise exception if explicit file is not present (i.e. not the default)
-                    throw new ConfigurationError(
+                    throw new ConfigurationException(
                             "Unable to find file referenced in '"
                                     + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "sql-load-script") + "="
                                     + String.join(",", persistenceUnitConfig.sqlLoadScript.get())
@@ -1454,7 +1453,7 @@ public final class HibernateOrmProcessor {
                         .toUpperCase(Locale.ROOT));
         if (multiTenancyStrategy == MultiTenancyStrategy.DISCRIMINATOR) {
             // See https://hibernate.atlassian.net/browse/HHH-6054
-            throw new ConfigurationError("The Hibernate ORM multitenancy strategy "
+            throw new ConfigurationException("The Hibernate ORM multitenancy strategy "
                     + MultiTenancyStrategy.DISCRIMINATOR + " is currently not supported");
         }
         return multiTenancyStrategy;

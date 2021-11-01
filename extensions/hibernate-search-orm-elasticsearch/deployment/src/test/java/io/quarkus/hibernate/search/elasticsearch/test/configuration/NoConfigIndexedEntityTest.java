@@ -9,7 +9,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.deployment.configuration.ConfigurationError;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class NoConfigIndexedEntityTest {
@@ -19,7 +19,7 @@ public class NoConfigIndexedEntityTest {
             () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class)
                     .addAsResource("application-nohsearchconfig.properties", "application.properties"))
             .assertException(throwable -> assertThat(throwable)
-                    .isInstanceOf(ConfigurationError.class)
+                    .isInstanceOf(ConfigurationException.class)
                     .hasMessageContaining("The Elasticsearch version needs to be defined via properties:"
                             + " quarkus.hibernate-search-orm.elasticsearch.version"));
 

@@ -43,7 +43,12 @@ public final class FeatureDetectorSubstitutions {
     }
 
     @Substitute
-    public static boolean areExperimentalFeaturesEnabled() {
+    public boolean isAwsAvailable() {
+        return false;
+    }
+
+    @Substitute
+    public boolean isGCSAvailable() {
         return false;
     }
 }

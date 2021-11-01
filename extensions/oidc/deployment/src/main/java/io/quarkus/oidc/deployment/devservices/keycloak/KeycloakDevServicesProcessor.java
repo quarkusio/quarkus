@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -115,7 +116,8 @@ public class KeycloakDevServicesProcessor {
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LaunchModeBuildItem launchMode,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem) {
+            LoggingSetupBuildItem loggingSetupBuildItem,
+            GlobalDevServicesConfig devServicesConfig) {
 
         if (oidcProviderBuildItem.isPresent()) {
             // Dev Services for the alternative OIDC provider are enabled
@@ -157,7 +159,7 @@ public class KeycloakDevServicesProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "KeyCloak Dev Services Starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         try {
-            startResult = startContainer(devServicesSharedNetworkBuildItem.isPresent());
+            startResult = startContainer(devServicesSharedNetworkBuildItem.isPresent(), devServicesConfig.timeout);
             if (startResult == null) {
                 compressor.close();
                 return null;
@@ -248,7 +250,7 @@ public class KeycloakDevServicesProcessor {
         return capturedDevServicesConfiguration.realmName.orElse("quarkus");
     }
 
-    private StartResult startContainer(boolean useSharedContainer) {
+    private StartResult startContainer(boolean useSharedContainer, Optional<Duration> timeout) {
         if (!capturedDevServicesConfiguration.enabled) {
             // explicitly disabled
             LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the config");
@@ -286,6 +288,7 @@ public class KeycloakDevServicesProcessor {
                     capturedDevServicesConfiguration.shared,
                     capturedDevServicesConfiguration.javaOpts);
 
+            timeout.ifPresent(oidcContainer::withStartupTimeout);
             oidcContainer.start();
 
             String url = "http://" + oidcContainer.getHost() + ":" + oidcContainer.getPort();

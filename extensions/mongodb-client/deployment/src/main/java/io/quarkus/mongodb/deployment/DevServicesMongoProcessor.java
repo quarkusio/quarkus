@@ -4,6 +4,7 @@ import static io.quarkus.mongodb.runtime.MongoClientBeanUtil.isDefault;
 
 import java.io.Closeable;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -54,7 +55,8 @@ public class DevServicesMongoProcessor {
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LaunchModeBuildItem launchMode,
-            LoggingSetupBuildItem loggingSetupBuildItem) {
+            LoggingSetupBuildItem loggingSetupBuildItem,
+            GlobalDevServicesConfig globalDevServicesConfig) {
 
         List<String> connectionNames = new ArrayList<>(mongoConnections.size());
         for (MongoConnectionNameBuildItem mongoConnection : mongoConnections) {
@@ -100,7 +102,7 @@ public class DevServicesMongoProcessor {
                 loggingSetupBuildItem);
         try {
             startResult = startMongo(connectionName, currentCapturedProperties.get(connectionName),
-                    devServicesSharedNetworkBuildItem.isPresent());
+                    devServicesSharedNetworkBuildItem.isPresent(), globalDevServicesConfig.timeout);
             compressor.close();
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
@@ -140,7 +142,8 @@ public class DevServicesMongoProcessor {
 
     }
 
-    private StartResult startMongo(String connectionName, CapturedProperties capturedProperties, boolean useSharedNetwork) {
+    private StartResult startMongo(String connectionName, CapturedProperties capturedProperties, boolean useSharedNetwork,
+            Optional<Duration> timeout) {
         if (!capturedProperties.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting devservices for " + (isDefault(connectionName) ? "default datasource" : connectionName)
@@ -173,6 +176,7 @@ public class DevServicesMongoProcessor {
         } else {
             mongoDBContainer = new QuarkusMongoDBContainer(capturedProperties.fixedExposedPort, useSharedNetwork);
         }
+        timeout.ifPresent(mongoDBContainer::withStartupTimeout);
         mongoDBContainer.start();
         Optional<String> databaseName = ConfigProvider.getConfig().getOptionalValue(configPrefix + "database", String.class);
         String effectiveURL = databaseName.map(mongoDBContainer::getReplicaSetUrl).orElse(mongoDBContainer.getReplicaSetUrl());

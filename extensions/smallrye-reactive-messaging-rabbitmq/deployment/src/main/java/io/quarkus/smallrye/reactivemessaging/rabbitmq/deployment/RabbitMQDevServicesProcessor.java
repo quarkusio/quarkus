@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.rabbitmq.deployment;
 
 import java.io.Closeable;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +66,8 @@ public class RabbitMQDevServicesProcessor {
             RabbitMQBuildTimeConfig rabbitmqClientBuildTimeConfig,
             BuildProducer<DevServicesConfigResultBuildItem> devServicePropertiesProducer,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem) {
+            LoggingSetupBuildItem loggingSetupBuildItem,
+            GlobalDevServicesConfig devServicesConfig) {
 
         RabbitMQDevServiceCfg configuration = getConfiguration(rabbitmqClientBuildTimeConfig);
 
@@ -84,7 +86,7 @@ public class RabbitMQDevServicesProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "RabbitMQ Dev Services Starting:", consoleInstalledBuildItem,
                 loggingSetupBuildItem);
         try {
-            broker = startRabbitMQBroker(configuration, launchMode);
+            broker = startRabbitMQBroker(configuration, launchMode, devServicesConfig.timeout);
             if (broker != null) {
                 closeable = broker.getCloseable();
                 devServicePropertiesProducer.produce(new DevServicesConfigResultBuildItem(RABBITMQ_HOST_PROP, broker.host));
@@ -143,7 +145,8 @@ public class RabbitMQDevServicesProcessor {
         }
     }
 
-    private RabbitMQBroker startRabbitMQBroker(RabbitMQDevServiceCfg config, LaunchModeBuildItem launchMode) {
+    private RabbitMQBroker startRabbitMQBroker(RabbitMQDevServiceCfg config, LaunchModeBuildItem launchMode,
+            Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting Dev Services for RabbitMQ, as it has been disabled in the config.");
@@ -179,6 +182,7 @@ public class RabbitMQDevServicesProcessor {
 
         final Supplier<RabbitMQBroker> defaultRabbitMQBrokerSupplier = () -> {
             // Starting the broker
+            timeout.ifPresent(container::withStartupTimeout);
             container.start();
 
             return new RabbitMQBroker(

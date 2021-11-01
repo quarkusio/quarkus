@@ -1,5 +1,7 @@
 package io.quarkus.deployment.dev.devservices;
 
+import java.time.Duration;
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -13,6 +15,12 @@ public class GlobalDevServicesConfig {
      */
     @ConfigItem(defaultValue = "true")
     boolean enabled;
+
+    /**
+     * The timeout for starting a container
+     */
+    @ConfigItem
+    public Optional<Duration> timeout;
 
     public static class Enabled implements BooleanSupplier {
 

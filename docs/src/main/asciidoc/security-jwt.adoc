@@ -13,10 +13,12 @@ This guide explains how your Quarkus application can utilize https://github.com/
 to verify https://tools.ietf.org/html/rfc7519[JSON Web Token]s, represent them as MicroProfile JWT `org.eclipse.microprofile.jwt.JsonWebToken`
 and provide secured access to the Quarkus HTTP endpoints using Bearer Token Authorization and https://en.wikipedia.org/wiki/Role-based_access_control[Role-Based Access Control].
 
-NOTE: Quarkus OpenId Connect extension also supports Bearer Token Authorization and uses `smallrye-jwt` to represent the bearer tokens as `JsonWebToken`, please read the link:security-openid-connect[Using OpenID Connect to Protect Service Applications] guide for more information.
+NOTE: Quarkus OpenId Connect `quarkus-oidc` extension also supports Bearer Token Authorization and uses `smallrye-jwt` to represent the bearer tokens as `JsonWebToken`, please read the link:security-openid-connect[Using OpenID Connect to Protect Service Applications] guide for more information.
 OpenId Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow, please read link:security-openid-connect-web-authentication[Using OpenID Connect to Protect Web Applications] guide for more information.
 
-== Solution
+== Quickstart
+
+=== Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.
 However, you can skip right to the completed example.
@@ -342,7 +344,7 @@ nQIDAQAB
 
 === Generating a JWT
 
-Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the JWT generation API provided by `smallrye-jwt` (see <<generate-jwt-tokens, Generate JWT tokens with SmallRye JWT>> for more information).
+Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the JWT generation API provided by `smallrye-jwt` (see link:smallrye-jwt-build[Generate JWT tokens with SmallRye JWT] for more information).
 
 Take the code from the following listing and place into `security-jwt-quickstart/src/main/java/org/acme/security/jwt/GenerateToken.java`:
 
@@ -379,7 +381,7 @@ in order for the token to be accepted as valid.
 <2> The `upn` claim is defined by the {mp-jwt} spec as preferred claim to use for the
 `Principal` seen via the container security APIs.
 <3> The `group` claim provides the groups and top-level roles associated with the JWT bearer.
-<4> The `birthday` claim. It can be considered to be a sensitive claim so you may want to consider encrypting the claims, see <<generate-jwt-tokens, Generate JWT tokens with SmallRye JWT>>.
+<4> The `birthday` claim. It can be considered to be a sensitive claim so you may want to consider encrypting the claims, see link:smallrye-jwt-build[Generate JWT tokens with SmallRye JWT].
 
 Note for this code to work we need the content of the RSA private key that corresponds to the public key we have in the TokenSecuredResource application. Take the following PEM content and place it into `security-jwt-quickstart/src/test/resources/privateKey.pem`:
 
@@ -456,7 +458,7 @@ eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiO
 The JWT string is the Base64 URL encoded string that has 3 parts separated by '.' characters.
 First part - JWT headers, second part - JWT claims, third part - JWT signature.
 
-== Finally, Secured Access to /secured/roles-allowed
+=== Finally, Secured Access to /secured/roles-allowed
 Now let's use this to make a secured request to the /secured/roles-allowed endpoint. Make sure you have the Quarkus server running using the `./mvnw compile quarkus:dev` command, and then run the following command, making sure to use your version of the generated JWT from the previous step:
 
 [source,bash]
@@ -631,27 +633,7 @@ worked through in this quickstart guide as well as some additional endpoints tha
 of ``JsonWebToken``s and their claims into those using the CDI APIs. We suggest that you check out the quickstart solutions and
 explore the `security-jwt-quickstart` directory to learn more about the {extension-name} extension features.
 
-[[configuration-reference]]
-== Configuration Reference
-
-=== Quarkus configuration
-
-include::{generated-dir}/config/quarkus-smallrye-jwt.adoc[opts=optional, leveloffset=+1]
-
-=== MicroProfile JWT configuration
-
-[cols="<m,<m,<2",options="header"]
-|===
-|Property Name|Default|Description
-|mp.jwt.verify.publickey|none|The `mp.jwt.verify.publickey` config property allows the Public Key text itself to be supplied as a string.  The Public Key will be parsed from the supplied string in the order defined in section <<Supported Public Key Formats>>.
-|mp.jwt.verify.publickey.location|none|Config property allows for an external or internal location of Public Key to be specified.  The value may be a relative path or a URL. If the value points to an HTTPS based JWK set then, for it to work in native mode, the `quarkus.ssl.native` property must also be set to `true`, see link:native-and-ssl[Using SSL With Native Executables] for more details.
-|mp.jwt.verify.publickey.algorithm|`RS256`|Signature algorithm. Set it to `ES256` to support the Elliptic Curve signature algorithm.
-|mp.jwt.decrypt.key.location|none|Config property allows for an external or internal location of Private Decryption Key to be specified.
-|mp.jwt.verify.issuer|none|Config property specifies the value of the `iss` (issuer) claim of the JWT that the server will accept as valid.
-|mp.jwt.verify.audiences|none|Comma separated list of the audiences that a token `aud` claim may contain.
-|mp.jwt.token.header|`Authorization`|Set this property if another header such as `Cookie` is used to pass the token.
-|mp.jwt.token.cookie|none|Name of the cookie containing a token. This property will be effective only if `mp.jwt.token.header` is set to `Cookie`.
-|===
+== Reference Guide
 
 === Supported Public Key Formats
 
@@ -664,41 +646,30 @@ precedence:
  - JSON Web Key (JWK) Base64 URL encoded
  - JSON Web Key Set (JWKS) Base64 URL encoded
 
-=== Additional SmallRye JWT configuration
+=== Dealing with the verification keys
 
-SmallRye JWT provides more properties which can be used to customize the token processing:
+If you need to verify the token signature using the assymetric RSA or Elliptic Curve (EC) key then use the `mp.jwt.verify.publickey.location` property to refer to the local or remote verification key.
 
-[cols="<m,<m,<2",options="header"]
-|===
-|Property Name|Default|Description
-|smallrye.jwt.verify.key.location|NONE|Location of the verification key which can point to both public and secret keys. Secret keys can only be in the JWK format. Note that 'mp.jwt.verify.publickey.location' will be ignored if this property is set.
-|smallrye.jwt.verify.algorithm|`RS256`|Signature algorithm. Set it to `ES256` to support the Elliptic Curve signature algorithm. This property is deprecated, use `mp.jwt.verify.publickey.algorithm`.
-|smallrye.jwt.verify.key-format|`ANY`|Set this property to a specific key format such as `PEM_KEY`, `PEM_CERTIFICATE`, `JWK` or `JWK_BASE64URL` to optimize the way the verification key is loaded.
-|smallrye.jwt.verify.relax-key-validation|false|Relax the validation of the verification keys, setting this property to `true` will allow public RSA keys with the length less than 2048 bit.
-|smallrye.jwt.verify.certificate-thumbprint|false|If this property is enabled then a signed token must contain either 'x5t' or 'x5t#S256' X509Certificate thumbprint headers. Verification keys can only be in JWK or PEM Certificate key formats in this case. JWK keys must have a 'x5c' (Base64-encoded X509Certificate) property set.
-|smallrye.jwt.token.header|`Authorization`|Set this property if another header such as `Cookie` is used to pass the token. This property is deprecated - use 'mp.jwt.token.header'.
-|smallrye.jwt.token.cookie|none|Name of the cookie containing a token. This property will be effective only if `smallrye.jwt.token.header` is set to `Cookie`. This property is deprecated - use 'mp.jwt.token.cookie`.
-|smallrye.jwt.always-check-authorization|false|Set this property to `true` for `Authorization` header be checked even if the `smallrye.jwt.token.header` is set to `Cookie` but no cookie with a `smallrye.jwt.token.cookie` name exists.
-|smallrye.jwt.token.schemes|`Bearer`|Comma-separated list containing an alternative single or multiple schemes, for example, `DPoP`.
-|smallrye.jwt.token.kid|none|Key identifier. If it is set then the verification JWK key as well every JWT token must have a matching `kid` header.
-|smallrye.jwt.time-to-live|none|The maximum number of seconds that a JWT may be issued for use. Effectively, the difference between the expiration date of the JWT and the issued at date must not exceed this value. Setting this property to a non-positive value relaxes the requirement for the token to have a valid 'iat' (issued at) claim.
-|smallrye.jwt.require.named-principal|`true`|If an application relies on `java.security.Principal` returning a name then a token must have a `upn` or `preferred_username` or `sub` claim set. Setting this property will result in SmallRye JWT throwing an exception if none of these claims is available for the application code to reliably deal with a non-null `Principal` name.
-|smallrye.jwt.path.sub|none|Path to the claim containing the subject name. It starts from the top level JSON object and can contain multiple segments where each segment represents a JSON object name only, example: `realms/subject`. This property can be used if a token has no 'sub' claim but has the subject set in a different claim. Use double quotes with the namespace qualified claims.
-|smallrye.jwt.claims.sub|none| This property can be used to set a default sub claim value when the current token has no standard or custom `sub` claim available. Effectively this property can be used to customize `java.security.Principal` name if no `upn` or `preferred_username` or `sub` claim is set.
-|smallrye.jwt.path.groups|none|Path to the claim containing the groups. It starts from the top level JSON object and can contain multiple segments where each segment represents a JSON object name only, example: `realm/groups`. This property can be used if a token has no 'groups' claim but has the groups set in a different claim. Use double quotes with the namespace qualified claims.
-|smallrye.jwt.groups-separator|' '|Separator for splitting a string which may contain multiple group values. It will only be used if the `smallrye.jwt.path.groups` property points to a custom claim whose value is a string. The default value is a single space because a standard OAuth2 `scope` claim may contain a space separated sequence.
-|smallrye.jwt.claims.groups|none| This property can be used to set a default groups claim value when the current token has no standard or custom groups claim available.
-|smallrye.jwt.jwks.refresh-interval|60|JWK cache refresh interval in minutes. It will be ignored unless the `mp.jwt.verify.publickey.location` points to the HTTP or HTTPS URL based JWK set and no HTTP `Cache-Control` response header with a positive `max-age` parameter value is returned from a JWK HTTPS endpoint.
-|smallrye.jwt.jwks.forced-refresh-interval|30|Forced JWK cache refresh interval in minutes which is used to restrict the frequency of the forced refresh attempts which may happen when the token verification fails due to the cache having no JWK key with a `kid` property matching the current token's `kid` header. It will be ignored unless the `mp.jwt.verify.publickey.location` points to the HTTP or HTTPS URL based JWK set.
-|smallrye.jwt.expiration.grace|60|Expiration grace in seconds. By default an expired token will still be accepted if the current time is no more than 1 min after the token expiry time.
-|smallrye.jwt.verify.aud|none|Comma separated list of the audiences that a token `aud` claim may contain. This property is deprecated - use `mp.jwt.verify.audiences`.
-|smallrye.jwt.required.claims|none|Comma separated list of the claims that a token must contain.
-|smallrye.jwt.decrypt.key.location|none|Config property allows for an external or internal location of Private Decryption Key to be specified. This property is deprecated - use 'mp.jwt.decrypt.key.location'.
-|smallrye.jwt.decrypt.algorithm|`RSA_OAEP`|Decryption algorithm.
-|smallrye.jwt.token.decryption.kid|none|Decryption Key identifier. If it is set then the decryption JWK key as well every JWT token must have a matching `kid` header.
-|===
+Use `mp.jwt.verify.publickey.algorithm` to customize the verification algorithm (default is `RS256`), for example, set it to `ES256` when working with the EC keys.
 
-== Create JsonWebToken with JWTParser
+If you need to verify the token signature using the symmetric secret key then either a `JSON Web Key` (JWK) or `JSON Web Key Set` (JWK Set) format must be used to represent this secret key, for example:
+
+```json
+{
+ "keys": [
+   {
+     "kty":"oct",
+     "kid":"secretKey",
+     "k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
+   }
+ ]
+}
+```
+
+This secret key JWK will also need to be referred to with `smallrye.jwt.key.verify.location`.
+`smallrye.jwt.verify.algorithm` should be set to `HS256`/`HS384`/`HS512`.
+
+=== Create JsonWebToken with JWTParser
 
 If the JWT token can not be injected, for example, if it is embedded in the service request payload or the service endpoint acquires it out of band, then one can use `JWTParser`:
 
@@ -752,7 +723,7 @@ public class SecuredResource {
 }
 ----
 
-== Token Decryption
+=== Token Decryption
 
 If your application needs to accept the tokens with the encrypted claims or with the encrypted inner signed claims then all you have to do is to set
 `smallrye.jwt.decrypt.key.location` pointing to the decryption key.
@@ -761,25 +732,9 @@ If this is the only key property which is set then the incoming token is expecte
 If either `mp.jwt.verify.publickey` or `mp.jwt.verify.publickey.location` verification properties are also set then the incoming token is expected to contain
 the encrypted inner-signed token.
 
-See <<generate-jwt-tokens, Generate JWT tokens with SmallRye JWT>> and learn how to generate the encrypted or inner-signed and then encrypted tokens fast.
+See link:smallrye-jwt-build[Generate JWT tokens with SmallRye JWT] and learn how to generate the encrypted or inner-signed and then encrypted tokens fast.
 
-== How to check the errors in the logs ==
-
-Please enable `io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator` `TRACE` level logging to see more details about the token verification or decryption errors:
-
-[source, properties]
-----
-quarkus.log.category."io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator".level=TRACE
-quarkus.log.category."io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator".min-level=TRACE
-----
-
-== Proactive Authentication
-
-If you'd like to skip the token verification when the public endpoint methods are invoked then please disable the link:security-built-in-authentication#proactive-authentication[proactive authentication].
-
-Note that you can't access the injected `JsonWebToken` in the public methods if the token verification has not been done.
-
-== Custom Factories
+=== Custom Factories
 
 `io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipalFactory` is used by default to parse and verify JWT tokens and convert them to `JsonWebToken` principals.
 It uses `MP JWT` and `smallrye-jwt` properties listed in the `Configuration` section to verify and customize JWT tokens.
@@ -819,15 +774,15 @@ public class TestJWTCallerPrincipalFactory extends JWTCallerPrincipalFactory {
 }
 ----
 
-== Token Propagation
+=== Token Propagation
 
 Please see link:security-openid-connect-client#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
 
 [[integration-testing]]
-== Testing
+=== Testing
 
 [[integration-testing-wiremock]]
-=== Wiremock
+==== Wiremock
 
 If you configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the link:security-openid-connect#integration-testing[OpenId Connect Bearer Token Integration testing] `Wiremock` section but only change the `application.properties` to use MP JWT configuration properties instead:
 
@@ -842,7 +797,7 @@ smallrye.jwt.sign.key.location=privateKey.jwk
 ----
 
 [[integration-testing-keycloak]]
-=== Keycloak
+==== Keycloak
 
 If you work with Keycloak and configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the link:security-openid-connect#integration-testing-keycloak[OpenId Connect Bearer Token Integration testing] `Keycloak` section but only change the `application.properties` to use MP JWT configuration properties instead:
 
@@ -854,7 +809,7 @@ mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
 ----
 
 [[integration-testing-public-key]]
-=== Local Public Key
+==== Local Public Key
 
 You can use the same approach as described in the link:security-openid-connect#integration-testing[OpenId Connect Bearer Token Integration testing] `Local Public Key` section but only change the `application.properties` to use MP JWT configuration properties instead:
 
@@ -869,7 +824,7 @@ smallrye.jwt.sign.key.location=privateKey.pem
 ----
 
 [[integration-testing-security-annotation]]
-=== TestSecurity annotation
+==== TestSecurity annotation
 
 Add the following dependency:
 [source,xml]
@@ -947,154 +902,76 @@ public class ProtectedResource {
 Note that `@TestSecurity` annotation must always be used and its `user` property is returned as `JsonWebToken.getName()` and `roles` property - as `JsonWebToken.getGroups()`.
 `@JwtSecurity` annotation is optional and can be used to set the additional token claims.
 
-[[generate-jwt-tokens]]
-== Generate JWT tokens with SmallRye JWT
+=== How to check the errors in the logs
 
-JWT claims can be signed or encrypted or signed first and the nested JWT token encrypted.
-Signing the claims is used most often to secure the claims. What is known today as a JWT token is typically produced by signing the claims in a JSON format using the steps described in the link:https://tools.ietf.org/html/rfc7515[JSON Web Signature] specification.
-However, when the claims are sensitive, their confidentiality can be guaranteed by following the steps described in the link:https://tools.ietf.org/html/rfc7516[JSON Web Encryption] specification to produce a JWT token with the encrypted claims.
-Finally both the confidentiality and integrity of the claims can be further enforced by signing them first and then encrypting the nested JWT token.
+Please enable `io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator` `TRACE` level logging to see more details about the token verification or decryption errors:
 
-SmallRye JWT provides an API for securing the JWT claims using all of these options.
-
-=== Maven dependency
-
-[source,xml]
+[source, properties]
 ----
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-smallrye-jwt-build</artifactId>
-</dependency>
+quarkus.log.category."io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator".level=TRACE
+quarkus.log.category."io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator".min-level=TRACE
 ----
 
-Note you can use Smallrye JWT Build API without having to create MP JWT endpoints.
-It can also be excluded from `quarkus-smallrye-jwt` if MP JWT endpoints do not need to generate JWT tokens.
+=== Proactive Authentication
 
-=== Create JwtClaimsBuilder and set the claims
+If you'd like to skip the token verification when the public endpoint methods are invoked then please disable the link:security-built-in-authentication#proactive-authentication[proactive authentication].
 
-The first step is to initialize a `JwtClaimsBuilder` using one of the options below and add some claims to it:
+Note that you can't access the injected `JsonWebToken` in the public methods if the token verification has not been done.
 
-[source, java]
-----
-import java.util.Collections;
-import javax.json.Json;
-import javax.json.JsonObject;
-import io.smallrye.jwt.build.Jwt;
-import io.smallrye.jwt.build.JwtClaimsBuilder;
-import org.eclipse.microprofile.jwt.JsonWebToken;
-...
-// Create an empty builder and add some claims
-JwtClaimsBuilder builder1 = Jwt.claims();
-builder1.claim("customClaim", "custom-value").issuer("https://issuer.org");
-// Or start typing the claims immediately:
-// JwtClaimsBuilder builder1 = Jwt.upn("Alice");
+[[configuration-reference]]
+== Configuration Reference
 
-// Builder created from the existing claims
-JwtClaimsBuilder builder2 = Jwt.claims("/tokenClaims.json");
+=== Quarkus configuration
 
-// Builder created from a map of claims
-JwtClaimsBuilder builder3 = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"));
+include::{generated-dir}/config/quarkus-smallrye-jwt.adoc[opts=optional, leveloffset=+1]
 
-// Builder created from JsonObject
-JsonObject userName = Json.createObjectBuilder().add("username", "Alice").build();
-JsonObject userAddress = Json.createObjectBuilder().add("city", "someCity").add("street", "someStreet").build();
-JsonObject json = Json.createObjectBuilder(userName).add("address", userAddress).build();
-JwtClaimsBuilder builder4 = Jwt.claims(json);
-
-// Builder created from JsonWebToken
-@Inject JsonWebToken token;
-JwtClaimsBuilder builder5 = Jwt.claims(token);
-----
-
-The API is fluent so the builder initialization can be done as part of the fluent API sequence.
-
-The builder will also set `iat` (issued at) to the current time, `exp` (expires at) to 5 minutes away from the current time (it can be customized with the `smallrye.jwt.new-token.lifespan` property) and `jti` (unique token identifier) claims if they have not already been set.
-One can also configure `smallrye.jwt.new-token.issuer` property and skip setting the issuer directly with the builder API.
-
-The next step is to decide how to secure the claims.
-
-=== Sign the claims
-
-The claims can be signed immediately or after the `JSON Web Signature` headers have been set:
-
-[source, java]
-----
-import io.smallrye.jwt.build.Jwt;
-...
-
-// Sign the claims using the private key loaded from the location set with a 'smallrye.jwt.sign.key.location' property.
-// No 'jws()' transition is necessary.
-String jwt1 = Jwt.claims("/tokenClaims.json").sign();
-
-// Set the headers and sign the claims with an RSA private key loaded in the code (the implementation of this method is omitted). Note a 'jws()' transition to a 'JwtSignatureBuilder'.
-String jwt2 = Jwt.claims("/tokenClaims.json").jws().keyId("kid1").header("custom-header", "custom-value").sign(getPrivateKey());
-----
-
-Note the `alg` (algorithm) header is set to `RS256` by default and `keyId` (key identifier) does not have to be set if a single JSON Web Key (JWK) containing a `kid` property is used.
-
-=== Encrypt the claims
-
-The claims can be encrypted immediately or after the `JSON Web Encryption` headers have been set the same way as they can be signed.
-The only minor difference is that encrypting the claims always requires a `jwe()` `JwtEncryptionBuilder` transition:
-
-[source, java]
-----
-import io.smallrye.jwt.build.Jwt;
-...
-
-// Encrypt the claims using the public key loaded from the location set with a 'smallrye.jwt.encrypt.key.location' property.
-String jwt1 = Jwt.claims("/tokenClaims.json").jwe().encrypt();
-
-// Set the headers and encrypt the claims with an RSA public key loaded in the code (the implementation of this method is omitted).
-String jwt2 = Jwt.claims("/tokenClaims.json").jwe().header("custom-header", "custom-value").encrypt(getPublicKey());
-----
-
-Note the `alg` (key management algorithm) header is set to `RSA-OAEP` and the `enc` (content encryption header) is set to `A256GCM` by default.
-
-=== Sign the claims and encrypt the nested JWT token
-
-The claims can be signed and then the nested JWT token encrypted by combining the sign and encrypt steps.
-[source, java]
-----
-import io.smallrye.jwt.build.Jwt;
-...
-
-// Sign the claims and encrypt the nested token using the private and public keys loaded from the locations set with the 'smallrye.jwt.sign.key.location' and 'smallrye.jwt.encrypt.key.location' properties respectively.
-String jwt = Jwt.claims("/tokenClaims.json").innerSign().encrypt();
-----
-
-=== Fast JWT Generation
-
-If `smallrye.jwt.sign.key.location` or/and `smallrye.jwt.encrypt.key.location` properties are set then one can secure the existing claims (resources, maps, JsonObjects) with a single call:
-
-[source,java]
-----
-// More compact than Jwt.claims("/claims.json").sign();
-Jwt.sign("/claims.json");
-
-// More compact than Jwt.claims("/claims.json").jwe().encrypt();
-Jwt.encrypt("/claims.json");
-
-// More compact than Jwt.claims("/claims.json").innerSign().encrypt();
-Jwt.signAndEncrypt("/claims.json");
-----
-As mentioned above, `iat`, `exp`, `jti` and `iss` claims will be added if needed.
-
-=== SmallRye JWT Builder configuration
-
-SmallRye JWT supports the following properties which can be used to customize the way claims are signed and encrypted:
+=== MicroProfile JWT configuration
 
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
-|smallrye.jwt.sign.key.location|`none`|Location of a private key which will be used to sign the claims when either a no-argument `sign()` or `innerSign()` method is called.
-|smallrye.jwt.sign.key.id|`none`|Signing key identifier which is checked only when JWK keys are used.
-|smallrye.jwt.encrypt.key.location|`none`|Location of a public key which will be used to encrypt the claims or inner JWT when a no-argument `encrypt()` method is called.
-|smallrye.jwt.encrypt.key.id|`none`|Encryption key identifier which is checked only when JWK keys are used.
-|smallrye.jwt.new-token.lifespan|300|Token lifespan in seconds which will be used to calculate an `exp` (expiry) claim value if this claim has not already been set.
-|smallrye.jwt.new-token.issuer|none|Token issuer which can be used to set an `iss` (issuer) claim value if this claim has not already been set.
-|smallrye.jwt.new-token.audience|none|Token audience which can be used to set an `aud` (audience) claim value if this claim has not already been set.
-|smallrye.jwt.new-token.override-matching-claims|false| Set this property to `true` for `smallrye.jwt.new-token.issuer` and `smallrye.jwt.new-token.audience` values to override the already initialized `iss` (issuer) and `aud` (audience) claims.
+|mp.jwt.verify.publickey|none|The `mp.jwt.verify.publickey` config property allows the Public Key text itself to be supplied as a string.  The Public Key will be parsed from the supplied string in the order defined in section <<Supported Public Key Formats>>.
+|mp.jwt.verify.publickey.location|none|Config property allows for an external or internal location of Public Key to be specified.  The value may be a relative path or a URL. If the value points to an HTTPS based JWK set then, for it to work in native mode, the `quarkus.ssl.native` property must also be set to `true`, see link:native-and-ssl[Using SSL With Native Executables] for more details.
+|mp.jwt.verify.publickey.algorithm|`RS256`|Signature algorithm. Set it to `ES256` to support the Elliptic Curve signature algorithm.
+|mp.jwt.decrypt.key.location|none|Config property allows for an external or internal location of Private Decryption Key to be specified.
+|mp.jwt.verify.issuer|none|Config property specifies the value of the `iss` (issuer) claim of the JWT that the server will accept as valid.
+|mp.jwt.verify.audiences|none|Comma separated list of the audiences that a token `aud` claim may contain.
+|mp.jwt.token.header|`Authorization`|Set this property if another header such as `Cookie` is used to pass the token.
+|mp.jwt.token.cookie|none|Name of the cookie containing a token. This property will be effective only if `mp.jwt.token.header` is set to `Cookie`.
+|===
+
+=== Additional SmallRye JWT configuration
+
+SmallRye JWT provides more properties which can be used to customize the token processing:
+
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|smallrye.jwt.verify.key.location|NONE|Location of the verification key which can point to both public and secret keys. Secret keys can only be in the JWK format. Note that 'mp.jwt.verify.publickey.location' will be ignored if this property is set.
+|smallrye.jwt.verify.algorithm|`RS256`|Signature algorithm. Set it to `ES256` to support the Elliptic Curve signature algorithm. This property is deprecated, use `mp.jwt.verify.publickey.algorithm`.
+|smallrye.jwt.verify.key-format|`ANY`|Set this property to a specific key format such as `PEM_KEY`, `PEM_CERTIFICATE`, `JWK` or `JWK_BASE64URL` to optimize the way the verification key is loaded.
+|smallrye.jwt.verify.relax-key-validation|false|Relax the validation of the verification keys, setting this property to `true` will allow public RSA keys with the length less than 2048 bit.
+|smallrye.jwt.verify.certificate-thumbprint|false|If this property is enabled then a signed token must contain either 'x5t' or 'x5t#S256' X509Certificate thumbprint headers. Verification keys can only be in JWK or PEM Certificate key formats in this case. JWK keys must have a 'x5c' (Base64-encoded X509Certificate) property set.
+|smallrye.jwt.token.header|`Authorization`|Set this property if another header such as `Cookie` is used to pass the token. This property is deprecated - use 'mp.jwt.token.header'.
+|smallrye.jwt.token.cookie|none|Name of the cookie containing a token. This property will be effective only if `smallrye.jwt.token.header` is set to `Cookie`. This property is deprecated - use 'mp.jwt.token.cookie`.
+|smallrye.jwt.always-check-authorization|false|Set this property to `true` for `Authorization` header be checked even if the `smallrye.jwt.token.header` is set to `Cookie` but no cookie with a `smallrye.jwt.token.cookie` name exists.
+|smallrye.jwt.token.schemes|`Bearer`|Comma-separated list containing an alternative single or multiple schemes, for example, `DPoP`.
+|smallrye.jwt.token.kid|none|Key identifier. If it is set then the verification JWK key as well every JWT token must have a matching `kid` header.
+|smallrye.jwt.time-to-live|none|The maximum number of seconds that a JWT may be issued for use. Effectively, the difference between the expiration date of the JWT and the issued at date must not exceed this value. Setting this property to a non-positive value relaxes the requirement for the token to have a valid 'iat' (issued at) claim.
+|smallrye.jwt.require.named-principal|`true`|If an application relies on `java.security.Principal` returning a name then a token must have a `upn` or `preferred_username` or `sub` claim set. Setting this property will result in SmallRye JWT throwing an exception if none of these claims is available for the application code to reliably deal with a non-null `Principal` name.
+|smallrye.jwt.path.sub|none|Path to the claim containing the subject name. It starts from the top level JSON object and can contain multiple segments where each segment represents a JSON object name only, example: `realms/subject`. This property can be used if a token has no 'sub' claim but has the subject set in a different claim. Use double quotes with the namespace qualified claims.
+|smallrye.jwt.claims.sub|none| This property can be used to set a default sub claim value when the current token has no standard or custom `sub` claim available. Effectively this property can be used to customize `java.security.Principal` name if no `upn` or `preferred_username` or `sub` claim is set.
+|smallrye.jwt.path.groups|none|Path to the claim containing the groups. It starts from the top level JSON object and can contain multiple segments where each segment represents a JSON object name only, example: `realm/groups`. This property can be used if a token has no 'groups' claim but has the groups set in a different claim. Use double quotes with the namespace qualified claims.
+|smallrye.jwt.groups-separator|' '|Separator for splitting a string which may contain multiple group values. It will only be used if the `smallrye.jwt.path.groups` property points to a custom claim whose value is a string. The default value is a single space because a standard OAuth2 `scope` claim may contain a space separated sequence.
+|smallrye.jwt.claims.groups|none| This property can be used to set a default groups claim value when the current token has no standard or custom groups claim available.
+|smallrye.jwt.jwks.refresh-interval|60|JWK cache refresh interval in minutes. It will be ignored unless the `mp.jwt.verify.publickey.location` points to the HTTP or HTTPS URL based JWK set and no HTTP `Cache-Control` response header with a positive `max-age` parameter value is returned from a JWK HTTPS endpoint.
+|smallrye.jwt.jwks.forced-refresh-interval|30|Forced JWK cache refresh interval in minutes which is used to restrict the frequency of the forced refresh attempts which may happen when the token verification fails due to the cache having no JWK key with a `kid` property matching the current token's `kid` header. It will be ignored unless the `mp.jwt.verify.publickey.location` points to the HTTP or HTTPS URL based JWK set.
+|smallrye.jwt.expiration.grace|60|Expiration grace in seconds. By default an expired token will still be accepted if the current time is no more than 1 min after the token expiry time.
+|smallrye.jwt.verify.aud|none|Comma separated list of the audiences that a token `aud` claim may contain. This property is deprecated - use `mp.jwt.verify.audiences`.
+|smallrye.jwt.required.claims|none|Comma separated list of the claims that a token must contain.
+|smallrye.jwt.decrypt.key.location|none|Config property allows for an external or internal location of Private Decryption Key to be specified. This property is deprecated - use 'mp.jwt.decrypt.key.location'.
+|smallrye.jwt.decrypt.algorithm|`RSA_OAEP`|Decryption algorithm.
+|smallrye.jwt.token.decryption.kid|none|Decryption Key identifier. If it is set then the decryption JWK key as well every JWT token must have a matching `kid` header.
 |===
 
 == References
@@ -1106,4 +983,6 @@ SmallRye JWT supports the following properties which can be used to customize th
 * link:https://tools.ietf.org/html/rfc7515[JSON Web Signature]
 * link:https://tools.ietf.org/html/rfc7516[JSON Web Encryption]
 * link:https://tools.ietf.org/html/rfc7518[JSON Web Algorithms]
+* link:security-jwt-build[Sign and encrypt JWT tokens with SmallRye JWT Build]
+* link:security#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
 * link:security[Quarkus Security]

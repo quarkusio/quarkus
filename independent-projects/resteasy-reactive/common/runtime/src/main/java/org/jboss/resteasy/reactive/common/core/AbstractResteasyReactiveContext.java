@@ -161,7 +161,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                     if (t instanceof PreserveTargetException) {
                         handleException(t.getCause(), true);
                     } else {
-                        handleException(t);
+                        handleException(t, true);
                     }
                     if (aborted) {
                         return;

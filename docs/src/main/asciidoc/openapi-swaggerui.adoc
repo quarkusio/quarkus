@@ -513,6 +513,29 @@ image:openapi-swaggerui-guide-screenshot02.png[alt=Interact with your API]
 
 Hit `CTRL+C` to stop the application.
 
+=== Styling
+You can style the swagger ui by supplying your own logo and css.
+
+==== Logo
+
+To supply your own logo, you need to place a file called `logo.png` in `src/main/resources/META-INF/branding`.
+
+This will set the logo for all UIs (not just swagger ui), so in this case also GraphQL-UI and Health-UI (if included).
+
+If you only want to apply this logo to swagger-ui (and not globally to all UIs) call the file `smallrye-open-api-ui.png` 
+rather than `logo.png`.
+
+==== CSS
+
+To supply your own css that override/enhance style in the html, you need to place a file called `style.css` in `src/main/resources/META-INF/branding`.
+
+This will add that css to all UIs (not just swagger ui), so in this case also GraphQL-UI and Health-UI (if included).
+
+If you only want to apply this style to swagger-ui (and not globally to all UIs) call the file `smallrye-open-api-ui.css` 
+rather than `style.css`.
+
+For more information on styling, read this blog entry: https://quarkus.io/blog/stylish-api/
+
 == Configuration Reference
 
 === OpenAPI

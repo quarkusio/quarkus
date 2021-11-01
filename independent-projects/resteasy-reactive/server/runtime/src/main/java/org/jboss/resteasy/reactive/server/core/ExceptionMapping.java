@@ -22,6 +22,7 @@ import javax.ws.rs.ext.ExceptionMapper;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.ResteasyReactiveClientProblem;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
+import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveAsyncExceptionMapper;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveExceptionMapper;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
@@ -99,31 +100,46 @@ public class ExceptionMapping {
 
     private void logBlockingErrorIfRequired(Throwable throwable, ResteasyReactiveRequestContext context) {
         if (isBlockingProblem(throwable)) {
-            log.error("A blocking operation occurred on the IO thread. This likely means you need to annotate "
-                    + context.getTarget().getResourceClass().getName() + "#" + context.getTarget().getJavaMethodName() + "("
-                    + Arrays.stream(context.getTarget().getParameterTypes()).map(Objects::toString)
-                            .collect(Collectors.joining(", "))
-                    + ") with @"
-                    + Blocking.class.getName()
-                    + ". Alternatively you can annotate the class " + context.getTarget().getResourceClass().getName()
-                    + " to make every method on the class blocking, or annotate your sub class of the "
-                    + Application.class.getName() + " class to make the whole application blocking");
+            RuntimeResource runtimeResource = context.getTarget();
+            if (runtimeResource == null) {
+                log.error("A blocking operation occurred on the IO thread. This likely means you need to use the @"
+                        + Blocking.class.getName() + " annotation on the Resource method, class or "
+                        + Application.class.getName() + " class.");
+            } else {
+                log.error("A blocking operation occurred on the IO thread. This likely means you need to annotate "
+                        + runtimeResource.getResourceClass().getName() + "#" + runtimeResource.getJavaMethodName() + "("
+                        + Arrays.stream(runtimeResource.getParameterTypes()).map(Objects::toString)
+                                .collect(Collectors.joining(", "))
+                        + ") with @"
+                        + Blocking.class.getName()
+                        + ". Alternatively you can annotate the class " + runtimeResource.getResourceClass().getName()
+                        + " to make every method on the class blocking, or annotate your sub class of the "
+                        + Application.class.getName() + " class to make the whole application blocking");
+            }
         }
     }
 
     private void logNonBlockingErrorIfRequired(Throwable throwable, ResteasyReactiveRequestContext context) {
         if (isNonBlockingProblem(throwable)) {
-            log.error(
-                    "An operation that needed be run on a Vert.x EventLoop thread was run on a worker pool thread. This likely means you need to annotate "
-                            + context.getTarget().getResourceClass().getName() + "#" + context.getTarget().getJavaMethodName()
-                            + "("
-                            + Arrays.stream(context.getTarget().getParameterTypes()).map(Objects::toString)
-                                    .collect(Collectors.joining(", "))
-                            + ") with @"
-                            + NonBlocking.class.getName()
-                            + ". Alternatively you can annotate the class " + context.getTarget().getResourceClass().getName()
-                            + " to make every method on the class run on a Vert.x EventLoop thread, or annotate your sub class of the "
-                            + Application.class.getName() + " class to affect the entire application");
+            RuntimeResource runtimeResource = context.getTarget();
+            if (runtimeResource == null) {
+                log.error(
+                        "An operation that needed be run on a Vert.x EventLoop thread was run on a worker pool thread. This likely means you use the @"
+                                + NonBlocking.class.getName() + " annotation on the Resource method, class or "
+                                + Application.class.getName() + " class.");
+            } else {
+                log.error(
+                        "An operation that needed be run on a Vert.x EventLoop thread was run on a worker pool thread. This likely means you need to annotate "
+                                + runtimeResource.getResourceClass().getName() + "#" + runtimeResource.getJavaMethodName()
+                                + "("
+                                + Arrays.stream(runtimeResource.getParameterTypes()).map(Objects::toString)
+                                        .collect(Collectors.joining(", "))
+                                + ") with @"
+                                + NonBlocking.class.getName()
+                                + ". Alternatively you can annotate the class " + runtimeResource.getResourceClass().getName()
+                                + " to make every method on the class run on a Vert.x EventLoop thread, or annotate your sub class of the "
+                                + Application.class.getName() + " class to affect the entire application");
+            }
         }
     }
 

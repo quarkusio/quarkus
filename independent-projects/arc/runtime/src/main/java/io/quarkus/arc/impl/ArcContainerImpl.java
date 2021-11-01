@@ -181,10 +181,9 @@ public class ArcContainerImpl implements ArcContainer {
     public void init() {
         requireRunning();
         // Fire an event with qualifier @Initialized(ApplicationScoped.class)
-        Set<Annotation> qualifiers = new HashSet<>(4);
-        qualifiers.add(Initialized.Literal.APPLICATION);
-        qualifiers.add(Any.Literal.INSTANCE);
-        EventImpl.createNotifier(Object.class, Object.class, qualifiers, this, false).notify(toString());
+        Set<Annotation> qualifiers = Set.of(Initialized.Literal.APPLICATION, Any.Literal.INSTANCE);
+        EventImpl.createNotifier(Object.class, Object.class, qualifiers, this, false)
+                .notify("@Initialized(ApplicationScoped.class)");
         // Configure CDIProvider used for CDI.current()
         CDI.setCDIProvider(new ArcCDIProvider());
         LOGGER.debugf("ArC DI container initialized [beans=%s, observers=%s]", beans.size(), observers.size());

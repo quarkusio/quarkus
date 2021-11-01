@@ -16,7 +16,13 @@ import io.quarkus.vertx.http.runtime.HttpConfiguration;
 @Recorder
 public class ResteasyReactiveRuntimeRecorder {
 
-    public void configure(RuntimeValue<Deployment> deployment, HttpConfiguration httpConf,
+    final HttpConfiguration httpConf;
+
+    public ResteasyReactiveRuntimeRecorder(HttpConfiguration httpConf) {
+        this.httpConf = httpConf;
+    }
+
+    public void configure(RuntimeValue<Deployment> deployment,
             ResteasyReactiveServerRuntimeConfig runtimeConf) {
         List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers = deployment.getValue()
                 .getRuntimeConfigurableServerRestHandlers();

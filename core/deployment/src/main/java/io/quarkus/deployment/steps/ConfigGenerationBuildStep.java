@@ -58,7 +58,6 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.quarkus.runtime.configuration.ConfigRecorder;
 import io.quarkus.runtime.configuration.ConfigUtils;
-import io.quarkus.runtime.configuration.ConfigurationRuntimeConfig;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.ConfigSourceFactory;
@@ -184,7 +183,6 @@ public class ConfigGenerationBuildStep {
     @Record(ExecutionTime.RUNTIME_INIT)
     public void checkForBuildTimeConfigChange(
             ConfigRecorder recorder, ConfigurationBuildItem configItem, LoggingSetupBuildItem loggingSetupBuildItem,
-            ConfigurationRuntimeConfig configurationConfig,
             List<SuppressNonRuntimeConfigChangedWarningBuildItem> suppressNonRuntimeConfigChangedWarningItems) {
         BuildTimeConfigurationReader.ReadResult readResult = configItem.getReadResult();
         Config config = ConfigProvider.getConfig();
@@ -203,7 +201,7 @@ public class ConfigGenerationBuildStep {
                 handleMembers(config, values, members, root.getName() + ".", excludedConfigKeys);
             }
         }
-        recorder.handleConfigChange(configurationConfig, values);
+        recorder.handleConfigChange(values);
     }
 
     @BuildStep(onlyIfNot = { IsNormal.class })

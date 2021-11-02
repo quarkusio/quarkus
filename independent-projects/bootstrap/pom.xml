@@ -52,7 +52,7 @@
         <jboss-logmanager-embedded.version>1.0.9</jboss-logmanager-embedded.version>
         <slf4j-jboss-logmanager.version>1.1.0.Final</slf4j-jboss-logmanager.version>
         <slf4j-api.version>1.7.30</slf4j-api.version>
-        <graal-sdk.version>21.2.0</graal-sdk.version>
+        <graal-sdk.version>21.3.0</graal-sdk.version>
         <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <smallrye-common.version>1.8.0</smallrye-common.version>

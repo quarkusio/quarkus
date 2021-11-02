@@ -791,9 +791,6 @@ If you configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP ba
 # keycloak.url is set by OidcWiremockTestResource
 mp.jwt.verify.publickey.location=${keycloak.url}/realms/quarkus/protocol/openid-connect/certs
 mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
-
-# required to sign the tokens
-smallrye.jwt.sign.key.location=privateKey.jwk
 ----
 
 [[integration-testing-keycloak]]

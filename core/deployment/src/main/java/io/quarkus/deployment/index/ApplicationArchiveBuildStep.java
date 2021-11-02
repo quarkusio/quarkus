@@ -3,6 +3,7 @@ package io.quarkus.deployment.index;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,6 +38,7 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.configuration.ClassLoadingConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
@@ -206,6 +208,9 @@ public class ApplicationArchiveBuildStep {
             IndexCache indexCache, Map<ArtifactKey, Set<String>> removed)
             throws IOException {
         for (ResolvedDependency dep : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
+            if (!ArtifactCoords.TYPE_JAR.equals(dep.getType())) {
+                continue;
+            }
             final PathCollection artifactPaths = dep.getResolvedPaths();
             boolean containsMarker = false;
             for (Path p : artifactPaths) {
@@ -221,7 +226,7 @@ public class ApplicationArchiveBuildStep {
                         if (containsMarker = containsMarker(fs.getPath("/"), applicationArchiveFiles)) {
                             break;
                         }
-                    } catch (ProviderNotFoundException e) {
+                    } catch (ProviderNotFoundException | FileSystemNotFoundException e) {
                         // that is pretty much an exceptional case
                         // it's not a dir and not a jar, it could be anything (e.g. a pom file that
                         // ended up in some project deps)

@@ -2,6 +2,8 @@ package io.quarkus.arc.deployment;
 
 import static io.quarkus.arc.processor.Annotations.getParameterAnnotations;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.builditem.ConfigClassBuildItem.Kind.MAPPING;
+import static io.quarkus.deployment.builditem.ConfigClassBuildItem.Kind.PROPERTIES;
 import static io.quarkus.deployment.configuration.ConfigMappingUtils.CONFIG_MAPPING_NAME;
 import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
 import static java.util.stream.Collectors.toList;
@@ -35,7 +37,6 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
-import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
@@ -285,17 +286,11 @@ public class ConfigBuildStep {
             return;
         }
 
-        Map<DotName, ConfigClassBuildItem> configMappingNames = new HashMap<>();
-        for (ConfigClassBuildItem configClass : configClasses) {
-            if (configClass.isMapping()) {
-                configMappingNames.put(configClass.getName(), configClass);
-            }
-        }
-
+        Map<Type, ConfigClassBuildItem> configMappingTypes = configClassesToTypesMap(configClasses, MAPPING);
         Set<ConfigClassBuildItem> configMappings = new HashSet<>();
         for (InjectionPointInfo injectionPoint : beanRegistration.getInjectionPoints()) {
             Type type = injectionPoint.getType();
-            ConfigClassBuildItem configClass = configMappingNames.get(type.name());
+            ConfigClassBuildItem configClass = configMappingTypes.get(type);
             if (configClass != null) {
                 configMappings.add(configClass);
             }
@@ -304,7 +299,7 @@ public class ConfigBuildStep {
         for (ConfigClassBuildItem configClass : configMappings) {
             BeanConfigurator<Object> bean = beanRegistration.getContext()
                     .configure(configClass.getConfigClass())
-                    .types(collectTypes(combinedIndex, configClass.getConfigClass()))
+                    .types(configClass.getTypes().toArray(new Type[] {}))
                     .creator(ConfigMappingCreator.class)
                     .param("type", configClass.getConfigClass())
                     .param("prefix", configClass.getPrefix());
@@ -328,13 +323,7 @@ public class ConfigBuildStep {
             return;
         }
 
-        Map<DotName, ConfigClassBuildItem> configPropertiesNames = new HashMap<>();
-        for (ConfigClassBuildItem configClass : configClasses) {
-            if (configClass.isProperties()) {
-                configPropertiesNames.put(configClass.getName(), configClass);
-            }
-        }
-
+        Map<Type, ConfigClassBuildItem> configPropertiesTypes = configClassesToTypesMap(configClasses, PROPERTIES);
         Set<ConfigClassBuildItem> configProperties = new HashSet<>();
         for (InjectionPointInfo injectionPoint : beanRegistration.getInjectionPoints()) {
             AnnotationInstance instance = injectionPoint.getRequiredQualifier(MP_CONFIG_PROPERTIES_NAME);
@@ -343,7 +332,7 @@ public class ConfigBuildStep {
             }
 
             Type type = injectionPoint.getType();
-            ConfigClassBuildItem configClass = configPropertiesNames.get(type.name());
+            ConfigClassBuildItem configClass = configPropertiesTypes.get(type);
             if (configClass != null) {
                 configProperties.add(configClass);
             }
@@ -353,7 +342,7 @@ public class ConfigBuildStep {
             beanConfigurator.produce(new BeanConfiguratorBuildItem(
                     beanRegistration.getContext()
                             .configure(configClass.getConfigClass())
-                            .types(collectTypes(combinedIndex, configClass.getConfigClass()))
+                            .types(configClass.getTypes().toArray(new Type[] {}))
                             .addQualifier(create(MP_CONFIG_PROPERTIES_NAME, null,
                                     new AnnotationValue[] {
                                             createStringValue("prefix", configClass.getPrefix())
@@ -361,40 +350,6 @@ public class ConfigBuildStep {
                             .creator(ConfigMappingCreator.class)
                             .param("type", configClass.getConfigClass())
                             .param("prefix", configClass.getPrefix())));
-        }
-    }
-
-    private Type[] collectTypes(CombinedIndexBuildItem combinedIndex, Class<?> configClass) {
-        IndexView index = combinedIndex.getIndex();
-        DotName configIfaceName = DotName.createSimple(configClass.getName());
-        ClassInfo configIfaceInfo = index.getClassByName(configIfaceName);
-        if ((configIfaceInfo == null) || configIfaceInfo.interfaceNames().isEmpty()) {
-            return new Type[] { Type.create(configIfaceName, Kind.CLASS) };
-        }
-
-        Set<DotName> allIfaces = new HashSet<>();
-        allIfaces.add(configIfaceName);
-        collectInterfacesRec(configIfaceInfo, index, allIfaces);
-        Type[] result = new Type[allIfaces.size()];
-        int i = 0;
-        for (DotName iface : allIfaces) {
-            result[i++] = Type.create(iface, Kind.CLASS);
-        }
-        return result;
-    }
-
-    private static void collectInterfacesRec(ClassInfo current, IndexView index, Set<DotName> result) {
-        List<DotName> interfaces = current.interfaceNames();
-        if (interfaces.isEmpty()) {
-            return;
-        }
-        for (DotName iface : interfaces) {
-            ClassInfo classByName = index.getClassByName(iface);
-            if (classByName == null) {
-                continue; // just ignore this type
-            }
-            result.add(iface);
-            collectInterfacesRec(classByName, index, result);
         }
     }
 
@@ -409,17 +364,11 @@ public class ConfigBuildStep {
             return;
         }
 
-        Map<DotName, ConfigClassBuildItem> configMappingNames = new HashMap<>();
-        for (ConfigClassBuildItem configClass : configClasses) {
-            if (configClass.isMapping()) {
-                configMappingNames.put(configClass.getName(), configClass);
-            }
-        }
-
+        Map<Type, ConfigClassBuildItem> configMappingTypes = configClassesToTypesMap(configClasses, MAPPING);
         Set<ConfigMappingBuildItem> toRegister = new HashSet<>();
         for (InjectionPointInfo injectionPoint : validationPhase.getContext().getInjectionPoints()) {
             Type type = injectionPoint.getType();
-            ConfigClassBuildItem configClass = configMappingNames.get(type.name());
+            ConfigClassBuildItem configClass = configMappingTypes.get(type);
             if (configClass != null) {
                 AnnotationTarget target = injectionPoint.getTarget();
                 AnnotationInstance mapping = null;
@@ -447,7 +396,7 @@ public class ConfigBuildStep {
             }
         }
 
-        for (ConfigClassBuildItem configClass : configMappingNames.values()) {
+        for (ConfigClassBuildItem configClass : configMappingTypes.values()) {
             // We don't look in the beans here, because SR Config has an API that can retrieve the mapping without CDI
             if (!arcConfig.shouldEnableBeanRemoval() || configClass.getConfigClass().isAnnotationPresent(Unremovable.class)) {
                 toRegister.add(new ConfigMappingBuildItem(configClass.getConfigClass(), configClass.getPrefix()));
@@ -468,19 +417,13 @@ public class ConfigBuildStep {
             return;
         }
 
-        Map<DotName, ConfigClassBuildItem> configPropertiesNames = new HashMap<>();
-        for (ConfigClassBuildItem configClass : configClasses) {
-            if (configClass.isProperties()) {
-                configPropertiesNames.put(configClass.getName(), configClass);
-            }
-        }
-
+        Map<Type, ConfigClassBuildItem> configPropertiesTypes = configClassesToTypesMap(configClasses, PROPERTIES);
         Set<ConfigPropertiesBuildItem> toRegister = new HashSet<>();
         for (InjectionPointInfo injectionPoint : validationPhase.getContext().getInjectionPoints()) {
             AnnotationInstance properties = injectionPoint.getRequiredQualifier(MP_CONFIG_PROPERTIES_NAME);
             if (properties != null) {
                 Type type = injectionPoint.getType();
-                ConfigClassBuildItem configClass = configPropertiesNames.get(type.name());
+                ConfigClassBuildItem configClass = configPropertiesTypes.get(type);
                 if (configClass != null) {
                     AnnotationValue annotationPrefix = properties.value("prefix");
                     String prefix = annotationPrefix != null && !annotationPrefix.asString().equals(UNCONFIGURED_PREFIX)
@@ -491,7 +434,7 @@ public class ConfigBuildStep {
             }
         }
 
-        for (ConfigClassBuildItem configClass : configPropertiesNames.values()) {
+        for (ConfigClassBuildItem configClass : configPropertiesTypes.values()) {
             if (!arcConfig.shouldEnableBeanRemoval()
                     || !validationPhase.getContext().beans().withBeanType(configClass.getConfigClass()).isEmpty()) {
                 toRegister.add(new ConfigPropertiesBuildItem(configClass.getConfigClass(), configClass.getPrefix()));
@@ -520,7 +463,7 @@ public class ConfigBuildStep {
                         .collect(toSet()));
     }
 
-    private String getPropertyName(String name, ClassInfo declaringClass) {
+    private static String getPropertyName(String name, ClassInfo declaringClass) {
         StringBuilder builder = new StringBuilder();
         if (declaringClass.enclosingClass() == null) {
             builder.append(declaringClass.name());
@@ -556,5 +499,18 @@ public class ConfigBuildStep {
                 SUPPLIER_NAME.equals(type.name()) ||
                 CONFIG_VALUE_NAME.equals(type.name()) ||
                 MP_CONFIG_VALUE_NAME.equals(type.name());
+    }
+
+    private static Map<Type, ConfigClassBuildItem> configClassesToTypesMap(List<ConfigClassBuildItem> configClasses,
+            ConfigClassBuildItem.Kind kind) {
+        Map<Type, ConfigClassBuildItem> configClassesTypes = new HashMap<>();
+        for (ConfigClassBuildItem configClass : configClasses) {
+            if (configClass.getKind().equals(kind)) {
+                for (Type type : configClass.getTypes()) {
+                    configClassesTypes.put(type, configClass);
+                }
+            }
+        }
+        return configClassesTypes;
     }
 }

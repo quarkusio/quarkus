@@ -595,6 +595,10 @@ public class QuteProcessor {
         for (Expression.Part part : expression.getParts()) {
             if (part.isVirtualMethod()) {
                 for (Expression param : part.asVirtualMethod().getParameters()) {
+                    if (param.isLiteral() && param.getLiteral() == null) {
+                        // "null" literal has no type info
+                        continue;
+                    }
                     if (!results.containsKey(param.toOriginalString())) {
                         validateNestedExpressions(templateAnalysis, null, results, excludes,
                                 incorrectExpressions, param, index, implicitClassToMembersUsed, templateIdToPathFun,
@@ -670,6 +674,15 @@ public class QuteProcessor {
                 ClassInfo returnType = index.getClassByName(method.returnType().name());
                 if (returnType != null) {
                     match.setValues(returnType, method.returnType());
+                    if (root.hasHints()) {
+                        // Root is a property with hint
+                        // E.g. 'it<loop#123>' and 'STATUS<when#123>'
+                        if (processHints(templateAnalysis, root.asHintInfo().hints, match, index, expression,
+                                generatedIdsToMatches, incorrectExpressions)) {
+                            // In some cases it's necessary to reset the iterator
+                            iterator = parts.iterator();
+                        }
+                    }
                 } else {
                     // Return type not available
                     return putResult(match, results, expression);

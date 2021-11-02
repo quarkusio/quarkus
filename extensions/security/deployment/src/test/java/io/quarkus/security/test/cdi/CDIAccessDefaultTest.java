@@ -6,6 +6,8 @@ import static io.quarkus.security.test.utils.IdentityMock.USER;
 import static io.quarkus.security.test.utils.SecurityTestUtils.assertFailureFor;
 import static io.quarkus.security.test.utils.SecurityTestUtils.assertSuccess;
 
+import java.util.concurrent.ExecutionException;
+
 import javax.inject.Inject;
 import javax.inject.Named;
 
@@ -13,6 +15,7 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.function.Executable;
 
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
@@ -71,6 +74,33 @@ public class CDIAccessDefaultTest {
         assertFailureFor(() -> bean.securedMethod(), UnauthorizedException.class, ANONYMOUS);
         assertFailureFor(() -> bean.securedMethod(), ForbiddenException.class, USER);
         assertSuccess(() -> bean.securedMethod(), "accessibleForAdminOnly", ADMIN);
+    }
+
+    @Test
+    public void shouldRestrictAccessToSpecificRoleUni() {
+        assertFailureFor(() -> bean.securedMethodUni().await().indefinitely(), UnauthorizedException.class, ANONYMOUS);
+        assertFailureFor(() -> bean.securedMethodUni().await().indefinitely(), ForbiddenException.class, USER);
+        assertSuccess(() -> bean.securedMethodUni().await().indefinitely(), "accessibleForAdminOnly", ADMIN);
+    }
+
+    @Test
+    public void shouldRestrictAccessToSpecificRoleCompletionState() {
+        Executable executable = () -> {
+            try {
+                bean.securedMethodCompletionStage().toCompletableFuture().get();
+            } catch (ExecutionException e) {
+                throw e.getCause();
+            }
+        };
+        assertFailureFor(executable, UnauthorizedException.class, ANONYMOUS);
+        assertFailureFor(executable, ForbiddenException.class, USER);
+        assertSuccess(() -> {
+            try {
+                return bean.securedMethodCompletionStage().toCompletableFuture().get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        }, "accessibleForAdminOnly", ADMIN);
     }
 
     @Test

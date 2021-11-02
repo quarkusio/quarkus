@@ -705,7 +705,7 @@ public class DevMojo extends AbstractMojo {
             sourceParent = module.getMainSources().iterator().next().getSourceDir().toPath().toAbsolutePath().getParent();
         }
 
-        Path classesDir = module.getMainResources().iterator().next().getDestinationDir().toPath().toAbsolutePath();
+        Path classesDir = module.getMainSources().iterator().next().getDestinationDir().toPath().toAbsolutePath();
         if (Files.isDirectory(classesDir)) {
             classesPath = classesDir.toString();
         }

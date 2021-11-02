@@ -36,6 +36,7 @@ public class LocalProject {
 
     private static final String PROJECT_BASEDIR = "${project.basedir}";
     private static final String PROJECT_BUILD_DIR = "${project.build.directory}";
+    private static final String PROJECT_OUTPUT_DIR = "${project.build.outputDirectory}";
 
     public static final String POM_XML = "pom.xml";
 
@@ -317,7 +318,7 @@ public class LocalProject {
 
     public WorkspaceModule toWorkspaceModule() {
         final DefaultWorkspaceModule module = new DefaultWorkspaceModule(
-                new GAV(key.getGroupId(), key.getArtifactId(), getVersion()), dir.toFile(), getOutputDir().toFile());
+                new GAV(getKey().getGroupId(), getKey().getArtifactId(), getVersion()), dir.toFile(), getOutputDir().toFile());
         module.addMainSources(new DefaultProcessedSources(getSourcesSourcesDir().toFile(), getClassesDir().toFile()));
         addMainResources(module);
         module.addTestSources(new DefaultProcessedSources(getTestSourcesSourcesDir().toFile(), getTestClassesDir().toFile()));
@@ -336,7 +337,10 @@ public class LocalProject {
             for (Resource r : resources) {
                 module.addMainResources(
                         new DefaultProcessedSources(resolveRelativeToBaseDir(r.getDirectory(), "src/main/resources").toFile(),
-                                resolveRelativeToBuildDir(r.getTargetPath(), "classes").toFile()));
+                                (r.getTargetPath() == null ? getClassesDir()
+                                        : getClassesDir()
+                                                .resolve(stripProjectBasedirPrefix(r.getTargetPath(), PROJECT_OUTPUT_DIR)))
+                                                        .toFile()));
             }
         }
     }
@@ -351,7 +355,10 @@ public class LocalProject {
             for (Resource r : resources) {
                 module.addTestResources(
                         new DefaultProcessedSources(resolveRelativeToBaseDir(r.getDirectory(), "src/test/resources").toFile(),
-                                resolveRelativeToBuildDir(r.getTargetPath(), "test-classes").toFile()));
+                                (r.getTargetPath() == null ? getTestClassesDir()
+                                        : getTestClassesDir()
+                                                .resolve(stripProjectBasedirPrefix(r.getTargetPath(), PROJECT_OUTPUT_DIR)))
+                                                        .toFile()));
             }
         }
     }

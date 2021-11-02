@@ -5,7 +5,7 @@ import io.quarkus.runtime.annotations.Recorder
 
 @Recorder
 open class PanacheKotlinHibernateOrmRecorder {
-    fun setEntityToPersistenceUnit(entityToPersistenceUnit: Map<String?, String?>?) {
+    open fun setEntityToPersistenceUnit(entityToPersistenceUnit: Map<String?, String?>?) {
         AbstractJpaOperations.setEntityToPersistenceUnit(entityToPersistenceUnit)
     }
 }

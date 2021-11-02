@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.PathSegment;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -26,6 +27,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.GeneratedPa
 import org.jboss.resteasy.reactive.server.core.parameters.converters.NoopParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupplier;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.PathSegmentParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
 import org.jboss.resteasy.reactive.server.processor.ServerEndpointIndexer;
 import org.jboss.resteasy.reactive.server.processor.ServerIndexedParameter;
@@ -133,6 +135,8 @@ public class QuarkusServerEndpointIndexer
             if (delegate == null)
                 throw new RuntimeException("Failed to find converter for " + elementType);
             return delegate;
+        } else if (elementType.equals(PathSegment.class.getName())) {
+            return new PathSegmentParamConverter.Supplier();
         }
 
         MethodDescriptor fromString = null;

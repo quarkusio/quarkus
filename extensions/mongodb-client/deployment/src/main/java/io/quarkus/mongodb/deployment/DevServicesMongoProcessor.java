@@ -148,13 +148,6 @@ public class DevServicesMongoProcessor {
             return null;
         }
 
-        if (!isDockerWorking.getAsBoolean()) {
-            log.warn("Please configure datasource URL for "
-                    + (isDefault(connectionName) ? "default datasource" : connectionName)
-                    + " or get a working docker instance");
-            return null;
-        }
-
         String configPrefix = getConfigPrefix(connectionName);
 
         // TODO: do we need to check the hosts as well?
@@ -166,6 +159,12 @@ public class DevServicesMongoProcessor {
             return null;
         }
 
+        if (!isDockerWorking.getAsBoolean()) {
+            log.warn("Please configure datasource URL for "
+                    + (isDefault(connectionName) ? "default datasource" : connectionName)
+                    + " or get a working docker instance");
+            return null;
+        }
         MongoDBContainer mongoDBContainer;
         if (capturedProperties.imageName != null) {
             mongoDBContainer = new QuarkusMongoDBContainer(

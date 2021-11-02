@@ -1,6 +1,7 @@
 package io.quarkus.arc.test.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import javax.inject.Inject;
 
@@ -23,6 +24,8 @@ public class UnremovedConfigMappingTest {
 
     @Inject
     SmallRyeConfig config;
+    @Inject
+    Base base;
 
     @Test
     void unremoved() {
@@ -30,10 +33,27 @@ public class UnremovedConfigMappingTest {
         assertEquals("1234", mapping.prop());
     }
 
+    @Test
+    void unremovedInjectionPointByParentType() {
+        assertNotNull(base);
+        assertEquals("default", base.base());
+    }
+
     @Unremovable
     @ConfigMapping(prefix = "mapping")
     public interface UnremovedConfigMapping {
         @WithDefault("1234")
         String prop();
+    }
+
+    public interface Base {
+        @WithDefault("default")
+        String base();
+    }
+
+    @ConfigMapping(prefix = "base")
+    public interface ExtendsBase extends Base {
+        @WithDefault("default")
+        String myProp();
     }
 }

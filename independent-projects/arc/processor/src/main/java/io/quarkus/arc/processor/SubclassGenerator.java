@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -741,16 +742,20 @@ public class SubclassGenerator extends AbstractGenerator {
         // catch exceptions declared on the original method
         boolean addCatchRuntimeException = true;
         boolean addCatchException = true;
+        Set<DotName> declaredExceptions = new LinkedHashSet<>(method.exceptions().size());
         for (Type declaredException : method.exceptions()) {
-            CatchBlockCreator catchDeclaredException = tryCatch.addCatch(declaredException.name().toString());
+            declaredExceptions.add(declaredException.name());
+        }
+        for (DotName declaredException : declaredExceptions) {
+            CatchBlockCreator catchDeclaredException = tryCatch.addCatch(declaredException.toString());
             catchDeclaredException.throwException(catchDeclaredException.getCaughtException());
 
-            if (JAVA_LANG_RUNTIME_EXCEPTION.equals(declaredException.name()) ||
-                    JAVA_LANG_THROWABLE.equals(declaredException.name())) {
+            if (JAVA_LANG_RUNTIME_EXCEPTION.equals(declaredException) ||
+                    JAVA_LANG_THROWABLE.equals(declaredException)) {
                 addCatchRuntimeException = false;
             }
-            if (JAVA_LANG_EXCEPTION.equals(declaredException.name()) ||
-                    JAVA_LANG_THROWABLE.equals(declaredException.name())) {
+            if (JAVA_LANG_EXCEPTION.equals(declaredException) ||
+                    JAVA_LANG_THROWABLE.equals(declaredException)) {
                 addCatchException = false;
             }
         }

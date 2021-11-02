@@ -20,7 +20,7 @@ public class MutinyVertxClientFactory {
 
         WebClientOptions options = new WebClientOptions()
                 .setConnectTimeout((int) vaultBootstrapConfig.connectTimeout.toMillis())
-                .setIdleTimeout((int) vaultBootstrapConfig.readTimeout.getSeconds());
+                .setIdleTimeout((int) vaultBootstrapConfig.readTimeout.getSeconds() * 2);
 
         if (vaultBootstrapConfig.nonProxyHosts.isPresent()) {
             options.setNonProxyHosts(vaultBootstrapConfig.nonProxyHosts.get());

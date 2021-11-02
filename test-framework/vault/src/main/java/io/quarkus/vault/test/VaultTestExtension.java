@@ -48,6 +48,7 @@ import org.testcontainers.containers.output.OutputFrame;
 import io.quarkus.vault.VaultException;
 import io.quarkus.vault.VaultKVSecretEngine;
 import io.quarkus.vault.runtime.VaultConfigHolder;
+import io.quarkus.vault.runtime.VaultIOException;
 import io.quarkus.vault.runtime.VaultVersions;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.backend.VaultInternalSystemBackend;
@@ -251,15 +252,15 @@ public class VaultTestExtension {
 
     private void initVault() throws InterruptedException, IOException {
 
+        waitForContainerToStart();
         vaultClient = createVaultClient();
         VaultInternalSystemBackend vaultInternalSystemBackend = new VaultInternalSystemBackend();
         vaultInternalSystemBackend.setVaultClient(vaultClient);
+        waitForVaultAPIToBeReady(vaultInternalSystemBackend);
 
         VaultInitResponse vaultInit = vaultInternalSystemBackend.init(1, 1);
         String unsealKey = vaultInit.keys.get(0);
         rootToken = vaultInit.rootToken;
-
-        waitForContainerToStart();
 
         try {
             vaultInternalSystemBackend.systemHealthStatus(false, false);
@@ -423,9 +424,28 @@ public class VaultTestExtension {
         Instant started = Instant.now();
         while (Instant.now().isBefore(started.plusSeconds(20))) {
             Container.ExecResult vault_status = vaultContainer.execInContainer(createVaultCommand("vault status"));
-            if (vault_status.getExitCode() == 2) { // 2 => sealed
+            int exitCode = vault_status.getExitCode();
+            log.info("vault status exit code = " + exitCode + " (0=unsealed, 1=error, 2=sealed)");
+            if (exitCode == 2) { // 2 => sealed
                 return;
             }
+            Thread.sleep(1000);
+        }
+        fail("vault failed to start");
+    }
+
+    private void waitForVaultAPIToBeReady(VaultInternalSystemBackend vaultInternalSystemBackend) throws InterruptedException {
+        Instant started = Instant.now();
+        while (Instant.now().isBefore(started.plusSeconds(20))) {
+            try {
+                log.info("checking seal status");
+                VaultSealStatusResult sealStatus = vaultInternalSystemBackend.systemSealStatus();
+                log.info(sealStatus);
+                return;
+            } catch (VaultIOException e) {
+                log.info("vault api not ready: " + e);
+            }
+            Thread.sleep(1000L);
         }
         fail("vault failed to start");
     }

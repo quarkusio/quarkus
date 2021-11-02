@@ -532,10 +532,11 @@ Add the following in your properties file.
 %prod.quarkus.hibernate-orm.sql-load-script = no-file
 ----
 
+[[flyway]]
 == Automatically transitioning to Flyway to Manage Schemas
 
-If you have the Flyway extension installed when running in development mode Quarkus provides a simple way to turn
-your Hibernate auto generated schema into a Flyway migration file. This is intended to make is easy to move from
+If you have the xref:flyway.adoc[Flyway extension] installed when running in development mode, Quarkus provides a simple way to turn
+your Hibernate ORM auto generated schema into a Flyway migration file. This is intended to make is easy to move from
 the early development phase, where Hibernate can be used to quickly setup the schema, to the production phase, where
 Flyway is used to manage schema changes.
 
@@ -548,7 +549,7 @@ link in the Flyway pane. Hit the `Create Initial Migration` button and the follo
 - `%dev.quarkus.flyway.clean-at-start` and ``%test.quarkus.flyway.clean-at-start` will be set, to clean the DB after reload in dev/test mode
 
 WARNING: This button is simply a convenience to quickly get you started with Flyway, it is up to you to determine how you want to
-manage your database schemas in production. In particular the `migrate-at-start` setting may not be rights for all environments.
+manage your database schemas in production. In particular the `migrate-at-start` setting may not be right for all environments.
 
 [[caching]]
 == Caching

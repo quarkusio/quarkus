@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.runtime.devconsole;
 
+import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -64,23 +65,29 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
         schemaExport.setDelimiter(";");
         schemaExport.setImportFiles(importFiles);
         StringWriter writer = new StringWriter();
-        schemaExport.doExecution(action, false, metadata, serviceRegistry,
-                new TargetDescriptor() {
-                    @Override
-                    public EnumSet<TargetType> getTargetTypes() {
-                        return EnumSet.of(TargetType.SCRIPT);
-                    }
+        try {
+            schemaExport.doExecution(action, false, metadata, serviceRegistry,
+                    new TargetDescriptor() {
+                        @Override
+                        public EnumSet<TargetType> getTargetTypes() {
+                            return EnumSet.of(TargetType.SCRIPT);
+                        }
 
-                    @Override
-                    public ScriptTargetOutput getScriptTargetOutput() {
-                        return new ScriptTargetOutputToWriter(writer) {
-                            @Override
-                            public void accept(String command) {
-                                super.accept(command);
-                            }
-                        };
-                    }
-                });
+                        @Override
+                        public ScriptTargetOutput getScriptTargetOutput() {
+                            return new ScriptTargetOutputToWriter(writer) {
+                                @Override
+                                public void accept(String command) {
+                                    super.accept(command);
+                                }
+                            };
+                        }
+                    });
+        } catch (RuntimeException e) {
+            StringWriter stackTraceWriter = new StringWriter();
+            e.printStackTrace(new PrintWriter(stackTraceWriter));
+            return "Could not generate DDL: \n" + stackTraceWriter.toString();
+        }
         return writer.toString();
     }
 

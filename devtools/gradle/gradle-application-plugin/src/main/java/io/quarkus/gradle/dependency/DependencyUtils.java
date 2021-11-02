@@ -157,7 +157,8 @@ public class DependencyUtils {
     public static ExtensionDependency getExtensionInfoOrNull(Project project, ResolvedArtifact artifact) {
         ModuleVersionIdentifier artifactId = artifact.getModuleVersion().getId();
         File artifactFile = artifact.getFile();
-        if (!artifactFile.exists() || !"jar".equals(artifact.getExtension())) {
+
+        if (!artifactFile.exists()) {
             return null;
         }
         if (artifactFile.isDirectory()) {
@@ -165,7 +166,7 @@ public class DependencyUtils {
             if (Files.exists(descriptorPath)) {
                 return loadExtensionInfo(project, descriptorPath, artifactId);
             }
-        } else {
+        } else if ("jar".equals(artifact.getExtension())) {
             try (FileSystem artifactFs = ZipUtils.newFileSystem(artifactFile.toPath())) {
                 Path descriptorPath = artifactFs.getPath(BootstrapConstants.DESCRIPTOR_PATH);
                 if (Files.exists(descriptorPath)) {

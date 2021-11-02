@@ -11,6 +11,19 @@ This guide explains how your Quarkus application can use https://tika.apache.org
 
 https://tika.apache.org/[Apache Tika] is a content analysis toolkit which is used to parse the documents in PDF, Open Document, Excel and many other well known binary and text formats using a simple uniform API. Both the document text and properties (metadata) are available once the document has been parsed.
 
+[NOTE]
+====
+If you are planning to run the application as a native executable and parse documents that may have been created with charsets different than the standard ones supported in Java such as `UTF-8` then you should configure Quarkus to get the native image generator include all the charsets available to the JVM:
+[source,xml]
+----
+<properties>
+    <quarkus.package.type>native</quarkus.package.type>
+    <quarkus.native.add-all-charsets>true</quarkus.native.add-all-charsets>
+<properties>
+----
+====
+
+
 == Prerequisites
 
 To complete this guide, you need:

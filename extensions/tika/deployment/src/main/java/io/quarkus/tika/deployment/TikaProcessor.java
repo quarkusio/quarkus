@@ -26,7 +26,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceDirectoryBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
@@ -86,11 +85,6 @@ public class TikaProcessor {
         resource.produce(new NativeImageResourceDirectoryBuildItem("org/apache/pdfbox/resources/glyphlist"));
         resource.produce(new NativeImageResourceDirectoryBuildItem("org/apache/fontbox/cmap"));
         resource.produce(new NativeImageResourceDirectoryBuildItem("org/apache/fontbox/unicode"));
-    }
-
-    @BuildStep
-    public NativeImageEnableAllCharsetsBuildItem registerAllCharsets() {
-        return new NativeImageEnableAllCharsetsBuildItem();
     }
 
     @BuildStep

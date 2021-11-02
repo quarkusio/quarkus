@@ -181,7 +181,6 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         final DefaultWorkspaceModule mainModule = new DefaultWorkspaceModule(
                 new GAV(appArtifact.getGroupId(), appArtifact.getArtifactId(), appArtifact.getVersion()),
                 project.getProjectDir(), project.getBuildDir());
-
         initProjectModule(project, mainModule, javaConvention.getSourceSets().findByName(SourceSet.MAIN_SOURCE_SET_NAME),
                 false);
         if (mode.equals(LaunchMode.TEST)) {
@@ -482,12 +481,17 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
     private static void initProjectModule(Project project, DefaultWorkspaceModule module, SourceSet sourceSet, boolean test) {
 
+        if (sourceSet == null) {
+            return;
+        }
+
         module.setBuildFiles(PathList.of(project.getBuildFile().toPath()));
 
         final FileCollection allClassesDirs = sourceSet.getOutput().getClassesDirs();
         // some plugins do not add source directories to source sets and they may be missing from sourceSet.getAllJava()
         // see https://github.com/quarkusio/quarkus/issues/20755
         final TaskCollection<AbstractCompile> compileTasks = project.getTasks().withType(AbstractCompile.class);
+
         compileTasks.forEach(t -> {
             if (!t.getEnabled()) {
                 return;

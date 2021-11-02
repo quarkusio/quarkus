@@ -220,7 +220,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 && vertxContext.get(REFRESH_TOKEN_GRANT_RESPONSE) != Boolean.TRUE
                 && vertxContext.get(NEW_AUTHENTICATION) != Boolean.TRUE) {
             final long refreshTokenTimeSkew = (oidcConfig.token.getRefreshTokenTimeSkew()
-                    .orElse(oidcConfig.token.autoRefreshInterval.get())).getSeconds();
+                    .orElseGet(() -> oidcConfig.token.autoRefreshInterval.get())).getSeconds();
             final long expiry = tokenJson.getLong("exp");
             final long now = System.currentTimeMillis() / 1000;
             return now + refreshTokenTimeSkew > expiry;

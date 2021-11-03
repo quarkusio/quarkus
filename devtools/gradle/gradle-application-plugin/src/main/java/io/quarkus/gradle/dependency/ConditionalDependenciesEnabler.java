@@ -81,6 +81,7 @@ public class ConditionalDependenciesEnabler {
                 if (DependencyUtils.exist(availableRuntimeArtifacts,
                         extensionDependency.dependencyConditions)) {
                     enableConditionalDependency(extensionDependency.extensionId);
+                    extensionDependency.setConditional(true);
                     allExtensions.add(extensionDependency);
                     if (!extensionDependency.conditionalDependencies.isEmpty()) {
                         featureVariants.putAll(extractFeatureVariants(Collections.singletonList(extensionDependency)));

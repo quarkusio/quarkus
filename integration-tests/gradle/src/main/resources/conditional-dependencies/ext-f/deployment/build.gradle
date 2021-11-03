@@ -6,6 +6,7 @@ plugins {
 dependencies {
     implementation platform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
     implementation 'io.quarkus:quarkus-core-deployment'
+    implementation project(':ext-g:deployment')
     implementation project(':ext-f:runtime')
 }
 

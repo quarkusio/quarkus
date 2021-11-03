@@ -19,6 +19,7 @@ public class ExtensionDependency {
     AppArtifactCoords deploymentModule;
     List<Dependency> conditionalDependencies;
     List<ArtifactKey> dependencyConditions;
+    boolean isConditional;
 
     ExtensionDependency(ModuleVersionIdentifier extensionId, AppArtifactCoords deploymentModule,
             List<Dependency> conditionalDependencies,
@@ -100,6 +101,14 @@ public class ExtensionDependency {
 
     public String getName() {
         return extensionId.getName();
+    }
+
+    public String getVersion() {
+        return extensionId.getVersion();
+    }
+
+    public void setConditional(boolean isConditional) {
+        this.isConditional = isConditional;
     }
 
     @Override

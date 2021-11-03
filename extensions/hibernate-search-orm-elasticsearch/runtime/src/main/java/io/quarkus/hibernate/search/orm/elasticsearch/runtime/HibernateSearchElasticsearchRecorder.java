@@ -219,6 +219,10 @@ public class HibernateSearchElasticsearchRecorder {
                     .entrySet()) {
                 contributeBackendRuntimeProperties(propertyCollector, backendEntry.getKey(), backendEntry.getValue());
             }
+
+            for (HibernateOrmIntegrationRuntimeInitListener integrationRuntimeInitListener : integrationRuntimeInitListeners) {
+                integrationRuntimeInitListener.contributeRuntimeProperties(propertyCollector);
+            }
         }
 
         private void contributeBackendRuntimeProperties(BiConsumer<String, Object> propertyCollector, String backendName,

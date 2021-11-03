@@ -3,7 +3,7 @@ package io.quarkus.hibernate.search.orm.elasticsearch;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 
-public class HibernateSearchIntegrationRuntimeConfiguredBuildItem extends MultiBuildItem {
+public final class HibernateSearchIntegrationRuntimeConfiguredBuildItem extends MultiBuildItem {
     private final String integrationName;
     private final String persistenceUnitName;
     private final HibernateOrmIntegrationRuntimeInitListener initListener;

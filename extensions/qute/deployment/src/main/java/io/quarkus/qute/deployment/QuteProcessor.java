@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -129,6 +130,7 @@ public class QuteProcessor {
 
     private static final String CHECKED_TEMPLATE_REQUIRE_TYPE_SAFE = "requireTypeSafeExpressions";
     private static final String CHECKED_TEMPLATE_BASE_PATH = "basePath";
+    private static final String BASE_PATH = "templates";
 
     private static final Function<FieldInfo, String> GETTER_FUN = new Function<FieldInfo, String>() {
         @Override
@@ -331,7 +333,10 @@ public class QuteProcessor {
     TemplatesAnalysisBuildItem analyzeTemplates(List<TemplatePathBuildItem> templatePaths,
             TemplateFilePathsBuildItem filePaths, List<CheckedTemplateBuildItem> checkedTemplates,
             List<MessageBundleMethodBuildItem> messageBundleMethods, QuteConfig config) {
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
+
+        checkDuplicatePaths(templatePaths);
+
         List<TemplateAnalysis> analysis = new ArrayList<>();
 
         // A dummy engine instance is used to parse and validate all templates during the build
@@ -462,7 +467,8 @@ public class QuteProcessor {
                             + "()"));
         }
 
-        LOGGER.debugf("Finished analysis of %s templates in %s ms", analysis.size(), System.currentTimeMillis() - start);
+        LOGGER.debugf("Finished analysis of %s templates in %s ms", analysis.size(),
+                TimeUnit.NANOSECONDS.toMillis(start - System.nanoTime()));
         return new TemplatesAnalysisBuildItem(analysis);
     }
 
@@ -1177,27 +1183,28 @@ public class QuteProcessor {
     }
 
     @BuildStep
-    void collectTemplates(ApplicationArchivesBuildItem applicationArchivesBuildItem,
+    void collectTemplates(ApplicationArchivesBuildItem applicationArchives,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             QuteConfig config)
             throws IOException {
-        ApplicationArchive applicationArchive = applicationArchivesBuildItem.getRootArchive();
-        String basePath = "templates";
-        Path templatesPath = null;
-        for (Path rootDir : applicationArchive.getRootDirectories()) {
-            // Note that we cannot use ApplicationArchive.getChildPath(String) here because we would not be able to detect 
-            // a wrong directory name on case-insensitive file systems 
-            templatesPath = Files.list(rootDir).filter(p -> p.getFileName().toString().equals(basePath)).findFirst()
-                    .orElse(null);
-            if (templatesPath != null) {
-                break;
+        Set<Path> basePaths = new HashSet<>();
+
+        for (ApplicationArchive archive : applicationArchives.getAllApplicationArchives()) {
+            for (Path rootDir : archive.getRootDirectories()) {
+                // Note that we cannot use ApplicationArchive.getChildPath(String) here because we would not be able to detect 
+                // a wrong directory name on case-insensitive file systems 
+                Path basePath = Files.list(rootDir).filter(QuteProcessor::isBasePath).findFirst().orElse(null);
+                if (basePath != null) {
+                    LOGGER.debugf("Found templates dir: %s", basePath);
+                    basePaths.add(basePath);
+                    break;
+                }
             }
         }
-        if (templatesPath != null) {
-            LOGGER.debugf("Found templates dir: %s", templatesPath);
-            scan(templatesPath, templatesPath, basePath + "/", watchedPaths, templatePaths, nativeImageResources,
+        for (Path base : basePaths) {
+            scan(base, base, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
                     config.templatePathExclude);
         }
     }
@@ -2093,6 +2100,29 @@ public class QuteProcessor {
             }
         }
         return false;
+    }
+
+    private static boolean isBasePath(Path path) {
+        return path.getFileName().toString().equals(BASE_PATH);
+    }
+
+    private void checkDuplicatePaths(List<TemplatePathBuildItem> templatePaths) {
+        Map<String, List<TemplatePathBuildItem>> duplicates = templatePaths.stream()
+                .collect(Collectors.groupingBy(TemplatePathBuildItem::getPath));
+        for (Iterator<List<TemplatePathBuildItem>> it = duplicates.values().iterator(); it.hasNext();) {
+            List<TemplatePathBuildItem> paths = it.next();
+            if (paths.isEmpty() || paths.size() == 1) {
+                it.remove();
+            }
+        }
+        if (!duplicates.isEmpty()) {
+            StringBuilder builder = new StringBuilder("Duplicate templates found:");
+            for (Entry<String, List<TemplatePathBuildItem>> e : duplicates.entrySet()) {
+                builder.append("\n\t- ").append(e.getKey()).append(": ")
+                        .append(e.getValue().stream().map(TemplatePathBuildItem::getFullPath).collect(Collectors.toList()));
+            }
+            throw new IllegalStateException(builder.toString());
+        }
     }
 
     /**

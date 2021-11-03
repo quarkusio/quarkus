@@ -143,6 +143,30 @@ values:
 
 NOTE: if you use `redirect` or `disabled` and have not added a SSL certificate or keystore, your server will not start!
 
+== Additional HTTP Headers
+
+To enable HTTP headers to be sent on every response, add the following properties:
+
+[source, properties]
+----
+quarkus.http.header."X-Content-Type-Options".value=nosniff
+----
+
+This will include the `X-Content-Type-Options: nosniff` HTTP Header on responses for requests performed on any resource in the application.
+
+You can also specify a `path` pattern and the HTTP `methods` the header needs to be applied:
+
+[source, properties]
+----
+quarkus.http.header.Pragma.value=no-cache
+quarkus.http.header.Pragma.path=/headers/pragma
+quarkus.http.header.Pragma.methods=GET,HEAD
+----
+
+This will apply the `Pragma` header only when the `/headers/pragma` resource is called with a `GET` or a `HEAD` method
+
+include::{generated-dir}/config/quarkus-vertx-http-config-group-header-config.adoc[leveloffset=+1, opts=optional]
+
 == HTTP/2 Support
 
 HTTP/2 is enabled by default, and will be used by browsers if SSL is in use on JDK11 or higher. JDK8 does not support

@@ -620,8 +620,6 @@ Prepare the REST test endpoint, set `application.properties`, for example:
 quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus/
 quarkus.oidc.client-id=quarkus-service-app
 quarkus.oidc.application-type=service
-# required to sign the tokens
-smallrye.jwt.sign.key.location=privateKey.jwk
 ----
 
 and finally write the test code, for example:
@@ -665,6 +663,8 @@ public class BearerTokenAuthorizationTest {
     }
 }
 ----
+
+Note that the `quarkus-test-oidc-server` extension includes a signing RSA private key file in a `JSON Web Key` (`JWK`) format and points to it with a `smallrye.jwt.sign.key.location` configuration property. It allows to use a no argument `sign()` operation to sign the token.
 
 Testing your `quarkus-oidc` `service` application with `OidcWiremockTestResource` provides the best coverage as even the communication channel is tested against the Wiremock HTTP stubs.
 `OidcWiremockTestResource` will be enhanced going forward to support more complex Bearer token test scenarios.

@@ -69,6 +69,11 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[IMPORTANT]
+====
+`quarkus-spring-web` needs to be complemented with either `quarkus-resteasy-jackson` or `quarkus-resteasy-reactive-jackson` in order to work.
+====
+
 == GreetingController
 
 The Quarkus maven plugin automatically generated a controller with the Spring Web annotations to define our REST endpoint (instead of the JAX-RS ones used by default)

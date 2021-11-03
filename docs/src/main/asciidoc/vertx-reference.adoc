@@ -58,7 +58,7 @@ Documentation about the Vert.x Mutiny variant is available on https://smallrye.i
 You can configure the Vert.x instance from the `application.properties` file.
 The following table lists the supported properties:
 
-include::{generated-dir}/config/quarkus-vertx.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-vertx-core.adoc[opts=optional, leveloffset=+1]
 
 
 [[using-vertx-clients]]

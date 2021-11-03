@@ -102,6 +102,7 @@ See the link:security-jwt[Using SmallRye JWT] guide for more information.
 
 See the link:security-oauth2[Using OAuth2] guide for more information.
 
+[[oidc-jwt-oauth2-comparison]]
 === Choosing between OpenId Connect, SmallRye JWT and OAuth2 extensions
 
 `quarkus-oidc` extension requires an OpenId Connect provider such as Keycloak which can be used to verify the Bearer tokens or authenticate the end users with the Authorization Code flow. In both cases `quarkus-oidc` requires a connection to this OpenId Connect provider.

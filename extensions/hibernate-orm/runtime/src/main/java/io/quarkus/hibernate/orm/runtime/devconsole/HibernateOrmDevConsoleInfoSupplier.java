@@ -1,13 +1,15 @@
 package io.quarkus.hibernate.orm.runtime.devconsole;
 
+import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.TreeMap;
 import java.util.function.Supplier;
 
 import org.hibernate.LockOptions;
@@ -30,41 +32,30 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
 
     public static void pushPersistenceUnit(String persistenceUnitName,
             Metadata metadata, ServiceRegistry serviceRegistry, String importFile) {
-        INSTANCE.persistenceUnits.add(persistenceUnitName);
-
-        String createSchema = generateDDL(SchemaExport.Action.CREATE, metadata, serviceRegistry, importFile);
-        INSTANCE.createDDLs.put(persistenceUnitName, createSchema);
-
-        String dropSchema = generateDDL(SchemaExport.Action.DROP, metadata, serviceRegistry, importFile);
-        INSTANCE.dropDDLs.put(persistenceUnitName, dropSchema);
-
+        List<EntityInfo> managedEntities = new ArrayList<>();
         for (PersistentClass entityBinding : metadata.getEntityBindings()) {
-            List<EntityInfo> list = INSTANCE.managedEntities.computeIfAbsent(persistenceUnitName,
-                    pu -> new ArrayList<>());
-            list.add(new HibernateOrmDevConsoleInfoSupplier.EntityInfo(entityBinding.getClassName(),
-                    entityBinding.getTable().getName(), persistenceUnitName));
+            managedEntities.add(new EntityInfo(entityBinding.getClassName(), entityBinding.getTable().getName()));
         }
 
+        List<QueryInfo> namedQueries = new ArrayList<>();
         for (NamedQueryDefinition queryDefinition : metadata.getNamedQueryDefinitions()) {
-            List<QueryInfo> list = INSTANCE.namedQueries.computeIfAbsent(persistenceUnitName,
-                    pu -> new ArrayList<>());
-            list.add(new QueryInfo(queryDefinition));
+            namedQueries.add(new QueryInfo(queryDefinition));
         }
 
+        List<QueryInfo> namedNativeQueries = new ArrayList<>();
         for (NamedSQLQueryDefinition staticQueryDefinition : metadata.getNamedNativeQueryDefinitions()) {
-            List<QueryInfo> list = INSTANCE.namedNativeQueries.computeIfAbsent(persistenceUnitName,
-                    pu -> new ArrayList<>());
-            list.add(new QueryInfo(staticQueryDefinition));
+            namedNativeQueries.add(new QueryInfo(staticQueryDefinition));
         }
+
+        String createDDL = generateDDL(SchemaExport.Action.CREATE, metadata, serviceRegistry, importFile);
+        String dropDDL = generateDDL(SchemaExport.Action.DROP, metadata, serviceRegistry, importFile);
+
+        INSTANCE.persistenceUnits.put(persistenceUnitName, new PersistenceUnitInfo(persistenceUnitName, managedEntities,
+                namedQueries, namedNativeQueries, createDDL, dropDDL));
     }
 
     public static void clearData() {
         INSTANCE.persistenceUnits.clear();
-        INSTANCE.createDDLs.clear();
-        INSTANCE.dropDDLs.clear();
-        INSTANCE.managedEntities.clear();
-        INSTANCE.namedQueries.clear();
-        INSTANCE.namedNativeQueries.clear();
     }
 
     private static String generateDDL(SchemaExport.Action action, Metadata metadata, ServiceRegistry serviceRegistry,
@@ -74,23 +65,29 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
         schemaExport.setDelimiter(";");
         schemaExport.setImportFiles(importFiles);
         StringWriter writer = new StringWriter();
-        schemaExport.doExecution(action, false, metadata, serviceRegistry,
-                new TargetDescriptor() {
-                    @Override
-                    public EnumSet<TargetType> getTargetTypes() {
-                        return EnumSet.of(TargetType.SCRIPT);
-                    }
+        try {
+            schemaExport.doExecution(action, false, metadata, serviceRegistry,
+                    new TargetDescriptor() {
+                        @Override
+                        public EnumSet<TargetType> getTargetTypes() {
+                            return EnumSet.of(TargetType.SCRIPT);
+                        }
 
-                    @Override
-                    public ScriptTargetOutput getScriptTargetOutput() {
-                        return new ScriptTargetOutputToWriter(writer) {
-                            @Override
-                            public void accept(String command) {
-                                super.accept(command);
-                            }
-                        };
-                    }
-                });
+                        @Override
+                        public ScriptTargetOutput getScriptTargetOutput() {
+                            return new ScriptTargetOutputToWriter(writer) {
+                                @Override
+                                public void accept(String command) {
+                                    super.accept(command);
+                                }
+                            };
+                        }
+                    });
+        } catch (RuntimeException e) {
+            StringWriter stackTraceWriter = new StringWriter();
+            e.printStackTrace(new PrintWriter(stackTraceWriter));
+            return "Could not generate DDL: \n" + stackTraceWriter.toString();
+        }
         return writer.toString();
     }
 
@@ -101,56 +98,73 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
 
     public static class PersistenceUnitsInfo {
 
-        private final List<String> persistenceUnits = Collections.synchronizedList(new ArrayList<>());
-        private final Map<String, List<EntityInfo>> managedEntities = new ConcurrentHashMap<>();
-        private final Map<String, List<QueryInfo>> namedQueries = new ConcurrentHashMap<>();
-        private final Map<String, List<QueryInfo>> namedNativeQueries = new ConcurrentHashMap<>();
-        private final Map<String, String> createDDLs = new ConcurrentHashMap<>();
-        private final Map<String, String> dropDDLs = new ConcurrentHashMap<>();
-        private boolean sorted;
+        private final Map<String, PersistenceUnitInfo> persistenceUnits = Collections
+                .synchronizedMap(new TreeMap<>(new PersistenceUnitNameComparator()));
 
-        public List<String> getPersistenceUnits() {
-            if (!sorted) {
-                sorted = true;
-                persistenceUnits.sort(new PersistenceUnitNameComparator());
-            }
-            return persistenceUnits;
-        }
-
-        public Map<String, String> getCreateDDLs() {
-            return createDDLs;
-        }
-
-        public Map<String, String> getDropDDLs() {
-            return dropDDLs;
-        }
-
-        public List<EntityInfo> getManagedEntities(String pu) {
-            return managedEntities.getOrDefault(pu, Collections.emptyList());
-        }
-
-        public List<QueryInfo> getNamedQueries(String pu) {
-            return namedQueries.getOrDefault(pu, Collections.emptyList());
-        }
-
-        public List<QueryInfo> getNamedNativeQueries(String pu) {
-            return namedNativeQueries.getOrDefault(pu, Collections.emptyList());
-        }
-
-        public List<QueryInfo> getAllNamedQueries(String pu) {
-            ArrayList<QueryInfo> allQueries = new ArrayList<>();
-            allQueries.addAll(namedQueries.getOrDefault(pu, Collections.emptyList()));
-            allQueries.addAll(namedNativeQueries.getOrDefault(pu, Collections.emptyList()));
-            return allQueries;
+        public Collection<PersistenceUnitInfo> getPersistenceUnits() {
+            return persistenceUnits.values();
         }
 
         public int getNumberOfNamedQueries() {
-            return namedQueries.values().stream().mapToInt(List::size).reduce(Integer::sum).orElse(0)
-                    + namedNativeQueries.values().stream().mapToInt(List::size).reduce(Integer::sum).orElse(0);
+            return persistenceUnits.values().stream().map(PersistenceUnitInfo::getAllNamedQueries)
+                    .mapToInt(List::size).reduce(Integer::sum).orElse(0);
         }
 
         public int getNumberOfEntities() {
-            return managedEntities.values().stream().mapToInt(List::size).reduce(Integer::sum).orElse(0);
+            return persistenceUnits.values().stream().map(PersistenceUnitInfo::getManagedEntities)
+                    .mapToInt(List::size).reduce(Integer::sum).orElse(0);
+        }
+
+    }
+
+    public static class PersistenceUnitInfo {
+
+        private final String name;
+        private final List<EntityInfo> managedEntities;
+        private final List<QueryInfo> namedQueries;
+        private final List<QueryInfo> namedNativeQueries;
+        private final String createDDL;
+        private final String dropDDL;
+
+        public PersistenceUnitInfo(String name, List<EntityInfo> managedEntities, List<QueryInfo> namedQueries,
+                List<QueryInfo> namedNativeQueries, String createDDL, String dropDDL) {
+            this.name = name;
+            this.managedEntities = managedEntities;
+            this.namedQueries = namedQueries;
+            this.namedNativeQueries = namedNativeQueries;
+            this.createDDL = createDDL;
+            this.dropDDL = dropDDL;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public List<EntityInfo> getManagedEntities() {
+            return managedEntities;
+        }
+
+        public List<QueryInfo> getNamedQueries() {
+            return namedQueries;
+        }
+
+        public List<QueryInfo> getNamedNativeQueries() {
+            return namedNativeQueries;
+        }
+
+        public List<QueryInfo> getAllNamedQueries() {
+            ArrayList<QueryInfo> allQueries = new ArrayList<>();
+            allQueries.addAll(namedQueries);
+            allQueries.addAll(namedNativeQueries);
+            return allQueries;
+        }
+
+        public String getCreateDDL() {
+            return createDDL;
+        }
+
+        public String getDropDDL() {
+            return dropDDL;
         }
 
     }
@@ -159,12 +173,10 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
 
         private final String className;
         private final String tableName;
-        private final String persistenceUnitName;
 
-        public EntityInfo(String className, String tableName, String persistenceUnitName) {
+        public EntityInfo(String className, String tableName) {
             this.className = className;
             this.tableName = tableName;
-            this.persistenceUnitName = persistenceUnitName;
         }
 
         public String getClassName() {
@@ -175,9 +187,6 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
             return tableName;
         }
 
-        public String getPersistenceUnitName() {
-            return persistenceUnitName;
-        }
     }
 
     public static class QueryInfo {

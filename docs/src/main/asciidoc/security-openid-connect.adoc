@@ -1091,4 +1091,6 @@ Note Quarkus `web-app` applications always require `quarkus.oidc.client-id` prop
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
 * link:security-openid-connect-client[Quarkus - Using OpenID Connect and OAuth2 Client and Filters to manage access tokens]
 * link:security-openid-connect-dev-services[Dev Services for Keycloak]
+* link:security-jwt-build[Sign and encrypt JWT tokens with SmallRye JWT Build]
+* link:security#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
 * link:security[Quarkus Security]

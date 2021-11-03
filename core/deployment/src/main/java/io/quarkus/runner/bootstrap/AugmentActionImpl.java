@@ -21,7 +21,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.BootstrapDebug;
@@ -34,23 +33,16 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.builder.BuildChain;
 import io.quarkus.builder.BuildChainBuilder;
-import io.quarkus.builder.BuildExecutionBuilder;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.builder.item.BuildItem;
-import io.quarkus.deployment.ExtensionLoader;
 import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
-import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceHandledBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
-import io.quarkus.deployment.builditem.RawCommandLineArgumentsBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
@@ -161,28 +153,7 @@ public class AugmentActionImpl implements AugmentAction {
                 }).toArray(Class[]::new);
         BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, targets);
 
-        String debugSourcesDir = BootstrapDebug.DEBUG_SOURCES_DIR;
-        if (debugSourcesDir != null) {
-            for (GeneratedClassBuildItem i : result.consumeMulti(GeneratedClassBuildItem.class)) {
-                try {
-                    if (i.getSource() != null) {
-                        File debugPath = new File(debugSourcesDir);
-                        if (!debugPath.exists()) {
-                            debugPath.mkdir();
-                        }
-                        File sourceFile = new File(debugPath, i.getName() + ".zig");
-                        sourceFile.getParentFile().mkdirs();
-                        Files.write(sourceFile.toPath(), i.getSource().getBytes(StandardCharsets.UTF_8),
-                                StandardOpenOption.CREATE);
-                        log.infof("Wrote source: %s", sourceFile.getAbsolutePath());
-                    } else {
-                        log.infof("Source not available: %s", i.getName());
-                    }
-                } catch (Exception t) {
-                    log.errorf(t, "Failed to write debug source file: %s", i.getName());
-                }
-            }
-        }
+        writeDebugSourceFile(result);
         try {
             BiConsumer<Object, BuildResult> consumer = (BiConsumer<Object, BuildResult>) Class
                     .forName(resultHandler, false, classLoader)
@@ -203,6 +174,26 @@ public class AugmentActionImpl implements AugmentAction {
         BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, ArtifactResultBuildItem.class,
                 DeploymentResultBuildItem.class);
 
+        writeDebugSourceFile(result);
+
+        JarBuildItem jarBuildItem = result.consumeOptional(JarBuildItem.class);
+        NativeImageBuildItem nativeImageBuildItem = result.consumeOptional(NativeImageBuildItem.class);
+        List<ArtifactResultBuildItem> artifactResultBuildItems = result.consumeMulti(ArtifactResultBuildItem.class);
+        BuildSystemTargetBuildItem buildSystemTargetBuildItem = result.consume(BuildSystemTargetBuildItem.class);
+
+        // this depends on the fact that the order in which we can obtain MultiBuildItems is the same as they are produced
+        // we want to write result of the final artifact created
+        ArtifactResultBuildItem lastResult = artifactResultBuildItems.get(artifactResultBuildItems.size() - 1);
+        writeArtifactResultMetadataFile(buildSystemTargetBuildItem, lastResult);
+
+        return new AugmentResult(artifactResultBuildItems.stream()
+                .map(a -> new ArtifactResult(a.getPath(), a.getType(), a.getMetadata()))
+                .collect(Collectors.toList()),
+                jarBuildItem != null ? jarBuildItem.toJarResult() : null,
+                nativeImageBuildItem != null ? nativeImageBuildItem.getPath() : null);
+    }
+
+    private void writeDebugSourceFile(BuildResult result) {
         String debugSourcesDir = BootstrapDebug.DEBUG_SOURCES_DIR;
         if (debugSourcesDir != null) {
             for (GeneratedClassBuildItem i : result.consumeMulti(GeneratedClassBuildItem.class)) {
@@ -225,22 +216,6 @@ public class AugmentActionImpl implements AugmentAction {
                 }
             }
         }
-
-        JarBuildItem jarBuildItem = result.consumeOptional(JarBuildItem.class);
-        NativeImageBuildItem nativeImageBuildItem = result.consumeOptional(NativeImageBuildItem.class);
-        List<ArtifactResultBuildItem> artifactResultBuildItems = result.consumeMulti(ArtifactResultBuildItem.class);
-        BuildSystemTargetBuildItem buildSystemTargetBuildItem = result.consume(BuildSystemTargetBuildItem.class);
-
-        // this depends on the fact that the order in which we can obtain MultiBuildItems is the same as they are produced
-        // we want to write result of the final artifact created
-        ArtifactResultBuildItem lastResult = artifactResultBuildItems.get(artifactResultBuildItems.size() - 1);
-        writeArtifactResultMetadataFile(buildSystemTargetBuildItem, lastResult);
-
-        return new AugmentResult(artifactResultBuildItems.stream()
-                .map(a -> new ArtifactResult(a.getPath(), a.getType(), a.getMetadata()))
-                .collect(Collectors.toList()),
-                jarBuildItem != null ? jarBuildItem.toJarResult() : null,
-                nativeImageBuildItem != null ? nativeImageBuildItem.getPath() : null);
     }
 
     private void writeArtifactResultMetadataFile(BuildSystemTargetBuildItem outputTargetBuildItem,
@@ -292,70 +267,6 @@ public class AugmentActionImpl implements AugmentAction {
         return new StartupActionImpl(curatedApplication, result);
     }
 
-    /**
-     * Runs a custom augmentation action, such as generating config.
-     *
-     * @param chainBuild A consumer that customises the build to select the output targets
-     * @param executionBuild A consumer that can see the initial build execution
-     * @return The build result
-     */
-    public BuildResult runCustomAction(Consumer<BuildChainBuilder> chainBuild, Consumer<BuildExecutionBuilder> executionBuild) {
-        ProfileManager.setLaunchMode(launchMode);
-        QuarkusClassLoader classLoader = curatedApplication.getAugmentClassLoader();
-
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
-        try {
-            Thread.currentThread().setContextClassLoader(classLoader);
-
-            final BuildChainBuilder chainBuilder = BuildChain.builder();
-            chainBuilder.setClassLoader(classLoader);
-
-            ExtensionLoader.loadStepsFrom(classLoader, new Properties(),
-                    curatedApplication.getAppModel(), launchMode, devModeType, null)
-                    .accept(chainBuilder);
-            chainBuilder.loadProviders(classLoader);
-
-            for (Consumer<BuildChainBuilder> c : chainCustomizers) {
-                c.accept(chainBuilder);
-            }
-            chainBuilder
-                    .addInitial(ShutdownContextBuildItem.class)
-                    .addInitial(LaunchModeBuildItem.class)
-                    .addInitial(CuratedApplicationShutdownBuildItem.class)
-                    .addInitial(LiveReloadBuildItem.class)
-                    .addInitial(RawCommandLineArgumentsBuildItem.class);
-            chainBuild.accept(chainBuilder);
-
-            BuildChain chain = chainBuilder
-                    .build();
-            boolean auxiliaryApplication = curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication();
-            BuildExecutionBuilder execBuilder = chain.createExecutionBuilder("main")
-                    .produce(new LaunchModeBuildItem(launchMode,
-                            devModeType == null ? Optional.empty() : Optional.of(devModeType),
-                            auxiliaryApplication,
-                            Optional.ofNullable(curatedApplication.getQuarkusBootstrap().isHostApplicationIsTestOnly()
-                                    ? DevModeType.TEST_ONLY
-                                    : (auxiliaryApplication ? DevModeType.LOCAL : null)),
-                            curatedApplication.getQuarkusBootstrap().isTest()))
-                    .produce(new ShutdownContextBuildItem())
-                    .produce(new CuratedApplicationShutdownBuildItem(curatedApplication.getAugmentClassLoader(), true))
-                    .produce(new RawCommandLineArgumentsBuildItem())
-                    .produce(new LiveReloadBuildItem());
-            executionBuild.accept(execBuilder);
-            return execBuilder
-                    .execute();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to run task", e);
-        } finally {
-            try {
-                ConfigProviderResolver.instance().releaseConfig(ConfigProviderResolver.instance().getConfig(classLoader));
-            } catch (Exception ignore) {
-
-            }
-            Thread.currentThread().setContextClassLoader(old);
-        }
-    }
-
     private BuildResult runAugment(boolean firstRun, Set<String> changedResources,
             ClassChangeInformation classChangeInformation, ClassLoader deploymentClassLoader,
             Class<? extends BuildItem>... finalOutputs) {
@@ -375,7 +286,7 @@ public class AugmentActionImpl implements AugmentAction {
                     .setTargetDir(quarkusBootstrap.getTargetDirectory())
                     .setDeploymentClassLoader(deploymentClassLoader)
                     .setBuildSystemProperties(quarkusBootstrap.getBuildSystemProperties())
-                    .setEffectiveModel(curatedApplication.getAppModel());
+                    .setEffectiveModel(curatedApplication.getApplicationModel());
             if (quarkusBootstrap.getBaseName() != null) {
                 builder.setBaseName(quarkusBootstrap.getBaseName());
             }
@@ -401,7 +312,7 @@ public class AugmentActionImpl implements AugmentAction {
                 //but we only need to add it to the additional app archives
                 //if it is forced as an app archive
                 if (i.isForceApplicationArchive()) {
-                    builder.addAdditionalApplicationArchive(i.getArchivePath());
+                    builder.addAdditionalApplicationArchive(i.getResolvedPaths());
                 }
             }
             builder.excludeFromIndexing(quarkusBootstrap.getExcludeFromClassPath());

@@ -50,7 +50,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
                 .setTargetDir(quarkusBootstrap.getTargetDirectory())
                 .setDeploymentClassLoader(curatedApplication.createDeploymentClassLoader())
                 .setBuildSystemProperties(quarkusBootstrap.getBuildSystemProperties())
-                .setEffectiveModel(curatedApplication.getAppModel());
+                .setEffectiveModel(curatedApplication.getApplicationModel());
         if (quarkusBootstrap.getBaseName() != null) {
             builder.setBaseName(quarkusBootstrap.getBaseName());
         }
@@ -69,7 +69,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
             //but we only need to add it to the additional app archives
             //if it is forced as an app archive
             if (i.isForceApplicationArchive()) {
-                builder.addAdditionalApplicationArchive(i.getArchivePath());
+                builder.addAdditionalApplicationArchive(i.getResolvedPaths());
             }
         }
         builder.addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
@@ -122,8 +122,10 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
                 }
             }
             resultMap.put("files", result);
-            List javaargs = new ArrayList<String>();
+            final List<String> javaargs = new ArrayList<>();
             javaargs.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
+            javaargs.add(
+                    "-Djava.util.concurrent.ForkJoinPool.common.threadFactory=io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThreadFactory");
             resultMap.put("java-args", javaargs);
             resultMap.put("main-class", buildResult.consume(MainClassBuildItem.class).getClassName());
             if (nativeRequested) {

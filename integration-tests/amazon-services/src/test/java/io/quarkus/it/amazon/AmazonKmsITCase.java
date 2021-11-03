@@ -1,8 +1,8 @@
 package io.quarkus.it.amazon;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class AmazonKmsITCase extends AmazonKmsTest {
 
 }

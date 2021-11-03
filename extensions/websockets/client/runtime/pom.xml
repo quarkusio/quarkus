@@ -24,6 +24,10 @@
             <artifactId>quarkus-vertx</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus.security</groupId>
+            <artifactId>quarkus-security</artifactId>
+        </dependency>
+        <dependency>
             <groupId>jakarta.websocket</groupId>
             <artifactId>jakarta.websocket-api</artifactId>
         </dependency>

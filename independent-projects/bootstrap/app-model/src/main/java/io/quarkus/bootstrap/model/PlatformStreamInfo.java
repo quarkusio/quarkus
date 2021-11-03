@@ -1,5 +1,7 @@
 package io.quarkus.bootstrap.model;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,7 +23,7 @@ public class PlatformStreamInfo implements Serializable {
         return id;
     }
 
-    boolean isAligned(Collection<AppArtifactCoords> importedBoms) {
+    boolean isAligned(Collection<ArtifactCoords> importedBoms) {
         if (releases.isEmpty()) {
             return true;
         }
@@ -33,22 +35,22 @@ public class PlatformStreamInfo implements Serializable {
         return false;
     }
 
-    List<List<String>> getPossibleAlignemnts(Collection<AppArtifactCoords> importedPlatformBoms) {
-        final Map<AppArtifactKey, String> importedKeys = new HashMap<>(importedPlatformBoms.size());
-        for (AppArtifactCoords bom : importedPlatformBoms) {
+    List<List<String>> getPossibleAlignemnts(Collection<ArtifactCoords> importedPlatformBoms) {
+        final Map<ArtifactKey, String> importedKeys = new HashMap<>(importedPlatformBoms.size());
+        for (ArtifactCoords bom : importedPlatformBoms) {
             importedKeys.put(bom.getKey(), bom.getVersion());
         }
         final List<List<String>> suggestions = new ArrayList<>();
         for (PlatformReleaseInfo release : releases.values()) {
-            final Map<AppArtifactKey, AppArtifactCoords> stackBoms = new HashMap<>(release.getBoms().size());
-            for (AppArtifactCoords bom : release.getBoms()) {
+            final Map<ArtifactKey, ArtifactCoords> stackBoms = new HashMap<>(release.getBoms().size());
+            for (ArtifactCoords bom : release.getBoms()) {
                 stackBoms.put(bom.getKey(), bom);
             }
             if (stackBoms.keySet().containsAll(importedKeys.keySet())) {
                 final List<String> suggestion = new ArrayList<>(importedPlatformBoms.size());
                 suggestions.add(suggestion);
-                for (Map.Entry<AppArtifactKey, String> bomKey : importedKeys.entrySet()) {
-                    final AppArtifactCoords stackBom = stackBoms.get(bomKey.getKey());
+                for (Map.Entry<ArtifactKey, String> bomKey : importedKeys.entrySet()) {
+                    final ArtifactCoords stackBom = stackBoms.get(bomKey.getKey());
                     if (!bomKey.getValue().equals(stackBom.getVersion())) {
                         suggestion.add(bomKey.getKey().getGroupId() + ":" + bomKey.getKey().getArtifactId() + ":"
                                 + bomKey.getValue() + " -> " + stackBom.getVersion());

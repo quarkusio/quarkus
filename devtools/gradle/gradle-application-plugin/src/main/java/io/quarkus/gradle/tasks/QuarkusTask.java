@@ -5,8 +5,8 @@ import java.util.Properties;
 
 import org.gradle.api.DefaultTask;
 
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 public abstract class QuarkusTask extends DefaultTask {
 
@@ -26,7 +26,7 @@ public abstract class QuarkusTask extends DefaultTask {
         return extension;
     }
 
-    protected Properties getBuildSystemProperties(AppArtifact appArtifact) {
+    protected Properties getBuildSystemProperties(ResolvedDependency appArtifact) {
         final Map<String, ?> properties = getProject().getProperties();
         final Properties realProperties = new Properties();
         for (Map.Entry<String, ?> entry : properties.entrySet()) {

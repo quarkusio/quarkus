@@ -1,7 +1,7 @@
 package io.quarkus.redis.it;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class HealthCheckIT extends HealthCheckTest {
 }

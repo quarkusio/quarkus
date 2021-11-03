@@ -51,6 +51,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -62,6 +63,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
@@ -142,7 +144,8 @@ public class SmallRyeReactiveMessagingProcessor {
             BuildProducer<MediatorBuildItem> mediatorMethods,
             BuildProducer<EmitterBuildItem> emitters,
             BuildProducer<ChannelBuildItem> channels,
-            BuildProducer<ValidationErrorBuildItem> validationErrors) {
+            BuildProducer<ValidationErrorBuildItem> validationErrors,
+            BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer) {
 
         // We need to collect all business methods annotated with @Incoming/@Outgoing first
         for (BeanInfo bean : beanDiscoveryFinished.beanStream().classBeans()) {
@@ -162,9 +165,19 @@ public class SmallRyeReactiveMessagingProcessor {
                         validationErrors.produce(new ValidationErrorBuildItem(
                                 new DeploymentException("Empty @Incoming annotation on method " + method)));
                     }
+                    if (incoming != null) {
+                        configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
+                                "mp.messaging.incoming." + incoming.value().asString() + ".connector", String.class, null,
+                                "The connector to use", null, null, ConfigPhase.BUILD_TIME));
+                    }
                     if (outgoing != null && outgoing.value().asString().isEmpty()) {
                         validationErrors.produce(new ValidationErrorBuildItem(
                                 new DeploymentException("Empty @Outgoing annotation on method " + method)));
+                    }
+                    if (outgoing != null) {
+                        configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
+                                "mp.messaging.outgoing." + outgoing.value().asString() + ".connector", String.class, null,
+                                "The connector to use", null, null, ConfigPhase.BUILD_TIME));
                     }
                     if (isSynthetic(method.flags())) {
                         continue;

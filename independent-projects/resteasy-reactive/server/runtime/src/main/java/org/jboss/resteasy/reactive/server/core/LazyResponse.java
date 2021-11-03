@@ -15,6 +15,16 @@ public interface LazyResponse {
      */
     boolean isCreated();
 
+    /**
+     * If {@code true}, it means that the Response is static and its data has been pre-populated and known in the request
+     * context.
+     * Otherwise, the build response could contain data that is not known in the request context and therefore needs to be
+     * consulted.
+     */
+    default boolean isPredetermined() {
+        return true;
+    }
+
     class Existing implements LazyResponse {
         final Response response;
 

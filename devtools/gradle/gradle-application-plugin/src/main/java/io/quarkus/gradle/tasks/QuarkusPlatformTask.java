@@ -18,7 +18,6 @@ import org.gradle.api.attributes.Category;
 import org.gradle.api.plugins.JavaPlugin;
 
 import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
@@ -26,6 +25,8 @@ import io.quarkus.devtools.project.buildfile.BuildFile;
 import io.quarkus.devtools.project.buildfile.GradleGroovyProjectBuildFile;
 import io.quarkus.devtools.project.buildfile.GradleKotlinProjectBuildFile;
 import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACT;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
@@ -65,12 +66,12 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
 
         final Configuration boms = getProject().getConfigurations()
                 .detachedConfiguration(bomDeps.toArray(new org.gradle.api.artifacts.Dependency[0]));
-        final Set<AppArtifactKey> processedKeys = new HashSet<>(1);
+        final Set<ArtifactKey> processedKeys = new HashSet<>(1);
 
         List<ArtifactCoords> platforms = new ArrayList<>();
         boms.getResolutionStrategy().eachDependency(d -> {
             if (!d.getTarget().getName().endsWith(BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX)
-                    || !processedKeys.add(new AppArtifactKey(d.getTarget().getGroup(), d.getTarget().getName()))) {
+                    || !processedKeys.add(new GACT(d.getTarget().getGroup(), d.getTarget().getName()))) {
                 return;
             }
             final ArtifactCoords platform = new ArtifactCoords(d.getTarget().getGroup(), d.getTarget().getName(),

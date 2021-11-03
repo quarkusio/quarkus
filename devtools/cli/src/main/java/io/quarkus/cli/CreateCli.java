@@ -16,7 +16,6 @@ import io.quarkus.devtools.commands.handlers.CreateProjectCommandHandler;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.codegen.SourceType;
 import picocli.CommandLine;
-import picocli.CommandLine.Mixin;
 
 @CommandLine.Command(name = "cli", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Create a Quarkus command-line project.", description = "%n"
         + "This command will create a Java project in a new ARTIFACT-ID directory.", footer = { "%n"
@@ -24,7 +23,7 @@ import picocli.CommandLine.Mixin;
                 + "it will use Maven to build an artifact with GROUP-ID='org.acme', ARTIFACT-ID='code-with-quarkus', and VERSION='1.0.0-SNAPSHOT'."
                 + "%n" }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class CreateCli extends BaseCreateCommand {
-    @Mixin
+    @CommandLine.Mixin
     TargetGAVGroup gav = new TargetGAVGroup();
 
     @CommandLine.Option(order = 1, paramLabel = "EXTENSION", names = { "-x",

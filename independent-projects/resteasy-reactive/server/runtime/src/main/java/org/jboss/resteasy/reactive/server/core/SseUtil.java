@@ -4,6 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import javax.ws.rs.core.HttpHeaders;
@@ -14,6 +16,7 @@ import javax.ws.rs.sse.OutboundSseEvent;
 import javax.ws.rs.sse.SseEvent;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.util.CommonSseUtil;
+import org.jboss.resteasy.reactive.server.handlers.PublisherResponseHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.OutboundSseEventImpl;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 
@@ -21,7 +24,8 @@ public class SseUtil extends CommonSseUtil {
 
     private static final String NL = "\n";
 
-    public static CompletionStage<?> send(ResteasyReactiveRequestContext context, OutboundSseEvent event) {
+    public static CompletionStage<?> send(ResteasyReactiveRequestContext context, OutboundSseEvent event,
+            List<PublisherResponseHandler.StreamingResponseCustomizer> customizers) {
         ServerHttpResponse response = context.serverResponse();
         if (response.closed()) {
             // FIXME: check spec
@@ -35,7 +39,7 @@ public class SseUtil extends CommonSseUtil {
             ret.completeExceptionally(e);
             return ret;
         }
-        setHeaders(context, response);
+        setHeaders(context, response, customizers);
         return response.write(data.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -142,6 +146,11 @@ public class SseUtil extends CommonSseUtil {
     }
 
     public static void setHeaders(ResteasyReactiveRequestContext context, ServerHttpResponse response) {
+        setHeaders(context, response, Collections.emptyList());
+    }
+
+    public static void setHeaders(ResteasyReactiveRequestContext context, ServerHttpResponse response,
+            List<PublisherResponseHandler.StreamingResponseCustomizer> customizers) {
         // FIXME: spec says we should flush the headers when first message is sent or when the resource method returns, whichever
         // happens first
         if (!response.headWritten()) {
@@ -151,6 +160,9 @@ public class SseUtil extends CommonSseUtil {
                 response.setResponseHeader(SSE_CONTENT_TYPE, context.getTarget().getSseElementType().toString());
             }
             response.setChunked(true);
+            for (int i = 0; i < customizers.size(); i++) {
+                customizers.get(i).customize(response);
+            }
             // FIXME: other headers?
         }
     }

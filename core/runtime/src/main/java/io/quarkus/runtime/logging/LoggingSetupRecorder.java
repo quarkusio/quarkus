@@ -55,7 +55,10 @@ public class LoggingSetupRecorder {
 
     private static final org.jboss.logging.Logger log = org.jboss.logging.Logger.getLogger(LoggingSetupRecorder.class);
 
-    public LoggingSetupRecorder() {
+    final RuntimeValue<ConsoleRuntimeConfig> consoleRuntimeConfig;
+
+    public LoggingSetupRecorder(RuntimeValue<ConsoleRuntimeConfig> consoleRuntimeConfig) {
+        this.consoleRuntimeConfig = consoleRuntimeConfig;
     }
 
     @SuppressWarnings("unused") //called via reflection, as it is in an isolated CL
@@ -70,14 +73,13 @@ public class LoggingSetupRecorder {
         ConfigInstantiator.handleObject(buildConfig);
         ConsoleRuntimeConfig consoleRuntimeConfig = new ConsoleRuntimeConfig();
         ConfigInstantiator.handleObject(consoleRuntimeConfig);
-        new LoggingSetupRecorder().initializeLogging(config, buildConfig, consoleRuntimeConfig, false, null,
+        new LoggingSetupRecorder(new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(config, buildConfig, false, null,
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(), banner, LaunchMode.DEVELOPMENT);
     }
 
     public void initializeLogging(LogConfig config, LogBuildTimeConfig buildConfig,
-            ConsoleRuntimeConfig consoleConfig,
             final boolean enableWebStream,
             final RuntimeValue<Optional<Handler>> devUiConsoleHandler,
             final List<RuntimeValue<Optional<Handler>>> additionalHandlers,
@@ -121,7 +123,8 @@ public class LoggingSetupRecorder {
         final ArrayList<Handler> handlers = new ArrayList<>(3 + additionalHandlers.size());
 
         if (config.console.enable) {
-            final Handler consoleHandler = configureConsoleHandler(config.console, consoleConfig, errorManager, cleanupFiler,
+            final Handler consoleHandler = configureConsoleHandler(config.console, consoleRuntimeConfig.getValue(),
+                    errorManager, cleanupFiler,
                     possibleFormatters, possibleBannerSupplier, launchMode);
             errorManager = consoleHandler.getErrorManager();
             handlers.add(consoleHandler);
@@ -155,7 +158,8 @@ public class LoggingSetupRecorder {
         }
 
         if (!categories.isEmpty()) {
-            Map<String, Handler> namedHandlers = createNamedHandlers(config, consoleConfig, possibleFormatters, errorManager,
+            Map<String, Handler> namedHandlers = createNamedHandlers(config, consoleRuntimeConfig.getValue(),
+                    possibleFormatters, errorManager,
                     cleanupFiler, launchMode);
 
             Map<String, Handler> additionalNamedHandlersMap;

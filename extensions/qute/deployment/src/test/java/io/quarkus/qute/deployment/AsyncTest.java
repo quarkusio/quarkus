@@ -24,7 +24,7 @@ public class AsyncTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(TemplateDataTest.Foo.class)
+                    .addClass(Foo.class)
                     .addAsResource(new StringAsset("{foo.val} is not {foo.val.setScale(2,roundingMode)}"),
                             "templates/foo.txt"));
 
@@ -34,14 +34,14 @@ public class AsyncTest {
     @Test
     public void testAsyncRendering() {
         CompletionStage<String> async = foo.data("roundingMode", RoundingMode.HALF_UP)
-                .data("foo", new TemplateDataTest.Foo(new BigDecimal("123.4563"))).renderAsync();
+                .data("foo", new Foo(new BigDecimal("123.4563"))).renderAsync();
         assertEquals("123.4563 is not 123.46", async.toCompletableFuture().join());
     }
 
     @Test
     public void testAsyncRenderingAsUni() {
         Uni<String> uni = Uni.createFrom().completionStage(() -> foo.data("roundingMode", RoundingMode.HALF_UP)
-                .data("foo", new TemplateDataTest.Foo(new BigDecimal("123.4563"))).renderAsync());
+                .data("foo", new Foo(new BigDecimal("123.4563"))).renderAsync());
         assertEquals("123.4563 is not 123.46", uni.await().indefinitely());
     }
 

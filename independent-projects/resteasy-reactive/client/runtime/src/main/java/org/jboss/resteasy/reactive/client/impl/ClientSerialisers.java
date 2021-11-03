@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.Map;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
@@ -17,12 +19,17 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.providers.serialisers.ClientDefaultTextPlainBodyHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.core.UnmanagedBeanFactory;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
+import org.jboss.resteasy.reactive.common.model.ResourceReader;
+import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.providers.serialisers.BooleanMessageBodyHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.ByteArrayMessageBodyHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.CharArrayMessageBodyHandler;
@@ -38,6 +45,8 @@ import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonObject
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonValueHandler;
 
 public class ClientSerialisers extends Serialisers {
+
+    private static final Logger log = Logger.getLogger(ClientSerialisers.class);
 
     public static BuiltinReader[] BUILTIN_READERS = new BuiltinReader[] {
             new BuiltinReader(String.class, StringMessageBodyHandler.class,
@@ -132,13 +141,50 @@ public class ClientSerialisers extends Serialisers {
         return context.proceed();
     }
 
-    @Override
     public BuiltinWriter[] getBuiltinWriters() {
         return BUILTIN_WRITERS;
     }
 
-    @Override
     public BuiltinReader[] getBuiltinReaders() {
         return BUILTIN_READERS;
+    }
+
+    public void registerBuiltins(RuntimeType constraint) {
+        for (BuiltinWriter builtinWriter : getBuiltinWriters()) {
+            if (builtinWriter.constraint == null || builtinWriter.constraint == constraint) {
+                MessageBodyWriter<?> writer;
+                try {
+                    writer = builtinWriter.writerClass.getDeclaredConstructor().newInstance();
+                } catch (InstantiationException | IllegalAccessException | NoSuchMethodException
+                        | InvocationTargetException e) {
+                    log.error("Unable to instantiate MessageBodyWriter", e);
+                    continue;
+                }
+                ResourceWriter resourceWriter = new ResourceWriter();
+                resourceWriter.setConstraint(builtinWriter.constraint);
+                resourceWriter.setMediaTypeStrings(Collections.singletonList(builtinWriter.mediaType));
+                // FIXME: we could still support beans
+                resourceWriter.setFactory(new UnmanagedBeanFactory<MessageBodyWriter<?>>(writer));
+                addWriter(builtinWriter.entityClass, resourceWriter);
+            }
+        }
+        for (BuiltinReader builtinReader : getBuiltinReaders()) {
+            if (builtinReader.constraint == null || builtinReader.constraint == constraint) {
+                MessageBodyReader<?> reader;
+                try {
+                    reader = builtinReader.readerClass.getDeclaredConstructor().newInstance();
+                } catch (InstantiationException | IllegalAccessException | NoSuchMethodException
+                        | InvocationTargetException e) {
+                    log.error("Unable to instantiate MessageBodyReader", e);
+                    continue;
+                }
+                ResourceReader resourceReader = new ResourceReader();
+                resourceReader.setConstraint(builtinReader.constraint);
+                resourceReader.setMediaTypeStrings(Collections.singletonList(builtinReader.mediaType));
+                // FIXME: we could still support beans
+                resourceReader.setFactory(new UnmanagedBeanFactory<MessageBodyReader<?>>(reader));
+                addReader(builtinReader.entityClass, resourceReader);
+            }
+        }
     }
 }

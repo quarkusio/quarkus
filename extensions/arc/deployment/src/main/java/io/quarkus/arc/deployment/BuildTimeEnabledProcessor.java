@@ -53,8 +53,7 @@ public class BuildTimeEnabledProcessor {
             .createSimple(UnlessBuildProperty.List.class.getName());
 
     @BuildStep
-    void ifBuildProfile(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> producer,
-            BuildProducer<PreAdditionalBeanBuildTimeConditionBuildItem> producerPreAdditionalBean) {
+    void ifBuildProfile(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> producer) {
         Collection<AnnotationInstance> annotationInstances = index.getIndex().getAnnotations(IF_BUILD_PROFILE);
         for (AnnotationInstance instance : annotationInstances) {
             String profileOnInstance = instance.value().asString();
@@ -65,13 +64,11 @@ public class BuildTimeEnabledProcessor {
                 LOGGER.debug("Disabling " + instance.target() + " since the profile value does not match the active profile.");
             }
             producer.produce(new BuildTimeConditionBuildItem(instance.target(), enabled));
-            producerPreAdditionalBean.produce(new PreAdditionalBeanBuildTimeConditionBuildItem(instance.target(), enabled));
         }
     }
 
     @BuildStep
-    void unlessBuildProfile(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> producer,
-            BuildProducer<PreAdditionalBeanBuildTimeConditionBuildItem> producerPreAdditionalBean) {
+    void unlessBuildProfile(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> producer) {
         Collection<AnnotationInstance> annotationInstances = index.getIndex().getAnnotations(UNLESS_BUILD_PROFILE);
         for (AnnotationInstance instance : annotationInstances) {
             String profileOnInstance = instance.value().asString();
@@ -82,13 +79,11 @@ public class BuildTimeEnabledProcessor {
                 LOGGER.debug("Disabling " + instance.target() + " since the profile value matches the active profile.");
             }
             producer.produce(new BuildTimeConditionBuildItem(instance.target(), enabled));
-            producerPreAdditionalBean.produce(new PreAdditionalBeanBuildTimeConditionBuildItem(instance.target(), enabled));
         }
     }
 
     @BuildStep
-    void ifBuildProperty(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> conditions,
-            BuildProducer<PreAdditionalBeanBuildTimeConditionBuildItem> preAdditionalBeansConditions) {
+    void ifBuildProperty(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> conditions) {
         buildProperty(IF_BUILD_PROPERTY, IF_BUILD_PROPERTY_CONTAINER, new BiFunction<String, String, Boolean>() {
             @Override
             public Boolean apply(String stringValue, String expectedStringValue) {
@@ -98,14 +93,12 @@ public class BuildTimeEnabledProcessor {
             @Override
             public void accept(AnnotationTarget target, Boolean enabled) {
                 conditions.produce(new BuildTimeConditionBuildItem(target, enabled));
-                preAdditionalBeansConditions.produce(new PreAdditionalBeanBuildTimeConditionBuildItem(target, enabled));
             }
         });
     }
 
     @BuildStep
-    void unlessBuildProperty(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> conditions,
-            BuildProducer<PreAdditionalBeanBuildTimeConditionBuildItem> preAdditionalBeansConditions) {
+    void unlessBuildProperty(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> conditions) {
         buildProperty(UNLESS_BUILD_PROPERTY, UNLESS_BUILD_PROPERTY_CONTAINER, new BiFunction<String, String, Boolean>() {
             @Override
             public Boolean apply(String stringValue, String expectedStringValue) {
@@ -115,7 +108,6 @@ public class BuildTimeEnabledProcessor {
             @Override
             public void accept(AnnotationTarget target, Boolean enabled) {
                 conditions.produce(new BuildTimeConditionBuildItem(target, enabled));
-                preAdditionalBeansConditions.produce(new PreAdditionalBeanBuildTimeConditionBuildItem(target, enabled));
             }
         });
     }

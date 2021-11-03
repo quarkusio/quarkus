@@ -58,7 +58,7 @@ class Neo4jConfigurationTest {
             TrustSettings trustSettings = new TrustSettings();
             trustSettings.strategy = TrustSettings.Strategy.TRUST_CUSTOM_CA_SIGNED_CERTIFICATES;
 
-            String msg = assertThrows(RuntimeException.class, () -> trustSettings.toInternalRepresentation())
+            String msg = assertThrows(RuntimeException.class, trustSettings::toInternalRepresentation)
                     .getMessage();
             assertEquals("Configured trust strategy requires a certificate file.", msg);
         }
@@ -70,7 +70,7 @@ class Neo4jConfigurationTest {
             trustSettings.strategy = TrustSettings.Strategy.TRUST_CUSTOM_CA_SIGNED_CERTIFICATES;
             trustSettings.certFile = Optional.of(Paths.get("na"));
 
-            String msg = assertThrows(RuntimeException.class, () -> trustSettings.toInternalRepresentation())
+            String msg = assertThrows(RuntimeException.class, trustSettings::toInternalRepresentation)
                     .getMessage();
             assertEquals("Configured trust strategy requires a certificate file.", msg);
         }

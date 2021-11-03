@@ -29,6 +29,7 @@ import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.smallrye.reactivemessaging.kafka.ReactiveMessagingKafkaConfig;
+import io.smallrye.mutiny.tuples.Functions.TriConsumer;
 import io.vertx.kafka.client.consumer.impl.KafkaReadStreamImpl;
 
 public class SmallRyeReactiveMessagingKafkaProcessor {
@@ -109,15 +110,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             MethodInfo method = annotation.target().asMethod();
 
             Type incomingType = getIncomingTypeFromMethod(method);
-            processIncomingType(discovery, incomingType, (keyDeserializer, valueDeserializer) -> {
-                produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        "mp.messaging.incoming." + channelName + ".key.deserializer", keyDeserializer);
-                produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        "mp.messaging.incoming." + channelName + ".value.deserializer", valueDeserializer);
 
-                handleAdditionalProperties("mp.messaging.incoming." + channelName + ".", discovery,
-                        config, keyDeserializer, valueDeserializer);
-            });
+            processIncomingType(discovery, config, incomingType, channelName);
         }
 
         for (AnnotationInstance annotation : discovery.findAnnotationsOnMethods(DotNames.OUTGOING)) {
@@ -153,15 +147,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             }
 
             Type incomingType = getIncomingTypeFromChannelInjectionPoint(injectionPointType);
-            processIncomingType(discovery, incomingType, (keyDeserializer, valueDeserializer) -> {
-                produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        "mp.messaging.incoming." + channelName + ".key.deserializer", keyDeserializer);
-                produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        "mp.messaging.incoming." + channelName + ".value.deserializer", valueDeserializer);
 
-                handleAdditionalProperties("mp.messaging.incoming." + channelName + ".", discovery,
-                        config, keyDeserializer, valueDeserializer);
-            });
+            processIncomingType(discovery, config, incomingType, channelName);
 
             Type outgoingType = getOutgoingTypeFromChannelInjectionPoint(injectionPointType);
             processOutgoingType(discovery, outgoingType, (keySerializer, valueSerializer) -> {
@@ -174,6 +161,25 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                         config, keySerializer, valueSerializer);
             });
         }
+    }
+
+    private void processIncomingType(DefaultSerdeDiscoveryState discovery,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> config, Type incomingType, String channelName) {
+        extractKeyValueType(incomingType, (key, value, isBatchType) -> {
+            Result keyDeserializer = deserializerFor(discovery, key);
+            Result valueDeserializer = deserializerFor(discovery, value);
+            produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                    "mp.messaging.incoming." + channelName + ".key.deserializer", keyDeserializer);
+            produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                    "mp.messaging.incoming." + channelName + ".value.deserializer", valueDeserializer);
+            if (Boolean.TRUE.equals(isBatchType)) {
+                produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                        "mp.messaging.incoming." + channelName + ".batch", "true");
+            }
+
+            handleAdditionalProperties("mp.messaging.incoming." + channelName + ".", discovery,
+                    config, keyDeserializer, valueDeserializer);
+        });
     }
 
     private Type getInjectionPointType(AnnotationInstance annotation) {
@@ -274,15 +280,6 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         }
     }
 
-    private void processIncomingType(DefaultSerdeDiscoveryState discovery, Type incomingType,
-            BiConsumer<Result, Result> deserializerAcceptor) {
-        extractKeyValueType(incomingType, (key, value) -> {
-            Result keyDeserializer = deserializerFor(discovery, key);
-            Result valueDeserializer = deserializerFor(discovery, value);
-            deserializerAcceptor.accept(keyDeserializer, valueDeserializer);
-        });
-    }
-
     private Type getOutgoingTypeFromMethod(MethodInfo method) {
         List<Type> parameterTypes = method.parameters();
         int parametersCount = parameterTypes.size();
@@ -339,26 +336,38 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     private void processOutgoingType(DefaultSerdeDiscoveryState discovery, Type outgoingType,
             BiConsumer<Result, Result> serializerAcceptor) {
-        extractKeyValueType(outgoingType, (key, value) -> {
+        extractKeyValueType(outgoingType, (key, value, isBatch) -> {
             Result keySerializer = serializerFor(discovery, key);
             Result valueSerializer = serializerFor(discovery, value);
             serializerAcceptor.accept(keySerializer, valueSerializer);
         });
     }
 
-    private void extractKeyValueType(Type type, BiConsumer<Type, Type> keyValueTypeAcceptor) {
+    private void extractKeyValueType(Type type, TriConsumer<Type, Type, Boolean> keyValueTypeAcceptor) {
         if (type == null) {
             return;
         }
 
         if (isMessage(type)) {
             List<Type> typeArguments = type.asParameterizedType().arguments();
-            keyValueTypeAcceptor.accept(null, typeArguments.get(0));
+            Type messageTypeParameter = typeArguments.get(0);
+            if (isList(messageTypeParameter)) {
+                List<Type> messageListTypeArguments = messageTypeParameter.asParameterizedType().arguments();
+                keyValueTypeAcceptor.accept(null, messageListTypeArguments.get(0), true);
+            } else {
+                keyValueTypeAcceptor.accept(null, messageTypeParameter, false);
+            }
+        } else if (isList(type)) {
+            List<Type> typeArguments = type.asParameterizedType().arguments();
+            keyValueTypeAcceptor.accept(null, typeArguments.get(0), true);
         } else if (isKafkaRecord(type) || isRecord(type) || isProducerRecord(type) || isConsumerRecord(type)) {
             List<Type> typeArguments = type.asParameterizedType().arguments();
-            keyValueTypeAcceptor.accept(typeArguments.get(0), typeArguments.get(1));
+            keyValueTypeAcceptor.accept(typeArguments.get(0), typeArguments.get(1), false);
+        } else if (isConsumerRecords(type) || isKafkaBatchRecord(type)) {
+            List<Type> typeArguments = type.asParameterizedType().arguments();
+            keyValueTypeAcceptor.accept(typeArguments.get(0), typeArguments.get(1), true);
         } else if (isRawMessage(type)) {
-            keyValueTypeAcceptor.accept(null, type);
+            keyValueTypeAcceptor.accept(null, type, false);
         }
     }
 
@@ -480,6 +489,24 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     private static boolean isProducerRecord(Type type) {
         // raw type ProducerRecord is wrong, must be ProducerRecord<Something, SomethingElse>
         return DotNames.PRODUCER_RECORD.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 2;
+    }
+
+    private static boolean isList(Type type) {
+        return DotNames.LIST.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 1;
+    }
+
+    private static boolean isKafkaBatchRecord(Type type) {
+        return DotNames.KAFKA_BATCH_RECORD.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 2;
+    }
+
+    private static boolean isConsumerRecords(Type type) {
+        return DotNames.CONSUMER_RECORDS.equals(type.name())
                 && type.kind() == Type.Kind.PARAMETERIZED_TYPE
                 && type.asParameterizedType().arguments().size() == 2;
     }
@@ -683,7 +710,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         for (AnnotationInstance annotation : index.getAnnotations(annotationType)) {
             String channelName = annotation.value().asString();
             Type type = typeExtractor.apply(annotation);
-            extractKeyValueType(type, (key, value) -> {
+            extractKeyValueType(type, (key, value, isBatch) -> {
                 if (key != null && isSerdeJson(index, config, channelName, serializer, true)) {
                     annotationAcceptor.accept(annotation, key);
                 }

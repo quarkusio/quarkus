@@ -4,6 +4,7 @@ import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,7 +27,7 @@ import org.eclipse.aether.repository.WorkspaceRepository;
  *
  * @author Alexey Loubyansky
  */
-public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
+public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, ProjectModuleResolver {
 
     private final Map<AppArtifactKey, LocalProject> projects = new HashMap<>();
 
@@ -241,5 +242,11 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
 
     void setBootstrapMavenContext(BootstrapMavenContext mvnCtx) {
         this.mvnCtx = mvnCtx;
+    }
+
+    @Override
+    public WorkspaceModule getProjectModule(String groupId, String artifactId) {
+        final LocalProject project = getProject(groupId, artifactId);
+        return project == null ? null : project.toWorkspaceModule();
     }
 }

@@ -84,7 +84,6 @@ import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfiguratorBuildItem;
 import io.quarkus.arc.deployment.CustomScopeBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -106,6 +105,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.undertow.runtime.HttpSessionContext;
 import io.quarkus.undertow.runtime.ServletHttpSecurityPolicy;
@@ -119,7 +119,6 @@ import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.HttpMethodSecurityInfo;
@@ -163,8 +162,8 @@ public class UndertowBuildStep {
     }
 
     private boolean jacksonOnClasspath(CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        for (AppDependency appDep : curateOutcomeBuildItem.getEffectiveModel().getUserDependencies()) {
-            if (appDep.getArtifact().getArtifactId().equals("jackson-core")) {
+        for (ResolvedDependency appDep : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
+            if (appDep.getArtifactId().equals("jackson-core")) {
                 return true;
             }
         }
@@ -179,7 +178,7 @@ public class UndertowBuildStep {
             ShutdownContextBuildItem shutdown,
             Consumer<DefaultRouteBuildItem> undertowProducer,
             BuildProducer<RouteBuildItem> routeProducer,
-            ExecutorBuildItem executorBuildItem, HttpConfiguration httpConfiguration,
+            ExecutorBuildItem executorBuildItem,
             ServletRuntimeConfig servletRuntimeConfig,
             ServletContextPathBuildItem servletContextPathBuildItem,
             Capabilities capabilities) throws Exception {
@@ -189,7 +188,7 @@ public class UndertowBuildStep {
         }
         Handler<RoutingContext> ut = recorder.startUndertow(shutdown, executorBuildItem.getExecutorProxy(),
                 servletDeploymentManagerBuildItem.getDeploymentManager(),
-                wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()), httpConfiguration,
+                wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()),
                 servletRuntimeConfig);
 
         if (servletContextPathBuildItem.getServletContextPath().equals("/")) {

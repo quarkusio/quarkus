@@ -2,6 +2,8 @@ package io.quarkus.minikube.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
+import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_GROUP;
+import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.MAX_NODE_PORT_VALUE;
@@ -57,6 +59,7 @@ import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
@@ -66,8 +69,16 @@ public class MinikubeProcessor {
     private static final int MINIKUBE_PRIORITY = DEFAULT_PRIORITY + 20;
 
     @BuildStep
-    public void checkMinikube(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
-        deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(MINIKUBE, DEPLOYMENT, MINIKUBE_PRIORITY, true));
+    public void checkMinikube(ApplicationInfoBuildItem applicationInfo, KubernetesConfig config,
+            BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
+            BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
+        deploymentTargets.produce(
+                new KubernetesDeploymentTargetBuildItem(MINIKUBE, DEPLOYMENT, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,
+                        MINIKUBE_PRIORITY, true));
+
+        String name = ResourceNameUtil.getResourceName(config, applicationInfo);
+        resourceMeta.produce(
+                new KubernetesResourceMetadataBuildItem(KUBERNETES, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION, DEPLOYMENT, name));
     }
 
     @BuildStep

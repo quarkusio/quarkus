@@ -1,11 +1,11 @@
 package io.quarkus.it.neo4j;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 /**
  * Test various Neo4j operations running in native mode.
  */
-@NativeImageTest
+@QuarkusIntegrationTest
 public class Neo4jFunctionalityInGraalITCase extends Neo4jFunctionalityTest {
 
 }

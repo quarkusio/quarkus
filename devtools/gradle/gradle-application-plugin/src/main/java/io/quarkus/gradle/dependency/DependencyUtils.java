@@ -30,9 +30,10 @@ import org.gradle.api.plugins.JavaPlugin;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACT;
 
 public class DependencyUtils {
 
@@ -71,10 +72,10 @@ public class DependencyUtils {
                 dependencyCoords.getVersion()));
     }
 
-    public static boolean exist(Set<ResolvedArtifact> runtimeArtifacts, List<AppArtifactKey> dependencies) {
-        final Set<AppArtifactKey> rtKeys = new HashSet<>(runtimeArtifacts.size());
+    public static boolean exist(Set<ResolvedArtifact> runtimeArtifacts, List<ArtifactKey> dependencies) {
+        final Set<ArtifactKey> rtKeys = new HashSet<>(runtimeArtifacts.size());
         runtimeArtifacts.forEach(r -> rtKeys.add(
-                new AppArtifactKey(r.getModuleVersion().getId().getGroup(), r.getName(), r.getClassifier(), r.getExtension())));
+                new GACT(r.getModuleVersion().getId().getGroup(), r.getName(), r.getClassifier(), r.getExtension())));
         return rtKeys.containsAll(dependencies);
     }
 
@@ -199,7 +200,7 @@ public class DependencyUtils {
             conditionalDependencies = Collections.emptyList();
         }
 
-        final AppArtifactKey[] constraints = BootstrapUtils
+        final ArtifactKey[] constraints = BootstrapUtils
                 .parseDependencyCondition(extensionProperties.getProperty(BootstrapConstants.DEPENDENCY_CONDITION));
         return new ExtensionDependency(exentionId, deploymentModule, conditionalDependencies,
                 constraints == null ? Collections.emptyList() : Arrays.asList(constraints));

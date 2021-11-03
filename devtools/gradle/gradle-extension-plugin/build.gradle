@@ -1,3 +1,8 @@
+plugins {
+    id 'java-gradle-plugin'
+    id 'com.gradle.plugin-publish'
+}
+
 dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
@@ -14,4 +19,10 @@ gradlePlugin {
             description = 'Builds a Quarkus extension'
         }
     }
+}
+
+pluginBundle {
+    website = 'https://quarkus.io/'
+    vcsUrl = 'https://github.com/quarkusio/quarkus'
+    tags = ['quarkus', 'quarkusio', 'graalvm']
 }

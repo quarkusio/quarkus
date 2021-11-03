@@ -157,10 +157,8 @@ class EventImpl<T> implements Event<T> {
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
             ArcContainerImpl container, boolean activateRequestContext) {
         EventMetadata metadata = new EventMetadataImpl(qualifiers, eventType);
-        List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>();
-        for (ObserverMethod<? super T> observerMethod : container.resolveObservers(eventType, qualifiers)) {
-            notifierObserverMethods.add(observerMethod);
-        }
+        List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>(
+                container.resolveObservers(eventType, qualifiers));
         return new Notifier<>(runtimeType, notifierObserverMethods, metadata, activateRequestContext);
     }
 

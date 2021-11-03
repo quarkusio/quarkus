@@ -2,6 +2,7 @@ package io.quarkus.rest.data.panache.deployment.utils;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
+import java.lang.annotation.Annotation;
 import java.net.URI;
 
 import javax.ws.rs.WebApplicationException;
@@ -9,6 +10,9 @@ import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -44,9 +48,18 @@ public final class ResponseImplementor {
     }
 
     public static ResultHandle getEntityUrl(BytecodeCreator creator, ResultHandle entity) {
-        ResultHandle linksProvider = creator.newInstance(MethodDescriptor.ofConstructor(ResourceLinksProvider.class));
-        ResultHandle link = creator.invokeVirtualMethod(
-                ofMethod(ResourceLinksProvider.class, "getSelfLink", String.class, Object.class), linksProvider, entity);
+        ResultHandle arcContainer = creator
+                .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
+        ResultHandle instance = creator.invokeInterfaceMethod(
+                MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
+                        Annotation[].class),
+                arcContainer, creator.loadClass(ResourceLinksProvider.class), creator.loadNull());
+        ResultHandle linksProvider = creator.invokeInterfaceMethod(
+                MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
+                instance);
+        ResultHandle link = creator.invokeInterfaceMethod(
+                ofMethod(ResourceLinksProvider.class, "getSelfLink", String.class, Object.class), linksProvider,
+                entity);
         creator.ifNull(link).trueBranch().throwException(RuntimeException.class, "Could not extract a new entity URL");
         return creator.invokeStaticMethod(ofMethod(URI.class, "create", URI.class, String.class), link);
     }

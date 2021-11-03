@@ -21,6 +21,7 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,12 +40,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import javax.inject.Inject;
+
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 import org.wildfly.common.function.Functions;
 
-import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStepBuilder;
@@ -84,6 +87,7 @@ import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.annotations.Recorder;
@@ -117,7 +121,6 @@ public final class ExtensionLoader {
      *
      * @param classLoader the class loader
      * @param buildSystemProps the build system properties to use
-     * @param platformProperties Quarkus platform properties
      * @param launchMode launch mode
      * @param configCustomizer configuration customizer
      * @return a consumer which adds the steps to the given chain builder
@@ -125,7 +128,7 @@ public final class ExtensionLoader {
      * @throws ClassNotFoundException if a build step class is not found
      */
     public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps,
-            AppModel appModel, LaunchMode launchMode, DevModeType devModeType,
+            ApplicationModel appModel, LaunchMode launchMode, DevModeType devModeType,
             Consumer<ConfigBuilder> configCustomizer)
             throws IOException, ClassNotFoundException {
         // populate with all known types
@@ -230,7 +233,6 @@ public final class ExtensionLoader {
      * @param clazz the class to load from (must not be {@code null})
      * @param readResult the build time configuration read result (must not be {@code null})
      * @param runTimeProxies the map of run time proxy objects to populate for recorders (must not be {@code null})
-     * @param launchMode the launch mode
      * @return a consumer which adds the steps to the given chain builder
      */
     private static Consumer<BuildChainBuilder> loadStepsFromClass(Class<?> clazz,
@@ -491,6 +493,7 @@ public final class ExtensionLoader {
             final Parameter[] methodParameters = method.getParameters();
             final Record recordAnnotation = method.getAnnotation(Record.class);
             final boolean isRecorder = recordAnnotation != null;
+            final boolean identityComparison = isRecorder ? recordAnnotation.useIdentityComparisonForParameters() : true;
             if (isRecorder) {
                 boolean recorderFound = false;
                 for (Class<?> p : method.getParameterTypes()) {
@@ -523,10 +526,13 @@ public final class ExtensionLoader {
                 assert recordAnnotation != null;
                 final ExecutionTime executionTime = recordAnnotation.value();
                 final boolean optional = recordAnnotation.optional();
-                methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(
-                        executionTime == ExecutionTime.STATIC_INIT ? StaticBytecodeRecorderBuildItem.class
-                                : MainBytecodeRecorderBuildItem.class,
-                        optional ? ProduceFlags.of(ProduceFlag.WEAK) : ProduceFlags.NONE));
+                methodStepConfig = methodStepConfig.andThen(bsb -> {
+                    bsb
+                            .produces(
+                                    executionTime == ExecutionTime.STATIC_INIT ? StaticBytecodeRecorderBuildItem.class
+                                            : MainBytecodeRecorderBuildItem.class,
+                                    optional ? ProduceFlags.of(ProduceFlag.WEAK) : ProduceFlags.NONE);
+                });
             }
             EnumSet<ConfigPhase> methodConsumingConfigPhases = consumingConfigPhases.clone();
             if (methodParameters.length == 0) {
@@ -646,6 +652,42 @@ public final class ExtensionLoader {
                             assert bri != null;
                             return bri.getRecordingProxy(parameterClass);
                         });
+                        //now look for recorder parameter injection
+                        //as we now inject config directly into recorders we need to look at the constructor params
+                        Constructor<?>[] ctors = parameter.getType().getDeclaredConstructors();
+                        for (var ctor : ctors) {
+                            if (ctors.length == 1 || ctor.isAnnotationPresent(Inject.class)) {
+                                for (var type : ctor.getGenericParameterTypes()) {
+                                    Class<?> theType = null;
+                                    if (type instanceof ParameterizedType) {
+                                        ParameterizedType pt = (ParameterizedType) type;
+                                        if (pt.getRawType().equals(RuntimeValue.class)) {
+                                            theType = (Class<?>) pt.getActualTypeArguments()[0];
+                                        } else {
+                                            throw new RuntimeException("Unknown recorder constructor parameter: " + type
+                                                    + " in recorder " + parameter.getType());
+                                        }
+                                    } else {
+                                        theType = (Class<?>) type;
+                                    }
+                                    ConfigRoot annotation = theType.getAnnotation(ConfigRoot.class);
+                                    if (annotation != null) {
+                                        if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
+                                            methodConsumingConfigPhases.add(ConfigPhase.BUILD_AND_RUN_TIME_FIXED);
+                                        } else {
+                                            methodConsumingConfigPhases.add(annotation.phase());
+                                        }
+                                        if (annotation.phase().isReadAtMain()) {
+                                            runTimeProxies.computeIfAbsent(theType, ReflectUtil::newInstance);
+                                        } else {
+                                            runTimeProxies.computeIfAbsent(theType,
+                                                    readResult::requireRootObjectForClass);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                     } else if (parameter.getType() == RecorderContext.class
                             || parameter.getType() == BytecodeRecorderImpl.class) {
                         if (!isRecorder) {
@@ -810,7 +852,32 @@ public final class ExtensionLoader {
                                 BytecodeRecorderImpl bri = isRecorder
                                         ? new BytecodeRecorderImpl(recordAnnotation.value() == ExecutionTime.STATIC_INIT,
                                                 clazz.getSimpleName(), method.getName(),
-                                                Integer.toString(method.toString().hashCode()))
+                                                Integer.toString(method.toString().hashCode()), identityComparison,
+                                                s -> {
+                                                    if (s instanceof Class) {
+                                                        var cfg = ((Class<?>) s).getAnnotation(ConfigRoot.class);
+                                                        if (cfg == null
+                                                                || (cfg.phase() != ConfigPhase.BUILD_AND_RUN_TIME_FIXED
+                                                                        && recordAnnotation
+                                                                                .value() == ExecutionTime.STATIC_INIT)) {
+                                                            throw new RuntimeException(
+                                                                    "Can only inject BUILD_AND_RUN_TIME_FIXED objects into a constructor, use RuntimeValue to inject runtime config: "
+                                                                            + s);
+                                                        }
+                                                        return runTimeProxies.get(s);
+                                                    }
+                                                    if (s instanceof ParameterizedType) {
+                                                        ParameterizedType p = (ParameterizedType) s;
+                                                        if (p.getRawType() == RuntimeValue.class) {
+                                                            Object object = runTimeProxies.get(p.getActualTypeArguments()[0]);
+                                                            if (object == null) {
+                                                                return new RuntimeValue<>();
+                                                            }
+                                                            return new RuntimeValue<>(object);
+                                                        }
+                                                    }
+                                                    throw new RuntimeException("Cannot inject type " + s);
+                                                })
                                         : null;
                                 for (int i = 0; i < methodArgs.length; i++) {
                                     methodArgs[i] = methodParamFns.get(i).apply(bc, bri);

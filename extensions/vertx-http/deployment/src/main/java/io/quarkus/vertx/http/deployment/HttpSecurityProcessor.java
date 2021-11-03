@@ -17,7 +17,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.PolicyConfig;
 import io.quarkus.vertx.http.runtime.security.AuthenticatedHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
@@ -58,14 +57,13 @@ public class HttpSecurityProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     SyntheticBeanBuildItem initFormAuth(
             HttpSecurityRecorder recorder,
-            HttpBuildTimeConfig buildTimeConfig,
-            HttpConfiguration httpConfiguration) {
+            HttpBuildTimeConfig buildTimeConfig) {
         if (buildTimeConfig.auth.form.enabled) {
             return SyntheticBeanBuildItem.configure(FormAuthenticationMechanism.class)
                     .types(HttpAuthenticationMechanism.class)
                     .setRuntimeInit()
                     .scope(Singleton.class)
-                    .supplier(recorder.setupFormAuth(httpConfiguration, buildTimeConfig)).done();
+                    .supplier(recorder.setupFormAuth()).done();
         }
         return null;
     }

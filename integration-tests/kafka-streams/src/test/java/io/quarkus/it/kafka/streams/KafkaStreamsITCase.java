@@ -1,8 +1,8 @@
 package io.quarkus.it.kafka.streams;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class KafkaStreamsITCase extends KafkaStreamsTest {
 
 }

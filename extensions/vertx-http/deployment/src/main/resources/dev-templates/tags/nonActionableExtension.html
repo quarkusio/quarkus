@@ -17,7 +17,7 @@
                 {#if it.metadata.status?? == 'experimental'}
                 <span class="float-right badge badge-warning">EXPERIMENTAL</span>
                 {/if}
-                <span class="card-subtitle mb-2 text-muted">{it.description}</span>
+                <span class="card-subtitle mb-2 text-muted">{it.description??}</span>
                 <br/>
                 {#if it._dev??}
                 {it._dev.raw}

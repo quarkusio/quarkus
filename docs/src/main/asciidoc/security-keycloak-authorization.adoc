@@ -170,7 +170,7 @@ public class AdminResource {
 }
 ----
 
-Note that we did not define any annotation such as `@RoleAllowed` to explicitly enforce access to a resource.
+Note that we did not define any annotation such as `@RolesAllowed` to explicitly enforce access to a resource.
 The extension will be responsible to map the URIs of the protected resources you have in Keycloak and evaluate the permissions accordingly, granting or denying access depending on the permissions that will be granted by Keycloak.
 
 === Configuring the application
@@ -180,24 +180,32 @@ The OpenID Connect extension allows you to define the adapter configuration usin
 [source,properties]
 ----
 # OIDC Configuration
-quarkus.oidc.auth-server-url=https://localhost:8543/auth/realms/quarkus
+%prod.quarkus.oidc.auth-server-url=https://localhost:8543/auth/realms/quarkus
 quarkus.oidc.client-id=backend-service
 quarkus.oidc.credentials.secret=secret
 quarkus.oidc.tls.verification=none
 
 # Enable Policy Enforcement
 quarkus.keycloak.policy-enforcer.enable=true
+
+# Tell Dev Services for Keycloak to import the realm file
+# This property is not effective when running the application in JVM or Native modes
+quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 ----
+
+NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures that `Dev Services for Keycloak` will launch a container for you when the application is run in a dev mode. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information.
 
 NOTE: By default, applications using the `quarkus-oidc` extension are marked as a `service` type application (see `quarkus.oidc.application-type`). This extension also supports only  `web-app` type applications but only if the access token returned as part of the authorization code grant response is marked as a source of roles: `quarkus.oidc.roles.source=accesstoken` (`web-app` type applications check ID token roles by default).
 
 == Starting and Configuring the Keycloak Server
 
+NOTE: Do not start the Keycloak server when you run the application in a dev mode - `Dev Services for Keycloak` will launch a container. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information.
+
 To start a Keycloak Server you can use Docker and just run the following command:
 
 [source,bash,subs=attributes+]
 ----
-docker run --name keycloak -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8180:8080 -p 8543:8443 {keycloak-docker-image}
+docker run --name keycloak -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8180:8080 -p 8543:8443 quay.io/keycloak/keycloak:{keycloak version}
 ----
 
 You should be able to access your Keycloak Server at http://localhost:8180/auth[localhost:8180/auth] or https://localhost:8543/auth[localhost:8543/auth].
@@ -208,15 +216,31 @@ Username should be `admin` and password `admin`.
 Import the {quickstarts-tree-url}/security-keycloak-authorization-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm.
 For more details, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
 
-== Running and Using the Application
+After importing the realm you can see the resource permissions:
 
-=== Running in Developer Mode
+image::keycloak-authorization-permissions.png[alt=Keycloak Authorization Permissions,role="center"].
 
-To run the microservice in dev mode, use `./mvnw clean compile quarkus:dev`.
+It explains why the endpoint has no `@RolesAllowed` annotations - the resource access permissions are set directly in Keycloak.
 
-=== Running in JVM Mode
+[[keycloak-dev-mode]]
+== Running the Application in Dev mode
 
-When you're done playing with "dev-mode" you can run it as a standard Java application.
+To run the application in dev mode, use `./mvnw clean compile quarkus:dev`. link:security-openid-connect-dev-services[Dev Services for Keycloak] will launch a Keycloak container and import a `quarkus-realm.json`.
+
+Open a link:dev-ui[Dev UI] available at http://localhost:8080/q/dev[/q/dev] and click on a `Provider: Keycloak` link in an `OpenId Connect` `Dev UI` card.
+
+You will be asked to login into a `Single Page Application` provided by `OpenId Connect Dev UI`:
+
+ * Login as `alice` (password: `alice`) who only has a `User Permission` to access the `/api/users/me` resource
+ ** accessing `/api/admin` will return `403`
+ ** accessing `/api/users/me` will return `200`
+ * Logout and login as `admin` (password: `admin`) who has both `Admin Permission` to access the `/api/admin` resource and `User Permission` to access the `/api/users/me` resource
+ ** accessing `/api/admin` will return `200`
+ ** accessing `/api/users/me` will return `200`
+
+== Running the Application in JVM mode
+
+When you're done playing with the `dev` mode" you can run it as a standard Java application.
 
 First compile it:
 
@@ -232,7 +256,7 @@ Then run it:
 java -jar target/quarkus-app/quarkus-run.jar
 ----
 
-=== Running in Native Mode
+== Running the Application in Native Mode
 
 This same demo can be compiled into native code: no modifications required.
 
@@ -253,6 +277,10 @@ After getting a cup of coffee, you'll be able to run this binary directly:
 ----
 
 == Testing the Application
+
+See <<keycloak-dev-mode, Running the Application in Dev mode>> section above about testing your application in a dev mode.
+
+You can test the application launched in JVM or Native modes with `curl`.
 
 The application is using bearer token authorization and the first thing to do is obtain an access token from the Keycloak Server in order to access the application resources:
 

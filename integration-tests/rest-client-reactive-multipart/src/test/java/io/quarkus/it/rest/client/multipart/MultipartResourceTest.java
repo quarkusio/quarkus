@@ -23,6 +23,19 @@ public class MultipartResourceTest {
     }
 
     @Test
+    public void shouldSendNullByteArrayAsBinaryFile() {
+        // @formatter:off
+        given()
+                .queryParam("nullFile", "true")
+                .header("Content-Type", "text/plain")
+        .when().get("/client/byte-array-as-binary-file")
+        .then()
+                .statusCode(200)
+                .body(equalTo("fileOk:null,nameOk:true"));
+        // @formatter:on
+    }
+
+    @Test
     public void shouldSendBufferAsBinaryFile() {
         // @formatter:off
         given()
@@ -31,6 +44,19 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,nameOk:true"));
+        // @formatter:on
+    }
+
+    @Test
+    public void shouldSendNullBufferAsBinaryFile() {
+        // @formatter:off
+        given()
+                .queryParam("nullFile", "true")
+                .header("Content-Type", "text/plain")
+        .when().get("/client/buffer-as-binary-file")
+        .then()
+                .statusCode(200)
+                .body(equalTo("fileOk:null,nameOk:true"));
         // @formatter:on
     }
 
@@ -47,6 +73,19 @@ public class MultipartResourceTest {
     }
 
     @Test
+    public void shouldSendNullFileAsBinaryFile() {
+        // @formatter:off
+        given()
+                .queryParam("nullFile", "true")
+                .header("Content-Type", "text/plain")
+        .when().get("/client/file-as-binary-file")
+        .then()
+                .statusCode(200)
+                .body(equalTo("fileOk:null,nameOk:true"));
+        // @formatter:on
+    }
+
+    @Test
     public void shouldSendPathAsBinaryFile() {
         // @formatter:off
         given()
@@ -55,6 +94,19 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,nameOk:true"));
+        // @formatter:on
+    }
+
+    @Test
+    public void shouldSendNullPathAsBinaryFile() {
+        // @formatter:off
+        given()
+                .queryParam("nullFile", "true")
+                .header("Content-Type", "text/plain")
+        .when().get("/client/path-as-binary-file")
+        .then()
+                .statusCode(200)
+                .body(equalTo("fileOk:null,nameOk:true"));
         // @formatter:on
     }
 

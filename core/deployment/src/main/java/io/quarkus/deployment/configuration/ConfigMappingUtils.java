@@ -1,14 +1,9 @@
 package io.quarkus.deployment.configuration;
 
-import static io.quarkus.deployment.builditem.ConfigClassBuildItem.Type.MAPPING;
-import static io.quarkus.deployment.builditem.ConfigClassBuildItem.Type.PROPERTIES;
-import static java.util.Collections.emptySet;
-import static org.eclipse.microprofile.config.inject.ConfigProperties.UNCONFIGURED_PREFIX;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
-import static org.jboss.jandex.AnnotationTarget.Kind.FIELD;
-import static org.jboss.jandex.AnnotationTarget.Kind.METHOD_PARAMETER;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -18,9 +13,10 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -47,25 +43,6 @@ public class ConfigMappingUtils {
         for (AnnotationInstance instance : combinedIndex.getIndex().getAnnotations(configAnnotation)) {
             AnnotationTarget target = instance.target();
             AnnotationValue annotationPrefix = instance.value("prefix");
-
-            if (target.kind().equals(FIELD)) {
-                if (annotationPrefix != null && !annotationPrefix.asString().equals(UNCONFIGURED_PREFIX)) {
-                    configClasses.produce(
-                            toConfigClassBuildItem(instance, toClass(target.asField().type().name()),
-                                    annotationPrefix.asString()));
-                    continue;
-                }
-            }
-
-            if (target.kind().equals(METHOD_PARAMETER)) {
-                if (annotationPrefix != null && !annotationPrefix.asString().equals(UNCONFIGURED_PREFIX)) {
-                    ClassType classType = target.asMethodParameter().method().parameters()
-                            .get(target.asMethodParameter().position()).asClassType();
-                    configClasses
-                            .produce(toConfigClassBuildItem(instance, toClass(classType.name()), annotationPrefix.asString()));
-                    continue;
-                }
-            }
 
             if (!target.kind().equals(CLASS)) {
                 continue;
@@ -105,7 +82,8 @@ public class ConfigMappingUtils {
                 }
             }
 
-            configClasses.produce(toConfigClassBuildItem(instance, configClass, generatedClassesNames, prefix));
+            configClasses.produce(new ConfigClassBuildItem(configClass, collectTypes(combinedIndex, configClass),
+                    generatedClassesNames, prefix, getConfigClassType(instance)));
         }
     }
 
@@ -114,26 +92,15 @@ public class ConfigMappingUtils {
         try {
             return classLoader.loadClass(dotName.toString());
         } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("The class (" + dotName.toString() + ") cannot be created during deployment.", e);
+            throw new IllegalStateException("The class (" + dotName + ") cannot be created during deployment.", e);
         }
     }
 
-    private static ConfigClassBuildItem toConfigClassBuildItem(
-            AnnotationInstance instance,
-            Class<?> configClass,
-            String prefix) {
-        return toConfigClassBuildItem(instance, configClass, emptySet(), prefix);
-    }
-
-    private static ConfigClassBuildItem toConfigClassBuildItem(
-            AnnotationInstance instance,
-            Class<?> configClass,
-            Set<String> generatedClasses,
-            String prefix) {
+    private static ConfigClassBuildItem.Kind getConfigClassType(AnnotationInstance instance) {
         if (instance.name().equals(CONFIG_MAPPING_NAME)) {
-            return new ConfigClassBuildItem(configClass, generatedClasses, prefix, MAPPING);
+            return ConfigClassBuildItem.Kind.MAPPING;
         } else {
-            return new ConfigClassBuildItem(configClass, generatedClasses, prefix, PROPERTIES);
+            return ConfigClassBuildItem.Kind.PROPERTIES;
         }
     }
 
@@ -144,5 +111,38 @@ public class ConfigMappingUtils {
             interfaces.addAll(getHierarchy(i));
         }
         return interfaces;
+    }
+
+    private static Set<Type> collectTypes(CombinedIndexBuildItem combinedIndex, Class<?> configClass) {
+        IndexView index = combinedIndex.getIndex();
+        DotName configIfaceName = DotName.createSimple(configClass.getName());
+        ClassInfo configIfaceInfo = index.getClassByName(configIfaceName);
+        if ((configIfaceInfo == null) || configIfaceInfo.interfaceNames().isEmpty()) {
+            return Collections.singleton(Type.create(configIfaceName, Type.Kind.CLASS));
+        }
+
+        Set<DotName> allIfaces = new HashSet<>();
+        allIfaces.add(configIfaceName);
+        collectInterfacesRec(configIfaceInfo, index, allIfaces);
+        Set<Type> result = new HashSet<>(allIfaces.size());
+        for (DotName iface : allIfaces) {
+            result.add(Type.create(iface, Type.Kind.CLASS));
+        }
+        return result;
+    }
+
+    private static void collectInterfacesRec(ClassInfo current, IndexView index, Set<DotName> result) {
+        List<DotName> interfaces = current.interfaceNames();
+        if (interfaces.isEmpty()) {
+            return;
+        }
+        for (DotName iface : interfaces) {
+            ClassInfo classByName = index.getClassByName(iface);
+            if (classByName == null) {
+                continue; // just ignore this type
+            }
+            result.add(iface);
+            collectInterfacesRec(classByName, index, result);
+        }
     }
 }

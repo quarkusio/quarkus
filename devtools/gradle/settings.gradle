@@ -13,4 +13,4 @@ gradleEnterprise {
 }
 
 rootProject.name = 'quarkus-gradle-plugins'
-include 'gradle-application-plugin', 'gradle-extension-plugin'
+include 'gradle-application-plugin', 'gradle-extension-plugin', 'gradle-model'

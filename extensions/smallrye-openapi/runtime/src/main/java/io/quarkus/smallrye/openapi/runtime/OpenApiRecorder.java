@@ -4,10 +4,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Enumeration;
+import java.util.function.Supplier;
 
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.spi.OASFactoryResolver;
 
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
@@ -16,11 +18,15 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class OpenApiRecorder {
+    final RuntimeValue<HttpConfiguration> configuration;
 
-    public Handler<RoutingContext> handler(OpenApiRuntimeConfig runtimeConfig, HttpConfiguration configuration,
-            OASFilter autoSecurityFilter) {
+    public OpenApiRecorder(RuntimeValue<HttpConfiguration> configuration) {
+        this.configuration = configuration;
+    }
+
+    public Handler<RoutingContext> handler(OpenApiRuntimeConfig runtimeConfig) {
         if (runtimeConfig.enable) {
-            return new OpenApiHandler(configuration.corsEnabled, autoSecurityFilter);
+            return new OpenApiHandler(configuration.getValue().corsEnabled);
         } else {
             return new OpenApiNotFoundHandler();
         }
@@ -76,5 +82,14 @@ public class OpenApiRecorder {
             Thread.currentThread().setContextClassLoader(cl);
         }
 
+    }
+
+    public Supplier<OASFilter> autoSecurityFilterSupplier(OASFilter autoSecurityFilter) {
+        return new Supplier<>() {
+            @Override
+            public OASFilter get() {
+                return autoSecurityFilter;
+            }
+        };
     }
 }

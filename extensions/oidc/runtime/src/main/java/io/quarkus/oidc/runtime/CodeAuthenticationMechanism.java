@@ -31,6 +31,8 @@ import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
+import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.HttpHeaders;
@@ -110,50 +112,53 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         context.put(OidcConstants.ACCESS_TOKEN_VALUE, session.getAccessToken());
                         context.put(AuthorizationCodeTokens.class.getName(), session);
                         return authenticate(identityProviderManager, context,
-                                new IdTokenCredential(session.getIdToken(), context))
-                                        .call(new Function<SecurityIdentity, Uni<?>>() {
-                                            @Override
-                                            public Uni<Void> apply(SecurityIdentity identity) {
-                                                if (isLogout(context, configContext)) {
-                                                    fireEvent(SecurityEvent.Type.OIDC_LOGOUT_RP_INITIATED, identity);
-                                                    return buildLogoutRedirectUriUni(context, configContext,
-                                                            session.getIdToken());
-                                                }
-                                                return VOID_UNI;
-                                            }
-                                        }).onFailure()
-                                        .recoverWithUni(new Function<Throwable, Uni<? extends SecurityIdentity>>() {
-                                            @Override
-                                            public Uni<? extends SecurityIdentity> apply(Throwable t) {
-                                                if (t instanceof AuthenticationRedirectException) {
-                                                    throw (AuthenticationRedirectException) t;
-                                                }
-
-                                                if (!(t instanceof TokenAutoRefreshException)) {
-                                                    boolean expired = (t.getCause() instanceof InvalidJwtException)
-                                                            && ((InvalidJwtException) t.getCause())
-                                                                    .hasErrorCode(ErrorCodes.EXPIRED);
-
-                                                    if (!expired) {
-                                                        LOG.debugf("Authentication failure: %s", t.getCause());
-                                                        throw new AuthenticationCompletionException(t.getCause());
+                                new IdTokenCredential(session.getIdToken(), context,
+                                        !configContext.oidcConfig.authentication.isIdTokenRequired()))
+                                                .call(new Function<SecurityIdentity, Uni<?>>() {
+                                                    @Override
+                                                    public Uni<Void> apply(SecurityIdentity identity) {
+                                                        if (isLogout(context, configContext)) {
+                                                            fireEvent(SecurityEvent.Type.OIDC_LOGOUT_RP_INITIATED, identity);
+                                                            return buildLogoutRedirectUriUni(context, configContext,
+                                                                    session.getIdToken());
+                                                        }
+                                                        return VOID_UNI;
                                                     }
-                                                    if (!configContext.oidcConfig.token.refreshExpired) {
-                                                        LOG.debug("Token has expired, token refresh is not allowed");
-                                                        throw new AuthenticationCompletionException(t.getCause());
+                                                }).onFailure()
+                                                .recoverWithUni(new Function<Throwable, Uni<? extends SecurityIdentity>>() {
+                                                    @Override
+                                                    public Uni<? extends SecurityIdentity> apply(Throwable t) {
+                                                        if (t instanceof AuthenticationRedirectException) {
+                                                            throw (AuthenticationRedirectException) t;
+                                                        }
+
+                                                        if (!(t instanceof TokenAutoRefreshException)) {
+                                                            boolean expired = (t.getCause() instanceof InvalidJwtException)
+                                                                    && ((InvalidJwtException) t.getCause())
+                                                                            .hasErrorCode(ErrorCodes.EXPIRED);
+
+                                                            if (!expired) {
+                                                                LOG.debugf("Authentication failure: %s", t.getCause());
+                                                                throw new AuthenticationCompletionException(t.getCause());
+                                                            }
+                                                            if (!configContext.oidcConfig.token.refreshExpired) {
+                                                                LOG.debug("Token has expired, token refresh is not allowed");
+                                                                throw new AuthenticationCompletionException(t.getCause());
+                                                            }
+                                                            LOG.debug("Token has expired, trying to refresh it");
+                                                            return refreshSecurityIdentity(configContext,
+                                                                    session.getRefreshToken(),
+                                                                    context,
+                                                                    identityProviderManager, false, null);
+                                                        } else {
+                                                            return refreshSecurityIdentity(configContext,
+                                                                    session.getRefreshToken(),
+                                                                    context,
+                                                                    identityProviderManager, true,
+                                                                    ((TokenAutoRefreshException) t).getSecurityIdentity());
+                                                        }
                                                     }
-                                                    LOG.debug("Token has expired, trying to refresh it");
-                                                    return refreshSecurityIdentity(configContext, session.getRefreshToken(),
-                                                            context,
-                                                            identityProviderManager, false, null);
-                                                } else {
-                                                    return refreshSecurityIdentity(configContext, session.getRefreshToken(),
-                                                            context,
-                                                            identityProviderManager, true,
-                                                            ((TokenAutoRefreshException) t).getSecurityIdentity());
-                                                }
-                                            }
-                                        });
+                                                });
                     }
                 });
     }
@@ -296,12 +301,23 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             return Uni.createFrom().failure(new AuthenticationCompletionException(tOuter));
                         }
 
+                        boolean internalIdToken = false;
+                        if (tokens.getIdToken() == null) {
+                            if (configContext.oidcConfig.authentication.isIdTokenRequired()) {
+                                return Uni.createFrom()
+                                        .failure(new AuthenticationCompletionException("ID Token is not available"));
+                            } else {
+                                tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig));
+                                internalIdToken = true;
+                            }
+                        }
+
                         context.put(NEW_AUTHENTICATION, Boolean.TRUE);
                         context.put(OidcConstants.ACCESS_TOKEN_VALUE, tokens.getAccessToken());
                         context.put(AuthorizationCodeTokens.class.getName(), tokens);
 
                         return authenticate(identityProviderManager, context,
-                                new IdTokenCredential(tokens.getIdToken(), context))
+                                new IdTokenCredential(tokens.getIdToken(), context, internalIdToken))
                                         .call(new Function<SecurityIdentity, Uni<?>>() {
                                             @Override
                                             public Uni<Void> apply(SecurityIdentity identity) {
@@ -351,6 +367,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     }
                 });
 
+    }
+
+    private String generateInternalIdToken(OidcTenantConfig oidcConfig) {
+        return Jwt.claims().sign(KeyUtils.createSecretKeyFromSecret(oidcConfig.credentials.secret.get()));
     }
 
     private Uni<Void> processSuccessfulAuthentication(RoutingContext context,

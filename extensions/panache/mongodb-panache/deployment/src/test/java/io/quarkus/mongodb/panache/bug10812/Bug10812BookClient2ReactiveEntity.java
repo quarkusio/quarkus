@@ -2,7 +2,7 @@ package io.quarkus.mongodb.panache.bug10812;
 
 import org.bson.codecs.pojo.annotations.BsonProperty;
 
-import io.quarkus.mongodb.panache.MongoEntity;
+import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity;
 
 @MongoEntity(collection = "TheBookEntity", clientName = "cl2-10812")

@@ -4,6 +4,7 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKN
 import static io.quarkus.vault.runtime.client.MutinyVertxClientFactory.createHttpClient;
 import static java.util.Collections.emptyMap;
 
+import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
@@ -11,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
 
 import javax.annotation.PreDestroy;
@@ -24,8 +26,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vault.VaultException;
 import io.quarkus.vault.runtime.VaultConfigHolder;
+import io.quarkus.vault.runtime.VaultIOException;
 import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.VertxException;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
@@ -172,6 +176,7 @@ public class VertxVaultClient implements VaultClient {
         try {
             Uni<HttpResponse<Buffer>> uni = body == null ? request.send()
                     : request.sendBuffer(Buffer.buffer(requestBody(body)));
+
             HttpResponse<Buffer> response = uni.await().atMost(getRequestTimeout());
 
             if (response.statusCode() != expectedCode) {
@@ -183,8 +188,32 @@ public class VertxVaultClient implements VaultClient {
             } else {
                 return null;
             }
+
         } catch (JsonProcessingException e) {
             throw new VaultException(e);
+
+        } catch (io.smallrye.mutiny.TimeoutException e) {
+            // happens if we reach the atMost condition - see UniAwait.atMost(Duration)
+            throw new VaultIOException(e);
+
+        } catch (VertxException e) {
+            if ("Connection was closed".equals(e.getMessage())) {
+                // happens if the connection gets closed (idle timeout, reset by peer, ...)
+                throw new VaultIOException(e);
+            } else {
+                throw e;
+            }
+
+        } catch (CompletionException e) {
+            if (e.getCause() instanceof ConnectException) {
+                // unable to establish connection
+                throw new VaultIOException(e);
+            } else if (e.getCause() instanceof java.util.concurrent.TimeoutException) {
+                // timeout on request - see HttpRequest.timeout(long)
+                throw new VaultIOException(e);
+            } else {
+                throw e;
+            }
         }
     }
 

@@ -42,19 +42,14 @@ public class KerberosContainer extends GenericContainer<KerberosContainer> {
     }
 
     public void createKrb5File() {
-        FileOutputStream file;
-        try {
-            FileInputStream fis = new FileInputStream("src/test/resources/krb5ClientTemplate.conf");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(fis));
-            String content = reader.lines()
-                    .collect(Collectors.joining(System.lineSeparator()));
+        try (FileInputStream fis = new FileInputStream("src/test/resources/krb5ClientTemplate.conf");
+                BufferedReader reader = new BufferedReader(new InputStreamReader(fis));
+                FileOutputStream file = new FileOutputStream("target/krb5.conf")) {
+            String content = reader.lines().collect(Collectors.joining(System.lineSeparator()));
             content = content.replaceAll("<host>", getHost());
             content = content.replaceAll("<kdc_port>", getMappedPort(88).toString());
             content = content.replaceAll("<admin_server_port>", getMappedPort(749).toString());
-            file = new FileOutputStream("target/krb5.conf");
             file.write(content.getBytes());
-            file.close();
-            reader.close();
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -7,6 +7,7 @@ import javax.enterprise.inject.Disposes;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
+import org.hibernate.reactive.common.spi.MutinyImplementor;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.arc.DefaultBean;
@@ -20,7 +21,7 @@ public class ReactiveSessionProducer {
     @RequestScoped
     @DefaultBean
     public Mutiny.Session createMutinySession() {
-        return mutinySessionFactory.openSession();
+        return ((MutinyImplementor) mutinySessionFactory).newSession();
     }
 
     public void disposeMutinySession(@Disposes Mutiny.Session reactiveSession) {

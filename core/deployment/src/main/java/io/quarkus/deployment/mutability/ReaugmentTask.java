@@ -18,8 +18,8 @@ import java.util.stream.Stream;
 import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppModel;
-import io.quarkus.bootstrap.model.PersistentAppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.model.MutableJarApplicationModel;
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 
 public class ReaugmentTask {
@@ -36,7 +36,7 @@ public class ReaugmentTask {
                 buildSystemProperties.load(buildIn);
             }
 
-            PersistentAppModel appModel = (PersistentAppModel) in.readObject();
+            MutableJarApplicationModel appModel = (MutableJarApplicationModel) in.readObject();
             List<AdditionalDependency> additional = new ArrayList<>();
 
             if (appModel.getUserProvidersDirectory() != null) {
@@ -53,7 +53,7 @@ public class ReaugmentTask {
                 }
             }
 
-            AppModel existingModel = appModel.getAppModel(appRoot);
+            final ApplicationModel existingModel = appModel.getAppModel(appRoot);
             System.setProperty("quarkus.package.type", "mutable-jar");
             try (CuratedApplication bootstrap = QuarkusBootstrap.builder()
                     .setAppArtifact(existingModel.getAppArtifact())
@@ -62,7 +62,7 @@ public class ReaugmentTask {
                     .setBuildSystemProperties(buildSystemProperties)
                     .setBaseName(appModel.getBaseName())
                     .addAdditionalApplicationArchives(additional)
-                    .setApplicationRoot(existingModel.getAppArtifact().getPath())
+                    .setApplicationRoot(existingModel.getAppArtifact().getResolvedPaths().getSinglePath())
                     .setTargetDirectory(appRoot.getParent())
                     .setBaseClassLoader(ReaugmentTask.class.getClassLoader())
                     .build().bootstrap()) {

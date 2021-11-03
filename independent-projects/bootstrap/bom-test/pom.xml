@@ -1,0 +1,37 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-bootstrap-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+    </parent>
+    <artifactId>quarkus-bootstrap-bom-test</artifactId>
+    <name>Quarkus - Bootstrap - Test BOM</name>
+    <description>This BOM contains only test scoped dependencies for the bootstrap project's testsuite</description>
+    <packaging>pom</packaging>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.assertj</groupId>
+                <artifactId>assertj-core</artifactId>
+                <version>${assertj.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${junit.jupiter.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shrinkwrap</groupId>
+                <artifactId>shrinkwrap-depchain</artifactId>
+                <type>pom</type>
+                <scope>test</scope>
+                <version>${shrinkwrap-depchain.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>

@@ -48,18 +48,18 @@ public class AmazonLambdaSimpleTestCase {
     }
 
     private void resetCounter() {
-        if (!isNativeImageTest()) {
+        if (!isQuarkusIntegrationTest()) {
             CounterInterceptor.COUNTER.set(0);
         }
     }
 
     private void assertCounter(int expected) {
-        if (!isNativeImageTest()) {
+        if (!isQuarkusIntegrationTest()) {
             assertEquals(expected, CounterInterceptor.COUNTER.get());
         }
     }
 
-    private boolean isNativeImageTest() {
+    private boolean isQuarkusIntegrationTest() {
         return System.getProperty("native.image.path") != null;
     }
 }

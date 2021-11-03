@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.common.model;
 
+import java.util.Objects;
+
 public class MethodParameter {
     public String name;
     public String type;
@@ -116,5 +118,26 @@ public class MethodParameter {
                 "name='" + name + '\'' +
                 ", type='" + type + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        MethodParameter that = (MethodParameter) o;
+        return encoded == that.encoded && single == that.single && optional == that.optional
+                && isObtainedAsCollection == that.isObtainedAsCollection && Objects.equals(name, that.name)
+                && Objects.equals(type, that.type) && Objects.equals(declaredType, that.declaredType)
+                && Objects.equals(declaredUnresolvedType, that.declaredUnresolvedType)
+                && Objects.equals(signature, that.signature) && parameterType == that.parameterType
+                && Objects.equals(defaultValue, that.defaultValue);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, type, declaredType, declaredUnresolvedType, signature, parameterType, encoded, single,
+                defaultValue, optional, isObtainedAsCollection);
     }
 }

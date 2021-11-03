@@ -4,9 +4,9 @@ import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class OpenTelemetryITCase extends OpenTelemetryTestCase {
     @Override
     protected void buildGlobalTelemetryInstance() {

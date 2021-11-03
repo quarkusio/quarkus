@@ -28,7 +28,6 @@ import java.util.function.Supplier;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
-import java.util.stream.Collectors;
 
 import org.jboss.logmanager.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -50,8 +49,6 @@ import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildException;
@@ -59,6 +56,7 @@ import io.quarkus.builder.BuildStep;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runner.bootstrap.StartupActionImpl;
 import io.quarkus.runtime.LaunchMode;
@@ -107,7 +105,7 @@ public class QuarkusUnitTest
     private CuratedApplication curatedApplication;
     private RunningQuarkusApplication runningQuarkusApplication;
     private ClassLoader originalClassLoader;
-    private List<AppArtifact> forcedDependencies = Collections.emptyList();
+    private List<Dependency> forcedDependencies = Collections.emptyList();
 
     private boolean useSecureConnection;
 
@@ -237,7 +235,7 @@ public class QuarkusUnitTest
      * Provides a convenient way to either add additional dependencies to the application (if it doesn't already contain a
      * dependency), or override a version (if the dependency already exists)
      */
-    public QuarkusUnitTest setForcedDependencies(List<AppArtifact> forcedDependencies) {
+    public QuarkusUnitTest setForcedDependencies(List<Dependency> forcedDependencies) {
         this.forcedDependencies = forcedDependencies;
         return this;
     }
@@ -484,8 +482,7 @@ public class QuarkusUnitTest
                         .addExcludedPath(testLocation)
                         .setProjectRoot(testLocation)
                         .setFlatClassPath(flatClassPath)
-                        .setForcedDependencies(forcedDependencies.stream().map(d -> new AppDependency(d, "compile"))
-                                .collect(Collectors.toList()));
+                        .setForcedDependencies(forcedDependencies);
                 if (!forcedDependencies.isEmpty()) {
                     //if we have forced dependencies we can't use the cache
                     //as it can screw everything up

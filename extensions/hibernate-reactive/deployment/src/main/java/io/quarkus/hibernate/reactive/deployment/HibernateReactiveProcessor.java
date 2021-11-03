@@ -11,12 +11,14 @@ import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import javax.persistence.SharedCacheMode;
 import javax.persistence.spi.PersistenceUnitTransactionType;
@@ -292,22 +294,28 @@ public final class HibernateReactiveProcessor {
         }
 
         // sql-load-script
-        Optional<String> importFile = getSqlLoadScript(persistenceUnitConfig.sqlLoadScript, launchMode);
+        List<String> importFiles = getSqlLoadScript(persistenceUnitConfig.sqlLoadScript, launchMode);
 
-        if (importFile.isPresent()) {
-            Path loadScriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(importFile.get());
+        if (!importFiles.isEmpty()) {
+            for (String importFile : importFiles) {
+                Path loadScriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(importFile);
 
-            if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
-                // enlist resource if present
-                nativeImageResources.produce(new NativeImageResourceBuildItem(importFile.get()));
-                hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(importFile.get()));
-                desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, importFile.get());
-            } else if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
-                //raise exception if explicit file is not present (i.e. not the default)
-                throw new ConfigurationError(
-                        "Unable to find file referenced in '"
-                                + HibernateOrmConfig.puPropertyKey(persistenceUnitConfigName, "sql-load-script") + "="
-                                + persistenceUnitConfig.sqlLoadScript.get() + "'. Remove property or add file to your path.");
+                if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
+                    // enlist resource if present
+                    nativeImageResources.produce(new NativeImageResourceBuildItem(importFile));
+                    hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(importFile));
+                } else if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
+                    //raise exception if explicit file is not present (i.e. not the default)
+                    throw new ConfigurationError(
+                            "Unable to find file referenced in '"
+                                    + HibernateOrmConfig.puPropertyKey(persistenceUnitConfigName, "sql-load-script") + "="
+                                    + String.join(",", persistenceUnitConfig.sqlLoadScript.get())
+                                    + "'. Remove property or add file to your path.");
+                }
+            }
+
+            if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
+                desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, String.join(",", importFiles));
             }
         } else {
             //Disable implicit loading of the default import script (import.sql)
@@ -342,18 +350,16 @@ public final class HibernateReactiveProcessor {
         descriptor.getProperties().setProperty(AvailableSettings.MAX_FETCH_DEPTH, String.valueOf(maxFetchDepth.getAsInt()));
     }
 
-    private static Optional<String> getSqlLoadScript(Optional<String> sqlLoadScript, LaunchMode launchMode) {
+    private static List<String> getSqlLoadScript(Optional<List<String>> sqlLoadScript, LaunchMode launchMode) {
         // Explicit file or default Hibernate ORM file.
         if (sqlLoadScript.isPresent()) {
-            if (HibernateOrmProcessor.NO_SQL_LOAD_SCRIPT_FILE.equalsIgnoreCase(sqlLoadScript.get())) {
-                return Optional.empty();
-            } else {
-                return Optional.of(sqlLoadScript.get());
-            }
+            return sqlLoadScript.get().stream()
+                    .filter(s -> !HibernateOrmProcessor.NO_SQL_LOAD_SCRIPT_FILE.equalsIgnoreCase(s))
+                    .collect(Collectors.toList());
         } else if (launchMode == LaunchMode.NORMAL) {
-            return Optional.empty();
+            return Collections.emptyList();
         } else {
-            return Optional.of("import.sql");
+            return List.of("import.sql");
         }
     }
 

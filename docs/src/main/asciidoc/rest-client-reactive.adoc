@@ -97,8 +97,7 @@ public class Country {
 }
 ----
 
-The model above is only a subset of the fields provided by the service (thus the `@JsonIgnoreProperties` annotation),
-but it suffices for the purposes of this guide.
+The model above is only a subset of the fields provided by the service, but it suffices for the purposes of this guide.
 
 == Create the interface
 
@@ -287,10 +286,8 @@ And the service as follows:
 ----
 package org.acme.rest.client;
 
-import io.smallrye.common.annotation.Blocking;
 import org.jboss.resteasy.reactive.RestPath;
 
-import javax.annotation.PostConstruct;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import java.net.URI;
@@ -301,10 +298,9 @@ import org.eclipse.microprofile.rest.client.RestClientBuilder;
 @Path("/country")
 public class CountriesResource {
 
-    private CountriesService countriesService;
+    private final CountriesService countriesService;
 
-    @PostConstruct
-    public void setUp(){
+    public CountriesResource() {
         countriesService = RestClientBuilder.newBuilder()
             .baseUri(URI.create("https://restcountries.eu/rest"))
             .build(CountriesService.class);
@@ -312,7 +308,6 @@ public class CountriesResource {
 
     @GET
     @Path("/name/{name}")
-    @Blocking
     public Set<Country> name(String name) {
         return countriesService.getByName(name);
     }
@@ -623,7 +618,7 @@ header.value=value of the header
 
 === Default header factory
 The `@RegisterClientHeaders` annotation can also be used without any custom factory specified. In that case the `DefaultClientHeadersFactoryImpl` factory will be used.
-If you make a REST client call from a REST resource, this fatory will propagate all the headers listed in `org.eclipse.microprofile.rest.client.propagateHeaders` configuration property from the resource request to the client request. Individual header names are comma-separated.
+If you make a REST client call from a REST resource, this factory will propagate all the headers listed in `org.eclipse.microprofile.rest.client.propagateHeaders` configuration property from the resource request to the client request. Individual header names are comma-separated.
 [source, java]
 ----
 
@@ -688,7 +683,7 @@ Rest Client Reactive uses RFC1738.
 You can override it by specifying the mode either on the client level,
 by setting `io.quarkus.rest.client.multipart-post-encoder-mode` RestBuilder property
 to the selected value of `HttpPostRequestEncoder.EncoderMode` or
-by specfying `quarkus.rest-client.multipart-post-encoder-mode` in your
+by specifying `quarkus.rest-client.multipart-post-encoder-mode` in your
 `application.properties`. Please note that the latter works only for
 clients created with the `@RegisterRestClient` annotation.
 All the available modes are described in the link:https://netty.io/4.1/api/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.EncoderMode.html[Netty documentation]

@@ -9,7 +9,7 @@ import io.quarkus.panache.common.Parameters;
  *
  * Use one of its methods to perform the update query.
  */
-public interface PanacheUpdate extends io.quarkus.mongodb.panache.PanacheUpdate {
+public interface PanacheUpdate {
 
     /**
      * Execute the update query with the update document.

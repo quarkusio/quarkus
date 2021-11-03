@@ -108,7 +108,6 @@ public final class PanacheHibernateResourceProcessor {
         PanacheJpaRepositoryEnhancer daoEnhancer = new PanacheJpaRepositoryEnhancer(index.getIndex(),
                 JavaJpaTypeBundle.BUNDLE);
         Set<String> panacheEntities = new HashSet<>();
-        Set<String> daoClasses = new HashSet<>();
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY_BASE)) {
             // Skip PanacheRepository
             if (classInfo.name().equals(DOTNAME_PANACHE_REPOSITORY))
@@ -118,18 +117,7 @@ public final class PanacheHibernateResourceProcessor {
             List<org.jboss.jandex.Type> typeParameters = JandexUtil
                     .resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_BASE, index.getIndex());
             panacheEntities.add(typeParameters.get(0).name().toString());
-            daoClasses.add(classInfo.name().toString());
-        }
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY)) {
-            if (daoEnhancer.skipRepository(classInfo))
-                continue;
-            List<org.jboss.jandex.Type> typeParameters = JandexUtil
-                    .resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY, index.getIndex());
-            panacheEntities.add(typeParameters.get(0).name().toString());
-            daoClasses.add(classInfo.name().toString());
-        }
-        for (String daoClass : daoClasses) {
-            transformers.produce(new BytecodeTransformerBuildItem(daoClass, daoEnhancer));
+            transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), daoEnhancer));
         }
 
         PanacheJpaEntityOperationsEnhancer entityOperationsEnhancer = new PanacheJpaEntityOperationsEnhancer(index.getIndex(),

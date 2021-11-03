@@ -41,7 +41,7 @@ mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=spring-web-quickstart \
     -DclassName="org.acme.spring.web.GreetingController" \
     -Dpath="/greeting" \
-    -Dextensions="spring-web"
+    -Dextensions="spring-web,resteasy-jackson"
 cd spring-web-quickstart
 ----
 
@@ -52,7 +52,7 @@ to your project by running the following command in your project base directory:
 
 [source,bash]
 ----
-./mvnw quarkus:add-extension -Dextensions="spring-web"
+./mvnw quarkus:add-extension -Dextensions="spring-web,resteasy-jackson"
 ----
 
 This will add the following to your `pom.xml`:
@@ -63,7 +63,16 @@ This will add the following to your `pom.xml`:
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-spring-web</artifactId>
 </dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-jackson</artifactId>
+</dependency>
 ----
+
+[IMPORTANT]
+====
+`quarkus-spring-web` needs to be complemented with either `quarkus-resteasy-jackson` or `quarkus-resteasy-reactive-jackson` in order to work.
+====
 
 == GreetingController
 

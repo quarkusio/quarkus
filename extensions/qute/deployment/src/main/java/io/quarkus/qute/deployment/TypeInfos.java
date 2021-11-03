@@ -35,7 +35,7 @@ final class TypeInfos {
         List<Info> infos = new ArrayList<>();
         boolean splitParts = true;
         for (Expression.Part part : expression.getParts()) {
-            if (splitParts) {
+            if (splitParts && part.getTypeInfo().contains(TYPE_INFO_SEPARATOR)) {
                 List<String> infoParts = Expressions.splitTypeInfoParts(part.getTypeInfo());
                 for (String infoPart : infoParts) {
                     infos.add(create(infoPart, part, index, templateIdToPathFun, expression.getOrigin()));
@@ -88,7 +88,7 @@ final class TypeInfos {
             if (part.isVirtualMethod() || Expressions.isVirtualMethod(typeInfo)) {
                 return new VirtualMethodInfo(typeInfo, part.asVirtualMethod(), hint);
             }
-            return new PropertyInfo(typeInfo, part, hint);
+            return new PropertyInfo(part.getName(), part, hint);
         }
     }
 
@@ -97,11 +97,18 @@ final class TypeInfos {
         DotName rawClassName = rawClassName(val);
         ClassInfo clazz = index.getClassByName(rawClassName);
         if (clazz == null) {
-            throw new TemplateException(
-                    "Class [" + rawClassName + "] used in the parameter declaration in template ["
-                            + templateIdToPathFun.apply(expressionOrigin.getTemplateGeneratedId()) + "] on line "
-                            + expressionOrigin.getLine()
-                            + " was not found in the application index. Make sure it is spelled correctly.");
+            if (!rawClassName.toString().contains(".")) {
+                // Try the java.lang prefix for a name without package
+                rawClassName = DotName.createSimple(Types.JAVA_LANG_PREFIX + rawClassName.toString());
+                clazz = index.getClassByName(rawClassName);
+            }
+            if (clazz == null) {
+                throw new TemplateException(
+                        "Class [" + rawClassName + "] used in the parameter declaration in template ["
+                                + templateIdToPathFun.apply(expressionOrigin.getTemplateGeneratedId()) + "] on line "
+                                + expressionOrigin.getLine()
+                                + " was not found in the application index. Make sure it is spelled correctly.");
+            }
         }
         return clazz;
     }

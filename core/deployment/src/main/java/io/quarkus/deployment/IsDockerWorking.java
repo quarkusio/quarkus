@@ -16,6 +16,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.console.StartupLogCompressor;
@@ -70,7 +71,10 @@ public class IsDockerWorking implements BooleanSupplier {
 
         @Override
         public Result get() {
-            StartupLogCompressor compressor = new StartupLogCompressor("Checking Docker Environment", Optional.empty(), null);
+            //testcontainers uses the Unreliables library to test if docker is started
+            //this runs in threads that start with 'ducttape'
+            StartupLogCompressor compressor = new StartupLogCompressor("Checking Docker Environment", Optional.empty(), null,
+                    (s) -> s.getName().startsWith("ducttape"));
             try {
                 Class<?> dockerClientFactoryClass = Thread.currentThread().getContextClassLoader()
                         .loadClass("org.testcontainers.DockerClientFactory");
@@ -125,20 +129,23 @@ public class IsDockerWorking implements BooleanSupplier {
     private static class DockerBinaryStrategy implements Strategy {
 
         private final boolean silent;
+        private final String binary;
 
         private DockerBinaryStrategy(boolean silent) {
             this.silent = silent;
+            this.binary = ConfigProvider.getConfig().getOptionalValue("quarkus.docker.executable-name", String.class)
+                    .orElse("docker");
         }
 
         @Override
         public Result get() {
             try {
-                if (!ExecUtil.execSilent("docker", "-v")) {
-                    LOGGER.warn("'docker -v' returned an error code. Make sure your Docker binary is correct");
+                if (!ExecUtil.execSilent(binary, "-v")) {
+                    LOGGER.warnf("'%s -v' returned an error code. Make sure your Docker binary is correct", binary);
                     return Result.UNKNOWN;
                 }
             } catch (Exception e) {
-                LOGGER.warnf("No Docker binary found or general error: %s", e);
+                LOGGER.warnf("No %s binary found or general error: %s", binary, e);
                 return Result.UNKNOWN;
             }
 

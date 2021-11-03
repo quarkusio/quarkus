@@ -95,7 +95,8 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                             "remote-dev can only be used with mutable applications generated with the fast-jar format");
                 }
                 //now extract the artifacts, to mirror the remote side
-                DevModeTask.extractDevModeClasses(start.getJar().getPath().getParent(), curatedApplication.getAppModel(), null);
+                DevModeTask.extractDevModeClasses(start.getJar().getPath().getParent(),
+                        curatedApplication.getApplicationModel(), null);
                 return start.getJar();
             } catch (Throwable t) {
                 deploymentProblem = t;

@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Neo4j
-:neo4j_version: 4.0.0
+:neo4j_version: 4.3
 
 include::./attributes.adoc[]
 :extension-status: preview
@@ -506,5 +506,14 @@ Those can be used directly, but we found it easier and more expressive to wrap t
 Typically, in the previous code, the session is closed when the stream completes, fails or the subscriber cancels.
 
 == Configuration Reference
+
+NOTE: Each of the neo4j and bolt URI schemes permit variants that contain extra encryption and trust information.
+      The +s variants enable encryption with a full certificate check, and the +ssc variants enable encryption,
+      but with no certificate check. This latter variant is designed specifically for use with self-signed certificates.
+      The variants are basically shortcuts over explicit configuration. If you use one of them, Quarkus won't pass
+      `quarkus.neo4j.encrypted` and related to the driver creation as the driver prohibits this.
+      +
+      The only check applied when Quarkus detects a secure url (either of `+s` or `+ssc`) is to ensure availability of
+      SSL in native image and will throw `ConfigurationException` if it isn't available.
 
 include::{generated-dir}/config/quarkus-neo4j.adoc[opts=optional, leveloffset=+1]

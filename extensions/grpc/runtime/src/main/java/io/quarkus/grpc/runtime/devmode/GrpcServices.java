@@ -15,6 +15,7 @@ import grpc.health.v1.HealthOuterClass.HealthCheckResponse.ServingStatus;
 import io.grpc.MethodDescriptor.MethodType;
 import io.grpc.ServerMethodDefinition;
 import io.quarkus.arc.Subclass;
+import io.quarkus.arc.Unremovable;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.grpc.runtime.GrpcServerRecorder;
 import io.quarkus.grpc.runtime.GrpcServerRecorder.GrpcServiceDefinition;
@@ -22,6 +23,7 @@ import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.devmode.GrpcServices.ServiceDefinitionAndStatus;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 
+@Unremovable
 @Singleton
 public class GrpcServices extends AbstractMap<String, ServiceDefinitionAndStatus> {
 

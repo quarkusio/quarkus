@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public class CapabilityContract implements Serializable {
+public class CapabilityContract implements ExtensionCapabilities, Serializable {
 
     public static CapabilityContract providesCapabilities(String extension, String commaSeparatedList) {
         final List<String> list = Arrays.asList(commaSeparatedList.split("\\s*,\\s*"));
@@ -26,10 +26,12 @@ public class CapabilityContract implements Serializable {
         this.providesCapabilities = Objects.requireNonNull(providesCapabilities, "providesCapabilities can't be null");
     }
 
+    @Override
     public String getExtension() {
         return extension;
     }
 
+    @Override
     public List<String> getProvidesCapabilities() {
         return providesCapabilities;
     }

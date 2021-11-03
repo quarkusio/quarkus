@@ -94,7 +94,7 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
             if (throwable != null) {
                 receiveThrowable(throwable);
                 notifyCompletion();
-            } else if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+            } else if (Response.Status.Family.familyOf(response.getStatus()) != Response.Status.Family.SUCCESSFUL) {
                 receiveThrowable(new RuntimeException("HTTP call unsuccessful: " + response.getStatus()));
                 notifyCompletion();
             } else if (!MediaType.SERVER_SENT_EVENTS_TYPE.isCompatible(response.getMediaType())) {

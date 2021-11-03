@@ -36,7 +36,7 @@ public class OutputOptionMixin implements MessageWriter {
         testProjectRoot = Paths.get(path).toAbsolutePath();
     }
 
-    @Spec(Spec.Target.MIXEE)
+    @CommandLine.Spec(CommandLine.Spec.Target.MIXEE)
     CommandSpec mixee;
 
     ColorScheme scheme;

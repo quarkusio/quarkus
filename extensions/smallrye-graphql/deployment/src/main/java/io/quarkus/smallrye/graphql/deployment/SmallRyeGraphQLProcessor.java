@@ -22,7 +22,6 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -49,8 +48,11 @@ import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.WebJarUtil;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLConfig;
+import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLConfigMapping;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRecorder;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRuntimeConfig;
 import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
@@ -528,7 +530,7 @@ public class SmallRyeGraphQLProcessor {
             String graphQLPath = httpRootPath.resolvePath(graphQLConfig.rootPath);
             String graphQLUiPath = nonApplicationRootPathBuildItem.resolvePath(graphQLConfig.ui.rootPath);
 
-            AppArtifact artifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, GRAPHQL_UI_WEBJAR_GROUP_ID,
+            ResolvedDependency artifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, GRAPHQL_UI_WEBJAR_GROUP_ID,
                     GRAPHQL_UI_WEBJAR_ARTIFACT_ID);
             if (launchMode.getLaunchMode().isDevOrTest()) {
                 Path tempPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem, curateOutcomeBuildItem, launchMode,

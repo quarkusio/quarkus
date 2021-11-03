@@ -9,8 +9,7 @@ public class KubernetesServiceBindingProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public RunTimeConfigurationSourceValueBuildItem configure(KubernetesServiceBindingRecorder recorder,
-            KubernetesServiceBindingConfig config) {
-        return new RunTimeConfigurationSourceValueBuildItem(recorder.configSources(config));
+    public RunTimeConfigurationSourceValueBuildItem configure(KubernetesServiceBindingRecorder recorder) {
+        return new RunTimeConfigurationSourceValueBuildItem(recorder.configSources());
     }
 }

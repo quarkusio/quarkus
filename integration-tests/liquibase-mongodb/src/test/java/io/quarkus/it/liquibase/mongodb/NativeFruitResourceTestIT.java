@@ -10,11 +10,11 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.mongodb.MongoTestResource;
 import io.restassured.common.mapper.TypeRef;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 @QuarkusTestResource(MongoTestResource.class)
 @DisabledOnOs(OS.WINDOWS)
 class NativeFruitResourceTestIT {

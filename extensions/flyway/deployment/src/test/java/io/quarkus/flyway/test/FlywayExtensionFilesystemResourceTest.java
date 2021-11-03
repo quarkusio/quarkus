@@ -104,7 +104,7 @@ public class FlywayExtensionFilesystemResourceTest {
         }
 
         @Override
-        public boolean isStateScript() {
+        public boolean isBaselineMigration() {
             return false;
         }
     }

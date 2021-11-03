@@ -25,12 +25,15 @@ public class ExecutorRecorder {
 
     private static final Logger log = Logger.getLogger("io.quarkus.thread-pool");
 
-    public ExecutorRecorder() {
-    }
-
     private static volatile Executor current;
 
-    public ExecutorService setupRunTime(ShutdownContext shutdownContext, ThreadPoolConfig threadPoolConfig,
+    final ThreadPoolConfig threadPoolConfig;
+
+    public ExecutorRecorder(ThreadPoolConfig threadPoolConfig) {
+        this.threadPoolConfig = threadPoolConfig;
+    }
+
+    public ExecutorService setupRunTime(ShutdownContext shutdownContext,
             LaunchMode launchMode, ThreadFactory threadFactory, ContextHandler<Object> contextHandler) {
         final EnhancedQueueExecutor underlying = createExecutor(threadPoolConfig, threadFactory, contextHandler);
         if (launchMode == LaunchMode.DEVELOPMENT) {

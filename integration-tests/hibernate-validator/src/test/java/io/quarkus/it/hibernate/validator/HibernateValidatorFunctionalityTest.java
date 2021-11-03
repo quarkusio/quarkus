@@ -152,7 +152,7 @@ public class HibernateValidatorFunctionalityTest {
         // are user errors and should be reported as such.
 
         // Bad request
-        RestAssured.when()
+        RestAssured.given()
                 .get("/hibernate-validator/test/rest-end-point-validation/plop/")
                 .then()
                 .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
@@ -165,10 +165,56 @@ public class HibernateValidatorFunctionalityTest {
                     .isEmpty();
         }
 
-        RestAssured.when()
+        // Should be ok
+        RestAssured.given()
                 .get("/hibernate-validator/test/rest-end-point-validation/42/")
                 .then()
                 .body(is("42"));
+    }
+
+    @Test
+    public void testRestEndPointValidationUsingTextMediaType() {
+        RestAssured.given()
+                .accept(ContentType.TEXT)
+                .get("/hibernate-validator/test/rest-end-point-validation/plop/")
+                .then()
+                .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
+                .contentType(ContentType.TEXT)
+                .body(containsString("numeric value out of bounds"));
+    }
+
+    @Test
+    public void testRestEndPointValidationUsingJsonMediaType() {
+        RestAssured.given()
+                .accept(ContentType.JSON)
+                .get("/hibernate-validator/test/rest-end-point-validation/plop/")
+                .then()
+                .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
+                .contentType(ContentType.JSON)
+                .body("parameterViolations[0].message", containsString("numeric value out of bounds"));
+    }
+
+    @Test
+    public void testRestEndPointValidationUsingXmlMediaType() {
+        RestAssured.given()
+                .accept(ContentType.XML)
+                .get("/hibernate-validator/test/rest-end-point-validation/plop/")
+                .then()
+                .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
+                .contentType(ContentType.XML)
+                .body("violationReport.parameterViolations.message", containsString("numeric value out of bounds"));
+    }
+
+    @Test
+    public void testRestEndPointValidationUsingXmlMediaTypeWithComponents() {
+        // The components of MediaType like "charset" should be ignored.
+        RestAssured.given()
+                .header("Accept", "application/xml;charset=UTF8")
+                .get("/hibernate-validator/test/rest-end-point-validation/plop/")
+                .then()
+                .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
+                .contentType(ContentType.XML)
+                .body("violationReport.parameterViolations.message", containsString("numeric value out of bounds"));
     }
 
     @Test
@@ -264,6 +310,7 @@ public class HibernateValidatorFunctionalityTest {
                 .get("/hibernate-validator/test/no-produces/plop/")
                 .then()
                 .statusCode(400)
+                .contentType(ContentType.JSON)
                 .body(containsString("numeric value out of bounds"));
     }
 

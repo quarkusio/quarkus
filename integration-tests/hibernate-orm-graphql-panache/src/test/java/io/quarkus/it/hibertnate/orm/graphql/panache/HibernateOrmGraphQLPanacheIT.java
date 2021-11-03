@@ -1,7 +1,7 @@
 package io.quarkus.it.hibertnate.orm.graphql.panache;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 class HibernateOrmGraphQLPanacheIT extends HibernateOrmGraphQLPanacheTest {
 }

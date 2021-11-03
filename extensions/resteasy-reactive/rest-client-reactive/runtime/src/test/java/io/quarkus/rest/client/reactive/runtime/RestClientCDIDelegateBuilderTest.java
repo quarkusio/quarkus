@@ -3,7 +3,7 @@ package io.quarkus.rest.client.reactive.runtime;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -79,7 +79,7 @@ public class RestClientCDIDelegateBuilderTest {
                 "test-client",
                 configRoot).build(restClientBuilderMock);
 
-        Mockito.verify(restClientBuilderMock).baseUrl(new URL("http://localhost"));
+        Mockito.verify(restClientBuilderMock).baseUri(URI.create("http://localhost"));
         Mockito.verify(restClientBuilderMock).register(MyResponseFilter1.class);
         Mockito.verify(restClientBuilderMock).connectTimeout(100, TimeUnit.MILLISECONDS);
         Mockito.verify(restClientBuilderMock).readTimeout(101, TimeUnit.MILLISECONDS);

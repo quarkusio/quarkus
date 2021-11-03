@@ -12,11 +12,10 @@ import java.util.Set;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.plugins.Convention;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 
-import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.util.IoUtils;
 
@@ -24,7 +23,7 @@ public class QuarkusGradleUtils {
 
     private static final String ERROR_COLLECTING_PROJECT_CLASSES = "Failed to collect project's classes in a temporary dir";
 
-    public static Path serializeAppModel(final AppModel appModel, Task context, boolean test) throws IOException {
+    public static Path serializeAppModel(ApplicationModel appModel, Task context, boolean test) throws IOException {
         final Path serializedModel = context.getTemporaryDir().toPath()
                 .resolve("quarkus-app" + (test ? "-test" : "") + "-model.dat");
         try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(serializedModel))) {
@@ -34,8 +33,7 @@ public class QuarkusGradleUtils {
     }
 
     public static SourceSet getSourceSet(Project project, String sourceSetName) {
-        final Convention convention = project.getConvention();
-        JavaPluginConvention javaConvention = convention.findPlugin(JavaPluginConvention.class);
+        final JavaPluginConvention javaConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
         if (javaConvention == null) {
             throw new IllegalArgumentException("The project does not include the Java plugin");
         }

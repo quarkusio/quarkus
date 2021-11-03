@@ -12,7 +12,7 @@ import org.hibernate.boot.registry.internal.BootstrapServiceRegistryImpl;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.boot.registry.selector.internal.StrategySelectorImpl;
 import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
-import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
+import org.hibernate.engine.jdbc.batch.internal.UnmodifiableBatchBuilderInitiator;
 import org.hibernate.engine.jdbc.connections.internal.MultiTenantConnectionProviderInitiator;
 import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
 import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
@@ -190,7 +190,9 @@ public class PreconfiguredServiceRegistryBuilder {
         // Custom one: Dialect is injected explicitly
         serviceInitiators.add(new QuarkusStaticDialectFactoryInitiator(rs.getDialect()));
 
-        serviceInitiators.add(BatchBuilderInitiator.INSTANCE);
+        // Non-default implementation: optimised for lack of JMX management
+        serviceInitiators.add(UnmodifiableBatchBuilderInitiator.INSTANCE);
+
         serviceInitiators.add(JdbcServicesInitiator.INSTANCE);
         serviceInitiators.add(RefCursorSupportInitiator.INSTANCE);
 

@@ -318,7 +318,7 @@ public class RestClientBase {
         InstanceHandle<RestClientsConfig> configHandle = Arc.container()
                 .instance(RestClientsConfig.class);
         if (!configHandle.isAvailable()) {
-            throw new IllegalStateException("Unable to find the RestClientConfigRootProvider");
+            throw new IllegalStateException("Unable to find the RestClientConfigs");
         }
         return configHandle.get();
     }

@@ -15,6 +15,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
@@ -44,8 +45,16 @@ public class HttpSecurityRecorder {
         }
     };
 
+    final RuntimeValue<HttpConfiguration> httpConfiguration;
+    final HttpBuildTimeConfig buildTimeConfig;
+
     //the temp encryption key, persistent across dev mode restarts
     static volatile String encryptionKey;
+
+    public HttpSecurityRecorder(RuntimeValue<HttpConfiguration> httpConfiguration, HttpBuildTimeConfig buildTimeConfig) {
+        this.httpConfiguration = httpConfiguration;
+        this.buildTimeConfig = buildTimeConfig;
+    }
 
     public Handler<RoutingContext> authenticationMechanismHandler(boolean proactiveAuthentication) {
         return new Handler<RoutingContext>() {
@@ -230,14 +239,13 @@ public class HttpSecurityRecorder {
         };
     }
 
-    public Supplier<FormAuthenticationMechanism> setupFormAuth(HttpConfiguration httpConfiguration,
-            HttpBuildTimeConfig buildTimeConfig) {
+    public Supplier<FormAuthenticationMechanism> setupFormAuth() {
 
         return new Supplier<FormAuthenticationMechanism>() {
             @Override
             public FormAuthenticationMechanism get() {
                 String key;
-                if (!httpConfiguration.encryptionKey.isPresent()) {
+                if (!httpConfiguration.getValue().encryptionKey.isPresent()) {
                     if (encryptionKey != null) {
                         //persist across dev mode restarts
                         key = encryptionKey;
@@ -248,7 +256,7 @@ public class HttpSecurityRecorder {
                         log.warn("Encryption key was not specified for persistent FORM auth, using temporary key " + key);
                     }
                 } else {
-                    key = httpConfiguration.encryptionKey.get();
+                    key = httpConfiguration.getValue().encryptionKey.get();
                 }
                 FormAuthConfig form = buildTimeConfig.auth.form;
                 PersistentLoginManager loginManager = new PersistentLoginManager(key, form.cookieName, form.timeout.toMillis(),

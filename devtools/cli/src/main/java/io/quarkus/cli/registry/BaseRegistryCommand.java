@@ -2,21 +2,23 @@ package io.quarkus.cli.registry;
 
 import java.util.concurrent.Callable;
 
+import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
 import picocli.CommandLine;
-import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
-import picocli.CommandLine.Spec;
 
 public class BaseRegistryCommand implements Callable<Integer> {
 
-    @Mixin(name = "output")
+    @CommandLine.Mixin(name = "output")
     protected OutputOptionMixin output;
 
-    @Mixin
+    @CommandLine.Mixin
     protected RegistryClientMixin registryClient;
 
-    @Spec
+    @CommandLine.Mixin
+    protected HelpOption helpOption;
+
+    @CommandLine.Spec
     protected CommandSpec spec;
 
     @Override

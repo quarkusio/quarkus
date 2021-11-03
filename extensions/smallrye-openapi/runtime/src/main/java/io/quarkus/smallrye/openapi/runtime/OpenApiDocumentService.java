@@ -7,7 +7,6 @@ import java.nio.charset.StandardCharsets;
 import javax.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 
@@ -25,16 +24,10 @@ import io.smallrye.openapi.runtime.io.OpenApiSerializer;
 @ApplicationScoped
 public class OpenApiDocumentService implements OpenApiDocumentHolder {
 
-    private boolean alwaysRunFilter;
+    private final OpenApiDocumentHolder documentHolder;
 
-    private OpenApiDocumentHolder documentHolder;
-
-    void init(OASFilter autoSecurityFilter) {
-
-        Config config = ConfigProvider.getConfig();
-        this.alwaysRunFilter = config.getOptionalValue("quarkus.smallrye-openapi.always-run-filter", Boolean.class)
-                .orElse(Boolean.FALSE);
-        if (alwaysRunFilter) {
+    public OpenApiDocumentService(OASFilter autoSecurityFilter, Config config) {
+        if (config.getOptionalValue("quarkus.smallrye-openapi.always-run-filter", Boolean.class).orElse(Boolean.FALSE)) {
             this.documentHolder = new DynamicDocument(config, autoSecurityFilter);
         } else {
             this.documentHolder = new StaticDocument(config, autoSecurityFilter);
@@ -52,7 +45,7 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
     /**
      * Generate the document once on creation.
      */
-    class StaticDocument implements OpenApiDocumentHolder {
+    static class StaticDocument implements OpenApiDocumentHolder {
 
         private byte[] jsonDocument;
         private byte[] yamlDocument;
@@ -101,7 +94,7 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
     /**
      * Generate the document on every request.
      */
-    class DynamicDocument implements OpenApiDocumentHolder {
+    static class DynamicDocument implements OpenApiDocumentHolder {
 
         private OpenAPI generatedOnBuild;
         private OpenApiConfig openApiConfig;

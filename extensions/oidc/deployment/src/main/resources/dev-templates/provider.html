@@ -11,6 +11,9 @@ OpenId Connect Dev Console
 var port = {config:property('quarkus.http.port')};
 
 {#if info:oidcApplicationType is 'service'}
+    var devRoot = '{devRootAppend}';
+    var encodedDevRoot = devRoot.replaceAll("/", "%2F");
+
     {#if info:oidcGrantType is 'implicit' || info:oidcGrantType is 'code'}
     var accessToken;
     var idToken;
@@ -81,13 +84,13 @@ var port = {config:property('quarkus.http.port')};
       {#if info:oidcGrantType is 'implicit'}
         window.location.href = '{info:authorizationUrl}'
           + "?client_id=" + '{info:clientId}'
-          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + "%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider"
+          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider"
           + "&scope=openid&response_type=token id_token&response_mode=query&prompt=login"
           + "&nonce=" + makeid();
       {#else}
         window.location.href = '{info:authorizationUrl}'
           + "?client_id=" + '{info:clientId}'
-          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + "%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider"
+          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider"
           + "&scope=openid&response_type=code&response_mode=query&prompt=login"
           + "&nonce=" + makeid();
       {/if}    
@@ -166,7 +169,7 @@ var port = {config:property('quarkus.http.port')};
         localStorage.removeItem('authorized');
     
         window.location.assign('{info:logoutUrl??}'
-          + "?post_logout_redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + "%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider");
+          + "?post_logout_redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider");
     }
         
     function exchangeCodeForTokens(code){
@@ -176,7 +179,7 @@ var port = {config:property('quarkus.http.port')};
               client: '{info:clientId}',
               clientSecret: '{info:clientSecret}',
               authorizationCode: code,
-              redirectUri: "http://localhost:" + port + "/q/dev/io.quarkus.quarkus-oidc/provider"
+              redirectUri: "http://localhost:" + port + devRoot + "/io.quarkus.quarkus-oidc/provider"
             },
             function(data, status){
                 var tokens = JSON.parse(data);
@@ -229,13 +232,12 @@ var port = {config:property('quarkus.http.port')};
           return token;
         }
     }
-    
     {/if}
 {/if}
 
 {#if info:oidcGrantType is 'password'}
 
-    function testServiceWithPassword(userName, servicePath){
+    function testServiceWithPassword(userName, password, servicePath){
         $.post("testService",
             {
               tokenUrl: '{info:tokenUrl}',
@@ -243,6 +245,7 @@ var port = {config:property('quarkus.http.port')};
               client: '{info:clientId}',
               clientSecret: '{info:clientSecret}',
               user: userName,
+              password: password,
               grant: '{info:oidcGrantType}'
             },
             function(data, status){
@@ -250,13 +253,14 @@ var port = {config:property('quarkus.http.port')};
             });
     }
     
-    function testServiceWithPasswordInSwaggerUi(userName){
+    function testServiceWithPasswordInSwaggerUi(userName, password){
         $.post("testService",
             {
               tokenUrl: '{info:tokenUrl}',
               client: '{info:clientId}',
               clientSecret: '{info:clientSecret}',
               user: userName,
+              password: password,
               grant: '{info:oidcGrantType}'
             },
             function(data, status){
@@ -535,9 +539,23 @@ function signInToService(servicePath) {
                         <label for="userName">User name</label>
                     </div>
                     <div class="col-10">
-                        <input type="text" class="form-control" id="userName" value="{info:keycloakUsers.keySet().iterator().next()}" title="User">
+                        <input type="text" class="form-control" id="userName" value="" title="User">
                     </div>
                 </div>
+                {#if info:keycloakUsers??}
+	                <div class="row">
+	                    <input type="hidden" id="password" value="" title="Password">
+	                </div>
+	            {#else}
+	                <div class="row">
+	                    <div class="col-2">
+	                        <label for="password">Password</label>
+	                    </div>
+	                    <div class="col-10">
+	                        <input type="password" class="form-control" id="password" value="" title="Password">
+	                    </div>
+	                </div> 
+                {/if}
                 <div class="row my-2">
                     <div class="col-2">
                         <label for="servicePath">Service Path</label>
@@ -548,16 +566,16 @@ function signInToService(servicePath) {
                 </div>
                 <div class="row my-2">
                     <div class="col offset-md-2">
-                        <button onclick="testServiceWithPassword($('#userName').val(), $('#servicePath').val());" class="btn btn-primary btn-block" title="Test service">Test service</button>
+                        <button onclick="testServiceWithPassword($('#userName').val(), $('#password').val(), $('#servicePath').val());" class="btn btn-primary btn-block" title="Test service">Test service</button>
                     </div>
                     <div class="float-right">
 	                    {#if info:swaggerIsAvailable??}
-	                    <a onclick="testServiceWithPasswordInSwaggerUi($('#userName').val());" class="btn btn-link" title="Test in Swagger UI">
+	                    <a onclick="testServiceWithPasswordInSwaggerUi($('#userName').val(), $('#password').val());" class="btn btn-link" title="Test in Swagger UI">
 	                        <i class="fas fa-external-link-alt"></i> Swagger UI
 	                    </a>
 	                    {/if}
 	                    {#if info:graphqlIsAvailable??}
-	                    <a onclick="testServiceWithPasswordInGraphQLUi($('#userName').val());" class="btn btn-link" title="Test in GraphQL UI">
+	                    <a onclick="testServiceWithPasswordInGraphQLUi($('#userName').val(), $('#password').val());" class="btn btn-link" title="Test in GraphQL UI">
 	                        <i class="fas fa-external-link-alt"></i> GraphQL UI
 	                    </a>
 	                    {/if}
@@ -573,7 +591,7 @@ function signInToService(servicePath) {
     {#else if info:oidcGrantType is 'client_credentials'}
         <div class="card">
             <div class="card-header">
-                Get access token for {info:clientId} and test your service
+                Get access token for the client {info:clientId} and test your service
             </div>
             <div class="card-body">
                 <div class="row">

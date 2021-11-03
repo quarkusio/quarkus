@@ -14,8 +14,8 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
 
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 public final class ArtifactInfoUtil {
 
@@ -56,22 +56,22 @@ public final class ArtifactInfoUtil {
             } else if (curateOutcomeBuildItem != null) {
                 // this is needed only for QuarkusDevModeTest inside Quarkus where the class is read from the corresponding directory
                 Path path = Paths.get(codeLocation.toURI());
-                for (AppDependency i : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
-                    for (Path p : i.getArtifact().getPaths()) {
+                for (ResolvedDependency i : curateOutcomeBuildItem.getApplicationModel().getDependencies()) {
+                    for (Path p : i.getResolvedPaths()) {
                         if (path.equals(p)) {
 
-                            String artifactId = i.getArtifact().getArtifactId();
+                            String artifactId = i.getArtifactId();
                             if (artifactId.endsWith(DEPLOYMENT)) {
                                 artifactId = artifactId.substring(0, artifactId.length() - DEPLOYMENT.length());
                             }
-                            return new AbstractMap.SimpleEntry<>(i.getArtifact().getGroupId(), artifactId);
+                            return new AbstractMap.SimpleEntry<>(i.getGroupId(), artifactId);
                         }
                     }
                 }
                 return new AbstractMap.SimpleEntry<>("unspecified", "unspecified");
             } else if ("file".equals(codeLocation.getProtocol())) {
                 // E.g. /quarkus/extensions/arc/deployment/target/classes/io/quarkus/arc/deployment/devconsole
-                // This can happen if you run an example app in dev mode 
+                // This can happen if you run an example app in dev mode
                 // and this app is part of a multi-module project which also declares the extension
                 // Just try to locate the pom.properties file in the target/maven-archiver directory
                 // Note that this hack will not work if addMavenDescriptor=false or if the pomPropertiesFile is overriden

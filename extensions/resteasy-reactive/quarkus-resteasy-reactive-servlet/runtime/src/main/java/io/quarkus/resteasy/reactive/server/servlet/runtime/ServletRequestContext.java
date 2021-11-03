@@ -154,6 +154,11 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     }
 
     @Override
+    public boolean resumeExternalProcessing() {
+        return false;
+    }
+
+    @Override
     public String getRequestHeader(CharSequence name) {
         return request.getHeader(name.toString());
     }

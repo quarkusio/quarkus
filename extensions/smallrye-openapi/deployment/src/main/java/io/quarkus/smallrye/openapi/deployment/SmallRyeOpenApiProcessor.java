@@ -43,6 +43,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -85,7 +86,6 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
 import io.smallrye.openapi.api.OpenApiDocument;
@@ -171,14 +171,14 @@ public class SmallRyeOpenApiProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     RouteBuildItem handler(LaunchModeBuildItem launch,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             OpenApiRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             List<SecurityInformationBuildItem> securityInformationBuildItems,
             OpenApiRuntimeConfig openApiRuntimeConfig,
             ShutdownContextBuildItem shutdownContext,
             SmallRyeOpenApiConfig openApiConfig,
-            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
-            HttpConfiguration httpConfiguration) {
+            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem) {
         /*
          * <em>Ugly Hack</em>
          * In dev mode, we pass a classloader to load the up to date OpenAPI document.
@@ -204,7 +204,10 @@ public class SmallRyeOpenApiProcessor {
             }
         }
 
-        Handler<RoutingContext> handler = recorder.handler(openApiRuntimeConfig, httpConfiguration, autoSecurityFilter);
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(OASFilter.class).setRuntimeInit()
+                .supplier(recorder.autoSecurityFilterSupplier(autoSecurityFilter)).done());
+
+        Handler<RoutingContext> handler = recorder.handler(openApiRuntimeConfig);
         return nonApplicationRootPathBuildItem.routeBuilder()
                 .route(openApiConfig.path)
                 .routeConfigKey("quarkus.smallrye-openapi.path")

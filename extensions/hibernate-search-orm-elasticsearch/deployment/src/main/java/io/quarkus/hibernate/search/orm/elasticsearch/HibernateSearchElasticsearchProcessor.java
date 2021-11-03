@@ -143,10 +143,10 @@ class HibernateSearchElasticsearchProcessor {
     void setRuntimeConfig(HibernateSearchElasticsearchRecorder recorder,
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
             List<HibernateSearchIntegrationRuntimeConfiguredBuildItem> integrationRuntimeConfigBuildItems,
-            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
+            List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
-        for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
-            String puName = puDescriptor.getPersistenceUnitName();
+        for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit : configuredPersistenceUnits) {
+            String puName = configuredPersistenceUnit.getPersistenceUnitName();
             List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners = new ArrayList<>();
             for (HibernateSearchIntegrationRuntimeConfiguredBuildItem item : integrationRuntimeConfigBuildItems) {
                 if (item.getPersistenceUnitName().equals(puName)) {
@@ -156,7 +156,7 @@ class HibernateSearchElasticsearchProcessor {
             runtimeConfigured.produce(
                     new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
                             .setInitListener(
-                                    recorder.createRuntimeInitListener(runtimeConfig, puDescriptor.getPersistenceUnitName(),
+                                    recorder.createRuntimeInitListener(runtimeConfig, puName,
                                             integrationRuntimeInitListeners)));
         }
     }

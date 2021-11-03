@@ -34,7 +34,15 @@ span.connected-status {
     font-size: 0.5em;
     margin-left: 1em;
 }
+.CodeMirror { 
+    height: auto; 
+    border: 1px solid #ddd;
+}
   {/style}
+  {#styleref}
+  <link rel="stylesheet" href="{devRootAppend}/resources/codemirror/lib/codemirror.css">
+  <link rel="stylesheet" href="{devRootAppend}/resources/codemirror/addon/hint/show-hint.css">
+  {/styleref}
   {#script}
         var grpcWS;
         var requestId = 0;
@@ -143,8 +151,20 @@ span.connected-status {
             openInIDE($(this).text());
           });
 
+          // Use codemirror editors
           document.querySelectorAll('.grpc-input')
-                .forEach(textArea => textArea.style.height = (textArea.scrollHeight + 5) + "px");
+                .forEach(function(textArea) {
+                    const editor = CodeMirror.fromTextArea(textArea, {
+                        mode: { name: "javascript", json: true },
+                        styleActiveLine: true,
+                        lineNumbers: true,
+                        lineWrapping: true,
+                        extraKeys: {"Ctrl-Space": "autocomplete"}
+                    });
+                    editor.on("blur", function(codeMirror) { codeMirror.save(); });
+                    editor.refresh();
+                });      
+          
           connect();
         });
 
@@ -189,8 +209,16 @@ span.connected-status {
               showConnected(connection);
             }
         }
-
+        
   {/script}
+    
+  {#scriptref}
+  <script src="{devRootAppend}/resources/codemirror/lib/codemirror.js"></script>
+  <script src="{devRootAppend}/resources/codemirror/mode/javascript/javascript.js"></script>
+  <script src="{devRootAppend}/resources/codemirror/addon/hint/show-hint.js"></script>
+  <script src="{devRootAppend}/resources/codemirror/addon/selection/active-line.js"></script>
+  {/scriptref}
+  
   {#breadcrumbs}<i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> <a href="/q/dev/io.quarkus.quarkus-grpc/services">Services</a>{/breadcrumbs}
   {#title}{info:grpcServices.get(currentRequest.params.get('name')).name}{/title}
   {#body}

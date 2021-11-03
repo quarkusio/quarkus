@@ -38,7 +38,8 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
 
     private final boolean withValidation;
 
-    public UpdateMethodImplementor(boolean withValidation) {
+    public UpdateMethodImplementor(boolean withValidation, boolean isResteasyClassic) {
+        super(isResteasyClassic);
         this.withValidation = withValidation;
     }
 

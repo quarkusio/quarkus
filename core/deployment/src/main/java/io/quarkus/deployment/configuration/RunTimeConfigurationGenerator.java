@@ -389,7 +389,7 @@ public final class RunTimeConfigurationGenerator {
             cc.getFieldCreator(C_BUILD_TIME_CONFIG_SOURCE)
                     .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
             final ResultHandle buildTimeConfigSource = clinit.newInstance(PCS_NEW, buildTimeValues,
-                    clinit.load("Build time config"), clinit.load(100));
+                    clinit.load("Build time config"), clinit.load(Integer.MAX_VALUE));
             clinit.writeStaticField(C_BUILD_TIME_CONFIG_SOURCE, buildTimeConfigSource);
 
             // the build time run time visible default values config source
@@ -483,7 +483,7 @@ public final class RunTimeConfigurationGenerator {
                             reinit.load(entry.getValue()));
                 }
                 final ResultHandle buildTimeConfigSource = reinit.newInstance(PCS_NEW, buildTimeValues,
-                        reinit.load("Build time config = Reloaded"), reinit.load(100));
+                        reinit.load("Build time config = Reloaded"), reinit.load(Integer.MAX_VALUE));
                 // the build time config, which is for user use only (not used by us other than for loading converters)
                 final ResultHandle buildTimeBuilder = reinit.invokeStaticMethod(CU_CONFIG_BUILDER, reinit.load(true),
                         reinit.load(launchMode));
@@ -493,6 +493,27 @@ public final class RunTimeConfigurationGenerator {
                 // build time defaults
                 reinit.writeArrayValue(array, 1, buildTimeRunTimeDefaultValuesConfigSource);
                 reinit.invokeVirtualMethod(SRCB_WITH_SOURCES, buildTimeBuilder, array);
+                // add safe static sources
+                for (String runtimeConfigSource : staticConfigSources) {
+                    reinit.invokeStaticMethod(CU_ADD_SOURCE_PROVIDER, buildTimeBuilder,
+                            reinit.newInstance(RCS_NEW, reinit.load(runtimeConfigSource)));
+                }
+                // add safe static source providers
+                for (String runtimeConfigSourceProvider : staticConfigSourceProviders) {
+                    reinit.invokeStaticMethod(CU_ADD_SOURCE_PROVIDER, buildTimeBuilder,
+                            reinit.newInstance(RCSP_NEW, reinit.load(runtimeConfigSourceProvider)));
+                }
+                // add safe static source factories
+                for (String discoveredConfigSourceFactory : staticConfigSourceFactories) {
+                    reinit.invokeStaticMethod(CU_ADD_SOURCE_FACTORY_PROVIDER, buildTimeBuilder,
+                            reinit.newInstance(RCSF_NEW, reinit.load(discoveredConfigSourceFactory)));
+                }
+                // add mappings
+                for (ConfigClassWithPrefix configMapping : staticConfigMappings) {
+                    reinit.invokeStaticMethod(CU_WITH_MAPPING, buildTimeBuilder,
+                            reinit.load(configMapping.getKlass().getName()), reinit.load(configMapping.getPrefix()));
+                }
+
                 ResultHandle clinitConfig = reinit.checkCast(reinit.invokeVirtualMethod(SRCB_BUILD, buildTimeBuilder),
                         SmallRyeConfig.class);
                 installConfiguration(clinitConfig, reinit);

@@ -1,5 +1,6 @@
 package io.quarkus.bootstrap.model;
 
+import io.quarkus.maven.dependency.ArtifactKey;
 import java.io.Serializable;
 
 /**
@@ -7,7 +8,7 @@ import java.io.Serializable;
  *
  * @author Alexey Loubyansky
  */
-public class AppArtifactKey implements Serializable {
+public class AppArtifactKey implements ArtifactKey, Serializable {
 
     public static AppArtifactKey fromString(String str) {
         return new AppArtifactKey(split(str, new String[4], str.length()));

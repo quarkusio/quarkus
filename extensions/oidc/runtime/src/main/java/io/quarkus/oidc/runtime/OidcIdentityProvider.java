@@ -131,8 +131,12 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
     private Uni<SecurityIdentity> createSecurityIdentityWithOidcServer(RoutingContext vertxContext,
             TokenAuthenticationRequest request, TenantConfigContext resolvedContext, final UserInfo userInfo) {
-        Uni<TokenVerificationResult> tokenUni = verifyTokenUni(resolvedContext,
-                request.getToken().getToken());
+        Uni<TokenVerificationResult> tokenUni = null;
+        if ((request.getToken() instanceof IdTokenCredential) && ((IdTokenCredential) request.getToken()).isInternal()) {
+            tokenUni = verifySelfSignedTokenUni(resolvedContext, request.getToken().getToken());
+        } else {
+            tokenUni = verifyTokenUni(resolvedContext, request.getToken().getToken());
+        }
 
         return tokenUni.onItemOrFailure()
                 .transformToUni(new BiFunction<TokenVerificationResult, Throwable, Uni<? extends SecurityIdentity>>() {
@@ -220,7 +224,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 && vertxContext.get(REFRESH_TOKEN_GRANT_RESPONSE) != Boolean.TRUE
                 && vertxContext.get(NEW_AUTHENTICATION) != Boolean.TRUE) {
             final long refreshTokenTimeSkew = (oidcConfig.token.getRefreshTokenTimeSkew()
-                    .orElse(oidcConfig.token.autoRefreshInterval.get())).getSeconds();
+                    .orElseGet(() -> oidcConfig.token.autoRefreshInterval.get())).getSeconds();
             final long expiry = tokenJson.getLong("exp");
             final long now = System.currentTimeMillis() / 1000;
             return now + refreshTokenTimeSkew > expiry;
@@ -282,6 +286,14 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     return Uni.createFrom().failure(t);
                 }
             }
+        }
+    }
+
+    private Uni<TokenVerificationResult> verifySelfSignedTokenUni(TenantConfigContext resolvedContext, String token) {
+        try {
+            return Uni.createFrom().item(resolvedContext.provider.verifySelfSignedJwtToken(token));
+        } catch (Throwable t) {
+            return Uni.createFrom().failure(t);
         }
     }
 

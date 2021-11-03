@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetAddress;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -30,7 +31,7 @@ public class DerbyDevServicesProcessor {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt fixedExposedPort, LaunchMode launchMode) {
+                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 try {
                     int port = fixedExposedPort.isPresent() ? fixedExposedPort.getAsInt()
                             : 1527 + (launchMode == LaunchMode.TEST ? 0 : 1);

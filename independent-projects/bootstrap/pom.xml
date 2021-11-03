@@ -27,10 +27,40 @@
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
 
-        <assertj.version>3.20.2</assertj.version>
+        <!-- Dependency versions -->
+        <assertj.version>3.21.0</assertj.version>
+        <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
+        <jboss-logging.version>3.4.2.Final</jboss-logging.version>
+        <junit.jupiter.version>5.8.1</junit.jupiter.version>
+        <maven-core.version>3.8.1</maven-core.version><!-- Keep in sync with sisu.version -->
+        <sisu.version>0.3.4</sisu.version><!-- Keep in sync with maven-core.version -->
+        <maven-plugin-annotations.version>3.6.0</maven-plugin-annotations.version>
+        <maven-resolver.version>1.6.2</maven-resolver.version>
+        <maven-shared-utils.version>3.3.3</maven-shared-utils.version> <!-- changed from the original version due to https://snyk.io/vuln/maven:org.apache.maven.shared:maven-shared-utils@3.2.1 -->
+        <maven-wagon.version>3.4.3</maven-wagon.version>
+        <httpcore.version>4.4.14</httpcore.version><!-- Keep in sync with maven-wagon.version (wagon-http 3.4.3 brings in 4.4.13 and 4.4.14) -->
+        <plexus-cypher.version>1.7</plexus-cypher.version>
+        <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+        <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
+        <jackson.version>2.12.5</jackson.version>
+        <jakarta.annotation-api.version>1.3.5</jakarta.annotation-api.version>
+        <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
+        <jakarta.inject-api.version>1.0</jakarta.inject-api.version>
+        <commons-lang.version>3.12.0</commons-lang.version>
+        <guava.version>30.1.1-jre</guava.version>
+        <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
+        <jboss-logmanager-embedded.version>1.0.9</jboss-logmanager-embedded.version>
+        <slf4j-jboss-logmanager.version>1.1.0.Final</slf4j-jboss-logmanager.version>
+        <slf4j-api.version>1.7.30</slf4j-api.version>
+        <graal-sdk.version>21.3.0</graal-sdk.version>
+        <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
+        <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
+        <smallrye-common.version>1.8.0</smallrye-common.version>
+        <gradle-tooling.version>7.2</gradle-tooling.version>
     </properties>
     <modules>
         <module>bom</module>
+        <module>bom-test</module>
         <module>app-model</module>
         <module>maven-resolver</module>
         <module>core</module>
@@ -38,15 +68,6 @@
         <module>runner</module>
         <module>gradle-resolver</module>
     </modules>
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.assertj</groupId>
-                <artifactId>assertj-core</artifactId>
-                <version>${assertj.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
     <build>
         <pluginManagement>
             <plugins>
@@ -158,7 +179,7 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.16.0</version>
+                    <version>2.17.0</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>

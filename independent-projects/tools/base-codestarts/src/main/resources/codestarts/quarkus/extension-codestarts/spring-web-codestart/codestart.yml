@@ -16,5 +16,6 @@ language:
       package-name: org.acme
     dependencies:
       - io.quarkus:quarkus-spring-web
+      - io.quarkus:quarkus-resteasy-jackson
     test-dependencies:
       - io.rest-assured:rest-assured

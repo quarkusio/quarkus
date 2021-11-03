@@ -24,8 +24,7 @@ import org.gradle.api.tasks.options.Option;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.resolver.AppModelResolver;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.runtime.util.StringUtil;
 
 public class QuarkusBuild extends QuarkusTask {
@@ -109,22 +108,20 @@ public class QuarkusBuild extends QuarkusTask {
     public void buildQuarkus() {
         getLogger().lifecycle("building quarkus jar");
 
-        final AppArtifact appArtifact = extension().getAppArtifact();
-        appArtifact.setPaths(QuarkusGradleUtils.getOutputPaths(getProject()));
-        final AppModelResolver modelResolver = extension().getAppModelResolver();
+        final ApplicationModel appModel = extension().getApplicationModel();
 
-        final Properties effectiveProperties = getBuildSystemProperties(appArtifact);
+        final Properties effectiveProperties = getBuildSystemProperties(appModel.getAppArtifact());
         if (ignoredEntries != null && ignoredEntries.size() > 0) {
             String joinedEntries = String.join(",", ignoredEntries);
             effectiveProperties.setProperty("quarkus.package.user-configured-ignored-entries", joinedEntries);
         }
         try (CuratedApplication appCreationContext = QuarkusBootstrap.builder()
                 .setBaseClassLoader(getClass().getClassLoader())
-                .setAppModelResolver(modelResolver)
+                .setExistingModel(appModel)
                 .setTargetDirectory(getProject().getBuildDir().toPath())
                 .setBaseName(extension().finalName())
                 .setBuildSystemProperties(effectiveProperties)
-                .setAppArtifact(appArtifact)
+                .setAppArtifact(appModel.getAppArtifact())
                 .setLocalProjectDiscovery(false)
                 .setIsolateDeployment(true)
                 .build().bootstrap()) {

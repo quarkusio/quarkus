@@ -114,6 +114,12 @@ public class ExecuteUtil {
                 return wrapper;
         }
 
-        return null;
+        // look for a wrapper in a parent directory
+        Path normalizedPath = projectRoot.normalize();
+        if (!normalizedPath.equals(projectRoot.getRoot())) {
+            return findWrapper(normalizedPath.getParent(), windows, other);
+        } else {
+            return null;
+        }
     }
 }

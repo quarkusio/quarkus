@@ -43,7 +43,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -72,6 +71,7 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.qute.Engine;
@@ -399,7 +399,7 @@ public class DevConsoleProcessor {
         }
 
         // Add the static resources
-        AppArtifact devConsoleResourcesArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, "io.quarkus",
+        ResolvedDependency devConsoleResourcesArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, "io.quarkus",
                 "quarkus-vertx-http-deployment");
 
         Path devConsoleStaticResourcesDeploymentPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem,
@@ -640,7 +640,7 @@ public class DevConsoleProcessor {
     }
 
     private Map<String, String> getDefaultValues(List<ConfigDescriptionBuildItem> configDescriptionBuildItems) {
-        Map<String, String> defaultValues = new HashMap();
+        Map<String, String> defaultValues = new HashMap<>();
 
         for (ConfigDescriptionBuildItem configDescriptionBuildItem : configDescriptionBuildItems) {
             if (configDescriptionBuildItem.getDefaultValue() != null) {

@@ -1,8 +1,8 @@
 package io.quarkus.it.reactive.mysql.client;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class NativeFruitsEndpointIT extends FruitsEndpointTest {
 
     // Runs the same tests as the parent class

@@ -16,7 +16,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import io.smallrye.common.annotation.NonBlocking;
 
 public class EmptyInputTest {
 
@@ -64,7 +63,6 @@ public class EmptyInputTest {
         }
 
         @Path("nonBlocking")
-        @NonBlocking
         @POST
         public String nonBlocking(Greeting greeting) {
             return createResult(greeting);

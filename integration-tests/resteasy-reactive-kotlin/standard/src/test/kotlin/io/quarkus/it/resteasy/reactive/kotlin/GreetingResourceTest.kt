@@ -10,12 +10,21 @@ import org.junit.jupiter.api.Test
 class GreetingResourceTest {
 
     @Test
-    fun testDataClass() {
+    fun testDataClassAndCustomFilters() {
         RestAssured.given()
                 .`when`()["/greeting"]
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
-                .body("message", CoreMatchers.`is`("hello"))
+                .body("message", CoreMatchers.`is`("hello foo bar"))
+                .header("method", "testSuspend")
+    }
+
+    @Test
+    fun testAbortingCustomFilters() {
+        RestAssured.given().header("abort", "true")
+                .`when`()["/greeting"]
+                .then()
+                .statusCode(204)
     }
 }

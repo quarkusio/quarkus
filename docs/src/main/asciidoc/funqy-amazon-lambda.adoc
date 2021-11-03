@@ -235,8 +235,8 @@ call must set a specific environment variable:
 
 == Examine the POM
 
-There is nothing special about the POM other than the inclusion of the `quarkus-funqy-amazon-lambda` and `quarkus-test-amazon-lambda` extensions
-as a dependencies.  The extension automatically generates everything you might need for your lambda deployment.
+There is nothing special about the POM other than the inclusion of the `quarkus-funqy-amazon-lambda` extension
+as a dependency.  The extension automatically generates everything you might need for your lambda deployment.
 
 == Integration Testing
 

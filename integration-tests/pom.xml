@@ -135,6 +135,7 @@
                 <module>kafka-ssl</module>
                 <module>kafka-sasl</module>
                 <module>kafka-sasl-elytron</module>
+                <module>kafka-oauth-keycloak</module>
                 <module>kafka-snappy</module>
                 <module>kafka-avro</module>
                 <module>kafka-avro-apicurio2</module>
@@ -181,6 +182,7 @@
                 <module>elytron-security</module>
                 <module>elytron-security-oauth2</module>
                 <module>elytron-resteasy</module>
+                <module>elytron-resteasy-reactive</module>
                 <module>elytron-undertow</module>
                 <module>flyway</module>
                 <module>liquibase</module>
@@ -254,10 +256,12 @@
                 <module>reactive-messaging-amqp</module>
                 <module>reactive-messaging-kafka</module>
                 <module>reactive-messaging-http</module>
+                <module>reactive-messaging-rabbitmq</module>
                 <module>rest-client</module>
                 <module>resteasy-reactive-kotlin</module>
                 <module>rest-client-reactive</module>
                 <module>rest-client-reactive-multipart</module>
+                <module>rest-client-reactive-stork</module>
                 <module>packaging</module>
                 <module>simple with space</module>
                 <module>consul-config</module>

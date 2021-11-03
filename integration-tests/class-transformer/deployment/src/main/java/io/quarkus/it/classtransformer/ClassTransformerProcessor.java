@@ -6,8 +6,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-import javax.inject.Inject;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
@@ -32,14 +30,9 @@ public class ClassTransformerProcessor {
 
     private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
 
-    @Inject
-    CombinedIndexBuildItem combinedIndex;
-
-    @Inject
-    BuildProducer<BytecodeTransformerBuildItem> transformers;
-
     @BuildStep
-    public void build() throws Exception {
+    public void build(CombinedIndexBuildItem combinedIndex,
+            BuildProducer<BytecodeTransformerBuildItem> transformers) throws Exception {
         final Set<String> pathAnnotatedClasses = new HashSet<>();
 
         Collection<AnnotationInstance> annotations = combinedIndex.getIndex().getAnnotations(PATH);

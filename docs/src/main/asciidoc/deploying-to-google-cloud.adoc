@@ -95,7 +95,14 @@ When done, the output will display the URL of your application (target url), you
 
 You can choose to let `gcloud` build your application for you, this is the simplest way to deploy to App Engine.
 
-Just launch `gcloud app deploy` in the root of your project, it will upload all your project files (the list can be reduced via the  `.gcloudignore` file),
+In this case, you need to configure your application to be packaged as an uber-jar in your `application.properties` file:
+
+[source, properties]
+----
+quarkus.package.type=uber-jar
+----
+
+Then, you can just launch `gcloud app deploy` in the root of your project, it will upload all your project files (the list can be reduced via the  `.gcloudignore` file),
 package your JAR via Maven (or Gradle) and launch it on App Engine.
 
 When done, the output will display the URL of your application (target url), you can use it with curl or directly open it in your browser using `gcloud app browse`.
@@ -115,7 +122,7 @@ First, add the plugin to your `pom.xml`:
     <configuration>
         <projectId>GCLOUD_CONFIG</projectId> <1>
         <version>gettingstarted</version>
-        <artifact>${project.build.directory}/getting-started-${project.version}-runner.jar</artifact> <2>
+        <artifact>${project.build.directory}/quarkus-app/quarkus-run.jar</artifact> <2>
     </configuration>
 </plugin>
 ----
@@ -223,6 +230,8 @@ When the deployment is done, the output will display the URL to access your appl
 Google Cloud SQL provides managed instances for MySQL, PostgreSQL and Microsoft SQL Server.
 Quarkus has support for all three databases.
 
+=== Using Cloud SQL with a JDBC driver
+
 To make your applications work with Cloud SQL, you first need to use the corresponding JDBC extension, for example, for PostgreSQL,
 add the `quarkus-jdbc-postgresql` extension.
 
@@ -261,6 +270,31 @@ as Hibernate ORM would not be able to automatically detect the dialect of your d
 
 WARNING: Using a PostgreSQL socket factory is not possible in dev mode at the moment
 due to issue link:https://github.com/quarkusio/quarkus/issues/15782[#15782].
+
+=== Using Cloud SQL with a reactive SQL client
+
+You can also use one of our reactive SQL client instead of the JDBC client.
+To do so with Cloud SQL, add the following dependency
+(adjust the classifier depending on your platform):
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-transport-native-epoll</artifactId>
+    <classifier>linux-x86_64</classifier>
+</dependency>
+----
+
+Then configure your reactive datasource with no hostname and with the Netty native transport:
+
+[source, properties]
+----
+quarkus.datasource.reactive.url=postgresql://:5432/db-name?host=/cloudsql/project-id:zone:db-name
+quarkus.vertx.prefer-native-transport=true
+----
+
+WARNING: This only works when your application is running inside a Google Cloud managed runtime like App Engine.
 
 == Going further
 

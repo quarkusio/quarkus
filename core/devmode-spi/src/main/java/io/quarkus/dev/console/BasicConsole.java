@@ -114,6 +114,7 @@ public class BasicConsole extends QuarkusConsole {
                     return;
                 }
                 if (message == null) {
+                    old = null;
                     return;
                 }
                 if (message.equals(old)) {

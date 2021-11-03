@@ -1,11 +1,12 @@
 package io.quarkus.runtime.graal;
 
 import java.awt.color.ICC_Profile;
+import java.util.function.BooleanSupplier;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-import io.quarkus.runtime.util.JavaVersionUtil.JDK16OrEarlier;
+import io.quarkus.runtime.util.JavaVersionUtil;
 
 @TargetClass(className = "sun.java2d.cmm.lcms.LCMS", onlyWith = JDK16OrEarlier.class)
 final class Target_sun_java2d_cmm_lcms_LCMS {
@@ -74,4 +75,15 @@ final class Target_sun_java2d_cmm_lcms_LCMS {
     static final class LCMSTransform {
     }
 
+}
+
+/*
+ * Replacement for com.oracle.svm.core.jdk.JDK16OrEarlier which got
+ * removed after the 21.3 release.
+ */
+class JDK16OrEarlier implements BooleanSupplier {
+    @Override
+    public boolean getAsBoolean() {
+        return JavaVersionUtil.isJava16OrLower();
+    }
 }

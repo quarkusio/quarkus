@@ -23,6 +23,10 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
 
     private static final String REL = "self";
 
+    public GetMethodImplementor(boolean isResteasyClassic) {
+        super(isResteasyClassic);
+    }
+
     /**
      * Generate JAX-RS GET method that exposes {@link RestDataResource#get(Object)}.
      * Generated code looks more or less like this:

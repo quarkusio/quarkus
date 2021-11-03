@@ -1,0 +1,41 @@
+plugins {
+    id 'java'
+    id 'io.quarkus'
+}
+
+group = 'com.quarkus.demo'
+version = '1.0'
+
+test {
+    dependsOn 'cleanTest'
+    useJUnitPlatform()
+    forkEvery 1
+}
+
+repositories {
+    mavenCentral()
+    if (System.properties.containsKey('maven.repo.local')) {
+        maven {
+            url System.properties.get('maven.repo.local')
+        }
+    } else {
+        mavenLocal()
+    }
+}
+
+dependencies {
+
+    implementation 'io.quarkus:quarkus-resteasy'
+    implementation 'io.quarkus:quarkus-resteasy-jackson'
+    implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+    implementation 'io.quarkus:quarkus-hibernate-orm-panache'
+
+    annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+
+    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation 'io.rest-assured:rest-assured'
+
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+
+}
+

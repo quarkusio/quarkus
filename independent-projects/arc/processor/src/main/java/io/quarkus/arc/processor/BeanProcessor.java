@@ -1,11 +1,13 @@
 package io.quarkus.arc.processor;
 
 import io.quarkus.arc.AlternativePriority;
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
 import io.quarkus.arc.processor.BuildExtension.BuildContext;
 import io.quarkus.arc.processor.BuildExtension.Key;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
+import io.quarkus.gizmo.BytecodeCreator;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,6 +21,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.Priority;
@@ -66,6 +69,7 @@ public class BeanProcessor {
     private final boolean generateSources;
     private final boolean allowMocking;
     private final boolean transformUnproxyableClasses;
+    private final List<Function<BeanInfo, Consumer<BytecodeCreator>>> suppressConditionGenerators;
 
     // This predicate is used to filter annotations for InjectionPoint metadata
     // Note that we do create annotation literals for all annotations for an injection point that resolves to a @Dependent bean that injects the InjectionPoint metadata
@@ -82,6 +86,7 @@ public class BeanProcessor {
         this.generateSources = builder.generateSources;
         this.allowMocking = builder.allowMocking;
         this.transformUnproxyableClasses = builder.transformUnproxyableClasses;
+        this.suppressConditionGenerators = builder.suppressConditionGenerators;
 
         // Initialize all build processors
         buildContext = new BuildContextImpl();
@@ -154,7 +159,7 @@ public class BeanProcessor {
 
         BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, applicationClassPredicate, privateMembers,
                 generateSources, reflectionRegistration, existingClasses, beanToGeneratedName,
-                injectionPointAnnotationsPredicate);
+                injectionPointAnnotationsPredicate, suppressConditionGenerators);
         ClientProxyGenerator clientProxyGenerator = new ClientProxyGenerator(applicationClassPredicate, generateSources,
                 allowMocking, reflectionRegistration, existingClasses);
         InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals, applicationClassPredicate,
@@ -280,6 +285,7 @@ public class BeanProcessor {
         final List<QualifierRegistrar> qualifierRegistrars;
         final List<InterceptorBindingRegistrar> interceptorBindingRegistrars;
         final List<BeanDeploymentValidator> beanDeploymentValidators;
+        final List<Function<BeanInfo, Consumer<BytecodeCreator>>> suppressConditionGenerators;
 
         boolean removeUnusedBeans = false;
         final List<Predicate<BeanInfo>> removalExclusions;
@@ -310,6 +316,7 @@ public class BeanProcessor {
             qualifierRegistrars = new ArrayList<>();
             interceptorBindingRegistrars = new ArrayList<>();
             beanDeploymentValidators = new ArrayList<>();
+            suppressConditionGenerators = new ArrayList<>();
 
             removeUnusedBeans = false;
             removalExclusions = new ArrayList<>();
@@ -524,6 +531,17 @@ public class BeanProcessor {
          */
         public Builder addExcludeType(Predicate<ClassInfo> predicate) {
             this.excludeTypes.add(predicate);
+            return this;
+        }
+
+        /**
+         * A generator can contribute to the generated {@link InjectableBean#isSuppressed()} method body.
+         * 
+         * @param generator
+         * @return self
+         */
+        public Builder addSuppressConditionGenerator(Function<BeanInfo, Consumer<BytecodeCreator>> generator) {
+            this.suppressConditionGenerators.add(generator);
             return this;
         }
 

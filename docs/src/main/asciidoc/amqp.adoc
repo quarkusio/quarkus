@@ -11,8 +11,10 @@ This guide demonstrates how your Quarkus application can utilize SmallRye Reacti
 
 include::./status-include.adoc[]
 
-IMPORTANT: If you want to use RabbitMQ, you need to enable AMQP 1.0 in the RabbitMQ broker.
-Check the https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.5/amqp/amqp.html#amqp-rabbitmq[connecting to RabbitMQ] documentation.
+IMPORTANT: If you want to use RabbitMQ, you should use the xref:rabbitmq.adoc[SmallRye Reactive Messaging RabbitMQ extension].
+Alternatively, if want to use RabbitMQ with AMQP 1.0 you need to enable the AMQP 1.0 plugin in the RabbitMQ broker;
+check the https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.9/amqp/amqp.html#amqp-rabbitmq[connecting to RabbitMQ]
+documentation.
 
 == Prerequisites
 

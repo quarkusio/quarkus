@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import javax.transaction.RollbackException;
 import javax.ws.rs.Priorities;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -58,6 +59,7 @@ import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem
 import io.quarkus.resteasy.reactive.common.deployment.ResourceInterceptorsContributorBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.UnwrappedExceptionBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContextResolverBuildItem;
@@ -97,20 +99,29 @@ public class ResteasyReactiveScanningProcessor {
         });
     }
 
+    @BuildStep
+    public List<UnwrappedExceptionBuildItem> defaultUnwrappedException() {
+        return List.of(new UnwrappedExceptionBuildItem(ArcUndeclaredThrowableException.class),
+                new UnwrappedExceptionBuildItem(RollbackException.class));
+    }
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @BuildStep
     public ExceptionMappersBuildItem scanForExceptionMappers(CombinedIndexBuildItem combinedIndexBuildItem,
             ApplicationResultBuildItem applicationResultBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
-            List<ExceptionMapperBuildItem> mappers, Capabilities capabilities) {
+            List<ExceptionMapperBuildItem> mappers, List<UnwrappedExceptionBuildItem> unwrappedExceptions,
+            Capabilities capabilities) {
         AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
         ExceptionMapping exceptions = ResteasyReactiveExceptionMappingScanner
                 .scanForExceptionMappers(combinedIndexBuildItem.getComputingIndex(), applicationResultBuildItem.getResult());
 
         exceptions.addBlockingProblem(BlockingOperationNotAllowedException.class);
         exceptions.addBlockingProblem(BlockingNotAllowedException.class);
-        exceptions.addUnwrappedException(ArcUndeclaredThrowableException.class);
+        for (UnwrappedExceptionBuildItem bi : unwrappedExceptions) {
+            exceptions.addUnwrappedException(bi.getThrowableClass());
+        }
         if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
             exceptions.addNonBlockingProblem(
                     new ExceptionMapping.ExceptionTypeAndMessageContainsPredicate(IllegalStateException.class, "HR000068"));

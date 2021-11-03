@@ -1,5 +1,7 @@
 package io.quarkus.bootstrap.model;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.GACTV;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +15,7 @@ public class PlatformReleaseInfo implements Serializable {
     private final String platformKey;
     private final String stream;
     private final String version;
-    private final List<AppArtifactCoords> boms;
+    private final List<ArtifactCoords> boms;
 
     public PlatformReleaseInfo(String platformKey, String stream, String version, String boms) {
         this.platformKey = platformKey;
@@ -22,7 +24,7 @@ public class PlatformReleaseInfo implements Serializable {
         final String[] bomCoords = boms.split(",");
         this.boms = new ArrayList<>(bomCoords.length);
         for (String s : bomCoords) {
-            this.boms.add(AppArtifactCoords.fromString(s));
+            this.boms.add(GACTV.fromString(s));
         }
     }
 
@@ -58,7 +60,7 @@ public class PlatformReleaseInfo implements Serializable {
      *
      * @return member BOM coordinates
      */
-    public List<AppArtifactCoords> getBoms() {
+    public List<ArtifactCoords> getBoms() {
         return boms;
     }
 
@@ -73,7 +75,7 @@ public class PlatformReleaseInfo implements Serializable {
 
     String getPropertyValue() {
         final StringBuilder buf = new StringBuilder();
-        final List<AppArtifactCoords> boms = getBoms();
+        final List<ArtifactCoords> boms = getBoms();
         if (!boms.isEmpty()) {
             buf.append(boms.get(0).toString());
             for (int i = 1; i < boms.size(); ++i) {

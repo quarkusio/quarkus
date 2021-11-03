@@ -940,8 +940,6 @@ to be 'Application Archives', and will therefore get indexed. This is done via t
 example the ArC extension registers `META-INF/beans.xml`, which means that all archives on the class path with a `beans.xml`
 file will be indexed.
 
-NOTE: `BuildStep.applicationArchiveMarkers()` is deprecated and will be removed at some point post Quarkus 1.1. Extensions are encouraged to use `io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem` instead.
-
 ==== Using Thread's Context Class Loader
 
 The build step will be run with a TCCL that can load user classes from the deployment in a transformer-safe way.
@@ -1451,6 +1449,13 @@ The following objects can be passed to recorders:
 - Any arbitrary object via the `io.quarkus.deployment.recording.RecorderContext#registerSubstitution(Class, Class, Class)` mechanism
 - Arrays, Lists and Maps of the above
 
+==== Injecting Configuration into Recorders
+
+Configuration objects with phase `RUNTIME` or `BUILD_AND_RUNTIME_FIXED` can be injected into recorders via constructor
+injection. Just create a constructor that takes the configuration objects the recorder needs. If the recorder has multiple
+constructors you can annotate the one you want Quarkus to use with `@Inject`. If the recorder wants to inject runtime config
+but is also used at static init time then it needs to inject a `RuntimeValue<ConfigObject>`, this value will only be set
+when the runtime methods are being invoked.
 
 ==== RecorderContext
 

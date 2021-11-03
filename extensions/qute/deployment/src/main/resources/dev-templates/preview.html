@@ -1,22 +1,108 @@
 {#include main}
   {#title}Render Preview{/title}
+  {#style}
+  .CodeMirror { height: auto; border: 1px solid #ddd; }
+  #template-source-pre { margin: 0px; }
+  {/style}
+  {#styleref}
+  <link rel="stylesheet" href="{devRootAppend}/resources/codemirror/lib/codemirror.css">
+  <link rel="stylesheet" href="{devRootAppend}/resources/codemirror/addon/hint/show-hint.css">
+  {/styleref}
+  
   {#body}
   <form method="post" enctype="application/x-www-form-urlencoded" target="_blank">
      <div class="form-group">
-        <label for="template-select">Select a template:</label>
-        <select class="form-control" name="template-path" id="template-select">
+        <label for="template-select">Template</label>
+        <select class="form-control" name="template-select" id="template-select">
         {#for template in info:devQuteInfos.templates}
+          {#let optionIndex=index}
           {#each template.variants}
-          <option value="{it}">{it}</option>
+          <option value="{it.key}"{#if optionIndex is 0 and index is 0} selected="true"{/if}>{it.key}</option>
           {/each}
+          {/let}
         {/for}
         </select>
      </div>
      <div class="form-group">
+        <a class="btn btn-primary" data-toggle="collapse" href="#template-source" role="button" aria-expanded="false" aria-controls="template-source">
+        Source
+        </a>
+        <div class="collapse" id="template-source">
+            <div class="card card-body">
+                <pre id="template-source-pre"></pre>
+            </div>
+        </div>
+     </div>
+     <div class="form-group">
         <label for="template-select">Test JSON data</label>
-        <textarea class="form-control" placeholder="Test JSON data" name="template-data" id="template-data"></textarea>
+        <textarea class="form-control" name="template-data" id="template-data"></textarea>
      </div>
      <input id="invoke" type="submit" value="Render" class="btn btn-primary">
   </form>
   {/body}
+  
+  {#scriptref}
+  <script src="{devRootAppend}/resources/codemirror/lib/codemirror.js"></script>
+  <script src="{devRootAppend}/resources/codemirror/mode/javascript/javascript.js"></script>
+  <script src="{devRootAppend}/resources/codemirror/addon/hint/show-hint.js"></script>
+  <script src="{devRootAppend}/resources/codemirror/addon/selection/active-line.js"></script>
+  {/scriptref}
+  
+  {#script}
+  
+  const templateSelect = document.querySelector('#template-select');
+  const templateDataMap = new Object();
+  const templateSourceMap = new Object();
+  
+  {! Init the template path -> initial data map !}
+  {#for template in info:devQuteInfos.templates}
+     {#let dataCount=count}
+     var testData{dataCount};
+     {#if template.parameters}
+       testData{dataCount} = '{';
+       {#each template.parameters}
+       testData{dataCount} += '\n  // Template parameter {count}: {it.value.raw}\n';
+       testData{dataCount} += '  "{it.key}" : null';
+       {#if hasNext}
+       testData{dataCount} += ',';
+       {/if}
+       {/each}
+       testData{dataCount} += '\n}'; 
+     {#else}
+       testData{dataCount} = '{}';
+     {/if}
+     {#each template.variants}
+     templateDataMap['{it.key}'] = testData{dataCount};
+     templateSourceMap['{it.key}'] = '{it.value}';
+     {/each}
+     {/let}
+  {/for}
+
+  const editor = CodeMirror.fromTextArea(document.querySelector('#template-data'), {
+    mode: { name: "javascript", json: true },
+    styleActiveLine: true,
+    lineNumbers: true,
+    lineWrapping: true,
+    extraKeys: {"Ctrl-Space": "autocomplete"}
+  });
+
+  const initialTemplate = '{info:devQuteInfos.templates.get(0).variants.keySet.iterator.next}';
+  editor.setValue(templateDataMap[initialTemplate]);
+  document.querySelector('#template-source-pre').innerHTML = templateSourceMap[initialTemplate];
+  document.querySelector('#template-select').value = initialTemplate;
+  
+  editor.on("blur", function(codeMirror) { codeMirror.save(); });
+  editor.refresh();
+  
+  templateSelect.addEventListener('input', (event) => {
+    // Update the template data
+    const templateData = document.querySelector('#template-data');
+    editor.setValue(templateDataMap[event.target.value]);
+    editor.refresh();  
+    // Update the list of expressions
+    document.querySelector('#template-source-pre').innerHTML = templateSourceMap[event.target.value]; 
+  });
+  
+
+  {/script}
 {/include}

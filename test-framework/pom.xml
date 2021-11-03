@@ -42,6 +42,7 @@
         <module>keycloak-server</module>
         <module>jacoco</module>
         <module>mongodb</module>
+        <module>infinispan-client</module>
     </modules>
 
 </project>

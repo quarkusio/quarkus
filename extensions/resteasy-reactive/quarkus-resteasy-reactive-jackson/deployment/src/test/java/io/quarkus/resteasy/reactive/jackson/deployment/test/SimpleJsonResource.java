@@ -3,6 +3,7 @@ package io.quarkus.resteasy.reactive.jackson.deployment.test;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -18,6 +19,7 @@ import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
 import com.fasterxml.jackson.annotation.JsonView;
@@ -27,12 +29,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
+import io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization;
+import io.quarkus.resteasy.reactive.jackson.EnableSecureSerialization;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 @Path("/simple")
 @NonBlocking
+@DisableSecureSerialization
 public class SimpleJsonResource extends SuperClass<Person> {
 
     @ServerExceptionMapper
@@ -54,6 +60,41 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Path("custom-serialized-person")
     public Person getCustomSerializedPerson() {
         return getPerson();
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("secure-person")
+    public Person getSecurePerson() {
+        return getPerson();
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("secure-uni-person")
+    public Uni<Person> getSecureUniPerson() {
+        return Uni.createFrom().item(getPerson());
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("secure-rest-response-person")
+    public RestResponse<Person> getSecureRestResponsePerson() {
+        return RestResponse.ok(getPerson());
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("secure-people")
+    public List<Person> getSecurePeople() {
+        return Collections.singletonList(getPerson());
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("secure-uni-people")
+    public Uni<List<Person>> getSecureUniPeople() {
+        return Uni.createFrom().item(Collections.singletonList(getPerson()));
     }
 
     @POST
@@ -262,4 +303,5 @@ public class SimpleJsonResource extends SuperClass<Person> {
             return objectMapper.writer().without(JsonWriteFeature.QUOTE_FIELD_NAMES);
         }
     }
+
 }

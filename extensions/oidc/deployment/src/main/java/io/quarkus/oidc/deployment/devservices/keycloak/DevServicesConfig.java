@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.oidc.deployment.DevUiConfig;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -106,6 +107,12 @@ public class DevServicesConfig {
     @ConfigItem
     public Map<String, String> roles;
 
+    /**
+     * Grant type.
+     * 
+     * @deprecated Use {@link DevUiConfig#grant}.
+     */
+    @Deprecated
     public Grant grant = new Grant();
 
     @ConfigGroup
@@ -160,8 +167,11 @@ public class DevServicesConfig {
      * The WebClient timeout.
      * Use this property to configure how long an HTTP client will wait for a response when requesting
      * tokens from Keycloak and sending them to the service endpoint.
+     *
+     * @deprecated Use {@link DevUiConfig#webClienTimeout}.
      */
     @ConfigItem(defaultValue = "4S")
+    @Deprecated
     public Duration webClienTimeout;
 
     @Override

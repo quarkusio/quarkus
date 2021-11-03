@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -59,6 +60,7 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runtime.ApplicationLifecycleManager;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 
@@ -86,7 +88,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
 
-            boolean augmentDone = false;
             //ok, we have resolved all the deps
             try {
                 StartupAction start = augmentAction.createInitialRuntimeApplication();
@@ -141,7 +142,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                         });
 
                 startCodeGenWatcher(deploymentClassLoader, codeGens, context.getBuildSystemProperties());
-                augmentDone = true;
                 runner = start.runMainClass(context.getArgs());
                 firstStartCompleted = true;
             } catch (Throwable t) {
@@ -151,9 +151,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 }
                 if (!(rootCause instanceof BindException)) {
                     deploymentProblem = t;
-                    if (!augmentDone) {
-                        log.error("Failed to start quarkus", t);
-                    }
                     if (!context.isAbortOnFailedStart()) {
                         //we need to set this here, while we still have the correct TCCL
                         //this is so the config is still valid, and we can read HTTP config from application.properties
@@ -168,8 +165,11 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                     cl.getMethod("handleFailedStart").invoke(null);
                                 }
                                 RuntimeUpdatesProcessor.INSTANCE.startupFailed();
+                                //try and wait till logging is setup
+                                log.error("Failed to start quarkus", t);
                             } catch (Exception e) {
                                 close();
+                                log.error("Failed to start quarkus", t);
                                 log.error("Failed to recover after failed start", e);
                                 //this is the end of the road, we just exit
                                 //generally we only hit this if something is already listening on the HTTP port
@@ -177,6 +177,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                 System.exit(1);
                             }
                         }
+                    } else {
+                        log.error("Failed to start quarkus", t);
                     }
                 }
             }
@@ -186,16 +188,18 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     }
 
     private void startCodeGenWatcher(QuarkusClassLoader classLoader, List<CodeGenData> codeGens,
-            Map<String, String> properties) {
+            Map<String, String> propertyMap) {
 
         Collection<FSWatchUtil.Watcher> watchers = new ArrayList<>();
+        Properties properties = new Properties();
+        properties.putAll(propertyMap);
         for (CodeGenData codeGen : codeGens) {
             watchers.add(new FSWatchUtil.Watcher(codeGen.sourceDir, codeGen.provider.inputExtension(),
                     modifiedPaths -> {
                         try {
                             CodeGenerator.trigger(classLoader,
                                     codeGen,
-                                    curatedApplication.getAppModel(), properties);
+                                    curatedApplication.getApplicationModel(), properties, LaunchMode.DEVELOPMENT);
                         } catch (Exception any) {
                             log.warn("Code generation failed", any);
                         }
@@ -360,6 +364,9 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     //the main entry point, but loaded inside the augmentation class loader
     @Override
     public void accept(CuratedApplication o, Map<String, Object> params) {
+        //setup the dev mode thread pool for NIO
+        System.setProperty("java.nio.channels.DefaultThreadPool.threadFactory",
+                "io.quarkus.dev.io.NioThreadPoolThreadFactory");
         Timing.staticInitStarted(o.getBaseRuntimeClassLoader(), false);
         //https://github.com/quarkusio/quarkus/issues/9748
         //if you have an app with all daemon threads then the app thread

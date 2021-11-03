@@ -4,13 +4,13 @@ import static io.quarkus.arc.processor.MethodDescriptors.MAP_PUT;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIENT_HEADERS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
+import static java.util.Arrays.asList;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.CDI_WRAPPER_SUFFIX;
 import static org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner.BUILTIN_HTTP_ANNOTATIONS_TO_METHOD;
 
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -135,8 +135,7 @@ class RestClientReactiveProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupAdditionalBeans(
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+    void setupAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             RestClientRecorder restClientRecorder) {
         restClientRecorder.setRestClientBuilderResolver();
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
@@ -220,7 +219,7 @@ class RestClientReactiveProcessor {
         for (AnnotationInstance annotation : index.getAnnotations(REGISTER_PROVIDERS)) {
             String targetClass = annotation.target().asClass().name().toString();
             annotationsByClassName.computeIfAbsent(targetClass, key -> new ArrayList<>())
-                    .addAll(Arrays.asList(annotation.value().asNestedArray()));
+                    .addAll(asList(annotation.value().asNestedArray()));
         }
 
         try (ClassCreator classCreator = ClassCreator.builder()
@@ -310,7 +309,7 @@ class RestClientReactiveProcessor {
         IndexView index = combinedIndex.getIndex();
         List<AnnotationInstance> allInstances = new ArrayList<>(index.getAnnotations(REGISTER_PROVIDER));
         for (AnnotationInstance annotation : index.getAnnotations(REGISTER_PROVIDERS)) {
-            allInstances.addAll(Arrays.asList(annotation.value().asNestedArray()));
+            allInstances.addAll(asList(annotation.value().asNestedArray()));
         }
         allInstances.addAll(index.getAnnotations(REGISTER_CLIENT_HEADERS));
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();

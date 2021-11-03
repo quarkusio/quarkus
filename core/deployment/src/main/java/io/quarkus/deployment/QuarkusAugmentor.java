@@ -17,7 +17,7 @@ import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.builder.BuildChain;
 import io.quarkus.builder.BuildChainBuilder;
@@ -36,6 +36,7 @@ import io.quarkus.deployment.builditem.RuntimeApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.paths.PathCollection;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.JavaVersionUtil;
 
@@ -50,12 +51,12 @@ public class QuarkusAugmentor {
     private final List<Consumer<BuildChainBuilder>> buildChainCustomizers;
     private final LaunchMode launchMode;
     private final DevModeType devModeType;
-    private final List<PathsCollection> additionalApplicationArchives;
+    private final List<PathCollection> additionalApplicationArchives;
     private final Collection<Path> excludedFromIndexing;
     private final LiveReloadBuildItem liveReloadBuildItem;
     private final Properties buildSystemProperties;
     private final Path targetDir;
-    private final AppModel effectiveModel;
+    private final ApplicationModel effectiveModel;
     private final String baseName;
     private final Consumer<ConfigBuilder> configCustomizer;
     private final boolean rebuild;
@@ -154,7 +155,7 @@ public class QuarkusAugmentor {
                     .produce(new BuildSystemTargetBuildItem(targetDir, baseName, rebuild,
                             buildSystemProperties == null ? new Properties() : buildSystemProperties))
                     .produce(new AppModelProviderBuildItem(effectiveModel));
-            for (PathsCollection i : additionalApplicationArchives) {
+            for (PathCollection i : additionalApplicationArchives) {
                 execBuilder.produce(new AdditionalApplicationArchiveBuildItem(i));
             }
             BuildResult buildResult = execBuilder.execute();
@@ -189,7 +190,7 @@ public class QuarkusAugmentor {
 
         public DevModeType auxiliaryDevModeType;
         boolean rebuild;
-        List<PathsCollection> additionalApplicationArchives = new ArrayList<>();
+        List<PathCollection> additionalApplicationArchives = new ArrayList<>();
         Collection<Path> excludedFromIndexing = Collections.emptySet();
         ClassLoader classLoader;
         PathsCollection root;
@@ -200,7 +201,7 @@ public class QuarkusAugmentor {
         LiveReloadBuildItem liveReloadState = new LiveReloadBuildItem();
         Properties buildSystemProperties;
 
-        AppModel effectiveModel;
+        ApplicationModel effectiveModel;
         String baseName = "quarkus-application";
         Consumer<ConfigBuilder> configCustomizer;
         ClassLoader deploymentClassLoader;
@@ -213,11 +214,11 @@ public class QuarkusAugmentor {
             return this;
         }
 
-        public List<PathsCollection> getAdditionalApplicationArchives() {
+        public List<PathCollection> getAdditionalApplicationArchives() {
             return additionalApplicationArchives;
         }
 
-        public Builder addAdditionalApplicationArchive(PathsCollection archive) {
+        public Builder addAdditionalApplicationArchive(PathCollection archive) {
             this.additionalApplicationArchives.add(archive);
             return this;
         }
@@ -328,7 +329,7 @@ public class QuarkusAugmentor {
             return this;
         }
 
-        public Builder setEffectiveModel(AppModel effectiveModel) {
+        public Builder setEffectiveModel(ApplicationModel effectiveModel) {
             this.effectiveModel = effectiveModel;
             return this;
         }

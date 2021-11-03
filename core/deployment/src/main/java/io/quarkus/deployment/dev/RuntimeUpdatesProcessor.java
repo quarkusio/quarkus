@@ -64,6 +64,8 @@ import io.quarkus.deployment.dev.filewatch.WatchServiceFileSystemWatcher;
 import io.quarkus.deployment.dev.testing.TestListener;
 import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.dev.console.QuarkusConsole;
+import io.quarkus.dev.console.StatusLine;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.HotReplacementSetup;
@@ -83,6 +85,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private final QuarkusCompiler compiler;
     private final DevModeType devModeType;
     volatile Throwable compileProblem;
+    volatile Throwable testCompileProblem;
 
     private volatile Predicate<ClassInfo> disableInstrumentationForClassPredicate = new AlwaysFalsePredicate<>();
     private volatile Predicate<Index> disableInstrumentationForIndexPredicate = new AlwaysFalsePredicate<>();
@@ -124,6 +127,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     private WatchServiceFileSystemWatcher testClassChangeWatcher;
     private Timer testClassChangeTimer;
+    volatile StatusLine compileOutput;
 
     public RuntimeUpdatesProcessor(Path applicationRoot, DevModeContext context, QuarkusCompiler compiler,
             DevModeType devModeType, BiConsumer<Set<String>, ClassScanResult> restartCallback,
@@ -293,10 +297,11 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         TestScanningLock.lockForTests();
         try {
             ClassScanResult changedTestClassResult = compileTestClasses();
-            ClassScanResult changedApp = checkForChangedClasses(compiler, DevModeContext.ModuleInfo::getMain, false, test);
+            ClassScanResult changedApp = checkForChangedClasses(compiler, DevModeContext.ModuleInfo::getMain, false, test,
+                    true);
             if (changedApp.compilationHappened) {
-                if (compileProblem != null) {
-                    testSupport.testCompileFailed(compileProblem);
+                if (testCompileProblem != null) {
+                    testSupport.testCompileFailed(testCompileProblem);
                 } else {
                     testSupport.testCompileSucceeded();
                 }
@@ -308,11 +313,11 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
             ClassScanResult merged = ClassScanResult.merge(changedTestClassResult, changedApp);
             if (configFileRestartNeeded) {
-                if (compileProblem == null) {
+                if (testCompileProblem == null) {
                     testSupport.runTests(null);
                 }
             } else if (merged.isChanged()) {
-                if (compileProblem == null) {
+                if (testCompileProblem == null) {
                     testSupport.runTests(merged);
                 }
             }
@@ -327,10 +332,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         ClassScanResult changedTestClassResult = new ClassScanResult();
         try {
             changedTestClassResult = checkForChangedClasses(testCompiler,
-                    m -> m.getTest().orElse(DevModeContext.EMPTY_COMPILATION_UNIT), false, test);
+                    m -> m.getTest().orElse(DevModeContext.EMPTY_COMPILATION_UNIT), false, test, true);
             if (compileProblem != null) {
                 testSupport.testCompileFailed(compileProblem);
-                compileProblem = null; //we don't want to block the app over a test problem
             } else {
                 if (changedTestClassResult.isChanged()) {
                     testSupport.testCompileSucceeded();
@@ -368,6 +372,18 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     @Override
     public void setRemoteProblem(Throwable throwable) {
         compileProblem = throwable;
+        getCompileOutput().setMessage(throwable.getMessage());
+    }
+
+    private StatusLine getCompileOutput() {
+        if (compileOutput == null) {
+            synchronized (this) {
+                if (compileOutput == null) {
+                    compileOutput = QuarkusConsole.INSTANCE.registerStatusLine(QuarkusConsole.COMPILE_ERROR);
+                }
+            }
+        }
+        return compileOutput;
     }
 
     @Override
@@ -417,7 +433,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             }
 
             ClassScanResult changedClassResults = checkForChangedClasses(compiler, DevModeContext.ModuleInfo::getMain, false,
-                    main);
+                    main, false);
             Set<String> filesChanged = checkForFileChange(DevModeContext.ModuleInfo::getMain, main);
 
             boolean configFileRestartNeeded = forceRestart || filesChanged.stream().map(main.watchedFilePaths::get)
@@ -476,6 +492,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                         instrumentationChange = false;
                     }
                 }
+            }
+            if (compileProblem != null) {
+                return false;
             }
 
             //if there is a deployment problem we always restart on scan
@@ -582,7 +601,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     }
 
     ClassScanResult checkForChangedClasses(boolean firstScan) {
-        ClassScanResult classScanResult = checkForChangedClasses(compiler, DevModeContext.ModuleInfo::getMain, firstScan, main);
+        ClassScanResult classScanResult = checkForChangedClasses(compiler, DevModeContext.ModuleInfo::getMain, firstScan, main,
+                false);
         if (firstScan) {
             test.merge(main);
         }
@@ -595,7 +615,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         }
         ClassScanResult ret = checkForChangedClasses(testSupport.getCompiler(),
                 s -> s.getTest().orElse(DevModeContext.EMPTY_COMPILATION_UNIT), firstScan,
-                test);
+                test, true);
         if (firstScan) {
             startTestScanningTimer();
         }
@@ -611,7 +631,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
      */
     ClassScanResult checkForChangedClasses(QuarkusCompiler compiler,
             Function<DevModeContext.ModuleInfo, DevModeContext.CompilationUnit> cuf, boolean firstScan,
-            TimestampSet timestampSet) {
+            TimestampSet timestampSet, boolean compilingTests) {
         ClassScanResult classScanResult = new ClassScanResult();
         boolean ignoreFirstScanChanges = firstScan;
 
@@ -670,8 +690,17 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                             compiler.compile(sourcePath.toString(), changedSourceFiles.stream()
                                     .collect(groupingBy(this::getFileExtension, Collectors.toSet())));
                             compileProblem = null;
+                            if (compilingTests) {
+                                testCompileProblem = null;
+                            }
+                            getCompileOutput().setMessage(null);
                         } catch (Exception e) {
-                            compileProblem = e;
+                            if (compilingTests) {
+                                testCompileProblem = e;
+                            } else {
+                                compileProblem = e;
+                            }
+                            getCompileOutput().setMessage(e.getMessage());
                             return classScanResult;
                         }
                         boolean timestampsChanged = false;

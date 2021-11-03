@@ -1,12 +1,12 @@
 package io.quarkus.platform.tools;
 
 import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
 import io.quarkus.registry.catalog.json.JsonCatalogMerger;
@@ -179,8 +179,9 @@ public class ToolsUtils {
         for (ArtifactCoords platform : platforms) {
             final Path json;
             try {
-                json = artifactResolver.resolve(new AppArtifact(platform.getGroupId(), platform.getArtifactId(),
-                        platform.getClassifier(), platform.getType(), platform.getVersion()));
+                json = artifactResolver.resolve(new GACTV(platform.getGroupId(), platform.getArtifactId(),
+                        platform.getClassifier(), platform.getType(), platform.getVersion())).getResolvedPaths()
+                        .getSinglePath();
             } catch (Exception e) {
                 throw new RuntimeException("Failed to resolve platform descriptor " + platform, e);
             }

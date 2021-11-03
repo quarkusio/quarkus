@@ -17,28 +17,19 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -54,23 +45,16 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.extest.runtime.AdditionalStaticInitConfigSourceProvider;
 import io.quarkus.extest.runtime.FinalFieldReflectionObject;
-import io.quarkus.extest.runtime.IConfigConsumer;
 import io.quarkus.extest.runtime.RuntimeXmlConfigService;
-import io.quarkus.extest.runtime.TestAnnotation;
 import io.quarkus.extest.runtime.TestRecorder;
 import io.quarkus.extest.runtime.beans.CommandServlet;
 import io.quarkus.extest.runtime.beans.PublicKeyProducer;
-import io.quarkus.extest.runtime.config.AnotherPrefixConfig;
-import io.quarkus.extest.runtime.config.FooRuntimeConfig;
 import io.quarkus.extest.runtime.config.ObjectOfValue;
 import io.quarkus.extest.runtime.config.ObjectValueOf;
-import io.quarkus.extest.runtime.config.PrefixConfig;
 import io.quarkus.extest.runtime.config.TestBuildAndRunTimeConfig;
 import io.quarkus.extest.runtime.config.TestBuildTimeConfig;
 import io.quarkus.extest.runtime.config.TestConfigRoot;
-import io.quarkus.extest.runtime.config.TestRunTimeConfig;
 import io.quarkus.extest.runtime.config.XmlConfig;
-import io.quarkus.extest.runtime.config.named.PrefixNamedConfig;
 import io.quarkus.extest.runtime.logging.AdditionalLogHandlerValueFactory;
 import io.quarkus.extest.runtime.runtimeinitializedpackage.RuntimeInitializedClass;
 import io.quarkus.extest.runtime.subst.DSAPublicKeyObjectSubstitution;
@@ -83,8 +67,6 @@ import io.quarkus.undertow.deployment.ServletBuildItem;
  */
 public final class TestProcessor {
     static final Logger log = Logger.getLogger(TestProcessor.class);
-    static DotName TEST_ANNOTATION = DotName.createSimple(TestAnnotation.class.getName());
-    static DotName TEST_ANNOTATION_SCOPE = DotName.createSimple(ApplicationScoped.class.getName());
 
     TestConfigRoot configRoot;
     TestBuildTimeConfig buildTimeConfig;
@@ -98,16 +80,6 @@ public final class TestProcessor {
     @BuildStep
     FeatureBuildItem featureBuildItem() {
         return new FeatureBuildItem("test-extension");
-    }
-
-    /**
-     * Register a custom bean defining annotation
-     *
-     * @return BeanDefiningAnnotationBuildItem
-     */
-    @BuildStep
-    BeanDefiningAnnotationBuildItem registerBeanDefiningAnnotations() {
-        return new BeanDefiningAnnotationBuildItem(TEST_ANNOTATION, TEST_ANNOTATION_SCOPE);
     }
 
     /**
@@ -340,59 +312,6 @@ public final class TestProcessor {
         if (buildTimeConfig.allValues.longList.get(2) != 3) {
             throw new IllegalStateException(
                     "buildTimeConfig.allValues.longList[2] != 3; " + buildTimeConfig.allValues.longList.get(2));
-        }
-    }
-
-    /**
-     * Collect the beans with our custom bean defining annotation and configure them with the runtime config
-     *
-     * @param recorder - runtime recorder
-     * @param beanArchiveIndex - index of type information
-     * @param testBeanProducer - producer for located Class<IConfigConsumer> bean types
-     */
-    @BuildStep
-    @Record(STATIC_INIT)
-    void scanForBeans(TestRecorder recorder, BeanArchiveIndexBuildItem beanArchiveIndex,
-            BuildProducer<TestBeanBuildItem> testBeanProducer) {
-        IndexView indexView = beanArchiveIndex.getIndex();
-        Collection<AnnotationInstance> testBeans = indexView.getAnnotations(TEST_ANNOTATION);
-        for (AnnotationInstance ann : testBeans) {
-            ClassInfo beanClassInfo = ann.target().asClass();
-            try {
-                boolean isConfigConsumer = beanClassInfo.interfaceNames()
-                        .stream()
-                        .anyMatch(dotName -> dotName.equals(DotName.createSimple(IConfigConsumer.class.getName())));
-                if (isConfigConsumer) {
-                    Class<IConfigConsumer> beanClass = (Class<IConfigConsumer>) Class.forName(beanClassInfo.name().toString(),
-                            true, Thread.currentThread().getContextClassLoader());
-                    testBeanProducer.produce(new TestBeanBuildItem(beanClass));
-                    log.infof("The configured bean: %s", beanClass);
-                }
-            } catch (ClassNotFoundException e) {
-                log.warn("Failed to load bean class", e);
-            }
-        }
-    }
-
-    /**
-     * For each IConfigConsumer type, have the runtime recorder create a bean and pass in the runtime related configs
-     *
-     * @param recorder - runtime recorder
-     * @param testBeans - types of IConfigConsumer found
-     * @param beanContainer - bean container to create test bean in
-     * @param runTimeConfig - The RUN_TIME config phase root config
-     */
-    @BuildStep
-    @Record(RUNTIME_INIT)
-    void configureBeans(TestRecorder recorder, List<TestBeanBuildItem> testBeans,
-            BeanContainerBuildItem beanContainer,
-            TestRunTimeConfig runTimeConfig, FooRuntimeConfig fooRuntimeConfig, PrefixConfig prefixConfig,
-            PrefixNamedConfig prefixNamedConfig,
-            AnotherPrefixConfig anotherPrefixConfig) {
-        for (TestBeanBuildItem testBeanBuildItem : testBeans) {
-            Class<IConfigConsumer> beanClass = testBeanBuildItem.getConfigConsumer();
-            recorder.configureBeans(beanContainer.getValue(), beanClass, buildAndRunTimeConfig, runTimeConfig,
-                    fooRuntimeConfig, prefixConfig, prefixNamedConfig, anotherPrefixConfig);
         }
     }
 

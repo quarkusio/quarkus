@@ -68,7 +68,7 @@ public class ClientEndpointIndexer
                 clazz.setPath(path);
             }
             List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
-                    clazz.getPathParameters());
+                    clazz.getPathParameters(), clazz.getPath(), false);
             clazz.getMethods().addAll(methods);
 
             warnForUnsupportedAnnotations(classInfo);
@@ -99,7 +99,8 @@ public class ClientEndpointIndexer
             throw new IllegalStateException("Subresource method returns an invalid type: " + method.returnType().name());
         }
 
-        List<ResourceMethod> endpoints = createEndpoints(subResourceClass, subResourceClass, new HashSet<>(), new HashSet<>());
+        List<ResourceMethod> endpoints = createEndpoints(subResourceClass, subResourceClass, new HashSet<>(), new HashSet<>(),
+                "", false);
         resourceMethod.setSubResourceMethods(endpoints);
     }
 

@@ -6,13 +6,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
+import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 @QuarkusIntegrationTest
 @DisabledOnOs(OS.WINDOWS)
 class MongoDbRestDataPanacheIT extends MongoDbRestDataPanacheTest {
 
-    QuarkusIntegrationTest.Context context;
+    DevServicesContext context;
 
     @Test
     public void testDevServicesProperties() {

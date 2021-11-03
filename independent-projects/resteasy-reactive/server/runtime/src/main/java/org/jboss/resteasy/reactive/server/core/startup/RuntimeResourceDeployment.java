@@ -32,9 +32,9 @@ import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
+import org.jboss.resteasy.reactive.common.reflection.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
-import org.jboss.resteasy.reactive.common.util.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.common.util.types.TypeSignatureParser;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
@@ -68,6 +68,7 @@ import org.jboss.resteasy.reactive.server.handlers.InvocationHandler;
 import org.jboss.resteasy.reactive.server.handlers.NonBlockingHandler;
 import org.jboss.resteasy.reactive.server.handlers.ParameterHandler;
 import org.jboss.resteasy.reactive.server.handlers.PerRequestInstanceHandler;
+import org.jboss.resteasy.reactive.server.handlers.PublisherResponseHandler;
 import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceLocatorHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
@@ -90,7 +91,9 @@ import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class RuntimeResourceDeployment {
 
-    public static final ServerRestHandler[] EMPTY_REST_HANDLER_ARRAY = new ServerRestHandler[0];
+    private static final ServerRestHandler[] EMPTY_REST_HANDLER_ARRAY = new ServerRestHandler[0];
+    @SuppressWarnings("rawtypes")
+    private static final MessageBodyWriter[] EMPTY_MESSAGE_BODY_WRITERS = new MessageBodyWriter[0];
 
     private static final Logger log = Logger.getLogger(RuntimeResourceDeployment.class);
 
@@ -106,6 +109,8 @@ public class RuntimeResourceDeployment {
      * If the runtime will always default to blocking (e.g. Servlet)
      */
     private final boolean defaultBlocking;
+    private final BlockingHandler blockingHandler;
+    private final ResponseWriterHandler responseWriterHandler;
 
     public RuntimeResourceDeployment(DeploymentInfo info, Supplier<Executor> executorSupplier,
             CustomServerRestHandlers customServerRestHandlers,
@@ -120,6 +125,8 @@ public class RuntimeResourceDeployment {
         this.dynamicEntityWriter = dynamicEntityWriter;
         this.resourceLocatorHandler = resourceLocatorHandler;
         this.defaultBlocking = defaultBlocking;
+        this.blockingHandler = new BlockingHandler(executorSupplier);
+        this.responseWriterHandler = new ResponseWriterHandler(dynamicEntityWriter);
     }
 
     public RuntimeResource buildResourceMethod(ResourceClass clazz,
@@ -181,7 +188,7 @@ public class RuntimeResourceDeployment {
         Optional<Integer> blockingHandlerIndex = Optional.empty();
         if (!defaultBlocking) {
             if (method.isBlocking()) {
-                handlers.add(new BlockingHandler(executorSupplier));
+                handlers.add(blockingHandler);
                 blockingHandlerIndex = Optional.of(handlers.size() - 1);
                 score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionBlocking);
             } else {
@@ -286,7 +293,7 @@ public class RuntimeResourceDeployment {
             boolean single = param.isSingle();
             ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, locatableResource, param.parameterType,
                     param.type, param.name,
-                    single, param.encoded, param.customerParameterExtractor);
+                    single, param.encoded, param.customParameterExtractor);
             ParameterConverter converter = null;
             ParamConverterProviders paramConverterProviders = info.getParamConverterProviders();
             boolean userProviderConvertersExist = !paramConverterProviders.getParamConverterProviders().isEmpty();
@@ -319,7 +326,11 @@ public class RuntimeResourceDeployment {
         } else {
             handlers.add(new InvocationHandler(invoker));
         }
-        addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE);
+        boolean afterMethodInvokeHandlersAdded = addHandlers(handlers, clazz, method, info,
+                HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE);
+        if (afterMethodInvokeHandlersAdded) {
+            addStreamingResponseCustomizers(method, handlers);
+        }
 
         Type returnType = TypeSignatureParser.parse(method.getReturnType());
         Type nonAsyncReturnType = getNonAsyncReturnType(returnType);
@@ -377,7 +388,7 @@ public class RuntimeResourceDeployment {
                         } else {
                             //multiple writers, we try them in the proper order which had already been created
                             handlers.add(new FixedProducesHandler(mediaType,
-                                    new FixedEntityWriterArray(buildTimeWriters.toArray(new MessageBodyWriter[0]),
+                                    new FixedEntityWriterArray(buildTimeWriters.toArray(EMPTY_MESSAGE_BODY_WRITERS),
                                             serialisers)));
                             score.add(ScoreSystem.Category.Writer,
                                     ScoreSystem.Diagnostic.WriterBuildTimeMultiple(buildTimeWriters));
@@ -403,25 +414,25 @@ public class RuntimeResourceDeployment {
         //in future there will be one per filter
         List<ServerRestHandler> responseFilterHandlers;
         if (method.isSse()) {
-            handlers.add(new SseResponseWriterHandler());
+            handlers.add(SseResponseWriterHandler.INSTANCE);
             responseFilterHandlers = Collections.emptyList();
         } else {
-            handlers.add(new ResponseHandler());
+            addResponseHandler(method, handlers);
             addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED);
             responseFilterHandlers = new ArrayList<>(interceptorDeployment.setupResponseFilterHandler());
             handlers.addAll(responseFilterHandlers);
-            handlers.add(new ResponseWriterHandler(dynamicEntityWriter));
+            handlers.add(responseWriterHandler);
         }
         if (!clazz.resourceExceptionMapper().isEmpty() && (instanceHandler != null)) {
             // when class level exception mapper are used, we need to make sure that an instance of resource class exists
             // so we can invoke it
             abortHandlingChain.add(instanceHandler);
         }
-        abortHandlingChain.add(new ExceptionHandler());
-        abortHandlingChain.add(new ResponseHandler());
+        abortHandlingChain.add(ExceptionHandler.INSTANCE);
+        abortHandlingChain.add(ResponseHandler.NO_CUSTOMIZER_INSTANCE);
         abortHandlingChain.addAll(responseFilterHandlers);
 
-        abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
+        abortHandlingChain.add(responseWriterHandler);
         handlers.add(0, new AbortChainHandler(abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY)));
 
         return new RuntimeResource(method.getHttpMethod(), methodPathTemplate,
@@ -431,7 +442,46 @@ public class RuntimeResourceDeployment {
                 clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterDeclaredTypes,
                 nonAsyncReturnType, method.isBlocking(), resourceClass,
                 lazyMethod,
-                pathParameterIndexes, score, sseElementType, clazz.resourceExceptionMapper());
+                pathParameterIndexes, info.isDevelopmentMode() ? score : null, sseElementType, clazz.resourceExceptionMapper());
+    }
+
+    private void addResponseHandler(ServerResourceMethod method, List<ServerRestHandler> handlers) {
+        if (method.getHandlerChainCustomizers().isEmpty()) {
+            handlers.add(ResponseHandler.NO_CUSTOMIZER_INSTANCE);
+        } else {
+            List<ResponseHandler.ResponseBuilderCustomizer> customizers = new ArrayList<>(
+                    method.getHandlerChainCustomizers().size());
+            for (int i = 0; i < method.getHandlerChainCustomizers().size(); i++) {
+                ResponseHandler.ResponseBuilderCustomizer customizer = method.getHandlerChainCustomizers().get(i)
+                        .successfulInvocationResponseBuilderCustomizer(method);
+                if (customizer != null) {
+                    customizers.add(customizer);
+                }
+            }
+            handlers.add(new ResponseHandler(customizers));
+        }
+    }
+
+    private void addStreamingResponseCustomizers(ServerResourceMethod method, List<ServerRestHandler> handlers) {
+        List<PublisherResponseHandler.StreamingResponseCustomizer> customizers = new ArrayList<>(
+                method.getHandlerChainCustomizers().size());
+        for (int i = 0; i < method.getHandlerChainCustomizers().size(); i++) {
+            PublisherResponseHandler.StreamingResponseCustomizer streamingResponseCustomizer = method
+                    .getHandlerChainCustomizers().get(i)
+                    .streamingResponseCustomizer(method);
+            if (streamingResponseCustomizer != null) {
+                customizers.add(streamingResponseCustomizer);
+            }
+        }
+        if (!customizers.isEmpty()) {
+            for (int i = 0; i < handlers.size(); i++) {
+                ServerRestHandler serverRestHandler = handlers.get(i);
+                if (serverRestHandler instanceof PublisherResponseHandler) {
+                    ((PublisherResponseHandler) serverRestHandler).setStreamingResponseCustomizers(customizers);
+                    return;
+                }
+            }
+        }
     }
 
     private boolean isSingleEffectiveWriter(List<MessageBodyWriter<?>> buildTimeWriters) {
@@ -444,15 +494,17 @@ public class RuntimeResourceDeployment {
         return buildTimeWriters.get(0) instanceof ServerMessageBodyWriter.AllWriteableMessageBodyWriter;
     }
 
-    private void addHandlers(List<ServerRestHandler> handlers, ResourceClass clazz, ServerResourceMethod method,
+    private boolean addHandlers(List<ServerRestHandler> handlers, ResourceClass clazz, ServerResourceMethod method,
             DeploymentInfo info,
             HandlerChainCustomizer.Phase phase) {
+        int originalHandlersSize = handlers.size();
         for (int i = 0; i < info.getGlobalHandlerCustomizers().size(); i++) {
             handlers.addAll(info.getGlobalHandlerCustomizers().get(i).handlers(phase, clazz, method));
         }
         for (int i = 0; i < method.getHandlerChainCustomizers().size(); i++) {
             handlers.addAll(method.getHandlerChainCustomizers().get(i).handlers(phase, clazz, method));
         }
+        return originalHandlersSize != handlers.size();
     }
 
     private ServerRestHandler alternateInvoker(ServerResourceMethod method, EndpointInvoker invoker) {
@@ -486,7 +538,7 @@ public class RuntimeResourceDeployment {
                         extractor = new NullParamExtractor();
                     }
                 } else {
-                    extractor = new PathParamExtractor(index, encoded);
+                    extractor = new PathParamExtractor(index, encoded, single);
                 }
                 return extractor;
             case CONTEXT:

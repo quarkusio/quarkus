@@ -26,7 +26,7 @@ abstract class ReactiveHandlerBeanBase<ConfigType extends StreamConfigBase, Mess
         if (bundle != null) {
             MultiEmitter<? super MessageType> emitter = bundle.emitter;
             StrictQueueSizeGuard guard = bundle.guard;
-            handleRequest(event, emitter, guard);
+            handleRequest(event, emitter, guard, bundle.path);
         } else {
             event.response().setStatusCode(404).end();
         }
@@ -41,6 +41,7 @@ abstract class ReactiveHandlerBeanBase<ConfigType extends StreamConfigBase, Mess
                 .<MessageType> emitter(bundle::setEmitter, BackPressureStrategy.BUFFER)
                 .onItem().invoke(guard::dequeue);
         bundle.setProcessor(processor);
+        bundle.setPath(streamConfig.path);
 
         Bundle<MessageType> previousProcessor = processors.put(key(streamConfig), bundle);
         if (previousProcessor != null) {
@@ -49,7 +50,7 @@ abstract class ReactiveHandlerBeanBase<ConfigType extends StreamConfigBase, Mess
     }
 
     protected abstract void handleRequest(RoutingContext event, MultiEmitter<? super MessageType> emitter,
-            StrictQueueSizeGuard guard);
+            StrictQueueSizeGuard guard, String path);
 
     protected abstract String description(ConfigType streamConfig);
 
@@ -63,6 +64,7 @@ abstract class ReactiveHandlerBeanBase<ConfigType extends StreamConfigBase, Mess
         private final StrictQueueSizeGuard guard;
         private Multi<MessageType> processor; // effectively final
         private MultiEmitter<? super MessageType> emitter; // effectively final
+        private String path;
 
         private Bundle(StrictQueueSizeGuard guard) {
             this.guard = guard;
@@ -78,6 +80,10 @@ abstract class ReactiveHandlerBeanBase<ConfigType extends StreamConfigBase, Mess
 
         public Multi<MessageType> getProcessor() {
             return processor;
+        }
+
+        public void setPath(String path) {
+            this.path = path;
         }
     }
 }

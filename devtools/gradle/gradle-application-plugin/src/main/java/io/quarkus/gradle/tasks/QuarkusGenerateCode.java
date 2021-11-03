@@ -16,7 +16,6 @@ import java.util.function.Consumer;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.plugins.Convention;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.InputFiles;
@@ -28,10 +27,10 @@ import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
-import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.deployment.CodeGenerator;
+import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusGenerateCode extends QuarkusTask {
 
@@ -46,6 +45,7 @@ public class QuarkusGenerateCode extends QuarkusTask {
     private Consumer<Path> sourceRegistrar = (p) -> {
     };
     private boolean test = false;
+    private boolean devMode = false;
 
     public QuarkusGenerateCode() {
         super("Performs Quarkus pre-build preparations, such as sources generation");
@@ -89,26 +89,23 @@ public class QuarkusGenerateCode extends QuarkusTask {
     public void prepareQuarkus() {
         getLogger().lifecycle("preparing quarkus application");
 
-        final AppArtifact appArtifact = extension().getAppArtifact();
-        appArtifact.setPaths(QuarkusGradleUtils.getOutputPaths(getProject()));
-
-        final AppModelResolver modelResolver = extension().getAppModelResolver();
-        final Properties realProperties = getBuildSystemProperties(appArtifact);
+        LaunchMode launchMode = test ? LaunchMode.TEST : devMode ? LaunchMode.DEVELOPMENT : LaunchMode.NORMAL;
+        final ApplicationModel appModel = extension().getApplicationModel(launchMode);
+        final Properties realProperties = getBuildSystemProperties(appModel.getAppArtifact());
 
         Path buildDir = getProject().getBuildDir().toPath();
         try (CuratedApplication appCreationContext = QuarkusBootstrap.builder()
                 .setBaseClassLoader(getClass().getClassLoader())
-                .setAppModelResolver(modelResolver)
+                .setExistingModel(appModel)
                 .setTargetDirectory(buildDir)
                 .setBaseName(extension().finalName())
                 .setBuildSystemProperties(realProperties)
-                .setAppArtifact(appArtifact)
+                .setAppArtifact(appModel.getAppArtifact())
                 .setLocalProjectDiscovery(false)
                 .setIsolateDeployment(true)
                 .build().bootstrap()) {
 
-            final Convention convention = getProject().getConvention();
-            JavaPluginConvention javaConvention = convention.findPlugin(JavaPluginConvention.class);
+            final JavaPluginConvention javaConvention = getProject().getConvention().findPlugin(JavaPluginConvention.class);
             if (javaConvention != null) {
                 final String generateSourcesDir = test ? QUARKUS_TEST_GENERATED_SOURCES : QUARKUS_GENERATED_SOURCES;
                 final SourceSet generatedSources = javaConvention.getSourceSets().findByName(generateSourcesDir);
@@ -129,16 +126,18 @@ public class QuarkusGenerateCode extends QuarkusTask {
                 Optional<Method> initAndRun = Arrays.stream(codeGenerator.getMethods())
                         .filter(m -> m.getName().equals(INIT_AND_RUN))
                         .findAny();
-                if (!initAndRun.isPresent()) {
+                if (initAndRun.isEmpty()) {
                     throw new GradleException("Failed to find " + INIT_AND_RUN + " method in " + CodeGenerator.class.getName());
                 }
+
                 initAndRun.get().invoke(null, deploymentClassLoader,
                         PathsCollection.from(sourcesDirectories),
-                        paths.iterator().next(),
+                        paths.get(0),
                         buildDir,
                         sourceRegistrar,
-                        appCreationContext.getAppModel(),
-                        realProperties);
+                        appCreationContext.getApplicationModel(),
+                        realProperties,
+                        launchMode.name());
 
             }
         } catch (BootstrapException | IllegalAccessException | InvocationTargetException | ClassNotFoundException e) {
@@ -152,5 +151,9 @@ public class QuarkusGenerateCode extends QuarkusTask {
 
     public void setTest(boolean test) {
         this.test = test;
+    }
+
+    public void setDevMode(boolean devMode) {
+        this.devMode = devMode;
     }
 }

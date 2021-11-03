@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import javax.ws.rs.RuntimeType;
@@ -12,13 +13,15 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.server.handlers.PublisherResponseHandler;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 
 // FIXME: we need to refactor the serialisation of entities to bytes between here and Sse and Serialisers
 // and figure out where interceptors come into play
 public class StreamingUtil {
 
-    public static CompletionStage<?> send(ResteasyReactiveRequestContext context, Object entity, String prefix) {
+    public static CompletionStage<?> send(ResteasyReactiveRequestContext context,
+            List<PublisherResponseHandler.StreamingResponseCustomizer> customizers, Object entity, String prefix) {
         ServerHttpResponse response = context.serverResponse();
         if (response.closed()) {
             // FIXME: check spec
@@ -32,7 +35,7 @@ public class StreamingUtil {
             ret.completeExceptionally(e);
             return ret;
         }
-        setHeaders(context, response);
+        setHeaders(context, response, customizers);
         if (prefix != null) {
             byte[] prefixBytes = prefix.getBytes(StandardCharsets.US_ASCII);
             byte[] prefixedData = new byte[prefixBytes.length + data.length];
@@ -56,7 +59,7 @@ public class StreamingUtil {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         boolean wrote = false;
         for (MessageBodyWriter<Object> writer : writers) {
-            // Spec(API) says we should use class/type/mediaType but doesn't talk about annotations 
+            // Spec(API) says we should use class/type/mediaType but doesn't talk about annotations
             if (writer.isWriteable(entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType)) {
                 // FIXME: spec doesn't really say what headers we should use here
                 writer.writeTo(entity, entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType,
@@ -72,13 +75,17 @@ public class StreamingUtil {
         return baos.toByteArray();
     }
 
-    public static void setHeaders(ResteasyReactiveRequestContext context, ServerHttpResponse response) {
+    public static void setHeaders(ResteasyReactiveRequestContext context, ServerHttpResponse response,
+            List<PublisherResponseHandler.StreamingResponseCustomizer> customizers) {
         // FIXME: spec says we should flush the headers when first message is sent or when the resource method returns, whichever
         // happens first
         if (!response.headWritten()) {
             response.setStatusCode(Response.Status.OK.getStatusCode());
             response.setResponseHeader(HttpHeaders.CONTENT_TYPE, context.getResponseContentType().toString());
             response.setChunked(true);
+            for (int i = 0; i < customizers.size(); i++) {
+                customizers.get(i).customize(response);
+            }
             // FIXME: other headers?
         }
     }

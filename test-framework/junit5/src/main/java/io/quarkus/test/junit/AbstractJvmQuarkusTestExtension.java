@@ -3,6 +3,7 @@ package io.quarkus.test.junit;
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
+import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,14 +23,14 @@ import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
-import io.quarkus.bootstrap.model.gradle.QuarkusModel;
 import io.quarkus.bootstrap.runner.Timing;
-import io.quarkus.bootstrap.util.PathsUtils;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.deployment.dev.testing.CurrentTestApplication;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.test.common.PathTestHelper;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.RestorableSystemProperties;
 import io.quarkus.test.common.TestClassIndexer;
 
@@ -44,11 +45,13 @@ public class AbstractJvmQuarkusTestExtension {
 
     //needed for @Nested
     protected static final Deque<Class<?>> currentTestClassStack = new ArrayDeque<>();
+    protected static Class<?> currentJUnitTestClass;
 
     protected PrepareResult createAugmentor(ExtensionContext context, Class<? extends QuarkusTestProfile> profile,
             Collection<Runnable> shutdownTasks) throws Exception {
 
         Class<?> requiredTestClass = context.getRequiredTestClass();
+        currentJUnitTestClass = requiredTestClass;
         Path testClassLocation = getTestClassesLocation(requiredTestClass);
         final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
 
@@ -116,16 +119,24 @@ public class AbstractJvmQuarkusTestExtension {
 
         // If gradle project running directly with IDE
         if (System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL) == null) {
-            QuarkusModel model = BuildToolHelper.enableGradleAppModelForTest(projectRoot);
-            if (model != null) {
-                final PathsCollection classDirectories = PathsUtils
-                        .toPathsCollection(model.getWorkspace().getMainModule().getSourceSet()
-                                .getSourceDirectories());
-                for (Path classes : classDirectories) {
-                    if (Files.exists(classes) && !rootBuilder.contains(classes)) {
-                        rootBuilder.add(classes);
+            ApplicationModel model = BuildToolHelper.enableGradleAppModelForTest(projectRoot);
+            if (model != null && model.getApplicationModule() != null) {
+                model.getApplicationModule().getTestSources().forEach(src -> {
+                    if (src.getDestinationDir().exists()) {
+                        final Path classesDir = src.getDestinationDir().toPath();
+                        if (!rootBuilder.contains(classesDir)) {
+                            rootBuilder.add(classesDir);
+                        }
                     }
-                }
+                });
+                model.getApplicationModule().getMainSources().forEach(src -> {
+                    if (src.getDestinationDir().exists()) {
+                        final Path classesDir = src.getDestinationDir().toPath();
+                        if (!rootBuilder.contains(classesDir)) {
+                            rootBuilder.add(classesDir);
+                        }
+                    }
+                });
             }
         } else if (System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR) != null) {
             final String[] sourceDirectories = System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR).split(",");
@@ -154,7 +165,7 @@ public class AbstractJvmQuarkusTestExtension {
             shutdownTasks.add(curatedApplication::close);
         }
 
-        if (curatedApplication.getAppModel().getUserDependencies().isEmpty()) {
+        if (curatedApplication.getApplicationModel().getRuntimeDependencies().isEmpty()) {
             throw new RuntimeException(
                     "The tests were run against a directory that does not contain a Quarkus project. Please ensure that the test is configured to use the proper working directory.");
         }
@@ -181,6 +192,34 @@ public class AbstractJvmQuarkusTestExtension {
             selectedProfile = annotation.value();
         }
         return selectedProfile;
+    }
+
+    protected static boolean hasPerTestResources(ExtensionContext extensionContext) {
+        return hasPerTestResources(extensionContext.getRequiredTestClass());
+    }
+
+    public static boolean hasPerTestResources(Class<?> requiredTestClass) {
+        while (requiredTestClass != Object.class) {
+            for (QuarkusTestResource testResource : requiredTestClass.getAnnotationsByType(QuarkusTestResource.class)) {
+                if (testResource.restrictToAnnotatedClass()) {
+                    return true;
+                }
+            }
+            // scan for meta-annotations
+            for (Annotation annotation : requiredTestClass.getAnnotations()) {
+                // skip TestResource annotations
+                if (annotation.annotationType() != QuarkusTestResource.class) {
+                    // look for a TestResource on the annotation itself
+                    if (annotation.annotationType().getAnnotationsByType(QuarkusTestResource.class).length > 0) {
+                        // meta-annotations are per-test scoped for now
+                        return true;
+                    }
+                }
+            }
+            // look up
+            requiredTestClass = requiredTestClass.getSuperclass();
+        }
+        return false;
     }
 
     protected static class PrepareResult {

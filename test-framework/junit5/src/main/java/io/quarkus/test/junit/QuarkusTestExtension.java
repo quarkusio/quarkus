@@ -4,7 +4,6 @@ import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResourc
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.reflect.Constructor;
@@ -75,6 +74,7 @@ import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.deployment.builditem.TestClassBeanBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.dev.testing.TracingHandler;
+import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.runtime.configuration.ProfileManager;
@@ -82,7 +82,6 @@ import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.GroovyCacheCleaner;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.RestorableSystemProperties;
 import io.quarkus.test.common.TestClassIndexer;
@@ -127,7 +126,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     private static List<Object> afterAllCallbacks;
     private static Class<?> quarkusTestMethodContextClass;
     private static boolean hasPerTestResources;
-    private static Class<?> currentJUnitTestClass;
     private static List<Function<Class<?>, String>> testHttpEndpointProviders;
 
     private static List<Object> testMethodInvokers;
@@ -209,7 +207,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
         quarkusTestProfile = profile;
         Class<?> requiredTestClass = context.getRequiredTestClass();
-        currentJUnitTestClass = requiredTestClass;
         Closeable testResourceManager = null;
         try {
             final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
@@ -240,7 +237,19 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             populateCallbacks(startupAction.getClassLoader());
             populateTestMethodInvokers(startupAction.getClassLoader());
 
-            runningQuarkusApplication = startupAction.run();
+            if (profileInstance == null || !profileInstance.runMainMethod()) {
+                runningQuarkusApplication = startupAction
+                        .run(profileInstance == null ? new String[0] : profileInstance.commandLineParameters());
+            } else {
+
+                Class<?> lifecycleManager = Class.forName(ApplicationLifecycleManager.class.getName(), true,
+                        startupAction.getClassLoader());
+                lifecycleManager.getDeclaredMethod("setDefaultExitCodeHandler", Consumer.class).invoke(null,
+                        (Consumer<Integer>) integer -> {
+                        });
+                runningQuarkusApplication = startupAction
+                        .runMainClass(profileInstance.commandLineParameters());
+            }
             String patternString = runningQuarkusApplication.getConfigValue("quarkus.test.class-clone-pattern", String.class)
                     .orElse("java\\..*");
             clonePattern = Pattern.compile(patternString);
@@ -480,7 +489,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         Method actualTestMethod = null;
 
         // go up the class hierarchy to fetch the proper test method
-        Class<?> c = actualTestClass;
+        Class<?> c = resolveDeclaringClass(originalTestMethod, actualTestClass);
         List<Class<?>> parameterTypesFromTccl = new ArrayList<>(originalParameterTypes.length);
         for (Class<?> type : originalParameterTypes) {
             if (type.isPrimitive()) {
@@ -491,14 +500,12 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             }
         }
         Class<?>[] parameterTypes = parameterTypesFromTccl.toArray(new Class[0]);
-        while (c != Object.class) {
-            try {
+        try {
+            if (c != null) {
                 actualTestMethod = c.getDeclaredMethod(originalTestMethod.getName(), parameterTypes);
-                break;
-            } catch (NoSuchMethodException ignored) {
-
             }
-            c = c.getSuperclass();
+        } catch (NoSuchMethodException ignored) {
+
         }
         if (actualTestMethod == null) {
             throw new RuntimeException("Could not find method " + originalTestMethod + " on test class");
@@ -936,32 +943,50 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     private Method determineTCCLExtensionMethod(Method originalMethod, Class<?> c)
             throws ClassNotFoundException {
-
-        Method newMethod = null;
-        while (c != Object.class) {
-            if (c.getName().equals(originalMethod.getDeclaringClass().getName())) {
-                try {
-                    Class<?>[] originalParameterTypes = originalMethod.getParameterTypes();
-                    List<Class<?>> parameterTypesFromTccl = new ArrayList<>(originalParameterTypes.length);
-                    for (Class<?> type : originalParameterTypes) {
-                        if (type.isPrimitive()) {
-                            parameterTypesFromTccl.add(type);
-                        } else {
-                            parameterTypesFromTccl
-                                    .add(Class.forName(type.getName(), true,
-                                            Thread.currentThread().getContextClassLoader()));
-                        }
-                    }
-                    newMethod = c.getDeclaredMethod(originalMethod.getName(),
-                            parameterTypesFromTccl.toArray(new Class[0]));
-                    break;
-                } catch (NoSuchMethodException ignored) {
-
+        Class<?> declaringClass = resolveDeclaringClass(originalMethod, c);
+        if (declaringClass == null) {
+            return null;
+        }
+        try {
+            Class<?>[] originalParameterTypes = originalMethod.getParameterTypes();
+            List<Class<?>> parameterTypesFromTccl = new ArrayList<>(originalParameterTypes.length);
+            for (Class<?> type : originalParameterTypes) {
+                if (type.isPrimitive()) {
+                    parameterTypesFromTccl.add(type);
+                } else {
+                    parameterTypesFromTccl
+                            .add(Class.forName(type.getName(), true,
+                                    Thread.currentThread().getContextClassLoader()));
                 }
             }
-            c = c.getSuperclass();
+            return declaringClass.getDeclaredMethod(originalMethod.getName(),
+                    parameterTypesFromTccl.toArray(new Class[0]));
+        } catch (NoSuchMethodException ignored) {
+
         }
-        return newMethod;
+
+        return null;
+    }
+
+    private Class<?> resolveDeclaringClass(Method method, Class<?> c) {
+        if (c == Object.class || c == null) {
+            return null;
+        }
+
+        if (c.getName().equals(method.getDeclaringClass().getName())) {
+            return c;
+        }
+        Class<?> declaringClass = resolveDeclaringClass(method, c.getSuperclass());
+        if (declaringClass != null) {
+            return declaringClass;
+        }
+        for (Class<?> anInterface : c.getInterfaces()) {
+            declaringClass = resolveDeclaringClass(method, anInterface);
+            if (declaringClass != null) {
+                return declaringClass;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -1295,33 +1320,5 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 }
             }
         }
-    }
-
-    static boolean hasPerTestResources(ExtensionContext extensionContext) {
-        return hasPerTestResources(extensionContext.getRequiredTestClass());
-    }
-
-    public static boolean hasPerTestResources(Class<?> requiredTestClass) {
-        while (requiredTestClass != Object.class) {
-            for (QuarkusTestResource testResource : requiredTestClass.getAnnotationsByType(QuarkusTestResource.class)) {
-                if (testResource.restrictToAnnotatedClass()) {
-                    return true;
-                }
-            }
-            // scan for meta-annotations
-            for (Annotation annotation : requiredTestClass.getAnnotations()) {
-                // skip TestResource annotations
-                if (annotation.annotationType() != QuarkusTestResource.class) {
-                    // look for a TestResource on the annotation itself
-                    if (annotation.annotationType().getAnnotationsByType(QuarkusTestResource.class).length > 0) {
-                        // meta-annotations are per-test scoped for now
-                        return true;
-                    }
-                }
-            }
-            // look up
-            requiredTestClass = requiredTestClass.getSuperclass();
-        }
-        return false;
     }
 }

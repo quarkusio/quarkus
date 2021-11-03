@@ -42,7 +42,7 @@ public class ReactiveHttpHandlerBean extends ReactiveHandlerBeanBase<HttpStreamC
 
     @Override
     protected String key(RoutingContext context) {
-        return key(context.normalisedPath(), context.request().method());
+        return key(context.normalizedPath(), context.request().method());
     }
 
     @Override
@@ -52,8 +52,11 @@ public class ReactiveHttpHandlerBean extends ReactiveHandlerBeanBase<HttpStreamC
 
     @Override
     protected void handleRequest(RoutingContext event, MultiEmitter<? super HttpMessage<?>> emitter,
-            StrictQueueSizeGuard guard) {
-        if (guard.prepareToEmit()) {
+            StrictQueueSizeGuard guard, String path) {
+        if (emitter == null) {
+            onUnexpectedError(event, null,
+                    "No consumer subscribed for messages sent to Reactive Messaging HTTP endpoint on path: " + path);
+        } else if (guard.prepareToEmit()) {
             try {
                 HttpMessage<Buffer> message = new HttpMessage<>(event.getBody(), new IncomingHttpMetadata(event.request()),
                         () -> event.response().setStatusCode(202).end(),

@@ -6,7 +6,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 
@@ -16,12 +15,10 @@ import org.jacoco.core.instr.Instrumenter;
 import org.jacoco.core.runtime.OfflineInstrumentationAccessGenerator;
 import org.jboss.jandex.ClassInfo;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.AppDependency;
-import io.quarkus.bootstrap.model.gradle.QuarkusModel;
-import io.quarkus.bootstrap.model.gradle.WorkspaceModule;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
+import io.quarkus.bootstrap.workspace.ProcessedSources;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -36,6 +33,7 @@ import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.jacoco.runtime.JacocoConfig;
 import io.quarkus.jacoco.runtime.ReportCreator;
 import io.quarkus.jacoco.runtime.ReportInfo;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class JacocoProcessor {
 
@@ -108,55 +106,45 @@ public class JacocoProcessor {
             info.classFiles = classes;
 
             Set<String> sources = new HashSet<>();
+            ApplicationModel model;
             if (BuildToolHelper.isMavenProject(targetdir.toPath())) {
-                Set<AppArtifactKey> runtimeDeps = new HashSet<>();
-                for (AppDependency i : curateOutcomeBuildItem.getEffectiveModel().getUserDependencies()) {
-                    runtimeDeps.add(new AppArtifactKey(i.getArtifact().getGroupId(), i.getArtifact().getArtifactId()));
-                }
-                LocalProject project = LocalProject.loadWorkspace(targetdir.toPath());
-                runtimeDeps.add(project.getKey());
-                for (Map.Entry<AppArtifactKey, LocalProject> i : project.getWorkspace().getProjects().entrySet()) {
-                    if (runtimeDeps.contains(i.getKey())) {
-                        info.savedData.add(i.getValue().getOutputDir().resolve(config.dataFile).toAbsolutePath().toString());
-                        sources.add(i.getValue().getSourcesSourcesDir().toFile().getAbsolutePath());
-                        File classesDir = i.getValue().getClassesDir().toFile();
-                        if (classesDir.isDirectory()) {
-                            for (final File file : FileUtils.getFiles(classesDir, includes, excludes,
-                                    true)) {
-                                if (file.getName().endsWith(".class")) {
-                                    classes.add(file.getAbsolutePath());
-                                }
-                            }
-                        }
-                    }
-                }
+                model = curateOutcomeBuildItem.getApplicationModel();
             } else if (BuildToolHelper.isGradleProject(targetdir.toPath())) {
                 //this seems counter productive, but we want the dev mode model and not the test model
                 //as the test model will include the test classes that we don't want in the report
-                QuarkusModel model = BuildToolHelper.enableGradleAppModelForDevMode(targetdir.toPath());
-                for (WorkspaceModule i : model.getWorkspace().getAllModules()) {
-                    info.savedData.add(new File(i.getBuildDir(), config.dataFile).getAbsolutePath());
-                    for (File src : i.getSourceSourceSet().getSourceDirectories()) {
-                        sources.add(src.getAbsolutePath());
-                    }
-                    for (File classesDir : i.getSourceSet().getSourceDirectories()) {
-                        if (classesDir.isDirectory()) {
-                            for (final File file : FileUtils.getFiles(classesDir, includes, excludes,
-                                    true)) {
-                                if (file.getName().endsWith(".class")) {
-                                    classes.add(file.getAbsolutePath());
-                                }
-                            }
-                        }
-                    }
-                }
+                model = BuildToolHelper.enableGradleAppModelForDevMode(targetdir.toPath());
             } else {
                 throw new RuntimeException("Cannot determine project type generating Jacoco report");
             }
+
+            if (model.getApplicationModule() != null) {
+                addProjectModule(model.getApplicationModule(), config, info, includes, excludes, classes, sources);
+            }
+            for (ResolvedDependency d : model.getDependencies()) {
+                if (d.isRuntimeCp() && d.isWorkspacetModule()) {
+                    addProjectModule(d.getWorkspaceModule(), config, info, includes, excludes, classes, sources);
+                }
+            }
+
             info.sourceDirectories = sources;
             info.artifactId = buildSystemTargetBuildItem.getBaseName();
             Runtime.getRuntime().addShutdownHook(new Thread(new ReportCreator(info, config)));
         }
     }
 
+    private void addProjectModule(WorkspaceModule module, JacocoConfig config, ReportInfo info, String includes,
+            String excludes, Set<String> classes, Set<String> sources) throws Exception {
+        info.savedData.add(new File(module.getBuildDir(), config.dataFile).getAbsolutePath());
+        for (ProcessedSources src : module.getMainSources()) {
+            sources.add(src.getSourceDir().getAbsolutePath());
+            if (src.getDestinationDir().isDirectory()) {
+                for (final File file : FileUtils.getFiles(src.getDestinationDir(), includes, excludes,
+                        true)) {
+                    if (file.getName().endsWith(".class")) {
+                        classes.add(file.getAbsolutePath());
+                    }
+                }
+            }
+        }
+    }
 }

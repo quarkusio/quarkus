@@ -11,7 +11,6 @@ import org.apache.kafka.common.serialization.Serdes.ByteArraySerde;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.DefaultProductionExceptionHandler;
 import org.apache.kafka.streams.errors.LogAndFailExceptionHandler;
-import org.apache.kafka.streams.processor.DefaultPartitionGrouper;
 import org.apache.kafka.streams.processor.FailOnInvalidTimestamp;
 import org.apache.kafka.streams.processor.internals.StreamsPartitionAssignor;
 import org.rocksdb.RocksDBException;
@@ -32,7 +31,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.deployment.pkg.steps.NativeImageBuildStep;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsProducer;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRecorder;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
@@ -66,7 +64,9 @@ class KafkaStreamsProcessor {
 
     private void registerCompulsoryClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, StreamsPartitionAssignor.class));
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, DefaultPartitionGrouper.class));
+        // Class DefaultPartitionGrouper deprecated in Kafka 2.8.x and removed in 3.0.0
+        reflectiveClasses.produce(
+                new ReflectiveClassBuildItem(true, false, false, "org.apache.kafka.streams.processor.DefaultPartitionGrouper"));
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, DefaultProductionExceptionHandler.class));
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, FailOnInvalidTimestamp.class));
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, true,
@@ -123,7 +123,7 @@ class KafkaStreamsProcessor {
 
     private void addSupportForRocksDbLib(BuildProducer<NativeImageResourceBuildItem> nativeLibs, NativeConfig nativeConfig) {
         // for RocksDB, either add linux64 native lib when targeting containers
-        if (NativeImageBuildStep.isContainerBuild(nativeConfig)) {
+        if (nativeConfig.isContainerBuild()) {
             nativeLibs.produce(new NativeImageResourceBuildItem("librocksdbjni-linux64.so"));
         }
         // otherwise the native lib of the platform this build runs on

@@ -5,8 +5,8 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 /**
  * The location that output artifacts should be created in
@@ -19,10 +19,10 @@ public final class OutputTargetBuildItem extends SimpleBuildItem {
     private final String baseName;
     private final boolean rebuild;
     private final Properties buildSystemProperties;
-    private final Optional<Set<AppArtifactKey>> includedOptionalDependencies;
+    private final Optional<Set<ArtifactKey>> includedOptionalDependencies;
 
     public OutputTargetBuildItem(Path outputDirectory, String baseName, boolean rebuild, Properties buildSystemProperties,
-            Optional<Set<AppArtifactKey>> includedOptionalDependencies) {
+            Optional<Set<ArtifactKey>> includedOptionalDependencies) {
         this.outputDirectory = outputDirectory;
         this.baseName = baseName;
         this.rebuild = rebuild;
@@ -46,7 +46,7 @@ public final class OutputTargetBuildItem extends SimpleBuildItem {
         return buildSystemProperties;
     }
 
-    public Optional<Set<AppArtifactKey>> getIncludedOptionalDependencies() {
+    public Optional<Set<ArtifactKey>> getIncludedOptionalDependencies() {
         return includedOptionalDependencies;
     }
 }

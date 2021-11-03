@@ -1,17 +1,20 @@
 package io.quarkus.bootstrap.app;
 
 import io.quarkus.bootstrap.BootstrapAppModelFactory;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import io.quarkus.bootstrap.util.BootstrapUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Exclusion;
 import org.apache.maven.model.Model;
@@ -21,19 +24,20 @@ public class CurationResult {
 
     private static final Logger log = Logger.getLogger(CurationResult.class);
 
-    private final AppModel appModel;
-    private final List<AppDependency> updatedDependencies;
+    private final ApplicationModel appModel;
+    private final Collection<io.quarkus.maven.dependency.Dependency> updatedDependencies;
     private final boolean fromState;
-    private final AppArtifact appArtifact;
-    private final AppArtifact stateArtifact;
+    private final ResolvedDependency appArtifact;
+    private final ResolvedDependency stateArtifact;
     private boolean persisted;
 
-    public CurationResult(AppModel appModel) {
+    public CurationResult(ApplicationModel appModel) {
         this(appModel, Collections.emptyList(), false, null, null);
     }
 
-    public CurationResult(AppModel appModel, List<AppDependency> updatedDependencies, boolean fromState,
-            AppArtifact appArtifact, AppArtifact stateArtifact) {
+    public CurationResult(ApplicationModel appModel, Collection<io.quarkus.maven.dependency.Dependency> updatedDependencies,
+            boolean fromState,
+            ResolvedDependency appArtifact, ResolvedDependency stateArtifact) {
         this.appModel = appModel;
         this.updatedDependencies = updatedDependencies;
         this.fromState = fromState;
@@ -41,11 +45,20 @@ public class CurationResult {
         this.stateArtifact = stateArtifact;
     }
 
+    /**
+     * @deprecated in favor of {@link #getApplicationModel()}
+     * @return AppModel
+     */
+    @Deprecated
     public AppModel getAppModel() {
+        return BootstrapUtils.convert(appModel);
+    }
+
+    public ApplicationModel getApplicationModel() {
         return appModel;
     }
 
-    public List<AppDependency> getUpdatedDependencies() {
+    public Collection<io.quarkus.maven.dependency.Dependency> getUpdatedDependencies() {
         return updatedDependencies;
     }
 
@@ -53,7 +66,7 @@ public class CurationResult {
         return fromState;
     }
 
-    public AppArtifact getStateArtifact() {
+    public ResolvedDependency getStateArtifact() {
         return stateArtifact;
     }
 
@@ -76,15 +89,16 @@ public class CurationResult {
         }
         final Path statePom = stateDir.resolve("pom.xml");
 
-        AppArtifact stateArtifact;
+        ArtifactCoords stateArtifact;
         if (this.stateArtifact == null) {
             stateArtifact = ModelUtils.getStateArtifact(appArtifact);
         } else {
-            stateArtifact = new AppArtifact(this.stateArtifact.getGroupId(),
-                    this.stateArtifact.getArtifactId(),
-                    this.stateArtifact.getClassifier(),
-                    this.stateArtifact.getType(),
-                    String.valueOf(Long.valueOf(this.stateArtifact.getVersion()) + 1));
+            final ArtifactCoords currentCoords = this.stateArtifact;
+            stateArtifact = new GACTV(currentCoords.getGroupId(),
+                    currentCoords.getArtifactId(),
+                    currentCoords.getClassifier(),
+                    currentCoords.getType(),
+                    String.valueOf(Long.valueOf(currentCoords.getVersion()) + 1));
         }
 
         final Model model = new Model();
@@ -116,24 +130,23 @@ public class CurationResult {
         model.addDependency(appDep);
 
         if (!updatedDependencies.isEmpty()) {
-            for (AppDependency dep : updatedDependencies) {
-                final AppArtifact depArtifact = dep.getArtifact();
-                final String groupId = depArtifact.getGroupId();
+            for (io.quarkus.maven.dependency.Dependency dep : updatedDependencies) {
+                final String groupId = dep.getGroupId();
 
                 final Exclusion exclusion = new Exclusion();
                 exclusion.setGroupId(groupId);
-                exclusion.setArtifactId(depArtifact.getArtifactId());
+                exclusion.setArtifactId(dep.getArtifactId());
                 appDep.addExclusion(exclusion);
 
                 final Dependency updateDep = new Dependency();
                 updateDep.setGroupId(groupId);
-                updateDep.setArtifactId(depArtifact.getArtifactId());
-                final String updateClassifier = depArtifact.getClassifier();
+                updateDep.setArtifactId(dep.getArtifactId());
+                final String updateClassifier = dep.getClassifier();
                 if (updateClassifier != null && !updateClassifier.isEmpty()) {
                     updateDep.setClassifier(updateClassifier);
                 }
-                updateDep.setType(depArtifact.getType());
-                updateDep.setVersion(depArtifact.getVersion());
+                updateDep.setType(dep.getType());
+                updateDep.setVersion(dep.getVersion());
                 updateDep.setScope(dep.getScope());
 
                 model.addDependency(updateDep);

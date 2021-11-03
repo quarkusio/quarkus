@@ -42,8 +42,6 @@ import com.google.cloud.tools.jib.api.buildplan.FilePermissions;
 import com.google.cloud.tools.jib.api.buildplan.Port;
 import com.google.cloud.tools.jib.frontend.CredentialRetrieverFactory;
 
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.builder.Version;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
@@ -68,6 +66,7 @@ import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class JibProcessor {
 
@@ -302,10 +301,9 @@ public class JibProcessor {
             entrypoint.add(JarResultBuildStep.QUARKUS_RUN_JAR);
         }
 
-        List<AppArtifact> fastChangingLibs = new ArrayList<>();
-        List<AppDependency> userDependencies = curateOutcome.getEffectiveModel().getUserDependencies();
-        for (AppDependency dep : userDependencies) {
-            AppArtifact artifact = dep.getArtifact();
+        List<ResolvedDependency> fastChangingLibs = new ArrayList<>();
+        Collection<ResolvedDependency> userDependencies = curateOutcome.getApplicationModel().getRuntimeDependencies();
+        for (ResolvedDependency artifact : userDependencies) {
             if (artifact == null) {
                 continue;
             }
@@ -330,9 +328,9 @@ public class JibProcessor {
                 throw new UncheckedIOException(e);
             }
             List<String> libFileNames = new ArrayList<>(libNameToPath.keySet());
-            for (AppArtifact appArtifact : fastChangingLibs) {
+            for (ResolvedDependency appArtifact : fastChangingLibs) {
                 String matchingLibDirFileName = null;
-                for (Path appArtifactPath : appArtifact.getPaths()) {
+                for (Path appArtifactPath : appArtifact.getResolvedPaths()) {
                     for (String libFileName : libFileNames) {
                         if (libFileName.contains(appArtifact.getGroupId())
                                 && libFileName.contains(appArtifactPath.getFileName().toString())) {

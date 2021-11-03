@@ -2,11 +2,14 @@ package io.quarkus.bootstrap.jbang;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactDependency;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.dependency.ResolvedArtifactDependency;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,28 +49,28 @@ public class JBangBuilderImpl {
 
         try {
             Path target = Files.createTempDirectory("quarkus-jbang");
-            AppArtifact appArtifact = new AppArtifact("dev.jbang.user", "quarkus", null, "jar", "999-SNAPSHOT");
-            appArtifact.setPath(appClasses);
+            final ResolvedArtifactDependency appArtifact = new ResolvedArtifactDependency("dev.jbang.user", "quarkus", null,
+                    "jar", "999-SNAPSHOT", appClasses);
             final QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
                     .setBaseClassLoader(JBangBuilderImpl.class.getClassLoader())
                     .setMavenArtifactResolver(quarkusResolver)
                     .setProjectRoot(pomFile.getParent())
                     .setTargetDirectory(target)
-                    .setManagingProject(new AppArtifact("io.quarkus", "quarkus-bom", "", "pom", getQuarkusVersion()))
+                    .setManagingProject(new GACTV("io.quarkus", "quarkus-bom", "", "pom", getQuarkusVersion()))
                     .setForcedDependencies(dependencies.stream().map(s -> {
                         String[] parts = s.getKey().split(":");
-                        AppArtifact artifact;
+                        Dependency artifact;
                         if (parts.length == 3) {
-                            artifact = new AppArtifact(parts[0], parts[1], parts[2]);
+                            artifact = new ArtifactDependency(parts[0], parts[1], null, ArtifactCoords.TYPE_JAR, parts[2]);
                         } else if (parts.length == 4) {
-                            artifact = new AppArtifact(parts[0], parts[1], null, parts[2], parts[3]);
+                            artifact = new ArtifactDependency(parts[0], parts[1], null, parts[2], parts[3]);
                         } else if (parts.length == 5) {
-                            artifact = new AppArtifact(parts[0], parts[1], parts[3], parts[2], parts[4]);
+                            artifact = new ArtifactDependency(parts[0], parts[1], parts[3], parts[2], parts[4]);
                         } else {
                             throw new RuntimeException("Invalid artifact " + s.getKey());
                         }
-                        artifact.setPath(s.getValue());
-                        return new AppDependency(artifact, "compile");
+                        //artifact.setPath(s.getValue());
+                        return artifact;
                     }).collect(Collectors.toList()))
                     .setAppArtifact(appArtifact)
                     .setIsolateDeployment(true)

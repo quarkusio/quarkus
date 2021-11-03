@@ -2,7 +2,6 @@ package io.quarkus.deployment.proxy;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
@@ -13,11 +12,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import javax.inject.Inject;
+
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
  * A factory that can generate proxies of a class.
@@ -35,6 +38,7 @@ public class ProxyFactory<T> {
     private boolean classDefined = false;
     private final Object lock = new Object();
     private Constructor<?> constructor;
+    private Constructor<?> injectConstructor;
 
     public ProxyFactory(ProxyConfiguration<T> configuration) {
         Objects.requireNonNull(configuration.getAnchorClass(), "anchorClass must be set");
@@ -48,7 +52,7 @@ public class ProxyFactory<T> {
             throw new IllegalArgumentException(
                     "A proxy cannot be created for class " + this.superClassName + " because the it is not public");
         }
-        if (!hasNoArgsConstructor(superClass, configuration.isAllowPackagePrivate())) {
+        if (!findConstructor(superClass, configuration.isAllowPackagePrivate(), true)) {
             throw new IllegalArgumentException(
                     "A proxy cannot be created for class " + this.superClassName
                             + " because it does contain a no-arg constructor");
@@ -77,16 +81,46 @@ public class ProxyFactory<T> {
         }
     }
 
-    private boolean hasNoArgsConstructor(Class<?> clazz, boolean allowPackagePrivate) {
-        for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
-            if (constructor.getParameterCount() == 0) {
-                if (allowPackagePrivate) {
-                    return !Modifier.isPrivate(constructor.getModifiers());
+    private boolean findConstructor(Class<?> clazz, boolean allowPackagePrivate, boolean allowInject) {
+        Constructor<?>[] ctors = clazz.getDeclaredConstructors();
+        if (allowInject) {
+            for (Constructor<?> constructor : ctors) {
+                //ctor needs to be @Inject or the only constructor
+                if (constructor.isAnnotationPresent(Inject.class)
+                        || (ctors.length == 1 && constructor.getParameterCount() > 0)) {
+                    if (!isModifiedCorrect(allowPackagePrivate, constructor)) {
+                        return false;
+                    }
+                    //if we have a constructor with only simple arguments (i.e. that also have a no-arg constructor)
+                    //then we will use that, and just create the types
+                    //this allows us to create proxys for recorders that use constructor injection for config objects
+                    for (var i : constructor.getParameterTypes()) {
+                        if (!(i.isAnnotationPresent(ConfigRoot.class) || i == RuntimeValue.class)) {
+                            return false;
+                        }
+                        if (!findConstructor(i, allowPackagePrivate, false)) {
+                            return false;
+                        }
+                    }
+                    injectConstructor = constructor;
+                    return true;
                 }
-                return Modifier.isPublic(constructor.getModifiers()) || Modifier.isProtected(constructor.getModifiers());
+            }
+        }
+        for (Constructor<?> constructor : ctors) {
+            if (constructor.getParameterCount() == 0) {
+                injectConstructor = constructor;
+                return isModifiedCorrect(allowPackagePrivate, constructor);
             }
         }
         return false;
+    }
+
+    private boolean isModifiedCorrect(boolean allowPackagePrivate, Constructor<?> constructor) {
+        if (allowPackagePrivate) {
+            return !Modifier.isPrivate(constructor.getModifiers());
+        }
+        return Modifier.isPublic(constructor.getModifiers()) || Modifier.isProtected(constructor.getModifiers());
     }
 
     private void addMethodsOfClass(Class<?> clazz) {
@@ -103,8 +137,13 @@ public class ProxyFactory<T> {
             if (methodInfo.getName().equals("finalize") && methodInfo.getParameterCount() == 0) {
                 continue;
             }
-            if (!Modifier.isStatic(methodInfo.getModifiers()) &&
-                    !Modifier.isFinal(methodInfo.getModifiers()) &&
+            int modifiers = methodInfo.getModifiers();
+            if (Modifier.isPublic(modifiers) && Modifier.isFinal(modifiers) && !Modifier.isStatic(modifiers)
+                    && clazz != Object.class) {
+                throw new RuntimeException("Public method " + methodInfo + " cannot be proxied as it is final");
+            }
+            if (!Modifier.isStatic(modifiers) &&
+                    !Modifier.isFinal(modifiers) &&
                     !methodInfo.getName().equals("<init>")) {
                 methods.add(methodInfo);
             }
@@ -118,10 +157,21 @@ public class ProxyFactory<T> {
         synchronized (lock) {
             if (!classDefined) {
                 doDefineClass();
-                try {
-                    constructor = loadClass().getConstructor(InvocationHandler.class);
-                } catch (NoSuchMethodException e) {
-                    throw new RuntimeException(e);
+                if (injectConstructor == null) {
+                    try {
+                        constructor = loadClass().getConstructor(InvocationHandler.class);
+                    } catch (NoSuchMethodException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    try {
+                        List<Class<?>> args = new ArrayList<>();
+                        args.add(InvocationHandler.class);
+                        args.addAll(Arrays.asList(injectConstructor.getParameterTypes()));
+                        constructor = loadClass().getConstructor(args.toArray(Class[]::new));
+                    } catch (NoSuchMethodException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 classDefined = true;
             }
@@ -140,9 +190,20 @@ public class ProxyFactory<T> {
                 ctor.returnValue(null);
             }
 
+            List<Class<?>> args = new ArrayList<>();
+            args.add(InvocationHandler.class);
+            args.addAll(Arrays.asList(injectConstructor.getParameterTypes()));
             try (MethodCreator ctor = cc
-                    .getMethodCreator(MethodDescriptor.ofConstructor(proxyName, InvocationHandler.class.getName()))) {
-                ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(this.superClassName), ctor.getThis());
+                    .getMethodCreator(MethodDescriptor.ofConstructor(proxyName, args.toArray(Class[]::new)))) {
+                List<ResultHandle> params = new ArrayList<>();
+                for (int i = 0; i < injectConstructor.getParameterTypes().length; ++i) {
+                    params.add(ctor.getMethodParam(i + 1));
+                }
+                ctor.invokeSpecialMethod(
+                        MethodDescriptor.ofConstructor(injectConstructor.getDeclaringClass(),
+                                injectConstructor.getParameterTypes()),
+                        ctor.getThis(),
+                        params.toArray(ResultHandle[]::new));
                 ctor.writeInstanceField(invocationHandlerField, ctor.getThis(), ctor.getMethodParam(0));
                 ctor.returnValue(null);
             }
@@ -202,8 +263,15 @@ public class ProxyFactory<T> {
         synchronized (lock) {
             try {
                 defineClass();
-                return (T) constructor.newInstance(handler);
-            } catch (InvocationTargetException e) {
+                Object[] args = new Object[constructor.getParameterCount()];
+                args[0] = handler;
+                for (int i = 1; i < constructor.getParameterCount(); ++i) {
+                    Constructor<?> ctor = this.constructor.getParameterTypes()[i].getConstructor();
+                    ctor.setAccessible(true);
+                    args[i] = ctor.newInstance();
+                }
+                return (T) constructor.newInstance(args);
+            } catch (Exception e) {
                 // if this happens, we have not created the proxy correctly
                 throw new IllegalStateException(e);
             }

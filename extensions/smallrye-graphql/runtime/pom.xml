@@ -33,6 +33,10 @@
         </dependency>
         <dependency>
             <groupId>io.smallrye</groupId>
+            <artifactId>smallrye-graphql-schema-builder</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye</groupId>
             <artifactId>smallrye-graphql-cdi</artifactId>
         </dependency>
         <dependency>

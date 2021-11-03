@@ -21,7 +21,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -101,11 +100,6 @@ public class OidcBuildStep {
                 .scope(Singleton.class)
                 .setRuntimeInit()
                 .done();
-    }
-
-    @BuildStep(onlyIf = IsEnabled.class)
-    EnableAllSecurityServicesBuildItem security() {
-        return new EnableAllSecurityServicesBuildItem();
     }
 
     @BuildStep(onlyIf = IsEnabled.class)

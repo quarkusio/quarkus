@@ -51,6 +51,8 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.ApplicationArchive;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -71,6 +73,8 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.grpc.GrpcService;
+import io.quarkus.grpc.auth.DefaultAuthExceptionHandlerProvider;
+import io.quarkus.grpc.auth.GrpcSecurityInterceptor;
 import io.quarkus.grpc.deployment.devmode.FieldDefinalizingVisitor;
 import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
 import io.quarkus.grpc.runtime.GrpcContainer;
@@ -80,6 +84,7 @@ import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerBuildTimeConfig;
 import io.quarkus.grpc.runtime.health.GrpcHealthEndpoint;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
+import io.quarkus.grpc.runtime.stork.GrpcStorkRecorder;
 import io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
@@ -257,7 +262,7 @@ public class GrpcServerProcessor {
     AnnotationsTransformerBuildItem transformUserDefinedServices(CombinedIndexBuildItem combinedIndexBuildItem,
             CustomScopeAnnotationsBuildItem customScopes) {
         // User-defined services usually only declare the @GrpcService qualifier
-        // We need to add @GrpcEnableRequestContext and @Singleton if needed 
+        // We need to add @Singleton if needed 
         Set<DotName> userDefinedServices = new HashSet<>();
         for (AnnotationInstance annotation : combinedIndexBuildItem.getIndex().getAnnotations(GrpcDotNames.GRPC_SERVICE)) {
             if (annotation.target().kind() == Kind.CLASS) {
@@ -334,6 +339,7 @@ public class GrpcServerProcessor {
 
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans,
+            Capabilities capabilities,
             List<BindableServiceBuildItem> bindables, BuildProducer<FeatureBuildItem> features) {
         // @GrpcService is a CDI qualifier
         beans.produce(new AdditionalBeanBuildItem(GrpcService.class));
@@ -345,15 +351,25 @@ public class GrpcServerProcessor {
             // Global interceptors are invoked before any of the per-service interceptors
             beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcRequestContextGrpcInterceptor.class));
             features.produce(new FeatureBuildItem(GRPC_SERVER));
+
+            if (capabilities.isPresent(Capability.SECURITY)) {
+                beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcSecurityInterceptor.class));
+                beans.produce(AdditionalBeanBuildItem.unremovableOf(DefaultAuthExceptionHandlerProvider.class));
+            }
         } else {
             log.debug("Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
         }
     }
 
     @BuildStep
-    void registerAdditionalInterceptors(BuildProducer<AdditionalGlobalInterceptorBuildItem> additionalInterceptors) {
+    void registerAdditionalInterceptors(BuildProducer<AdditionalGlobalInterceptorBuildItem> additionalInterceptors,
+            Capabilities capabilities) {
         additionalInterceptors
                 .produce(new AdditionalGlobalInterceptorBuildItem(GrpcRequestContextGrpcInterceptor.class.getName()));
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            additionalInterceptors
+                    .produce(new AdditionalGlobalInterceptorBuildItem(GrpcSecurityInterceptor.class.getName()));
+        }
     }
 
     @BuildStep
@@ -550,6 +566,12 @@ public class GrpcServerProcessor {
                 log.warn("Only Micrometer-based metrics system is supported by quarkus-grpc");
             }
         }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void setUpStork(GrpcStorkRecorder storkRecorder) {
+        storkRecorder.init();
     }
 
     @BuildStep

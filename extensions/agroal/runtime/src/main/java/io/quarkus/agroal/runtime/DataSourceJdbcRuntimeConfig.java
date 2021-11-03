@@ -90,6 +90,12 @@ public class DataSourceJdbcRuntimeConfig {
     public boolean extendedLeakReport;
 
     /**
+     * Allows connections to be flushed upon return to the pool. It's not enabled by default.
+     */
+    @ConfigItem
+    public boolean flushOnClose;
+
+    /**
      * When enabled Agroal will be able to produce a warning when a connection is returned
      * to the pool without the application having closed all open statements.
      * This is unrelated with tracking of open connections.

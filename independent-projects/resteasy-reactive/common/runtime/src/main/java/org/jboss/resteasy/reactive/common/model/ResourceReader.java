@@ -52,16 +52,18 @@ public class ResourceReader {
         return builtin;
     }
 
-    public void setBuiltin(boolean builtin) {
+    public ResourceReader setBuiltin(boolean builtin) {
         this.builtin = builtin;
+        return this;
     }
 
     public Integer getPriority() {
         return priority;
     }
 
-    public void setPriority(Integer priority) {
+    public ResourceReader setPriority(Integer priority) {
         this.priority = priority;
+        return this;
     }
 
     public MessageBodyReader<?> instance() {

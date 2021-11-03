@@ -325,6 +325,23 @@ It's also possible to use the value from another field to add a new environment 
 quarkus.openshift.env.fields.foo=metadata.name
 ----
 
+===== Using Deployment instead of DeploymentConfig
+Out of the box the extension will generate a `DeploymentConfig` resource. Often users, prefer to use `Deployment` as the main deployment resource, but still make use of Openshift specific resources like `Route`, `BuildConfig` etc.
+This feature is enabled by setting `quarkus.openshift.deployment-kind` to `Deployment`.
+
+[source,properties]
+----
+quarkus.openshift.deployment-kind=Deployment
+----
+
+Since `Deployment` is a Kubernetes resource and not Openshift specific, it can't possibly leverage `ImageStream` resources, as is the case with `DeploymentConfig`. This means that the image references need to include the container image registry that hosts the image.
+When the image is built, using Openshift builds (s2i binary and docker strategy) the Openshift internral image registry `image-registry.openshift-image-registry.svc:5000` will be used, unless an other registry has been explicitly specified by the user. Please note, that in the internal registry the project/namespace name is added as part of the image repository: `image-registry.openshift-image-registry.svc:5000/<project name>/<name>:<tag>`, so users will need to make sure that the target project/namespace name is aligned with the `quarkus.container-image.group`.
+
+[source,properties]
+----
+quarkus.container-image.group=<project/namespace name>
+----
+
 ===== Validation
 
 A conflict between two definitions, e.g. mistakenly assigning both a value and specifying that a variable is derived from a field, will result in an error being thrown at build time so that you get the opportunity to fix the issue before you deploy your application to your cluster where it might be more difficult to diagnose the source of the issue.

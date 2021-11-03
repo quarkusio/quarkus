@@ -16,7 +16,6 @@ import picocli.CommandLine;
 import picocli.CommandLine.Help;
 import picocli.CommandLine.IHelpSectionRenderer;
 import picocli.CommandLine.IParameterExceptionHandler;
-import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Model.UsageMessageSpec;
 import picocli.CommandLine.ParameterException;
@@ -35,7 +34,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
     @Inject
     CommandLine.IFactory factory;
 
-    @Mixin
+    @CommandLine.Mixin(name = "output")
     OutputOptionMixin output;
 
     @CommandLine.Spec

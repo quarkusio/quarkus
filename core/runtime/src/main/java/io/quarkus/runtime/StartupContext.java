@@ -18,25 +18,26 @@ public class StartupContext implements Closeable {
 
     private final Map<String, Object> values = new HashMap<>();
     private Object lastValue;
-    // this is done to distinguish between the value never having been set and having been set as null
+    // this is done to distinguish between the value having never been set and having been set as null
     private boolean lastValueSet = false;
-    private final List<Runnable> shutdownTasks = new ArrayList<>();
-    private final List<Runnable> lastShutdownTasks = new ArrayList<>();
-    private final ShutdownContext shutdownContext = new ShutdownContext() {
-        @Override
-        public void addShutdownTask(Runnable runnable) {
-            shutdownTasks.add(runnable);
-        }
-
-        @Override
-        public void addLastShutdownTask(Runnable runnable) {
-            lastShutdownTasks.add(runnable);
-        }
-    };
+    // the initial capacity was determined experimentally for a standard set of extensions
+    private final List<Runnable> shutdownTasks = new ArrayList<>(9);
+    private final List<Runnable> lastShutdownTasks = new ArrayList<>(7);
     private String[] commandLineArgs;
     private String currentBuildStepName;
 
     public StartupContext() {
+        ShutdownContext shutdownContext = new ShutdownContext() {
+            @Override
+            public void addShutdownTask(Runnable runnable) {
+                shutdownTasks.add(runnable);
+            }
+
+            @Override
+            public void addLastShutdownTask(Runnable runnable) {
+                lastShutdownTasks.add(runnable);
+            }
+        };
         values.put(ShutdownContext.class.getName(), shutdownContext);
         values.put(RAW_COMMAND_LINE_ARGS, new Supplier<String[]>() {
             @Override

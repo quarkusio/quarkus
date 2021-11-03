@@ -15,7 +15,6 @@ import org.apache.kafka.clients.consumer.ConsumerPartitionAssignor;
 import org.apache.kafka.clients.consumer.RangeAssignor;
 import org.apache.kafka.clients.consumer.RoundRobinAssignor;
 import org.apache.kafka.clients.consumer.StickyAssignor;
-import org.apache.kafka.clients.consumer.internals.PartitionAssignor;
 import org.apache.kafka.clients.producer.Partitioner;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
@@ -123,6 +122,9 @@ public class KafkaProcessor {
             "org.apache.kafka.common.security.oauthbearer.internals.OAuthBearerSaslClientProvider"
     }).collect(Collectors.toSet());
 
+    static final DotName PARTITION_ASSIGNER = DotName
+            .createSimple("org.apache.kafka.clients.consumer.internals.PartitionAssignor");
+
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.KAFKA_CLIENT);
@@ -188,7 +190,7 @@ public class KafkaProcessor {
         collectImplementors(toRegister, indexBuildItem, Deserializer.class);
         collectImplementors(toRegister, indexBuildItem, Partitioner.class);
         // PartitionAssignor is now deprecated, replaced by ConsumerPartitionAssignor
-        collectImplementors(toRegister, indexBuildItem, PartitionAssignor.class);
+        collectImplementors(toRegister, indexBuildItem, PARTITION_ASSIGNER);
         collectImplementors(toRegister, indexBuildItem, ConsumerPartitionAssignor.class);
         collectImplementors(toRegister, indexBuildItem, ConsumerInterceptor.class);
         collectImplementors(toRegister, indexBuildItem, ProducerInterceptor.class);
@@ -254,7 +256,7 @@ public class KafkaProcessor {
 
         String root = "org/xerial/snappy/native/";
         // add linux64 native lib when targeting containers
-        if (nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild) {
+        if (nativeConfig.isContainerBuild()) {
             String dir = "Linux/x86_64";
             String snappyNativeLibraryName = "libsnappyjava.so";
             String path = root + dir + "/" + snappyNativeLibraryName;
@@ -465,6 +467,10 @@ public class KafkaProcessor {
 
     private static void collectImplementors(Set<DotName> set, CombinedIndexBuildItem indexBuildItem, Class<?> cls) {
         collectClassNames(set, indexBuildItem.getIndex().getAllKnownImplementors(DotName.createSimple(cls.getName())));
+    }
+
+    private static void collectImplementors(Set<DotName> set, CombinedIndexBuildItem indexBuildItem, DotName className) {
+        collectClassNames(set, indexBuildItem.getIndex().getAllKnownImplementors(className));
     }
 
     private static void collectSubclasses(Set<DotName> set, CombinedIndexBuildItem indexBuildItem, Class<?> cls) {

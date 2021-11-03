@@ -18,7 +18,13 @@ public class ShutdownRecorder {
     private static volatile List<ShutdownListener> shutdownListeners;
     private static volatile Optional<Duration> waitTime;
 
-    public void setListeners(List<ShutdownListener> listeners, ShutdownConfig shutdownConfig) {
+    final ShutdownConfig shutdownConfig;
+
+    public ShutdownRecorder(ShutdownConfig shutdownConfig) {
+        this.shutdownConfig = shutdownConfig;
+    }
+
+    public void setListeners(List<ShutdownListener> listeners) {
         shutdownListeners = listeners;
         waitTime = shutdownConfig.timeout;
     }

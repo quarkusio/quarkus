@@ -240,4 +240,23 @@ public abstract class AbstractRolesAllowedTestCase {
                 .assertThat()
                 .statusCode(401);
     }
+
+    @Test
+    public void testLargeBodyRejected() {
+
+        StringBuilder sb = new StringBuilder("HELLO WORLD");
+        for (int i = 0; i < 20; ++i) {
+            sb.append(sb);
+        }
+        for (int i = 0; i < 10; ++i) {
+            RestAssured
+                    .given()
+                    .body(sb.toString())
+                    .post("/roles1")
+                    .then()
+                    .assertThat()
+                    .statusCode(401);
+        }
+
+    }
 }

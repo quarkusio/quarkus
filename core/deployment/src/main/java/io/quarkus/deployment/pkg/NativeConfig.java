@@ -35,8 +35,11 @@ public class NativeConfig {
 
     /**
      * If all security services should be added to the native image
+     *
+     * @deprecated {@code --enable-all-security-services} was removed in GraalVM 21.1 https://github.com/oracle/graal/pull/3258
      */
     @ConfigItem
+    @Deprecated
     public boolean enableAllSecurityServices;
 
     /**
@@ -171,13 +174,17 @@ public class NativeConfig {
      * used by default. If docker is not available or is an alias to podman, podman will be used instead as the default.
      */
     @ConfigItem
-    public boolean containerBuild;
+    public Optional<Boolean> containerBuild;
 
     /**
      * If this build is done using a remote docker daemon.
      */
     @ConfigItem
     public boolean remoteContainerBuild;
+
+    public boolean isContainerBuild() {
+        return containerBuild.orElse(containerRuntime.isPresent() || remoteContainerBuild);
+    }
 
     /**
      * The docker image to use to do the image build

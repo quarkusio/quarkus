@@ -2,20 +2,20 @@ package io.quarkus.deployment.builditem;
 
 import java.util.Set;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 public final class RemovedResourceBuildItem extends MultiBuildItem {
 
-    private final AppArtifactKey artifact;
+    private final ArtifactKey artifact;
     private final Set<String> resources;
 
-    public RemovedResourceBuildItem(AppArtifactKey artifact, Set<String> resources) {
+    public RemovedResourceBuildItem(ArtifactKey artifact, Set<String> resources) {
         this.artifact = artifact;
         this.resources = resources;
     }
 
-    public AppArtifactKey getArtifact() {
+    public ArtifactKey getArtifact() {
         return artifact;
     }
 

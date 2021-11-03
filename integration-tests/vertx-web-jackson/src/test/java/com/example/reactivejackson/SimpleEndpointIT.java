@@ -1,9 +1,9 @@
 package com.example.reactivejackson;
 
 import io.quarkus.test.common.http.TestHTTPEndpoint;
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 @TestHTTPEndpoint(SimpleEndpoint.class)
 class SimpleEndpointIT extends SimpleEndpointTest {
 

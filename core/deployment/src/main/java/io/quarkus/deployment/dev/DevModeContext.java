@@ -17,6 +17,7 @@ import java.util.Set;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.PathsCollection;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 /**
  * Object that is used to pass context data from the plugin doing the invocation
@@ -228,7 +229,7 @@ public class DevModeContext implements Serializable {
 
     public static class ModuleInfo implements Serializable {
 
-        private final AppArtifactKey appArtifactKey;
+        private final ArtifactKey appArtifactKey;
         private final String name;
         private final String projectDirectory;
         private final CompilationUnit main;
@@ -285,7 +286,7 @@ public class DevModeContext implements Serializable {
             return targetDir;
         }
 
-        public AppArtifactKey getAppArtifactKey() {
+        public ArtifactKey getArtifactKey() {
             return appArtifactKey;
         }
 
@@ -299,7 +300,7 @@ public class DevModeContext implements Serializable {
 
         public static class Builder {
 
-            private AppArtifactKey appArtifactKey;
+            private ArtifactKey appArtifactKey;
             private String name;
             private String projectDirectory;
             private PathsCollection sourcePaths = PathsCollection.of();
@@ -316,7 +317,7 @@ public class DevModeContext implements Serializable {
             private PathsCollection testResourcePaths = PathsCollection.of();
             private String testResourcesOutputPath;
 
-            public Builder setAppArtifactKey(AppArtifactKey appArtifactKey) {
+            public Builder setArtifactKey(ArtifactKey appArtifactKey) {
                 this.appArtifactKey = appArtifactKey;
                 return this;
             }

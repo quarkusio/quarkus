@@ -187,17 +187,19 @@ public class VertxHttpResponse implements HttpResponse {
         if (!isCommitted()) {
             committed = true;
             response.setStatusCode(getStatus());
+            transformHeaders();
             if (finished) {
-                if (buffer == null) {
-                    getOutputHeaders().putSingle(javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH, "0");
-                } else {
-                    getOutputHeaders().putSingle(javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH, "" + buffer.readableBytes());
+                boolean explicitChunked = "chunked".equalsIgnoreCase(response.headers().get("transfer-encoding"));
+                if (!explicitChunked) {
+                    if (buffer == null) {
+                        getOutputHeaders().putSingle(javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH, "0");
+                    } else {
+                        getOutputHeaders().putSingle(javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH, "" + buffer.readableBytes());
+                    }
                 }
-
-            } else {
+            } else if (!response.headers().contains(javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH)) {
                 response.setChunked(true);
             }
-            transformHeaders();
         }
         if (finished)
             this.finished = true;

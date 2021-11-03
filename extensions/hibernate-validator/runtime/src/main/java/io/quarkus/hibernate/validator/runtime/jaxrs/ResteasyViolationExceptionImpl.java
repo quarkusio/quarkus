@@ -23,8 +23,8 @@ public class ResteasyViolationExceptionImpl extends ResteasyViolationException {
     private static final long serialVersionUID = 657697354453281559L;
 
     public ResteasyViolationExceptionImpl(final Set<? extends ConstraintViolation<?>> constraintViolations,
-            final List<MediaType> accept) {
-        super(constraintViolations, accept);
+            final List<MediaType> produces) {
+        super(constraintViolations, produces);
     }
 
     @Override

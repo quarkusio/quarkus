@@ -180,7 +180,12 @@ public class GrpcDevConsoleWebSocketListener implements GrpcWebSocketProxy.WebSo
                                     }
                                 }
                             } catch (Exception e) {
-                                throw new IllegalStateException(e);
+                                websocketData.responseConsumer
+                                        .accept(jsonResponse(id, "ERROR").put("body",
+                                                e.getMessage() + "\nCheck application log for more details")
+                                                .encode());
+                                grpcCall.incomingStream = null;
+                                log.error("Failure returned by gRPC service", e);
                             }
                         }
                     }

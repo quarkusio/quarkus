@@ -18,7 +18,18 @@ public class MetamodelInfo {
 
     public Set<String> getEntitiesWithPublicFields() {
         return entities.entrySet().stream()
-                .filter(e -> !e.getValue().fields.isEmpty())
+                .filter(e -> {
+                    EntityModel value = e.getValue();
+                    for (;;) {
+                        if (!value.fields.isEmpty()) {
+                            return true;
+                        }
+                        value = entities.get(value.superClassName);
+                        if (value == null) {
+                            return false;
+                        }
+                    }
+                })
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
     }

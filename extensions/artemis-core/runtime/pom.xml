@@ -43,6 +43,12 @@
         <dependency>
             <groupId>org.apache.activemq</groupId>
             <artifactId>artemis-core-client</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>jakarta.json</groupId>
+                    <artifactId>jakarta.json-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

@@ -14,7 +14,13 @@ public class KubernetesServiceBindingRecorder {
 
     private static final Logger log = Logger.getLogger(KubernetesServiceBindingRecorder.class);
 
-    public RuntimeValue<ConfigSourceProvider> configSources(KubernetesServiceBindingConfig kubernetesServiceBindingConfig) {
+    final KubernetesServiceBindingConfig kubernetesServiceBindingConfig;
+
+    public KubernetesServiceBindingRecorder(KubernetesServiceBindingConfig kubernetesServiceBindingConfig) {
+        this.kubernetesServiceBindingConfig = kubernetesServiceBindingConfig;
+    }
+
+    public RuntimeValue<ConfigSourceProvider> configSources() {
         if (!kubernetesServiceBindingConfig.enabled) {
             log.debug(
                     "No attempt will be made to bind configuration based on Kubernetes ServiceBinding because the feature was not enabled.");

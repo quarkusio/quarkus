@@ -1,0 +1,19 @@
+name: "RESTEasy Reactive JAXB"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  short-name: "resteasy-reactive-jaxb"
+  keywords:
+    - "rest-jaxb"
+    - "resteasy-reactive-xml"
+    - "jaxrs-xml"
+    - "rest"
+    - "jaxrs"
+    - "jaxb"
+    - "xml"
+  categories:
+    - "web"
+    - "reactive"
+    - "serialization"
+  status: "preview"
+  config:
+    - "quarkus.resteasy-reactive."

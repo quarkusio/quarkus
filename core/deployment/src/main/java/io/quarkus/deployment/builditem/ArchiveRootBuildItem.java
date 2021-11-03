@@ -89,7 +89,7 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
                 if (Files.isDirectory(root)) {
                     rootDirs.add(root);
                 } else {
-                    final FileSystem fs = buildCloseables.add(FileSystems.newFileSystem(root, null));
+                    final FileSystem fs = buildCloseables.add(FileSystems.newFileSystem(root, (ClassLoader) null));
                     fs.getRootDirectories().forEach(rootDirs::add);
                 }
             }

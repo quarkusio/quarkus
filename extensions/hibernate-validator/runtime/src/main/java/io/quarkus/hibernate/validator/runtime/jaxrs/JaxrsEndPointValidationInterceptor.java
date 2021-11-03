@@ -34,7 +34,7 @@ public class JaxrsEndPointValidationInterceptor extends AbstractMethodValidation
         try {
             return super.validateMethodInvocation(ctx);
         } catch (ConstraintViolationException e) {
-            throw new ResteasyViolationExceptionImpl(e.getConstraintViolations(), getAccept(ctx.getMethod()));
+            throw new ResteasyViolationExceptionImpl(e.getConstraintViolations(), getProduces(ctx.getMethod()));
         }
     }
 
@@ -44,7 +44,7 @@ public class JaxrsEndPointValidationInterceptor extends AbstractMethodValidation
         super.validateConstructorInvocation(ctx);
     }
 
-    private List<MediaType> getAccept(Method method) {
+    private List<MediaType> getProduces(Method method) {
         MediaType[] producedMediaTypes = MediaTypeHelper.getProduces(method.getDeclaringClass(), method);
 
         if (producedMediaTypes == null) {

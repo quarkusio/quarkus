@@ -16,6 +16,7 @@ import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
@@ -40,8 +41,9 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
 
     private static final String KEYCLOAK = "Keycloak";
     private static final String AZURE = "Azure";
-
     private static final Set<String> OTHER_PROVIDERS = Set.of("Auth0", "Okta", "Google");
+
+    OidcBuildTimeConfig oidcConfig;
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
@@ -84,7 +86,7 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     console,
                     providerName,
                     getApplicationType(),
-                    "code",
+                    oidcConfig.devui.grant.type.isPresent() ? oidcConfig.devui.grant.type.get().getGrantType() : "code",
                     getConfigProperty(CLIENT_ID_CONFIG_KEY),
                     getClientSecret(),
                     metadata.getString("authorization_endpoint"),
@@ -92,9 +94,12 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     metadata.getString("end_session_endpoint"),
                     metadata.containsKey("introspection_endpoint"));
 
+            Duration webClientTimeout = oidcConfig.devui.webClienTimeout.isPresent() ? oidcConfig.devui.webClienTimeout.get()
+                    : Duration.ofSeconds(4);
             produceDevConsoleRouteItems(devConsoleRoute,
-                    new OidcTestServiceHandler(vertxInstance, Duration.ofSeconds(3)),
-                    new OidcAuthorizationCodePostHandler(vertxInstance, Duration.ofSeconds(3)));
+                    new OidcTestServiceHandler(vertxInstance, webClientTimeout),
+                    new OidcAuthorizationCodePostHandler(vertxInstance, webClientTimeout),
+                    new OidcPasswordClientCredHandler(vertxInstance, webClientTimeout));
         }
     }
 
@@ -128,7 +133,7 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                 return null;
             }
         } catch (Throwable t) {
-            LOG.errorf("OIDC metadata discovery failed: %s", t.toString());
+            LOG.infof("OIDC metadata can not be discovered: %s", t.toString());
             return null;
         } finally {
             client.close();

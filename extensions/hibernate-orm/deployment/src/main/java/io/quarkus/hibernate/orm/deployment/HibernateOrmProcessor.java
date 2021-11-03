@@ -41,7 +41,6 @@ import javax.persistence.ValidationMode;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 import javax.transaction.TransactionManager;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
@@ -130,6 +129,7 @@ import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
 import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.panache.common.deployment.HibernateModelClassCandidatesForFieldAccessBuildItem;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
@@ -196,10 +196,9 @@ public final class HibernateOrmProcessor {
             dsName = "quarkus.datasource." + config.defaultPersistenceUnit.datasource.get() + ".username";
         }
 
-        if (ConfigProvider.getConfig().getOptionalValue(dsName, String.class).isEmpty()) {
+        if (!ConfigUtils.isPropertyPresent(dsName)) {
             if (devServicesResult.getConfig().containsKey(dsName)) {
-                if (ConfigProvider.getConfig().getOptionalValue("quarkus.hibernate-orm.database.generation", String.class)
-                        .isEmpty()) {
+                if (!ConfigUtils.isPropertyPresent("quarkus.hibernate-orm.database.generation")) {
                     LOG.info(
                             "Setting quarkus.hibernate-orm.database.generation=drop-and-create to initialize Dev Services managed database");
                     runTimeConfigurationDefaultBuildItemBuildProducer.produce(new RunTimeConfigurationDefaultBuildItem(
@@ -215,10 +214,10 @@ public final class HibernateOrmProcessor {
             } else {
                 dsName = "quarkus.datasource." + entry.getValue().datasource.get() + ".username";
             }
-            if (ConfigProvider.getConfig().getOptionalValue(dsName, String.class).isEmpty()) {
+            if (!ConfigUtils.isPropertyPresent(dsName)) {
                 if (devServicesResult.getConfig().containsKey(dsName)) {
                     String propertyName = "quarkus.hibernate-orm." + entry.getKey() + ".database.generation";
-                    if (ConfigProvider.getConfig().getOptionalValue(propertyName, String.class).isEmpty()) {
+                    if (!ConfigUtils.isPropertyPresent(propertyName)) {
                         LOG.info("Setting " + propertyName + "=drop-and-create to initialize Dev Services managed database");
                         runTimeConfigurationDefaultBuildItemBuildProducer
                                 .produce(new RunTimeConfigurationDefaultBuildItem(propertyName, "drop-and-create"));
@@ -597,6 +596,7 @@ public final class HibernateOrmProcessor {
 
         // Some user-injectable beans are retrieved programmatically and shouldn't be removed
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(AttributeConverter.class));
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(jpaModel.getPotentialCdiBeanClassNames()));
     }
 
     @Consume(InterceptedStaticMethodsTransformersRegisteredBuildItem.class)
@@ -769,18 +769,16 @@ public final class HibernateOrmProcessor {
         }
     }
 
-    private static Optional<String> getSqlLoadScript(Optional<String> sqlLoadScript, LaunchMode launchMode) {
+    private static List<String> getSqlLoadScript(Optional<List<String>> sqlLoadScript, LaunchMode launchMode) {
         // Explicit file or default Hibernate ORM file.
         if (sqlLoadScript.isPresent()) {
-            if (NO_SQL_LOAD_SCRIPT_FILE.equalsIgnoreCase(sqlLoadScript.get())) {
-                return Optional.empty();
-            } else {
-                return Optional.of(sqlLoadScript.get());
-            }
+            return sqlLoadScript.get().stream()
+                    .filter(s -> !NO_SQL_LOAD_SCRIPT_FILE.equalsIgnoreCase(s))
+                    .collect(Collectors.toList());
         } else if (launchMode == LaunchMode.NORMAL) {
-            return Optional.empty();
+            return Collections.emptyList();
         } else {
-            return Optional.of("import.sql");
+            return List.of("import.sql");
         }
     }
 
@@ -1019,28 +1017,38 @@ public final class HibernateOrmProcessor {
         if (hibernateOrmConfig.metricsEnabled
                 || (hibernateOrmConfig.statistics.isPresent() && hibernateOrmConfig.statistics.get())) {
             descriptor.getProperties().setProperty(AvailableSettings.GENERATE_STATISTICS, "true");
+            //When statistics are enabled, the default in Hibernate ORM is to also log them after each
+            // session; turn that off as it's very noisy:
+            descriptor.getProperties().setProperty(AvailableSettings.LOG_SESSION_METRICS, "false");
         }
 
-        // sql-load-script
-        Optional<String> importFile = getSqlLoadScript(persistenceUnitConfig.sqlLoadScript, launchMode);
+        // sql-load-scripts
+        List<String> importFiles = getSqlLoadScript(persistenceUnitConfig.sqlLoadScript, launchMode);
 
-        if (importFile.isPresent()) {
-            Path loadScriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(importFile.get());
+        if (!importFiles.isEmpty()) {
+            for (String importFile : importFiles) {
+                Path loadScriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(importFile);
 
-            if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
-                // enlist resource if present
-                nativeImageResources.produce(new NativeImageResourceBuildItem(importFile.get()));
-                descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, importFile.get());
-            } else if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
-                //raise exception if explicit file is not present (i.e. not the default)
-                throw new ConfigurationError(
-                        "Unable to find file referenced in '"
-                                + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "sql-load-script") + "="
-                                + persistenceUnitConfig.sqlLoadScript.get() + "'. Remove property or add file to your path.");
+                if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
+                    // enlist resource if present
+                    nativeImageResources.produce(new NativeImageResourceBuildItem(importFile));
+                } else if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
+                    //raise exception if explicit file is not present (i.e. not the default)
+                    throw new ConfigurationError(
+                            "Unable to find file referenced in '"
+                                    + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "sql-load-script") + "="
+                                    + String.join(",", persistenceUnitConfig.sqlLoadScript.get())
+                                    + "'. Remove property or add file to your path.");
+                }
+                // in dev mode we want to make sure that we watch for changes to file even if it doesn't currently exist
+                // as a user could still add it after performing the initial configuration
+                hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(importFile));
             }
-            // in dev mode we want to make sure that we watch for changes to file even if it doesn't currently exist
-            // as a user could still add it after performing the initial configuration
-            hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(importFile.get()));
+
+            // only set the found import files if configured
+            if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
+                descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, String.join(",", importFiles));
+            }
         } else {
             //Disable implicit loading of the default import script (import.sql)
             descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, "");

@@ -44,8 +44,13 @@ public interface QuarkusTestProfile {
     }
 
     /**
-     * {@link QuarkusTestResourceLifecycleManager} classes (along with their init params) to be used from this
-     * specific test profile
+     * Additional {@link QuarkusTestResourceLifecycleManager} classes (along with their init params) to be used from this
+     * specific test profile.
+     *
+     * If this method is not overridden, then only the {@link QuarkusTestResourceLifecycleManager} classes enabled via the
+     * {@link io.quarkus.test.common.QuarkusTestResource} class
+     * annotation will be used for the tests using this profile (which is the same behavior as tests that don't use a profile at
+     * all).
      */
     default List<TestResourceEntry> testResources() {
         return Collections.emptyList();
@@ -67,6 +72,24 @@ public interface QuarkusTestProfile {
      */
     default Set<String> tags() {
         return Collections.emptySet();
+    }
+
+    /**
+     * The command line parameters that are passed to the main method on startup.
+     *
+     * This is ignored for {@link io.quarkus.test.junit.main.QuarkusMainTest}, which has its own way of passing parameters.
+     */
+    default String[] commandLineParameters() {
+        return new String[0];
+    }
+
+    /**
+     * If the main method should be run.
+     *
+     * This is ignored for {@link io.quarkus.test.junit.main.QuarkusMainTest}, where the main method is always run.
+     */
+    default boolean runMainMethod() {
+        return false;
     }
 
     /**

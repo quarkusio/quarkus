@@ -17,11 +17,11 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 /**
  * Split package (same package coming from multiple app archives) is considered a bad practice and
@@ -45,10 +45,7 @@ public class SplitPackageProcessor {
         public boolean test(String packageName) {
             // Remove the elements from this list when the original issue is fixed
             // so that we can detect further issues.
-            return packageName.startsWith("io.fabric8.kubernetes")
-                    || packageName.equals("io.quarkus.hibernate.orm.panache")
-                    || packageName.equals("io.quarkus.mongodb.panache.reactive")
-                    || packageName.equals("io.quarkus.mongodb.panache");
+            return packageName.startsWith("io.fabric8.kubernetes");
         }
     };
 
@@ -61,7 +58,7 @@ public class SplitPackageProcessor {
         Map<String, Set<ApplicationArchive>> packageToArchiveMap = new HashMap<>();
 
         // build up exclusion predicates from user defined config and extensions
-        List<Predicate> packageSkipPredicates = new ArrayList<>();
+        List<Predicate<String>> packageSkipPredicates = new ArrayList<>();
         if (config.ignoredSplitPackages.isPresent()) {
             packageSkipPredicates.addAll(initPredicates(config.ignoredSplitPackages.get()));
         }
@@ -107,8 +104,8 @@ public class SplitPackageProcessor {
                 Iterator<ApplicationArchive> iterator = applicationArchives.iterator();
                 Set<String> splitPackages = new TreeSet<>();
                 while (iterator.hasNext()) {
-                    ApplicationArchive next = iterator.next();
-                    AppArtifactKey a = next.getArtifactKey();
+                    final ApplicationArchive next = iterator.next();
+                    final ArtifactKey a = next.getKey();
                     // can be null for instance in test mode where all application classes go under target/classes
                     if (a == null) {
                         if (archivesBuildItem.getRootArchive().equals(next)) {
@@ -116,7 +113,7 @@ public class SplitPackageProcessor {
                             splitPackages.add("application classes");
                         } else {
                             // as next best effort, we try to take first path from archive paths collection
-                            Iterator<Path> pathIterator = next.getPaths().iterator();
+                            Iterator<Path> pathIterator = next.getResolvedPaths().iterator();
                             if (pathIterator.hasNext()) {
                                 splitPackages.add(pathIterator.next().toString());
                             } else {

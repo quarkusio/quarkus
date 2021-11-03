@@ -5,6 +5,8 @@ import static io.quarkus.deployment.Feature.MONGODB_REST_DATA_PANACHE;
 import java.lang.reflect.Modifier;
 import java.util.List;
 
+import javax.ws.rs.Priorities;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -16,6 +18,8 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
@@ -27,9 +31,11 @@ import io.quarkus.mongodb.rest.data.panache.PanacheMongoEntityResource;
 import io.quarkus.mongodb.rest.data.panache.PanacheMongoRepositoryResource;
 import io.quarkus.mongodb.rest.data.panache.runtime.NoopUpdateExecutor;
 import io.quarkus.mongodb.rest.data.panache.runtime.RestDataPanacheExceptionMapper;
+import io.quarkus.rest.data.panache.RestDataPanacheException;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.RestDataResourceBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 
 class MongoPanacheRestProcessor {
 
@@ -45,8 +51,14 @@ class MongoPanacheRestProcessor {
     }
 
     @BuildStep
-    ResteasyJaxrsProviderBuildItem registerRestDataPanacheExceptionMapper() {
-        return new ResteasyJaxrsProviderBuildItem(RestDataPanacheExceptionMapper.class.getName());
+    void registerRestDataPanacheExceptionMapper(
+            BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProviderBuildItemBuildProducer,
+            BuildProducer<ExceptionMapperBuildItem> exceptionMapperBuildItemBuildProducer) {
+        resteasyJaxrsProviderBuildItemBuildProducer
+                .produce(new ResteasyJaxrsProviderBuildItem(RestDataPanacheExceptionMapper.class.getName()));
+        exceptionMapperBuildItemBuildProducer
+                .produce(new ExceptionMapperBuildItem(RestDataPanacheExceptionMapper.class.getName(),
+                        RestDataPanacheException.class.getName(), Priorities.USER + 100, false));
     }
 
     @BuildStep
@@ -55,7 +67,7 @@ class MongoPanacheRestProcessor {
     }
 
     @BuildStep
-    void findEntityResources(CombinedIndexBuildItem index,
+    void findEntityResources(CombinedIndexBuildItem index, Capabilities capabilities,
             BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
             BuildProducer<RestDataResourceBuildItem> restDataResourceProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformersProducer) {
@@ -78,13 +90,15 @@ class MongoPanacheRestProcessor {
 
             restDataResourceProducer.produce(new RestDataResourceBuildItem(
                     new ResourceMetadata(resourceClass, resourceInterface, entityType, idType)));
-            bytecodeTransformersProducer.produce(
-                    getEntityIdAnnotationTransformer(entityType, entityClassHelper.getIdField(entityType).name()));
+            if (capabilities.isPresent(Capability.RESTEASY)) {
+                bytecodeTransformersProducer.produce(
+                        getEntityIdAnnotationTransformer(entityType, entityClassHelper.getIdField(entityType).name()));
+            }
         }
     }
 
     @BuildStep
-    void findRepositoryResources(CombinedIndexBuildItem index,
+    void findRepositoryResources(CombinedIndexBuildItem index, Capabilities capabilities,
             BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
             BuildProducer<RestDataResourceBuildItem> restDataResourceProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer,
@@ -111,8 +125,10 @@ class MongoPanacheRestProcessor {
 
             restDataResourceProducer.produce(new RestDataResourceBuildItem(
                     new ResourceMetadata(resourceClass, resourceInterface, entityType, idType)));
-            bytecodeTransformersProducer.produce(
-                    getEntityIdAnnotationTransformer(entityType, entityClassHelper.getIdField(entityType).name()));
+            if (capabilities.isPresent(Capability.RESTEASY)) {
+                bytecodeTransformersProducer.produce(
+                        getEntityIdAnnotationTransformer(entityType, entityClassHelper.getIdField(entityType).name()));
+            }
         }
     }
 

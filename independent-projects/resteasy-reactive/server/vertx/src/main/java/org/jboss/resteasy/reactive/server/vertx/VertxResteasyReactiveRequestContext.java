@@ -74,6 +74,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
                 });
             }
         };
+        request.pause();
     }
 
     @Override
@@ -119,6 +120,12 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
                 handle.cancel(false);
             }
         };
+    }
+
+    @Override
+    public boolean resumeExternalProcessing() {
+        context.next();
+        return true;
     }
 
     @Override

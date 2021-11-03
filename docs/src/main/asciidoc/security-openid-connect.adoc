@@ -18,7 +18,9 @@ If you use Keycloak and Bearer tokens then also see the link:security-keycloak-a
 
 Please read the link:security-openid-connect-multitenancy[Using OpenID Connect Multi-Tenancy] guide how to support multiple tenants.
 
-== Prerequisites
+== Quickstart
+
+=== Prerequisites
 
 To complete this guide, you need:
 
@@ -29,9 +31,9 @@ To complete this guide, you need:
 * https://stedolan.github.io/jq/[jq tool]
 * Docker
 
-== Architecture
+=== Architecture
 
-In this example, we build a very simple microservice which offers three endpoints:
+In this example, we build a very simple microservice which offers two endpoints:
 
 * `/api/users/me`
 * `/api/admin`
@@ -44,7 +46,7 @@ The `/api/users/me` endpoint can be accessed by any user with a valid token. As 
 
 The `/api/admin` endpoint is protected with RBAC (Role-Based Access Control) where only users granted with the `admin` role can access. At this endpoint, we use the `@RolesAllowed` annotation to declaratively enforce the access constraint.
 
-== Solution
+=== Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.
 However, you can go right to the completed example.
@@ -53,7 +55,7 @@ Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {q
 
 The solution is located in the `security-openid-connect-quickstart` {quickstarts-tree-url}/security-openid-connect-quickstart[directory].
 
-== Creating the Maven Project
+=== Creating the Maven Project
 
 First, we need a new project. Create a new project with the following command:
 
@@ -88,7 +90,7 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
-== Writing the application
+=== Writing the application
 
 Let's start by implementing the `/api/users/me` endpoint. As you can see from the source code below it is just a regular JAX-RS resource:
 
@@ -159,44 +161,9 @@ public class AdminResource {
 
 Injection of the `SecurityIdentity` is supported in both `@RequestScoped` and `@ApplicationScoped` contexts.
 
-=== Accessing JWT claims
-
-If you need to access `JsonWebToken` claims, you may simply inject the token itself:
-
-[source,java]
-----
-package org.acme.security.openid.connect;
-
-import org.eclipse.microprofile.jwt.JsonWebToken;
-import javax.inject.Inject;
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
-@Path("/api/admin")
-public class AdminResource {
-
-    @Inject
-    JsonWebToken jwt;
-
-    @GET
-    @RolesAllowed("admin")
-    @Produces(MediaType.TEXT_PLAIN)
-    public String admin() {
-        return "Access for subject " + jwt.getSubject() + " is granted";
-    }
-}
-----
-
-Injection of the `JsonWebToken` is supported in both `@RequestScoped` and `@ApplicationScoped` contexts.
-
-== Configuring the application
+=== Configuring the application
 
 The OpenID Connect extension allows you to define the adapter configuration using the `application.properties` file which should be located at the `src/main/resources` directory.
-
-=== Configuring using the application.properties file
 
 include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional, leveloffset=+1]
 
@@ -204,21 +171,27 @@ Example configuration:
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
 quarkus.oidc.client-id=backend-service
+quarkus.oidc.client-secret=secret
+
+# Tell Dev Services for Keycloak to import the realm file
+# This property is not effective when running the application in JVM or Native modes
+
+quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 ----
 
-=== Configuring CORS
+NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures that `Dev Services for Keycloak` will launch a container for you when the application is run in a dev mode. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information.
 
-If you plan to consume this application from another application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the link:http-reference#cors-filter[HTTP CORS documentation] for more details.
+=== Starting and Configuring the Keycloak Server
 
-== Starting and Configuring the Keycloak Server
+NOTE: Do not start the Keycloak server when you run the application in a dev mode - `Dev Services for Keycloak` will launch a container. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information.
 
 To start a Keycloak Server you can use Docker and just run the following command:
 
 [source,bash,subs=attributes+]
 ----
-docker run --name keycloak -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8180:8080 {keycloak-docker-image}
+docker run --name keycloak -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak version}
 ----
 
 You should be able to access your Keycloak Server at http://localhost:8180/auth[localhost:8180/auth].
@@ -230,15 +203,25 @@ Import the {quickstarts-tree-url}/security-openid-connect-quickstart/config/quar
 NOTE: If you want to use the Keycloak Admin Client to configure your server from your application you need to include the
 `quarkus-keycloak-admin-client` extension.
 
-== Running and Using the Application
+[[keycloak-dev-mode]]
+=== Running the Application in Dev mode
 
-=== Running in Developer Mode
+To run the application in a dev mode, use `./mvnw clean compile quarkus:dev`. link:security-openid-connect-dev-services[Dev Services for Keycloak] will launch a Keycloak container and import a `quarkus-realm.json`.
 
-To run the microservice in dev mode, use `./mvnw clean compile quarkus:dev`.
+Open a link:dev-ui[Dev UI] available at http://localhost:8080/q/dev[/q/dev] and click on a `Provider: Keycloak` link in an `OpenId Connect` `Dev UI` card.
 
-=== Running in JVM Mode
+You will be asked to login into a `Single Page Application` provided by `OpenId Connect Dev UI`:
 
-When you're done playing with "dev-mode" you can run it as a standard Java application.
+ * Login as `alice` (password: `alice`) who has a `user` role
+ ** accessing `/api/admin` will return `403`
+ ** accessing `/api/users/me` will return `200`
+ * Logout and login as `admin` (password: `admin`) who has both `admin` and `user` roles
+ ** accessing `/api/admin` will return `200`
+ ** accessing `/api/users/me` will return `200`
+
+=== Running the Application in JVM mode
+
+When you're done playing with the `dev` mode" you can run it as a standard Java application.
 
 First compile it:
 
@@ -254,7 +237,7 @@ Then run it:
 java -jar target/quarkus-app/quarkus-run.jar
 ----
 
-=== Running in Native Mode
+=== Running the Application in Native Mode
 
 This same demo can be compiled into native code: no modifications required.
 
@@ -277,16 +260,19 @@ After getting a cup of coffee, you'll be able to run this binary directly:
 ./target/security-openid-connect-quickstart-runner
 ----
 
-== Testing the Application
+=== Testing the Application
 
-The application is using bearer token authorization and the first
-thing to do is obtain an access token from the Keycloak Server in
+See <<keycloak-dev-mode, Running the Application in Dev mode>> section above about testing your application in a dev mode.
+
+You can test the application launched in JVM or Native modes with `curl`.
+
+The application is using bearer token authorization and the first thing to do is obtain an access token from the Keycloak Server in
 order to access the application resources:
 
 [source,bash]
 ----
 export access_token=$(\
-    curl -X POST http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/token \
+    curl --insecure -X POST https://localhost:8543/auth/realms/quarkus/protocol/openid-connect/token \
     --user backend-service:secret \
     -H 'content-type: application/x-www-form-urlencoded' \
     -d 'username=alice&password=alice&grant_type=password' | jq --raw-output '.access_token' \
@@ -322,28 +308,65 @@ In order to access the admin endpoint you should obtain a token for the `admin` 
 [source,bash]
 ----
 export access_token=$(\
-    curl -X POST http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/token \
+    curl --insecure -X POST https://localhost:8543/auth/realms/quarkus/protocol/openid-connect/token \
     --user backend-service:secret \
     -H 'content-type: application/x-www-form-urlencoded' \
     -d 'username=admin&password=admin&grant_type=password' | jq --raw-output '.access_token' \
  )
 ----
 
+Please also see the <<integration-testing-keycloak-devservices, Dev Services for Keycloak>> section below about writing the integration tests which depend on `Dev Services for Keycloak`.
+
+== Reference Guide
+
+=== Accessing JWT claims
+
+If you need to access JWT token claims then you can inject `JsonWebToken`:
+
+[source,java]
+----
+package org.acme.security.openid.connect;
+
+import org.eclipse.microprofile.jwt.JsonWebToken;
+import javax.inject.Inject;
+import javax.annotation.security.RolesAllowed;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/api/admin")
+public class AdminResource {
+
+    @Inject
+    JsonWebToken jwt;
+
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String admin() {
+        return "Access for subject " + jwt.getSubject() + " is granted";
+    }
+}
+----
+
+Injection of the `JsonWebToken` is supported in both `@RequestScoped` and `@ApplicationScoped` contexts.
+
 [[user-info]]
-== User Info
+=== User Info
 
 Set `quarkus.oidc.user-info-required=true` if a UserInfo JSON object from the OIDC userinfo endpoint has to be requested.
 A request will be sent to the OpenId Provider UserInfo endpoint and  an `io.quarkus.oidc.UserInfo` (a simple `javax.json.JsonObject` wrapper) object will be created.
 `io.quarkus.oidc.UserInfo` can be either injected or accessed as a SecurityIdentity `userinfo` attribute.
 
 [[config-metadata]]
-== Configuration Metadata
+=== Configuration Metadata
 
 The current tenant's discovered link:https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata[OpenId Connect Configuration Metadata] is represented by `io.quarkus.oidc.OidcConfigurationMetadata` and can be either injected or accessed as a `SecurityIdentity` `configuration-metadata` attribute.
 
 The default tenant's `OidcConfigurationMetadata` is injected if the endpoint is public.
 
-== Token Claims And SecurityIdentity Roles
+=== Token Claims And SecurityIdentity Roles
 
 SecurityIdentity roles can be mapped from the verified JWT access tokens as follows:
 
@@ -360,7 +383,7 @@ If UserInfo is the source of the roles then set `quarkus.oidc.authentication.use
 Additionally a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented link:security#security-identity-customization[here].
 
 [[token-verification-introspection]]
-== Token Verification And Introspection 
+=== Token Verification And Introspection 
 
 If the token is a JWT token then, by default, it will be verified with a `JsonWebKey` (JWK) key from a local `JsonWebKeySet` retrieved from the OpenId Connect Provider's JWK endpoint. The token's key identifier `kid` header value will be used to find the matching JWK key.
 If no matching `JWK` is available locally then `JsonWebKeySet` will be refreshed by fetching the current key set from the JWK endpoint. The `JsonWebKeySet` refresh can be repeated again only after the `quarkus.oidc.token.forced-jwk-refresh-interval` (default is 10 minutes) expires.
@@ -382,14 +405,14 @@ However, there could be cases where JWT tokens must be verified via the introspe
 ----
 quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
 quarkus.oidc.discovery-enabled=false
-# Token Introspection endoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens/introspect
+# Token Introspection endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens/introspect
 quarkus.oidc.introspection-path=/protocol/openid-connect/tokens/introspect
 ----
 
 Note that `io.quarkus.oidc.TokenIntrospection` (a simple `javax.json.JsonObject` wrapper) object will be created and can be either injected or accessed as a SecurityIdentity `introspection` attribute if either JWT or opaque token has been successfully introspected.
 
 [[token-introspection-userinfo-cache]]
-== Token Introspection and UserInfo Cache
+=== Token Introspection and UserInfo Cache
 
 All opaque and sometimes JWT Bearer access tokens have to be remotely introspected. If `UserInfo` is also required then the same access token will be used to do a remote call to OpenId Connect Provider again. So, if `UserInfo` is required and the current access token is opaque then for every such token there will be 2 remote calls done - one to introspect it and one to get UserInfo with it, and if the token is JWT then usually only a single remote call will be needed - to get UserInfo with it.
 
@@ -428,8 +451,53 @@ The default cache uses a token as a key and each entry can have `TokenIntrospect
 
 Please experiment with the default cache implementation or register a custom one.
 
+[[jwt-claim-verification]]
+=== JSON Web Token Claim Verification
+
+Once the bearer JWT token's signature has been verified and its `expires at` (`exp`) claim has been checked, the `iss` (`issuer`) claim value is verified next.
+
+By default, the `iss` claim value is compared to the `issuer` property which may have been discovered in the well-known provider configuration.
+But if `quarkus.oidc.token.issuer` property is set then the `iss` claim value is compared to it instead.
+
+In some cases, this `iss` claim verification may not work. For example, if the discovered `issuer` property contains an internal HTTP/IP address while the token `iss` claim value contains an external HTTP/IP address. Or when a discovered `issuer` property contains the template tenant variable but the token `iss` claim value has the complete tenant-specific issuer value.
+
+In such cases you may want to consider skipping the issuer verification by setting `quarkus.oidc.token.issuer=any`. Please note that it is not recommended and should be avoided unless no other options are available:
+
+- If you work with Keycloak and observe the issuer verification errors due to the different host addresses then configure Keycloak with a `KEYCLOAK_FRONTEND_URL` property to ensure the same host address is used.
+- If the `iss` property is tenant specific in a multi-tenant deployment then you can use the `SecurityIdentity` `tenant-id` attribute to check the issuer is correct in the endpoint itself or the custom JAX-RS filter, for example:
+
+[source, java]
+----
+import javax.inject.Inject;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.ext.Provider;
+
+import org.eclipse.microprofile.jwt.JsonWebToken;
+import io.quarkus.oidc.OidcConfigurationMetadata;
+import io.quarkus.security.identity.SecurityIdentity;
+
+@Provider
+public class IssuerValidator implements ContainerRequestFilter {
+    @Inject
+    OidcConfigurationMetadata configMetadata;
+
+    @Inject JsonWebToken jwt;
+    @Inject SecurityIdentity identity;
+
+    public void filter(ContainerRequestContext requestContext) {
+        String issuer = configMetadata.getIssuer().replace("{tenant-id}", identity.getAttribute("tenant-id"));
+        if (!issuer.equals(jwt.getIssuer())) {
+            requestContext.abortWith(Response.status(401).build());
+        }
+    }
+}
+----
+
+Note it is also recommended to use `quarkus.oidc.token.audience` property to verify the token `aud` (`audience`) claim value.
+
 [[single-page-applications]]
-== Single Page Applications
+=== Single Page Applications
 
 Single Page Application (SPA) typically uses `XMLHttpRequest`(XHR) and the Java Script utility code provided by the OpenId Connect provider to acquire a bearer token and use it
 to access Quarkus `service` applications.
@@ -476,7 +544,11 @@ For example, here is how you can use `keycloak.js` to authenticate the users and
 </html>
 ----
 
-== Provider Endpoint configuration
+=== Cross Origin Resource Sharing
+
+If you plan to consume your OpenId Connect `service` application from a Single Page Application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the link:http-reference#cors-filter[HTTP CORS documentation] for more details.
+
+=== Provider Endpoint configuration
 
 OIDC `service` application needs to know OpenId Connect provider's token, `JsonWebKey` (JWK) set and possibly `UserInfo` and introspection endpoint addresses.
 
@@ -492,68 +564,23 @@ quarkus.oidc.discovery-enabled=false
 quarkus.oidc.token-path=/protocol/openid-connect/token
 # JWK set endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/certs
 quarkus.oidc.jwks-path=/protocol/openid-connect/certs
-# UserInfo endoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/userinfo
+# UserInfo endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/userinfo
 quarkus.oidc.user-info-path=/protocol/openid-connect/userinfo
-# Token Introspection endoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens/introspect
+# Token Introspection endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens/introspect
 quarkus.oidc.introspection-path=/protocol/openid-connect/tokens/introspect
 ----
 
-[[jwt-claim-verification]]
-== JSON Web Token Claim Verification
-
-Once the bearer JWT token's signature has been verified and its `expires at` (`exp`) claim has been checked, the `iss` (`issuer`) claim value is verified next.
-
-By default, the `iss` claim value is compared to the `issuer` property which may have been discovered in the well-known provider configuration.
-But if `quarkus.oidc.token.issuer` property is set then the `iss` claim value is compared to it instead.
-
-In some cases, this `iss` claim verification may not work. For example, if the discovered `issuer` property contains an internal HTTP/IP address while the token `iss` claim value contains an external HTTP/IP address. Or when a discovered `issuer` property contains the template tenant variable but the token `iss` claim value has the complete tenant-specific issuer value.
-
-In such cases you may want to consider skipping the issuer verification by setting `quarkus.oidc.token.issuer=any`. Please note that it is not recommended and should be avoided unless no other options are available:
-
-- If you work with Keycloak and observe the issuer verification errors due to the different host addresses then configure Keycloak with a `KEYCLOAK_FRONTEND_URL` property to ensure the same host address is used.
-- If the `iss` property is tenant specific in a multi-tenant deployment then you can use the `SecurityIdentity` `tenant-id` attribute to check the issuer is correct in the endpoint itself or the custom JAX-RS filter, for example:
-
-[source, java]
-----
-import javax.inject.Inject;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.ext.Provider;
-
-import org.eclipse.microprofile.jwt.JsonWebToken;
-import io.quarkus.oidc.OidcConfigurationMetadata;
-import io.quarkus.security.identity.SecurityIdentity;
-
-@Provider
-public class IssuerValidator implements ContainerRequestFilter {
-    @Inject
-    OidcConfigurationMetadata configMetadata;
-
-    @Inject JsonWebToken jwt;
-    @Inject SecurityIdentity identity;
-
-    public void filter(ContainerRequestContext requestContext) {
-        String issuer = configMetadata.getIssuer().replace("{tenant-id}", identity.getAttribute("tenant-id"));
-        if (!issuer.equals(jwt.getIssuer())) {
-            requestContext.abortWith(Response.status(401).build());
-        }
-    }
-}
-----
-
-Note it is also recommended to use `quarkus.oidc.token.audience` property to verify the token `aud` (`audience`) claim value.
-
-== Token Propagation
+=== Token Propagation
 
 Please see link:security-openid-connect-client#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
 
 [[oidc-provider-authentication]]
-== Oidc Provider Client Authentication
+=== Oidc Provider Client Authentication
 
 `quarkus.oidc.runtime.OidcProviderClient` is used when a remote request to an OpenId Connect Provider has to be done. If the bearer token has to be introspected then `OidcProviderClient` has to authenticate to the OpenId Connect Provider. Please see link:security-openid-connect-web-authentication#oidc-provider-client-authentication[OidcProviderClient Authentication] for more information about all the supported authentication options.
 
 [[integration-testing]]
-== Testing
+=== Testing
 
 Start by adding the following dependencies to your test project:
 
@@ -572,7 +599,7 @@ Start by adding the following dependencies to your test project:
 ----
 
 [[integration-testing-wiremock]]
-=== Wiremock
+==== Wiremock
 
 Add the following dependencies to your test project:
 
@@ -593,8 +620,6 @@ Prepare the REST test endpoint, set `application.properties`, for example:
 quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus/
 quarkus.oidc.client-id=quarkus-service-app
 quarkus.oidc.application-type=service
-# required to sign the tokens
-smallrye.jwt.sign.key.location=privateKey.jwk
 ----
 
 and finally write the test code, for example:
@@ -638,6 +663,8 @@ public class BearerTokenAuthorizationTest {
     }
 }
 ----
+
+Note that the `quarkus-test-oidc-server` extension includes a signing RSA private key file in a `JSON Web Key` (`JWK`) format and points to it with a `smallrye.jwt.sign.key.location` configuration property. It allows to use a no argument `sign()` operation to sign the token.
 
 Testing your `quarkus-oidc` `service` application with `OidcWiremockTestResource` provides the best coverage as even the communication channel is tested against the Wiremock HTTP stubs.
 `OidcWiremockTestResource` will be enhanced going forward to support more complex Bearer token test scenarios.
@@ -686,7 +713,7 @@ public class CustomOidcWireMockStubTest {
 ----
 
 [[integration-testing-keycloak-devservices]]
-=== Dev Services for Keycloak
+==== Dev Services for Keycloak
 
 Using link:security-openid-connect-dev-services[Dev Services for Keycloak] is recommended for the integration testing against Keycloak.
 `Dev Services for Keycloak` will launch and initialize a test container: it will create a `quarkus` realm, a `quarkus-app` client (`secret` secret) and add `alice` (`admin` and `user` roles) and `bob` (`user` role) users, where all of these properties can be customized.
@@ -771,7 +798,7 @@ public class NativeBearerTokenAuthenticationIT extends BearerTokenAuthentication
 Please see link:security-openid-connect-dev-services[Dev Services for Keycloak] for more information about the way it is initialized and configured.
 
 [[integration-testing-keycloak]]
-=== KeycloakTestResourceLifecycleManager
+==== KeycloakTestResourceLifecycleManager
 
 If you need to do some integration testing against Keycloak then you are encouraged to do it with <<integration-testing-keycloak-devservices,Dev Services For Keycloak>>.
 Use `KeycloakTestResourceLifecycleManager` for your tests only if there is a good reason not to use `Dev Services for Keycloak`.
@@ -787,7 +814,7 @@ Start with adding the following dependency:
 </dependency>
 ----
 
-which provides `io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager` - an implementaion of `io.quarkus.test.common.QuarkusTestResourceLifecycleManager` which starts a Keycloak container.
+which provides `io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager` - an implementation of `io.quarkus.test.common.QuarkusTestResourceLifecycleManager` which starts a Keycloak container.
 
 And configure the Maven Surefire plugin as follows:
 
@@ -797,7 +824,7 @@ And configure the Maven Surefire plugin as follows:
     <artifactId>maven-surefire-plugin</artifactId>
     <configuration>
         <systemPropertyVariables>
-            <!-- or, alternativey, configure 'keycloak.version' -->
+            <!-- or, alternatively, configure 'keycloak.version' -->
             <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
             <!--
               Disable HTTPS if required:
@@ -859,7 +886,7 @@ By default, `KeycloakTestResourceLifecycleManager` uses HTTPS to initialize a Ke
 Default realm name is `quarkus` and client id - `quarkus-service-app` - set `keycloak.realm` and `keycloak.service.client` system properties to customize the values if needed.
 
 [[integration-testing-public-key]]
-=== Local Public Key
+==== Local Public Key
 
 You can also use a local inlined public key for testing your `quarkus-oidc` `service` applications:
 
@@ -876,7 +903,7 @@ copy `privateKey.pem` from the `integration-tests/oidc-tenancy` in the `main` Qu
 This approach provides a more limited coverage compared to the Wiremock approach - for example, the remote communication code is not covered.
 
 [[integration-testing-security-annotation]]
-=== TestSecurity annotation
+==== TestSecurity annotation
 
 You can use `@TestSecurity` and `@OidcSecurity` annotations for testing the `service` application endpoint code which depends on the injected `JsonWebToken` as well as `UserInfo` and `OidcConfigurationMetadata`.
 
@@ -1033,9 +1060,9 @@ public class ProtectedResource {
 }
 ----
 
-Note that `@TestSecurity` `user` and `roles` attributes are availabe as `TokenIntrospection` `username` and `scope` properties and you can use `io.quarkus.test.security.oidc.TokenIntrospection` to add the additional introspection response properties such as an `email`, etc.
+Note that `@TestSecurity` `user` and `roles` attributes are available as `TokenIntrospection` `username` and `scope` properties and you can use `io.quarkus.test.security.oidc.TokenIntrospection` to add the additional introspection response properties such as an `email`, etc.
 
-== How to check the errors in the logs ==
+=== How to check the errors in the logs
 
 Please enable `io.quarkus.oidc.runtime.OidcProvider` `TRACE` level logging to see more details about the token verification errors:
 
@@ -1053,21 +1080,21 @@ quarkus.log.category."io.quarkus.oidc.runtime.OidcRecorder".level=TRACE
 quarkus.log.category."io.quarkus.oidc.runtime.OidcRecorder".min-level=TRACE
 ----
 
-== External and Internal Access to OpenId Connect Provider
+=== External and Internal Access to OpenId Connect Provider
 
 Note that the OpenId Connect Provider externally accessible token and other endpoints may have different HTTP(S) URLs compared to the URLs auto-discovered or configured relative to `quarkus.oidc.auth-server-url` internal URL. For example, if your SPA acquires a token from an external token endpoint address and sends it to Quarkus as a Bearer token then an issuer verification failure may be reported by the endpoint.
 
 In such cases, if you work with Keycloak then please start it with a `KEYCLOAK_FRONTEND_URL` system property set to the externally accessible base URL.
 If you work with other Openid Connect providers then please check your provider's documentation.
 
-== How to use 'client-id' property
+=== How to use 'client-id' property
 
 `quarkus.oidc.client-id` property identifies an OpenId Connect Client which requested the current bearer token. It can be an SPA application running in a browser or a Quarkus `web-app` confidential client application propagating the access token to the Quarkus `service` application.
 
 This property is required if the `service` application is expected to introspect the tokens remotely - which is always the case for the opaque tokens.
 This property is optional if the local Json Web Key token verification only is used.
 
-Nonetheless, setting this propery is encouraged even if the endpoint does not require an access to the remote introspection endpoint. The reasons behind it that `client-id`, if set, can be used to verify the token audience and will also be included in the logs when the token verification fails for the better traceability of the tokens issued to specific clients to be analyzed over a longer period of time.
+Nonetheless, setting this property is encouraged even if the endpoint does not require an access to the remote introspection endpoint. The reasons behind it that `client-id`, if set, can be used to verify the token audience and will also be included in the logs when the token verification fails for the better traceability of the tokens issued to specific clients to be analyzed over a longer period of time.
 
 For example, if your OpenId Connect provider sets a token audience then the following configuration pattern is recommended:
 
@@ -1083,7 +1110,6 @@ If you set `quarkus.oidc.client-id` but your endpoint does not require a remote 
 
 Note Quarkus `web-app` applications always require `quarkus.oidc.client-id` property.
 
-
 == References
 
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
@@ -1091,4 +1117,6 @@ Note Quarkus `web-app` applications always require `quarkus.oidc.client-id` prop
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
 * link:security-openid-connect-client[Quarkus - Using OpenID Connect and OAuth2 Client and Filters to manage access tokens]
 * link:security-openid-connect-dev-services[Dev Services for Keycloak]
+* link:security-jwt-build[Sign and encrypt JWT tokens with SmallRye JWT Build]
+* link:security#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
 * link:security[Quarkus Security]

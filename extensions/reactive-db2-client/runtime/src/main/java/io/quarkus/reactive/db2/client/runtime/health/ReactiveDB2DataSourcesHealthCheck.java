@@ -20,7 +20,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.datasource.runtime.DataSourcesExcludedFromHealthChecks;
+import io.quarkus.datasource.runtime.DataSourcesHealthSupport;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.vertx.mutiny.db2client.DB2Pool;
 
@@ -37,7 +37,7 @@ class ReactiveDB2DataSourcesHealthCheck implements HealthCheck {
     @PostConstruct
     protected void init() {
         ArcContainer container = Arc.container();
-        DataSourcesExcludedFromHealthChecks excluded = container.instance(DataSourcesExcludedFromHealthChecks.class).get();
+        DataSourcesHealthSupport excluded = container.instance(DataSourcesHealthSupport.class).get();
         Set<String> excludedNames = excluded.getExcludedNames();
         for (InstanceHandle<DB2Pool> handle : container.select(DB2Pool.class, Any.Literal.INSTANCE).handles()) {
             String db2PoolName = getDB2PoolName(handle.getBean());

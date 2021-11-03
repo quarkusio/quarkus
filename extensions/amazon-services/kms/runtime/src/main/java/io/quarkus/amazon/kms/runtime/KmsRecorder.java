@@ -17,23 +17,29 @@ import software.amazon.awssdk.services.kms.KmsClientBuilder;
 @Recorder
 public class KmsRecorder {
 
-    public RuntimeValue<SyncHttpClientConfig> getSyncConfig(KmsConfig config) {
+    final KmsConfig config;
+
+    public KmsRecorder(KmsConfig config) {
+        this.config = config;
+    }
+
+    public RuntimeValue<SyncHttpClientConfig> getSyncConfig() {
         return new RuntimeValue<>(config.syncClient);
     }
 
-    public RuntimeValue<NettyHttpClientConfig> getAsyncConfig(KmsConfig config) {
+    public RuntimeValue<NettyHttpClientConfig> getAsyncConfig() {
         return new RuntimeValue<>(config.asyncClient);
     }
 
-    public RuntimeValue<AwsConfig> getAwsConfig(KmsConfig config) {
+    public RuntimeValue<AwsConfig> getAwsConfig() {
         return new RuntimeValue<>(config.aws);
     }
 
-    public RuntimeValue<SdkConfig> getSdkConfig(KmsConfig config) {
+    public RuntimeValue<SdkConfig> getSdkConfig() {
         return new RuntimeValue<>(config.sdk);
     }
 
-    public RuntimeValue<AwsClientBuilder> createSyncBuilder(KmsConfig config, RuntimeValue<SdkHttpClient.Builder> transport) {
+    public RuntimeValue<AwsClientBuilder> createSyncBuilder(RuntimeValue<SdkHttpClient.Builder> transport) {
         KmsClientBuilder builder = KmsClient.builder();
         if (transport != null) {
             builder.httpClientBuilder(transport.getValue());
@@ -41,8 +47,7 @@ public class KmsRecorder {
         return new RuntimeValue<>(builder);
     }
 
-    public RuntimeValue<AwsClientBuilder> createAsyncBuilder(KmsConfig config,
-            RuntimeValue<SdkAsyncHttpClient.Builder> transport) {
+    public RuntimeValue<AwsClientBuilder> createAsyncBuilder(RuntimeValue<SdkAsyncHttpClient.Builder> transport) {
 
         KmsAsyncClientBuilder builder = KmsAsyncClient.builder();
         if (transport != null) {

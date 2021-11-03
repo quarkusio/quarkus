@@ -139,7 +139,7 @@ Alternatively, `OidcClientRequestFilter` can be registered automatically with al
 
 `quarkus-oidc-client-reactive-filter` extension provides `io.quarkus.oidc.client.filter.OidcClientRequestReactiveFilter`.
 
-It works similary to the way `OidcClientRequestFilter` (described in the previous section) does - it uses `OidcClient` to acquire the access token, refresh it if needed, and set it as an HTTP `Authorization` `Bearer` scheme value. The difference is that it works with link:rest-client-reactive[Reactive RestClient] and implements a non-blocking client filter which does not block the current IO thread when acquring or refreshing the tokens.
+It works similarly to the way `OidcClientRequestFilter` (described in the previous section) does - it uses `OidcClient` to acquire the access token, refresh it if needed, and set it as an HTTP `Authorization` `Bearer` scheme value. The difference is that it works with link:rest-client-reactive[Reactive RestClient] and implements a non-blocking client filter which does not block the current IO thread when acquiring or refreshing the tokens.
 
 `OidcClientRequestReactiveFilter` delays an initial token acquisition until it is executed to avoid blocking an IO thread and it currently can only be registered with `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotation:
 
@@ -411,7 +411,7 @@ or with the secret retrieved from a link:credentials-provider[CredentialsProvide
 quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
 quarkus.oidc-client.client-id=quarkus-app
 
-# This is a key which will be used to retrieve a secret from the map of credentails returned from CredentialsProvider
+# This is a key which will be used to retrieve a secret from the map of credentials returned from CredentialsProvider
 quarkus.oidc-client.credentials.jwt.secret-provider.key=mysecret-key
 # Set it only if more than one CredentialsProvider can be registered
 quarkus.oidc-client.credentials.jwt.secret-provider.name=oidc-credentials-provider
@@ -671,7 +671,7 @@ Note `AccessTokenRequestFilter` will use `OidcClient` to exchange the current to
 
 Using `JsonWebTokenRequestFilter` is recommended if you work with Bearer JWT tokens where these tokens can have their claims such as `issuer` and `audience` modified and the updated tokens secured (for example, re-signed) again. It expects an injected `org.eclipse.microprofile.jwt.JsonWebToken` and therefore will not work with the opaque tokens. Also, if your OpenId Connect Provider supports a Token Exchange protocol then it is recommended to use `AccessTokenRequestFilter` instead - as both JWT and opaque bearer tokens can be securely exchanged with `AccessTokenRequestFilter`.
 
-`JsonWebTokenRequestFilter` makes it easy for `Service A` implemementations to update the injected `org.eclipse.microprofile.jwt.JsonWebToken` with the new `issuer` and `audience` claim values and secure the updated token again with a new signature. The only difficult step is to ensure `Service A` has a signing key - it should be provisioned from a secure file system or from the remote secure storage such as Vault.
+`JsonWebTokenRequestFilter` makes it easy for `Service A` implementations to update the injected `org.eclipse.microprofile.jwt.JsonWebToken` with the new `issuer` and `audience` claim values and secure the updated token again with a new signature. The only difficult step is to ensure `Service A` has a signing key - it should be provisioned from a secure file system or from the remote secure storage such as Vault.
 
 You can selectively register `JsonWebTokenRequestFilter` by using either `io.quarkus.oidc.token.propagation.JsonWebToken` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider`, for example:
 

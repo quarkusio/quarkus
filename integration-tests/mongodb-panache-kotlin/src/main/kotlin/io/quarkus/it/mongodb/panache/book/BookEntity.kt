@@ -1,6 +1,6 @@
 package io.quarkus.it.mongodb.panache.book
 
-import io.quarkus.mongodb.panache.MongoEntity
+import io.quarkus.mongodb.panache.common.MongoEntity
 import io.quarkus.mongodb.panache.kotlin.PanacheMongoCompanion
 import io.quarkus.mongodb.panache.kotlin.PanacheMongoEntity
 import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations.Companion.INSTANCE

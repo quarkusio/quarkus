@@ -2,6 +2,8 @@ package io.quarkus.deployment.builditem;
 
 import java.util.Objects;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -24,6 +26,12 @@ import io.quarkus.deployment.Capability;
  */
 public final class CapabilityBuildItem extends MultiBuildItem {
 
+    private static volatile Logger log;
+
+    private static Logger getLog() {
+        return log == null ? log = Logger.getLogger(CapabilityBuildItem.class) : log;
+    }
+
     private final String name;
     private final String provider;
 
@@ -35,7 +43,17 @@ public final class CapabilityBuildItem extends MultiBuildItem {
      */
     @Deprecated
     public CapabilityBuildItem(String name) {
-        this(name, "<unknown>");
+        this(name, StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass().getName());
+        final String msg = "An instance of " + CapabilityBuildItem.class.getName()
+                + " was created using a deprecated constructor by "
+                + provider + " to provide capability '" + name
+                + "'. Please report this issue to the extension maintainers to fix it in the future releases.";
+        final Logger log = getLog();
+        if (log.isDebugEnabled()) {
+            log.debug(msg, new Exception(msg));
+        } else {
+            log.warn(msg);
+        }
     }
 
     /**

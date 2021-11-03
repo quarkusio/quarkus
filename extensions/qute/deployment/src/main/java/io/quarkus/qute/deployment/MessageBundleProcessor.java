@@ -1,6 +1,7 @@
 package io.quarkus.qute.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static java.util.stream.Collectors.toMap;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,10 +44,12 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.Annotations;
+import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -78,6 +81,7 @@ import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expression.Part;
 import io.quarkus.qute.Namespaces;
 import io.quarkus.qute.Resolver;
+import io.quarkus.qute.deployment.QuteProcessor.LookupConfig;
 import io.quarkus.qute.deployment.QuteProcessor.Match;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.generator.Descriptors;
@@ -346,6 +350,8 @@ public class MessageBundleProcessor {
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
             BuildProducer<ImplicitValueResolverBuildItem> implicitClasses,
             List<CheckedTemplateBuildItem> checkedTemplates,
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
+            List<TemplateDataBuildItem> templateData,
             QuteConfig config) {
 
         IndexView index = beanArchiveIndex.getIndex();
@@ -355,6 +361,26 @@ public class MessageBundleProcessor {
                 return QuteProcessor.findTemplatePath(analysis, id);
             }
         };
+
+        // IMPLEMENTATION NOTE: 
+        // We do not support injection of synthetic beans with names 
+        // Dependency on the ValidationPhaseBuildItem would result in a cycle in the build chain
+        Map<String, BeanInfo> namedBeans = beanDiscovery.beanStream().withName()
+                .collect(toMap(BeanInfo::getName, Function.identity()));
+
+        Map<String, TemplateDataBuildItem> namespaceTemplateData = templateData.stream()
+                .filter(TemplateDataBuildItem::hasNamespace)
+                .collect(Collectors.toMap(TemplateDataBuildItem::getNamespace, Function.identity()));
+
+        Map<String, List<TemplateExtensionMethodBuildItem>> namespaceExtensionMethods = templateExtensionMethods.stream()
+                .filter(TemplateExtensionMethodBuildItem::hasNamespace)
+                .sorted(Comparator.comparingInt(TemplateExtensionMethodBuildItem::getPriority).reversed())
+                .collect(Collectors.groupingBy(TemplateExtensionMethodBuildItem::getNamespace));
+
+        List<TemplateExtensionMethodBuildItem> regularExtensionMethods = templateExtensionMethods.stream()
+                .filter(Predicate.not(TemplateExtensionMethodBuildItem::hasNamespace)).collect(Collectors.toUnmodifiableList());
+
+        LookupConfig lookupConfig = new QuteProcessor.FixedLookupConfig(index, QuteProcessor.initDefaultMembersFilter(), false);
 
         // bundle name -> (key -> method)
         Map<String, Map<String, MethodInfo>> bundleMethodsMap = new HashMap<>();
@@ -456,9 +482,10 @@ public class MessageBundleProcessor {
                                 if (param.hasTypeInfo()) {
                                     Map<String, Match> results = new HashMap<>();
                                     QuteProcessor.validateNestedExpressions(exprEntry.getKey(), defaultBundleInterface,
-                                            results, templateExtensionMethods, excludes,
-                                            incorrectExpressions, expression, index, implicitClassToMembersUsed,
-                                            templateIdToPathFun, generatedIdsToMatches, checkedTemplate);
+                                            results, excludes, incorrectExpressions, expression, index,
+                                            implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches,
+                                            checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData,
+                                            regularExtensionMethods, namespaceExtensionMethods);
                                     Match match = results.get(param.toOriginalString());
                                     if (match != null && !match.isEmpty() && !Types.isAssignableFrom(match.type(),
                                             methodParams.get(idx), index)) {

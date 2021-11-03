@@ -234,7 +234,7 @@ jobs:
     needs: [build-jdk11, calculate-test-jobs]
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.run_jvm == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
-    timeout-minutes: 270
+    timeout-minutes: 300
     env:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
     strategy:
@@ -305,6 +305,9 @@ jobs:
         shell: bash
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
         run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
+      - name: Clean Gradle temp directory
+        shell: bash
+        run: devtools/gradle/gradlew --stop && rm -rf devtools/gradle/gradle-extension-plugin/build/tmp
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -329,7 +332,9 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: "GC log - JDK ${{matrix.java.name}}"
-          path: "**/windows-java-11.txt"
+          path: |
+            **/windows-java-11.txt
+            !**/build/tmp/**
 
   maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
@@ -448,7 +453,7 @@ jobs:
           name: "build-reports-Gradle Tests - JDK ${{matrix.java.name}}"
           path: |
             **/build/test-results/test/TEST-*.xml
-            **/target/*-reports/TEST-*.xml
+            **/target/**
             target/build-report.json
             LICENSE.txt
           retention-days: 2
@@ -606,7 +611,7 @@ jobs:
         uses: DeLaGuardo/setup-graalvm@master
         if: startsWith(matrix.os-name, 'windows')
         with:
-          graalvm-version: '21.2.0.java11'
+          graalvm-version: '21.3.0.java11'
       - name: Install native-image component
         if: startsWith(matrix.os-name, 'windows')
         run: |

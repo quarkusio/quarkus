@@ -32,8 +32,6 @@ import org.objectweb.asm.ClassWriter;
 import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -47,6 +45,9 @@ import io.quarkus.deployment.configuration.ClassLoadingConfig;
 import io.quarkus.deployment.index.ConstPoolScanner;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACT;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LaunchMode;
 
 public class ClassTransformingBuildStep {
@@ -100,7 +101,9 @@ public class ClassTransformingBuildStep {
             if (!i.isCacheable()) {
                 nonCacheable.add(i.getClassToTransform());
             }
-            classReaderOptions.put(i.getClassToTransform(), i.getClassReaderOptions());
+            classReaderOptions.merge(i.getClassToTransform(), i.getClassReaderOptions(),
+                    // class reader options are bit flags (see org.objectweb.asm.ClassReader)
+                    (oldValue, newValue) -> oldValue | newValue);
         }
         QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
         Map<String, Path> transformedToArchive = new ConcurrentHashMap<>();
@@ -132,7 +135,6 @@ public class ClassTransformingBuildStep {
                     List<ClassPathElement> archives = cl.getElementsWithResource(classFileName);
                     if (!archives.isEmpty()) {
                         ClassPathElement classPathElement = archives.get(0);
-                        Path jar = classPathElement.getRoot();
                         byte[] classData = classPathElement.getResource(classFileName).getData();
                         Set<String> constValues = constScanning.get(className);
                         if (constValues != null && !noConstScanning.contains(className)) {
@@ -269,18 +271,18 @@ public class ClassTransformingBuildStep {
             Map<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJar,
             List<RemovedResourceBuildItem> removedResourceBuildItems) {
         //a little bit of a hack, but we use an empty transformed class to represent removed resources, as transforming a class removes it from the original archive
-        Map<AppArtifactKey, Set<String>> removed = new HashMap<>();
+        Map<ArtifactKey, Set<String>> removed = new HashMap<>();
         for (Map.Entry<String, Set<String>> entry : classLoadingConfig.removedResources.entrySet()) {
-            removed.put(new AppArtifactKey(entry.getKey().split(":")), entry.getValue());
+            removed.put(new GACT(entry.getKey().split(":")), entry.getValue());
         }
         for (RemovedResourceBuildItem i : removedResourceBuildItems) {
             removed.computeIfAbsent(i.getArtifact(), k -> new HashSet<>()).addAll(i.getResources());
         }
         if (!removed.isEmpty()) {
-            for (AppDependency i : curateOutcomeBuildItem.getEffectiveModel().getUserDependencies()) {
-                Set<String> filtered = removed.remove(i.getArtifact().getKey());
+            for (ResolvedDependency i : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
+                Set<String> filtered = removed.remove(i.getKey());
                 if (filtered != null) {
-                    for (Path path : i.getArtifact().getPaths()) {
+                    for (Path path : i.getResolvedPaths()) {
                         transformedClassesByJar.computeIfAbsent(path, s -> new HashSet<>())
                                 .addAll(filtered.stream()
                                         .map(file -> new TransformedClassesBuildItem.TransformedClass(null, null, file, false))

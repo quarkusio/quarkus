@@ -65,6 +65,31 @@ public class ResourceMethod {
     private boolean isMultipart;
     private List<ResourceMethod> subResourceMethods;
 
+    public ResourceMethod() {
+    }
+
+    public ResourceMethod(String httpMethod, String path, String[] produces, String sseElementType, String[] consumes,
+            Set<String> nameBindingNames, String name, String returnType, String simpleReturnType, MethodParameter[] parameters,
+            boolean blocking, boolean suspended, boolean isSse, boolean isFormParamRequired, boolean isMultipart,
+            List<ResourceMethod> subResourceMethods) {
+        this.httpMethod = httpMethod;
+        this.path = path;
+        this.produces = produces;
+        this.sseElementType = sseElementType;
+        this.consumes = consumes;
+        this.nameBindingNames = nameBindingNames;
+        this.name = name;
+        this.returnType = returnType;
+        this.simpleReturnType = simpleReturnType;
+        this.parameters = parameters;
+        this.blocking = blocking;
+        this.suspended = suspended;
+        this.isSse = isSse;
+        this.isFormParamRequired = isFormParamRequired;
+        this.isMultipart = isMultipart;
+        this.subResourceMethods = subResourceMethods;
+    }
+
     public boolean isResourceLocator() {
         return httpMethod == null;
     }

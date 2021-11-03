@@ -1,9 +1,9 @@
 package io.quarkus.bootstrap.resolver.replace.test;
 
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.resolver.CollectDependenciesBase;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
+import io.quarkus.maven.dependency.DependencyFlags;
 
 /**
  *
@@ -52,7 +52,7 @@ public class ManagedReplacedDependencyTestCase extends CollectDependenciesBase {
         addManagedDep(ext201);
         addManagedDep(ext301);
 
-        addCollectedDep(ext301.getRuntime(), AppDependency.DIRECT_FLAG, AppDependency.RUNTIME_EXTENSION_ARTIFACT_FLAG);
+        addCollectedDep(ext301.getRuntime(), DependencyFlags.DIRECT | DependencyFlags.RUNTIME_EXTENSION_ARTIFACT);
         addCollectedDeploymentDep(ext301.getDeployment());
     }
 }

@@ -239,6 +239,18 @@
                                     <version>${webjar.codemirror.version}</version>
                                     <type>jar</type>
                                     <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/classes/dev-static/codemirror/mode/javascript</outputDirectory>
+                                    <includes>**/mode/javascript/**.js</includes>
+                                    <fileMappers>
+                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
+                                    </fileMappers>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.webjars</groupId>
+                                    <artifactId>codemirror</artifactId>
+                                    <version>${webjar.codemirror.version}</version>
+                                    <type>jar</type>
+                                    <overWrite>true</overWrite>
                                     <outputDirectory>${project.build.directory}/classes/dev-static/codemirror/addon/hint</outputDirectory>
                                     <includes>**/addon/hint/show-hint.js, **/addon/hint/show-hint.css</includes>
                                     <fileMappers>
@@ -253,6 +265,19 @@
                                     <overWrite>true</overWrite>
                                     <outputDirectory>${project.build.directory}/classes/dev-static/codemirror/addon/selection</outputDirectory>
                                     <includes>**/addon/selection/active-line.js</includes>
+                                    <fileMappers>
+                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
+                                    </fileMappers>
+                                </artifactItem>
+                                <!-- Mermaid -->
+                                <artifactItem>
+                                    <groupId>org.webjars.npm</groupId>
+                                    <artifactId>mermaid</artifactId>
+                                    <version>${webjar.mermaid.version}</version>
+                                    <type>jar</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/classes/dev-static/js/</outputDirectory>
+                                    <includes>**/mermaid.min.js, **/mermaid.min.js.map</includes>
                                     <fileMappers>
                                         <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
                                     </fileMappers>

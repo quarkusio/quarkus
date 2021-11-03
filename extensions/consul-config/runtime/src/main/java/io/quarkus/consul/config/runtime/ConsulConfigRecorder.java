@@ -14,7 +14,13 @@ public class ConsulConfigRecorder {
 
     private static final Logger log = Logger.getLogger(ConsulConfigRecorder.class);
 
-    public RuntimeValue<ConfigSourceProvider> configSources(ConsulConfig consulConfig) {
+    final ConsulConfig consulConfig;
+
+    public ConsulConfigRecorder(ConsulConfig consulConfig) {
+        this.consulConfig = consulConfig;
+    }
+
+    public RuntimeValue<ConfigSourceProvider> configSources() {
         if (!consulConfig.enabled) {
             log.debug(
                     "No attempt will be made to obtain configuration from Consul because the functionality has been disabled via configuration");

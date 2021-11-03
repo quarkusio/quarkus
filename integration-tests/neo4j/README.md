@@ -43,7 +43,6 @@ The Quarkus project must be configured like this:
 ```
 <properties>
     <quarkus.package.type>native</quarkus.package.type>
-    <quarkus.native.enable-all-security-services>true</quarkus.native.enable-all-security-services>
     <quarkus.native.enable-https-url-handler>true</quarkus.native.enable-https-url-handler>
 </properties>
 ```

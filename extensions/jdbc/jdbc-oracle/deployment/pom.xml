@@ -29,6 +29,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-oracle</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices-oracle</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

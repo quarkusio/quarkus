@@ -83,12 +83,12 @@ public class S3Processor extends AbstractAmazonServiceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupApacheSyncTransport(List<AmazonClientBuildItem> amazonClients, S3Recorder recorder,
             AmazonClientApacheTransportRecorder transportRecorder,
-            S3Config runtimeConfig, BuildProducer<AmazonClientSyncTransportBuildItem> syncTransports) {
+            BuildProducer<AmazonClientSyncTransportBuildItem> syncTransports) {
 
         createApacheSyncTransportBuilder(amazonClients,
                 transportRecorder,
                 buildTimeConfig.syncClient,
-                recorder.getSyncConfig(runtimeConfig),
+                recorder.getSyncConfig(),
                 syncTransports);
     }
 
@@ -96,12 +96,12 @@ public class S3Processor extends AbstractAmazonServiceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupUrlConnectionSyncTransport(List<AmazonClientBuildItem> amazonClients, S3Recorder recorder,
             AmazonClientUrlConnectionTransportRecorder transportRecorder,
-            S3Config runtimeConfig, BuildProducer<AmazonClientSyncTransportBuildItem> syncTransports) {
+            BuildProducer<AmazonClientSyncTransportBuildItem> syncTransports) {
 
         createUrlConnectionSyncTransportBuilder(amazonClients,
                 transportRecorder,
                 buildTimeConfig.syncClient,
-                recorder.getSyncConfig(runtimeConfig),
+                recorder.getSyncConfig(),
                 syncTransports);
     }
 
@@ -113,7 +113,7 @@ public class S3Processor extends AbstractAmazonServiceProcessor {
 
         createNettyAsyncTransportBuilder(amazonClients,
                 transportRecorder,
-                recorder.getAsyncConfig(runtimeConfig),
+                recorder.getAsyncConfig(),
                 asyncTransports);
     }
 
@@ -121,21 +121,20 @@ public class S3Processor extends AbstractAmazonServiceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void createClientBuilders(S3Recorder recorder,
             AmazonClientRecorder commonRecorder,
-            S3Config runtimeConfig,
             List<AmazonClientSyncTransportBuildItem> syncTransports,
             List<AmazonClientAsyncTransportBuildItem> asyncTransports,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
 
         createClientBuilders(commonRecorder,
-                recorder.getAwsConfig(runtimeConfig),
-                recorder.getSdkConfig(runtimeConfig),
+                recorder.getAwsConfig(),
+                recorder.getSdkConfig(),
                 buildTimeConfig.sdk,
                 syncTransports,
                 asyncTransports,
                 S3ClientBuilder.class,
-                (syncTransport) -> recorder.createSyncBuilder(runtimeConfig, syncTransport),
+                (syncTransport) -> recorder.createSyncBuilder(syncTransport),
                 S3AsyncClientBuilder.class,
-                (asyncTransport) -> recorder.createAsyncBuilder(runtimeConfig, asyncTransport),
+                (asyncTransport) -> recorder.createAsyncBuilder(asyncTransport),
                 syntheticBeans);
     }
 }

@@ -58,12 +58,11 @@ public interface BuildSystemRunner {
         File wrapper = getWrapper();
         if (wrapper != null) {
             args.addFirst(wrapper.getAbsolutePath());
-            cmd.targetDirectory = wrapper.getParentFile();
         } else {
             File command = getExecutable();
             args.addFirst(command.getAbsolutePath());
-            cmd.targetDirectory = getProjectRoot().toFile();
         }
+        cmd.targetDirectory = getProjectRoot().toFile();
         cmd.arguments = args.toArray(new String[0]);
         return cmd;
     }

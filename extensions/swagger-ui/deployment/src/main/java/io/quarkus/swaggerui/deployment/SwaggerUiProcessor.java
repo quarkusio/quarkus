@@ -9,7 +9,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -26,6 +25,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.WebJarUtil;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.swaggerui.runtime.SwaggerUiRecorder;
 import io.quarkus.swaggerui.runtime.SwaggerUiRuntimeConfig;
@@ -117,7 +117,7 @@ public class SwaggerUiProcessor {
             String openApiPath = nonApplicationRootPathBuildItem.resolvePath(openapi.path);
             String swaggerUiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path);
 
-            AppArtifact artifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, SWAGGER_UI_WEBJAR_GROUP_ID,
+            ResolvedDependency artifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, SWAGGER_UI_WEBJAR_GROUP_ID,
                     SWAGGER_UI_WEBJAR_ARTIFACT_ID);
 
             if (launchMode.getLaunchMode().isDevOrTest()) {

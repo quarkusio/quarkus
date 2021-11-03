@@ -895,12 +895,20 @@ public abstract class ResteasyReactiveRequestContext
         // this is a slower version than getPathParam, but we can't actually bake path indices inside
         // BeanParam classes (which use thismethod ) because they can be used by multiple resources that would have different
         // indices
-        Integer index = this.target.getPathParameterIndexes().get(name);
+        Integer index = target.getPathParameterIndexes().get(name);
+        String value;
+        if (index != null) {
+            value = getPathParam(index);
+        } else {
+            // Check previous resources if the path is not defined in the current target
+            value = getResourceLocatorPathParam(name);
+        }
+
         // It's possible to inject a path param that's not defined, return null in this case
-        String value = index != null ? getPathParam(index) : null;
         if (encoded && value != null) {
             return Encode.encodeQueryParam(value);
         }
+
         return value;
     }
 
@@ -1012,6 +1020,8 @@ public abstract class ResteasyReactiveRequestContext
         }
         return getResourceLocatorPathParam(name, previousResource.prev);
     }
+
+    public abstract boolean resumeExternalProcessing();
 
     static class PreviousResource {
 

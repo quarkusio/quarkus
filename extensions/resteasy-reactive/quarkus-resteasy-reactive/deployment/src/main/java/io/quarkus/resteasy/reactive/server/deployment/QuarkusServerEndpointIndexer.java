@@ -6,14 +6,12 @@ import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Predicate;
 
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
@@ -22,8 +20,7 @@ import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.processor.DefaultProducesHandler;
 import org.jboss.resteasy.reactive.server.core.Deployment;
-import org.jboss.resteasy.reactive.server.core.parameters.converters.GeneratedParameterConverter;
-import org.jboss.resteasy.reactive.server.core.parameters.converters.NoopParameterConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.LoadedParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupplier;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
@@ -41,9 +38,6 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.resteasy.reactive.server.common.runtime.EndpointInvokerFactory;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
-import io.vertx.ext.web.RoutingContext;
 
 public class QuarkusServerEndpointIndexer
         extends ServerEndpointIndexer {
@@ -57,11 +51,6 @@ public class QuarkusServerEndpointIndexer
     private final Map<String, String> multipartGeneratedPopulators = new HashMap<>();
     private final Predicate<String> applicationClassPredicate;
 
-    private static final Set<DotName> CONTEXT_TYPES = Set.of(
-            DotName.createSimple(HttpServerRequest.class.getName()),
-            DotName.createSimple(HttpServerResponse.class.getName()),
-            DotName.createSimple(RoutingContext.class.getName()));
-
     QuarkusServerEndpointIndexer(Builder builder) {
         super(builder);
         this.initConverters = builder.initConverters;
@@ -71,10 +60,6 @@ public class QuarkusServerEndpointIndexer
         this.defaultProducesHandler = builder.defaultProducesHandler;
         this.applicationClassPredicate = builder.applicationClassPredicate;
         this.resteasyReactiveRecorder = builder.resteasyReactiveRecorder;
-    }
-
-    protected boolean isContextType(ClassType klass) {
-        return super.isContextType(klass) || CONTEXT_TYPES.contains(klass.name());
     }
 
     @Override
@@ -114,26 +99,8 @@ public class QuarkusServerEndpointIndexer
     }
 
     @Override
-    protected ParameterConverterSupplier extractConverter(String elementType, IndexView indexView,
+    protected ParameterConverterSupplier extractConverterImpl(String elementType, IndexView indexView,
             Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters) {
-        if (elementType.equals(String.class.getName())) {
-            if (hasRuntimeConverters)
-                return new RuntimeResolvedConverter.Supplier().setDelegate(new NoopParameterConverter.Supplier());
-            // String needs no conversion
-            return null;
-        } else if (existingConverters.containsKey(elementType)) {
-            String className = existingConverters.get(elementType);
-            ParameterConverterSupplier delegate;
-            if (className == null)
-                delegate = null;
-            else
-                delegate = new GeneratedParameterConverter().setClassName(className);
-            if (hasRuntimeConverters)
-                return new RuntimeResolvedConverter.Supplier().setDelegate(delegate);
-            if (delegate == null)
-                throw new RuntimeException("Failed to find converter for " + elementType);
-            return delegate;
-        }
 
         MethodDescriptor fromString = null;
         MethodDescriptor valueOf = null;
@@ -195,7 +162,7 @@ public class QuarkusServerEndpointIndexer
                     mc.returnValue(ret);
                 }
             }
-            delegate = new GeneratedParameterConverter().setClassName(baseName);
+            delegate = new LoadedParameterConverter().setClassName(baseName);
         } else {
             // let's not try this again
             baseName = null;

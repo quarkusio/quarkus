@@ -20,6 +20,8 @@ import io.narayana.lra.client.internal.proxy.ParticipantProxyResource;
 import io.narayana.lra.client.internal.proxy.nonjaxrs.jandex.DotNames;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -33,7 +35,15 @@ import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 class NarayanaLRAProcessor {
 
     @BuildStep
-    void registerFeature(BuildProducer<FeatureBuildItem> feature) {
+    void registerFeature(BuildProducer<FeatureBuildItem> feature, Capabilities capabilities) {
+        boolean isResteasyClassicAvailable = capabilities.isPresent(Capability.RESTEASY_JSON_JACKSON);
+        boolean isResteasyReactiveAvailable = capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JACKSON);
+
+        if (!isResteasyClassicAvailable && !isResteasyReactiveAvailable) {
+            throw new IllegalStateException(
+                    "'quarkus-narayana-lra' can only work if 'quarkus-resteasy-jackson' or 'quarkus-resteasy-reactive-jackson' is present");
+        }
+
         feature.produce(new FeatureBuildItem(Feature.NARAYANA_LRA));
     }
 

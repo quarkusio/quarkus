@@ -47,7 +47,7 @@ by running the following command in your project base directory:
 
 [source,bash]
 ----
-./mvnw quarkus:add-extension -Dextensions="narayana-lra"
+./mvnw quarkus:add-extension -Dextensions="narayana-lra,resteasy-jackson"
 ----
 
 This will add the following to your pom.xml:
@@ -58,7 +58,16 @@ This will add the following to your pom.xml:
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-narayana-lra</artifactId>
     </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy-jackson</artifactId>
+    </dependency>
 ----
+
+[IMPORTANT]
+====
+`quarkus-narayana-lra` needs to be complemented with either `quarkus-resteasy-jackson` or `quarkus-resteasy-reactive-jackson` in order to work.
+====
 
 If there is a running coordinator then this is all you need in order to create
 new LRAs and to enlist participants with them.

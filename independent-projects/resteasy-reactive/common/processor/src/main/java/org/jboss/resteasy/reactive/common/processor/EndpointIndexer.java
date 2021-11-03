@@ -67,6 +67,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -94,19 +95,19 @@ import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
+import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
-import org.jboss.resteasy.reactive.common.util.ReflectionBeanFactoryCreator;
+import org.jboss.resteasy.reactive.common.reflection.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.common.util.URLUtils;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
-import org.objectweb.asm.Opcodes;
 
 public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD>, PARAM extends IndexedParameter<PARAM>, METHOD extends ResourceMethod> {
 
     protected static final Map<String, String> primitiveTypes;
     private static final Map<DotName, Class<?>> supportedReaderJavaTypes;
     // NOTE: sync with ContextProducer and ContextParamExtractor
-    private static final Set<DotName> CONTEXT_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+    private static final Set<DotName> DEFAULT_CONTEXT_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             // spec
             ResteasyReactiveDotNames.URI_INFO,
             ResteasyReactiveDotNames.HTTP_HEADERS,
@@ -184,6 +185,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Function<String, BeanFactory<Object>> factoryCreator;
     private final Consumer<ResourceMethodCallbackData> resourceMethodCallback;
     private final AnnotationStore annotationStore;
+    private final ApplicationScanningResult applicationScanningResult;
+    private final Set<DotName> contextTypes;
 
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
         this.index = builder.index;
@@ -200,9 +203,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.factoryCreator = builder.factoryCreator;
         this.resourceMethodCallback = builder.resourceMethodCallback;
         this.annotationStore = new AnnotationStore(builder.annotationsTransformers);
+        this.applicationScanningResult = builder.applicationScanningResult;
+        this.contextTypes = builder.contextTypes;
     }
 
-    public ResourceClass createEndpoints(ClassInfo classInfo) {
+    public Optional<ResourceClass> createEndpoints(ClassInfo classInfo, boolean considerApplication) {
+        if (considerApplication && !applicationScanningResult.keepClass(classInfo.name().toString())) {
+            return Optional.empty();
+        }
         try {
             String path = scannedResourcePaths.get(classInfo.name());
             ResourceClass clazz = new ResourceClass();
@@ -226,7 +234,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 clazz.setClassLevelExceptionMappers(classLevelExceptionMappers);
             }
             List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
-                    clazz.getPathParameters(), clazz.getPath());
+                    clazz.getPathParameters(), clazz.getPath(), considerApplication);
             clazz.getMethods().addAll(methods);
 
             // get an InjectableBean view of our class
@@ -246,13 +254,13 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 clazz.setPerRequestResource(true);
             }
 
-            return clazz;
+            return Optional.of(clazz);
         } catch (Exception e) {
             if (Modifier.isInterface(classInfo.flags()) || Modifier.isAbstract(classInfo.flags())) {
                 //kinda bogus, but we just ignore failed interfaces for now
                 //they can have methods that are not valid until they are actually extended by a concrete type
                 log.debug("Ignoring interface " + classInfo.name(), e);
-                return null;
+                return Optional.empty();
             }
             throw new RuntimeException(e);
         }
@@ -263,7 +271,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected List<ResourceMethod> createEndpoints(ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, Set<String> seenMethods,
-            Set<String> pathParameters, String resourceClassPath) {
+            Set<String> pathParameters, String resourceClassPath, boolean considerApplication) {
+        if (considerApplication && applicationScanningResult != null
+                && !applicationScanningResult.keepClass(actualEndpointInfo.name().toString())) {
+            return Collections.emptyList();
+        }
 
         // $$CDIWrapper suffix is used to generate CDI beans from interfaces, we don't want to create endpoints for them:
         if (currentClassInfo.name().toString().endsWith(CDI_WRAPPER_SUFFIX)) {
@@ -348,7 +360,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
                 ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
-                        pathParameters, resourceClassPath));
+                        pathParameters, resourceClassPath, considerApplication));
             }
         }
         List<DotName> interfaces = currentClassInfo.interfaceNames();
@@ -356,7 +368,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             ClassInfo superClass = index.getClassByName(i);
             if (superClass != null) {
                 ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
-                        pathParameters, resourceClassPath));
+                        pathParameters, resourceClassPath, considerApplication));
             }
         }
         return ret;
@@ -400,7 +412,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     private boolean isSynthetic(int mod) {
-        return (mod & Opcodes.ACC_SYNTHETIC) != 0;
+        return (mod & 0x1000) != 0; //0x1000 == SYNTHETIC
     }
 
     private ResourceMethod createResourceMethod(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
@@ -700,7 +712,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
         return returnType;
         // FIXME: should be an exception, but we have incomplete support for generics ATM, so we still
-        // have some unresolved type vars and they do pass _some_ tests 
+        // have some unresolved type vars and they do pass _some_ tests
         //        throw new UnsupportedOperationException("Endpoint return type not supported yet: " + returnType);
     }
 
@@ -1145,8 +1157,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             PARAM builder, String elementType) {
     }
 
-    protected boolean isContextType(ClassType klass) {
-        return CONTEXT_TYPES.contains(klass.name());
+    final boolean isContextType(ClassType klass) {
+        return contextTypes.contains(klass.name());
     }
 
     private String valueOrDefault(AnnotationValue annotation, String defaultValue) {
@@ -1173,7 +1185,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Function<String, BeanFactory<Object>> factoryCreator = new ReflectionBeanFactoryCreator();
         private BlockingDefault defaultBlocking = BlockingDefault.AUTOMATIC;
         private IndexView index;
-        private Map<String, String> existingConverters;
+        private Map<String, String> existingConverters = new HashMap<>();
         private Map<DotName, String> scannedResourcePaths;
         private ResteasyReactiveConfig config;
         private AdditionalReaders additionalReaders;
@@ -1184,6 +1196,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Map<DotName, Map<String, String>> classLevelExceptionMappers;
         private Consumer<ResourceMethodCallbackData> resourceMethodCallback;
         private Collection<AnnotationsTransformer> annotationsTransformers;
+        private ApplicationScanningResult applicationScanningResult;
+        private Set<DotName> contextTypes = new HashSet<>(DEFAULT_CONTEXT_TYPES);
 
         public B setDefaultBlocking(BlockingDefault defaultBlocking) {
             this.defaultBlocking = defaultBlocking;
@@ -1197,6 +1211,16 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         public B setIndex(IndexView index) {
             this.index = index;
+            return (B) this;
+        }
+
+        public B addContextType(DotName contextType) {
+            this.contextTypes.add(contextType);
+            return (B) this;
+        }
+
+        public B addContextTypes(Collection<DotName> contextTypes) {
+            this.contextTypes.addAll(contextTypes);
             return (B) this;
         }
 
@@ -1252,6 +1276,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         public B setAnnotationsTransformers(Collection<AnnotationsTransformer> annotationsTransformers) {
             this.annotationsTransformers = annotationsTransformers;
+            return (B) this;
+        }
+
+        public B setApplicationScanningResult(ApplicationScanningResult applicationScanningResult) {
+            this.applicationScanningResult = applicationScanningResult;
             return (B) this;
         }
 

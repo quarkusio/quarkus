@@ -1,17 +1,12 @@
-package io.quarkus.resteasy.reactive.server.runtime;
+package org.jboss.resteasy.reactive.server.vertx;
 
+import io.vertx.ext.web.RoutingContext;
 import java.time.Duration;
-
 import javax.ws.rs.HttpMethod;
-
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfigurableServerRestHandler;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
-import org.jboss.resteasy.reactive.server.vertx.VertxResteasyReactiveRequestContext;
-
-import io.quarkus.vertx.http.runtime.VertxInputStream;
-import io.vertx.ext.web.RoutingContext;
 
 /**
  * Handler that reads data and sets up the input stream and blocks until the data has been read.
@@ -42,7 +37,8 @@ public class BlockingInputHandler implements RuntimeConfigurableServerRestHandle
             //TODO: this should not be installed for servlet
             VertxResteasyReactiveRequestContext vertxContext = (VertxResteasyReactiveRequestContext) context;
             RoutingContext routingContext = vertxContext.getContext();
-            vertxContext.setInputStream(new VertxInputStream(routingContext, timeout.toMillis()));
+            vertxContext.setInputStream(
+                    new VertxInputStream(routingContext, timeout.toMillis(), (VertxResteasyReactiveRequestContext) context));
         }
     }
 }

@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.jboss.jandex.AnnotationInstance;
@@ -56,6 +57,11 @@ public final class JandexUtil {
             throw new RuntimeException(e);
         }
         return indexer.complete();
+    }
+
+    public static IndexView createCalculatingIndex(Path path) {
+        Index index = createIndex(path);
+        return new CalculatingIndexView(index, Thread.currentThread().getContextClassLoader(), new ConcurrentHashMap<>());
     }
 
     /**
@@ -369,4 +375,5 @@ public final class JandexUtil {
         }
         return type.toString();
     }
+
 }

@@ -68,7 +68,7 @@ public class ClientEndpointIndexer
                 clazz.setPath(path);
             }
             List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
-                    clazz.getPathParameters(), clazz.getPath());
+                    clazz.getPathParameters(), clazz.getPath(), false);
             clazz.getMethods().addAll(methods);
 
             warnForUnsupportedAnnotations(classInfo);
@@ -100,7 +100,7 @@ public class ClientEndpointIndexer
         }
 
         List<ResourceMethod> endpoints = createEndpoints(subResourceClass, subResourceClass, new HashSet<>(), new HashSet<>(),
-                "");
+                "", false);
         resourceMethod.setSubResourceMethods(endpoints);
     }
 

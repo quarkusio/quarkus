@@ -2,9 +2,6 @@ package io.quarkus.resteasy.reactive.server.deployment;
 
 import static java.util.stream.Collectors.toList;
 
-import java.io.File;
-import java.io.InputStream;
-import java.io.Reader;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,7 +22,6 @@ import javax.ws.rs.Priorities;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
@@ -39,8 +35,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.resteasy.reactive.FilePart;
-import org.jboss.resteasy.reactive.PathPart;
 import org.jboss.resteasy.reactive.ResponseHeader;
 import org.jboss.resteasy.reactive.ResponseStatus;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
@@ -78,20 +72,6 @@ import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerBooleanMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerByteArrayMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerCharArrayMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerCharacterMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerDefaultTextPlainBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFileBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFilePartBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFormUrlEncodedProvider;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerInputStreamMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerNumberMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerPathBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerPathPartBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerReaderBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerStringMessageBodyHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -168,6 +148,8 @@ import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
 public class ResteasyReactiveProcessor {
@@ -178,53 +160,10 @@ public class ResteasyReactiveProcessor {
     private static final DotName RESPONSE_HEADER_LIST = DotName.createSimple(ResponseHeader.List.class.getName());
     private static final DotName RESPONSE_STATUS = DotName.createSimple(ResponseStatus.class.getName());
 
-    private final static Serialisers.BuiltinReader[] BUILTIN_READERS = new Serialisers.BuiltinReader[] {
-            new Serialisers.BuiltinReader(String.class, ServerStringMessageBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinReader(Boolean.class, ServerBooleanMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinReader(Character.class, ServerCharacterMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinReader(Number.class, ServerNumberMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinReader(InputStream.class, ServerInputStreamMessageBodyHandler.class, MediaType.WILDCARD),
-            new Serialisers.BuiltinReader(Reader.class, ServerReaderBodyHandler.class, MediaType.WILDCARD),
-            new Serialisers.BuiltinReader(File.class, ServerFileBodyHandler.class, MediaType.WILDCARD),
-
-            new Serialisers.BuiltinReader(byte[].class, ServerByteArrayMessageBodyHandler.class, MediaType.WILDCARD),
-            new Serialisers.BuiltinReader(Object.class, ServerDefaultTextPlainBodyHandler.class, MediaType.TEXT_PLAIN,
-                    RuntimeType.SERVER),
-    };
-    private final static Serialisers.BuiltinWriter[] BUILTIN_WRITERS = new Serialisers.BuiltinWriter[] {
-            new Serialisers.BuiltinWriter(String.class, ServerStringMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinWriter(Number.class, ServerStringMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinWriter(Boolean.class, ServerStringMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinWriter(Character.class, ServerStringMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinWriter(Object.class, ServerStringMessageBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(char[].class, ServerCharArrayMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinWriter(byte[].class, ServerByteArrayMessageBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(MultivaluedMap.class, ServerFormUrlEncodedProvider.class,
-                    MediaType.APPLICATION_FORM_URLENCODED),
-            new Serialisers.BuiltinWriter(InputStream.class, ServerInputStreamMessageBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(Reader.class, ServerReaderBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(File.class, ServerFileBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(FilePart.class, ServerFilePartBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(java.nio.file.Path.class, ServerPathBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(PathPart.class, ServerPathPartBodyHandler.class,
-                    MediaType.WILDCARD),
-    };
+    private static final Set<DotName> CONTEXT_TYPES = Set.of(
+            DotName.createSimple(HttpServerRequest.class.getName()),
+            DotName.createSimple(HttpServerResponse.class.getName()),
+            DotName.createSimple(RoutingContext.class.getName()));
 
     @BuildStep
     public FeatureBuildItem buildSetup() {
@@ -447,7 +386,6 @@ public class ResteasyReactiveProcessor {
         ResourceScanningResult result = resourceScanningResultBuildItem.get().getResult();
         Map<DotName, ClassInfo> scannedResources = result.getScannedResources();
         Map<DotName, String> scannedResourcePaths = result.getScannedResourcePaths();
-        Map<DotName, ClassInfo> possibleSubResources = result.getPossibleSubResources();
         Map<DotName, String> pathInterfaces = result.getPathInterfaces();
 
         ApplicationScanningResult appResult = applicationResultBuildItem.getResult();
@@ -477,6 +415,7 @@ public class ResteasyReactiveProcessor {
                     .addMethodScanners(
                             methodScanners.stream().map(MethodScannerBuildItem::getMethodScanner).collect(toList()))
                     .setIndex(index)
+                    .addContextTypes(CONTEXT_TYPES)
                     .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                     .setEndpointInvokerFactory(new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))
                     .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
@@ -490,6 +429,7 @@ public class ResteasyReactiveProcessor {
                     .setInjectableBeans(injectableBeans)
                     .setAdditionalWriters(additionalWriters)
                     .setDefaultBlocking(appResult.getBlockingDefault())
+                    .setApplicationScanningResult(appResult)
                     .setHasRuntimeConverters(!paramConverterProviders.getParamConverterProviders().isEmpty())
                     .setClassLevelExceptionMappers(
                             classLevelExceptionMappers.isPresent() ? classLevelExceptionMappers.get().getMappers()
@@ -584,15 +524,12 @@ public class ResteasyReactiveProcessor {
             serverEndpointIndexer = serverEndpointIndexerBuilder.build();
 
             for (ClassInfo i : scannedResources.values()) {
-                if (!appResult.keepClass(i.name().toString())) {
-                    continue;
-                }
-                ResourceClass endpoints = serverEndpointIndexer.createEndpoints(i);
-                if (singletonClasses.contains(i.name().toString())) {
-                    endpoints.setFactory(new SingletonBeanFactory<>(i.name().toString()));
-                }
-                if (endpoints != null) {
-                    resourceClasses.add(endpoints);
+                Optional<ResourceClass> endpoints = serverEndpointIndexer.createEndpoints(i, true);
+                if (endpoints.isPresent()) {
+                    if (singletonClasses.contains(i.name().toString())) {
+                        endpoints.get().setFactory(new SingletonBeanFactory<>(i.name().toString()));
+                    }
+                    resourceClasses.add(endpoints.get());
                 }
             }
             //now index possible sub resources. These are all classes that have method annotations
@@ -614,6 +551,7 @@ public class ResteasyReactiveProcessor {
                     toScan.add(classInfo);
                 }
             }
+            Map<DotName, ClassInfo> possibleSubResources = new HashMap<>();
             while (!toScan.isEmpty()) {
                 ClassInfo classInfo = toScan.poll();
                 if (scannedResources.containsKey(classInfo.name()) ||
@@ -622,9 +560,9 @@ public class ResteasyReactiveProcessor {
                     continue;
                 }
                 possibleSubResources.put(classInfo.name(), classInfo);
-                ResourceClass endpoints = serverEndpointIndexer.createEndpoints(classInfo);
-                if (endpoints != null) {
-                    subResourceClasses.add(endpoints);
+                Optional<ResourceClass> endpoints = serverEndpointIndexer.createEndpoints(classInfo, false);
+                if (endpoints.isPresent()) {
+                    subResourceClasses.add(endpoints.get());
                 }
                 //we need to also look for all sub classes and interfaces
                 //they may have type variables that need to be handled
@@ -660,13 +598,13 @@ public class ResteasyReactiveProcessor {
                 RuntimeType.SERVER);
 
         // built-ins
-        for (Serialisers.BuiltinWriter builtinWriter : BUILTIN_WRITERS) {
+        for (Serialisers.BuiltinWriter builtinWriter : ServerSerialisers.BUILTIN_WRITERS) {
             registerWriter(recorder, serialisers, builtinWriter.entityClass, builtinWriter.writerClass,
                     beanContainerBuildItem.getValue(),
                     builtinWriter.mediaType);
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, builtinWriter.writerClass.getName()));
         }
-        for (Serialisers.BuiltinReader builtinReader : BUILTIN_READERS) {
+        for (Serialisers.BuiltinReader builtinReader : ServerSerialisers.BUILTIN_READERS) {
             registerReader(recorder, serialisers, builtinReader.entityClass, builtinReader.readerClass,
                     beanContainerBuildItem.getValue(),
                     builtinReader.mediaType, builtinReader.constraint);

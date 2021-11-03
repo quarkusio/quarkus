@@ -2,7 +2,7 @@ package org.jboss.resteasy.reactive.server.core.parameters.converters;
 
 import java.util.Objects;
 
-public class GeneratedParameterConverter implements ParameterConverterSupplier {
+public class LoadedParameterConverter implements ParameterConverterSupplier {
 
     private String className;
 
@@ -22,7 +22,7 @@ public class GeneratedParameterConverter implements ParameterConverterSupplier {
         return className;
     }
 
-    public GeneratedParameterConverter setClassName(String className) {
+    public LoadedParameterConverter setClassName(String className) {
         this.className = className;
         return this;
     }
@@ -33,7 +33,7 @@ public class GeneratedParameterConverter implements ParameterConverterSupplier {
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        GeneratedParameterConverter that = (GeneratedParameterConverter) o;
+        LoadedParameterConverter that = (LoadedParameterConverter) o;
         return Objects.equals(className, that.className);
     }
 

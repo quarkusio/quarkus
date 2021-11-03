@@ -9,8 +9,9 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_STRUCTURE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_VALUE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_VALUED_MAP;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
 
-import io.quarkus.gizmo.MethodCreator;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,6 +24,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.regex.PatternSyntaxException;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.PathSegment;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -41,12 +43,17 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ListConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.LoadedParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalDateParamConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.NoopParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.OptionalConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupplier;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.PathSegmentParamConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SetConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SortedSetConverter;
+import org.jboss.resteasy.reactive.server.core.reflection.ReflectionConstructorParameterConverterSupplier;
+import org.jboss.resteasy.reactive.server.core.reflection.ReflectionValueOfParameterConverterSupplier;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
@@ -61,13 +68,11 @@ import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 
 public class ServerEndpointIndexer
         extends EndpointIndexer<ServerEndpointIndexer, ServerIndexedParameter, ServerResourceMethod> {
-    private final MethodCreator initConverters;
     protected final EndpointInvokerFactory endpointInvokerFactory;
     protected final List<MethodScanner> methodScanners;
 
     protected ServerEndpointIndexer(AbstractBuilder builder) {
         super(builder);
-        this.initConverters = builder.initConverters;
         this.endpointInvokerFactory = builder.endpointInvokerFactory;
         this.methodScanners = new ArrayList<>(builder.methodScanners);
     }
@@ -291,7 +296,7 @@ public class ServerEndpointIndexer
                     existingConverters, errorLocation, hasRuntimeConverters));
         } catch (Throwable throwable) {
             throw new RuntimeException("Could not create converter for " + elementType + " for " + builder.getErrorLocation()
-                    + " of type " + builder.getType());
+                    + " of type " + builder.getType(), throwable);
         }
     }
 
@@ -331,16 +336,86 @@ public class ServerEndpointIndexer
         builder.setConverter(new LocalDateParamConverter.Supplier());
     }
 
-    protected ParameterConverterSupplier extractConverter(String elementType, IndexView indexView,
+    private ParameterConverterSupplier extractConverter(String elementType, IndexView indexView,
             Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters) {
-        return null;
+        if (elementType.equals(String.class.getName())) {
+            if (hasRuntimeConverters)
+                return new RuntimeResolvedConverter.Supplier().setDelegate(new NoopParameterConverter.Supplier());
+            // String needs no conversion
+            return null;
+        } else if (existingConverters.containsKey(elementType)) {
+            String className = existingConverters.get(elementType);
+            ParameterConverterSupplier delegate;
+            if (className == null)
+                delegate = null;
+            else
+                delegate = new LoadedParameterConverter().setClassName(className);
+            if (hasRuntimeConverters)
+                return new RuntimeResolvedConverter.Supplier().setDelegate(delegate);
+            if (delegate == null)
+                throw new RuntimeException("Failed to find converter for " + elementType);
+            return delegate;
+        } else if (elementType.equals(PathSegment.class.getName())) {
+            return new PathSegmentParamConverter.Supplier();
+        }
+        return extractConverterImpl(elementType, indexView, existingConverters, errorLocation, hasRuntimeConverters);
+    }
+
+    protected ParameterConverterSupplier extractConverterImpl(String elementType, IndexView indexView,
+            Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters) {
+        MethodInfo fromString = null;
+        MethodInfo valueOf = null;
+        MethodInfo stringCtor = null;
+        String primitiveWrapperType = primitiveTypes.get(elementType);
+        String prefix = "";
+        if (primitiveWrapperType != null) {
+            return new ReflectionValueOfParameterConverterSupplier(primitiveWrapperType);
+        } else {
+            ClassInfo type = indexView.getClassByName(DotName.createSimple(elementType));
+            if (type != null) {
+                for (MethodInfo i : type.methods()) {
+                    boolean isStatic = ((i.flags() & Modifier.STATIC) != 0);
+                    boolean isNotPrivate = (i.flags() & Modifier.PRIVATE) == 0;
+                    if ((i.parameters().size() == 1) && isNotPrivate) {
+                        if (i.parameters().get(0).name().equals(STRING)) {
+                            if (i.name().equals("<init>")) {
+                                stringCtor = i;
+                            } else if (i.name().equals("valueOf") && isStatic) {
+                                valueOf = i;
+                            } else if (i.name().equals("fromString") && isStatic) {
+                                fromString = i;
+                            }
+                        }
+                    }
+                }
+                if (type.isEnum()) {
+                    //spec weirdness, enums order is different
+                    if (fromString != null) {
+                        valueOf = null;
+                    }
+                }
+            }
+        }
+        ParameterConverterSupplier delegate = null;
+        if (stringCtor != null) {
+            delegate = new ReflectionConstructorParameterConverterSupplier(stringCtor.declaringClass().name().toString());
+        } else if (valueOf != null) {
+            delegate = new ReflectionValueOfParameterConverterSupplier(valueOf.declaringClass().name().toString());
+        } else if (fromString != null) {
+            delegate = new ReflectionValueOfParameterConverterSupplier(fromString.declaringClass().name().toString(),
+                    "fromString");
+        }
+        if (hasRuntimeConverters)
+            return new RuntimeResolvedConverter.Supplier().setDelegate(delegate);
+        if (delegate == null)
+            throw new RuntimeException("Failed to find converter for " + elementType);
+        return delegate;
     }
 
     @SuppressWarnings("unchecked")
     public static class AbstractBuilder<B extends EndpointIndexer.Builder<ServerEndpointIndexer, B, ServerResourceMethod>>
             extends EndpointIndexer.Builder<ServerEndpointIndexer, B, ServerResourceMethod> {
 
-        private MethodCreator initConverters;
         private EndpointInvokerFactory endpointInvokerFactory = new ReflectionEndpointInvokerFactory();
         private List<MethodScanner> methodScanners = new ArrayList<>();
 
@@ -350,15 +425,6 @@ public class ServerEndpointIndexer
 
         public B setEndpointInvokerFactory(EndpointInvokerFactory endpointInvokerFactory) {
             this.endpointInvokerFactory = endpointInvokerFactory;
-            return (B) this;
-        }
-
-        public MethodCreator getInitConverters() {
-            return initConverters;
-        }
-
-        public B setInitConverters(MethodCreator initConverters) {
-            this.initConverters = initConverters;
             return (B) this;
         }
 

@@ -74,6 +74,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
                 });
             }
         };
+        request.pause();
     }
 
     @Override

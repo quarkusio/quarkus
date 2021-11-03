@@ -3,8 +3,6 @@ package io.quarkus.resteasy.reactive.common.deployment;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -15,28 +13,24 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.Priorities;
-import javax.ws.rs.RuntimeType;
 import javax.ws.rs.ext.RuntimeDelegate;
 
-import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
-import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.jaxrs.RuntimeDelegateImpl;
 import org.jboss.resteasy.reactive.common.model.InterceptorContainer;
 import org.jboss.resteasy.reactive.common.model.PreMatchInterceptorContainer;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptor;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
-import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
-import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult.KeepProviderResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveInterceptorScanner;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner;
+import org.jboss.resteasy.reactive.common.processor.scanning.SerializerScanningResult;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -49,7 +43,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.resteasy.reactive.common.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.spi.AbstractInterceptorBuildItem;
@@ -276,70 +269,16 @@ public class ResteasyReactiveCommonProcessor {
         }
 
         IndexView index = beanArchiveIndexBuildItem.getIndex();
-        Collection<ClassInfo> writers = index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.MESSAGE_BODY_WRITER);
-        Collection<ClassInfo> readers = index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.MESSAGE_BODY_READER);
-
-        for (ClassInfo writerClass : writers) {
-            KeepProviderResult keepProviderResult = applicationResultBuildItem.getResult().keepProvider(writerClass);
-            if (keepProviderResult != KeepProviderResult.DISCARD) {
-                RuntimeType runtimeType = null;
-                if (keepProviderResult == KeepProviderResult.SERVER_ONLY) {
-                    runtimeType = RuntimeType.SERVER;
-                }
-                List<String> mediaTypeStrings = Collections.emptyList();
-                AnnotationInstance producesAnnotation = writerClass.classAnnotation(ResteasyReactiveDotNames.PRODUCES);
-                if (producesAnnotation != null) {
-                    mediaTypeStrings = Arrays.asList(producesAnnotation.value().asStringArray());
-                }
-                List<Type> typeParameters = JandexUtil.resolveTypeParameters(writerClass.name(),
-                        ResteasyReactiveDotNames.MESSAGE_BODY_WRITER,
-                        index);
-                String writerClassName = writerClass.name().toString();
-                AnnotationInstance constrainedToInstance = writerClass.classAnnotation(ResteasyReactiveDotNames.CONSTRAINED_TO);
-                if (constrainedToInstance != null) {
-                    runtimeType = RuntimeType.valueOf(constrainedToInstance.value().asEnum());
-                }
-                int priority = Priorities.USER;
-                AnnotationInstance priorityInstance = writerClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
-                if (priorityInstance != null) {
-                    priority = priorityInstance.value().asInt();
-                }
-                messageBodyWriterBuildItemBuildProducer.produce(new MessageBodyWriterBuildItem(writerClassName,
-                        typeParameters.get(0).name().toString(), mediaTypeStrings, runtimeType, false, priority));
-            }
+        SerializerScanningResult serializers = ResteasyReactiveScanner.scanForSerializers(index,
+                applicationResultBuildItem.getResult());
+        for (var i : serializers.getReaders()) {
+            messageBodyReaderBuildItemBuildProducer.produce(new MessageBodyReaderBuildItem(i.getClassName(),
+                    i.getHandledClassName(), i.getMediaTypeStrings(), i.getRuntimeType(), i.isBuiltin(), i.getPriority()));
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, i.getClassName()));
         }
-
-        for (ClassInfo readerClass : readers) {
-            KeepProviderResult keepProviderResult = applicationResultBuildItem.getResult().keepProvider(readerClass);
-            if (keepProviderResult != KeepProviderResult.DISCARD) {
-                List<Type> typeParameters = JandexUtil.resolveTypeParameters(readerClass.name(),
-                        ResteasyReactiveDotNames.MESSAGE_BODY_READER,
-                        index);
-                RuntimeType runtimeType = null;
-                if (keepProviderResult == KeepProviderResult.SERVER_ONLY) {
-                    runtimeType = RuntimeType.SERVER;
-                }
-                List<String> mediaTypeStrings = Collections.emptyList();
-                String readerClassName = readerClass.name().toString();
-                AnnotationInstance consumesAnnotation = readerClass.classAnnotation(ResteasyReactiveDotNames.CONSUMES);
-                if (consumesAnnotation != null) {
-                    mediaTypeStrings = Arrays.asList(consumesAnnotation.value().asStringArray());
-                }
-                AnnotationInstance constrainedToInstance = readerClass.classAnnotation(ResteasyReactiveDotNames.CONSTRAINED_TO);
-                if (constrainedToInstance != null) {
-                    runtimeType = RuntimeType.valueOf(constrainedToInstance.value().asEnum());
-                }
-                int priority = Priorities.USER;
-                AnnotationInstance priorityInstance = readerClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
-                if (priorityInstance != null) {
-                    priority = priorityInstance.value().asInt();
-                }
-                messageBodyReaderBuildItemBuildProducer.produce(new MessageBodyReaderBuildItem(readerClassName,
-                        typeParameters.get(0).name().toString(), mediaTypeStrings, runtimeType, false, priority));
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, readerClassName));
-            }
+        for (var i : serializers.getWriters()) {
+            messageBodyWriterBuildItemBuildProducer.produce(new MessageBodyWriterBuildItem(i.getClassName(),
+                    i.getHandledClassName(), i.getMediaTypeStrings(), i.getRuntimeType(), i.isBuiltin(), i.getPriority()));
         }
     }
 

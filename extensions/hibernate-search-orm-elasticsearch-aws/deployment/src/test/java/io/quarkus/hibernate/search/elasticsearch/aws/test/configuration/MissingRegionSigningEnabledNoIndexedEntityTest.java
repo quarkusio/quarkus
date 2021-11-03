@@ -7,13 +7,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class MissingRegionSigningDisabledTest {
+public class MissingRegionSigningEnabledNoIndexedEntityTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
+            () -> ShrinkWrap.create(JavaArchive.class).addClass(NonIndexedEntity.class))
             .withConfigurationResource("application.properties")
-            .overrideConfigKey("quarkus.hibernate-search-orm.elasticsearch.aws.signing.enabled", "false");
+            .overrideConfigKey("quarkus.hibernate-search-orm.elasticsearch.aws.signing.enabled", "true");
 
     @Test
     public void testNoConfig() {

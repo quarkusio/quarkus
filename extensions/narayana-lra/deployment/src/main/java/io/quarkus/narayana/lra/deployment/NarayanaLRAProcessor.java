@@ -30,9 +30,10 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.narayana.lra.runtime.LRAConfiguration;
 import io.quarkus.narayana.lra.runtime.NarayanaLRAProducers;
 import io.quarkus.narayana.lra.runtime.NarayanaLRARecorder;
-import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 
 class NarayanaLRAProcessor {
+
+    private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
 
     @BuildStep
     void registerFeature(BuildProducer<FeatureBuildItem> feature, Capabilities capabilities) {
@@ -42,6 +43,11 @@ class NarayanaLRAProcessor {
         if (!isResteasyClassicAvailable && !isResteasyReactiveAvailable) {
             throw new IllegalStateException(
                     "'quarkus-narayana-lra' can only work if 'quarkus-resteasy-jackson' or 'quarkus-resteasy-reactive-jackson' is present");
+        }
+
+        if (!capabilities.isPresent(Capability.REST_CLIENT)) {
+            throw new IllegalStateException(
+                    "'quarkus-narayana-lra' can only work if 'quarkus-rest-client' or 'quarkus-rest-client-reactive' is present");
         }
 
         feature.produce(new FeatureBuildItem(Feature.NARAYANA_LRA));
@@ -63,7 +69,7 @@ class NarayanaLRAProcessor {
         final List<String> classNames = new ArrayList<>();
 
         IndexView index = beanArchiveIndex.getIndex();
-        Collection<AnnotationInstance> annotations = index.getAnnotations(ResteasyDotNames.PATH);
+        Collection<AnnotationInstance> annotations = index.getAnnotations(PATH);
 
         for (AnnotationInstance annotation : annotations) {
             ClassInfo classInfo;

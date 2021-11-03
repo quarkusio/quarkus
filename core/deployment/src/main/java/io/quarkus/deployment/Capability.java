@@ -36,6 +36,7 @@ public interface Capability {
     String JSONB = QUARKUS_PREFIX + "jsonb";
 
     String REST = QUARKUS_PREFIX + "rest";
+    String REST_CLIENT = REST + ".client";
     String REST_JACKSON = REST + ".jackson";
     String REST_JSONB = REST + ".jsonb";
 

@@ -47,7 +47,7 @@ by running the following command in your project base directory:
 
 [source,bash]
 ----
-./mvnw quarkus:add-extension -Dextensions="narayana-lra,resteasy-jackson"
+./mvnw quarkus:add-extension -Dextensions="narayana-lra,resteasy-jackson,rest-client"
 ----
 
 This will add the following to your pom.xml:
@@ -62,11 +62,16 @@ This will add the following to your pom.xml:
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-resteasy-jackson</artifactId>
     </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-rest-client-jackson</artifactId>
+    </dependency>
 ----
 
 [IMPORTANT]
 ====
-`quarkus-narayana-lra` needs to be complemented with either `quarkus-resteasy-jackson` or `quarkus-resteasy-reactive-jackson` in order to work.
+`quarkus-narayana-lra` needs to be complemented with a server JAX-RS implementation and a REST Client implementation in order to work.
+This means that users should also have either `quarkus-resteasy-jackson` and `quarkus-rest-client` or `quarkus-resteasy-reactive-jackson` and `quarkus-rest-client-reactive` dependencies in their application.
 ====
 
 If there is a running coordinator then this is all you need in order to create

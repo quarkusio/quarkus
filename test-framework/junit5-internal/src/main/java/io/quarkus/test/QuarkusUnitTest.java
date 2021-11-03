@@ -43,6 +43,7 @@ import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
+import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
@@ -76,6 +77,7 @@ public class QuarkusUnitTest
         InvocationInterceptor {
 
     public static final String THE_BUILD_WAS_EXPECTED_TO_FAIL = "The build was expected to fail";
+    private static final String APP_ROOT = "app-root";
 
     private static final Logger rootLogger;
     private Handler[] originalHandlers;
@@ -90,6 +92,8 @@ public class QuarkusUnitTest
     private Path deploymentDir;
     private Consumer<Throwable> assertException;
     private Supplier<JavaArchive> archiveProducer;
+    private List<JavaArchive> additionalDependencies = new ArrayList<>();
+
     private List<Consumer<BuildChainBuilder>> buildChainCustomizers = new ArrayList<>();
     private Runnable afterUndeployListener;
 
@@ -165,9 +169,39 @@ public class QuarkusUnitTest
     }
 
     public QuarkusUnitTest setArchiveProducer(Supplier<JavaArchive> archiveProducer) {
-        Objects.requireNonNull(archiveProducer);
-        this.archiveProducer = archiveProducer;
+        this.archiveProducer = Objects.requireNonNull(archiveProducer);
         return this;
+    }
+
+    public QuarkusUnitTest withApplicationRoot(Consumer<JavaArchive> applicationRootConsumer) {
+        JavaArchive root = ShrinkWrap.create(JavaArchive.class);
+        Objects.requireNonNull(applicationRootConsumer).accept(root);
+        return setArchiveProducer(() -> root);
+    }
+
+    /**
+     * Add the java archive as an additional dependency. This dependency is always considered an application archive, even if it
+     * would not otherwise be one.
+     * 
+     * @param archive
+     * @return self
+     */
+    public QuarkusUnitTest addAdditionalDependency(JavaArchive archive) {
+        this.additionalDependencies.add(Objects.requireNonNull(archive));
+        return this;
+    }
+
+    /**
+     * Add the java archive as an additional dependency. This dependency is always considered an application archive, even if it
+     * would not otherwise be one.
+     * 
+     * @param dependencyConsumer
+     * @return self
+     */
+    public QuarkusUnitTest withAdditionalDependency(Consumer<JavaArchive> dependencyConsumer) {
+        JavaArchive dependency = ShrinkWrap.create(JavaArchive.class);
+        Objects.requireNonNull(dependencyConsumer).accept(dependency);
+        return addAdditionalDependency(dependency);
     }
 
     public QuarkusUnitTest addBuildChainCustomizer(Consumer<BuildChainBuilder> customizer) {
@@ -259,7 +293,7 @@ public class QuarkusUnitTest
         return this;
     }
 
-    private void exportArchive(Path deploymentDir, Class<?> testClass) {
+    private void exportArchives(Path deploymentDir, Class<?> testClass) {
         try {
             JavaArchive archive = getArchiveProducerOrDefault();
             Class<?> c = testClass;
@@ -271,7 +305,11 @@ public class QuarkusUnitTest
             if (customApplicationProperties != null) {
                 archive.add(new PropertiesAsset(customApplicationProperties), "application.properties");
             }
-            archive.as(ExplodedExporter.class).exportExplodedInto(deploymentDir.toFile());
+            archive.as(ExplodedExporter.class).exportExplodedInto(deploymentDir.resolve(APP_ROOT).toFile());
+
+            for (JavaArchive dependency : additionalDependencies) {
+                dependency.as(ExplodedExporter.class).exportExplodedInto(deploymentDir.resolve(dependency.getName()).toFile());
+            }
 
             //debugging code
             ExportUtil.exportToQuarkusDeploymentPath(archive);
@@ -423,7 +461,7 @@ public class QuarkusUnitTest
         try {
             deploymentDir = Files.createTempDirectory("quarkus-unit-test");
 
-            exportArchive(deploymentDir, testClass);
+            exportArchives(deploymentDir, testClass);
 
             List<Consumer<BuildChainBuilder>> customizers = new ArrayList<>(buildChainCustomizers);
 
@@ -477,12 +515,16 @@ public class QuarkusUnitTest
 
             try {
                 QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
-                        .setApplicationRoot(deploymentDir)
+                        .setApplicationRoot(deploymentDir.resolve(APP_ROOT))
                         .setMode(QuarkusBootstrap.Mode.TEST)
                         .addExcludedPath(testLocation)
                         .setProjectRoot(testLocation)
                         .setFlatClassPath(flatClassPath)
                         .setForcedDependencies(forcedDependencies);
+                for (JavaArchive dependency : additionalDependencies) {
+                    builder.addAdditionalApplicationArchive(
+                            new AdditionalDependency(deploymentDir.resolve(dependency.getName()), false, true));
+                }
                 if (!forcedDependencies.isEmpty()) {
                     //if we have forced dependencies we can't use the cache
                     //as it can screw everything up

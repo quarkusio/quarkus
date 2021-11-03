@@ -177,6 +177,45 @@ public class DevServicesConfig {
     }
 
     /**
+     * Keycloak Authorization properties which are only used to create Keycloak authorization permissions when a default realm
+     * is
+     * created.
+     * Use 'quarkus-keycloak-authorization' to verify these permissions.
+     */
+    public Authorization authorization = new Authorization();
+
+    /**
+     * Keycloak Authorization properties
+     */
+    @ConfigGroup
+    public static class Authorization {
+
+        /**
+         * Keycloak Authorization resource paths containing the identity role and resource path pairs.
+         * For example, 'quarkus.keycloak.devservices.resource-paths.user=/api/users/*'.
+         */
+        @ConfigItem
+        public Map<String, String> paths;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            Authorization that = (Authorization) o;
+            // grant.type is not checked since it only affects which grant is used by the Dev UI provider.html
+            // and as such the changes to this property should not cause restarting a container
+            return Objects.equals(paths, that.paths);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(paths);
+        }
+    }
+
+    /**
      * Optional fixed port the dev service will listen to.
      * <p>
      * If not defined, the port will be chosen randomly.
@@ -211,11 +250,12 @@ public class DevServicesConfig {
                 && Objects.equals(realmName, that.realmName)
                 && Objects.equals(users, that.users)
                 && Objects.equals(javaOpts, that.javaOpts)
-                && Objects.equals(roles, that.roles);
+                && Objects.equals(roles, that.roles)
+                && Objects.equals(authorization, that.authorization);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(enabled, imageName, port, realmPath, realmName, users, roles);
+        return Objects.hash(enabled, imageName, port, realmPath, realmName, users, roles, authorization);
     }
 }

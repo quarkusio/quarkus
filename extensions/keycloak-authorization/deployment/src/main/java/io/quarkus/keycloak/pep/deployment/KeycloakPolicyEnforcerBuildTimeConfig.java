@@ -1,4 +1,4 @@
-package io.quarkus.keycloak.pep.runtime;
+package io.quarkus.keycloak.pep.deployment;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -8,7 +8,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
  * Build time configuration for Keycloak Authorization.
  */
 @ConfigRoot(name = "keycloak")
-public class KeycloakPoilcyEnforcerBuildTimeConfig {
+public class KeycloakPolicyEnforcerBuildTimeConfig {
 
     /**
      * Policy enforcement enable status

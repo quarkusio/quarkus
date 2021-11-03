@@ -13,7 +13,6 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.keycloak.pep.runtime.KeycloakPoilcyEnforcerBuildTimeConfig;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerAuthorizer;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerConfig;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerRecorder;
@@ -104,7 +103,7 @@ public class KeycloakPolicyEnforcerBuildStep {
     }
 
     public static class IsEnabled implements BooleanSupplier {
-        KeycloakPoilcyEnforcerBuildTimeConfig config;
+        KeycloakPolicyEnforcerBuildTimeConfig config;
 
         public boolean getAsBoolean() {
             return config.policyEnforcer.enable;

@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,9 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.representations.idm.authorization.PolicyRepresentation;
+import org.keycloak.representations.idm.authorization.ResourceRepresentation;
+import org.keycloak.representations.idm.authorization.ResourceServerRepresentation;
 import org.keycloak.util.JsonSerialization;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
@@ -596,7 +600,74 @@ public class KeycloakDevServicesProcessor {
         client.setRedirectUris(Arrays.asList("*"));
         client.setDefaultClientScopes(Arrays.asList("microprofile-jwt"));
 
+        // Keycloak Authorization
+        if (!capturedDevServicesConfiguration.authorization.paths.isEmpty()) {
+            client.setAuthorizationServicesEnabled(true);
+            ResourceServerRepresentation authorizationSettings = new ResourceServerRepresentation();
+            authorizationSettings.setResources(new ArrayList<>());
+            authorizationSettings.setPolicies(new ArrayList<>());
+            for (Map.Entry<String, String> entry : capturedDevServicesConfiguration.authorization.paths.entrySet()) {
+                configurePermissionResourcePermission(authorizationSettings, entry.getKey(), entry.getValue());
+            }
+            client.setAuthorizationSettings(authorizationSettings);
+        }
+
         return client;
+    }
+
+    private static ResourceRepresentation createResource(ResourceServerRepresentation authorizationSettings, String name,
+            String uri, String... scopes) {
+        ResourceRepresentation resource = new ResourceRepresentation(name);
+
+        for (String scope : scopes) {
+            resource.addScope(scope);
+        }
+
+        if (uri != null) {
+            resource.setUris(Collections.singleton(uri));
+        }
+
+        authorizationSettings.getResources().add(resource);
+        return resource;
+    }
+
+    private static void configurePermissionResourcePermission(ResourceServerRepresentation settings, String role, String path) {
+
+        PolicyRepresentation policyAdmin = createJSPolicy("Admin Policy", "var identity = $evaluation.context.identity;\n" +
+                "\n" +
+                "if (identity.hasRealmRole(\"" + role + "\")) {\n" +
+                "$evaluation.grant();\n" +
+                "}", settings);
+
+        createPermission(settings, createResource(settings, "Permission Resource Tenant", path),
+                policyAdmin);
+    }
+
+    private static PolicyRepresentation createJSPolicy(String name, String code, ResourceServerRepresentation settings) {
+        PolicyRepresentation policy = new PolicyRepresentation();
+
+        policy.setName(name);
+        policy.setType("js");
+        policy.setConfig(new HashMap<>());
+        policy.getConfig().put("code", code);
+
+        settings.getPolicies().add(policy);
+
+        return policy;
+    }
+
+    private static void createPermission(ResourceServerRepresentation settings, ResourceRepresentation resource,
+            PolicyRepresentation policy) {
+        PolicyRepresentation permission = new PolicyRepresentation();
+
+        permission.setName(resource.getName() + " Permission");
+        permission.setType("resource");
+        permission.setResources(new HashSet<>());
+        permission.getResources().add(resource.getName());
+        permission.setPolicies(new HashSet<>());
+        permission.getPolicies().add(policy.getName());
+
+        settings.getPolicies().add(permission);
     }
 
     private UserRepresentation createUser(String username, String password, String... realmRoles) {

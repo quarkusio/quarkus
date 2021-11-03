@@ -1,18 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>io.quarkus</groupId>
     <artifactId>quarkus-oidc-code-tokens-cache-parent</artifactId>
+    <groupId>io.quarkus</groupId>
     <version>999-SNAPSHOT</version>
   </parent>
+  <modelVersion>4.0.0</modelVersion>
+
   <artifactId>quarkus-oidc-code-tokens-cache-deployment</artifactId>
   <name>Quarkus - OpenID Connect Token Cache - Deployment</name>
+
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-arc-deployment</artifactId>
+      <artifactId>quarkus-core-deployment</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-oidc-deployment</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-cache-deployment</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -24,6 +34,7 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
   <build>
     <plugins>
       <plugin>

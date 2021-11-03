@@ -6,6 +6,9 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot
 public class OidcCodeTokensCacheConfig {
 
+    /**
+     * Placeholder
+     */
     @ConfigItem(defaultValue = "10")
     public int initialCapacity;
 }

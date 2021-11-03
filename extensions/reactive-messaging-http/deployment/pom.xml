@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-reactive-messaging-http-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>2.4.1.Final</version>
     </parent>
 
   <artifactId>quarkus-reactive-messaging-http-deployment</artifactId>

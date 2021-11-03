@@ -168,11 +168,23 @@ public class QuarkusUnitTest
         return archiveProducer;
     }
 
+    /**
+     * 
+     * @param archiveProducer
+     * @return self
+     * @see #withApplicationRoot(Consumer)
+     */
     public QuarkusUnitTest setArchiveProducer(Supplier<JavaArchive> archiveProducer) {
         this.archiveProducer = Objects.requireNonNull(archiveProducer);
         return this;
     }
 
+    /**
+     * Customize the application root.
+     * 
+     * @param applicationRootConsumer
+     * @return self
+     */
     public QuarkusUnitTest withApplicationRoot(Consumer<JavaArchive> applicationRootConsumer) {
         JavaArchive root = ShrinkWrap.create(JavaArchive.class);
         Objects.requireNonNull(applicationRootConsumer).accept(root);

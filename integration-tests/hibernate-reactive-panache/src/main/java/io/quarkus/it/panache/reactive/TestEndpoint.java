@@ -998,7 +998,111 @@ public class TestEndpoint {
                                 Assertions.assertEquals(0, count);
 
                                 return makeSavedPersonDao();
-                            });
+                            })
+
+                            .flatMap(v -> Person.count("#Person.countAll")
+                                    .flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.count("#Person.countByName", Parameters.with("name", "stef").map());
+                                    }).flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.count("#Person.countByName", Parameters.with("name", "stef"));
+                                    }).flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.count("#Person.countByName.ordinal", "stef");
+                                    }).flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Uni.createFrom().voidItem();
+                                    }))
+                            .flatMap(voidUni -> Person.update("#Person.updateAllNames", Parameters.with("name", "stef2").map())
+                                    .flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("#Person.getByName", Parameters.with("name", "stef2")).list();
+                                    }).flatMap(persons -> {
+                                        Assertions.assertEquals(1, persons.size());
+                                        return Person.update("#Person.updateAllNames", Parameters.with("name", "stef3"));
+                                    }).flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("#Person.getByName", Parameters.with("name", "stef3")).list();
+                                    }).flatMap(persons -> {
+                                        Assertions.assertEquals(1, persons.size());
+                                        return Person.update("#Person.updateNameById",
+                                                Parameters.with("name", "stef2").and("id", ((Person) persons.get(0)).id).map());
+                                    }).flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("#Person.getByName", Parameters.with("name", "stef2")).list();
+                                    }).flatMap(persons -> {
+                                        Assertions.assertEquals(1, persons.size());
+                                        return Person.update("#Person.updateNameById",
+                                                Parameters.with("name", "stef3").and("id", ((Person) persons.get(0)).id));
+                                    }).flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("#Person.getByName", Parameters.with("name", "stef3")).list();
+                                    }).flatMap(persons -> {
+                                        Assertions.assertEquals(1, persons.size());
+                                        return Person.update("#Person.updateNameById.ordinal", "stef",
+                                                ((Person) persons.get(0)).id);
+                                    }).flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("#Person.getByName", Parameters.with("name", "stef")).list();
+                                    }).flatMap(persons -> {
+                                        Assertions.assertEquals(1, persons.size());
+                                        return Uni.createFrom().voidItem();
+                                    }))
+                            .flatMap(voidUni -> Dog.deleteAll()
+                                    .flatMap(v -> Person.delete("#Person.deleteAll"))
+                                    .flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("").list();
+                                    })
+                                    .flatMap(persons -> {
+                                        Assertions.assertEquals(0, persons.size());
+                                        return Uni.createFrom().voidItem();
+                                    }))
+                            .flatMap(voidUni -> makeSavedPerson().flatMap(personToDelete -> Dog.deleteAll()
+                                    .flatMap(v -> Person.find("").list())
+                                    .flatMap(persons -> {
+                                        Assertions.assertEquals(1, persons.size());
+                                        return Person.delete("#Person.deleteById",
+                                                Parameters.with("id", personToDelete.id).map());
+                                    })
+                                    .flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("").list();
+                                    })
+                                    .flatMap(persons -> {
+                                        Assertions.assertEquals(0, persons.size());
+                                        return Uni.createFrom().voidItem();
+                                    })))
+                            .flatMap(voidUni -> makeSavedPerson().flatMap(personToDelete -> Dog.deleteAll()
+                                    .flatMap(v -> Person.find("").list())
+                                    .flatMap(persons -> {
+                                        Assertions.assertEquals(1, persons.size());
+                                        return Person.delete("#Person.deleteById", Parameters.with("id", personToDelete.id));
+                                    })
+                                    .flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("").list();
+                                    })
+                                    .flatMap(persons -> {
+                                        Assertions.assertEquals(0, persons.size());
+                                        return Uni.createFrom().voidItem();
+                                    })))
+                            .flatMap(voidUni -> makeSavedPerson().flatMap(personToDelete -> Dog.deleteAll()
+                                    .flatMap(v -> Person.find("").list())
+                                    .flatMap(persons -> {
+                                        Assertions.assertEquals(1, persons.size());
+                                        return Person.delete("#Person.deleteById.ordinal", personToDelete.id);
+                                    })
+                                    .flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("").list();
+                                    })
+                                    .flatMap(persons -> {
+                                        Assertions.assertEquals(0, persons.size());
+                                        return makeSavedPersonDao();
+                                    })));
+
                 }).flatMap(person -> {
 
                     return personDao.count()

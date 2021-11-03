@@ -91,13 +91,35 @@ The codestart should not include any business logic, instead, it should contain 
 
 - Optionally, add the <<app-config>>.
 
-- Create an <<integration-test>> *You can use it to get your codestart generated as a project*.
+- Create an <<integration-test>>.
 
-You can also use it for dev using the `buildAllProjectsForLocalUse` (Disabled by default because it's already covered by `QuarkusCodestartBuildIT`).
+- <<generating>>
 
-If you want to try using the CLI or Maven plugin for generating a project with your codestart:
+== Writing an Extension Codestart in the Quarkiverse or standalone
 
-- After adding the codestart and updating the relevant extension's metadata yml file (and building both modules), you also have to rebuild the `devtools/bom-descriptor-json` module to include the codestart in the platform descriptor.
+For extensions hosted outside of the Quarkus core[https://github.com/quarkusio/quarkus] repository, codestarts will typically be located in the runtime module (with special instruction in the `pom.xml` to generate a separate codestart artifact). https://github.com/ia3andy/aloha-code/[Here, window="_blank"] is an example extension with a codestart and its tests.
+
+
+[#generating]
+== Generating your Extension Codestart
+
+**You need to build your codestart with Maven to make it available in the tooling:**
+
+- First add the codestart and update the relevant extension's metadata yml file, and build it all (the codestart and the extension if in core). 
+
+- In Quarkus core, you also have to rebuild the `devtools/bom-descriptor-json` module to bind the codestart with the extension in the platform descriptor.
+
+=== With the tests
+
+You can use the <<integration-test>> to help develop your codestart with `buildAllProjects` (In Quarkus core we added `@EnabledIfSystemProperty(named = "build-projects", matches = "true")` because codestarts are already built together in another test from `QuarkusCodestartBuildIT`). 
+
+Use `-Dbuild-projects=true` when running this test to generate the real project with your codestart. Open it with your IDE, then change the code and copy it back to the codestart (and iterate until you are happy with the result).
+
+=== With the Quarkus tooling
+
+NOTE: Using the tooling to generate your local extension codestart during dev is not yet available Quarkiverse/Standalone extension (Until then, you may use the tests and follow https://github.com/quarkusio/quarkus/issues/21165[#21165, window="_blank"] for updates).
+
+Using the CLI or Maven plugin to generate a project with your codestart:
 
 - If using the CLI, you'll probably need to add `-P=io.quarkus:quarkus-bom:999-SNAPSHOT` to the CLI's arguments to use your snapshot of the platform
 
@@ -105,16 +127,11 @@ If you want to try using the CLI or Maven plugin for generating a project with y
 
 - Equivalent for the Maven plugin: `mvn io.quarkus:quarkus-maven-plugin:2.3.0.Final:create -Dextensions=smallrye-health -DplatformVersion=999-SNAPSHOT`
 
-== Writing an Extension Codestart in the Quarkiverse or standalone
-
-For extensions hosted outside of the Quarkus core[https://github.com/quarkusio/quarkus] repository, codestarts will typically be located in the runtime module (with special instruction in the `pom.xml` to generate a separate codestart artifact). https://github.com/ia3andy/aloha-code/[Here, window="_blank"] is an example extension with a codestart & its tests
-
 
 == Specific topics
 
 [#org-acme-package]
 === Dynamic package name generation from org.acme
-
 
 You have to use `org.acme` as the package name in your extension codestart sources. In the generated project, the user specified package will be used (and auto-replace `org.acme`).
 
@@ -160,7 +177,7 @@ NOTE: `codestart.yml` is the only required file.
 === Naming Convention for files
 
 * `.tpl.qute` will be processed with Qute and can use data (`.tpl.qute` will be removed from the output file name).
-* certain common files, such as `readme.md`, `src/test/resources/application.yml`, `src/main/resources/META-INF/resources/index.html` are generated from the collected fragments found in the selected codestarts for the project
+* certain common files, such as `readme.md`, `src/main/resources/application.yml`, `src/main/resources/META-INF/resources/index.html` are generated from the collected fragments found in the selected codestarts for the project
 * other files are copied.
 
 [#qute-templates]
@@ -194,7 +211,7 @@ NOTE: The `{#include readme-header /}` will use a template located in the Quarku
 [#app-config]
 === application config application.yml
 
-As a convention, you should always provide the Quarkus configuration as a yaml file (`base/src/test/resources/application.yml`).
+As a convention, you should always provide the Quarkus configuration as a yaml file (`base/src/main/resources/application.yml`).
 
 It is going to be:
 
@@ -203,7 +220,6 @@ It is going to be:
 
 [#index-html]
 === index.html and web extension codestarts
-
 
 Extension codestarts may provide a snippet for the generated index.html by adding this file:
 
@@ -218,13 +234,12 @@ NOTE: The `{#include index-entry /}` will use a template located in the Quarkus 
 [#integration-test]
 === Integration test
 
-
 An extension is available to help test extension codestarts `QuarkusCodestartTest`. It provides a way to test:
 
 - the generated project content (with immutable mocked data) using snapshot testing
 - the generated project build/run (with real data) with helpers to run the build
 
-NOTE: Before all tests, the extension will generate Quarkus projects in the specified languages with the given codestart, with mocked data and with real data. You can find those generated project in `target/quarkus-codestart-test`. You can open the `real-data` ones in your IDE or play with them using the terminal. *Running those tests is the easiest way to iterate on your extension codestart dev.*
+NOTE: Before all the tests, the extension will generate Quarkus projects in the specified languages with the given codestart using mocked data and real data. You can find those generated projects in the `target/quarkus-codestart-test` directory. You can open the `real-data` ones in your IDE or play with them using the terminal. *The real data is the easiest way to iterate on your extension codestart development.*
 
 
 The extension provides helpers to test that the projects build `buildAllProjects` or just a specific language project `buildProject(Language language)`. It also provides helpers to test the content with <<snapshot-testing>>.

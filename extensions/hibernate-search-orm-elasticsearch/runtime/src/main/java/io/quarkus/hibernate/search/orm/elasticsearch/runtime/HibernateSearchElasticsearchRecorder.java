@@ -190,6 +190,12 @@ public class HibernateSearchElasticsearchRecorder {
 
         @Override
         public void contributeRuntimeProperties(BiConsumer<String, Object> propertyCollector) {
+            if (!runtimeConfig.enabled) {
+                addConfig(propertyCollector, HibernateOrmMapperSettings.ENABLED, false);
+                // Do not process other properties: Hibernate Search is disabled anyway.
+                return;
+            }
+
             addConfig(propertyCollector,
                     HibernateOrmMapperSettings.SCHEMA_MANAGEMENT_STRATEGY,
                     runtimeConfig.schemaManagement.strategy);

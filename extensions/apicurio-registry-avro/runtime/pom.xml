@@ -17,6 +17,16 @@
         <dependency>
             <groupId>io.apicurio</groupId>
             <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.apicurio</groupId>
+                    <artifactId>apicurio-common-rest-client-jdk</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.apicurio</groupId>
+            <artifactId>apicurio-common-rest-client-vertx</artifactId>
         </dependency>
 
         <dependency>
@@ -27,10 +37,9 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-avro</artifactId>
         </dependency>
-        <!-- Apicurio Registry libraries use Keycloak client, which requires Apache HTTP Client -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-apache-httpclient</artifactId>
+            <artifactId>quarkus-vertx</artifactId>
         </dependency>
     </dependencies>
 

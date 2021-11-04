@@ -22,7 +22,7 @@
       -->
 
     <properties>
-        <apicurio.version>2.0.1.Final</apicurio.version>
+        <apicurio.version>2.1.1.Final</apicurio.version>
     </properties>
 
     <dependencies>

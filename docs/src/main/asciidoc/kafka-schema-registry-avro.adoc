@@ -392,7 +392,7 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
 
   schema-registry:
-    image: apicurio/apicurio-registry-mem:2.0.1.Final
+    image: apicurio/apicurio-registry-mem:2.1.1.Final
     ports:
       - 8081:8080
     depends_on:
@@ -607,7 +607,7 @@ public class KafkaAndSchemaRegistryTestResource implements QuarkusTestResourceLi
     @Override
     public Map<String, String> start() {
         kafka.start();
-        registry = new GenericContainer<>("apicurio/apicurio-registry-mem:2.0.1.Final")
+        registry = new GenericContainer<>("apicurio/apicurio-registry-mem:2.1.1.Final")
                 .withExposedPorts(8080)
                 .withEnv("QUARKUS_PROFILE", "prod");
         registry.start();

@@ -1,6 +1,7 @@
 package io.quarkus.gradle.dependency;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,127 +15,152 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
 
+import io.quarkus.gradle.tooling.ToolingUtils;
+import io.quarkus.maven.dependency.GACT;
+
 public class ConditionalDependenciesEnabler {
 
-    private final Map<String, ExtensionDependency> featureVariants = new HashMap<>();
-    private final Set<ExtensionDependency> allExtensions = new HashSet<>();
+    private final Map<GACT, Set<ExtensionDependency>> featureVariants = new HashMap<>();
+    private final Map<ModuleVersionIdentifier, ExtensionDependency> allExtensions = new HashMap<>();
     private final Project project;
+    private final Configuration baseConfiguration;
+    private final Set<ResolvedArtifact> allRuntimeArtifacts = new HashSet<>();
+    private final List<Dependency> unsatisfiedConditionalDeps = new ArrayList<>();
+    private List<Dependency> enforcedPlatforms;
 
-    public ConditionalDependenciesEnabler(Project project) {
+    public ConditionalDependenciesEnabler(Project project, String baseConfigurationName) {
         this.project = project;
+        this.baseConfiguration = project.getConfigurations().getByName(baseConfigurationName);
     }
 
-    public Set<ExtensionDependency> declareConditionalDependencies(String baseConfigurationName) {
-        featureVariants.clear();
-        allExtensions.clear();
-        Configuration baseConfiguration = project.getConfigurations().getByName(baseConfigurationName);
+    public Collection<ExtensionDependency> declareConditionalDependencies() {
         if (baseConfiguration.getIncoming().getDependencies().isEmpty()) {
             return Collections.emptySet();
         }
-        Configuration resolvedConfiguration = DependencyUtils.duplicateConfiguration(project, baseConfiguration);
-        Set<ResolvedArtifact> runtimeArtifacts = resolvedConfiguration.getResolvedConfiguration().getResolvedArtifacts();
 
-        List<ExtensionDependency> extensions = collectExtensionsForResolution(runtimeArtifacts);
-        if (extensions.isEmpty()) {
-            return allExtensions;
+        final Configuration resolvedConfiguration = DependencyUtils.duplicateConfiguration(project, baseConfiguration);
+        enforcedPlatforms = ToolingUtils.getEnforcedPlatforms(baseConfiguration);
+
+        collectConditionalDependencies(resolvedConfiguration.getResolvedConfiguration().getResolvedArtifacts());
+        if (unsatisfiedConditionalDeps.isEmpty()) {
+            return allExtensions.values();
         }
 
-        featureVariants.putAll(extractFeatureVariants(extensions));
+        while (!unsatisfiedConditionalDeps.isEmpty()) {
+            boolean satisfiedConditionalDeps = false;
+            final int originalUnsatisfiedCount = unsatisfiedConditionalDeps.size();
+            int i = 0;
+            while (i < unsatisfiedConditionalDeps.size()) {
+                final Dependency conditionalDep = unsatisfiedConditionalDeps.get(i);
+                if (resolveConditionalDependency(conditionalDep)) {
+                    satisfiedConditionalDeps = true;
+                    unsatisfiedConditionalDeps.remove(i);
+                } else {
+                    ++i;
+                }
+            }
+            if (!satisfiedConditionalDeps && unsatisfiedConditionalDeps.size() == originalUnsatisfiedCount) {
+                break;
+            }
+        }
 
-        resolveConditionalDependencies(extensions, runtimeArtifacts, baseConfigurationName);
-        return allExtensions;
+        final List<ExtensionDependency> result = new ArrayList<>(allExtensions.values());
+        reset();
+        return result;
     }
 
-    private List<ExtensionDependency> collectExtensionsForResolution(Set<ResolvedArtifact> runtimeArtifacts) {
-        List<ExtensionDependency> firstLevelExtensions = new ArrayList<>();
+    private void reset() {
+        featureVariants.clear();
+        allExtensions.clear();
+        allRuntimeArtifacts.clear();
+        unsatisfiedConditionalDeps.clear();
+    }
+
+    private void collectConditionalDependencies(Set<ResolvedArtifact> runtimeArtifacts) {
         for (ResolvedArtifact artifact : runtimeArtifacts) {
+            allRuntimeArtifacts.add(artifact);
             ExtensionDependency extension = DependencyUtils.getExtensionInfoOrNull(project, artifact);
             if (extension != null) {
-                allExtensions.add(extension);
-                if (!extension.conditionalDependencies.isEmpty()) {
-                    if (extension.needsResolution(runtimeArtifacts)) {
-                        firstLevelExtensions.add(extension);
+                allExtensions.put(extension.extensionId, extension);
+                for (Dependency conditionalDep : extension.conditionalDependencies) {
+                    if (!DependencyUtils.exists(allRuntimeArtifacts, conditionalDep)) {
+                        queueConditionalDependency(extension, conditionalDep);
                     }
                 }
             }
         }
-        return firstLevelExtensions;
     }
 
-    private void resolveConditionalDependencies(List<ExtensionDependency> conditionalExtensions,
-            Set<ResolvedArtifact> runtimeArtifacts, String baseConfigurationName) {
+    private boolean resolveConditionalDependency(Dependency conditionalDep) {
 
-        boolean hasChanged = false;
-        List<ExtensionDependency> newConditionalDependencies = new ArrayList<>();
-
-        final Configuration conditionalDeps = createConditionalDependenciesConfiguration(project,
-                conditionalExtensions);
+        final Configuration conditionalDeps = createConditionalDependenciesConfiguration(project, conditionalDep);
         Set<ResolvedArtifact> resolvedArtifacts = conditionalDeps.getResolvedConfiguration().getResolvedArtifacts();
 
-        Set<ResolvedArtifact> availableRuntimeArtifacts = new HashSet<>();
-        availableRuntimeArtifacts.addAll(runtimeArtifacts);
-        availableRuntimeArtifacts.addAll(resolvedArtifacts);
+        boolean satisfied = false;
+        for (ResolvedArtifact artifact : resolvedArtifacts) {
+            if (conditionalDep.getName().equals(artifact.getName())
+                    && conditionalDep.getVersion().equals(artifact.getModuleVersion().getId().getVersion())
+                    && artifact.getModuleVersion().getId().getGroup().equals(conditionalDep.getGroup())) {
+                final ExtensionDependency extensionDependency = DependencyUtils.getExtensionInfoOrNull(project, artifact);
+                if (extensionDependency != null && (extensionDependency.dependencyConditions.isEmpty()
+                        || DependencyUtils.exist(allRuntimeArtifacts, extensionDependency.dependencyConditions))) {
+                    satisfied = true;
+                    enableConditionalDependency(extensionDependency.extensionId);
+                    break;
+                }
+            }
+        }
+
+        if (!satisfied) {
+            return false;
+        }
 
         for (ResolvedArtifact artifact : resolvedArtifacts) {
+            allRuntimeArtifacts.add(artifact);
             ExtensionDependency extensionDependency = DependencyUtils.getExtensionInfoOrNull(project, artifact);
-            if (extensionDependency != null) {
-                if (DependencyUtils.exist(availableRuntimeArtifacts,
-                        extensionDependency.dependencyConditions)) {
-                    enableConditionalDependency(extensionDependency.extensionId);
-                    extensionDependency.setConditional(true);
-                    allExtensions.add(extensionDependency);
-                    if (!extensionDependency.conditionalDependencies.isEmpty()) {
-                        featureVariants.putAll(extractFeatureVariants(Collections.singletonList(extensionDependency)));
-                    }
-                }
-                if (!conditionalExtensions.contains(extensionDependency)) {
-                    hasChanged = true;
-                    newConditionalDependencies.add(extensionDependency);
+            if (extensionDependency == null) {
+                continue;
+            }
+            extensionDependency.setConditional(true);
+            allExtensions.put(extensionDependency.extensionId, extensionDependency);
+            for (Dependency cd : extensionDependency.conditionalDependencies) {
+                if (!DependencyUtils.exists(allRuntimeArtifacts, cd)) {
+                    queueConditionalDependency(extensionDependency, cd);
                 }
             }
         }
-
-        if (hasChanged) {
-            if (!newConditionalDependencies.isEmpty()) {
-                Configuration enhancedDependencies = DependencyUtils.duplicateConfiguration(project,
-                        project.getConfigurations().getByName(baseConfigurationName));
-                Set<ResolvedArtifact> enhancedRuntimeArtifacts = enhancedDependencies.getResolvedConfiguration()
-                        .getResolvedArtifacts();
-                resolveConditionalDependencies(newConditionalDependencies, enhancedRuntimeArtifacts, baseConfigurationName);
-            }
-        }
+        return satisfied;
     }
 
-    private Map<String, ExtensionDependency> extractFeatureVariants(List<ExtensionDependency> extensions) {
-        Map<String, ExtensionDependency> possibleVariant = new HashMap<>();
-        for (ExtensionDependency extension : extensions) {
-            for (Dependency dependency : extension.conditionalDependencies) {
-                possibleVariant.put(DependencyUtils.asFeatureName(dependency), extension);
-            }
-        }
-        return possibleVariant;
+    private void queueConditionalDependency(ExtensionDependency extension, Dependency conditionalDep) {
+        featureVariants.computeIfAbsent(getFeatureKey(conditionalDep), k -> {
+            unsatisfiedConditionalDeps.add(conditionalDep);
+            return new HashSet<>();
+        }).add(extension);
     }
 
-    private Configuration createConditionalDependenciesConfiguration(Project project,
-            List<ExtensionDependency> extensions) {
-        Set<Dependency> dependencies = collectConditionalDependencies(extensions);
-        return project.getConfigurations().detachedConfiguration(dependencies.toArray(new Dependency[0]));
-    }
-
-    private Set<Dependency> collectConditionalDependencies(List<ExtensionDependency> extensionDependencies) {
-        Set<Dependency> dependencies = new HashSet<>();
-        for (ExtensionDependency extensionDependency : extensionDependencies) {
-            dependencies.add(extensionDependency.asDependency(project.getDependencies()));
-            dependencies.addAll(extensionDependency.conditionalDependencies);
+    private Configuration createConditionalDependenciesConfiguration(Project project, Dependency conditionalDep) {
+        final Dependency[] deps = new Dependency[enforcedPlatforms.size() + 1];
+        for (int i = 0; i < enforcedPlatforms.size(); ++i) {
+            deps[i] = enforcedPlatforms.get(i);
         }
-        return dependencies;
+        deps[deps.length - 1] = conditionalDep;
+        return project.getConfigurations().detachedConfiguration(deps);
     }
 
     private void enableConditionalDependency(ModuleVersionIdentifier dependency) {
-        ExtensionDependency extension = featureVariants.get(DependencyUtils.asFeatureName(dependency));
-        if (extension == null) {
+        final Set<ExtensionDependency> extensions = featureVariants.remove(getFeatureKey(dependency));
+        if (extensions == null) {
             return;
         }
-        extension.importConditionalDependency(project.getDependencies(), dependency);
+        extensions.forEach(e -> e.importConditionalDependency(project.getDependencies(), dependency));
+    }
+
+    private static GACT getFeatureKey(ModuleVersionIdentifier version) {
+        return new GACT(version.getGroup(), version.getName());
+    }
+
+    private static GACT getFeatureKey(Dependency version) {
+        return new GACT(version.getGroup(), version.getName());
     }
 }

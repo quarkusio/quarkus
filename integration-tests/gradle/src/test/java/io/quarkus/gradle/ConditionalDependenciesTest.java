@@ -130,7 +130,7 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
 
         // F -> G -> H?(I,J) -> K -> T
         // L -> J -> P?(O)
-        // M -> N?(K) -> I -> O?(H)
+        // M -> N?(G) -> I -> O?(H)
         // M -> R?(I) -> S?(T) -> U
 
         final File projectDir = getProjectDir("conditional-test-project");

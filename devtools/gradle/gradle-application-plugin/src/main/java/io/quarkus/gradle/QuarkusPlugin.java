@@ -2,6 +2,7 @@ package io.quarkus.gradle;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -248,27 +249,27 @@ public class QuarkusPlugin implements Plugin<Project> {
     }
 
     private void registerConditionalDependencies(Project project) {
-        ConditionalDependenciesEnabler conditionalDependenciesEnabler = new ConditionalDependenciesEnabler(project);
         ApplicationDeploymentClasspathBuilder deploymentClasspathBuilder = new ApplicationDeploymentClasspathBuilder(
                 project);
         project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME).getIncoming()
                 .beforeResolve((dependencies) -> {
-                    Set<ExtensionDependency> implementationExtensions = conditionalDependenciesEnabler
-                            .declareConditionalDependencies(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
-                    deploymentClasspathBuilder.createBuildClasspath(implementationExtensions,
-                            JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
+                    final String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME;
+                    final Collection<ExtensionDependency> implementationExtensions = new ConditionalDependenciesEnabler(project,
+                            configName).declareConditionalDependencies();
+                    deploymentClasspathBuilder.createBuildClasspath(implementationExtensions, configName);
                 });
         project.getConfigurations().getByName(DEV_MODE_CONFIGURATION_NAME).getIncoming().beforeResolve((devDependencies) -> {
-            Set<ExtensionDependency> devModeExtensions = conditionalDependenciesEnabler
-                    .declareConditionalDependencies(DEV_MODE_CONFIGURATION_NAME);
-            deploymentClasspathBuilder.createBuildClasspath(devModeExtensions, DEV_MODE_CONFIGURATION_NAME);
+            final String configName = DEV_MODE_CONFIGURATION_NAME;
+            final Collection<ExtensionDependency> devModeExtensions = new ConditionalDependenciesEnabler(project, configName)
+                    .declareConditionalDependencies();
+            deploymentClasspathBuilder.createBuildClasspath(devModeExtensions, configName);
         });
         project.getConfigurations().getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME).getIncoming()
                 .beforeResolve((testDependencies) -> {
-                    Set<ExtensionDependency> testExtensions = conditionalDependenciesEnabler
-                            .declareConditionalDependencies(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME);
-                    deploymentClasspathBuilder.createBuildClasspath(testExtensions,
-                            JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME);
+                    final String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME;
+                    final Collection<ExtensionDependency> testExtensions = new ConditionalDependenciesEnabler(project,
+                            configName).declareConditionalDependencies();
+                    deploymentClasspathBuilder.createBuildClasspath(testExtensions, configName);
                 });
         project.getConfigurations().getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME).getIncoming()
                 .beforeResolve(annotationProcessors -> {

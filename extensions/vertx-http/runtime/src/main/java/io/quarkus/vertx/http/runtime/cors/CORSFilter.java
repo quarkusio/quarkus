@@ -168,8 +168,8 @@ public class CORSFilter implements Handler<RoutingContext> {
                         String.join(",", exposedHeaders.orElse(Collections.emptyList())));
             }
 
-            if (request.method().equals(HttpMethod.OPTIONS)) {
-                if ((requestedHeaders != null || requestedMethods != null) && corsConfig.accessControlMaxAge.isPresent()) {
+            if (request.method().equals(HttpMethod.OPTIONS) && (requestedHeaders != null || requestedMethods != null)) {
+                if (corsConfig.accessControlMaxAge.isPresent()) {
                     response.putHeader(HttpHeaders.ACCESS_CONTROL_MAX_AGE,
                             String.valueOf(corsConfig.accessControlMaxAge.get().getSeconds()));
                 }

@@ -2,8 +2,6 @@ package io.quarkus.spring.data.devmode;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,7 +12,7 @@ public class RepositoryReloadTest {
 
     @RegisterExtension
     static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource("application.properties")
                     .addAsResource("import_books.sql", "import.sql")
                     .addClasses(Book.class, BookRepository.class, BookResource.class));

@@ -2,8 +2,6 @@ package io.quarkus.hibernate.orm.quoted_indentifiers;
 
 import static org.hamcrest.core.StringContains.containsString;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -17,7 +15,7 @@ public class JPAQuotedTestCase {
 
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Group.class, QuotedResource.class)
                     .addAsResource("application-quoted-identifiers.properties", "application.properties"));
 

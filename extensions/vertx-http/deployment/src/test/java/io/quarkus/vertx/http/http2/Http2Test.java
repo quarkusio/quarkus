@@ -8,8 +8,6 @@ import java.util.concurrent.ExecutionException;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -40,7 +38,7 @@ public class Http2Test {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class)
                     .addAsResource(new File("src/test/resources/conf/ssl-jks.conf"), "application.properties")
                     .addAsResource(new File("src/test/resources/conf/server-keystore.jks"), "server-keystore.jks"));

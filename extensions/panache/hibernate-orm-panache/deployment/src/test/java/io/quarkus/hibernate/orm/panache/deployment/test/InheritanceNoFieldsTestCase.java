@@ -1,9 +1,7 @@
 package io.quarkus.hibernate.orm.panache.deployment.test;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -16,7 +14,7 @@ public class InheritanceNoFieldsTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MappedParent.class, ChildEntity.class, InheritanceResource.class)
                     .addAsResource(new StringAsset("INSERT INTO ChildEntity(id, name) VALUES(1, 'my name');\n"), "import.sql")
                     .addAsResource("application-test.properties",

@@ -20,7 +20,7 @@ public class HibernateHotReloadTestCase {
 
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, MyEntityTestResource.class)
                     .add(new StringAsset(
                             //TODO: we can't use devservices here because of issues with the class loading

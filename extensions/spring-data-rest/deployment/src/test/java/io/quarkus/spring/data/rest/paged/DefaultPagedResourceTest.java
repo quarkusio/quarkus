@@ -18,8 +18,6 @@ import java.util.Map;
 
 import javax.ws.rs.core.Link;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -32,7 +30,7 @@ import io.restassured.response.Response;
 class DefaultPagedResourceTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(AbstractEntity.class, Record.class, DefaultRecordsRepository.class)
                     .addAsResource("application.properties")
                     .addAsResource("import.sql"));

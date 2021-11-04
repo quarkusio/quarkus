@@ -8,8 +8,6 @@ import java.util.Map;
 
 import javax.enterprise.inject.spi.DeploymentException;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -20,7 +18,7 @@ public class MapTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(WithMap.class))
+            .withApplicationRoot((jar) -> jar.addClasses(WithMap.class))
             .assertException(e -> {
                 assertEquals(DeploymentException.class, e.getClass());
                 assertTrue(e.getMessage().contains("config-mappings"));

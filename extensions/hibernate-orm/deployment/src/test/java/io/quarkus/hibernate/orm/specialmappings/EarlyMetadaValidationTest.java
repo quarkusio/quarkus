@@ -1,7 +1,5 @@
 package io.quarkus.hibernate.orm.specialmappings;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,7 +16,7 @@ public class EarlyMetadaValidationTest {
 
     @RegisterExtension
     final static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(DataIdentity.class, IdVersionPK.class, NormalPointEntity.class, PointEntity.class)
                     .addAsResource("application.properties"));
 

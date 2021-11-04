@@ -9,8 +9,6 @@ import java.util.logging.Formatter;
 import java.util.stream.Collectors;
 
 import org.jboss.logmanager.formatters.PatternFormatter;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -19,7 +17,7 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class LoggingWithPanacheDevModeTest {
     @RegisterExtension
     static final QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(LoggingEndpoint.class))
+            .withApplicationRoot((jar) -> jar.addClasses(LoggingEndpoint.class))
             .setLogRecordPredicate(record -> "io.quarkus.logging.LoggingEndpoint".equals(record.getLoggerName()));
 
     @Test

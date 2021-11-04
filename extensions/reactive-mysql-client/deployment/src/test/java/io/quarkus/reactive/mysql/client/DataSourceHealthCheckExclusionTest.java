@@ -1,8 +1,6 @@
 package io.quarkus.reactive.mysql.client;
 
 import org.hamcrest.CoreMatchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -13,7 +11,7 @@ public class DataSourceHealthCheckExclusionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
+            .withEmptyApplication()
             .withConfigurationResource("application-datasources-with-health.properties");
 
     @Test

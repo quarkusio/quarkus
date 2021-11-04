@@ -2,8 +2,6 @@ package io.quarkus.spring.web.test;
 
 import static io.restassured.RestAssured.when;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.http.HttpStatus;
@@ -20,7 +18,7 @@ public class ResponseStatusAndExceptionHandlerTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(ExceptionController.class, RestExceptionHandler.class));
 
     @Test

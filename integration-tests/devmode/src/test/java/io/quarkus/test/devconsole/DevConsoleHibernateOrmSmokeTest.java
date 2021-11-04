@@ -1,9 +1,7 @@
 package io.quarkus.test.devconsole;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,7 +16,7 @@ public class DevConsoleHibernateOrmSmokeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addAsResource(
+            .withApplicationRoot((jar) -> jar.addAsResource(
                     new StringAsset("quarkus.datasource.db-kind=h2\n"
                             + "quarkus.datasource.jdbc.url=jdbc:h2:mem:test\n"),
                     "application.properties")

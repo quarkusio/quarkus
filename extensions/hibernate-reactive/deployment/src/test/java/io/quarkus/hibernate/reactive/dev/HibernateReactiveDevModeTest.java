@@ -5,9 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,7 +20,7 @@ public class HibernateReactiveDevModeTest {
 
     @RegisterExtension
     static QuarkusDevModeTest runner = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Fruit.class, FruitMutinyResource.class).addAsResource("application.properties")
                     .addAsResource(new StringAsset("INSERT INTO known_fruits(id, name) VALUES (1, 'Cherry');\n" +
                             "INSERT INTO known_fruits(id, name) VALUES (2, 'Apple');\n" +

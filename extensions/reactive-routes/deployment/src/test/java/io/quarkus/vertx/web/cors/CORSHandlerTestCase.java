@@ -3,8 +3,6 @@ package io.quarkus.vertx.web.cors;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.core.Is.is;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -16,7 +14,7 @@ public class CORSHandlerTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(TestRoute.class)
                     .addAsResource("conf/cors-config.properties", "application.properties"));
 

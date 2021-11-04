@@ -1,9 +1,7 @@
 package io.quarkus.test.devconsole;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,7 +16,7 @@ public class DevConsoleReactiveMessagingSmokeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MyProcessor.class, DummyConnector.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyProcessor.class, DummyConnector.class)
                     .addAsResource(
                             new StringAsset(
                                     "mp.messaging.incoming.input.connector=dummy\n"

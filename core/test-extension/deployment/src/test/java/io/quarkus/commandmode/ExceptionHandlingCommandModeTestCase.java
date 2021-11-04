@@ -1,8 +1,6 @@
 package io.quarkus.commandmode;
 
 import org.assertj.core.api.Assertions;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -12,7 +10,7 @@ public class ExceptionHandlingCommandModeTestCase {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsManifestResource("application.properties", "microprofile-config.properties")
                     .addClasses(ThrowExceptionApplicationMain.class, ThrowExceptionApplication.class))
             .setApplicationName("exception-handling")

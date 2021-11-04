@@ -11,8 +11,6 @@ import javax.enterprise.event.TransactionPhase;
 import javax.inject.Inject;
 import javax.transaction.UserTransaction;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +26,7 @@ public class TransactionalObserversTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(ObservingBean.class, Actions.class));
 
     public static String AFTER_SUCCESS = "AFTER_SUCCESS";

@@ -186,9 +186,26 @@ public class QuarkusUnitTest
      * @return self
      */
     public QuarkusUnitTest withApplicationRoot(Consumer<JavaArchive> applicationRootConsumer) {
-        JavaArchive root = ShrinkWrap.create(JavaArchive.class);
-        Objects.requireNonNull(applicationRootConsumer).accept(root);
-        return setArchiveProducer(() -> root);
+        Objects.requireNonNull(applicationRootConsumer);
+        return setArchiveProducer(() -> {
+            JavaArchive jar = ShrinkWrap.create(JavaArchive.class);
+            applicationRootConsumer.accept(jar);
+            return jar;
+        });
+    }
+
+    /**
+     * Use an empty application for the test
+     *
+     * @return self
+     */
+    public QuarkusUnitTest withEmptyApplication() {
+        return withApplicationRoot(new Consumer<JavaArchive>() {
+            @Override
+            public void accept(JavaArchive javaArchive) {
+
+            }
+        });
     }
 
     /**

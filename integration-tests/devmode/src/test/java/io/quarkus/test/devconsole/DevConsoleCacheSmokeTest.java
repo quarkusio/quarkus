@@ -3,8 +3,6 @@ package io.quarkus.test.devconsole;
 import javax.inject.Singleton;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -20,7 +18,7 @@ public class DevConsoleCacheSmokeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(MyBean.class));
+            .withApplicationRoot((jar) -> jar.addClass(MyBean.class));
 
     @Test
     public void testCaches() {

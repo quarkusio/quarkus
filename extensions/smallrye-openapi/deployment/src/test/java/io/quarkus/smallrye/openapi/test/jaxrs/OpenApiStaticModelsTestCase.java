@@ -3,9 +3,7 @@ package io.quarkus.smallrye.openapi.test.jaxrs;
 import java.io.IOException;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,7 +16,7 @@ public class OpenApiStaticModelsTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiResource.class, ResourceBean.class)
                     .addAsManifestResource("test-openapi.yaml", "openapi/model1.yaml")
                     .addAsManifestResource("test-openapi2.yaml", "openapi/model2.yaml")

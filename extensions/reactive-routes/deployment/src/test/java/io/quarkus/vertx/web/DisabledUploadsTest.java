@@ -20,9 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -37,7 +35,7 @@ public class DisabledUploadsTest {
     private static final String UPLOADS_DIR = "target/disabled-uploads-" + UUID.randomUUID().toString();
     @RegisterExtension
     static final QuarkusUnitTest CONFIG = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Routes.class)
                     .addAsResource(new StringAsset(
                             "quarkus.http.body.handle-file-uploads = false\n" //

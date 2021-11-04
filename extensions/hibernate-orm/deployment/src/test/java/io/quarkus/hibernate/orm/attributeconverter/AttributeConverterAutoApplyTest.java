@@ -13,8 +13,6 @@ import javax.persistence.Table;
 import javax.transaction.UserTransaction;
 
 import org.hibernate.Session;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -29,7 +27,7 @@ public class AttributeConverterAutoApplyTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class)
                     .addClass(MyData.class)
                     .addClass(MyDataConverter.class))

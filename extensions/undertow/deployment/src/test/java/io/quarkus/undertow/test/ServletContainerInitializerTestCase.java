@@ -4,8 +4,6 @@ import static org.hamcrest.Matchers.containsString;
 
 import javax.servlet.ServletContainerInitializer;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -16,7 +14,7 @@ public class ServletContainerInitializerTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsServiceProvider(ServletContainerInitializer.class, TestSCI.class)
                     .addClasses(SCIInterface.class, SCIImplementation.class, TestSCI.class, SCIAnnotation.class,
                             AnnotatedSCIClass.class));

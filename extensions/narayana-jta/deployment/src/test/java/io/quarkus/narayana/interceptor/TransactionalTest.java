@@ -9,8 +9,6 @@ import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 import javax.transaction.UserTransaction;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -23,7 +21,7 @@ public class TransactionalTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(TransactionalTest.TransactionalBean.class, TestXAResource.class,
                             TxAssertionData.class, TestException.class))
             .addClassLoaderEventListener(ClassLoaderLimiter.builder()

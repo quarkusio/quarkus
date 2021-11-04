@@ -9,8 +9,6 @@ import static io.quarkus.security.test.utils.SecurityTestUtils.assertSuccess;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -48,7 +46,7 @@ public class CDIAccessDenyUnannotatedTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(BeanWithNoSecurityAnnotations.class,
                             BeanWithSecurityAnnotations.class,
                             BeanWithSecurityAnnotationsSubBean.class,

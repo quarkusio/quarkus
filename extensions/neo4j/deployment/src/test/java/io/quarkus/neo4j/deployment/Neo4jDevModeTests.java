@@ -8,8 +8,6 @@ import java.util.logging.LogRecord;
 
 import javax.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -26,7 +24,7 @@ public class Neo4jDevModeTests {
 
         @RegisterExtension
         static QuarkusUnitTest test = new QuarkusUnitTest()
-                .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
+                .withEmptyApplication()
                 .setLogRecordPredicate(record -> true)
                 .withConfigurationResource("application.properties")
                 .assertLogRecords(records -> assertThat(records).extracting(LogRecord::getMessage)
@@ -48,7 +46,7 @@ public class Neo4jDevModeTests {
 
         @RegisterExtension
         static QuarkusUnitTest test = new QuarkusUnitTest()
-                .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
+                .withEmptyApplication()
                 .setLogRecordPredicate(record -> true)
                 .withConfigurationResource("application.properties")
                 .overrideConfigKey("quarkus.neo4j.devservices.image-name", "neo4j:4.3-enterprise")
@@ -76,7 +74,7 @@ public class Neo4jDevModeTests {
 
         @RegisterExtension
         static QuarkusUnitTest test = new QuarkusUnitTest()
-                .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
+                .withEmptyApplication()
                 .setLogRecordPredicate(record -> true)
                 .withConfigurationResource("application.properties")
                 .overrideConfigKey("quarkus.neo4j.devservices.enabled", "false")
@@ -98,7 +96,7 @@ public class Neo4jDevModeTests {
 
         @RegisterExtension
         static QuarkusUnitTest test = new QuarkusUnitTest()
-                .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
+                .withEmptyApplication()
                 .setLogRecordPredicate(record -> true)
                 .withConfigurationResource("application.properties")
                 .overrideConfigKey("quarkus.neo4j.uri", "bolt://localhost:7687")
@@ -125,7 +123,7 @@ public class Neo4jDevModeTests {
 
         @RegisterExtension
         static QuarkusUnitTest test = new QuarkusUnitTest()
-                .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
+                .withEmptyApplication()
                 .setLogRecordPredicate(record -> true)
                 .withConfigurationResource("application.properties")
                 .assertLogRecords(records -> assertThat(records).extracting(LogRecord::getMessage)

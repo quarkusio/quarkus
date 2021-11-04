@@ -268,6 +268,13 @@ public class OidcCommonConfig {
             public Optional<String> tokenKeyId = Optional.empty();
 
             /**
+             * Signature algorithm.
+             * Supported values: RS256, RS384, RS512, PS256, PS384, PS512, ES256, ES384, ES512, HS256, HS384, HS512.
+             */
+            @ConfigItem
+            public Optional<String> signatureAlgorithm = Optional.empty();
+
+            /**
              * JWT life-span in seconds. It will be added to the time it was issued at to calculate the expiration time.
              */
             @ConfigItem(defaultValue = "10")
@@ -303,6 +310,14 @@ public class OidcCommonConfig {
 
             public void setSecretProvider(Provider secretProvider) {
                 this.secretProvider = secretProvider;
+            }
+
+            public Optional<String> getSignatureAlgorithm() {
+                return signatureAlgorithm;
+            }
+
+            public void setSignatureAlgorithm(String signatureAlgorithm) {
+                this.signatureAlgorithm = Optional.of(signatureAlgorithm);
             }
 
         }

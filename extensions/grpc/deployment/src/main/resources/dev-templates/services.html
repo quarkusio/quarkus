@@ -41,7 +41,7 @@
    <tbody>
    {#for service in info:grpcServices.infos}
     <tr>
-      <td>{count}.</td>
+      <td>{service_count}.</td>
       <td>
       {#when service.status}
         {#is SERVING}

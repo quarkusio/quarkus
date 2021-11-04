@@ -19,7 +19,7 @@ public class ParamDeclarationTest {
                     .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.typesafe.Movie movie}"
                             + "{movie.mainCharacters.size}: {#for character in movie.mainCharacters}"
                             + "{character}"
-                            + "{#if hasNext}, {/}"
+                            + "{#if character_hasNext}, {/}"
                             + "{/}"), "templates/movie.html"));
 
     @Inject

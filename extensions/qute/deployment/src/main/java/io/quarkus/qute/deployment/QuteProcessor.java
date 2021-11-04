@@ -132,6 +132,9 @@ public class QuteProcessor {
     private static final String CHECKED_TEMPLATE_BASE_PATH = "basePath";
     private static final String BASE_PATH = "templates";
 
+    private static final Set<String> ITERATION_METADATA_KEYS = Set.of("count", "index", "indexParity", "hasNext", "odd",
+            "isOdd", "even", "isEven", "isLast", "isFirst");
+
     private static final Function<FieldInfo, String> GETTER_FUN = new Function<FieldInfo, String>() {
         @Override
         public String apply(FieldInfo field) {
@@ -527,7 +530,8 @@ public class QuteProcessor {
                 if (expression.isLiteral()) {
                     continue;
                 }
-                Match match = validateNestedExpressions(templateAnalysis, null, new HashMap<>(), excludes, incorrectExpressions,
+                Match match = validateNestedExpressions(config, templateAnalysis, null, new HashMap<>(), excludes,
+                        incorrectExpressions,
                         expression, index, implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches,
                         checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData, regularExtensionMethods,
                         namespaceExtensionMethods);
@@ -587,7 +591,8 @@ public class QuteProcessor {
         return ignorePattern.toString();
     }
 
-    static Match validateNestedExpressions(TemplateAnalysis templateAnalysis, ClassInfo rootClazz, Map<String, Match> results,
+    static Match validateNestedExpressions(QuteConfig config, TemplateAnalysis templateAnalysis, ClassInfo rootClazz,
+            Map<String, Match> results,
             List<TypeCheckExcludeBuildItem> excludes, BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
             Expression expression, IndexView index,
             Map<DotName, Set<String>> implicitClassToMembersUsed, Function<String, String> templateIdToPathFun,
@@ -606,7 +611,7 @@ public class QuteProcessor {
                         continue;
                     }
                     if (!results.containsKey(param.toOriginalString())) {
-                        validateNestedExpressions(templateAnalysis, null, results, excludes,
+                        validateNestedExpressions(config, templateAnalysis, null, results, excludes,
                                 incorrectExpressions, param, index, implicitClassToMembersUsed, templateIdToPathFun,
                                 generatedIdsToMatches, checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData,
                                 regularExtensionMethods, namespaceExtensionMethods);
@@ -651,14 +656,39 @@ public class QuteProcessor {
         }
 
         if (checkedTemplate != null && checkedTemplate.requireTypeSafeExpressions && !expression.hasTypeInfo()) {
-            incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                    "Only type-safe expressions are allowed in the checked template defined via: "
-                            + checkedTemplate.method.declaringClass().name() + "."
-                            + checkedTemplate.method.name()
-                            + "(); an expression must be based on a checked template parameter "
-                            + checkedTemplate.bindings.keySet()
-                            + ", or bound via a param declaration, or the requirement must be relaxed via @CheckedTemplate(requireTypeSafeExpressions = false)",
-                    expression.getOrigin()));
+            if (!expression.hasNamespace() && expression.getParts().size() == 1
+                    && ITERATION_METADATA_KEYS.contains(expression.getParts().get(0).getName())) {
+                String prefixInfo;
+                if (config.iterationMetadataPrefix
+                        .equals(LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_ALIAS_UNDERSCORE)) {
+                    prefixInfo = String.format(
+                            "based on the iteration alias, i.e. the correct key should be something like {it_%1$s} or {element_%1$s}",
+                            expression.getParts().get(0).getName());
+                } else if (config.iterationMetadataPrefix
+                        .equals(LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_ALIAS_QM)) {
+                    prefixInfo = String.format(
+                            "based on the iteration alias, i.e. the correct key should be something like {it?%1$s} or {element?%1$s}",
+                            expression.getParts().get(0).getName());
+                } else {
+                    prefixInfo = ": " + config.iterationMetadataPrefix + ", i.e. the correct key should be: "
+                            + config.iterationMetadataPrefix + expression.getParts().get(0).getName();
+                }
+                incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                        "An invalid iteration metadata key is probably used\n\t- The configured iteration metadata prefix is "
+                                + prefixInfo
+                                + "\n\t- You can configure the prefix via the io.quarkus.qute.iteration-metadata-prefix configuration property",
+                        expression.getOrigin()));
+            } else {
+                incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                        "Only type-safe expressions are allowed in the checked template defined via: "
+                                + checkedTemplate.method.declaringClass().name() + "."
+                                + checkedTemplate.method.name()
+                                + "(); an expression must be based on a checked template parameter "
+                                + checkedTemplate.bindings.keySet()
+                                + ", or bound via a param declaration, or the requirement must be relaxed via @CheckedTemplate(requireTypeSafeExpressions = false)",
+                        expression.getOrigin()));
+
+            }
             return putResult(match, results, expression);
         }
 

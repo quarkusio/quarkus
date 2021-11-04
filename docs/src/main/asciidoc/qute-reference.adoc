@@ -557,25 +557,54 @@ The other form is using the `for` name and can specify the alias used to referen
 ----
 <1> `item` is the alias used for the iteration element.
 
-It's also possible to access the iteration metadata inside the loop:
+It's also possible to access the iteration metadata inside the loop via the following keys:
 
-* `{count}` - 1-based index
-* `{index}` - zero-based index
-* `{hasNext}` - `true` if the iteration has more elements
-* `{odd}` - `true` if the zero-based index is odd
-* `{even}` - `true` if the zero-based index is even
-* `{indexParity}` - outputs `odd` or `even` based on the zero-based index value
+* `count` - 1-based index
+* `index` - zero-based index
+* `hasNext` - `true` if the iteration has more elements
+* `isLast` - `true` if `hasNext == false`
+* `isFirst` - `true` if `count == 1`
+* `odd` - `true` if the zero-based index is odd
+* `even` - `true` if the zero-based index is even
+* `indexParity` - outputs `odd` or `even` based on the zero-based index value
 
-.Iteration Metadata Example
+However, the keys cannot be used directly.
+Instead, a prefix is used to avoid possible collisions with variables from the outer scope.
+By default, the alias of an iterated element suffixed with an underscore is used as a prefix.
+For example, the `hasNext` key must be prefixed with `it_` inside an `{#each}` section: `{it_hasNext}`.
+
+.`each` Iteration Metadata Example
 [source]
 ----
 {#each items}
-  {count}. {it.name} <1>
-  {#if hasNext}<br>{/if} <2>
+  {it_count}. {it.name} <1>
+  {#if it_hasNext}<br>{/if} <2>
 {/each}
 ----
-<1> `count` represents one-based index. 
+<1> `it_count` represents one-based index. 
 <2> `<br>` is only rendered if the iteration has more elements.
+
+And must be used in a form of `{item_hasNext}` inside a `{#for}` section with the `item` element alias.
+
+.`for` Iteration Metadata Example
+[source]
+----
+{#for item in items}
+  {item_count}. {item.name} <1>
+  {#if item_hasNext}<br>{/if} <2>
+{/each}
+----
+<1> `item_count` represents one-based index. 
+<2> `<br>` is only rendered if the iteration has more elements.
+
+[TIP]
+====
+The iteration metadata prefix is configurable either via `EngineBuilder.iterationMetadataPrefix()` for standalone Qute or via the `quarkus.qute.iteration-metadata-prefix` configuration property in a Quarkus application. Three special constants can be used: 
+
+1. `<alias_>` - the alias of an iterated element suffixed with an underscore is used (default)
+2. `<alias?>` - the alias of an iterated element suffixed with a question mark is used
+3. `<none>` - no prefix is used
+====
 
 The `for` statement also works with integers, starting from 1. In the example below, considering that `total = 3`:
 

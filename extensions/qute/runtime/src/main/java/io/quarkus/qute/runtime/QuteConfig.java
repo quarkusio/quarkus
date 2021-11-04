@@ -57,4 +57,21 @@ public class QuteConfig {
     @ConfigItem(defaultValue = "^\\..*|.*\\/\\..*$")
     public Pattern templatePathExclude;
 
+    /**
+     * The prefix is used to access the iteration metadata inside a loop section.
+     * <p>
+     * A valid prefix consists of alphanumeric characters and underscores.
+     * Three special constants can be used:
+     * <ul>
+     * <li>{@code <alias_>} - the alias of an iterated element suffixed with an underscore is used, e.g. {@code item_hasNext}
+     * and {@code it_count}</li>
+     * <li>{@code <alias?>} - the alias of an iterated element suffixed with a question mark is used, e.g. {@code item?hasNext}
+     * and {@code it?count}</li>
+     * <li>{@code <none>} - no prefix is used, e.g. {@code hasNext} and {@code count}</li>
+     * </ul>
+     * By default, the {@code <alias_>} constant is set.
+     */
+    @ConfigItem(defaultValue = "<alias_>")
+    public String iterationMetadataPrefix;
+
 }

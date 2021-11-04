@@ -27,7 +27,7 @@ public class SetSectionTest {
         assertEquals("1::4::Andy::false",
                 engine.parse(
                         "{#let foo=1 bar='qute' baz=name.or('Andy') alpha=name.ifTruthy('true').or('false')}"
-                                + "{#for i in foo}{count}{/for}::{bar.length}::{baz}::{alpha}"
+                                + "{#for i in foo}{i_count}{/for}::{bar.length}::{baz}::{alpha}"
                                 + "{/let}")
                         .render());
     }

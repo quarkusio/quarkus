@@ -160,7 +160,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public String getRequestNormalisedPath() {
-        return context.normalisedPath();
+        return context.normalizedPath();
     }
 
     @Override

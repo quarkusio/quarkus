@@ -1,7 +1,9 @@
 package io.quarkus.vertx.http.runtime.filters;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 
@@ -87,6 +89,22 @@ public class QuarkusRequestWrapper extends AbstractRequestWrapper {
             return new QuarkusCookie();
         }
         return super.getCookie(name);
+    }
+
+    @Override
+    public Cookie getCookie(String name, String domain, String path) {
+        if (name.equals(FAKE_COOKIE_NAME)) {
+            return new QuarkusCookie();
+        }
+        return super.getCookie(name, domain, path);
+    }
+
+    @Override
+    public Set<Cookie> cookies(String name) {
+        if (name.equals(FAKE_COOKIE_NAME)) {
+            return Collections.singleton(new QuarkusCookie());
+        }
+        return super.cookies(name);
     }
 
     class ResponseWrapper extends AbstractResponseWrapper {

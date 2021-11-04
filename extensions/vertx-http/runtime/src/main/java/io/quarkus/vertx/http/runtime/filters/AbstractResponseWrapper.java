@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.runtime.filters;
 
+import java.util.Set;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -444,7 +446,6 @@ class AbstractResponseWrapper implements HttpServerResponse {
     }
 
     @Override
-
     public Cookie removeCookie(String name) {
         return delegate.removeCookie(name);
     }
@@ -453,6 +454,26 @@ class AbstractResponseWrapper implements HttpServerResponse {
 
     public Cookie removeCookie(String name, boolean invalidate) {
         return delegate.removeCookie(name, invalidate);
+    }
+
+    @Override
+    public Set<Cookie> removeCookies(String name) {
+        return delegate.removeCookies(name);
+    }
+
+    @Override
+    public Set<Cookie> removeCookies(String name, boolean invalidate) {
+        return delegate.removeCookies(name, invalidate);
+    }
+
+    @Override
+    public Cookie removeCookie(String name, String domain, String path) {
+        return delegate.removeCookie(name, domain, path);
+    }
+
+    @Override
+    public Cookie removeCookie(String name, String domain, String path, boolean invalidate) {
+        return delegate.removeCookie(name, domain, path, invalidate);
     }
 
     @Override

@@ -51,9 +51,11 @@ public class UnusedExclusionTest {
                     @Override
                     public void execute(BuildContext context) {
                         BeanContainer beanContainer = context.consume(BeanContainerBuildItem.class).getValue();
-                        BytecodeRecorderImpl bytecodeRecorder = new BytecodeRecorderImpl(true,
-                                TestRecorder.class.getSimpleName(),
-                                "test", "" + TestRecorder.class.hashCode(), true, s -> null);
+                        BytecodeRecorderImpl bytecodeRecorder = new BytecodeRecorderImpl.Builder()
+                                .setPhase(BytecodeRecorderImpl.Phase.STATIC_INIT)
+                                .setBuildStepName(TestRecorder.class.getSimpleName()).setMethodName("test")
+                                .setUniqueHash("" + TestRecorder.class.hashCode()).setUseIdentityComparison(true)
+                                .setConfigCreatorFunction(s -> null).build();
                         // We need to use reflection due to some class loading problems
                         Object recorderProxy = bytecodeRecorder.getRecordingProxy(TestRecorder.class);
                         try {

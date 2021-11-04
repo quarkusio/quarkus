@@ -296,7 +296,9 @@ public class BytecodeRecorderTestCase {
     @Test
     public void testRecordingProxyToStringNotNull() {
         TestClassLoader tcl = new TestClassLoader(getClass().getClassLoader());
-        BytecodeRecorderImpl generator = new BytecodeRecorderImpl(tcl, false, TEST_CLASS);
+        BytecodeRecorderImpl generator = new BytecodeRecorderImpl.Builder().setClassLoader(tcl)
+                .setPhase(BytecodeRecorderImpl.Phase.RUNTIME_INIT)
+                .setClassName(TEST_CLASS).build();
         TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
         assertNotNull(recorder.toString());
         assertTrue(recorder.toString().contains("$$RecordingProxyProxy"));
@@ -359,7 +361,9 @@ public class BytecodeRecorderTestCase {
     void runTest(Consumer<BytecodeRecorderImpl> generator, Object... expected) throws Exception {
         TestRecorder.RESULT.clear();
         TestClassLoader tcl = new TestClassLoader(getClass().getClassLoader());
-        BytecodeRecorderImpl recorder = new BytecodeRecorderImpl(tcl, false, TEST_CLASS);
+        BytecodeRecorderImpl recorder = new BytecodeRecorderImpl.Builder().setClassLoader(tcl)
+                .setPhase(BytecodeRecorderImpl.Phase.RUNTIME_INIT)
+                .setClassName(TEST_CLASS).build();
         generator.accept(recorder);
         recorder.writeBytecode(new TestClassOutput(tcl));
 

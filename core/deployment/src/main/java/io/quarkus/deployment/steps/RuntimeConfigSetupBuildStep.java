@@ -15,10 +15,11 @@ import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
+import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.builditem.BootstrapConfigSetupCompleteBuildItem;
+import io.quarkus.deployment.builditem.BytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationSourceValueBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
@@ -49,7 +50,7 @@ public class RuntimeConfigSetupBuildStep {
     @Produce(RuntimeConfigSetupCompleteBuildItem.class)
     void setupRuntimeConfig(List<RunTimeConfigurationSourceValueBuildItem> runTimeConfigurationSourceValues,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
-            BuildProducer<MainBytecodeRecorderBuildItem> mainBytecodeRecorder) {
+            BuildProducer<BytecodeRecorderBuildItem> mainBytecodeRecorder) {
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
 
         try (ClassCreator clazz = ClassCreator.builder().classOutput(classOutput)
@@ -97,6 +98,7 @@ public class RuntimeConfigSetupBuildStep {
             }
         }
 
-        mainBytecodeRecorder.produce(new MainBytecodeRecorderBuildItem(RUNTIME_CONFIG_STARTUP_TASK_CLASS_NAME));
+        mainBytecodeRecorder
+                .produce(new BytecodeRecorderBuildItem(RUNTIME_CONFIG_STARTUP_TASK_CLASS_NAME, ExecutionTime.BOOTSTRAP_INIT));
     }
 }

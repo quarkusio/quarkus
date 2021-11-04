@@ -326,7 +326,7 @@ public class DevConsoleProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    @Record(ExecutionTime.STATIC_INIT)
+    @Record(ExecutionTime.RUNTIME_INIT)
     public void handler(BuildProducer<HistoryHandlerBuildItem> historyProducer,
             BuildProducer<WebSocketLogHandlerBuildItem> webSocketLogHandlerBuildItem,
             LogStreamRecorder recorder, DevUIConfig devUiConfig) {

@@ -79,6 +79,41 @@ public class LoggingSetupRecorder {
                 Collections.emptyList(), banner, LaunchMode.DEVELOPMENT);
     }
 
+    public void initializeLoggingBoostrap(LogConfig config, LogBuildTimeConfig buildConfig) {
+
+        final LogContext logContext = LogContext.getLogContext();
+        final Logger rootLogger = logContext.getLogger("");
+
+        if (config.level.intValue() < buildConfig.minLevel.intValue()) {
+            log.warnf("Root log level %s set below minimum logging level %s, promoting it to %s",
+                    config.level, buildConfig.minLevel, buildConfig.minLevel);
+
+            rootLogger.setLevel(buildConfig.minLevel);
+        } else {
+            rootLogger.setLevel(config.level);
+        }
+
+        final Map<String, CleanupFilterConfig> filters = config.filters;
+        List<LogCleanupFilterElement> filterElements;
+        if (filters.isEmpty()) {
+            filterElements = Collections.emptyList();
+        } else {
+            filterElements = new ArrayList<>(filters.size());
+            filters.forEach(new BiConsumer<String, CleanupFilterConfig>() {
+                @Override
+                public void accept(String loggerName, CleanupFilterConfig config) {
+                    filterElements.add(
+                            new LogCleanupFilterElement(loggerName, config.targetLevel, config.ifStartsWith));
+                }
+            });
+        }
+        LogCleanupFilter cleanupFiler = new LogCleanupFilter(filterElements);
+        for (Handler handler : LogManager.getLogManager().getLogger("").getHandlers()) {
+            handler.setFilter(cleanupFiler);
+        }
+
+    }
+
     public void initializeLogging(LogConfig config, LogBuildTimeConfig buildConfig,
             final boolean enableWebStream,
             final RuntimeValue<Optional<Handler>> devUiConsoleHandler,

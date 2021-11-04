@@ -30,7 +30,7 @@ public class ConsulConfigProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
+    @Record(ExecutionTime.BOOTSTRAP_INIT)
     public RunTimeConfigurationSourceValueBuildItem configure(ConsulConfigRecorder recorder) {
         return new RunTimeConfigurationSourceValueBuildItem(
                 recorder.configSources());

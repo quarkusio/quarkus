@@ -68,12 +68,11 @@ import io.quarkus.deployment.annotations.ProduceWeak;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.annotations.Weak;
 import io.quarkus.deployment.builditem.BootstrapConfigSetupCompleteBuildItem;
+import io.quarkus.deployment.builditem.BytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
-import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationProxyBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
-import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.DefaultValuesConfigurationSource;
 import io.quarkus.deployment.configuration.definition.RootDefinition;
@@ -524,13 +523,11 @@ public final class ExtensionLoader {
 
             if (isRecorder) {
                 assert recordAnnotation != null;
-                final ExecutionTime executionTime = recordAnnotation.value();
                 final boolean optional = recordAnnotation.optional();
                 methodStepConfig = methodStepConfig.andThen(bsb -> {
                     bsb
                             .produces(
-                                    executionTime == ExecutionTime.STATIC_INIT ? StaticBytecodeRecorderBuildItem.class
-                                            : MainBytecodeRecorderBuildItem.class,
+                                    BytecodeRecorderBuildItem.class,
                                     optional ? ProduceFlags.of(ProduceFlag.WEAK) : ProduceFlags.NONE);
                 });
             }
@@ -850,10 +847,11 @@ public final class ExtensionLoader {
                                 finalStepInstanceSetup.accept(bc, instance);
                                 Object[] methodArgs = new Object[methodParamFns.size()];
                                 BytecodeRecorderImpl bri = isRecorder
-                                        ? new BytecodeRecorderImpl(recordAnnotation.value() == ExecutionTime.STATIC_INIT,
-                                                clazz.getSimpleName(), method.getName(),
-                                                Integer.toString(method.toString().hashCode()), identityComparison,
-                                                s -> {
+                                        ? new BytecodeRecorderImpl.Builder()
+                                                .setPhase(BytecodeRecorderImpl.Phase.of(recordAnnotation.value()))
+                                                .setBuildStepName(clazz.getSimpleName()).setMethodName(method.getName())
+                                                .setUniqueHash(Integer.toString(method.toString().hashCode()))
+                                                .setUseIdentityComparison(identityComparison).setConfigCreatorFunction(s -> {
                                                     if (s instanceof Class) {
                                                         var cfg = ((Class<?>) s).getAnnotation(ConfigRoot.class);
                                                         if (cfg == null
@@ -877,7 +875,7 @@ public final class ExtensionLoader {
                                                         }
                                                     }
                                                     throw new RuntimeException("Cannot inject type " + s);
-                                                })
+                                                }).build()
                                         : null;
                                 for (int i = 0; i < methodArgs.length; i++) {
                                     methodArgs[i] = methodParamFns.get(i).apply(bc, bri);
@@ -899,12 +897,7 @@ public final class ExtensionLoader {
                                 resultConsumer.accept(bc, result);
                                 if (isRecorder) {
                                     // commit recorded data
-                                    if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
-                                        bc.produce(new StaticBytecodeRecorderBuildItem(bri));
-                                    } else {
-                                        bc.produce(new MainBytecodeRecorderBuildItem(bri));
-                                    }
-
+                                    bc.produce(new BytecodeRecorderBuildItem(bri, recordAnnotation.value()));
                                 }
                             }
 

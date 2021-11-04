@@ -27,8 +27,8 @@ public final class RawCommandLineArgumentsBuildItem extends SimpleBuildItem
     }
 
     @Override
-    public boolean __static$$init() {
-        return true;
+    public BytecodeRecorderImpl.Phase __quarkus$$phase() {
+        return BytecodeRecorderImpl.Phase.ALL;
     }
 
     @Override

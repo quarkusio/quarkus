@@ -34,7 +34,7 @@ public class SpringCloudConfigProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
+    @Record(ExecutionTime.BOOTSTRAP_INIT)
     public RunTimeConfigurationSourceValueBuildItem configure(SpringCloudConfigClientRecorder recorder,
             SpringCloudConfigClientConfig springCloudConfigClientConfig,
             ApplicationConfig applicationConfig,

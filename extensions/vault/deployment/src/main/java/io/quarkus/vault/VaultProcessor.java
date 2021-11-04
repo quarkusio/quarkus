@@ -106,7 +106,7 @@ public class VaultProcessor {
                 .build();
     }
 
-    @Record(ExecutionTime.RUNTIME_INIT)
+    @Record(ExecutionTime.BOOTSTRAP_INIT)
     @BuildStep
     RunTimeConfigurationSourceValueBuildItem init(VaultRecorder recorder, VaultBootstrapConfig vaultBootstrapConfig) {
         return new RunTimeConfigurationSourceValueBuildItem(recorder.configure(vaultBootstrapConfig));

@@ -6,10 +6,11 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.builditem.BootstrapConfigSetupCompleteBuildItem;
+import io.quarkus.deployment.builditem.BytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
@@ -27,7 +28,7 @@ public class BootstrapConfigSetupBuildStep {
     @BuildStep
     @Produce(BootstrapConfigSetupCompleteBuildItem.class)
     void setupBootstrapConfig(BuildProducer<GeneratedClassBuildItem> generatedClass,
-            BuildProducer<MainBytecodeRecorderBuildItem> mainBytecodeRecorder) {
+            BuildProducer<BytecodeRecorderBuildItem> mainBytecodeRecorder) {
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
 
         try (ClassCreator clazz = ClassCreator.builder().classOutput(classOutput)
@@ -43,6 +44,7 @@ public class BootstrapConfigSetupBuildStep {
             }
         }
 
-        mainBytecodeRecorder.produce(new MainBytecodeRecorderBuildItem(BOOTSTRAP_CONFIG_STARTUP_TASK_CLASS_NAME));
+        mainBytecodeRecorder
+                .produce(new BytecodeRecorderBuildItem(BOOTSTRAP_CONFIG_STARTUP_TASK_CLASS_NAME, ExecutionTime.BOOTSTRAP_INIT));
     }
 }

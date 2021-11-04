@@ -22,7 +22,7 @@ import io.quarkus.runtime.TlsConfig;
 public class KubernetesConfigProcessor {
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
+    @Record(ExecutionTime.BOOTSTRAP_INIT)
     public RunTimeConfigurationSourceValueBuildItem configure(KubernetesConfigRecorder recorder,
             KubernetesConfigSourceConfig config, KubernetesConfigBuildTimeConfig buildTimeConfig,
             KubernetesClientBuildConfig clientConfig,

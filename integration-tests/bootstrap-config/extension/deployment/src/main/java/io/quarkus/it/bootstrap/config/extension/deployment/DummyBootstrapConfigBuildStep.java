@@ -13,14 +13,14 @@ import io.quarkus.runtime.ApplicationConfig;
 public class DummyBootstrapConfigBuildStep {
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
+    @Record(ExecutionTime.BOOTSTRAP_INIT)
     public RunTimeConfigurationSourceValueBuildItem dummyRecorder(DummyBootstrapRecorder recorder, DummyConfig dummyConfig,
             ApplicationConfig applicationConfig) {
         return new RunTimeConfigurationSourceValueBuildItem(recorder.create(dummyConfig, applicationConfig));
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
+    @Record(ExecutionTime.BOOTSTRAP_INIT)
     public void dummyRecorder2(DummyBootstrapRecorder2 recorder,
             BuildProducer<RunTimeConfigurationSourceValueBuildItem> producer) {
         producer.produce(new RunTimeConfigurationSourceValueBuildItem(recorder.create()));

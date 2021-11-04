@@ -11,5 +11,18 @@ public enum ExecutionTime {
     /**
      * The bytecode is run from a main method
      */
-    RUNTIME_INIT
+    RUNTIME_INIT,
+    /**
+     * This is the first code that is executed when the application is started. For JVM based applications
+     * this is run before static init, while for native applications it is run before RUNTIME_INIT.
+     *
+     * Because it may be used after static init for results from a BOOTSTRAP_INIT recorder cannot be used in STATIC_INIT,
+     * and visa versa.
+     *
+     * This is an advanced option, it should only need to be used to setup things like logging that should happen as early
+     * as possible in the startup process.
+     *
+     */
+    BOOTSTRAP_INIT,
+
 }

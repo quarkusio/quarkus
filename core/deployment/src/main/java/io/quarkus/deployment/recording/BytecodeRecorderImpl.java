@@ -1,5 +1,9 @@
 package io.quarkus.deployment.recording;
 
+import static io.quarkus.deployment.recording.BytecodeRecorderImpl.Phase.ALL;
+import static io.quarkus.deployment.recording.BytecodeRecorderImpl.Phase.BOOTSTRAP_INIT;
+import static io.quarkus.deployment.recording.BytecodeRecorderImpl.Phase.RUNTIME_INIT;
+import static io.quarkus.deployment.recording.BytecodeRecorderImpl.Phase.STATIC_INIT;
 import static io.quarkus.gizmo.MethodDescriptor.ofConstructor;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
@@ -49,6 +53,7 @@ import org.jboss.jandex.Type;
 import org.wildfly.common.Assert;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.proxy.ProxyConfiguration;
 import io.quarkus.deployment.proxy.ProxyFactory;
 import io.quarkus.deployment.recording.AnnotationProxyProvider.AnnotationProxy;
@@ -107,7 +112,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private static final MethodDescriptor COLLECTION_ADD = ofMethod(Collection.class, "add", boolean.class, Object.class);
     private static final MethodDescriptor MAP_PUT = ofMethod(Map.class, "put", Object.class, Object.class, Object.class);
 
-    private final boolean staticInit;
+    private final Phase phase;
     private final ClassLoader classLoader;
 
     private static final Map<Class<?>, ProxyFactory<?>> recordingProxyFactories = new ConcurrentHashMap<>();
@@ -142,11 +147,13 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private int deferredParameterCount = 0;
     private boolean loadComplete;
 
+    @Deprecated
     public BytecodeRecorderImpl(boolean staticInit, String buildStepName, String methodName, String uniqueHash,
             boolean useIdentityComparison) {
         this(staticInit, buildStepName, methodName, uniqueHash, useIdentityComparison, (s) -> null);
     }
 
+    @Deprecated
     public BytecodeRecorderImpl(boolean staticInit, String buildStepName, String methodName, String uniqueHash,
             boolean useIdentityComparison, Function<java.lang.reflect.Type, Object> configCreatorFunction) {
         this(
@@ -162,6 +169,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
     }
 
     // visible for testing
+    @Deprecated
     BytecodeRecorderImpl(ClassLoader classLoader, boolean staticInit, String className) {
         this(classLoader, staticInit, className,
                 classOutput -> {
@@ -181,17 +189,40 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 });
     }
 
+    @Deprecated
     private BytecodeRecorderImpl(ClassLoader classLoader, boolean staticInit, String className,
             Function<ClassOutput, ClassCreator> classCreatorFunction,
             Function<ClassCreator, MethodCreator> methodCreatorFunction, boolean useIdentityComparison,
             Function<java.lang.reflect.Type, Object> configCreatorFunction) {
         this.classLoader = classLoader;
-        this.staticInit = staticInit;
+        this.phase = staticInit ? STATIC_INIT : RUNTIME_INIT;
         this.className = className;
         this.classCreatorFunction = classCreatorFunction;
         this.methodCreatorFunction = methodCreatorFunction;
         this.useIdentityComparison = useIdentityComparison;
         this.configCreatorFunction = configCreatorFunction;
+    }
+
+    public BytecodeRecorderImpl(Builder builder) {
+        this.phase = builder.phase;
+        this.classLoader = builder.classLoader;
+        this.className = builder.className == null ? toClassName(builder.buildStepName, builder.methodName, builder.uniqueHash)
+                : builder.className;
+        this.useIdentityComparison = builder.useIdentityComparison;
+        this.classCreatorFunction = builder.classCreatorFunction != null ? builder.classCreatorFunction
+                : classOutput -> startupTaskClassCreator(classOutput, className);
+        this.configCreatorFunction = builder.configCreatorFunction != null ? builder.configCreatorFunction : s -> {
+            try {
+                if (s instanceof Class) {
+                    return ((Class<?>) s).newInstance();
+                }
+                throw new RuntimeException("Not implemented for testing");
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        };
+        this.methodCreatorFunction = builder.methodCreatorFunction != null ? builder.methodCreatorFunction
+                : classCreator -> startupMethodCreator(null, null, classCreator);
     }
 
     private static MethodCreator startupMethodCreator(String buildStepName, String methodName, ClassCreator classCreator) {
@@ -311,14 +342,17 @@ public class BytecodeRecorderImpl implements RecorderContext {
         InvocationHandler invocationHandler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                if (staticInit) {
+                if (phase != RUNTIME_INIT) {
                     for (int i = 0; i < args.length; ++i) {
                         if (args[i] instanceof ReturnedProxy) {
                             ReturnedProxy p = (ReturnedProxy) args[i];
-                            if (!p.__static$$init()) {
+                            Phase proxyPhase = p.__quarkus$$phase();
+                            if (!proxyPhase.canBeUsedIn(phase)) {
                                 throw new RuntimeException("Invalid proxy passed to recorder. Parameter " + i + " of type "
                                         + method.getParameterTypes()[i]
-                                        + " was created in a runtime recorder method, while this recorder is for a static init method. The object will not have been created at the time this method is run.");
+                                        + " was created in a " + proxyPhase + " recorder method, while this recorder is for a "
+                                        + phase
+                                        + " method. The object will not have been created at the time this method is run.");
                             }
                         }
                     }
@@ -410,8 +444,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 if (method.getName().equals("__returned$proxy$key")) {
                     return key;
                 }
-                if (method.getName().equals("__static$$init")) {
-                    return staticInit;
+                if (method.getName().equals("__quarkus$$phase")) {
+                    return phase;
                 }
                 if (method.getName().equals("toString")
                         && method.getParameterTypes().length == 0
@@ -736,9 +770,11 @@ public class BytecodeRecorderImpl implements RecorderContext {
         } else if (param instanceof ReturnedProxy) {
             //if this is a proxy we just grab the value from the StartupContext
             ReturnedProxy rp = (ReturnedProxy) param;
-            if (!rp.__static$$init() && staticInit) {
+            Phase proxyPhase = rp.__quarkus$$phase();
+            if (!proxyPhase.canBeUsedIn(phase)) {
                 throw new RuntimeException("Invalid proxy passed to recorder. " + rp
-                        + " was created in a runtime recorder method, while this recorder is for a static init method. The object will not have been created at the time this method is run.");
+                        + " was created in a " + proxyPhase + " method, while this recorder is for a " + phase
+                        + " method. The object will not have been created at the time this method is run. Recroder method");
             }
             String proxyId = rp.__returned$proxy$key();
             //because this is the result of a method invocation that may not have happened at param deserialization time
@@ -1523,11 +1559,11 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
     private DeferredParameter findLoaded(final Object param) {
         for (ObjectLoader loader : loaders) {
-            if (loader.canHandleObject(param, staticInit)) {
+            if (loader.canHandleObject(param, phase == STATIC_INIT)) {
                 return new DeferredArrayStoreParameter(param, param.getClass()) {
                     @Override
                     ResultHandle createValue(MethodContext context, MethodCreator method, ResultHandle array) {
-                        return loader.load(method, param, staticInit);
+                        return loader.load(method, param, phase == STATIC_INIT);
                     }
                 };
             }
@@ -1542,7 +1578,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
     public interface ReturnedProxy {
         String __returned$proxy$key();
 
-        boolean __static$$init();
+        Phase __quarkus$$phase();
     }
 
     static final class StoredMethodCall implements BytecodeInstruction {
@@ -1609,7 +1645,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     for (java.lang.reflect.Type param : injectCtor.getGenericParameterTypes()) {
                         var obj = configCreatorFunction.apply(param);
                         if (obj instanceof RuntimeValue) {
-                            if (!staticInit) {
+                            if (phase == RUNTIME_INIT || phase == BOOTSTRAP_INIT) {
                                 var result = findLoaded(((RuntimeValue<?>) obj).getValue());
                                 if (result == null) {
                                     throw new RuntimeException("Cannot inject object of type " + param);
@@ -2066,4 +2102,121 @@ public class BytecodeRecorderImpl implements RecorderContext {
         ResultHandle loadDeferred(DeferredParameter parameter);
     }
 
+    public enum Phase {
+        ALL(null) { //psudo pahse that means the item is available everywhere
+            @Override
+            public boolean canBeUsedIn(Phase other) {
+                return true;
+            }
+        },
+        STATIC_INIT(ExecutionTime.STATIC_INIT) {
+            @Override
+            public boolean canBeUsedIn(Phase other) {
+                return other != BOOTSTRAP_INIT;
+            }
+        },
+        BOOTSTRAP_INIT(ExecutionTime.BOOTSTRAP_INIT) {
+            @Override
+            public boolean canBeUsedIn(Phase other) {
+                return other != STATIC_INIT;
+            }
+        },
+        RUNTIME_INIT(ExecutionTime.RUNTIME_INIT);
+
+        final ExecutionTime executionTime;
+
+        Phase(ExecutionTime executionTime) {
+            this.executionTime = executionTime;
+        }
+
+        public static Phase of(ExecutionTime value) {
+            switch (value) {
+                case RUNTIME_INIT:
+                    return RUNTIME_INIT;
+                case STATIC_INIT:
+                    return STATIC_INIT;
+                case BOOTSTRAP_INIT:
+                    return BOOTSTRAP_INIT;
+            }
+            throw new RuntimeException("unreachable");
+        }
+
+        public boolean canBeUsedIn(Phase other) {
+            return this == other;
+        }
+
+        public ExecutionTime getExecutionTime() {
+            return executionTime;
+        }
+    }
+
+    public static class Builder {
+        private String buildStepName;
+        private String methodName;
+        private String uniqueHash;
+        private boolean useIdentityComparison = true;
+        private Function<java.lang.reflect.Type, Object> configCreatorFunction;
+        private ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        private String className;
+        private Function<ClassOutput, ClassCreator> classCreatorFunction;
+        private Function<ClassCreator, MethodCreator> methodCreatorFunction;
+        private BytecodeRecorderImpl.Phase phase;
+
+        public Builder setMethodName(String methodName) {
+            this.methodName = methodName;
+            return this;
+        }
+
+        public Builder setUniqueHash(String uniqueHash) {
+            this.uniqueHash = uniqueHash;
+            return this;
+        }
+
+        public Builder setUseIdentityComparison(boolean useIdentityComparison) {
+            this.useIdentityComparison = useIdentityComparison;
+            return this;
+        }
+
+        public Builder setConfigCreatorFunction(Function<java.lang.reflect.Type, Object> configCreatorFunction) {
+            this.configCreatorFunction = configCreatorFunction;
+            return this;
+        }
+
+        public Builder setClassLoader(ClassLoader classLoader) {
+            this.classLoader = classLoader;
+            return this;
+        }
+
+        public Builder setBuildStepName(String buildStepName) {
+            this.buildStepName = buildStepName;
+            return this;
+        }
+
+        public Builder setClassName(String className) {
+            this.className = className;
+            return this;
+        }
+
+        public Builder setClassCreatorFunction(Function<ClassOutput, ClassCreator> classCreatorFunction) {
+            this.classCreatorFunction = classCreatorFunction;
+            return this;
+        }
+
+        public Builder setMethodCreatorFunction(Function<ClassCreator, MethodCreator> methodCreatorFunction) {
+            this.methodCreatorFunction = methodCreatorFunction;
+            return this;
+        }
+
+        public Builder setPhase(BytecodeRecorderImpl.Phase phase) {
+            if (phase == ALL) {
+                throw new RuntimeException("Invalid phase");
+            }
+            this.phase = phase;
+            return this;
+        }
+
+        public BytecodeRecorderImpl build() {
+            return new BytecodeRecorderImpl(this);
+        }
+    }
 }

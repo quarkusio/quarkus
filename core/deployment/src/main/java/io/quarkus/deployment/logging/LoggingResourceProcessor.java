@@ -143,6 +143,12 @@ public final class LoggingResourceProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.BOOTSTRAP_INIT)
+    void setupLoggingRuntimeInit(LoggingSetupRecorder recorder, LogConfig log, LogBuildTimeConfig buildLog) {
+        recorder.initializeLoggingBoostrap(log, buildLog);
+    }
+
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     LoggingSetupBuildItem setupLoggingRuntimeInit(LoggingSetupRecorder recorder, LogConfig log, LogBuildTimeConfig buildLog,
             Optional<WebSocketLogHandlerBuildItem> logStreamHandlerBuildItem,

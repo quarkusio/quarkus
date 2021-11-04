@@ -11,7 +11,7 @@ public class AutoTagTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(OpenApiResourceWithNoTag.class));
+                    .addClasses(OpenApiResourceWithNoTag.class, AutoTagResource.class, AbstractAutoTagResource.class));
 
     @Test
     public void testAutoSecurityRequirement() {
@@ -26,6 +26,15 @@ public class AutoTagTestCase {
                 .and()
                 .body("paths.'/resource/auto'.post.tags", Matchers.hasItem("Open Api Resource With No Tag"));
 
+    }
+
+    @Test
+    public void testTagInOpenApi() {
+        RestAssured.given().header("Accept", "application/json")
+                .when().get("/q/openapi")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("Auto Tag Resource"));
     }
 
 }

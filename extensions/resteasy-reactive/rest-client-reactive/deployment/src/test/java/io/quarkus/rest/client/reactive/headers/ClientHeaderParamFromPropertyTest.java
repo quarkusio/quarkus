@@ -12,9 +12,7 @@ import javax.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -29,7 +27,7 @@ public class ClientHeaderParamFromPropertyTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(Client.class)
+            .withApplicationRoot((jar) -> jar.addClasses(Client.class)
                     .addAsResource(
                             new StringAsset("my.property-value=" + HEADER_VALUE),
                             "application.properties"));

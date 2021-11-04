@@ -2,8 +2,6 @@ package io.quarkus.spring.scheduled.deployment;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -16,7 +14,7 @@ public class UnsupportedFixedDelayParamTest {
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .setExpectedException(IllegalArgumentException.class)
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(UnsupportedFixedDelayParamTest.InvalidBean.class));
 
     @Test

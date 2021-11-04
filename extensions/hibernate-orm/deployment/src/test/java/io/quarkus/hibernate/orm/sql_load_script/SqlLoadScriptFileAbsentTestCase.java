@@ -1,7 +1,5 @@
 package io.quarkus.hibernate.orm.sql_load_script;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -14,7 +12,7 @@ public class SqlLoadScriptFileAbsentTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setExpectedException(ConfigurationError.class)
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class)
                     .addAsResource("application-other-load-script-test.properties", "application.properties"));
 

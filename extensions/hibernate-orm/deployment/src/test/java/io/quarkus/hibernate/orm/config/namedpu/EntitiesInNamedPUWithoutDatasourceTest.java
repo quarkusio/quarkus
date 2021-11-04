@@ -2,8 +2,6 @@ package io.quarkus.hibernate.orm.config.namedpu;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -22,7 +20,7 @@ public class EntitiesInNamedPUWithoutDatasourceTest {
             })
             .withConfigurationResource("application-named-pu-no-datasource.properties")
             .overrideConfigKey("quarkus.datasource.devservices", "false")
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addPackage(MyEntity.class.getPackage().getName()));
 
     @Test

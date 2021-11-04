@@ -2,9 +2,7 @@ package io.quarkus.hibernate.orm.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -27,7 +25,7 @@ public class NoHibernatePropertiesTest {
                         .hasMessageContainingAll(
                                 "The Hibernate ORM configuration in Quarkus does not support sourcing configuration properties from resources named `hibernate.properties`");
             })
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class)
                     .addAsResource(new StringAsset(""), "hibernate.properties"))
             .withConfigurationResource("application.properties")

@@ -3,9 +3,7 @@ package io.quarkus.micrometer.deployment;
 import javax.enterprise.inject.spi.DeploymentException;
 import javax.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -20,7 +18,7 @@ public class MicrometerDisabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset("quarkus.micrometer.enabled=false"), "application.properties"))
             .assertException(t -> {
                 Assertions.assertEquals(DeploymentException.class, t.getClass());

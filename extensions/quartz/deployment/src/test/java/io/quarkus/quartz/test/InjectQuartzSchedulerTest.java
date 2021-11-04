@@ -7,9 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.event.Observes;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.quartz.Job;
@@ -30,7 +28,7 @@ public class InjectQuartzSchedulerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Starter.class)
                     .addAsResource(new StringAsset("quarkus.quartz.start-mode=forced"),
                             "application.properties"));

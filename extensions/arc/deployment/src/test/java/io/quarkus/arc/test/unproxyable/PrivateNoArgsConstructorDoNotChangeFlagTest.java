@@ -3,9 +3,7 @@ package io.quarkus.arc.test.unproxyable;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.spi.DeploymentException;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -17,7 +15,7 @@ public class PrivateNoArgsConstructorDoNotChangeFlagTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(PrivateNoArgsConstructorDoNotChangeFlagTest.class, MyBean.class)
                     .addAsResource(new StringAsset("quarkus.arc.transform-unproxyable-classes=false"),
                             "application.properties"))

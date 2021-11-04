@@ -1,8 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.path;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -16,7 +14,7 @@ public class RestPathTestCase {
             .withConfigurationResource("empty.properties")
             .overrideConfigKey("quarkus.resteasy-reactive.path", "/foo")
             .overrideConfigKey("quarkus.http.root-path", "/app")
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(HelloResource.class));
 
     @Test

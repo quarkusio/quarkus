@@ -5,8 +5,6 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -20,7 +18,7 @@ public class MultiRouteTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(SimpleBean.class));
+            .withApplicationRoot((jar) -> jar.addClasses(SimpleBean.class));
 
     @Test
     public void testMultiRoute() {

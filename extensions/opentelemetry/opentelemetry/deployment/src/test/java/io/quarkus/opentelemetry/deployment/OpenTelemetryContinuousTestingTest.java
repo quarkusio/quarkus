@@ -14,7 +14,7 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class OpenTelemetryContinuousTestingTest {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(TestSpanExporter.class)
                     .addClass(TracerRouter.class)
                     .add(new StringAsset(ContinuousTestingTestUtils.appProperties("")), "application.properties"))

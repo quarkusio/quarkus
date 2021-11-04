@@ -1,10 +1,8 @@
 package io.quarkus.smallrye.health.test;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -17,7 +15,7 @@ public class HealthOpenAPITest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(BasicHealthCheck.class, OpenApiRoute.class)
                     .addAsResource(new StringAsset("quarkus.health.openapi.included=true\n"
                             + "quarkus.smallrye-openapi.store-schema-directory=target"), "application.properties")

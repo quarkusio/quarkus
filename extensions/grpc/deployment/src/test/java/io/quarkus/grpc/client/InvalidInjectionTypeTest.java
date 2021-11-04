@@ -5,8 +5,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.spi.DeploymentException;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -23,7 +21,7 @@ public class InvalidInjectionTypeTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(GreeterGrpc.class, GreeterGrpc.GreeterStub.class,
                             MutinyGreeterGrpc.MutinyGreeterStub.class, MutinyGreeterGrpc.class,
                             HelloRequest.class, HelloReply.class,

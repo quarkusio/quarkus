@@ -5,8 +5,6 @@ import static org.hamcrest.CoreMatchers.is;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -21,7 +19,7 @@ public class TikaProcessorDevModeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
                     .addAsResource("tika-config.xml")
                     .addAsResource("application-dev-mode.properties", "application.properties"));

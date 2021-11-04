@@ -8,8 +8,6 @@ import java.util.Date;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,7 +20,7 @@ public class JacksonErroneousTimeZonePropertiesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(Pojo.class, SomeBean.class))
+            .withApplicationRoot((jar) -> jar.addClasses(Pojo.class, SomeBean.class))
             .withConfigurationResource("application-erroneous-timezone-properties.properties")
             .setExpectedException(ZoneRulesException.class);
 

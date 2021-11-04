@@ -1,7 +1,5 @@
 package io.quarkus.it.spring.web.openapi;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -13,7 +11,7 @@ public class OpenApiPathWithoutSegmentsPMT {
 
     @RegisterExtension
     static QuarkusProdModeTest runner = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiController.class)
                     .addAsResource("test-roles.properties")
                     .addAsResource("test-users.properties"))

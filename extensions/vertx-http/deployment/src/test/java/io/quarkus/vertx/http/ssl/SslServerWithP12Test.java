@@ -9,8 +9,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 
 import org.assertj.core.api.Assertions;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -28,7 +26,7 @@ public class SslServerWithP12Test {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class)
                     .addAsResource(new File("src/test/resources/conf/ssl-pkcs12.conf"), "application.properties")
                     .addAsResource(new File("src/test/resources/conf/server-keystore.p12"), "server-keystore.pkcs12"));

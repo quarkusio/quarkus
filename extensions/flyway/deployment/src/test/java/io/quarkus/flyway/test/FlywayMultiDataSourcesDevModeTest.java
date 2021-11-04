@@ -2,8 +2,6 @@ package io.quarkus.flyway.test;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -15,7 +13,7 @@ public class FlywayMultiDataSourcesDevModeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MultiDataSourcesDevModeEndpoint.class, FlywayExtensionCallback.class)
                     .addAsResource("config-for-multiple-datasources.properties", "application.properties"));
 

@@ -2,8 +2,6 @@ package io.quarkus.vertx.web.cors;
 
 import static io.restassured.RestAssured.given;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -15,7 +13,7 @@ public class CORSFullConfigHandlerTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(TestRoute.class)
                     .addAsResource("conf/cors-config-full.properties", "application.properties"));
 

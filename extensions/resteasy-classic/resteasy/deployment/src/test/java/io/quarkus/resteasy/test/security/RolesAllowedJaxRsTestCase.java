@@ -2,8 +2,6 @@ package io.quarkus.resteasy.test.security;
 
 import static org.hamcrest.Matchers.*;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -16,7 +14,7 @@ import io.restassured.RestAssured;
 public class RolesAllowedJaxRsTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(RolesAllowedResource.class, UserResource.class,
                             TestIdentityProvider.class,
                             TestIdentityController.class,

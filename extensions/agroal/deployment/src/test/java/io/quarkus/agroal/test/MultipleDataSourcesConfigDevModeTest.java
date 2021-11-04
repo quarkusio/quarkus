@@ -6,8 +6,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,7 +16,7 @@ public class MultipleDataSourcesConfigDevModeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MultipleDataSourcesTestUtil.class, DevModeTestEndpoint.class)
                     .addAsResource("application-multiple-datasources.properties", "application.properties"));
 

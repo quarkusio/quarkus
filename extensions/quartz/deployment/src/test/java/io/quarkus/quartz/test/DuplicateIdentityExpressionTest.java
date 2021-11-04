@@ -1,8 +1,6 @@
 package io.quarkus.quartz.test;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,7 +12,7 @@ public class DuplicateIdentityExpressionTest {
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .setExpectedException(IllegalStateException.class)
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(DuplicateIdentityExpressionTest.InvalidBean.class)
                     .addAsResource(new StringAsset("my.identity=my_name"),
                             "application.properties"));

@@ -3,8 +3,6 @@ package io.quarkus.jwt.build;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.junit.jupiter.api.Test;
@@ -18,7 +16,7 @@ public class JwtBuildUnitTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource("publicKey.pem")
                     .addAsResource("privateKey.pem")
                     .addAsResource("application.properties"));

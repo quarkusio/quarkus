@@ -7,8 +7,6 @@ import java.time.ZoneId;
 
 import org.jboss.logmanager.formatters.JsonFormatter;
 import org.jboss.logmanager.formatters.StructuredFormatter;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,7 +16,7 @@ public class JsonFormatterCustomConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(JsonFormatterDefaultConfigTest.class))
+            .withApplicationRoot((jar) -> jar.addClasses(JsonFormatterDefaultConfigTest.class))
             .withConfigurationResource("application-json-formatter-custom.properties");
 
     @Test

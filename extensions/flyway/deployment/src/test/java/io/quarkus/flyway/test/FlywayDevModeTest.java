@@ -2,8 +2,6 @@ package io.quarkus.flyway.test;
 
 import java.util.function.Function;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -20,7 +18,7 @@ public class FlywayDevModeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(DevModeTestEndpoint.class)
                     .addAsResource("db/migration/V1.0.0__Quarkus.sql")
                     .addAsResource("config-empty.properties", "application.properties"));

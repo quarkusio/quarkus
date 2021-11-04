@@ -2,9 +2,7 @@ package io.quarkus.smallrye.openapi.test.hotreload;
 
 import static org.hamcrest.Matchers.containsString;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,7 +16,7 @@ public class DisplayOpenAPiEndpointInNotFoundExceptionPageTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyResource.class)
                     .addAsResource(new StringAsset(
                             "quarkus.smallrye-openapi.path=" + OPEN_API_PATH + "\nquarkus.swagger-ui.path=" + SWAGGER_UI_PATH),

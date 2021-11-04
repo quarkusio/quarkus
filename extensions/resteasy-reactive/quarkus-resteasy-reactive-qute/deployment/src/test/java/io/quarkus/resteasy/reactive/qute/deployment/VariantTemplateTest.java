@@ -3,9 +3,7 @@ package io.quarkus.resteasy.reactive.qute.deployment;
 import static io.restassured.RestAssured.given;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -16,7 +14,7 @@ public class VariantTemplateTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(ItemResource.class, Item.class)
                     .addAsResource(new StringAsset("Item {name}: {price}"), "templates/item.txt")
                     .addAsResource(new StringAsset("<html><body>Item {name}: {price}</body></html>"),

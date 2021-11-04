@@ -9,8 +9,6 @@ import java.util.logging.Level;
 
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.PeriodicSizeRotatingFileHandler;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -21,7 +19,7 @@ public class PeriodicSizeRotatingLoggingTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-periodic-size-file-log-rotating.properties")
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(LoggingTestsHelper.class)
                     .addAsManifestResource("application.properties", "microprofile-config.properties"))
             .setLogFileName("PeriodicSizeRotatingLoggingTest.log");

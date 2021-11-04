@@ -583,7 +583,7 @@ public class GreetingExtensionTest {
 
   @RegisterExtension
   static final QuarkusUnitTest config = new QuarkusUnitTest()
-    .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)); // <1>
+    .withEmptyApplication(); // <1>
 
   @Test
   public void testGreeting() {

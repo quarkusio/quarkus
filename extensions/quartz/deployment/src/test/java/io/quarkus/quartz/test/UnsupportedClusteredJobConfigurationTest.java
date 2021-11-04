@@ -1,8 +1,6 @@
 package io.quarkus.quartz.test;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -15,7 +13,7 @@ public class UnsupportedClusteredJobConfigurationTest {
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .setExpectedException(ConfigurationError.class)
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(SimpleJobs.class)
                     .addAsResource(new StringAsset(
                             "quarkus.quartz.store-type=ram\nquarkus.quartz.clustered=true"),

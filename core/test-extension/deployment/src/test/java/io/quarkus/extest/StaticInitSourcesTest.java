@@ -2,8 +2,6 @@ package io.quarkus.extest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -15,7 +13,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class StaticInitSourcesTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(ConfiguredBean.class)
                     // Don't change this to types, because of classloader class cast exception.
                     .addAsServiceProvider("org.eclipse.microprofile.config.spi.ConfigSource",

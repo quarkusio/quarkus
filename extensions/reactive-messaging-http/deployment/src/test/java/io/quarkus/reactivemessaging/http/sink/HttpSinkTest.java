@@ -18,8 +18,6 @@ import java.util.function.Function;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -43,7 +41,7 @@ class HttpSinkTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(HttpEmitter.class, ToUpperCaseSerializer.class, HttpEndpoint.class, Dto.class))
             .withConfigurationResource("http-sink-test-application.properties");
 

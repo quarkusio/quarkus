@@ -3,8 +3,6 @@ package io.quarkus.vertx.web;
 import java.util.function.Function;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -15,7 +13,7 @@ public class VertxWebDevModeTestCase {
 
     @RegisterExtension
     static QuarkusDevModeTest runner = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(DevModeRoute.class));
 
     @Test

@@ -2,8 +2,6 @@ package io.quarkus.resteasy.reactive.qute.deployment;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,7 +12,7 @@ public class MissingTemplateTest {
 
     @RegisterExtension
     static final QuarkusUnitTest configError = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(MissingTemplateResource.class)
                     .addAsResource("templates/MissingTemplateResource/hello.txt"))
             .setExpectedException(TemplateException.class);

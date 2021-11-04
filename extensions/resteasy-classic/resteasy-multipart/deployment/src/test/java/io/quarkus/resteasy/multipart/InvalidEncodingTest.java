@@ -5,8 +5,6 @@ import static org.hamcrest.CoreMatchers.not;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -21,7 +19,7 @@ public class InvalidEncodingTest {
 
     @RegisterExtension
     static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(FeedbackBody.class, FeedbackResource.class))
             .withConfigurationResource("application-charset-us-ascii.properties");
 

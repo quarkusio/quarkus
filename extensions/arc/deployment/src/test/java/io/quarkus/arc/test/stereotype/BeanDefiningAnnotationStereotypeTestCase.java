@@ -19,8 +19,6 @@ import javax.enterprise.inject.Stereotype;
 import javax.inject.Inject;
 
 import org.jboss.jandex.DotName;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -34,7 +32,7 @@ public class BeanDefiningAnnotationStereotypeTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class, MakeItBean.class, DependentStereotype.class))
             .addBuildChainCustomizer(buildCustomizer());
 

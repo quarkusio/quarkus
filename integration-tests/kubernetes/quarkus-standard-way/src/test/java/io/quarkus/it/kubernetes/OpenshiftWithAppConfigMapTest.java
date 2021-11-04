@@ -8,8 +8,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.assertj.core.api.AbstractObjectAssert;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -28,7 +26,7 @@ public class OpenshiftWithAppConfigMapTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("openshift-with-app-config-map")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("openshift-with-app-config-map.properties")

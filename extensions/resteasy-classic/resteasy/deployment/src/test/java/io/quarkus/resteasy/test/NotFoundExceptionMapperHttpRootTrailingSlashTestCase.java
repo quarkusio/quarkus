@@ -3,9 +3,7 @@ package io.quarkus.resteasy.test;
 import static org.hamcrest.CoreMatchers.containsString;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,7 +16,7 @@ public class NotFoundExceptionMapperHttpRootTrailingSlashTestCase {
 
     @RegisterExtension
     static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(RootResource.class)
                     .addAsResource(new StringAsset("quarkus.http.root-path=/abc/"), "application.properties")
                     .addAsResource(new StringAsset("index content"), META_INF_RESOURCES + "index.html"));

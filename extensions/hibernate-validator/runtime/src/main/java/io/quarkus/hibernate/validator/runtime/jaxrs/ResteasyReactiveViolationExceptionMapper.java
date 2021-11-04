@@ -10,13 +10,21 @@ import javax.validation.ConstraintViolationException;
 import javax.validation.ElementKind;
 import javax.validation.Path;
 import javax.validation.ValidationException;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
+import org.jboss.resteasy.api.validation.Validation;
+
 @Provider
 public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper<ValidationException> {
+
+    @Context
+    HttpHeaders headers;
 
     @Override
     public Response toResponse(ValidationException exception) {
@@ -56,17 +64,25 @@ public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper
         return secondNode.getKind() == ElementKind.RETURN_VALUE;
     }
 
-    protected Response buildResponse(Object entity, Status status) {
-        return Response.status(status).entity(entity).build();
-    }
-
     private Response buildViolationReportResponse(ConstraintViolationException cve) {
+        Status status = Status.BAD_REQUEST;
+        Response.ResponseBuilder builder = Response.status(status);
+        builder.header(Validation.VALIDATION_HEADER, "true");
+
+        // Check standard media types.
+        MediaType mediaType = ValidatorMediaTypeUtil.getAcceptMediaTypeFromSupported(headers.getAcceptableMediaTypes());
+        if (mediaType == null) {
+            mediaType = MediaType.APPLICATION_JSON_TYPE;
+        }
+
         List<ViolationReport.Violation> violationsInReport = new ArrayList<>(cve.getConstraintViolations().size());
         for (ConstraintViolation<?> cv : cve.getConstraintViolations()) {
             violationsInReport.add(new ViolationReport.Violation(cv.getPropertyPath().toString(), cv.getMessage()));
         }
-        Status status = Status.BAD_REQUEST;
-        return buildResponse(new ViolationReport("Constraint Violation", status, violationsInReport), status);
+        builder.entity(new ViolationReport("Constraint Violation", status, violationsInReport));
+        builder.type(mediaType);
+
+        return builder.build();
     }
 
     /**
@@ -75,9 +91,15 @@ public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper
      * This also what Reactive Routes uses
      */
     public static class ViolationReport {
-        private final String title;
-        private final int status;
-        private final List<Violation> violations;
+        private String title;
+        private int status;
+        private List<Violation> violations;
+
+        /**
+         * Requires no-args constructor for some serializers.
+         */
+        public ViolationReport() {
+        }
 
         public ViolationReport(String title, Status status, List<Violation> violations) {
             this.title = title;
@@ -89,17 +111,44 @@ public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper
             return title;
         }
 
+        public void setTitle(String title) {
+            this.title = title;
+        }
+
         public int getStatus() {
             return status;
+        }
+
+        public void setStatus(int status) {
+            this.status = status;
         }
 
         public List<Violation> getViolations() {
             return violations;
         }
 
+        public void setViolations(List<Violation> violations) {
+            this.violations = violations;
+        }
+
+        @Override
+        public String toString() {
+            return "ViolationReport{" +
+                    "title='" + title + '\'' +
+                    ", status=" + status +
+                    ", violations=" + violations +
+                    '}';
+        }
+
         public static class Violation {
-            private final String field;
-            private final String message;
+            private String field;
+            private String message;
+
+            /**
+             * Requires no-args constructor for some serializers.
+             */
+            public Violation() {
+            }
 
             public Violation(String field, String message) {
                 this.field = field;
@@ -110,8 +159,24 @@ public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper
                 return field;
             }
 
+            public void setField(String field) {
+                this.field = field;
+            }
+
             public String getMessage() {
                 return message;
+            }
+
+            public void setMessage(String message) {
+                this.message = message;
+            }
+
+            @Override
+            public String toString() {
+                return "Violation{" +
+                        "field='" + field + '\'' +
+                        ", message='" + message + '\'' +
+                        '}';
             }
         }
     }

@@ -2,7 +2,6 @@ package io.quarkus.hibernate.validator.runtime.jaxrs;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 import javax.ws.rs.core.MediaType;
 
@@ -11,11 +10,22 @@ import javax.ws.rs.core.MediaType;
  */
 public final class ValidatorMediaTypeUtil {
 
-    private static final List<MediaType> SUPPORTED_MEDIA_TYPES = Arrays.asList(MediaType.APPLICATION_XML_TYPE,
-            MediaType.APPLICATION_JSON_TYPE, MediaType.TEXT_PLAIN_TYPE);
+    private static final List<MediaType> SUPPORTED_MEDIA_TYPES = Arrays.asList(MediaType.APPLICATION_JSON_TYPE,
+            MediaType.APPLICATION_XML_TYPE,
+            MediaType.TEXT_PLAIN_TYPE);
 
     private ValidatorMediaTypeUtil() {
 
+    }
+
+    /**
+     * Look up the right media type taking into account the HTTP request and the supported media types.
+     *
+     * @param mediaTypesFromRequest list of media types in the HTTP request.
+     * @return one supported media type from either the HTTP request or the annotation.
+     */
+    public static MediaType getAcceptMediaTypeFromSupported(List<MediaType> mediaTypesFromRequest) {
+        return getAcceptMediaType(mediaTypesFromRequest, SUPPORTED_MEDIA_TYPES);
     }
 
     /**
@@ -26,23 +36,23 @@ public final class ValidatorMediaTypeUtil {
      * @param mediaTypesFromProducesAnnotation list of media types set in the `@Produces` annotation.
      * @return one supported media type from either the HTTP request or the annotation.
      */
-    public static Optional<MediaType> getAcceptMediaType(List<MediaType> mediaTypesFromRequest,
+    public static MediaType getAcceptMediaType(List<MediaType> mediaTypesFromRequest,
             List<MediaType> mediaTypesFromProducesAnnotation) {
 
         for (MediaType mediaType : mediaTypesFromRequest) {
             // It's supported and is included in the `@Produces` annotation
             if (isMediaTypeInList(mediaType, SUPPORTED_MEDIA_TYPES)
                     && isMediaTypeInList(mediaType, mediaTypesFromProducesAnnotation)) {
-                return Optional.of(mediaType);
+                return mediaType;
             }
         }
 
         // if none is found, then return the first from the annotation or empty if no produces annotation
         if (mediaTypesFromProducesAnnotation.isEmpty()) {
-            return Optional.empty();
+            return null;
         }
 
-        return Optional.of(mediaTypesFromProducesAnnotation.get(0));
+        return mediaTypesFromProducesAnnotation.get(0);
     }
 
     private static boolean isMediaTypeInList(MediaType mediaType, List<MediaType> list) {

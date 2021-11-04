@@ -42,6 +42,15 @@ public class HibernateOrmConfig {
     public Optional<Boolean> statistics;
 
     /**
+     * Whether session metrics should be appended into the server log for each Hibernate session. This
+     * only has effect if statistics are enabled (`quarkus.hibernate-orm.statistics`). The default is false
+     * (which means both `statistics` and `log-session-metrics` need to be enabled for the session metrics
+     * to appear in the log).
+     */
+    @ConfigItem
+    public Optional<Boolean> logSessionMetrics;
+
+    /**
      * Whether or not metrics are published if a metrics extension is enabled.
      */
     @ConfigItem(name = "metrics.enabled")

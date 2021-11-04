@@ -110,6 +110,22 @@ import io.smallrye.jwt.build.Jwt;
 String jwt = Jwt.upn("Alice").jws().algorithm(SignatureAlgorithm.PS256).sign();
 ----
 
+Alternatively you can use a `smallrye.jwt.new-token.signature-algorithm` property:
+
+```properties
+smallrye.jwt.new-token.signature-algorithm=PS256
+```
+
+and write a simpler API sequence:
+
+[source, java]
+----
+import io.smallrye.jwt.build.Jwt;
+
+// Sign the claims using an RSA private key loaded from the location set with a 'smallrye.jwt.sign.key.location' property. Algorithm is PS256.
+String jwt = Jwt.upn("Alice").sign();
+----
+
 Note the `sign` step can be combined with the <<encrypt-claims, encrypt>> step to produce `inner-signed and encrypted` tokens, see <<innersign-encrypt-claims, Sign the claims and encrypt the nested JWT token>> section.
 
 [[encrypt-claims]]
@@ -156,6 +172,23 @@ String jwt = Jwt.subject("Bob").jwe()
     .encrypt();
 ----
 
+Alternatively, especially if the default `A256GCM` content encryption algorithm does not need to be changed, you can use a `smallrye.jwt.new-token.key-encryption-algorithm` property to customize a key encryption algorithm:
+
+```properties
+smallrye.jwt.new-token.key-encryption-algorithm=RSA-OAEP-256
+```
+
+and write a simpler API sequence:
+
+[source, java]
+----
+import io.smallrye.jwt.build.Jwt;
+
+// Encrypt the claims using an RSA public key loaded from the location set with a 'smallrye.jwt.encrypt.key.location' property.
+// Key encryption algorithm is RSA-OAEP-256, content encryption algorithm is A256GCM.
+String jwt = Jwt.subject("Bob").encrypt();
+----
+
 Note that when the token is directly encrypted by the public RSA or EC key it is not possible to verify which party sent the token.
 Therefore the secret keys should be preferred for directly encrypting the tokens, for example, when using JWT as cookies where a secret key is managed by the Quarkus endpoint with only this endpoint being both a producer and a consumer of the encrypted token.
 
@@ -170,7 +203,7 @@ The claims can be signed and then the nested JWT token encrypted by combining th
 import io.smallrye.jwt.build.Jwt;
 ...
 
-// Sign the claims and encrypt the nested token using the private and public keys loaded from the locations set with the 'smallrye.jwt.sign.key.location' and 'smallrye.jwt.encrypt.key.location' properties respectively.
+// Sign the claims and encrypt the nested token using the private and public keys loaded from the locations set with the 'smallrye.jwt.sign.key.location' and 'smallrye.jwt.encrypt.key.location' properties respectively. Signature algorithm is RS256, key encryption algorithm is RSA-OAEP-256.
 String jwt = Jwt.claims("/tokenClaims.json").innerSign().encrypt();
 ----
 
@@ -251,6 +284,8 @@ SmallRye JWT supports the following properties which can be used to customize th
 |smallrye.jwt.sign.key.id|`none`|Signing key identifier which is checked only when JWK keys are used.
 |smallrye.jwt.encrypt.key.location|`none`|Location of a public key which will be used to encrypt the claims or inner JWT when a no-argument `encrypt()` method is called.
 |smallrye.jwt.encrypt.key.id|`none`|Encryption key identifier which is checked only when JWK keys are used.
+|smallrye.jwt.new-token.signature-algorithm|RS256|Signature algorithm. This property will be checked if the JWT signature builder has not already set the signature algorithm.
+|smallrye.jwt.new-token.key-encryption-algorithm|RSA-OAEP|Key encryption algorithm. This property will be checked if the JWT encryption builder has not already set the key encryption algorithm.
 |smallrye.jwt.new-token.lifespan|300|Token lifespan in seconds which will be used to calculate an `exp` (expiry) claim value if this claim has not already been set.
 |smallrye.jwt.new-token.issuer|none|Token issuer which can be used to set an `iss` (issuer) claim value if this claim has not already been set.
 |smallrye.jwt.new-token.audience|none|Token audience which can be used to set an `aud` (audience) claim value if this claim has not already been set.

@@ -11,6 +11,7 @@ updates:
       - area/dependencies
     allow:
       - dependency-name: org.jboss:jboss-parent
+      - dependency-name: org.jboss.resteasy:*
       - dependency-name: org.apache.activemq:*
       - dependency-name: org.flywaydb:flyway-core
       - dependency-name: org.liquibase:liquibase-core

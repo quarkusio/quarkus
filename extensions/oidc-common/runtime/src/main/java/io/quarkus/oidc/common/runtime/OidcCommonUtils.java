@@ -32,6 +32,7 @@ import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Tls.Verification;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtSignatureBuilder;
 import io.smallrye.jwt.util.KeyUtils;
@@ -289,6 +290,15 @@ public class OidcCommonUtils {
                 .jws();
         if (oidcConfig.credentials.jwt.getTokenKeyId().isPresent()) {
             builder.keyId(oidcConfig.credentials.jwt.getTokenKeyId().get());
+        }
+        if (oidcConfig.credentials.jwt.getSignatureAlgorithm().isPresent()) {
+            SignatureAlgorithm signatureAlgorithm;
+            try {
+                signatureAlgorithm = SignatureAlgorithm.fromAlgorithm(oidcConfig.credentials.jwt.getSignatureAlgorithm().get());
+            } catch (Exception ex) {
+                throw new ConfigurationException("Unsupported signature algorithm");
+            }
+            builder.algorithm(signatureAlgorithm);
         }
         if (key instanceof SecretKey) {
             return builder.sign((SecretKey) key);

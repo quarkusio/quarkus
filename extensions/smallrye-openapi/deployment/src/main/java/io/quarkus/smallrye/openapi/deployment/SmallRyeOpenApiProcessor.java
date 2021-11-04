@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -427,7 +428,22 @@ public class SmallRyeOpenApiProcessor {
             if (ai.target().kind().equals(AnnotationTarget.Kind.METHOD)) {
                 MethodInfo method = ai.target().asMethod();
                 String ref = JandexUtil.createUniqueMethodReference(method);
-                classNames.put(ref, method.declaringClass().simpleName());
+
+                if (Modifier.isInterface(method.declaringClass().flags())) {
+                    Collection<ClassInfo> allKnownImplementors = apiFilteredIndexViewBuildItem.getIndex()
+                            .getAllKnownImplementors(method.declaringClass().name());
+                    for (ClassInfo impl : allKnownImplementors) {
+                        classNames.put(ref, impl.simpleName());
+                    }
+                } else if (Modifier.isAbstract(method.declaringClass().flags())) {
+                    Collection<ClassInfo> allKnownSubclasses = apiFilteredIndexViewBuildItem.getIndex()
+                            .getAllKnownSubclasses(method.declaringClass().name());
+                    for (ClassInfo impl : allKnownSubclasses) {
+                        classNames.put(ref, impl.simpleName());
+                    }
+                } else {
+                    classNames.put(ref, method.declaringClass().simpleName());
+                }
             }
         }
         return classNames;

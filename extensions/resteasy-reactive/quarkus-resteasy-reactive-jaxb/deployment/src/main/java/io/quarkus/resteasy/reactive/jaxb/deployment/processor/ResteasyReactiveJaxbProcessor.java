@@ -25,7 +25,7 @@ public class ResteasyReactiveJaxbProcessor {
     void additionalProviders(BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<MessageBodyReaderBuildItem> additionalReaders,
             BuildProducer<MessageBodyWriterBuildItem> additionalWriters) {
-        // make these beans to they can get instantiated with the Quarkus CDI configured Jsonb object
+        // make these beans to they can get instantiated with the Quarkus CDI
         additionalBean.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(JaxbMessageBodyReader.class.getName())
                 .addBeanClass(JaxbMessageBodyWriter.class.getName())

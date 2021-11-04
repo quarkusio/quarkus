@@ -406,8 +406,6 @@ that will hold this information like so:
 
 [source,java]
 ----
-import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.PartType;
@@ -474,6 +472,49 @@ Moreoever if `quarkus.http.body.delete-uploaded-files-on-end` is set to true, Qu
 the file will reside on the file system of the server (in the directory defined by the `quarkus.http.body.uploads-directory` configuration option), but as the uploaded files are saved
 with a UUID file name and no additional metadata is saved, these files are essentially a random dump of files.
 
+Similarly, RESTEasy Reactive can produce Multipart Form data to allow users download files from the server. For example, we could write a POJO
+that will hold the information we want to expose as:
+
+[source,java]
+----
+import javax.ws.rs.core.MediaType;
+
+import org.jboss.resteasy.reactive.PartType;
+import org.jboss.resteasy.reactive.RestForm;
+
+public class DownloadFormData {
+
+    @RestForm
+    String name;
+
+    @RestForm
+    @PartType(MediaType.APPLICATION_OCTET_STREAM)
+    File file;
+}
+----
+
+And then expose this POJO via a Resource like so:
+
+[source,java]
+----
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("multipart")
+public class Endpoint {
+
+    @GET
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    @Path("file")
+    public DownloadFormData getFile() {
+        // return something
+    }
+}
+----
+
+WARNING: For the time being, returning Multipart data is limited to be blocking endpoints. 
 
 === Returning a response body
 

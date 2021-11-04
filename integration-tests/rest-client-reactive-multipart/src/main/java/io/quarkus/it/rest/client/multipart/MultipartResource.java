@@ -231,6 +231,23 @@ public class MultipartResource {
                         : "some-name".equals(fileWithPojo.pojo.getName()) && "some-value".equals(fileWithPojo.pojo.getValue()));
     }
 
+    @GET
+    @Path("/produces/multipart")
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    public MultipartBodyWithTextFile produceMultipart() throws IOException {
+        File tempFile = File.createTempFile("quarkus-test", ".bin");
+        tempFile.deleteOnExit();
+
+        try (FileOutputStream fileOutputStream = new FileOutputStream(tempFile)) {
+            fileOutputStream.write(HELLO_WORLD.getBytes());
+        }
+
+        MultipartBodyWithTextFile data = new MultipartBodyWithTextFile();
+        data.file = tempFile;
+        data.number = String.valueOf(NUMBER);
+        return data;
+    }
+
     private boolean containsHelloWorld(File file) {
         try {
             String actual = new String(Files.readAllBytes(file.toPath()));

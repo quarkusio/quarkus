@@ -483,7 +483,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 } else if (type == ParameterType.MULTI_PART_FORM) {
                     multipart = true;
                     ClassInfo multipartClassInfo = index.getClassByName(paramType.name());
-                    handleMultipart(multipartClassInfo);
+                    handleMultipartForParamType(multipartClassInfo);
                 }
             }
 
@@ -526,11 +526,18 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             if (sseElementTypeAnnotation != null) {
                 sseElementType = sseElementTypeAnnotation.value().asString();
             }
-            if (((produces != null) && (produces.length == 1) && MediaType.SERVER_SENT_EVENTS.equals(produces[0]))
-                    && (sseElementType == null)) {
-                String[] defaultProducesForType = applyAdditionalDefaults(nonAsyncReturnType);
-                if (defaultProducesForType.length == 1) {
-                    sseElementType = defaultProducesForType[0];
+            boolean returnsMultipart = false;
+            if (produces != null && produces.length == 1) {
+                if (sseElementType == null && MediaType.SERVER_SENT_EVENTS.equals(produces[0])) {
+                    // Handle server sent events responses
+                    String[] defaultProducesForType = applyAdditionalDefaults(nonAsyncReturnType);
+                    if (defaultProducesForType.length == 1) {
+                        sseElementType = defaultProducesForType[0];
+                    }
+                } else if (MediaType.MULTIPART_FORM_DATA.equals(produces[0])) {
+                    // Handle multipart form data responses
+                    ClassInfo multipartClassInfo = index.getClassByName(nonAsyncReturnType.name());
+                    returnsMultipart = handleMultipartForReturnType(additionalWriters, multipartClassInfo);
                 }
             }
             Set<String> nameBindingNames = nameBindingNames(currentMethodInfo, classNameBindings);
@@ -545,6 +552,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     //would be reached for a default
                     blocking = isBlocking(actualMethodInfo, blocking ? BlockingDefault.BLOCKING : BlockingDefault.NON_BLOCKING);
                 }
+            }
+
+            if (returnsMultipart && !blocking) {
+                throw new DeploymentException(
+                        "Endpoints that produce a Multipart result can only be used on non blocking methods. Offending method is '"
+                                + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
             }
 
             ResourceMethod method = createResourceMethod(currentMethodInfo, actualEndpointInfo, methodContext)
@@ -629,7 +642,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return true;
     }
 
-    protected void handleMultipart(ClassInfo multipartClassInfo) {
+    /**
+     * @return true if return type is compatible to handle multipart types.
+     */
+    protected boolean handleMultipartForReturnType(AdditionalWriters additionalWriters, ClassInfo multipartClassInfo) {
+        return false;
+    }
+
+    protected void handleMultipartForParamType(ClassInfo multipartClassInfo) {
 
     }
 

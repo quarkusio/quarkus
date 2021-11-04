@@ -22,6 +22,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 import io.restassured.response.ValidatableResponse;
 
 @QuarkusTest
@@ -108,8 +109,7 @@ public class HibernateValidatorFunctionalityTest {
         // are user errors and should be reported as such.
 
         // Bad request
-        RestAssured.when()
-                .get("/hibernate-validator/test/rest-end-point-validation/plop/")
+        RestAssured.get("/hibernate-validator/test/rest-end-point-validation/plop/")
                 .then()
                 .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
                 .body(containsString("numeric value out of bounds"));
@@ -125,6 +125,48 @@ public class HibernateValidatorFunctionalityTest {
                     .then()
                     .body(is("42"));
         }
+    }
+
+    @Test
+    public void testRestEndPointValidationUsingTextMediaType() {
+        RestAssured.given()
+                .accept(ContentType.TEXT)
+                .get("/hibernate-validator/test/rest-end-point-validation/plop/")
+                .then()
+                .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
+                .contentType(ContentType.TEXT)
+                .body(containsString("numeric value out of bounds"));
+    }
+
+    @Test
+    public void testRestEndPointValidationUsingXmlMediaType() {
+        RestAssured.given()
+                .accept(ContentType.XML)
+                .get("/hibernate-validator/test/rest-end-point-validation/plop/")
+                .then()
+                .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
+                .contentType(ContentType.XML)
+                .body("validationReport.violations.message", containsString("numeric value out of bounds"));
+    }
+
+    @Test
+    public void testRestEndPointValidationUsingJsonMediaType() {
+        RestAssured.given()
+                .accept(ContentType.JSON)
+                .get("/hibernate-validator/test/rest-end-point-validation/plop/")
+                .then()
+                .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
+                .contentType(ContentType.JSON)
+                .body("violations[0].message", containsString("numeric value out of bounds"));
+    }
+
+    @Test
+    public void testNoProduces() {
+        RestAssured.given()
+                .get("/hibernate-validator/test/no-produces/plop/")
+                .then()
+                .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
+                .body(containsString("numeric value out of bounds"));
     }
 
     @Test

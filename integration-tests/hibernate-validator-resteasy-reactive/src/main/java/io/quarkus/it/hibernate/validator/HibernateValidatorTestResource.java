@@ -77,8 +77,14 @@ public class HibernateValidatorTestResource {
 
     @GET
     @Path("/rest-end-point-validation/{id}/")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN })
     public String testRestEndPointValidation(@Digits(integer = 5, fraction = 0) @RestPath("id") String id) {
+        return id;
+    }
+
+    @GET
+    @Path("/no-produces/{id}/")
+    public String testRestEndPointWithNoProduces(@Digits(integer = 5, fraction = 0) @RestPath("id") String id) {
         return id;
     }
 

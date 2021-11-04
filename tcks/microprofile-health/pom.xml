@@ -12,6 +12,10 @@
     <artifactId>quarkus-tck-microprofile-health</artifactId>
     <name>Quarkus - TCK - MicroProfile Health</name>
 
+    <properties>
+        <microprofile-health-tck.version>3.1</microprofile-health-tck.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -51,7 +55,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.health</groupId>
             <artifactId>microprofile-health-tck</artifactId>
-            <version>${microprofile-health-api.version}</version>
+            <version>${microprofile-health-tck.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>javax.json</groupId>

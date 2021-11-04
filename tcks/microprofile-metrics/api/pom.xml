@@ -52,7 +52,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.metrics</groupId>
             <artifactId>microprofile-metrics-api-tck</artifactId>
-            <version>${microprofile-metrics-api.version}</version>
+            <version>${microprofile-metrics-tck.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.hamcrest</groupId>

@@ -134,7 +134,41 @@ updates:
       - dependency-name: org.jetbrains.kotlin:*
       - dependency-name: org.jetbrains.kotlinx:*
       - dependency-name: org.jetbrains.dokka:*
+      # TCKs
+      - dependency-name: org.eclipse.microprofile.config:microprofile-config-tck
+      - dependency-name: org.eclipse.microprofile.context-propagation:microprofile-context-propagation-tck
+      - dependency-name: org.eclipse.microprofile.fault-tolerance:microprofile-fault-tolerance-tck
+      - dependency-name: org.eclipse.microprofile.graphql:microprofile-graphql-tck
+      - dependency-name: org.eclipse.microprofile.health:microprofile-health-tck
+      - dependency-name: org.eclipse.microprofile.jwt:microprofile-jwt-auth-tck
+      - dependency-name: org.eclipse.microprofile.metrics:microprofile-metrics-*-tck
+      - dependency-name: org.eclipse.microprofile.reactive.messaging:microprofile-reactive-messaging-tck
+      - dependency-name: org.eclipse.microprofile.openapi:microprofile-openapi-tck
+      - dependency-name: org.eclipse.microprofile.opentracing:microprofile-opentracing-tck*
+      - dependency-name: org.eclipse.microprofile.rest.client:microprofile-rest-client-tck
     ignore:
+      - dependency-name: org.eclipse.microprofile.config:microprofile-config-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.context-propagation:microprofile-context-propagation-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.fault-tolerance:microprofile-fault-tolerance-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.graphql:microprofile-graphql-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.health:microprofile-health-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.jwt:microprofile-jwt-auth-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.metrics:microprofile-metrics-*-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.reactive.messaging:microprofile-reactive-messaging-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.openapi:microprofile-openapi-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.opentracing:microprofile-opentracing-tck*
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.rest.client:microprofile-rest-client-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.glassfish:jakarta-el
         update-types: ["version-update:semver-major"]
       - dependency-name: org.eclipse:yasson

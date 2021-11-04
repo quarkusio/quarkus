@@ -46,7 +46,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.opentracing</groupId>
             <artifactId>microprofile-opentracing-tck-rest-client</artifactId>
-            <version>${microprofile-opentracing-api.version}</version>
+            <version>${microprofile-opentracing-tck.version}</version>
         </dependency>
     </dependencies>
 

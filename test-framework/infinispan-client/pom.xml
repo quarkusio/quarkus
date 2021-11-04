@@ -60,7 +60,18 @@
                     <groupId>net.spy</groupId>
                     <artifactId>spymemcached</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+        <!-- needed to make the junit version converge -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit4.version}</version>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 

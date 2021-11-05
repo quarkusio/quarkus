@@ -29,6 +29,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
+import io.quarkus.vertx.http.deployment.spi.AdditionalStaticResourceBuildItem;
 import io.quarkus.vertx.http.runtime.StaticResourcesRecorder;
 
 /**
@@ -93,12 +94,16 @@ public class StaticResourcesProcessor {
 
     @BuildStep
     void collectStaticResources(Capabilities capabilities, ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            List<AdditionalStaticResourceBuildItem> additionalStaticResources,
             BuildProducer<StaticResourcesBuildItem> staticResources) throws Exception {
         if (capabilities.isPresent(Capability.SERVLET)) {
             // Servlet container handles static resources
             return;
         }
         Set<StaticResourcesBuildItem.Entry> paths = getClasspathResources(applicationArchivesBuildItem);
+        for (AdditionalStaticResourceBuildItem bi : additionalStaticResources) {
+            paths.add(new StaticResourcesBuildItem.Entry(bi.getPath(), bi.isDirectory()));
+        }
         if (!paths.isEmpty()) {
             staticResources.produce(new StaticResourcesBuildItem(paths));
         }

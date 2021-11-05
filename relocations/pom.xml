@@ -3,18 +3,21 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-extensions-parent</artifactId>
+        <artifactId>quarkus-build-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
+        <relativePath>../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-vertx-web-parent</artifactId>
-    <name>Quarkus - Vert.x - Web (Relocation only)</name>
+    <artifactId>quarkus-relocations-parent</artifactId>
+    <name>Quarkus - Relocations Parent</name>
+    <description>This is the parent of relocated artifacts, that are still released for compatibility reasons.</description>
     <packaging>pom</packaging>
+
     <modules>
-        <module>deployment</module>
-        <module>runtime</module>
+        <module>quarkus-vertx-web</module>
+        <module>quarkus-vertx-web-deployment</module>
     </modules>
+
 </project>

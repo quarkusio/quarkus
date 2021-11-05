@@ -9,3 +9,9 @@ metadata:
   guide: "https://quarkus.io/guides/rest-client"
   categories:
   - "web"
+  codestart:
+    name: "rest-client"
+    languages:
+      - "java"
+      - "kotlin"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

@@ -23,8 +23,8 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.PathCollection;
 
 /**
  * Class that handles compilation of source files
@@ -62,7 +62,7 @@ public class QuarkusCompiler implements Closeable {
         }
         Set<Path> paths = new HashSet<>();
         for (ResolvedDependency i : application.getApplicationModel().getRuntimeDependencies()) {
-            for (Path p : i.getResolvedPaths()) {
+            for (Path p : i.getContentTree().getRoots()) {
                 paths.add(p);
             }
         }
@@ -157,7 +157,11 @@ public class QuarkusCompiler implements Closeable {
                 return;
             }
             compilationUnit.getSourcePaths().forEach(sourcePath -> {
-                this.compilationContexts.put(sourcePath.toString(),
+                final String srcPathStr = sourcePath.toString();
+                if (this.compilationContexts.containsKey(srcPathStr)) {
+                    return;
+                }
+                this.compilationContexts.put(srcPathStr,
                         new CompilationProvider.Context(
                                 i.getName(),
                                 classPathElements,
@@ -191,7 +195,7 @@ public class QuarkusCompiler implements Closeable {
         }
     }
 
-    public Path findSourcePath(Path classFilePath, PathsCollection sourcePaths, String classesPath) {
+    public Path findSourcePath(Path classFilePath, PathCollection sourcePaths, String classesPath) {
         for (CompilationProvider compilationProvider : compilationProviders) {
             Path sourcePath = compilationProvider.getSourcePath(classFilePath, sourcePaths, classesPath);
 

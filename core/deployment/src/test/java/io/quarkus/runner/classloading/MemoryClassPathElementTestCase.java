@@ -34,7 +34,7 @@ public class MemoryClassPathElementTestCase {
 
     @Test
     public void testGetAllResources() {
-        MemoryClassPathElement f = new MemoryClassPathElement(data);
+        MemoryClassPathElement f = new MemoryClassPathElement(data, true);
         Set<String> res = f.getProvidedResources();
         Assertions.assertEquals(3, res.size());
         Assertions.assertEquals(new HashSet<>(Arrays.asList("a.txt", "b.txt", "foo/sub.txt")), res);
@@ -42,7 +42,7 @@ public class MemoryClassPathElementTestCase {
 
     @Test
     public void testGetResource() {
-        MemoryClassPathElement f = new MemoryClassPathElement(data);
+        MemoryClassPathElement f = new MemoryClassPathElement(data, true);
         ClassPathResource res = f.getResource("foo/sub.txt");
         Assertions.assertNotNull(res);
         Assertions.assertEquals("subdir file", new String(res.getData(), StandardCharsets.UTF_8));

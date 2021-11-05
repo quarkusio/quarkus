@@ -138,7 +138,6 @@ class InfinispanClientProcessor {
                             // Quarkus doesn't currently support hot deployment watching directories
                             //                hotDeployment.produce(new HotDeploymentConfigFileBuildItem(META_INF));
                         }
-
                         while (protoFiles.hasNext()) {
                             Path path = protoFiles.next();
                             if (log.isDebugEnabled()) {

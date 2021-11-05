@@ -46,10 +46,6 @@
             <artifactId>quarkus-bootstrap-gradle-resolver</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-fs-util</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-io</artifactId>
         </dependency>

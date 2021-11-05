@@ -1,5 +1,7 @@
 package io.quarkus.bootstrap.classloading;
 
+import io.quarkus.paths.EmptyPathTree;
+import io.quarkus.paths.OpenPathTree;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,14 +16,22 @@ import java.security.cert.Certificate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 public class MemoryClassPathElement extends AbstractClassPathElement {
 
     private volatile Map<String, byte[]> resources;
     private volatile long lastModified = System.currentTimeMillis();
+    private final boolean runtime;
 
-    public MemoryClassPathElement(Map<String, byte[]> resources) {
+    public MemoryClassPathElement(Map<String, byte[]> resources, boolean runtime) {
         this.resources = resources;
+        this.runtime = runtime;
+    }
+
+    @Override
+    public boolean isRuntime() {
+        return runtime;
     }
 
     public void reset(Map<String, byte[]> resources) {
@@ -46,6 +56,11 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
     @Override
     public Path getRoot() {
         return null;
+    }
+
+    @Override
+    public <T> T apply(Function<OpenPathTree, T> func) {
+        return func.apply(EmptyPathTree.getInstance());
     }
 
     @Override

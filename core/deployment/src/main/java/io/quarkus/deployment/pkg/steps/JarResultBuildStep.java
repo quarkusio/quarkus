@@ -56,6 +56,7 @@ import io.quarkus.bootstrap.model.MutableJarApplicationModel;
 import io.quarkus.bootstrap.runner.QuarkusEntryPoint;
 import io.quarkus.bootstrap.runner.SerializedApplication;
 import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -85,6 +86,8 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.PathVisit;
+import io.quarkus.paths.PathVisitor;
 
 /**
  * This build step builds both the thin jars and uber jars.
@@ -655,9 +658,7 @@ public class JarResultBuildStep {
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
 
             try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {
-                for (Path root : applicationArchivesBuildItem.getRootArchive().getRootDirectories()) {
-                    copyFiles(root, runnerZipFs, null, ignoredEntriesPredicate);
-                }
+                copyFiles(applicationArchivesBuildItem.getRootArchive(), runnerZipFs, null, ignoredEntriesPredicate);
             }
         }
         final Set<ArtifactKey> parentFirstKeys = getParentFirstKeys(curateOutcomeBuildItem, classLoadingConfig);
@@ -1253,9 +1254,7 @@ public class JarResultBuildStep {
             }
         }
 
-        for (Path root : appArchives.getRootArchive().getRootDirectories()) {
-            copyFiles(root, runnerZipFs, concatenatedEntries, ignoredEntriesPredicate);
-        }
+        copyFiles(appArchives.getRootArchive(), runnerZipFs, concatenatedEntries, ignoredEntriesPredicate);
 
         for (Map.Entry<String, List<byte[]>> entry : concatenatedEntries.entrySet()) {
             try (final OutputStream os = wrapForJDK8232879(
@@ -1372,52 +1371,53 @@ public class JarResultBuildStep {
     }
 
     /**
-     * Copy files from {@code dir} to {@code fs}, filtering out service providers into the given map.
+     * Copy files from {@code archive} to {@code fs}, filtering out service providers into the given map.
      *
-     * @param dir the source directory
+     * @param archive the root application archive
      * @param fs the destination filesystem
      * @param services the services map
      * @throws IOException if an error occurs
      */
-    private void copyFiles(Path dir, FileSystem fs, Map<String, List<byte[]>> services,
-            Predicate<String> ignoredEntriesPredicate)
-            throws IOException {
-        try (Stream<Path> fileTreeElements = Files.walk(dir)) {
-            fileTreeElements.forEach(new Consumer<Path>() {
-                @Override
-                public void accept(Path path) {
-                    final Path file = dir.relativize(path);
-                    final String relativePath = toUri(file);
-                    if (relativePath.isEmpty() || ignoredEntriesPredicate.test(relativePath)) {
-                        return;
-                    }
-                    try {
-                        if (Files.isDirectory(path)) {
-                            addDir(fs, relativePath);
-                        } else {
-                            if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18
-                                    && services != null) {
-                                final byte[] content;
-                                try {
-                                    content = Files.readAllBytes(path);
-                                } catch (IOException e) {
-                                    throw new UncheckedIOException(e);
-                                }
-                                services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(content);
-                            } else if (!relativePath.equals("META-INF/INDEX.LIST")) {
-                                //TODO: auto generate INDEX.LIST
-                                //this may have implications for Camel though, as they change the layout
-                                //also this is only really relevant for the thin jar layout
-                                Path target = fs.getPath(relativePath);
-                                if (!Files.exists(target)) {
-                                    Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING);
+    private void copyFiles(ApplicationArchive archive, FileSystem fs, Map<String, List<byte[]>> services,
+            Predicate<String> ignoredEntriesPredicate) throws IOException {
+        try {
+            archive.accept(tree -> {
+                tree.walk(new PathVisitor() {
+                    @Override
+                    public void visitPath(PathVisit visit) {
+                        final Path file = visit.getRoot().relativize(visit.getPath());
+                        final String relativePath = toUri(file);
+                        if (relativePath.isEmpty() || ignoredEntriesPredicate.test(relativePath)) {
+                            return;
+                        }
+                        try {
+                            if (Files.isDirectory(visit.getPath())) {
+                                addDir(fs, relativePath);
+                            } else {
+                                if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18
+                                        && services != null) {
+                                    final byte[] content;
+                                    try {
+                                        content = Files.readAllBytes(visit.getPath());
+                                    } catch (IOException e) {
+                                        throw new UncheckedIOException(e);
+                                    }
+                                    services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(content);
+                                } else if (!relativePath.equals("META-INF/INDEX.LIST")) {
+                                    //TODO: auto generate INDEX.LIST
+                                    //this may have implications for Camel though, as they change the layout
+                                    //also this is only really relevant for the thin jar layout
+                                    Path target = fs.getPath(relativePath);
+                                    if (!Files.exists(target)) {
+                                        Files.copy(visit.getPath(), target, StandardCopyOption.REPLACE_EXISTING);
+                                    }
                                 }
                             }
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
                         }
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
                     }
-                }
+                });
             });
         } catch (RuntimeException re) {
             final Throwable cause = re.getCause();
@@ -1426,6 +1426,7 @@ public class JarResultBuildStep {
             }
             throw re;
         }
+
     }
 
     private void addDir(FileSystem fs, final String relativePath)

@@ -282,6 +282,18 @@ public class PackageIT extends MojoTestBase {
 
     }
 
+    @Test
+    public void testMultiJarModulesPackage() throws Exception {
+        testDir = initProject("projects/multijar-module", "projects/multijar-module-package");
+
+        running = new RunningInvoker(testDir, false);
+        final MavenProcessInvocationResult result = running.execute(
+                Arrays.asList("package"),
+                Collections.emptyMap());
+
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+    }
+
     private int getNumberOfFilesEndingWith(File dir, String suffix) {
         return getFilesEndingWith(dir, suffix).size();
     }

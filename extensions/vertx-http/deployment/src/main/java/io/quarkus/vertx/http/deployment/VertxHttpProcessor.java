@@ -1,12 +1,7 @@
 package io.quarkus.vertx.http.deployment;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.FileSystem;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.CodeSource;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -22,6 +17,8 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -39,7 +36,6 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
-import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.runtime.LaunchMode;
@@ -67,6 +63,7 @@ import io.vertx.ext.web.RoutingContext;
 
 class VertxHttpProcessor {
 
+    private static final String META_INF_SERVICES_EXCHANGE_ATTRIBUTE_BUILDER = "META-INF/services/io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder";
     private static final Logger logger = Logger.getLogger(VertxHttpProcessor.class);
 
     @BuildStep
@@ -340,30 +337,33 @@ class VertxHttpProcessor {
             throws BuildException {
         // get hold of the META-INF/services/io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder
         // from within the jar containing the ExchangeAttributeBuilder class
-        final CodeSource codeSource = ExchangeAttributeBuilder.class.getProtectionDomain().getCodeSource();
-        if (codeSource == null) {
+        final List<ClassPathElement> elements = QuarkusClassLoader.getElements(META_INF_SERVICES_EXCHANGE_ATTRIBUTE_BUILDER,
+                false);
+        if (elements.isEmpty()) {
             logger.debug("Skipping registration of service providers for " + ExchangeAttributeBuilder.class);
             return;
         }
-        try (final FileSystem jarFileSystem = ZipUtils.newFileSystem(
-                new URI("jar", codeSource.getLocation().toURI().toString(), null),
-                Collections.emptyMap())) {
-            final Path serviceDescriptorFilePath = jarFileSystem.getPath("META-INF", "services",
-                    "io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder");
-            if (!Files.exists(serviceDescriptorFilePath)) {
-                logger.debug("Skipping registration of service providers for " + ExchangeAttributeBuilder.class
-                        + " since no service descriptor file found");
-                return;
-            }
-            // we register all the listed providers since the access log configuration is a runtime construct
-            // and we won't know at build time which attributes the user application will choose
-            final ServiceProviderBuildItem serviceProviderBuildItem;
-            serviceProviderBuildItem = ServiceProviderBuildItem.allProviders(ExchangeAttributeBuilder.class.getName(),
-                    serviceDescriptorFilePath);
-            exchangeAttributeBuilderService.produce(serviceProviderBuildItem);
-        } catch (IOException | URISyntaxException e) {
-            throw new BuildException(e, Collections.emptyList());
+        for (ClassPathElement cpe : elements) {
+            cpe.apply(tree -> {
+                tree.accept(META_INF_SERVICES_EXCHANGE_ATTRIBUTE_BUILDER, visit -> {
+                    if (visit == null) {
+                        logger.debug("Skipping registration of service providers for " + ExchangeAttributeBuilder.class
+                                + " since no service descriptor file found");
+                    } else {
+                        // we register all the listed providers since the access log configuration is a runtime construct
+                        // and we won't know at build time which attributes the user application will choose
+                        final ServiceProviderBuildItem serviceProviderBuildItem;
+                        try {
+                            serviceProviderBuildItem = ServiceProviderBuildItem
+                                    .allProviders(ExchangeAttributeBuilder.class.getName(), visit.getPath());
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                        exchangeAttributeBuilderService.produce(serviceProviderBuildItem);
+                    }
+                });
+                return null;
+            });
         }
     }
-
 }

@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.deployment.util.GlobUtil;
+import io.quarkus.util.GlobUtil;
 
 /**
  * A build item that indicates that a set of resource paths defined by regular expression patterns or globs should be

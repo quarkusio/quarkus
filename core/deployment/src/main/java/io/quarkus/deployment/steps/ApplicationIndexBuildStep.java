@@ -23,7 +23,7 @@ public class ApplicationIndexBuildStep {
     @BuildStep
     ApplicationIndexBuildItem build(ArchiveRootBuildItem root) throws IOException {
         Indexer indexer = new Indexer();
-        for (Path p : root.getRootDirs()) {
+        for (Path p : root.getRootDirectories()) {
             Files.walkFileTree(p, new FileVisitor<Path>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
@@ -32,7 +32,7 @@ public class ApplicationIndexBuildStep {
 
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    if (file.toString().endsWith(".class")) {
+                    if (file.getFileName().toString().endsWith(".class")) {
                         log.debugf("Indexing %s", file);
                         try (InputStream stream = Files.newInputStream(file)) {
                             indexer.index(stream);

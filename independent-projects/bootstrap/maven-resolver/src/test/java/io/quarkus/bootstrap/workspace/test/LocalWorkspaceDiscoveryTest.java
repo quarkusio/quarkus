@@ -14,8 +14,9 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.IoUtils;
-import io.quarkus.bootstrap.workspace.ProcessedSources;
+import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.paths.PathTree;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
@@ -577,12 +578,13 @@ public class LocalWorkspaceDiscoveryTest {
         final WorkspaceModule wsModule = module1.toWorkspaceModule();
         Assertions.assertThat(wsModule.getModuleDir()).isEqualTo(module1Dir.toFile());
         Assertions.assertThat(wsModule.getBuildDir()).isEqualTo(module1Dir.resolve("target").toFile());
-        Collection<ProcessedSources> c = wsModule.getMainResources();
-        Assertions.assertThat(c).hasSize(1);
-        final ProcessedSources src = c.iterator().next();
-        Assertions.assertThat(src.getSourceDir()).isEqualTo(module1Dir.resolve("build").toFile());
-        Assertions.assertThat(src.getDestinationDir())
-                .isEqualTo(module1Dir.resolve("target/classes/META-INF/resources").toFile());
+        SourceDir src = wsModule.getMainSources().getResourceDirs().iterator().next();
+        PathTree sourceTree = src.getSourceTree();
+        Assertions.assertThat(sourceTree).isNotNull();
+        Collection<Path> roots = sourceTree.getRoots();
+        Assertions.assertThat(roots).hasSize(1);
+        Assertions.assertThat(roots.iterator().next()).isEqualTo(module1Dir.resolve("build"));
+        Assertions.assertThat(src.getOutputDir()).isEqualTo(module1Dir.resolve("target/classes/META-INF/resources"));
     }
 
     private void assertCompleteWorkspace(final LocalProject project) {

@@ -31,7 +31,6 @@ import io.quarkus.deployment.dev.IsolatedDevModeMain;
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedArtifactDependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathList;
@@ -81,8 +80,8 @@ public class DevModeTask {
             public void run(ResolvedDependency dep, Path moduleClasses, boolean appArtifact) {
 
                 ((ResolvedArtifactDependency) dep).setResolvedPaths(PathList.of(moduleClasses));
-                DevModeContext.ModuleInfo module = new DevModeContext.ModuleInfo.Builder().setArtifactKey(dep.getKey())
-                        .setName(dep.getArtifactId())
+                DevModeContext.ModuleInfo module = new DevModeContext.ModuleInfo.Builder()
+                        .setArtifactKey(dep.getKey())
                         .setClassesPath(moduleClasses.toAbsolutePath().toString())
                         .setResourcesOutputPath(moduleClasses.toAbsolutePath().toString())
                         .build();
@@ -97,16 +96,15 @@ public class DevModeTask {
         context.setAbortOnFailedStart(false);
         context.setLocalProjectDiscovery(false);
         return context;
-
     }
 
     public static void extractDevModeClasses(Path appRoot, ApplicationModel appModel, PostExtractAction postExtractAction)
             throws IOException {
         Path extracted = appRoot.resolve("dev");
         Files.createDirectories(extracted);
-        Map<ArtifactKey, ResolvedDependency> rtDependencies = new HashMap<>();
+        final Map<ArtifactKey, ResolvedDependency> rtDependencies = new HashMap<>();
         for (ResolvedDependency i : appModel.getRuntimeDependencies()) {
-            rtDependencies.put(new GACT(i.getGroupId(), i.getArtifactId()), i);
+            rtDependencies.put(i.getKey(), i);
         }
 
         //setup the classes that can be hot reloaded
@@ -117,8 +115,7 @@ public class DevModeTask {
             ResolvedDependency dep = rtDependencies.get(i);
             Path moduleClasses = null;
             if (dep == null) {
-                appArtifact = i.getGroupId().equals(appModel.getAppArtifact().getGroupId())
-                        && i.getArtifactId().equals(appModel.getAppArtifact().getArtifactId());
+                appArtifact = appModel.getAppArtifact().getKey().equals(i);
                 //check if this is the application itself
                 if (appArtifact) {
                     dep = appModel.getAppArtifact();

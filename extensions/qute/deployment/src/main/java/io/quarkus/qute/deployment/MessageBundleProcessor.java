@@ -5,6 +5,7 @@ import static java.util.stream.Collectors.toMap;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,7 +51,6 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -122,16 +122,7 @@ public class MessageBundleProcessor {
         Map<String, ClassInfo> found = new HashMap<>();
         List<MessageBundleBuildItem> bundles = new ArrayList<>();
         List<DotName> localizedInterfaces = new ArrayList<>();
-        Set<Path> messageFiles = findMessageFiles(applicationArchivesBuildItem);
-
-        Path messagesPath = applicationArchivesBuildItem.getRootArchive().getChildPath(MESSAGES);
-        for (Path messageFile : messageFiles) {
-            String messageFilePath = messagesPath.relativize(messageFile).toString();
-            if (File.separatorChar != '/') {
-                messageFilePath = messageFilePath.replace(File.separatorChar, '/');
-            }
-            watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(MESSAGES + "/" + messageFilePath));
-        }
+        Set<Path> messageFiles = findMessageFiles(applicationArchivesBuildItem, watchedFiles);
 
         // First collect all interfaces annotated with @MessageBundle
         for (AnnotationInstance bundleAnnotation : index.getAnnotations(Names.BUNDLE)) {
@@ -1042,23 +1033,32 @@ public class MessageBundleProcessor {
         return defaultLocale;
     }
 
-    private Set<Path> findMessageFiles(ApplicationArchivesBuildItem applicationArchivesBuildItem) throws IOException {
-        ApplicationArchive applicationArchive = applicationArchivesBuildItem.getRootArchive();
-        Path messagesPath = applicationArchive.getChildPath(MESSAGES);
-        if (messagesPath == null) {
-            return Collections.emptySet();
-        }
-        Set<Path> messageFiles = new HashSet<>();
-        try (Stream<Path> files = Files.list(messagesPath)) {
-            Iterator<Path> iter = files.iterator();
-            while (iter.hasNext()) {
-                Path filePath = iter.next();
-                if (Files.isRegularFile(filePath)) {
-                    messageFiles.add(filePath);
-                }
+    private Set<Path> findMessageFiles(ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) throws IOException {
+        return applicationArchivesBuildItem.getRootArchive().apply(tree -> {
+            final Path messagesPath = tree.getPath(MESSAGES);
+            if (messagesPath == null) {
+                return Collections.emptySet();
             }
-        }
-        return messageFiles;
+            Set<Path> messageFiles = new HashSet<>();
+            try (Stream<Path> files = Files.list(messagesPath)) {
+                Iterator<Path> iter = files.iterator();
+                while (iter.hasNext()) {
+                    Path filePath = iter.next();
+                    if (Files.isRegularFile(filePath)) {
+                        messageFiles.add(filePath);
+                        String messageFilePath = messagesPath.relativize(filePath).toString();
+                        if (File.separatorChar != '/') {
+                            messageFilePath = messageFilePath.replace(File.separatorChar, '/');
+                        }
+                        watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(MESSAGES + "/" + messageFilePath));
+                    }
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            return messageFiles;
+        });
     }
 
     private static class AppClassPredicate implements Predicate<String> {

@@ -20,6 +20,7 @@ import io.quarkus.arc.impl.MapValueSupplier;
 import io.quarkus.arc.impl.Objects;
 import io.quarkus.arc.impl.Reflections;
 import io.quarkus.arc.impl.RemovedBeanImpl;
+import io.quarkus.arc.impl.Sets;
 import io.quarkus.gizmo.MethodDescriptor;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -223,7 +224,7 @@ public final class MethodDescriptors {
     public static final MethodDescriptor COLLECTIONS_EMPTY_MAP = MethodDescriptor.ofMethod(Collections.class, "emptyMap",
             Map.class);
 
-    public static final MethodDescriptor SET_OF = MethodDescriptor.ofMethod(Set.class, "of", Set.class, Object[].class);
+    public static final MethodDescriptor SETS_OF = MethodDescriptor.ofMethod(Sets.class, "of", Set.class, Object[].class);
 
     public static final MethodDescriptor ARC_CONTAINER = MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class);
 

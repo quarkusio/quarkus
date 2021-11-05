@@ -49,6 +49,8 @@ public final class ReactiveMessagingDotNames {
 
     // Do not directly reference the MetricDecorator (due to its direct references to MP Metrics, which may not be present)
     static final DotName METRIC_DECORATOR = DotName.createSimple("io.smallrye.reactive.messaging.metrics.MetricDecorator");
+    static final DotName MICROMETER_DECORATOR = DotName
+            .createSimple("io.smallrye.reactive.messaging.metrics.MicrometerDecorator");
 
     // Used to detect REST endpoints and JAX-RS provider
     public static final DotName JAXRS_PATH = DotName.createSimple("javax.ws.rs.Path");

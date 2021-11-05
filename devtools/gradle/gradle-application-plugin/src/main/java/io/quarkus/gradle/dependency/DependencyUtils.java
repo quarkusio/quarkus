@@ -52,9 +52,6 @@ public class DependencyUtils {
 
         configurationCopy.getDependencyConstraints().addAll(toDuplicate.getAllDependencyConstraints());
         for (Dependency dependency : toDuplicate.getAllDependencies()) {
-            if (includedBuild(project, dependency.getName()) != null) {
-                continue;
-            }
             if (isTestFixtureDependency(dependency)) {
                 continue;
             }

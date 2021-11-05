@@ -174,17 +174,17 @@ public class KubernetesClientTest {
 ----
 
 
-Alternately, you can create a `CustomKubernetesMockServerTestResource.java` to ensure all your `@QuarkusTest` enabled test classes share the same mock server setup:
+Alternately, you can create an extension of the `KubernetesServerTestResource` class to ensure all your `@QuarkusTest` enabled test classes share the same mock server setup via the `QuarkusTestResource` annotation:
 
 [source%nowrap,java]
 ----
 public class CustomKubernetesMockServerTestResource extends KubernetesServerTestResource {
 
     @Override
-    public void configureMockServer(KubernetesServer mockServer) {
-        mockServer.expect().get().withPath("/api/v1/namespaces/test/pods")
-                .andReturn(200, new PodList())
-                .always();
+    protected void configureServer() {
+        super.configureServer();
+        server.expect().get().withPath("/api/v1/namespaces/test/pods")
+          .andReturn(200, new PodList()).always();
     }
 }
 ----
@@ -192,7 +192,7 @@ public class CustomKubernetesMockServerTestResource extends KubernetesServerTest
 and use this in your other test classes as follows:
 [source%nowrap,java]
 ----
-@QuarkusTestResource(KubernetesMockServerTestResource.class)
+@QuarkusTestResource(CustomKubernetesMockServerTestResource.class)
 @QuarkusTest
 public class KubernetesClientTest {
 

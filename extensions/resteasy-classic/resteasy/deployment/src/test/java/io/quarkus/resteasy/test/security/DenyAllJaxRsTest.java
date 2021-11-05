@@ -2,6 +2,7 @@ package io.quarkus.resteasy.test.security;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
+import static org.hamcrest.Matchers.emptyString;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.BeforeAll;
@@ -31,6 +32,19 @@ public class DenyAllJaxRsTest {
         TestIdentityController.resetRoles()
                 .add("admin", "admin", "admin")
                 .add("user", "user", "user");
+    }
+
+    @Test
+    public void shouldPermitAllMethodWithPathParam() {
+        assertStatus("/unsecured/permitAllPathParam/1", 200, 200);
+    }
+
+    @Test
+    public void shouldReportNoImplementationDetailsWithWrongPathParam() {
+        when().get("/unsecured/permitAllPathParam/string")
+                .then()
+                .statusCode(404)
+                .body(emptyString());
     }
 
     @Test

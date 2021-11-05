@@ -78,8 +78,11 @@ import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.Engine;
@@ -471,7 +474,7 @@ public class QuteProcessor {
         }
 
         LOGGER.debugf("Finished analysis of %s templates in %s ms", analysis.size(),
-                TimeUnit.NANOSECONDS.toMillis(start - System.nanoTime()));
+                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
         return new TemplatesAnalysisBuildItem(analysis);
     }
 
@@ -1214,14 +1217,35 @@ public class QuteProcessor {
 
     @BuildStep
     void collectTemplates(ApplicationArchivesBuildItem applicationArchives,
+            CurateOutcomeBuildItem curateOutcome,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             QuteConfig config)
             throws IOException {
         Set<Path> basePaths = new HashSet<>();
+        Set<ApplicationArchive> allApplicationArchives = applicationArchives.getAllApplicationArchives();
+        List<ResolvedDependency> extensionArtifacts = curateOutcome.getApplicationModel().getDependencies().stream()
+                .filter(Dependency::isRuntimeExtensionArtifact).collect(Collectors.toList());
 
-        for (ApplicationArchive archive : applicationArchives.getAllApplicationArchives()) {
+        for (ResolvedDependency artifact : extensionArtifacts) {
+            if (isApplicationArchive(artifact, allApplicationArchives)) {
+                // Skip extension archives that are also application archives
+                continue;
+            }
+            for (Path p : artifact.getResolvedPaths()) {
+                if (Files.isDirectory(p)) {
+                    // Try to find the templates in the root dir
+                    Path basePath = Files.list(p).filter(QuteProcessor::isBasePath).findFirst().orElse(null);
+                    if (basePath != null) {
+                        LOGGER.debugf("Found extension templates dir: %s", p);
+                        basePaths.add(basePath);
+                        break;
+                    }
+                }
+            }
+        }
+        for (ApplicationArchive archive : allApplicationArchives) {
             for (Path rootDir : archive.getRootDirectories()) {
                 // Note that we cannot use ApplicationArchive.getChildPath(String) here because we would not be able to detect 
                 // a wrong directory name on case-insensitive file systems 
@@ -2153,6 +2177,19 @@ public class QuteProcessor {
             }
             throw new IllegalStateException(builder.toString());
         }
+    }
+
+    private boolean isApplicationArchive(ResolvedDependency dependency, Set<ApplicationArchive> applicationArchives) {
+        for (ApplicationArchive archive : applicationArchives) {
+            if (archive.getKey() == null) {
+                continue;
+            }
+            if (dependency.getGroupId().equals(archive.getKey().getGroupId())
+                    && dependency.getArtifactId().equals(archive.getKey().getArtifactId())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

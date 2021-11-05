@@ -332,7 +332,11 @@ public interface ReactiveRedisClient {
 
     Uni<Response> lpop(String arg0);
 
+    Uni<Response> lpop(List<String> arg0);
+
     Response lpopAndAwait(String arg0);
+
+    Response lpopAndAwait(List<String> arg0);
 
     Uni<Response> lpush(List<String> args);
 
@@ -448,7 +452,11 @@ public interface ReactiveRedisClient {
 
     Uni<Response> psync(String arg0, String arg1);
 
+    Uni<Response> psync(List<String> args);
+
     Response psyncAndAwait(String arg0, String arg1);
+
+    Response psyncAndAwait(List<String> args);
 
     Uni<Response> pttl(String arg0);
 
@@ -508,7 +516,11 @@ public interface ReactiveRedisClient {
 
     Uni<Response> rpop(String arg0);
 
+    Uni<Response> rpop(List<String> args);
+
     Response rpopAndAwait(String arg0);
+
+    Response rpopAndAwait(List<String> args);
 
     Uni<Response> rpoplpush(String arg0, String arg1);
 

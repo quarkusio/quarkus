@@ -87,8 +87,10 @@ public class RedisClientProcessor {
         producer.produce(new RuntimeInitializedClassBuildItem(BulkType.class.getName()));
         // Classes using SplittableRandom, which need to be runtime initialized
         producer.produce(new RuntimeInitializedClassBuildItem("io.vertx.redis.client.impl.RedisSentinelClient"));
+        producer.produce(new RuntimeInitializedClassBuildItem("io.vertx.redis.client.impl.RedisReplicationClient"));
         producer.produce(new RuntimeInitializedClassBuildItem("io.vertx.redis.client.impl.Slots"));
         producer.produce(new RuntimeInitializedClassBuildItem("io.vertx.redis.client.impl.RedisClusterConnection"));
+        producer.produce(new RuntimeInitializedClassBuildItem("io.vertx.redis.client.impl.RedisReplicationConnection"));
         // RedisClusterConnections is referenced from RedisClusterClient. Thus, we need to runtime-init
         // that too.
         producer.produce(new RuntimeInitializedClassBuildItem("io.vertx.redis.client.impl.RedisClusterClient"));

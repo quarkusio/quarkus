@@ -58,7 +58,8 @@ class VertxCoreProcessor {
     NativeImageConfigBuildItem build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, VertxLogDelegateFactory.class.getName()));
         return NativeImageConfigBuildItem.builder()
-                .addRuntimeInitializedClass("io.vertx.core.net.impl.PartialPooledByteBufAllocator")
+                .addRuntimeInitializedClass("io.vertx.core.buffer.impl.VertxByteBufAllocator")
+                .addRuntimeInitializedClass("io.vertx.core.buffer.impl.PartialPooledByteBufAllocator")
                 .addRuntimeInitializedClass("io.vertx.core.http.impl.VertxHttp2ClientUpgradeCodec")
                 .addRuntimeInitializedClass("io.vertx.core.eventbus.impl.clustered.ClusteredEventBus")
 

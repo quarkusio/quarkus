@@ -389,7 +389,12 @@ class RedisClientImpl implements RedisClient {
 
     @Override
     public Response lpop(String arg0) {
-        return await(redisAPI.lpop(arg0));
+        return await(redisAPI.lpop(List.of(arg0)));
+    }
+
+    @Override
+    public Response lpop(List<String> args) {
+        return await(redisAPI.lpop(args));
     }
 
     @Override
@@ -534,7 +539,12 @@ class RedisClientImpl implements RedisClient {
 
     @Override
     public Response psync(String arg0, String arg1) {
-        return await(redisAPI.psync(arg0, arg1));
+        return await(redisAPI.psync(List.of(arg0, arg1)));
+    }
+
+    @Override
+    public Response psync(List<String> args) {
+        return await(redisAPI.psync(args));
     }
 
     @Override
@@ -609,7 +619,12 @@ class RedisClientImpl implements RedisClient {
 
     @Override
     public Response rpop(String arg0) {
-        return await(redisAPI.rpop(arg0));
+        return await(redisAPI.rpop(List.of(arg0)));
+    }
+
+    @Override
+    public Response rpop(List<String> args) {
+        return await(redisAPI.rpop(args));
     }
 
     @Override

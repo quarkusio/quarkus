@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.util.Map;
+import java.util.Set;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
@@ -143,6 +144,7 @@ public abstract class AbstractRequestWrapper
     }
 
     @Override
+    @Deprecated
     public X509Certificate[] peerCertificateChain() throws SSLPeerUnverifiedException {
         return delegate.peerCertificateChain();
     }
@@ -243,8 +245,34 @@ public abstract class AbstractRequestWrapper
     }
 
     @Override
+    @Deprecated
     public Map<String, Cookie> cookieMap() {
         return delegate.cookieMap();
+    }
+
+    @Override
+    public String getParam(String paramName, String defaultValue) {
+        return delegate.getParam(paramName, defaultValue);
+    }
+
+    @Override
+    public int streamId() {
+        return delegate.streamId();
+    }
+
+    @Override
+    public Cookie getCookie(String name, String domain, String path) {
+        return delegate.getCookie(name, domain, path);
+    }
+
+    @Override
+    public Set<Cookie> cookies(String name) {
+        return delegate.cookies(name);
+    }
+
+    @Override
+    public Set<Cookie> cookies() {
+        return delegate.cookies();
     }
 
     @Override

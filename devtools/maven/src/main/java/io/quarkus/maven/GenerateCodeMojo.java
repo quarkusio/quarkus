@@ -16,7 +16,8 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.model.PathsCollection;
+import io.quarkus.paths.PathCollection;
+import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 
 // in the PROCESS_RESOURCES phase because we want the config to be available
@@ -72,12 +73,12 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
             Thread.currentThread().setContextClassLoader(deploymentClassLoader);
 
             final Class<?> codeGenerator = deploymentClassLoader.loadClass("io.quarkus.deployment.CodeGenerator");
-            final Method initAndRun = codeGenerator.getMethod("initAndRun", ClassLoader.class, PathsCollection.class,
+            final Method initAndRun = codeGenerator.getMethod("initAndRun", ClassLoader.class, PathCollection.class,
                     Path.class,
                     Path.class,
                     Consumer.class, ApplicationModel.class, Properties.class, String.class);
             initAndRun.invoke(null, deploymentClassLoader,
-                    PathsCollection.of(sourcesDir),
+                    PathList.of(sourcesDir),
                     generatedSourcesDir(test),
                     buildDir().toPath(),
                     sourceRegistrar,

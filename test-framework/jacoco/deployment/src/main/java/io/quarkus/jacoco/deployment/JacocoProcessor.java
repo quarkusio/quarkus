@@ -3,6 +3,7 @@ package io.quarkus.jacoco.deployment;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
@@ -17,8 +18,7 @@ import org.jboss.jandex.ClassInfo;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
-import io.quarkus.bootstrap.workspace.ProcessedSources;
-import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -118,11 +118,11 @@ public class JacocoProcessor {
             }
 
             if (model.getApplicationModule() != null) {
-                addProjectModule(model.getApplicationModule(), config, info, includes, excludes, classes, sources);
+                addProjectModule(model.getAppArtifact(), config, info, includes, excludes, classes, sources);
             }
             for (ResolvedDependency d : model.getDependencies()) {
-                if (d.isRuntimeCp() && d.isWorkspacetModule()) {
-                    addProjectModule(d.getWorkspaceModule(), config, info, includes, excludes, classes, sources);
+                if (d.isRuntimeCp() && d.isWorkspaceModule()) {
+                    addProjectModule(d, config, info, includes, excludes, classes, sources);
                 }
             }
 
@@ -132,13 +132,15 @@ public class JacocoProcessor {
         }
     }
 
-    private void addProjectModule(WorkspaceModule module, JacocoConfig config, ReportInfo info, String includes,
+    private void addProjectModule(ResolvedDependency module, JacocoConfig config, ReportInfo info, String includes,
             String excludes, Set<String> classes, Set<String> sources) throws Exception {
-        info.savedData.add(new File(module.getBuildDir(), config.dataFile).getAbsolutePath());
-        for (ProcessedSources src : module.getMainSources()) {
-            sources.add(src.getSourceDir().getAbsolutePath());
-            if (src.getDestinationDir().isDirectory()) {
-                for (final File file : FileUtils.getFiles(src.getDestinationDir(), includes, excludes,
+        info.savedData.add(new File(module.getWorkspaceModule().getBuildDir(), config.dataFile).getAbsolutePath());
+        for (SourceDir src : module.getSources().getSourceDirs()) {
+            for (Path p : src.getSourceTree().getRoots()) {
+                sources.add(p.toAbsolutePath().toString());
+            }
+            if (Files.isDirectory(src.getOutputDir())) {
+                for (final File file : FileUtils.getFiles(src.getOutputDir().toFile(), includes, excludes,
                         true)) {
                     if (file.getName().endsWith(".class")) {
                         classes.add(file.getAbsolutePath());

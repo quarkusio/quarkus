@@ -1183,4 +1183,70 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         assertThat(DevModeTestUtils.getHttpResponse("/app/hello/")).isEqualTo("hello");
         assertThat(DevModeTestUtils.getHttpResponse("/app/hello/applicationName")).isEqualTo("myapp");
     }
+
+    @Test
+    public void testMultiJarModuleDevModeMocks() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/multijar-module", "projects/multijar-module-devmode-mocks");
+        run(false, "clean", "package", "-DskipTests", "-Dqdev");
+
+        String greeting = DevModeTestUtils.getHttpResponse("/hello");
+        assertThat(greeting).contains("acme other mock-service");
+
+        // Update TestBean
+        File resource = new File(testDir, "beans/src/test/java/org/acme/testlib/mock/MockService.java");
+        filter(resource, Collections.singletonMap("return \"mock-service\";", "return \"mock-service!\";"));
+        await()
+                .pollDelay(300, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("acme other mock-service!"));
+
+        // Update AcmeBean
+        resource = new File(testDir, "beans/src/main/java/org/acme/AcmeBean.java");
+        filter(resource, Collections.singletonMap("return \"acme\";", "return \"acme!\";"));
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("acme! other mock-service!"));
+
+        // Update Other bean
+        resource = new File(testDir, "beans/src/main/java/org/acme/Other.java");
+        filter(resource, Collections.singletonMap("return \"other\";", "return \"other!\";"));
+        await()
+                .pollDelay(300, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("acme! other! mock-service!"));
+    }
+
+    @Test
+    public void testMultiJarModuleDevMode() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/multijar-module", "projects/multijar-module-devmode");
+        run(false, "clean", "package", "-DskipTests");
+
+        String greeting = DevModeTestUtils.getHttpResponse("/hello");
+        assertThat(greeting).contains("acme other acme-service");
+
+        // Update TestBean
+        File resource = new File(testDir, "beans/src/main/java/org/acme/AcmeService.java");
+        filter(resource, Collections.singletonMap("return \"acme-service\";", "return \"acme-service!\";"));
+        await()
+                .pollDelay(300, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("acme other acme-service!"));
+
+        // Update AcmeBean
+        resource = new File(testDir, "beans/src/main/java/org/acme/AcmeBean.java");
+        filter(resource, Collections.singletonMap("return \"acme\";", "return \"acme!\";"));
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("acme! other acme-service!"));
+
+        // Update Other bean
+        resource = new File(testDir, "beans/src/main/java/org/acme/Other.java");
+        filter(resource, Collections.singletonMap("return \"other\";", "return \"other!\";"));
+        await()
+                .pollDelay(300, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("acme! other! acme-service!"));
+    }
 }

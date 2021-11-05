@@ -3,9 +3,7 @@ package io.quarkus.bootstrap.app;
 import io.quarkus.bootstrap.BootstrapAppModelFactory;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.update.DependenciesOrigin;
@@ -16,6 +14,8 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.PathCollection;
+import io.quarkus.paths.PathList;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -43,7 +43,7 @@ public class QuarkusBootstrap implements Serializable {
     /**
      * The root of the application, where the application classes live.
      */
-    private final PathsCollection applicationRoot;
+    private final PathCollection applicationRoot;
 
     /**
      * The root of the project. This may be different to the application root for tests that
@@ -93,7 +93,7 @@ public class QuarkusBootstrap implements Serializable {
     private final boolean disableClasspathCache;
     private final ApplicationModel existingModel;
     private final boolean rebuild;
-    private final Set<AppArtifactKey> localArtifacts;
+    private final Set<ArtifactKey> localArtifacts;
     private final List<ClassLoaderEventListener> classLoadListeners;
     private final boolean auxiliaryApplication;
     private final boolean hostApplicationIsTestOnly;
@@ -179,7 +179,7 @@ public class QuarkusBootstrap implements Serializable {
         return new CuratedApplication(this, appModelFactory.resolveAppModel(), classLoadingConfig);
     }
 
-    private static ConfiguredClassLoading createClassLoadingConfig(PathsCollection applicationRoot, Mode mode) {
+    private static ConfiguredClassLoading createClassLoadingConfig(PathCollection applicationRoot, Mode mode) {
         //look for an application.properties
         for (Path path : applicationRoot) {
             Path props = path.resolve("application.properties");
@@ -262,7 +262,7 @@ public class QuarkusBootstrap implements Serializable {
         return appModelResolver;
     }
 
-    public PathsCollection getApplicationRoot() {
+    public PathCollection getApplicationRoot() {
         return applicationRoot;
     }
 
@@ -304,7 +304,7 @@ public class QuarkusBootstrap implements Serializable {
 
     @Deprecated
     public static Builder builder(Path applicationRoot) {
-        return new Builder().setApplicationRoot(PathsCollection.of(applicationRoot));
+        return new Builder().setApplicationRoot(PathList.of(applicationRoot));
     }
 
     public String getBaseName() {
@@ -385,7 +385,7 @@ public class QuarkusBootstrap implements Serializable {
         public boolean hostApplicationIsTestOnly;
         boolean flatClassPath;
         boolean rebuild;
-        PathsCollection applicationRoot;
+        PathCollection applicationRoot;
         String baseName;
         Path projectRoot;
         ClassLoader baseClassLoader = ClassLoader.getSystemClassLoader();
@@ -410,18 +410,18 @@ public class QuarkusBootstrap implements Serializable {
         List<Dependency> forcedDependencies = new ArrayList<>();
         boolean disableClasspathCache;
         ApplicationModel existingModel;
-        final Set<AppArtifactKey> localArtifacts = new HashSet<>();
+        final Set<ArtifactKey> localArtifacts = new HashSet<>();
         boolean auxiliaryApplication;
 
         public Builder() {
         }
 
         public Builder setApplicationRoot(Path applicationRoot) {
-            this.applicationRoot = PathsCollection.of(applicationRoot);
+            this.applicationRoot = PathList.of(applicationRoot);
             return this;
         }
 
-        public Builder setApplicationRoot(PathsCollection applicationRoot) {
+        public Builder setApplicationRoot(PathCollection applicationRoot) {
             if (appArtifact != null) {
                 throw new IllegalStateException("Cannot set both app artifact and application root");
             }
@@ -546,7 +546,7 @@ public class QuarkusBootstrap implements Serializable {
                 throw new IllegalStateException("Cannot set both application root and app artifact");
             }
             this.appArtifact = appArtifact;
-            this.applicationRoot = PathsCollection.from(appArtifact.getResolvedPaths());
+            this.applicationRoot = PathList.from(appArtifact.getResolvedPaths());
             if (appArtifact.getResolvedPaths().isSinglePath()) {
                 this.projectRoot = appArtifact.getResolvedPaths().getSinglePath();
             }
@@ -597,8 +597,13 @@ public class QuarkusBootstrap implements Serializable {
             return this;
         }
 
-        public Builder addLocalArtifact(AppArtifactKey key) {
+        public Builder addLocalArtifact(ArtifactKey key) {
             localArtifacts.add(key);
+            return this;
+        }
+
+        public Builder clearLocalArtifacts() {
+            localArtifacts.clear();
             return this;
         }
 
@@ -617,7 +622,6 @@ public class QuarkusBootstrap implements Serializable {
             return this;
         }
 
-        @SuppressWarnings("AssertWithSideEffects")
         private boolean inheritedAssertionsEnabled() {
             boolean result = false;
             assert result = true;
@@ -627,8 +631,7 @@ public class QuarkusBootstrap implements Serializable {
         public QuarkusBootstrap build() {
             Objects.requireNonNull(applicationRoot, "Application root must not be null");
             if (appArtifact != null) {
-                localArtifacts
-                        .add(new AppArtifactKey(appArtifact.getGroupId(), appArtifact.getArtifactId()));
+                localArtifacts.add(appArtifact.getKey());
             }
 
             ConfiguredClassLoading classLoadingConfig = createClassLoadingConfig(applicationRoot, mode);

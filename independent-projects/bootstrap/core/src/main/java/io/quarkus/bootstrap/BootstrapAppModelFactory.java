@@ -1,7 +1,6 @@
 package io.quarkus.bootstrap;
 
 import io.quarkus.bootstrap.app.CurationResult;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
@@ -23,7 +22,6 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
-import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedArtifactDependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -40,10 +38,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.jboss.logging.Logger;
@@ -107,10 +105,8 @@ public class BootstrapAppModelFactory {
         return this;
     }
 
-    public BootstrapAppModelFactory setLocalArtifacts(Set<AppArtifactKey> localArtifacts) {
-        this.reloadableModules = localArtifacts.stream()
-                .map(k -> new GACT(k.getGroupId(), k.getArtifactId(), k.getClassifier(), k.getType()))
-                .collect(Collectors.toSet());
+    public BootstrapAppModelFactory setLocalArtifacts(Set<ArtifactKey> localArtifacts) {
+        this.reloadableModules = new HashSet<>(localArtifacts);
         return this;
     }
 

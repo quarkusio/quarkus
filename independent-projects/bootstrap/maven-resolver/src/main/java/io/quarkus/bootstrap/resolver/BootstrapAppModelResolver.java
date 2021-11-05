@@ -8,23 +8,19 @@ import io.quarkus.bootstrap.model.PlatformImportsImpl;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.BuildDependencyGraphVisitor;
 import io.quarkus.bootstrap.resolver.maven.DeploymentInjectingDependencyVisitor;
-import io.quarkus.bootstrap.resolver.maven.DeploymentInjectionException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.SimpleDependencyGraphTransformationContext;
-import io.quarkus.bootstrap.workspace.ProcessedSources;
+import io.quarkus.bootstrap.workspace.ArtifactSources;
+import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
-import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvableDependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
-import java.io.IOException;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -196,11 +192,9 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         }
 
         final ResolvedDependency appArtifact = resolve(coords, mvnArtifact, managedRepos);
-        final boolean preferWorkspacePaths = !containsExtensionMetadata(appArtifact) && (devmode || test);
-
         final ApplicationModelBuilder appBuilder = new ApplicationModelBuilder().setAppArtifact(appArtifact);
         if (appArtifact.getWorkspaceModule() != null) {
-            appBuilder.addReloadableWorkspaceModule(new GACT(appArtifact.getGroupId(), appArtifact.getArtifactId()));
+            appBuilder.addReloadableWorkspaceModule(appArtifact.getKey());
         }
         if (!reloadableModules.isEmpty()) {
             appBuilder.addReloadableWorkspaceModules(reloadableModules);
@@ -234,7 +228,6 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         final DeploymentInjectingDependencyVisitor deploymentInjector;
         try {
             deploymentInjector = new DeploymentInjectingDependencyVisitor(mvn, managedDeps, repos, appBuilder,
-                    preferWorkspacePaths,
                     collectReloadableDeps && reloadableModules.isEmpty());
             deploymentInjector.injectDeploymentDependencies(resolvedDeps);
         } catch (BootstrapDependencyProcessingException e) {
@@ -283,7 +276,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                         }
                     }
                     appBuilder.addDependency(
-                            toAppArtifact(dep.getArtifact(), module, false)
+                            toAppArtifact(dep.getArtifact(), module)
                                     .setScope(dep.getDependency().getScope())
                                     .setFlags(flags).build());
                 }
@@ -293,36 +286,6 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         collectPlatformProperties(appBuilder, managedDeps);
 
         return appBuilder.build();
-    }
-
-    private static boolean containsExtensionMetadata(ResolvedDependency dep) {
-        if (!ArtifactCoords.TYPE_JAR.equals(dep.getType())) {
-            return false;
-        }
-        for (Path path : dep.getResolvedPaths()) {
-            if (!Files.exists(path)) {
-                continue;
-            }
-            if (Files.isDirectory(path)) {
-                if (containsExtensionMetadata(path)) {
-                    return true;
-                }
-            } else {
-                try (FileSystem artifactFs = ZipUtils.newFileSystem(path)) {
-                    if (containsExtensionMetadata(artifactFs.getPath(""))) {
-                        return true;
-                    }
-                } catch (IOException e) {
-                    throw new DeploymentInjectionException("Failed to read " + path, e);
-                }
-            }
-        }
-        return false;
-    }
-
-    private static boolean containsExtensionMetadata(final Path path) {
-        return Files.exists(path.resolve(BootstrapConstants.BUILD_STEPS_PATH))
-                || Files.exists(path.resolve(BootstrapConstants.DESCRIPTOR_PATH));
     }
 
     private io.quarkus.maven.dependency.ResolvedDependency resolve(ArtifactCoords appArtifact, Artifact mvnArtifact,
@@ -344,25 +307,14 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
         PathCollection resolvedPaths = null;
         if ((devmode || test) && resolvedModule != null) {
-            final PathList.Builder pathBuilder = PathList.builder();
-            for (ProcessedSources src : resolvedModule.getMainSources()) {
-                if (src.getDestinationDir().exists()) {
-                    final Path p = src.getDestinationDir().toPath();
-                    if (!pathBuilder.contains(p)) {
-                        pathBuilder.add(p);
-                    }
+            final ArtifactSources artifactSources = resolvedModule.getSources(appArtifact.getClassifier());
+            if (artifactSources != null) {
+                final PathList.Builder pathBuilder = PathList.builder();
+                collectSourceDirs(pathBuilder, artifactSources.getSourceDirs());
+                collectSourceDirs(pathBuilder, artifactSources.getResourceDirs());
+                if (!pathBuilder.isEmpty()) {
+                    resolvedPaths = pathBuilder.build();
                 }
-            }
-            for (ProcessedSources src : resolvedModule.getMainResources()) {
-                if (src.getDestinationDir().exists()) {
-                    final Path p = src.getDestinationDir().toPath();
-                    if (!pathBuilder.contains(p)) {
-                        pathBuilder.add(p);
-                    }
-                }
-            }
-            if (!pathBuilder.isEmpty()) {
-                resolvedPaths = pathBuilder.build();
             }
         }
         if (resolvedPaths == null) {
@@ -374,6 +326,17 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         }
         return ResolvedDependencyBuilder.newInstance().setCoords(appArtifact).setWorkspaceModule(resolvedModule)
                 .setResolvedPaths(resolvedPaths).build();
+    }
+
+    private static void collectSourceDirs(final PathList.Builder pathBuilder, Collection<SourceDir> resources) {
+        for (SourceDir src : resources) {
+            if (Files.exists(src.getOutputDir())) {
+                final Path p = src.getOutputDir();
+                if (!pathBuilder.contains(p)) {
+                    pathBuilder.add(p);
+                }
+            }
+        }
     }
 
     private void collectPlatformProperties(ApplicationModelBuilder appBuilder, List<Dependency> managedDeps)
@@ -504,11 +467,11 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     }
 
     private ResolvedDependencyBuilder toAppArtifact(Artifact artifact) {
-        return toAppArtifact(artifact, null, false);
+        return toAppArtifact(artifact, null);
     }
 
-    private ResolvedDependencyBuilder toAppArtifact(Artifact artifact, WorkspaceModule module, boolean preferWorkspacePaths) {
-        return DeploymentInjectingDependencyVisitor.toAppArtifact(artifact, module, preferWorkspacePaths);
+    private ResolvedDependencyBuilder toAppArtifact(Artifact artifact, WorkspaceModule module) {
+        return DeploymentInjectingDependencyVisitor.toAppArtifact(artifact, module);
     }
 
     private static List<Dependency> toAetherDeps(Collection<io.quarkus.maven.dependency.Dependency> directDeps) {

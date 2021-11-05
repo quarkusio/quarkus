@@ -74,7 +74,7 @@ public class AppDependency implements ResolvedDependency, Serializable {
         if (isOptional()) {
             buf.append("optional ");
         }
-        if (isWorkspacetModule()) {
+        if (isWorkspaceModule()) {
             buf.append("local ");
         }
         if (isRuntimeExtensionArtifact()) {

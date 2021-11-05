@@ -14,18 +14,16 @@ import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapGradleException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.devmode.DependenciesFilter;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
-import io.quarkus.bootstrap.workspace.ProcessedSources;
-import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.bootstrap.workspace.ArtifactSources;
+import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
 import io.quarkus.dev.spi.DevModeType;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.GACT;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.PathList;
 
 public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String, Object>>, Closeable {
 
@@ -50,14 +48,14 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
             }
 
             if (appModel != null) {
-                for (WorkspaceModule project : DependenciesFilter.getReloadableModules(appModel)) {
+                for (ResolvedDependency project : DependenciesFilter.getReloadableModules(appModel)) {
                     final ModuleInfo module = toModule(project);
-                    if (project == appModel.getApplicationModule()) {
+                    if (project.getKey().equals(appModel.getAppArtifact().getKey())
+                            && project.getVersion().equals(appModel.getAppArtifact().getVersion())) {
                         devModeContext.setApplicationRoot(module);
                     } else {
                         devModeContext.getAdditionalModules().add(module);
-                        devModeContext.getLocalArtifacts()
-                                .add(new AppArtifactKey(project.getId().getGroupId(), project.getId().getArtifactId()));
+                        devModeContext.getLocalArtifacts().add(project.getKey());
                     }
                 }
             }
@@ -85,40 +83,48 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
         }
     }
 
-    private DevModeContext.ModuleInfo toModule(WorkspaceModule module) throws BootstrapGradleException {
+    private DevModeContext.ModuleInfo toModule(ResolvedDependency module) throws BootstrapGradleException {
 
         String classesDir = null;
         final Set<Path> sourceParents = new LinkedHashSet<>();
-        final PathsCollection.Builder srcPaths = PathsCollection.builder();
-        for (ProcessedSources src : module.getMainSources()) {
-            sourceParents.add(src.getSourceDir().getParentFile().toPath());
-            srcPaths.add(src.getSourceDir().toPath());
+        final PathList.Builder srcPaths = PathList.builder();
+        final ArtifactSources sources = module.getSources();
+        for (SourceDir src : sources.getSourceDirs()) {
+            for (Path p : src.getSourceTree().getRoots()) {
+                sourceParents.add(p.getParent());
+                if (!srcPaths.contains(p)) {
+                    srcPaths.add(p);
+                }
+            }
             if (classesDir == null) {
-                classesDir = src.getDestinationDir().toString();
+                classesDir = src.getOutputDir().toString();
             }
         }
 
         String resourceDirectory = null;
-        final PathsCollection.Builder resourcesPaths = PathsCollection.builder();
-        for (ProcessedSources src : module.getMainResources()) {
-            resourcesPaths.add(src.getSourceDir().toPath());
+        final PathList.Builder resourcesPaths = PathList.builder();
+        for (SourceDir src : sources.getResourceDirs()) {
+            for (Path p : src.getSourceTree().getRoots()) {
+                if (!resourcesPaths.contains(p)) {
+                    resourcesPaths.add(p);
+                }
+            }
             if (resourceDirectory == null) {
                 // Peek the first one as we assume that it is the primary
-                resourceDirectory = src.getDestinationDir().toString();
+                resourceDirectory = src.getOutputDir().toString();
             }
         }
 
-        final ArtifactKey key = new GACT(module.getId().getGroupId(), module.getId().getArtifactId());
         return new DevModeContext.ModuleInfo.Builder()
-                .setArtifactKey(key)
-                .setName(module.getId().getArtifactId())
-                .setProjectDirectory(module.getModuleDir().getPath())
+                .setArtifactKey(module.getKey())
+                .setProjectDirectory(module.getWorkspaceModule().getModuleDir().getPath())
                 .setSourcePaths(srcPaths.build())
                 .setClassesPath(classesDir)
                 .setResourcePaths(resourcesPaths.build())
                 .setResourcesOutputPath(resourceDirectory)
-                .setSourceParents(PathsCollection.from(sourceParents))
-                .setPreBuildOutputDir(module.getBuildDir().toPath().resolve("generated-sources").toAbsolutePath().toString())
-                .setTargetDir(module.getBuildDir().toString()).build();
+                .setSourceParents(PathList.from(sourceParents))
+                .setPreBuildOutputDir(module.getWorkspaceModule().getBuildDir().toPath().resolve("generated-sources")
+                        .toAbsolutePath().toString())
+                .setTargetDir(module.getWorkspaceModule().getBuildDir().toString()).build();
     }
 }

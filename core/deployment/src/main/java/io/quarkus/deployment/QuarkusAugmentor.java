@@ -18,7 +18,6 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.builder.BuildChain;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildExecutionBuilder;
@@ -46,7 +45,7 @@ public class QuarkusAugmentor {
 
     private final ClassLoader classLoader;
     private final ClassLoader deploymentClassLoader;
-    private final PathsCollection root;
+    private final PathCollection root;
     private final Set<Class<? extends BuildItem>> finalResults;
     private final List<Consumer<BuildChainBuilder>> buildChainCustomizers;
     private final LaunchMode launchMode;
@@ -193,7 +192,7 @@ public class QuarkusAugmentor {
         List<PathCollection> additionalApplicationArchives = new ArrayList<>();
         Collection<Path> excludedFromIndexing = Collections.emptySet();
         ClassLoader classLoader;
-        PathsCollection root;
+        PathCollection root;
         Path targetDir;
         Set<Class<? extends BuildItem>> finalResults = new HashSet<>();
         private final List<Consumer<BuildChainBuilder>> buildChainCustomizers = new ArrayList<>();
@@ -274,7 +273,7 @@ public class QuarkusAugmentor {
             return this;
         }
 
-        public PathsCollection getRoot() {
+        public PathCollection getRoot() {
             return root;
         }
 
@@ -283,7 +282,7 @@ public class QuarkusAugmentor {
             return this;
         }
 
-        public Builder setRoot(PathsCollection root) {
+        public Builder setRoot(PathCollection root) {
             this.root = root;
             return this;
         }

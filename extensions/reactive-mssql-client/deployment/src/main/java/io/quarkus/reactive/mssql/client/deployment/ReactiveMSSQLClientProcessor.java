@@ -73,6 +73,9 @@ class ReactiveMSSQLClientProcessor {
                     curateOutcomeBuildItem);
         }
 
+        // Enable SSL support by default
+        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.REACTIVE_MSSQL_CLIENT));
+
         return new ServiceStartBuildItem("reactive-mssql-client");
     }
 

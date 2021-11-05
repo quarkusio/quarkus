@@ -25,6 +25,7 @@ var port = {config:property('quarkus.http.port')};
         if(tokensInUrl()){
             loggedIn === true;
             $('.implicitLoggedOut').hide();
+            $('.loginError').hide();
             $('.implicitLoggedIn').show();
             var hash = window.location.hash;
             accessToken = hash.match(/access_token=([^&]+)/)[1];
@@ -36,14 +37,22 @@ var port = {config:property('quarkus.http.port')};
         }else if(codeInUrl()){
             loggedIn === true;
             $('.implicitLoggedOut').hide();
+            $('.loginError').hide();
             $('.implicitLoggedIn').show();
             var search = window.location.search;
             var code = search.match(/code=([^&]+)/)[1];
             exchangeCodeForTokens(code);
+        }else if(errorInUrl()){
+            loggedIn === false;
+            $('.implicitLoggedOut').hide();
+            $('.implicitLoggedIn').hide();
+            $('.loginError').show();
+            printLoginError();
         }else{
             loggedIn === false;
             $('.implicitLoggedOut').show();
             $('.implicitLoggedIn').hide();
+            $('.loginError').hide();
             accessToken = null;
             idToken = null;
             userName = null;
@@ -51,9 +60,14 @@ var port = {config:property('quarkus.http.port')};
             $('#accessTokenDecodedArea').text('');
             $('#idTokenEncodedArea').text('');
             $('#idTokenDecodedArea').text('');
-
+            $('#errorDescription').text('');
         }
     });
+    
+    function showLoginToSpa() {
+        $('.implicitLoggedOut').show();
+        $('.loginError').hide();
+    }
 
     function tokensInUrl(){
         return idTokenInUrl() && accessTokenInUrl();
@@ -69,6 +83,10 @@ var port = {config:property('quarkus.http.port')};
     
     function codeInUrl(){
         return inUrl('code');
+    }
+    
+    function errorInUrl(){
+        return inUrl('error_description');
     }
 
     function inUrl(field){
@@ -373,6 +391,13 @@ function printResponseData(data, message){
     $('#results').append("<br/>");
 }
 
+function printLoginError(){
+    var search = window.location.search;
+    var errorDescription = search.match(/error_description=([^&]+)/)[1];
+    $('#errorDescription').append("<i class='far fa-times-circle text-danger px-2'></i>");
+    $('#errorDescription').append("<span class='text-primary px-1'>" + "Login error: " + decodeURI(errorDescription).replaceAll("+", " ") + "</span>");
+}
+
 function signInToService(servicePath) {
     window.open("http://localhost:" + port + servicePath);
 }
@@ -401,6 +426,18 @@ function signInToService(servicePath) {
                 </a>
             </div>
         </div>
+        <div class="card loginError">
+            <div class="card-body">
+                <div class="float-left">
+                    <span id="errorDescription"></span>
+                </div>
+                <div class="float-right">
+                    <a onclick="showLoginToSpa();" class="btn btn-link" title="Click to start again">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+            </div>
+        </div>    
         <div class="card implicitLoggedIn">
             <div class="card-header">
                 <div class="float-left">
@@ -542,20 +579,14 @@ function signInToService(servicePath) {
                         <input type="text" class="form-control" id="userName" value="" title="User">
                     </div>
                 </div>
-                {#if info:keycloakUsers??}
-	                <div class="row">
-	                    <input type="hidden" id="password" value="" title="Password">
-	                </div>
-	            {#else}
-	                <div class="row">
-	                    <div class="col-2">
-	                        <label for="password">Password</label>
-	                    </div>
-	                    <div class="col-10">
-	                        <input type="password" class="form-control" id="password" value="" title="Password">
-	                    </div>
-	                </div> 
-                {/if}
+                <div class="row">
+                    <div class="col-2">
+                        <label for="password">Password</label>
+                    </div>
+                    <div class="col-10">
+                        <input type="password" class="form-control" id="password" value="" title="Password">
+                    </div>
+                </div> 
                 <div class="row my-2">
                     <div class="col-2">
                         <label for="servicePath">Service Path</label>

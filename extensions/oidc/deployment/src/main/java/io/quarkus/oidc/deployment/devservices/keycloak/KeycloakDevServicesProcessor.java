@@ -232,7 +232,7 @@ public class KeycloakDevServicesProcessor {
         String oidcClientId = getOidcClientId();
         String oidcClientSecret = getOidcClientSecret();
         String oidcApplicationType = getOidcApplicationType();
-        Map<String, String> users = getUsers(capturedDevServicesConfiguration.users);
+        Map<String, String> users = getUsers(capturedDevServicesConfiguration.users, createRealm);
 
         if (createRealm) {
             createRealm(capturedKeycloakUrl, users, oidcClientId, oidcClientSecret);
@@ -538,8 +538,8 @@ public class KeycloakDevServicesProcessor {
         }
     }
 
-    private Map<String, String> getUsers(Map<String, String> configuredUsers) {
-        if (configuredUsers.isEmpty()) {
+    private Map<String, String> getUsers(Map<String, String> configuredUsers, boolean createRealm) {
+        if (configuredUsers.isEmpty() && createRealm) {
             Map<String, String> users = new LinkedHashMap<String, String>();
             users.put("alice", "alice");
             users.put("bob", "bob");

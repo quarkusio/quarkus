@@ -80,6 +80,12 @@ Next test the service with either the current access or ID token. SPA usually se
 
 Finally you can select a `Log Out` image::dev-ui-keycloak-logout.png option if you'd like to log out and authenticate to Keycloak as a different user.
 
+Note Keycloak may return an error when you try to `Log into Single Page Application`. For example, `quarkus.oidc.client-id` may not match the client id in the realm imported to Keycloak or the client in this realm is not configured correctly to support the authorization code flow, etc. In such cases Keycloak will return an `error_description` query parameter and `Dev UI` will also show this error description, for example:
+
+image::dev-ui-keycloak-login-error.png[alt=Dev UI Keycloak Login Error,role="center"]
+
+If the error occurs then log into Keycloak using the `Keycloak Admin` option and update the realm configuration as necesary and also check the `application.properties`.
+
 ===== Test with Swagger UI or GrapghQL UI
 
 You can avoid manually entering the service paths and test your service with `Swagger UI` or `GraphQL UI` if `quarkus-smallrye-openapi` and/or `quarkus-smallrye-graphql` are used in your project. For example, if you run `mvn quarkus-dev` with both `quarkus-smallrye-openapi` and `quarkus-smallrye-graphql` dependencies then you will see the following options after logging in into Keycloak:
@@ -116,7 +122,9 @@ If you set `quarkus.oidc.devui.grant.type=password` in `application.properties` 
 
 image::dev-ui-keycloak-password-grant.png[alt=Dev UI OpenId Connect Keycloak Page - Password Grant,role="center"]
 
-Enter a registered user name, a relative service endpoint path, click on `Test Service` and you will see a status code such as `200`, `403`, `401` or `404` printed.
+Enter a registered user name, user password, a relative service endpoint path, click on `Test Service` and you will see a status code such as `200`, `403`, `401` or `404` printed.
+If the user name is also set in `quarkus.keycloak.devservices.users` map property containing user names and passwords then you do not have to set a password when testing the service.
+But note, you do not have to initialize `quarkus.keycloak.devservices.users` to test the service using the password grant.
 
 You will also see in the Dev UI console something similar to:
 

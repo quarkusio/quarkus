@@ -42,7 +42,7 @@ public class OidcPasswordClientCredHandler extends DevConsolePostHandler {
 
                 String userName = form.get("user");
                 String password = users.get(userName);
-                if (password == null) {
+                if (password == null || password.isBlank()) {
                     password = form.get("password");
                 }
                 token = OidcDevServicesUtils.getPasswordAccessToken(client, tokenUrl,

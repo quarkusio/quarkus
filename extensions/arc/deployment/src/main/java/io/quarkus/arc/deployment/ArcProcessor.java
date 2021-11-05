@@ -154,6 +154,7 @@ public class ArcProcessor {
             BeanArchiveIndexBuildItem beanArchiveIndex,
             CombinedIndexBuildItem combinedIndex,
             ApplicationIndexBuildItem applicationIndex,
+            List<ExcludedTypeBuildItem> excludedTypes,
             List<AnnotationsTransformerBuildItem> annotationTransformers,
             List<InjectionPointTransformerBuildItem> injectionPointTransformers,
             List<ObserverTransformerBuildItem> observerTransformers,
@@ -365,6 +366,12 @@ public class ArcProcessor {
         if (arcConfig.excludeTypes.isPresent()) {
             for (Predicate<ClassInfo> predicate : initClassPredicates(
                     arcConfig.excludeTypes.get())) {
+                builder.addExcludeType(predicate);
+            }
+        }
+        if (!excludedTypes.isEmpty()) {
+            for (Predicate<ClassInfo> predicate : initClassPredicates(
+                    excludedTypes.stream().map(ExcludedTypeBuildItem::getMatch).collect(Collectors.toList()))) {
                 builder.addExcludeType(predicate);
             }
         }

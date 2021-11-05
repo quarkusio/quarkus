@@ -1,0 +1,4 @@
+quarkus:
+  hibernate-orm:
+    database:
+      generation: drop-and-create

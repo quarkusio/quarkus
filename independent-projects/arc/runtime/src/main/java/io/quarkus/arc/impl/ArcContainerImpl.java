@@ -17,6 +17,7 @@ import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.RemovedBean;
 import io.quarkus.arc.ResourceReferenceProvider;
 import io.quarkus.arc.impl.ArcCDIProvider.ArcCDI;
+import java.lang.StackWalker.StackFrame;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -38,6 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.Dependent;
@@ -630,31 +632,45 @@ public class ArcContainerImpl implements ArcContainer {
                 String msg = "\n%1$s%1$s%1$s%1$s\n"
                         + "CDI: programmatic lookup problem detected\n"
                         + "-----------------------------------------\n"
-                        + "At least one bean matched the required type and qualifiers but was marked as unused and removed during build\n"
-                        + "Removed beans:\n\t- %2$s\n"
+                        + "At least one bean matched the required type and qualifiers but was marked as unused and removed during build\n\n"
+                        + "Stack frame: %5$s\n"
                         + "Required type: %3$s\n"
                         + "Required qualifiers: %4$s\n"
+                        + "Removed beans:\n\t- %2$s\n"
                         + "Solutions:\n"
                         + "\t- Application developers can eliminate false positives via the @Unremovable annotation\n"
                         + "\t- Extensions can eliminate false positives via build items, e.g. using the UnremovableBeanBuildItem\n"
                         + "\t- See also https://quarkus.io/guides/cdi-reference#remove_unused_beans\n"
-                        + "\t- Enable the DEBUG log level to see the full stack trace to identify the method that performed the lookup\n"
+                        + "\t- Enable the DEBUG log level to see the full stack trace\n"
                         + "%1$s%1$s%1$s%1$s\n";
+                StackWalker walker = StackWalker.getInstance();
+                StackFrame frame = walker.walk(this::findCaller);
                 LOGGER.warnf(msg, separator,
                         removedMatching.stream().map(Object::toString).collect(Collectors.joining("\n\t- ")),
-                        resolvable.requiredType, Arrays.toString(resolvable.qualifiers));
+                        resolvable.requiredType, Arrays.toString(resolvable.qualifiers), frame != null ? frame : "n/a");
                 if (LOGGER.isDebugEnabled()) {
-                    StringBuilder stack = new StringBuilder("\nCDI: programmatic lookup stack trace:\n");
-                    for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
-                        stack.append("\t");
-                        stack.append(e.toString());
-                        stack.append("\n");
-                    }
-                    LOGGER.debug(stack);
+                    LOGGER.debug("\nCDI: programmatic lookup stack trace:\n" + walker.walk(this::collectStack));
                 }
             }
         }
         return matching;
+    }
+
+    private StackFrame findCaller(Stream<StackFrame> stream) {
+        return stream
+                .filter(this::isCallerFrame)
+                .findFirst().orElse(null);
+    }
+
+    private String collectStack(Stream<StackFrame> stream) {
+        return stream
+                .map(Object::toString)
+                .collect(Collectors.joining("\n\t"));
+    }
+
+    private boolean isCallerFrame(StackFrame frame) {
+        String className = frame.getClassName();
+        return !className.startsWith("io.quarkus.arc.impl");
     }
 
     List<InjectableBean<?>> getMatchingBeans(String name) {

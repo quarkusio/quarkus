@@ -28,13 +28,14 @@ public class FlywayContainerProducer {
         this.flywayBuildConfig = flywayBuildConfig;
     }
 
-    public FlywayContainer createFlyway(DataSource dataSource, String dataSourceName) {
+    public FlywayContainer createFlyway(DataSource dataSource, String dataSourceName, boolean hasMigrations,
+            boolean createPossible) {
         FlywayDataSourceRuntimeConfig matchingRuntimeConfig = flywayRuntimeConfig.getConfigForDataSourceName(dataSourceName);
         FlywayDataSourceBuildTimeConfig matchingBuildTimeConfig = flywayBuildConfig.getConfigForDataSourceName(dataSourceName);
         final Collection<Callback> callbacks = QuarkusPathLocationScanner.callbacksForDataSource(dataSourceName);
         final Flyway flyway = new FlywayCreator(matchingRuntimeConfig, matchingBuildTimeConfig).withCallbacks(callbacks)
                 .createFlyway(dataSource);
         return new FlywayContainer(flyway, matchingRuntimeConfig.cleanAtStart, matchingRuntimeConfig.migrateAtStart,
-                dataSourceName);
+                dataSourceName, hasMigrations, createPossible);
     }
 }

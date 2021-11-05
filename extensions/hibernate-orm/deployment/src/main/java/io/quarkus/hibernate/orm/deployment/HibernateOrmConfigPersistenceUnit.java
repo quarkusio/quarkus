@@ -210,6 +210,14 @@ public class HibernateOrmConfigPersistenceUnit {
     @ConfigItem
     public Optional<String> multitenantSchemaDatasource;
 
+    /**
+     * If hibernate is not auto generating the schema, and Quarkus is running in development mode
+     * then Quarkus will attempt to validate the database after startup and print a log message if
+     * there are any problems.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean validateInDevMode;
+
     public boolean isAnyPropertySet() {
         return datasource.isPresent() ||
                 packages.isPresent() ||

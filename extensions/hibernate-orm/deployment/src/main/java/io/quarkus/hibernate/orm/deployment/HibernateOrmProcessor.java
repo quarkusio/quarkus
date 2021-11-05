@@ -30,6 +30,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -65,6 +66,7 @@ import org.jboss.logmanager.Level;
 
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
+import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -78,6 +80,8 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -106,6 +110,8 @@ import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
@@ -120,6 +126,7 @@ import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusArcBeanContainer;
+import io.quarkus.hibernate.orm.runtime.devconsole.HibernateOrmDevConsoleCreateDDLSupplier;
 import io.quarkus.hibernate.orm.runtime.devconsole.HibernateOrmDevConsoleIntegrator;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
@@ -180,15 +187,74 @@ public final class HibernateOrmProcessor {
         }
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsDevelopment.class)
+    void handleMoveSql(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> runtimeInfoProducer,
+            BuildProducer<JdbcInitialSQLGeneratorBuildItem> initialSQLGeneratorBuildItemBuildProducer,
+            HibernateOrmConfig config) {
+
+        DevConsoleRuntimeTemplateInfoBuildItem devConsoleRuntimeTemplateInfoBuildItem = new DevConsoleRuntimeTemplateInfoBuildItem(
+                "create-ddl." + PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
+                new HibernateOrmDevConsoleCreateDDLSupplier(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME));
+        runtimeInfoProducer.produce(devConsoleRuntimeTemplateInfoBuildItem);
+        if (config.defaultPersistenceUnit.datasource.isEmpty()) {
+            handleGenerateSqlForPu(runtimeInfoProducer, initialSQLGeneratorBuildItemBuildProducer,
+                    PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, DataSourceUtil.DEFAULT_DATASOURCE_NAME);
+        } else {
+            handleGenerateSqlForPu(runtimeInfoProducer, initialSQLGeneratorBuildItemBuildProducer,
+                    PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, config.defaultPersistenceUnit.datasource.get());
+        }
+        for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.persistenceUnits.entrySet()) {
+
+            if (entry.getValue().datasource.isEmpty()) {
+                handleGenerateSqlForPu(runtimeInfoProducer, initialSQLGeneratorBuildItemBuildProducer, entry.getKey(),
+                        DataSourceUtil.DEFAULT_DATASOURCE_NAME);
+            } else {
+                handleGenerateSqlForPu(runtimeInfoProducer, initialSQLGeneratorBuildItemBuildProducer, entry.getKey(),
+                        entry.getValue().datasource.get());
+            }
+        }
+    }
+
+    private void handleGenerateSqlForPu(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> runtimeInfoProducer,
+            BuildProducer<JdbcInitialSQLGeneratorBuildItem> initialSQLGeneratorBuildItemBuildProducer, String puName,
+            String dsName) {
+        DevConsoleRuntimeTemplateInfoBuildItem devConsoleRuntimeTemplateInfoBuildItem = new DevConsoleRuntimeTemplateInfoBuildItem(
+                "create-ddl." + puName, new HibernateOrmDevConsoleCreateDDLSupplier(puName));
+        runtimeInfoProducer.produce(devConsoleRuntimeTemplateInfoBuildItem);
+        initialSQLGeneratorBuildItemBuildProducer.produce(new JdbcInitialSQLGeneratorBuildItem(dsName, new Supplier<String>() {
+            @Override
+            public String get() {
+                return DevConsoleManager.getTemplateInfo()
+                        .get(devConsoleRuntimeTemplateInfoBuildItem.getGroupId() + "."
+                                + devConsoleRuntimeTemplateInfoBuildItem.getArtifactId())
+                        .get(devConsoleRuntimeTemplateInfoBuildItem.getName()).toString();
+            }
+        }));
+    }
+
+    @Record(RUNTIME_INIT)
+    @Consume(ServiceStartBuildItem.class)
+    @BuildStep(onlyIf = IsDevelopment.class)
+    void warnOfSchemaProblems(HibernateOrmConfig config, HibernateOrmRecorder recorder) {
+        if (config.defaultPersistenceUnit.validateInDevMode) {
+            recorder.doValidation(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+        }
+        for (var e : config.persistenceUnits.entrySet()) {
+            if (e.getValue().validateInDevMode) {
+                recorder.doValidation(e.getKey());
+            }
+        }
+
+    }
+
+    @BuildStep(onlyIfNot = IsNormal.class)
     void devServicesAutoGenerateByDefault(DevServicesLauncherConfigResultBuildItem devServicesResult,
             List<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItems,
             HibernateOrmConfig config,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfigurationDefaultBuildItemBuildProducer) {
-        if (!schemaReadyBuildItems.isEmpty()) {
-            //we don't want to enable auto generation if somebody else is managing the schema
-            return;
-        }
+        Set<String> managedSources = schemaReadyBuildItems.stream().map(JdbcDataSourceSchemaReadyBuildItem::getDatasourceNames)
+                .collect(HashSet::new, Collection::addAll, Collection::addAll);
+
         String dsName;
         if (config.defaultPersistenceUnit.datasource.isEmpty()) {
             dsName = "quarkus.datasource.username";
@@ -197,7 +263,8 @@ public final class HibernateOrmProcessor {
         }
 
         if (!ConfigUtils.isPropertyPresent(dsName)) {
-            if (devServicesResult.getConfig().containsKey(dsName)) {
+            if (devServicesResult.getConfig().containsKey(dsName)
+                    && !managedSources.contains(DataSourceUtil.DEFAULT_DATASOURCE_NAME)) {
                 if (!ConfigUtils.isPropertyPresent("quarkus.hibernate-orm.database.generation")) {
                     LOG.info(
                             "Setting quarkus.hibernate-orm.database.generation=drop-and-create to initialize Dev Services managed database");
@@ -209,13 +276,16 @@ public final class HibernateOrmProcessor {
 
         for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.persistenceUnits.entrySet()) {
 
-            if (entry.getValue().datasource.isEmpty()) {
+            Optional<String> ds = entry.getValue().datasource;
+            if (ds.isEmpty()) {
                 dsName = "quarkus.datasource.jdbc.url";
             } else {
-                dsName = "quarkus.datasource." + entry.getValue().datasource.get() + ".username";
+                dsName = "quarkus.datasource." + ds.get() + ".username";
             }
+
             if (!ConfigUtils.isPropertyPresent(dsName)) {
-                if (devServicesResult.getConfig().containsKey(dsName)) {
+                if (devServicesResult.getConfig().containsKey(dsName)
+                        && !managedSources.contains(ds.isEmpty() ? DataSourceUtil.DEFAULT_DATASOURCE_NAME : ds)) {
                     String propertyName = "quarkus.hibernate-orm." + entry.getKey() + ".database.generation";
                     if (!ConfigUtils.isPropertyPresent(propertyName)) {
                         LOG.info("Setting " + propertyName + "=drop-and-create to initialize Dev Services managed database");
@@ -225,7 +295,6 @@ public final class HibernateOrmProcessor {
                 }
             }
         }
-
     }
 
     @BuildStep

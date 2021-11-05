@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.ServiceConfigurationError;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -172,6 +173,8 @@ public class QuarkusAugmentor {
                 ConfigProviderResolver.instance()
                         .releaseConfig(ConfigProviderResolver.instance().getConfig(deploymentClassLoader));
             } catch (Exception ignore) {
+
+            } catch (ServiceConfigurationError ignore) {
 
             }
             if (deploymentClassLoader instanceof Closeable) {

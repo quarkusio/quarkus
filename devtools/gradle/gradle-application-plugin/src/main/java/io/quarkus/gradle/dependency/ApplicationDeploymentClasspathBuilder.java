@@ -1,5 +1,6 @@
 package io.quarkus.gradle.dependency;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -8,6 +9,7 @@ import java.util.Set;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalDependency;
+import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 
@@ -16,13 +18,14 @@ import io.quarkus.gradle.tooling.ToolingUtils;
 public class ApplicationDeploymentClasspathBuilder {
 
     private final Project project;
-    private final Set<ExtensionDependency> alreadyProcessed = new HashSet<>();
+    private final Set<ModuleVersionIdentifier> alreadyProcessed = new HashSet<>();
 
     public ApplicationDeploymentClasspathBuilder(Project project) {
         this.project = project;
     }
 
-    public synchronized void createBuildClasspath(Set<ExtensionDependency> knownExtensions, String baseConfigurationName) {
+    public synchronized void createBuildClasspath(Collection<ExtensionDependency> knownExtensions,
+            String baseConfigurationName) {
         String deploymentConfigurationName = ToolingUtils.toDeploymentConfigurationName(baseConfigurationName);
         project.getConfigurations().create(deploymentConfigurationName);
         DependencyHandler dependencies = project.getDependencies();
@@ -40,16 +43,15 @@ public class ApplicationDeploymentClasspathBuilder {
 
         for (ExtensionDependency extension : extensions) {
             requireDeploymentDependency(deploymentConfigurationName, extension, dependencies);
-            if (alreadyProcessed.contains(extension)) {
+            if (!alreadyProcessed.add(extension.extensionId)) {
                 continue;
             }
-            alreadyProcessed.add(extension);
             extension.createDeploymentVariant(dependencies);
         }
     }
 
     private Set<ExtensionDependency> collectFirstMetQuarkusExtensions(Configuration configuration,
-            Set<ExtensionDependency> knownExtensions) {
+            Collection<ExtensionDependency> knownExtensions) {
 
         Set<ExtensionDependency> firstLevelExtensions = new HashSet<>();
         Set<ResolvedDependency> firstLevelModuleDependencies = configuration.getResolvedConfiguration()
@@ -64,7 +66,7 @@ public class ApplicationDeploymentClasspathBuilder {
     }
 
     private Set<ExtensionDependency> collectQuarkusExtensions(ResolvedDependency dependency, Set<String> visitedArtifacts,
-            Set<ExtensionDependency> knownExtensions) {
+            Collection<ExtensionDependency> knownExtensions) {
         String artifactKey = String.format("%s:%s", dependency.getModuleGroup(), dependency.getModuleName());
         if (visitedArtifacts.contains(artifactKey)) {
             return Collections.emptySet();
@@ -94,7 +96,7 @@ public class ApplicationDeploymentClasspathBuilder {
     }
 
     private ExtensionDependency getExtensionOrNull(String group, String artifact, String version,
-            Set<ExtensionDependency> knownExtensions) {
+            Collection<ExtensionDependency> knownExtensions) {
         for (ExtensionDependency knownExtension : knownExtensions) {
             if (group.equals(knownExtension.getGroup()) && artifact.equals(knownExtension.getName())
                     && version.equals(knownExtension.getVersion())) {

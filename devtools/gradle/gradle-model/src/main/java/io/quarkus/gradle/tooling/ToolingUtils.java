@@ -22,11 +22,13 @@ public class ToolingUtils {
     }
 
     public static List<Dependency> getEnforcedPlatforms(Project project) {
-        final List<org.gradle.api.artifacts.Dependency> directExtension = new ArrayList<>();
-        final Configuration impl = project.getConfigurations()
-                .getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
+        return getEnforcedPlatforms(project.getConfigurations()
+                .getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME));
+    }
 
-        for (Dependency d : impl.getAllDependencies()) {
+    public static List<Dependency> getEnforcedPlatforms(Configuration config) {
+        final List<org.gradle.api.artifacts.Dependency> directExtension = new ArrayList<>();
+        for (Dependency d : config.getAllDependencies()) {
             if (!(d instanceof ModuleDependency)) {
                 continue;
             }

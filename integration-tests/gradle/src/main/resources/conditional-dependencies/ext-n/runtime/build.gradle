@@ -11,7 +11,7 @@ dependencies {
 
 quarkusExtension {
     deploymentArtifact = "org.acme:ext-n-deployment:1.0-SNAPSHOT"
-    dependencyConditions = ["org.acme:ext-k::jar"]
+    dependencyConditions = ["org.acme:ext-g::jar"]
 }
 
 publishing {

@@ -23,15 +23,14 @@ import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
-import org.gradle.api.attributes.Category;
 import org.gradle.api.capabilities.Capability;
 import org.gradle.api.initialization.IncludedBuild;
-import org.gradle.api.plugins.JavaPlugin;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
+import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 
@@ -40,7 +39,7 @@ public class DependencyUtils {
     private static final String COPY_CONFIGURATION_NAME = "quarkusDependency";
     private static final String TEST_FIXTURE_SUFFIX = "-test-fixtures";
 
-    public static Configuration duplicateConfiguration(Project project, Configuration... toDuplicates) {
+    public static Configuration duplicateConfiguration(Project project, Configuration toDuplicate) {
         Configuration configurationCopy = project.getConfigurations().findByName(COPY_CONFIGURATION_NAME);
         if (configurationCopy != null) {
             project.getConfigurations().remove(configurationCopy);
@@ -48,20 +47,18 @@ public class DependencyUtils {
         configurationCopy = project.getConfigurations().create(COPY_CONFIGURATION_NAME);
 
         // We add boms for dependency resolution
-        List<Dependency> boms = getEnforcedPlatforms(project);
+        List<Dependency> boms = ToolingUtils.getEnforcedPlatforms(toDuplicate);
         configurationCopy.getDependencies().addAll(boms);
 
-        for (Configuration toDuplicate : toDuplicates) {
-            configurationCopy.getDependencyConstraints().addAll(toDuplicate.getAllDependencyConstraints());
-            for (Dependency dependency : toDuplicate.getAllDependencies()) {
-                if (includedBuild(project, dependency.getName()) != null) {
-                    continue;
-                }
-                if (isTestFixtureDependency(dependency)) {
-                    continue;
-                }
-                configurationCopy.getDependencies().add(dependency);
+        configurationCopy.getDependencyConstraints().addAll(toDuplicate.getAllDependencyConstraints());
+        for (Dependency dependency : toDuplicate.getAllDependencies()) {
+            if (includedBuild(project, dependency.getName()) != null) {
+                continue;
             }
+            if (isTestFixtureDependency(dependency)) {
+                continue;
+            }
+            configurationCopy.getDependencies().add(dependency);
         }
         return configurationCopy;
     }
@@ -102,29 +99,6 @@ public class DependencyUtils {
         return false;
     }
 
-    public static List<Dependency> getEnforcedPlatforms(Project project) {
-        final List<org.gradle.api.artifacts.Dependency> directExtension = new ArrayList<>();
-        final Configuration impl = project.getConfigurations()
-                .getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
-
-        for (Dependency d : impl.getAllDependencies()) {
-            if (!(d instanceof ModuleDependency)) {
-                continue;
-            }
-            final ModuleDependency module = (ModuleDependency) d;
-            if (isEnforcedPlatform(module)) {
-                directExtension.add(d);
-            }
-        }
-        return directExtension;
-    }
-
-    public static boolean isEnforcedPlatform(ModuleDependency module) {
-        final Category category = module.getAttributes().getAttribute(Category.CATEGORY_ATTRIBUTE);
-        return category != null && (Category.ENFORCED_PLATFORM.equals(category.getName())
-                || Category.REGULAR_PLATFORM.equals(category.getName()));
-    }
-
     public static IncludedBuild includedBuild(final Project project, final String projectName) {
         try {
             return project.getGradle().includedBuild(projectName);
@@ -144,14 +118,6 @@ public class DependencyUtils {
     public static String asCapabilityNotation(AppArtifactCoords artifactCoords) {
         return String.join(":", artifactCoords.getGroupId(), artifactCoords.getArtifactId() + "-capability",
                 artifactCoords.getVersion());
-    }
-
-    public static String asFeatureName(ModuleVersionIdentifier version) {
-        return version.getGroup() + ":" + version.getName();
-    }
-
-    public static String asFeatureName(Dependency version) {
-        return version.getGroup() + ":" + version.getName();
     }
 
     public static ExtensionDependency getExtensionInfoOrNull(Project project, ResolvedArtifact artifact) {

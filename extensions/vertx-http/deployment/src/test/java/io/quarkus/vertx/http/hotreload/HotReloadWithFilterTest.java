@@ -2,13 +2,10 @@ package io.quarkus.vertx.http.hotreload;
 
 import static org.hamcrest.core.Is.is;
 
-import java.net.URL;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
 
 public class HotReloadWithFilterTest {
@@ -22,32 +19,29 @@ public class HotReloadWithFilterTest {
     private static final String USER_FILE = "DevBean.java";
     private static final String USER_FILTER = "DevFilter.java";
 
-    @TestHTTPResource
-    URL url;
-
     @Test
     public void testFilterChange() {
-        RestAssured.when().get("http://localhost:" + url.getPort() + "/dev").then()
+        RestAssured.when().get("/dev").then()
                 .statusCode(200)
                 .body(is("Hello World"))
                 .header("X-Header", is("AAAA"));
 
         test.modifySourceFile(USER_FILTER, s -> s.replace("AAAA", "BBBB"));
 
-        RestAssured.when().get("http://localhost:" + url.getPort() + "/dev").then()
+        RestAssured.when().get("/dev").then()
                 .statusCode(200)
                 .body(is("Hello World"))
                 .header("X-Header", is("BBBB"));
 
         test.modifySourceFile(USER_FILE, s -> s.replace("World", "Quarkus"));
-        RestAssured.when().get("http://localhost:" + url.getPort() + "/dev").then()
+        RestAssured.when().get("/dev").then()
                 .statusCode(200)
                 .body(is("Hello Quarkus"))
                 .header("X-Header", is("BBBB"));
 
         test.modifySourceFile(USER_FILTER, s -> s.replace("BBBB", "CCC"));
 
-        RestAssured.when().get("http://localhost:" + url.getPort() + "/dev").then()
+        RestAssured.when().get("/dev").then()
                 .statusCode(200)
                 .body(is("Hello Quarkus"))
                 .header("X-Header", is("CCC"));
@@ -58,7 +52,7 @@ public class HotReloadWithFilterTest {
     public void testAddFilter() {
         test.addSourceFile(NewFilter.class);
 
-        RestAssured.when().get("http://localhost:" + url.getPort() + "/dev").then()
+        RestAssured.when().get("/dev").then()
                 .statusCode(200)
                 .body(is("Hello World"))
                 .header("X-Header", is("AAAA"))

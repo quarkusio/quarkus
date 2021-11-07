@@ -666,7 +666,7 @@ If you need to verify the token signature using the symmetric secret key then ei
 }
 ```
 
-This secret key JWK will also need to be referred to with `smallrye.jwt.key.verify.location`.
+This secret key JWK will also need to be referred to with `smallrye.jwt.verify.key.location`.
 `smallrye.jwt.verify.algorithm` should be set to `HS256`/`HS384`/`HS512`.
 
 === Create JsonWebToken with JWTParser

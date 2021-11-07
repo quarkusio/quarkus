@@ -265,14 +265,6 @@ public class QuarkusUnitTest
         return this;
     }
 
-    public List<LogRecord> getLogRecords() {
-        return inMemoryLogHandler.records;
-    }
-
-    public void clearLogRecords() {
-        inMemoryLogHandler.clearRecords();
-    }
-
     public QuarkusUnitTest assertLogRecords(Consumer<List<LogRecord>> assertLogRecords) {
         if (this.assertLogRecords != null) {
             throw new IllegalStateException("Don't set the a log record assertion twice"

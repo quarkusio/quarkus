@@ -60,7 +60,6 @@ public class GlobalAndServiceInterceptorsTest {
 
     @BeforeEach
     void cleanUp() {
-        config.getLogRecords();
         GlobalInterceptor.invoked = false;
         ServiceBInterceptor.invoked = false;
         FarewellInterceptor.invoked = false;

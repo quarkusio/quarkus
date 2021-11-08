@@ -16,8 +16,8 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
-import io.quarkus.smallrye.reactivemessaging.deployment.ConnectorBuildItem;
-import io.quarkus.smallrye.reactivemessaging.deployment.ConnectorManagedChannelBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
 import io.smallrye.reactive.messaging.kafka.KafkaConnector;
 
 class DefaultSerdeDiscoveryState {
@@ -39,7 +39,7 @@ class DefaultSerdeDiscoveryState {
             String channelName) {
         // First look in the channelsManagedByConnectors list
         Optional<ConnectorManagedChannelBuildItem> match = channelsManagedByConnectors.stream().filter(cn -> cn
-                .getDirection() == (incoming ? ConnectorBuildItem.Direction.INBOUND : ConnectorBuildItem.Direction.OUTBOUND)
+                .getDirection() == (incoming ? ChannelDirection.INCOMING : ChannelDirection.OUTGOING)
                 && cn.getName().equalsIgnoreCase(channelName)).findFirst();
         if (match.isPresent()) {
             return true;

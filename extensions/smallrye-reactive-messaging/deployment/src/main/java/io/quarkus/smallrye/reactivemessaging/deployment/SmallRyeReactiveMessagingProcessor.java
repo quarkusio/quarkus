@@ -7,7 +7,6 @@ import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessaging
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -20,29 +19,23 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
-import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
-import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
-import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -51,7 +44,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -63,10 +55,12 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedChannelBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedEmitterBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.MediatorBuildItem;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusWorkerPoolRegistry;
 import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration;
@@ -139,179 +133,6 @@ public class SmallRyeReactiveMessagingProcessor {
     }
 
     @BuildStep
-    void collectComponents(BeanDiscoveryFinishedBuildItem beanDiscoveryFinished,
-            TransformedAnnotationsBuildItem transformedAnnotations,
-            BuildProducer<MediatorBuildItem> mediatorMethods,
-            BuildProducer<EmitterBuildItem> emitters,
-            BuildProducer<ChannelBuildItem> channels,
-            BuildProducer<ValidationErrorBuildItem> validationErrors,
-            BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer) {
-
-        // We need to collect all business methods annotated with @Incoming/@Outgoing first
-        for (BeanInfo bean : beanDiscoveryFinished.beanStream().classBeans()) {
-            // TODO: add support for inherited business methods
-            for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
-                // @Incoming is repeatable
-                AnnotationInstance incoming = transformedAnnotations.getAnnotation(method,
-                        ReactiveMessagingDotNames.INCOMING);
-                AnnotationInstance incomings = transformedAnnotations.getAnnotation(method,
-                        ReactiveMessagingDotNames.INCOMINGS);
-                AnnotationInstance outgoing = transformedAnnotations.getAnnotation(method,
-                        ReactiveMessagingDotNames.OUTGOING);
-                AnnotationInstance blocking = transformedAnnotations.getAnnotation(method,
-                        BLOCKING);
-                if (incoming != null || incomings != null || outgoing != null) {
-                    if (incoming != null && incoming.value().asString().isEmpty()) {
-                        validationErrors.produce(new ValidationErrorBuildItem(
-                                new DeploymentException("Empty @Incoming annotation on method " + method)));
-                    }
-                    if (incoming != null) {
-                        configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
-                                "mp.messaging.incoming." + incoming.value().asString() + ".connector", String.class, null,
-                                "The connector to use", null, null, ConfigPhase.BUILD_TIME));
-                    }
-                    if (outgoing != null && outgoing.value().asString().isEmpty()) {
-                        validationErrors.produce(new ValidationErrorBuildItem(
-                                new DeploymentException("Empty @Outgoing annotation on method " + method)));
-                    }
-                    if (outgoing != null) {
-                        configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
-                                "mp.messaging.outgoing." + outgoing.value().asString() + ".connector", String.class, null,
-                                "The connector to use", null, null, ConfigPhase.BUILD_TIME));
-                    }
-                    if (isSynthetic(method.flags())) {
-                        continue;
-                    }
-                    // TODO: validate method params and return type?
-                    mediatorMethods.produce(new MediatorBuildItem(bean, method));
-                    LOGGER.debugf("Found mediator business method %s declared on %s", method, bean);
-                } else if (blocking != null) {
-                    validationErrors.produce(new ValidationErrorBuildItem(
-                            new DeploymentException(
-                                    "@Blocking used on " + method + " which has no @Incoming or @Outgoing annotation")));
-                }
-            }
-        }
-
-        for (InjectionPointInfo injectionPoint : beanDiscoveryFinished.getInjectionPoints()) {
-            Optional<AnnotationInstance> broadcast = getAnnotation(transformedAnnotations, injectionPoint,
-                    ReactiveMessagingDotNames.BROADCAST);
-            Optional<AnnotationInstance> channel = getAnnotation(transformedAnnotations, injectionPoint,
-                    ReactiveMessagingDotNames.CHANNEL);
-            Optional<AnnotationInstance> legacyChannel = getAnnotation(transformedAnnotations, injectionPoint,
-                    ReactiveMessagingDotNames.LEGACY_CHANNEL);
-            boolean isEmitter = injectionPoint.getRequiredType().name().equals(ReactiveMessagingDotNames.EMITTER);
-            boolean isMutinyEmitter = injectionPoint.getRequiredType().name()
-                    .equals(ReactiveMessagingDotNames.MUTINY_EMITTER);
-            boolean isLegacyEmitter = injectionPoint.getRequiredType().name()
-                    .equals(ReactiveMessagingDotNames.LEGACY_EMITTER);
-
-            // New emitter from the spec, or Mutiny emitter
-            if (isEmitter || isMutinyEmitter) {
-                if (!channel.isPresent()) {
-                    validationErrors.produce(new ValidationErrorBuildItem(
-                            new DeploymentException(
-                                    "Invalid emitter injection - @Channel is required for " + injectionPoint
-                                            .getTargetInfo())));
-                } else {
-                    String channelName = channel.get().value().asString();
-                    Optional<AnnotationInstance> overflow = getAnnotation(transformedAnnotations, injectionPoint,
-                            ReactiveMessagingDotNames.ON_OVERFLOW);
-                    createEmitter(emitters,
-                            injectionPoint, channelName, overflow, broadcast);
-                }
-            }
-
-            // Deprecated Emitter from SmallRye (emitter, channel and on overflow have been added to the spec)
-            if (isLegacyEmitter) {
-                if (!legacyChannel.isPresent()) {
-                    validationErrors.produce(new ValidationErrorBuildItem(
-                            new DeploymentException(
-                                    "Invalid emitter injection - @Channel is required for " + injectionPoint
-                                            .getTargetInfo())));
-                } else {
-                    String channelName = legacyChannel.get().value().asString();
-                    Optional<AnnotationInstance> overflow = getAnnotation(transformedAnnotations, injectionPoint,
-                            ReactiveMessagingDotNames.LEGACY_ON_OVERFLOW);
-                    createEmitter(emitters, injectionPoint, channelName, overflow, broadcast);
-                }
-            }
-
-            if (channel.isPresent() && !(isEmitter || isMutinyEmitter)) {
-                String name = channel.get().value().asString();
-                if (name != null && !name.trim().isEmpty()) {
-                    channels.produce(ChannelBuildItem.of(name));
-                }
-            }
-
-            if (legacyChannel.isPresent() && !isLegacyEmitter) {
-                String name = legacyChannel.get().value().asString();
-                if (name != null && !name.trim().isEmpty()) {
-                    channels.produce(ChannelBuildItem.of(name));
-                }
-            }
-        }
-
-    }
-
-    private boolean isSynthetic(int mod) {
-        return (mod & Opcodes.ACC_SYNTHETIC) != 0;
-    }
-
-    private Optional<AnnotationInstance> getAnnotation(TransformedAnnotationsBuildItem transformedAnnotations,
-            InjectionPointInfo injectionPoint,
-            DotName annotationName) {
-        Collection<AnnotationInstance> annotations = transformedAnnotations.getAnnotations(injectionPoint.getTarget());
-        for (AnnotationInstance annotation : annotations) {
-            if (annotationName.equals(annotation.name())) {
-                // For method parameter we must check the position
-                if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER
-                        && injectionPoint.isParam()
-                        && annotation.target().asMethodParameter().position() == injectionPoint.getPosition()) {
-                    return Optional.of(annotation);
-                } else if (annotation.target().kind() != AnnotationTarget.Kind.METHOD_PARAMETER) {
-                    // For other kind, no need to check anything else
-                    return Optional.of(annotation);
-                }
-            }
-        }
-        return Optional.empty();
-    }
-
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private void createEmitter(BuildProducer<EmitterBuildItem> emitters,
-            InjectionPointInfo injectionPoint,
-            String channelName,
-            Optional<AnnotationInstance> overflow,
-            Optional<AnnotationInstance> broadcast) {
-        LOGGER.debugf("Emitter injection point '%s' detected, channel name: '%s'",
-                injectionPoint.getTargetInfo(), channelName);
-
-        boolean hasBroadcast = false;
-        int awaitSubscribers = -1;
-        int bufferSize = -1;
-        String strategy = null;
-        if (broadcast.isPresent()) {
-            hasBroadcast = true;
-            AnnotationValue value = broadcast.get().value();
-            awaitSubscribers = value == null ? 0 : value.asInt();
-        }
-
-        if (overflow.isPresent()) {
-            AnnotationInstance annotation = overflow.get();
-            AnnotationValue maybeBufferSize = annotation.value("bufferSize");
-            bufferSize = maybeBufferSize == null ? 0 : maybeBufferSize.asInt();
-            strategy = annotation.value().asString();
-        }
-
-        boolean isMutinyEmitter = injectionPoint.getRequiredType().name()
-                .equals(ReactiveMessagingDotNames.MUTINY_EMITTER);
-        emitters.produce(
-                EmitterBuildItem
-                        .of(channelName, isMutinyEmitter, strategy, bufferSize, hasBroadcast, awaitSubscribers));
-    }
-
-    @BuildStep
     public List<UnremovableBeanBuildItem> removalExclusions() {
         return Arrays.asList(
                 new UnremovableBeanBuildItem(
@@ -375,8 +196,8 @@ public class SmallRyeReactiveMessagingProcessor {
     public void build(SmallRyeReactiveMessagingRecorder recorder, RecorderContext recorderContext,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             List<MediatorBuildItem> mediatorMethods,
-            List<EmitterBuildItem> emitterFields,
-            List<ChannelBuildItem> channelFields,
+            List<InjectedEmitterBuildItem> emitterFields,
+            List<InjectedChannelBuildItem> channelFields,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             ReactiveMessagingConfiguration conf) {
@@ -385,7 +206,7 @@ public class SmallRyeReactiveMessagingProcessor {
 
         List<QuarkusMediatorConfiguration> mediatorConfigurations = new ArrayList<>(mediatorMethods.size());
         List<WorkerConfiguration> workerConfigurations = new ArrayList<>();
-        List<EmitterConfiguration> emittersConfiguratons = new ArrayList<>();
+        List<EmitterConfiguration> emittersConfigurations = new ArrayList<>();
         List<ChannelConfiguration> channelConfigurations = new ArrayList<>();
 
         /*
@@ -420,7 +241,8 @@ public class SmallRyeReactiveMessagingProcessor {
                         classOutput);
                 /*
                  * We need to register the invoker's constructor for reflection since it will be called inside smallrye.
-                 * We could potentially lift this restriction with some extra CDI bean generation but it's probably not worth it
+                 * We could potentially lift this restriction with some extra CDI bean generation, but it's probably not worth
+                 * it
                  */
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedInvokerName));
                 mediatorConfiguration
@@ -430,25 +252,23 @@ public class SmallRyeReactiveMessagingProcessor {
             }
         }
 
-        for (EmitterBuildItem it : emitterFields) {
-            emittersConfiguratons.add(it.getEmitterConfig());
+        for (InjectedEmitterBuildItem it : emitterFields) {
+            emittersConfigurations.add(it.getEmitterConfig());
         }
-        for (ChannelBuildItem it : channelFields) {
+        for (InjectedChannelBuildItem it : channelFields) {
             channelConfigurations.add(it.getChannelConfig());
         }
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(SmallRyeReactiveMessagingContext.class)
-                .supplier(recorder.createContext(mediatorConfigurations, workerConfigurations, emittersConfiguratons,
+                .supplier(recorder.createContext(mediatorConfigurations, workerConfigurations, emittersConfigurations,
                         channelConfigurations))
                 .done());
     }
 
     private boolean isSuspendMethod(MethodInfo methodInfo) {
         if (!methodInfo.parameters().isEmpty()) {
-            if (methodInfo.parameters().get(methodInfo.parameters().size() - 1).name()
-                    .equals(ReactiveMessagingDotNames.CONTINUATION)) {
-                return true;
-            }
+            return methodInfo.parameters().get(methodInfo.parameters().size() - 1).name()
+                    .equals(ReactiveMessagingDotNames.CONTINUATION);
         }
         return false;
     }
@@ -516,7 +336,8 @@ public class SmallRyeReactiveMessagingProcessor {
                     .getFieldDescriptor();
 
             // generate a constructor that takes the bean instance as an argument
-            // the method type needs to be Object because that is what is used as the call site in SmallRye Reactive Messaging
+            // the method parameter needs to be of type Object because that is what is used as the call site in SmallRye
+            // Reactive Messaging
             try (MethodCreator ctor = invoker.getMethodCreator("<init>", void.class, Object.class)) {
                 ctor.setModifiers(Modifier.PUBLIC);
                 ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), ctor.getThis());
@@ -533,7 +354,7 @@ public class SmallRyeReactiveMessagingProcessor {
                 String[] argTypes = new String[parametersCount];
                 ResultHandle[] args = new ResultHandle[parametersCount];
                 for (int i = 0; i < parametersCount; i++) {
-                    // the only method argument of io.smallrye.reactive.messaging.Invoker is an object array so we need to pull out
+                    // the only method argument of io.smallrye.reactive.messaging.Invoker is an object array, so we need to pull out
                     // each argument and put it in the target method arguments array
                     args[i] = invoke.readArrayValue(invoke.getMethodParam(0), i);
                     argTypes[i] = method.parameters().get(i).name().toString();
@@ -557,7 +378,8 @@ public class SmallRyeReactiveMessagingProcessor {
                 .build()) {
 
             // generate a constructor that takes the bean instance as an argument
-            // the method type needs to be Object because that is what is used as the call site in SmallRye Reactive Messaging
+            // the method parameter type needs to be Object, because that is what is used as the call site in SmallRye
+            // Reactive Messaging
             try (MethodCreator ctor = invoker.getMethodCreator("<init>", void.class, Object.class)) {
                 ctor.setModifiers(Modifier.PUBLIC);
                 ctor.invokeSpecialMethod(

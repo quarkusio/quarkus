@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.reactivemessaging.deployment;
+package io.quarkus.smallrye.reactivemessaging.deployment.items;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.smallrye.reactive.messaging.extension.ChannelConfiguration;
@@ -6,16 +6,16 @@ import io.smallrye.reactive.messaging.extension.ChannelConfiguration;
 /**
  * Represents a channel injection.
  */
-public final class ChannelBuildItem extends MultiBuildItem {
+public final class InjectedChannelBuildItem extends MultiBuildItem {
 
     /**
-     * Creates a new instance of {@link ChannelBuildItem}.
+     * Creates a new instance of {@link InjectedChannelBuildItem}.
      *
      * @param name the name of the injected channel
-     * @return the new {@link ChannelBuildItem}
+     * @return the new {@link InjectedChannelBuildItem}
      */
-    static ChannelBuildItem of(String name) {
-        return new ChannelBuildItem(name);
+    public static InjectedChannelBuildItem of(String name) {
+        return new InjectedChannelBuildItem(name);
     }
 
     /**
@@ -23,7 +23,7 @@ public final class ChannelBuildItem extends MultiBuildItem {
      */
     private final String name;
 
-    public ChannelBuildItem(String name) {
+    public InjectedChannelBuildItem(String name) {
         this.name = name;
     }
 

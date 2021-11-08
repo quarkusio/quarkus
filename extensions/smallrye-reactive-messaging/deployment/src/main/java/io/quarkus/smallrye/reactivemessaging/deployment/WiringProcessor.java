@@ -1,37 +1,52 @@
 package io.quarkus.smallrye.reactivemessaging.deployment;
 
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.BLOCKING;
 import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.find;
 import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.getConnectorAttributes;
 import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.getConnectorName;
 import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.hasConnector;
-import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.isEmitter;
 import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.isInboundConnector;
 import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.isOutboundConnector;
 import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.produceIncomingChannel;
 import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.produceOutgoingChannel;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+
+import javax.enterprise.inject.spi.DeploymentException;
 
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedChannelBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedEmitterBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.MediatorBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.OrphanChannelBuildItem;
 import io.smallrye.reactive.messaging.annotations.ConnectorAttribute;
 import io.smallrye.reactive.messaging.wiring.WiringException;
 
@@ -48,14 +63,14 @@ public class WiringProcessor {
                 .forEach(bi -> {
                     if (isInboundConnector(bi.getImplClazz())) {
                         builder.produce(
-                                ConnectorBuildItem.createInboundConnector(getConnectorName(bi),
+                                ConnectorBuildItem.createIncomingConnector(getConnectorName(bi),
                                         getConnectorAttributes(bi, index,
                                                 ConnectorAttribute.Direction.INCOMING,
                                                 ConnectorAttribute.Direction.INCOMING_AND_OUTGOING)));
                     }
                     if (isOutboundConnector(bi.getImplClazz())) {
                         builder.produce(
-                                ConnectorBuildItem.createOutboundConnector(getConnectorName(bi),
+                                ConnectorBuildItem.createOutgoingConnector(getConnectorName(bi),
                                         getConnectorAttributes(bi, index,
                                                 ConnectorAttribute.Direction.OUTGOING,
                                                 ConnectorAttribute.Direction.INCOMING_AND_OUTGOING)));
@@ -64,53 +79,180 @@ public class WiringProcessor {
     }
 
     @BuildStep
-    public void collectAllApplicationChannels(BuildProducer<IncomingChannelBuildItem> incomings,
-            BuildProducer<OutgoingChannelBuildItem> outgoings,
-            CombinedIndexBuildItem index) {
+    void extractComponents(BeanDiscoveryFinishedBuildItem beanDiscoveryFinished,
+            TransformedAnnotationsBuildItem transformedAnnotations,
+            BuildProducer<ChannelBuildItem> appChannels,
+            BuildProducer<MediatorBuildItem> mediatorMethods,
+            BuildProducer<InjectedEmitterBuildItem> emitters,
+            BuildProducer<InjectedChannelBuildItem> channels,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
+            BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer) {
 
-        Collection<AnnotationInstance> annotations = index.getIndex().getAnnotations(ReactiveMessagingDotNames.INCOMING);
-        for (AnnotationInstance annotation : annotations) {
-            String name = annotation.value().asString();
-            produceIncomingChannel(incomings, name);
-        }
+        // We need to collect all business methods annotated with @Incoming/@Outgoing first
+        for (BeanInfo bean : beanDiscoveryFinished.beanStream().classBeans()) {
+            // TODO: add support for inherited business methods
+            //noinspection OptionalGetWithoutIsPresent
+            for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
+                // @Incoming is repeatable
+                AnnotationInstance incoming = transformedAnnotations.getAnnotation(method,
+                        ReactiveMessagingDotNames.INCOMING);
+                AnnotationInstance incomings = transformedAnnotations.getAnnotation(method,
+                        ReactiveMessagingDotNames.INCOMINGS);
+                AnnotationInstance outgoing = transformedAnnotations.getAnnotation(method,
+                        ReactiveMessagingDotNames.OUTGOING);
+                AnnotationInstance blocking = transformedAnnotations.getAnnotation(method,
+                        BLOCKING);
+                if (incoming != null || incomings != null || outgoing != null) {
+                    handleMethodAnnotatedWithIncoming(appChannels, validationErrors, configDescriptionBuildItemBuildProducer,
+                            method, incoming);
+                    handleMethodAnnotationWithIncomings(appChannels, validationErrors, configDescriptionBuildItemBuildProducer,
+                            method, incomings);
+                    handleMethodAnnotationWithOutgoing(appChannels, validationErrors, configDescriptionBuildItemBuildProducer,
+                            method, outgoing);
 
-        annotations = index.getIndex().getAnnotations(ReactiveMessagingDotNames.INCOMINGS);
-        for (AnnotationInstance annotation : annotations) {
-            for (AnnotationValue channel : annotation.values()) {
-                String name = channel.asString();
-                produceIncomingChannel(incomings, name);
+                    if (WiringHelper.isSynthetic(method)) {
+                        continue;
+                    }
+
+                    mediatorMethods.produce(new MediatorBuildItem(bean, method));
+                    LOGGER.debugf("Found mediator business method %s declared on %s", method, bean);
+                } else if (blocking != null) {
+                    validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
+                            new DeploymentException(
+                                    "@Blocking used on " + method + " which has no @Incoming or @Outgoing annotation")));
+                }
             }
         }
-        annotations = index.getIndex().getAnnotations(ReactiveMessagingDotNames.OUTGOING);
-        for (AnnotationInstance annotation : annotations) {
-            String name = annotation.value().asString();
-            produceOutgoingChannel(outgoings, name);
+
+        for (InjectionPointInfo injectionPoint : beanDiscoveryFinished.getInjectionPoints()) {
+            Optional<AnnotationInstance> broadcast = WiringHelper.getAnnotation(transformedAnnotations, injectionPoint,
+                    ReactiveMessagingDotNames.BROADCAST);
+            Optional<AnnotationInstance> channel = WiringHelper.getAnnotation(transformedAnnotations, injectionPoint,
+                    ReactiveMessagingDotNames.CHANNEL);
+            Optional<AnnotationInstance> legacyChannel = WiringHelper.getAnnotation(transformedAnnotations, injectionPoint,
+                    ReactiveMessagingDotNames.LEGACY_CHANNEL);
+            boolean isEmitter = injectionPoint.getRequiredType().name().equals(ReactiveMessagingDotNames.EMITTER);
+            boolean isMutinyEmitter = injectionPoint.getRequiredType().name()
+                    .equals(ReactiveMessagingDotNames.MUTINY_EMITTER);
+            boolean isLegacyEmitter = injectionPoint.getRequiredType().name()
+                    .equals(ReactiveMessagingDotNames.LEGACY_EMITTER);
+
+            if (isEmitter || isMutinyEmitter) {
+                // New emitter from the spec, or Mutiny emitter
+                handleEmitter(transformedAnnotations, appChannels, emitters, validationErrors, injectionPoint, broadcast,
+                        channel, ReactiveMessagingDotNames.ON_OVERFLOW);
+            }
+
+            if (isLegacyEmitter) {
+                // Deprecated Emitter from SmallRye (emitter, channel and on overflow have been added to the spec)
+                handleEmitter(transformedAnnotations, appChannels, emitters, validationErrors, injectionPoint, broadcast,
+                        legacyChannel, ReactiveMessagingDotNames.LEGACY_ON_OVERFLOW);
+            }
+
+            if (channel.isPresent() && !(isEmitter || isMutinyEmitter)) {
+                handleChannelInjection(appChannels, channels, channel.get());
+            }
+
+            if (legacyChannel.isPresent() && !isLegacyEmitter) {
+                handleChannelInjection(appChannels, channels, legacyChannel.get());
+            }
         }
 
-        annotations = index.getIndex().getAnnotations(ReactiveMessagingDotNames.CHANNEL);
-        for (AnnotationInstance annotation : annotations) {
-            String name = annotation.value().asString();
-            if (!name.isBlank()) {
-                if (isEmitter(annotation)) {
-                    produceOutgoingChannel(outgoings, name);
-                } else {
-                    produceIncomingChannel(incomings, name);
+    }
+
+    private void handleChannelInjection(BuildProducer<ChannelBuildItem> appChannels,
+            BuildProducer<InjectedChannelBuildItem> channels,
+            AnnotationInstance channel) {
+        String name = channel.value().asString();
+        if (name != null && !name.trim().isEmpty()) {
+            produceIncomingChannel(appChannels, name);
+            channels.produce(InjectedChannelBuildItem.of(name));
+        }
+    }
+
+    private void handleEmitter(TransformedAnnotationsBuildItem transformedAnnotations,
+            BuildProducer<ChannelBuildItem> appChannels,
+            BuildProducer<InjectedEmitterBuildItem> emitters,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
+            InjectionPointInfo injectionPoint,
+            Optional<AnnotationInstance> broadcast,
+            Optional<AnnotationInstance> annotation,
+            DotName onOverflowAnnotation) {
+        if (annotation.isEmpty()) {
+            validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
+                    new DeploymentException(
+                            "Invalid emitter injection - @Channel is required for " + injectionPoint
+                                    .getTargetInfo())));
+        } else {
+            String channelName = annotation.get().value().asString();
+            Optional<AnnotationInstance> overflow = WiringHelper.getAnnotation(transformedAnnotations, injectionPoint,
+                    onOverflowAnnotation);
+            createEmitter(appChannels, emitters, injectionPoint, channelName, overflow, broadcast);
+        }
+    }
+
+    private void handleMethodAnnotationWithOutgoing(BuildProducer<ChannelBuildItem> appChannels,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
+            BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer,
+            MethodInfo method, AnnotationInstance outgoing) {
+        if (outgoing != null && outgoing.value().asString().isEmpty()) {
+            validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
+                    new DeploymentException("Empty @Outgoing annotation on method " + method)));
+        }
+        if (outgoing != null) {
+            configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
+                    "mp.messaging.outgoing." + outgoing.value().asString() + ".connector", String.class, null,
+                    "The connector to use", null, null, ConfigPhase.BUILD_TIME));
+
+            produceOutgoingChannel(appChannels, outgoing.value().asString());
+        }
+    }
+
+    private void handleMethodAnnotationWithIncomings(BuildProducer<ChannelBuildItem> appChannels,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
+            BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer,
+            MethodInfo method, AnnotationInstance incomings) {
+        if (incomings != null) {
+            for (AnnotationInstance instance : incomings.value().asNestedArray()) {
+                if (instance.value().asString().isEmpty()) {
+                    validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
+                            new DeploymentException("Empty @Incoming annotation on method " + method)));
                 }
+                configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
+                        "mp.messaging.incoming." + instance.value().asString() + ".connector", String.class, null,
+                        "The connector to use", null, null, ConfigPhase.BUILD_TIME));
+                produceIncomingChannel(appChannels, instance.value().asString());
             }
         }
     }
 
-    @BuildStep
-    public void detectOrphanChannels(List<IncomingChannelBuildItem> incomings,
-            List<OutgoingChannelBuildItem> outgoings,
-            BuildProducer<OrphanChannelBuildItem> builder) {
-        Map<String, IncomingChannelBuildItem> inc = new HashMap<>();
-        Map<String, OutgoingChannelBuildItem> out = new HashMap<>();
-        for (IncomingChannelBuildItem incoming : incomings) {
-            inc.put(incoming.getName(), incoming);
+    private void handleMethodAnnotatedWithIncoming(BuildProducer<ChannelBuildItem> appChannels,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
+            BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer,
+            MethodInfo method, AnnotationInstance incoming) {
+        if (incoming != null && incoming.value().asString().isEmpty()) {
+            validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
+                    new DeploymentException("Empty @Incoming annotation on method " + method)));
         }
-        for (OutgoingChannelBuildItem outgoing : outgoings) {
-            out.put(outgoing.getName(), outgoing);
+        if (incoming != null) {
+            configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
+                    "mp.messaging.incoming." + incoming.value().asString() + ".connector", String.class, null,
+                    "The connector to use", null, null, ConfigPhase.BUILD_TIME));
+            produceIncomingChannel(appChannels, incoming.value().asString());
+        }
+    }
+
+    @BuildStep
+    public void detectOrphanChannels(List<ChannelBuildItem> channels,
+            BuildProducer<OrphanChannelBuildItem> builder) {
+        Map<String, ChannelBuildItem> inc = new HashMap<>();
+        Map<String, ChannelBuildItem> out = new HashMap<>();
+        for (ChannelBuildItem channel : channels) {
+            if (channel.getDirection() == ChannelDirection.INCOMING) {
+                inc.put(channel.getName(), channel);
+            } else {
+                out.put(channel.getName(), channel);
+            }
         }
 
         Set<String> orphanInboundChannels = new HashSet<>(inc.keySet());
@@ -118,19 +260,18 @@ public class WiringProcessor {
 
         // Orphan inbounds: all inbounds that do not have a matching outbound
         orphanInboundChannels.removeAll(out.keySet());
-
         // Orphan outbounds: all outbounds that do not have a matching inbound
         orphanOutboundChannels.removeAll(inc.keySet());
 
         // We need to remove all channels that are managed by connectors
         for (String channel : orphanInboundChannels) {
             if (!inc.get(channel).isManagedByAConnector()) {
-                builder.produce(OrphanChannelBuildItem.of(ConnectorBuildItem.Direction.INBOUND, channel));
+                builder.produce(OrphanChannelBuildItem.of(ChannelDirection.INCOMING, channel));
             }
         }
         for (String channel : orphanOutboundChannels) {
             if (!out.get(channel).isManagedByAConnector()) {
-                builder.produce(OrphanChannelBuildItem.of(ConnectorBuildItem.Direction.OUTBOUND, channel));
+                builder.produce(OrphanChannelBuildItem.of(ChannelDirection.OUTGOING, channel));
             }
         }
     }
@@ -144,12 +285,12 @@ public class WiringProcessor {
         for (ConnectorManagedChannelBuildItem channel : channels) {
             ConnectorBuildItem connector = find(connectors, channel.getConnector(), channel.getDirection());
             String prefix = "mp.messaging."
-                    + (channel.getDirection() == ConnectorBuildItem.Direction.INBOUND ? "incoming" : "outgoing") + "."
+                    + (channel.getDirection() == ChannelDirection.INCOMING ? "incoming" : "outgoing") + "."
                     + channel.getName() + ".";
             if (connector != null) {
                 for (ConnectorAttribute attribute : connector.getAttributes()) {
                     ConfigDescriptionBuildItem cfg = new ConfigDescriptionBuildItem(prefix + attribute.name(),
-                            toType(attribute.type()),
+                            WiringHelper.toType(attribute.type()),
                             attribute.defaultValue().equalsIgnoreCase(ConnectorAttribute.NO_VALUE) ? null
                                     : attribute.defaultValue(),
                             renderer.render(markdownParser.parse(attribute.description())),
@@ -160,35 +301,19 @@ public class WiringProcessor {
         }
     }
 
-    private Class<?> toType(String type) throws ClassNotFoundException {
-        if (type.equalsIgnoreCase("string")) {
-            return String.class;
-        }
-        if (type.equalsIgnoreCase("int")) {
-            return Integer.class;
-        }
-        if (type.equalsIgnoreCase("long")) {
-            return Long.class;
-        }
-        if (type.equalsIgnoreCase("boolean")) {
-            return Boolean.class;
-        }
-        return this.getClass().getClassLoader().loadClass(type);
-    }
-
     @BuildStep
     public void autoConfigureConnectorForOrphansAndProduceManagedChannels(
             ReactiveMessagingBuildTimeConfig buildTimeConfig,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
-            BuildProducer<ConnectorManagedChannelBuildItem> channels,
+            BuildProducer<ConnectorManagedChannelBuildItem> connectorManagedChannels,
             List<OrphanChannelBuildItem> orphans, List<ConnectorBuildItem> connectors,
-            List<IncomingChannelBuildItem> incomings, List<OutgoingChannelBuildItem> outgoings,
+            List<ChannelBuildItem> channels,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors) {
         // For each orphan, if we have a single matching connector - add the .connector attribute to the config
         Set<String> incomingConnectors = new HashSet<>();
         Set<String> outgoingConnectors = new HashSet<>();
         for (ConnectorBuildItem connector : connectors) {
-            if (connector.getDirection() == ConnectorBuildItem.Direction.INBOUND) {
+            if (connector.getDirection() == ChannelDirection.INCOMING) {
                 incomingConnectors.add(connector.getName());
             } else {
                 outgoingConnectors.add(connector.getName());
@@ -199,13 +324,13 @@ public class WiringProcessor {
             String connector = incomingConnectors.iterator().next();
             // Single incoming connector, set mp.messaging.incoming.orphan-channel.connector
             for (OrphanChannelBuildItem orphan : orphans) {
-                if (orphan.getDirection() == ConnectorBuildItem.Direction.INBOUND) {
+                if (orphan.getDirection() == ChannelDirection.INCOMING) {
                     config.produce(new RunTimeConfigurationDefaultBuildItem(
                             "mp.messaging.incoming." + orphan.getName() + ".connector", connector));
                     LOGGER.infof("Configuring the channel '%s' to be managed by the connector '%s'", orphan.getName(),
                             connector);
-                    channels.produce(new ConnectorManagedChannelBuildItem(orphan.getName(),
-                            ConnectorBuildItem.Direction.INBOUND, connector));
+                    connectorManagedChannels.produce(new ConnectorManagedChannelBuildItem(orphan.getName(),
+                            ChannelDirection.INCOMING, connector));
                 }
             }
         }
@@ -214,46 +339,64 @@ public class WiringProcessor {
             String connector = outgoingConnectors.iterator().next();
             // Single outgoing connector, set mp.messaging.outgoing.orphan-channel.connector
             for (OrphanChannelBuildItem orphan : orphans) {
-                if (orphan.getDirection() == ConnectorBuildItem.Direction.OUTBOUND) {
+                if (orphan.getDirection() == ChannelDirection.OUTGOING) {
                     config.produce(new RunTimeConfigurationDefaultBuildItem(
                             "mp.messaging.outgoing." + orphan.getName() + ".connector", connector));
                     LOGGER.infof("Configuring the channel '%s' to be managed by the connector '%s'", orphan.getName(),
                             connector);
-                    channels.produce(new ConnectorManagedChannelBuildItem(orphan.getName(),
-                            ConnectorBuildItem.Direction.OUTBOUND, connector));
+                    connectorManagedChannels.produce(new ConnectorManagedChannelBuildItem(orphan.getName(),
+                            ChannelDirection.OUTGOING, connector));
                 }
             }
         }
 
         // Now iterate over the configured channels.
-        for (IncomingChannelBuildItem incoming : incomings) {
-            if (incoming.isManagedByAConnector()) {
-                if (!hasConnector(connectors, ConnectorBuildItem.Direction.INBOUND, incoming.getConnector())) {
+        for (ChannelBuildItem channel : channels) {
+            if (channel.isManagedByAConnector()) {
+                if (!hasConnector(connectors, channel.getDirection(), channel.getConnector())) {
                     errors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
-                            new WiringException("The channel '" + incoming.getName()
-                                    + "' is configured with an unknown connector (" + incoming.getConnector() + ")")));
+                            new WiringException("The channel '" + channel.getName()
+                                    + "' is configured with an unknown connector (" + channel.getConnector() + ")")));
                 } else {
-                    channels.produce(
-                            new ConnectorManagedChannelBuildItem(incoming.getName(), ConnectorBuildItem.Direction.INBOUND,
-                                    incoming.getConnector()));
+                    connectorManagedChannels.produce(new ConnectorManagedChannelBuildItem(channel.getName(),
+                            channel.getDirection(), channel.getConnector()));
                 }
             }
         }
+    }
 
-        for (OutgoingChannelBuildItem outgoing : outgoings) {
-            if (outgoing.isManagedByAConnector()) {
-                if (!hasConnector(connectors, ConnectorBuildItem.Direction.OUTBOUND, outgoing.getConnector())) {
-                    errors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
-                            new WiringException("The channel '" + outgoing.getName()
-                                    + "' is configured with an unknown connector (" + outgoing.getConnector() + ")")));
-                } else {
-                    channels.produce(
-                            new ConnectorManagedChannelBuildItem(outgoing.getName(), ConnectorBuildItem.Direction.OUTBOUND,
-                                    outgoing.getConnector()));
-                }
-            }
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private void createEmitter(BuildProducer<ChannelBuildItem> appChannels, BuildProducer<InjectedEmitterBuildItem> emitters,
+            InjectionPointInfo injectionPoint,
+            String channelName,
+            Optional<AnnotationInstance> overflow,
+            Optional<AnnotationInstance> broadcast) {
+        LOGGER.debugf("Emitter injection point '%s' detected, channel name: '%s'",
+                injectionPoint.getTargetInfo(), channelName);
+
+        boolean hasBroadcast = false;
+        int awaitSubscribers = -1;
+        int bufferSize = -1;
+        String strategy = null;
+        if (broadcast.isPresent()) {
+            hasBroadcast = true;
+            AnnotationValue value = broadcast.get().value();
+            awaitSubscribers = value == null ? 0 : value.asInt();
         }
 
+        if (overflow.isPresent()) {
+            AnnotationInstance annotation = overflow.get();
+            AnnotationValue maybeBufferSize = annotation.value("bufferSize");
+            bufferSize = maybeBufferSize == null ? 0 : maybeBufferSize.asInt();
+            strategy = annotation.value().asString();
+        }
+
+        boolean isMutinyEmitter = injectionPoint.getRequiredType().name()
+                .equals(ReactiveMessagingDotNames.MUTINY_EMITTER);
+        produceOutgoingChannel(appChannels, channelName);
+        emitters.produce(
+                InjectedEmitterBuildItem
+                        .of(channelName, isMutinyEmitter, strategy, bufferSize, hasBroadcast, awaitSubscribers));
     }
 
 }

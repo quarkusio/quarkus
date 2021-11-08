@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.reactivemessaging.deployment;
+package io.quarkus.smallrye.reactivemessaging.deployment.items;
 
 import org.jboss.jandex.MethodInfo;
 

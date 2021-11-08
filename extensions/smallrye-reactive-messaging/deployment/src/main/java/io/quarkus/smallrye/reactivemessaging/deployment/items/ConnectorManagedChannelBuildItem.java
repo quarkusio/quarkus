@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.reactivemessaging.deployment;
+package io.quarkus.smallrye.reactivemessaging.deployment.items;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
@@ -9,9 +9,9 @@ public final class ConnectorManagedChannelBuildItem extends MultiBuildItem {
 
     private final String name;
     private final String connector;
-    private final ConnectorBuildItem.Direction direction;
+    private final ChannelDirection direction;
 
-    public ConnectorManagedChannelBuildItem(String name, ConnectorBuildItem.Direction direction, String connector) {
+    public ConnectorManagedChannelBuildItem(String name, ChannelDirection direction, String connector) {
         this.name = name;
         this.connector = connector;
         this.direction = direction;
@@ -25,7 +25,7 @@ public final class ConnectorManagedChannelBuildItem extends MultiBuildItem {
         return connector;
     }
 
-    public ConnectorBuildItem.Direction getDirection() {
+    public ChannelDirection getDirection() {
         return direction;
     }
 }

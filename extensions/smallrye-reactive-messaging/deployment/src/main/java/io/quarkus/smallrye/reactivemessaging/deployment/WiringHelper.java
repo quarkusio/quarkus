@@ -2,11 +2,11 @@ package io.quarkus.smallrye.reactivemessaging.deployment;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -15,27 +15,23 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.MethodParameterInfo;
+import org.jboss.jandex.MethodInfo;
+import org.objectweb.asm.Opcodes;
 
+import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorBuildItem;
 import io.smallrye.reactive.messaging.annotations.ConnectorAttribute;
 
 public class WiringHelper {
 
     private WiringHelper() {
         // Avoid direct instantiation
-    }
-
-    /**
-     * Checks if the given set of annotation contains the {@code Connector} qualifier.
-     * 
-     * @param qualifiers the set
-     * @return {@code true} if the set contains {@code Connector}, {@code false} otherwise.
-     */
-    static boolean isConnector(Set<AnnotationInstance> qualifiers) {
-        return qualifiers.stream().anyMatch(ai -> ai.name().equals(ReactiveMessagingDotNames.CONNECTOR));
     }
 
     /**
@@ -52,25 +48,25 @@ public class WiringHelper {
                 .value().asString();
     }
 
-    static void produceIncomingChannel(BuildProducer<IncomingChannelBuildItem> producer, String name) {
-        Optional<String> managingConnector = getManagingConnector("incoming", name);
+    static void produceIncomingChannel(BuildProducer<ChannelBuildItem> producer, String name) {
+        Optional<String> managingConnector = getManagingConnector(ChannelDirection.INCOMING, name);
         if (managingConnector.isPresent()) {
-            if (isChannelEnabled("incoming", name)) {
-                producer.produce(IncomingChannelBuildItem.of(name, managingConnector.get()));
+            if (isChannelEnabled(ChannelDirection.INCOMING, name)) {
+                producer.produce(ChannelBuildItem.incoming(name, managingConnector.get()));
             }
         } else {
-            producer.produce(IncomingChannelBuildItem.of(name, null));
+            producer.produce(ChannelBuildItem.incoming(name, null));
         }
     }
 
-    static void produceOutgoingChannel(BuildProducer<OutgoingChannelBuildItem> producer, String name) {
-        Optional<String> managingConnector = getManagingConnector("outgoing", name);
+    static void produceOutgoingChannel(BuildProducer<ChannelBuildItem> producer, String name) {
+        Optional<String> managingConnector = getManagingConnector(ChannelDirection.OUTGOING, name);
         if (managingConnector.isPresent()) {
-            if (isChannelEnabled("outgoing", name)) {
-                producer.produce(OutgoingChannelBuildItem.of(name, managingConnector.get()));
+            if (isChannelEnabled(ChannelDirection.OUTGOING, name)) {
+                producer.produce(ChannelBuildItem.outgoing(name, managingConnector.get()));
             }
         } else {
-            producer.produce(OutgoingChannelBuildItem.of(name, null));
+            producer.produce(ChannelBuildItem.outgoing(name, null));
         }
     }
 
@@ -82,8 +78,9 @@ public class WiringHelper {
      * @param channel the channel name
      * @return an optional with the connector name if the channel is managed, empty otherwise
      */
-    static Optional<String> getManagingConnector(String direction, String channel) {
-        return ConfigProvider.getConfig().getOptionalValue("mp.messaging." + direction + "." + channel + ".connector",
+    static Optional<String> getManagingConnector(ChannelDirection direction, String channel) {
+        return ConfigProvider.getConfig().getOptionalValue(
+                "mp.messaging." + direction.name().toLowerCase() + "." + channel + ".connector",
                 String.class);
     }
 
@@ -94,9 +91,11 @@ public class WiringHelper {
      * @param channel the channel name
      * @return {@code true} if the channel is enabled, {@code false} otherwise
      */
-    static boolean isChannelEnabled(String direction, String channel) {
-        return ConfigProvider.getConfig().getOptionalValue("mp.messaging." + direction + "." + channel + ".enabled",
-                Boolean.class).orElse(true);
+    static boolean isChannelEnabled(ChannelDirection direction, String channel) {
+        return ConfigProvider.getConfig()
+                .getOptionalValue("mp.messaging." + direction.name().toLowerCase() + "." + channel + ".enabled",
+                        Boolean.class)
+                .orElse(true);
     }
 
     /**
@@ -194,24 +193,6 @@ public class WiringHelper {
     }
 
     /**
-     * Checks if the given {@code @Channel} annotation instance is injecting an {@code Emitter} or {@code MutinyEmitter}.
-     * 
-     * @param instance the {@code @Channel} instance
-     * @return {@code true} if the injected type is an emitter, {@code false} otherwise.
-     */
-    static boolean isEmitter(AnnotationInstance instance) {
-        DotName type = null;
-        if (instance.target().kind() == AnnotationTarget.Kind.FIELD) {
-            type = instance.target().asField().type().name();
-        } else if (instance.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
-            MethodParameterInfo info = instance.target().asMethodParameter();
-            type = info.method().parameters().get(info.position()).name();
-        }
-        return type != null && (type.equals(ReactiveMessagingDotNames.EMITTER)
-                || type.equals(ReactiveMessagingDotNames.MUTINY_EMITTER));
-    }
-
-    /**
      * Finds a connector by name and direction in the given list.
      * 
      * @param connectors the list of connectors
@@ -219,7 +200,7 @@ public class WiringHelper {
      * @param direction the direction
      * @return the found connector, {@code null} otherwise
      */
-    static ConnectorBuildItem find(List<ConnectorBuildItem> connectors, String name, ConnectorBuildItem.Direction direction) {
+    static ConnectorBuildItem find(List<ConnectorBuildItem> connectors, String name, ChannelDirection direction) {
         for (ConnectorBuildItem connector : connectors) {
             if (connector.getDirection() == direction && connector.getName().equalsIgnoreCase(name)) {
                 return connector;
@@ -228,7 +209,48 @@ public class WiringHelper {
         return null;
     }
 
-    static boolean hasConnector(List<ConnectorBuildItem> connectors, ConnectorBuildItem.Direction direction, String name) {
+    static boolean hasConnector(List<ConnectorBuildItem> connectors, ChannelDirection direction, String name) {
         return connectors.stream().anyMatch(c -> c.getName().equalsIgnoreCase(name) && c.getDirection() == direction);
+    }
+
+    static Class<?> toType(String type) throws ClassNotFoundException {
+        if (type.equalsIgnoreCase("string")) {
+            return String.class;
+        }
+        if (type.equalsIgnoreCase("int")) {
+            return Integer.class;
+        }
+        if (type.equalsIgnoreCase("long")) {
+            return Long.class;
+        }
+        if (type.equalsIgnoreCase("boolean")) {
+            return Boolean.class;
+        }
+        return WiringHelper.class.getClassLoader().loadClass(type);
+    }
+
+    static boolean isSynthetic(MethodInfo method) {
+        short flag = method.flags();
+        return (flag & Opcodes.ACC_SYNTHETIC) != 0;
+    }
+
+    static Optional<AnnotationInstance> getAnnotation(TransformedAnnotationsBuildItem transformedAnnotations,
+            InjectionPointInfo injectionPoint,
+            DotName annotationName) {
+        Collection<AnnotationInstance> annotations = transformedAnnotations.getAnnotations(injectionPoint.getTarget());
+        for (AnnotationInstance annotation : annotations) {
+            if (annotationName.equals(annotation.name())) {
+                // For method parameter we must check the position
+                if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER
+                        && injectionPoint.isParam()
+                        && annotation.target().asMethodParameter().position() == injectionPoint.getPosition()) {
+                    return Optional.of(annotation);
+                } else if (annotation.target().kind() != AnnotationTarget.Kind.METHOD_PARAMETER) {
+                    // For other kind, no need to check anything else
+                    return Optional.of(annotation);
+                }
+            }
+        }
+        return Optional.empty();
     }
 }

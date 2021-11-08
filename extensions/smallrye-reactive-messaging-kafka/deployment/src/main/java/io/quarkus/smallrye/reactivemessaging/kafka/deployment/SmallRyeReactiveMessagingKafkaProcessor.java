@@ -28,7 +28,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
-import io.quarkus.smallrye.reactivemessaging.deployment.ConnectorManagedChannelBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.kafka.ReactiveMessagingKafkaConfig;
 import io.smallrye.mutiny.tuples.Functions.TriConsumer;
 import io.vertx.kafka.client.consumer.impl.KafkaReadStreamImpl;

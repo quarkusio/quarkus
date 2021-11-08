@@ -1,25 +1,28 @@
-package io.quarkus.smallrye.reactivemessaging.deployment;
+package io.quarkus.smallrye.reactivemessaging.deployment.items;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.BroadcastLiteral;
+import io.quarkus.smallrye.reactivemessaging.deployment.OnOverflowLiteral;
 import io.smallrye.reactive.messaging.extension.EmitterConfiguration;
 
 /**
  * Represents an emitter injection.
  */
-public final class EmitterBuildItem extends MultiBuildItem {
+public final class InjectedEmitterBuildItem extends MultiBuildItem {
 
     /**
-     * Creates a new instance of {@link EmitterBuildItem} setting the overflow strategy.
+     * Creates a new instance of {@link InjectedEmitterBuildItem} setting the overflow strategy.
      *
      * @param name the name of the stream
      * @param isMutinyEmitter if the emitter is a {@link io.smallrye.reactive.messaging.MutinyEmitter}
      * @param overflow the overflow strategy
      * @param bufferSize the buffer size, if overflow is set to {@code BUFFER}
-     * @return the new {@link EmitterBuildItem}
+     * @return the new {@link InjectedEmitterBuildItem}
      */
-    static EmitterBuildItem of(String name, boolean isMutinyEmitter, String overflow, int bufferSize, boolean hasBroadcast,
+    public static InjectedEmitterBuildItem of(String name, boolean isMutinyEmitter, String overflow, int bufferSize,
+            boolean hasBroadcast,
             int awaitSubscribers) {
-        return new EmitterBuildItem(name, isMutinyEmitter, overflow, bufferSize, hasBroadcast, awaitSubscribers);
+        return new InjectedEmitterBuildItem(name, isMutinyEmitter, overflow, bufferSize, hasBroadcast, awaitSubscribers);
     }
 
     /**
@@ -55,7 +58,7 @@ public final class EmitterBuildItem extends MultiBuildItem {
      */
     private final int awaitSubscribers;
 
-    public EmitterBuildItem(String name, boolean isMutinyEmitter, String overflow, int bufferSize, boolean hasBroadcast,
+    public InjectedEmitterBuildItem(String name, boolean isMutinyEmitter, String overflow, int bufferSize, boolean hasBroadcast,
             int awaitSubscribers) {
         this.name = name;
         this.overflow = overflow;

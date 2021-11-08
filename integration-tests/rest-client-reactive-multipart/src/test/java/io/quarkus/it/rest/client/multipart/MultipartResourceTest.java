@@ -1,14 +1,24 @@
 package io.quarkus.it.rest.client.multipart;
 
+import static io.quarkus.it.rest.client.multipart.MultipartResource.HELLO_WORLD;
+import static io.quarkus.it.rest.client.multipart.MultipartResource.NUMBER;
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.equalTo;
+
+import javax.ws.rs.core.MediaType;
 
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 
 @QuarkusTest
 public class MultipartResourceTest {
+
+    private static final String EXPECTED_CONTENT_DISPOSITION_PART = "Content-Disposition: form-data; name=\"%s\"";
+    private static final String EXPECTED_CONTENT_TYPE_PART = "Content-Type: %s";
 
     @Test
     public void shouldSendByteArrayAsBinaryFile() {
@@ -181,5 +191,24 @@ public class MultipartResourceTest {
                 .statusCode(200)
                 .body(equalTo("fileOk:true,nameOk:true,pojoOk:null"));
         // @formatter:on
+    }
+
+    @Test
+    public void shouldProducesMultipartForm() {
+        String response = RestAssured.get("/produces/multipart")
+                .then()
+                .contentType(ContentType.MULTIPART)
+                .statusCode(200)
+                .extract().asString();
+
+        assertMultipartResponseContains(response, "number", MediaType.TEXT_PLAIN, NUMBER);
+        assertMultipartResponseContains(response, "file", MediaType.TEXT_PLAIN, HELLO_WORLD);
+    }
+
+    private void assertMultipartResponseContains(String response, String name, String contentType, Object value) {
+        String[] lines = response.split("--");
+        assertThat(lines).anyMatch(line -> line.contains(String.format(EXPECTED_CONTENT_DISPOSITION_PART, name))
+                && line.contains(String.format(EXPECTED_CONTENT_TYPE_PART, contentType))
+                && line.contains(value.toString()));
     }
 }

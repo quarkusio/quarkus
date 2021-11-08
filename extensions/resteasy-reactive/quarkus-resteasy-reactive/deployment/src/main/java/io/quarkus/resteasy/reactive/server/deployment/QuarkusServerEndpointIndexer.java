@@ -18,6 +18,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
+import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.DefaultProducesHandler;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LoadedParameterConverter;
@@ -38,6 +39,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.resteasy.reactive.server.common.runtime.EndpointInvokerFactory;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
+import io.quarkus.resteasy.reactive.server.runtime.multipart.MultipartMessageBodyWriter;
 
 public class QuarkusServerEndpointIndexer
         extends ServerEndpointIndexer {
@@ -48,7 +50,8 @@ public class QuarkusServerEndpointIndexer
     private final DefaultProducesHandler defaultProducesHandler;
     private final ResteasyReactiveRecorder resteasyReactiveRecorder;
 
-    private final Map<String, String> multipartGeneratedPopulators = new HashMap<>();
+    private final Map<String, String> multipartInputGeneratedPopulators = new HashMap<>();
+    private final Map<String, Boolean> multipartOutputGeneratedPopulators = new HashMap<>();
     private final Predicate<String> applicationClassPredicate;
 
     QuarkusServerEndpointIndexer(Builder builder) {
@@ -189,9 +192,10 @@ public class QuarkusServerEndpointIndexer
                 initConverters.getMethodParam(0));
     }
 
-    protected void handleMultipart(ClassInfo multipartClassInfo) {
+    @Override
+    protected void handleMultipartForParamType(ClassInfo multipartClassInfo) {
         String className = multipartClassInfo.name().toString();
-        if (multipartGeneratedPopulators.containsKey(className)) {
+        if (multipartInputGeneratedPopulators.containsKey(className)) {
             // we've already seen this class before and have done all we need to make it work
             return;
         }
@@ -199,7 +203,7 @@ public class QuarkusServerEndpointIndexer
         String populatorClassName = MultipartPopulatorGenerator.generate(multipartClassInfo,
                 new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, applicationClassPredicate.test(className)),
                 index);
-        multipartGeneratedPopulators.put(className, populatorClassName);
+        multipartInputGeneratedPopulators.put(className, populatorClassName);
 
         // transform the multipart pojo (and any super-classes) so we can access its fields no matter what
         ClassInfo currentClassInHierarchy = multipartClassInfo;
@@ -219,6 +223,41 @@ public class QuarkusServerEndpointIndexer
             currentClassInHierarchy = newCurrentClassInHierarchy;
         }
 
+    }
+
+    @Override
+    protected boolean handleMultipartForReturnType(AdditionalWriters additionalWriters, ClassInfo multipartClassInfo) {
+        String className = multipartClassInfo.name().toString();
+        Boolean canHandle = multipartOutputGeneratedPopulators.get(className);
+        if (canHandle != null) {
+            // we've already seen this class before and have done all we need
+            return canHandle;
+        }
+
+        canHandle = false;
+        if (FormDataOutputMapperGenerator.isReturnTypeCompatible(multipartClassInfo, index)) {
+            additionalWriters.add(MultipartMessageBodyWriter.class, MediaType.MULTIPART_FORM_DATA, loadClass(className));
+            String mapperClassName = FormDataOutputMapperGenerator.generate(multipartClassInfo,
+                    new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer,
+                            applicationClassPredicate.test(className)),
+                    index);
+            reflectiveClassProducer.produce(
+                    new ReflectiveClassBuildItem(true, false, MultipartMessageBodyWriter.class.getName()));
+            reflectiveClassProducer.produce(new ReflectiveClassBuildItem(false, false, className));
+            reflectiveClassProducer.produce(new ReflectiveClassBuildItem(true, false, mapperClassName));
+            canHandle = true;
+        }
+
+        multipartOutputGeneratedPopulators.put(className, canHandle);
+        return canHandle;
+    }
+
+    private static <T> Class<T> loadClass(String className) {
+        try {
+            return (Class<T>) Class.forName(className, false, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static final class Builder extends AbstractBuilder<Builder> {

@@ -14,9 +14,15 @@ abstract class AbstractGenerator {
     static final String SYNTHETIC_SUFFIX = "Synthetic";
 
     protected final boolean generateSources;
+    protected final ReflectionRegistration reflectionRegistration;
+
+    public AbstractGenerator(boolean generateSources, ReflectionRegistration reflectionRegistration) {
+        this.generateSources = generateSources;
+        this.reflectionRegistration = reflectionRegistration;
+    }
 
     public AbstractGenerator(boolean generateSources) {
-        this.generateSources = generateSources;
+        this(generateSources, null);
     }
 
     /**

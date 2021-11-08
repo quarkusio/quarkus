@@ -48,11 +48,8 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
 
     private static final Logger LOGGER = Logger.getLogger(AnnotationLiteralGenerator.class);
 
-    private final boolean generateSources;
-
     AnnotationLiteralGenerator(boolean generateSources) {
         super(generateSources);
-        this.generateSources = generateSources;
     }
 
     /**
@@ -72,7 +69,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
         return resources;
     }
 
-    static void createSharedAnnotationLiteral(ClassOutput classOutput, Key key, Literal literal, Set<String> existingClasses) {
+    void createSharedAnnotationLiteral(ClassOutput classOutput, Key key, Literal literal, Set<String> existingClasses) {
         // Ljavax/enterprise/util/AnnotationLiteral<Lcom/foo/MyQualifier;>;Lcom/foo/MyQualifier;
         String signature = String.format("Ljavax/enterprise/util/AnnotationLiteral<L%1$s;>;L%1$s;",
                 key.annotationName.toString().replace('.', '/'));
@@ -113,6 +110,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
         generateStaticFieldsWithDefaultValues(annotationLiteral, defaultOfClassType);
 
         annotationLiteral.close();
+
         LOGGER.debugf("Shared annotation literal generated: %s", literal.className);
     }
 

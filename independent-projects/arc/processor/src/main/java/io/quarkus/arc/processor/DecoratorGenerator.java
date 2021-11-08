@@ -106,9 +106,8 @@ public class DecoratorGenerator extends BeanGenerator {
         implementGetIdentifier(decorator, decoratorCreator);
         implementSupplierGet(decoratorCreator);
         implementCreate(classOutput, decoratorCreator, decorator, providerType, baseName,
-                injectionPointToProviderField,
-                Collections.emptyMap(), Collections.emptyMap(),
-                reflectionRegistration, targetPackage, isApplicationClass);
+                injectionPointToProviderField, Collections.emptyMap(), Collections.emptyMap(),
+                targetPackage, isApplicationClass);
         implementGet(decorator, decoratorCreator, providerType, baseName);
         implementGetTypes(decoratorCreator, beanTypes.getFieldDescriptor());
         implementGetBeanClass(decorator, decoratorCreator);

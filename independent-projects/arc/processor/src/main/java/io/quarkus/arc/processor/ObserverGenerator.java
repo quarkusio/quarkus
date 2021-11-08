@@ -64,7 +64,6 @@ public class ObserverGenerator extends AbstractGenerator {
     private final AnnotationLiteralProcessor annotationLiterals;
     private final Predicate<DotName> applicationClassPredicate;
     private final PrivateMembersCollector privateMembers;
-    private final ReflectionRegistration reflectionRegistration;
     private final Set<String> existingClasses;
     private final Map<ObserverInfo, String> observerToGeneratedName;
     private final Predicate<DotName> injectionPointAnnotationsPredicate;
@@ -74,11 +73,10 @@ public class ObserverGenerator extends AbstractGenerator {
             PrivateMembersCollector privateMembers, boolean generateSources, ReflectionRegistration reflectionRegistration,
             Set<String> existingClasses, Map<ObserverInfo, String> observerToGeneratedName,
             Predicate<DotName> injectionPointAnnotationsPredicate, boolean mockable) {
-        super(generateSources);
+        super(generateSources, reflectionRegistration);
         this.annotationLiterals = annotationLiterals;
         this.applicationClassPredicate = applicationClassPredicate;
         this.privateMembers = privateMembers;
-        this.reflectionRegistration = reflectionRegistration;
         this.existingClasses = existingClasses;
         this.observerToGeneratedName = observerToGeneratedName;
         this.injectionPointAnnotationsPredicate = injectionPointAnnotationsPredicate;
@@ -567,7 +565,7 @@ public class ObserverGenerator extends AbstractGenerator {
             constructor.writeInstanceField(
                     FieldDescriptor.of(observerCreator.getClassName(), "qualifiers", Set.class.getName()),
                     constructor.getThis(),
-                    constructor.invokeStaticInterfaceMethod(MethodDescriptors.SET_OF,
+                    constructor.invokeStaticMethod(MethodDescriptors.SETS_OF,
                             qualifiersArray));
         }
 

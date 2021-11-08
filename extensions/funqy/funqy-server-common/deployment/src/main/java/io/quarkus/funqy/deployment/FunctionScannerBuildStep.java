@@ -108,6 +108,9 @@ public class FunctionScannerBuildStep {
         }
         unremovableBeans.produce(new UnremovableBeanBuildItem(b -> classNames.contains(b.getBeanClass().toString())));
         generateDefaultConstructors(transformers, withoutDefaultCtor);
+
+        // we need to use an annotation transformer here instead of an AdditionalBeanBuildItem because
+        // the use of the latter along with the BeanArchiveIndexBuildItem results in build cycles
         annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
 
             @Override
@@ -120,8 +123,12 @@ public class FunctionScannerBuildStep {
                 ClassInfo clazz = transformationContext.getTarget().asClass();
                 if (!classes.contains(clazz))
                     return;
-                Transformation transformation = transformationContext.transform()
-                        .add(BuiltinScope.DEPENDENT.getName());
+                if (BuiltinScope.isDeclaredOn(clazz)) {
+                    // nothing to do as the presence of a scope will automatically qualify the class as a bean
+                    return;
+                }
+                Transformation transformation = transformationContext.transform();
+                transformation.add(BuiltinScope.DEPENDENT.getName());
                 if (clazz.classAnnotation(DotNames.TYPED) == null) {
                     // Add @Typed(MySubresource.class)
                     transformation.add(createTypedAnnotationInstance(clazz));

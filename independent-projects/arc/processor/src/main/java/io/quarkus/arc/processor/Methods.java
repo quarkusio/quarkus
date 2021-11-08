@@ -197,17 +197,29 @@ final class Methods {
                 }
             }
             if (!merged.isEmpty()) {
-                boolean addToCandidates = true;
-                if (Modifier.isFinal(method.flags())) {
-                    if (transformUnproxyableClasses) {
-                        methodsFromWhichToRemoveFinal.add(NameAndDescriptor.fromMethodInfo(method));
+                if (Modifier.isPrivate(method.flags())) {
+                    if (merged.size() == 1) {
+                        LOGGER.warnf("%s will have no effect on method %s.%s() because the method is private",
+                                merged.iterator().next(), classInfo.name(), method.name());
                     } else {
-                        addToCandidates = false;
-                        finalMethodsFoundAndNotChanged.add(method);
+                        LOGGER.warnf("Annotations %s will have no effect on method %s.%s() because the method is private",
+                                merged.stream().map(AnnotationInstance::toString).collect(Collectors.joining(",")),
+                                classInfo.name(), method.name());
                     }
-                }
-                if (addToCandidates) {
-                    candidates.computeIfAbsent(new Methods.MethodKey(method), key -> merged);
+
+                } else {
+                    boolean addToCandidates = true;
+                    if (Modifier.isFinal(method.flags())) {
+                        if (transformUnproxyableClasses) {
+                            methodsFromWhichToRemoveFinal.add(NameAndDescriptor.fromMethodInfo(method));
+                        } else {
+                            addToCandidates = false;
+                            finalMethodsFoundAndNotChanged.add(method);
+                        }
+                    }
+                    if (addToCandidates) {
+                        candidates.computeIfAbsent(new Methods.MethodKey(method), key -> merged);
+                    }
                 }
             }
         }

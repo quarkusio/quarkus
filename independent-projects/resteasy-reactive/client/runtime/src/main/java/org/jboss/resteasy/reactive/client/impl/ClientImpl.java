@@ -60,6 +60,8 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.UriBuilder;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.client.api.ClientLogger;
+import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import org.jboss.resteasy.reactive.client.spi.ClientContext;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
@@ -67,7 +69,7 @@ import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 
 public class ClientImpl implements Client {
 
-    private static final Logger log = Logger.getLogger(ClientImpl.class); // TODO: remove
+    private static final Logger log = Logger.getLogger(ClientImpl.class);
 
     private static final int DEFAULT_CONNECT_TIMEOUT = 15000;
     private static final int DEFAULT_CONNECTION_POOL_SIZE = 20;
@@ -86,7 +88,9 @@ public class ClientImpl implements Client {
     public ClientImpl(HttpClientOptions options, ConfigurationImpl configuration, ClientContext clientContext,
             HostnameVerifier hostnameVerifier,
             SSLContext sslContext, boolean followRedirects,
-            MultiQueryParamMode multiQueryParamMode) {
+            MultiQueryParamMode multiQueryParamMode,
+            LoggingScope loggingScope,
+            ClientLogger clientLogger) {
         configuration = configuration != null ? configuration : new ConfigurationImpl(RuntimeType.CLIENT);
         // TODO: ssl context
         // TODO: hostnameVerifier
@@ -133,8 +137,21 @@ public class ClientImpl implements Client {
         }
         options.setMaxPoolSize((int) connectionPoolSize);
 
-        this.httpClient = this.vertx.createHttpClient(options);
-        handlerChain = new HandlerChain(followRedirects);
+        if (loggingScope == LoggingScope.ALL) {
+            options.setLogActivity(true);
+        }
+
+        httpClient = this.vertx.createHttpClient(options);
+
+        if (loggingScope != LoggingScope.NONE) {
+            Function<HttpClientResponse, Future<RequestOptions>> defaultRedirectHandler = httpClient.redirectHandler();
+            httpClient.redirectHandler(response -> {
+                clientLogger.logResponse(response, true);
+                return defaultRedirectHandler.apply(response);
+            });
+        }
+
+        handlerChain = new HandlerChain(followRedirects, loggingScope, clientLogger);
     }
 
     public ClientContext getClientContext() {

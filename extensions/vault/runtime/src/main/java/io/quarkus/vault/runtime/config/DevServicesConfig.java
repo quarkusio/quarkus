@@ -1,5 +1,6 @@
 package io.quarkus.vault.runtime.config;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -46,6 +47,12 @@ public class DevServicesConfig {
     @ConfigItem(defaultValue = "false")
     public boolean pkiEnabled;
 
+    /**
+     * Custom container initialization commands
+     */
+    @ConfigItem
+    public Optional<List<String>> initCommands;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -57,7 +64,8 @@ public class DevServicesConfig {
         DevServicesConfig that = (DevServicesConfig) o;
         return enabled == that.enabled && Objects.equals(imageName,
                 that.imageName) && Objects.equals(port,
-                        that.port);
+                        that.port)
+                && Objects.equals(initCommands, that.initCommands);
     }
 
     @Override
@@ -71,6 +79,7 @@ public class DevServicesConfig {
                 "enabled=" + enabled +
                 ", imageName=" + imageName +
                 ", port=" + port +
+                ", initCommands=" + initCommands +
                 '}';
     }
 }

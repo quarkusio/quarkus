@@ -153,6 +153,8 @@ public class DevServicesVaultProcessor {
             vaultContainer.withInitCommand("secrets enable pki");
         }
 
+        devServicesConfig.initCommands.ifPresent(initCommands -> initCommands.forEach(vaultContainer::withInitCommand));
+
         timeout.ifPresent(vaultContainer::withStartupTimeout);
         vaultContainer.start();
 

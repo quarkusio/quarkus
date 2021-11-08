@@ -1,6 +1,7 @@
 package io.quarkus.test.common;
 
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Interface that can be used to get properties from DevServices for {@link QuarkusTest} and {@link QuarkusIntegrationTest}
@@ -17,6 +18,12 @@ public interface DevServicesContext {
      * If no dev services where launched, the map will be empty.
      */
     Map<String, String> devServicesProperties();
+
+    /**
+     * If the application is going to be launched in a container, this method returns the id of container network
+     * it will be launched on.
+     */
+    Optional<String> containerNetworkId();
 
     /**
      * Interface that can be implemented to allow automatic injection of the context.

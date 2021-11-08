@@ -41,7 +41,9 @@ public class SecurityHandler {
                     }).subscribeAsCompletionStage();
         } else if (Multi.class.isAssignableFrom(returnType)) {
             return constrainer.nonBlockingCheck(ic.getMethod(), ic.getParameters())
-                    .onItem().transformToMulti(new MultiContinuation(ic));
+                    // Do not use transformToMulti as we want to preserve the type of multi produced by the user method.
+                    // This is required for Reactive Routes to handle custom Multi serialization.
+                    .toMulti().plug(x -> new MultiContinuation(ic).apply(x));
         } else {
             constrainer.check(ic.getMethod(), ic.getParameters());
             return ic.proceed();

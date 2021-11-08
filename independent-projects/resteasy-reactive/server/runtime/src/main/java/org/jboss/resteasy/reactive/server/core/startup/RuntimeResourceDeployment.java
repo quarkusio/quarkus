@@ -101,7 +101,6 @@ public class RuntimeResourceDeployment {
     private final ServerSerialisers serialisers;
     private final ResteasyReactiveConfig quarkusRestConfig;
     private final Supplier<Executor> executorSupplier;
-    private final CustomServerRestHandlers customServerRestHandlers;
     private final RuntimeInterceptorDeployment runtimeInterceptorDeployment;
     private final DynamicEntityWriter dynamicEntityWriter;
     private final ResourceLocatorHandler resourceLocatorHandler;
@@ -113,14 +112,12 @@ public class RuntimeResourceDeployment {
     private final ResponseWriterHandler responseWriterHandler;
 
     public RuntimeResourceDeployment(DeploymentInfo info, Supplier<Executor> executorSupplier,
-            CustomServerRestHandlers customServerRestHandlers,
             RuntimeInterceptorDeployment runtimeInterceptorDeployment, DynamicEntityWriter dynamicEntityWriter,
             ResourceLocatorHandler resourceLocatorHandler, boolean defaultBlocking) {
         this.info = info;
         this.serialisers = info.getSerialisers();
         this.quarkusRestConfig = info.getConfig();
         this.executorSupplier = executorSupplier;
-        this.customServerRestHandlers = customServerRestHandlers;
         this.runtimeInterceptorDeployment = runtimeInterceptorDeployment;
         this.dynamicEntityWriter = dynamicEntityWriter;
         this.resourceLocatorHandler = resourceLocatorHandler;
@@ -245,17 +242,7 @@ public class RuntimeResourceDeployment {
             handlers.add(new FormBodyHandler(bodyParameter != null, executorSupplier));
         } else if (bodyParameter != null) {
             if (!defaultBlocking) {
-                if (method.isBlocking()) {
-                    Supplier<ServerRestHandler> blockingInputHandlerSupplier = customServerRestHandlers
-                            .getBlockingInputHandlerSupplier();
-                    if (blockingInputHandlerSupplier != null) {
-                        // when the method is blocking, we will already be on a worker thread
-                        handlers.add(blockingInputHandlerSupplier.get());
-                    } else {
-                        throw new RuntimeException(
-                                "The current execution environment does not implement a ServerRestHandler for blocking input");
-                    }
-                } else if (!method.isBlocking()) {
+                if (!method.isBlocking()) {
                     // allow the body to be read by chunks
                     handlers.add(new InputHandler(quarkusRestConfig.getInputBufferSize(), executorSupplier));
                 }

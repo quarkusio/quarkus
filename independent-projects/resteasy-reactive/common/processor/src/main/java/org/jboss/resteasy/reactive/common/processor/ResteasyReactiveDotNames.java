@@ -227,9 +227,13 @@ public final class ResteasyReactiveDotNames {
             .createSimple("org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestFilter");
     public static final DotName OBJECT = DotName.createSimple(Object.class.getName());
 
+    public static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
+    public static final DotName KOTLIN_UNIT = DotName.createSimple("kotlin.Unit");
+
     // TODO: fix this hack by moving all the logic that handles this annotation to the server processor
     public static final DotName SERVER_EXCEPTION_MAPPER = DotName
             .createSimple("org.jboss.resteasy.reactive.server.ServerExceptionMapper");
+    public static final DotName OBJECT_NAME = DotName.createSimple(Object.class.getName());
     // Types ignored for reflection used by the RESTEasy and SmallRye REST client extensions.
     private static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(
             // javax.json

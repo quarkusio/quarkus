@@ -21,6 +21,7 @@ import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfigurableServerRestHandler;
+import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory.BeanInstance;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
@@ -40,7 +41,10 @@ public class Deployment {
     private final List<ServerRestHandler> preMatchHandlers;
     private final List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers;
     private final List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers;
+    private final RuntimeExceptionMapper exceptionMapper;
     private final boolean resumeOn404;
+    //this is not final, as it is set after startup
+    private RuntimeConfiguration runtimeConfiguration;
 
     public Deployment(ExceptionMapping exceptionMapping, ContextResolvers contextResolvers,
             ServerSerialisers serialisers,
@@ -50,7 +54,9 @@ public class Deployment {
             ThreadSetupAction threadSetupAction, RequestContextFactory requestContextFactory,
             List<ServerRestHandler> preMatchHandlers,
             List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers,
-            List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers, boolean resumeOn404) {
+            List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers,
+            RuntimeExceptionMapper exceptionMapper,
+            boolean resumeOn404) {
         this.exceptionMapping = exceptionMapping;
         this.contextResolvers = contextResolvers;
         this.serialisers = serialisers;
@@ -65,7 +71,12 @@ public class Deployment {
         this.preMatchHandlers = preMatchHandlers;
         this.classMappers = classMappers;
         this.runtimeConfigurableServerRestHandlers = runtimeConfigurableServerRestHandlers;
+        this.exceptionMapper = exceptionMapper;
         this.resumeOn404 = resumeOn404;
+    }
+
+    public RuntimeExceptionMapper getExceptionMapper() {
+        return exceptionMapper;
     }
 
     public Supplier<Application> getApplicationSupplier() {
@@ -102,7 +113,7 @@ public class Deployment {
 
     /**
      * Application path prefix. Must start with "/" and not end with a "/". Cannot be null.
-     * 
+     *
      * @return the application path prefix, or an empty string.
      */
     public String getPrefix() {
@@ -171,5 +182,17 @@ public class Deployment {
 
     public List<RuntimeConfigurableServerRestHandler> getRuntimeConfigurableServerRestHandlers() {
         return runtimeConfigurableServerRestHandlers;
+    }
+
+    public RuntimeConfiguration getRuntimeConfiguration() {
+        return runtimeConfiguration;
+    }
+
+    public Deployment setRuntimeConfiguration(RuntimeConfiguration runtimeConfiguration) {
+        if (this.runtimeConfiguration != null) {
+            throw new IllegalStateException("runtime config has already been set");
+        }
+        this.runtimeConfiguration = runtimeConfiguration;
+        return this;
     }
 }

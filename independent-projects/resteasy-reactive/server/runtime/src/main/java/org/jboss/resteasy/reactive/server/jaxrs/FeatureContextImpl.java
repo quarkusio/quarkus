@@ -25,19 +25,19 @@ import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptor;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.common.model.SettableResourceInterceptor;
-import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
+import org.jboss.resteasy.reactive.server.core.RuntimeExceptionMapper;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class FeatureContextImpl implements FeatureContext {
 
     protected final ResourceInterceptors interceptors;
-    private final ExceptionMapping exceptionMapping;
+    private final RuntimeExceptionMapper exceptionMapping;
     private final Function<Class<?>, BeanFactory<?>> beanFactoryCreator;
     private final ConfigurationImpl configuration;
 
     private boolean filtersNeedSorting = false;
 
-    public FeatureContextImpl(ResourceInterceptors interceptors, ExceptionMapping exceptionMapping,
+    public FeatureContextImpl(ResourceInterceptors interceptors, RuntimeExceptionMapper exceptionMapping,
             ConfigurationImpl configuration, Function<Class<?>, BeanFactory<?>> beanFactoryCreator) {
         this.interceptors = interceptors;
         this.exceptionMapping = exceptionMapping;

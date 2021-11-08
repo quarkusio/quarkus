@@ -16,11 +16,9 @@ import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-@Disabled("filters")
 public class BlockingWithFilterTest {
 
     @RegisterExtension
@@ -41,7 +39,7 @@ public class BlockingWithFilterTest {
         assertEquals(2, parts.length);
         assertEquals(parts[0], parts[1]);
         assertFalse(parts[0].contains("eventloop"));
-        assertTrue(parts[0].contains("executor"));
+        assertTrue(parts[0].contains(ResteasyReactiveUnitTest.EXECUTOR_THREAD_NAME));
     }
 
     public static class TestFilter {

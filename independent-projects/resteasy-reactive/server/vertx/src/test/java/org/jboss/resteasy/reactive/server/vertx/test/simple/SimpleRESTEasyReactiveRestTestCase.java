@@ -11,7 +11,6 @@ import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveU
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -295,7 +294,7 @@ public class SimpleRESTEasyReactiveRestTestCase {
                 .then().body(Matchers.is(emptyString()));
     }
 
-    @RepeatedTest(100)
+    @Test
     public void testFormMap() {
         RestAssured
                 .given()

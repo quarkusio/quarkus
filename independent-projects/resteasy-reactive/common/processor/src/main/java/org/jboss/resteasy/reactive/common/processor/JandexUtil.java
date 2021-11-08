@@ -64,6 +64,10 @@ public final class JandexUtil {
         return new CalculatingIndexView(index, Thread.currentThread().getContextClassLoader(), new ConcurrentHashMap<>());
     }
 
+    public static IndexView createCalculatingIndex(IndexView index) {
+        return new CalculatingIndexView(index, Thread.currentThread().getContextClassLoader(), new ConcurrentHashMap<>());
+    }
+
     /**
      * Returns the captured generic types of an interface given a class that at some point in the class
      * hierarchy implements the interface.

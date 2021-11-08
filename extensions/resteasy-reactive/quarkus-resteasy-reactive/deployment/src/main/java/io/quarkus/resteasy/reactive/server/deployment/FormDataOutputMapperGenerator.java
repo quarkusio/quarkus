@@ -19,6 +19,9 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.server.core.multipart.MultipartMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.core.multipart.MultipartOutputInjectionTarget;
+import org.jboss.resteasy.reactive.server.core.multipart.PartItem;
 
 import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.gizmo.AssignableResultHandle;
@@ -28,9 +31,6 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.resteasy.reactive.server.runtime.multipart.MultipartMessageBodyWriter;
-import io.quarkus.resteasy.reactive.server.runtime.multipart.MultipartOutputInjectionTarget;
-import io.quarkus.resteasy.reactive.server.runtime.multipart.PartItem;
 
 final class FormDataOutputMapperGenerator {
 

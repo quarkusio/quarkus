@@ -5,6 +5,9 @@ import java.util.List;
 
 import javax.ws.rs.core.MediaType;
 
+import org.jboss.resteasy.reactive.server.jsonb.JsonbMessageBodyReader;
+import org.jboss.resteasy.reactive.server.jsonb.JsonbMessageBodyWriter;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -13,8 +16,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;
 import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem;
-import io.quarkus.resteasy.reactive.jsonb.runtime.serialisers.JsonbMessageBodyReader;
-import io.quarkus.resteasy.reactive.jsonb.runtime.serialisers.JsonbMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jsonb.runtime.serialisers.vertx.VertxJson;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;

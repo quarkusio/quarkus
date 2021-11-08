@@ -412,6 +412,11 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     }
 
     @Override
+    public String getResponseHeader(String name) {
+        return response.getHeader(name);
+    }
+
+    @Override
     public boolean closed() {
         return context.response().closed();
     }

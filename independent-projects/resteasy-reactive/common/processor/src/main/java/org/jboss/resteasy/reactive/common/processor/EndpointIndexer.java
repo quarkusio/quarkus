@@ -187,6 +187,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final AnnotationStore annotationStore;
     private final ApplicationScanningResult applicationScanningResult;
     private final Set<DotName> contextTypes;
+    private final MultipartReturnTypeHandler multipartReturnTypeHandler;
 
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
         this.index = builder.index;
@@ -205,6 +206,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.annotationStore = new AnnotationStore(builder.annotationsTransformers);
         this.applicationScanningResult = builder.applicationScanningResult;
         this.contextTypes = builder.contextTypes;
+        this.multipartReturnTypeHandler = builder.multipartReturnTypeHandler;
     }
 
     public Optional<ResourceClass> createEndpoints(ClassInfo classInfo, boolean considerApplication) {
@@ -537,7 +539,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 } else if (MediaType.MULTIPART_FORM_DATA.equals(produces[0])) {
                     // Handle multipart form data responses
                     ClassInfo multipartClassInfo = index.getClassByName(nonAsyncReturnType.name());
-                    returnsMultipart = handleMultipartForReturnType(additionalWriters, multipartClassInfo);
+                    returnsMultipart = multipartReturnTypeHandler.handleMultipartForReturnType(additionalWriters,
+                            multipartClassInfo, index);
                 }
             }
             Set<String> nameBindingNames = nameBindingNames(currentMethodInfo, classNameBindings);
@@ -640,13 +643,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected boolean doesMethodHaveBlockingSignature(MethodInfo info) {
         return true;
-    }
-
-    /**
-     * @return true if return type is compatible to handle multipart types.
-     */
-    protected boolean handleMultipartForReturnType(AdditionalWriters additionalWriters, ClassInfo multipartClassInfo) {
-        return false;
     }
 
     protected void handleMultipartForParamType(ClassInfo multipartClassInfo) {
@@ -1219,6 +1215,18 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Collection<AnnotationsTransformer> annotationsTransformers;
         private ApplicationScanningResult applicationScanningResult;
         private Set<DotName> contextTypes = new HashSet<>(DEFAULT_CONTEXT_TYPES);
+        private MultipartReturnTypeHandler multipartReturnTypeHandler = new MultipartReturnTypeHandler() {
+            @Override
+            public boolean handleMultipartForReturnType(AdditionalWriters additionalWriters, ClassInfo multipartClassInfo,
+                    IndexView indexView) {
+                return false;
+            }
+        };
+
+        public Builder<T, B, METHOD> setMultipartReturnTypeHandler(MultipartReturnTypeHandler multipartReturnTypeHandler) {
+            this.multipartReturnTypeHandler = multipartReturnTypeHandler;
+            return this;
+        }
 
         public B setDefaultBlocking(BlockingDefault defaultBlocking) {
             this.defaultBlocking = defaultBlocking;
@@ -1394,4 +1402,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
     }
 
+    /**
+     * @return true if return type is compatible to handle multipart types.
+     */
+    public interface MultipartReturnTypeHandler {
+        boolean handleMultipartForReturnType(AdditionalWriters additionalWriters, ClassInfo multipartClassInfo,
+                IndexView index);
+    }
 }

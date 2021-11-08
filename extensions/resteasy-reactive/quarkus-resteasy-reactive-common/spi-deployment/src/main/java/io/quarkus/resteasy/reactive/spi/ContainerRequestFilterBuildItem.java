@@ -33,12 +33,12 @@ public final class ContainerRequestFilterBuildItem extends AbstractInterceptorBu
             super(className);
         }
 
-        public Builder setPreMatching(Boolean preMatching) {
+        public Builder setPreMatching(boolean preMatching) {
             this.preMatching = preMatching;
             return this;
         }
 
-        public Builder setNonBlockingRequired(Boolean nonBlockingRequired) {
+        public Builder setNonBlockingRequired(boolean nonBlockingRequired) {
             this.nonBlockingRequired = nonBlockingRequired;
             return this;
         }

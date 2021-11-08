@@ -213,7 +213,8 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         if (existingData == null) {
             return createInputStream();
         }
-        return new VertxInputStream(context, 10000, Unpooled.wrappedBuffer(existingData), this);
+        return new VertxInputStream(context, getDeployment().getRuntimeConfiguration().readTimeout().toMillis(),
+                Unpooled.wrappedBuffer(existingData), this);
     }
 
     @Override
@@ -369,6 +370,11 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     public Iterable<Map.Entry<String, String>> getAllResponseHeaders() {
         return response.headers();
+    }
+
+    @Override
+    public String getResponseHeader(String name) {
+        return response.headers().get(name);
     }
 
     @Override

@@ -337,7 +337,7 @@ public abstract class ResteasyReactiveRequestContext
         // we got an exception
         if (throwable != null) {
             this.responseContentType = null;
-            deployment.getExceptionMapping().mapException(throwable, this);
+            deployment.getExceptionMapper().mapException(throwable, this);
             // NOTE: keep the throwable around for close() AsyncResponse notification
         }
     }

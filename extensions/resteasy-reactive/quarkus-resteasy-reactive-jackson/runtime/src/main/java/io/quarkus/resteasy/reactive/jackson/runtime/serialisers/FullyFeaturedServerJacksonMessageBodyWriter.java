@@ -1,9 +1,9 @@
 package io.quarkus.resteasy.reactive.jackson.runtime.serialisers;
 
-import static io.quarkus.resteasy.reactive.jackson.runtime.serialisers.JacksonMessageBodyWriterUtil.createDefaultWriter;
-import static io.quarkus.resteasy.reactive.jackson.runtime.serialisers.JacksonMessageBodyWriterUtil.doLegacyWrite;
-import static io.quarkus.resteasy.reactive.jackson.runtime.serialisers.JacksonMessageBodyWriterUtil.setNecessaryJsonFactoryConfig;
-import static org.jboss.resteasy.reactive.server.vertx.providers.serialisers.json.JsonMessageServerBodyWriterUtil.setContentTypeIfNecessary;
+import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWriterUtil.createDefaultWriter;
+import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWriterUtil.doLegacyWrite;
+import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWriterUtil.setNecessaryJsonFactoryConfig;
+import static org.jboss.resteasy.reactive.server.providers.serialisers.json.JsonMessageServerBodyWriterUtil.setContentTypeIfNecessary;
 
 import java.io.IOException;
 import java.io.OutputStream;

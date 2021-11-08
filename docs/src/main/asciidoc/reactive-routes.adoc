@@ -14,6 +14,10 @@ You can implement REST API with routes only or combine them with JAX-RS resource
 
 The code presented in this guide is available in this {quickstarts-base-url}[Github repository] under the {quickstarts-tree-url}/reactive-routes-quickstart[`reactive-routes-quickstart` directory]
 
+NOTE: Reactive Routes were initially introduced to provide a reactive execution model for HTTP APIs on top of the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture].
+With the introduction of link:resteasy-reactive[RESTEasy Reactive], you can now implement reactive HTTP APIs and still use JAX-RS annotations.
+Reactive Routes are still supported, especially if you want a more _route-based_ approach, and something closer to the underlying reactive engine.
+
 == Quarkus HTTP
 
 Before going further, let's have a look at the HTTP layer of Quarkus.

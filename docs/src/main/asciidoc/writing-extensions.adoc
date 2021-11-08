@@ -544,9 +544,9 @@ Please refer to https://github.com/quarkusio/quarkus/blob/{quarkus-version}/devt
 ==== Using Gradle
 
 You will need to apply the `io.quarkus.extension` plugin in the `runtime` module of your extension project.
-The plugin includes the `extensionDescriptor` task that will generate the `META-INF/quarkus-extension.properties` file.
+The plugin includes the `extensionDescriptor` task that will generate `META-INF/quarkus-extension.properties` and `META-INF/quarkus-extension.yml` files.
 The plugin also enables the `io.quarkus:quarkus-extension-processor` annotation processor in both `deployment` and `runtime` modules.
-The name of the deployment module can be configured in the plugin by setting the `deploymentModule` property. The property is set to `deployment` by default:
+The name of the deployment module can be configured in the plugin by setting the `deploymentArtifact` property. The property is set to `deployment` by default:
 
 [source,groovy,subs=attributes+]
 ----
@@ -556,7 +556,7 @@ plugins {
 }
 
 quarkusExtension {
-    deploymentModule = 'deployment'
+    deploymentArtifact = 'deployment'
 }
 
 dependencies {
@@ -566,8 +566,7 @@ dependencies {
 
 [WARNING]
 ====
-This plugin is still experimental. It will generate the `META-INF/quarkus-extension.properties` file but not the `META-INF/quarkus-extension.yml` file.
-Also, it does not validate the extension dependencies as the equivalent Maven plugin does. Unit tests are not supported by the plugin for the moment.
+This plugin is still experimental, it does not validate the extension dependencies as the equivalent Maven plugin does. Unit tests are not supported by the plugin for the moment.
 ====
 
 === Build Step Processors

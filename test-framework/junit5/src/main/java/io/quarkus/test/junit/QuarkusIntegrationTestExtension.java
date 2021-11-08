@@ -33,6 +33,7 @@ import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.TestHostLauncher;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
@@ -171,13 +172,18 @@ public class QuarkusIntegrationTestExtension
             additionalProperties.putAll(resourceManagerProps);
 
             ArtifactLauncher<?> launcher = null;
-            ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
-            for (ArtifactLauncherProvider launcherProvider : loader) {
-                if (launcherProvider.supportsArtifactType(artifactType)) {
-                    launcher = launcherProvider.create(
-                            new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context, requiredTestClass,
-                                    devServicesLaunchResult));
-                    break;
+            String testHost = System.getProperty("quarkus.http.test-host");
+            if ((testHost != null) && !testHost.isEmpty()) {
+                launcher = new TestHostLauncher();
+            } else {
+                ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
+                for (ArtifactLauncherProvider launcherProvider : loader) {
+                    if (launcherProvider.supportsArtifactType(artifactType)) {
+                        launcher = launcherProvider.create(
+                                new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context, requiredTestClass,
+                                        devServicesLaunchResult));
+                        break;
+                    }
                 }
             }
             if (launcher == null) {

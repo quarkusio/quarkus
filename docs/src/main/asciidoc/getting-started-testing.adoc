@@ -1215,6 +1215,24 @@ As a test annotated with `@QuarkusIntegrationTest` tests the result of the build
 These tests will **not** work if run in the same phase as `@QuarkusTest` as Quarkus has not yet created the final artifact.
 ====
 
+=== Executing against a running application
+
+[WARNING]
+====
+This feature is considered experimental and is likely to change in future versions of Quarkus.
+====
+
+`@QuarkusIntegrationTest` supports executing tests against an already running instance of the application. This can be achieved by setting the
+`quarkus.http.test-host` system property when running the tests.
+
+An example use of this could be the following Maven command, that forces `@QuarkusIntegrationTest` to execute against that is accessible at `http://1.2.3.4:4321`:
+
+[source,bash]
+----
+./mvnw verify -Dquarkus.http.test-host=1.2.3.4 -Dquarkus.http.test-port=4321
+----
+
+
 == Mixing `@QuarkusTest` with other type of tests
 
 Mixing tests annotated with `@QuarkusTest` with tests annotated with either `@QuarkusDevModeTest`, `@QuarkusProdModeTest` or `@QuarkusUnitTest`

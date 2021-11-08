@@ -61,6 +61,7 @@ import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.smallrye.health.runtime.QuarkusAsyncHealthCheckFactory;
 import io.quarkus.smallrye.health.runtime.ShutdownReadinessListener;
@@ -433,8 +434,10 @@ class SmallRyeHealthProcessor {
                 Path tempPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem, curateOutcomeBuildItem, launchMode,
                         artifact,
                         HEALTH_UI_WEBJAR_PREFIX);
-                updateApiUrl(tempPath.resolve(JS_FILE_TO_UPDATE), healthPath);
-                updateApiUrl(tempPath.resolve(INDEX_FILE_TO_UPDATE), healthPath);
+                if (launchMode.equals(LaunchMode.DEVELOPMENT)) {
+                    updateApiUrl(tempPath.resolve(JS_FILE_TO_UPDATE), healthPath);
+                    updateApiUrl(tempPath.resolve(INDEX_FILE_TO_UPDATE), healthPath);
+                }
 
                 smallRyeHealthBuildProducer
                         .produce(new SmallRyeHealthBuildItem(tempPath.toAbsolutePath().toString(), healthUiPath));

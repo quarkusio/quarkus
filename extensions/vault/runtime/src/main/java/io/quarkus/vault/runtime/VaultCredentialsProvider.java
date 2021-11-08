@@ -1,5 +1,8 @@
 package io.quarkus.vault.runtime;
 
+import static io.quarkus.vault.runtime.config.CredentialsProviderConfig.DATABASE_MOUNT;
+import static io.quarkus.vault.runtime.config.CredentialsProviderConfig.DEFAULT_REQUEST_PATH;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,10 +23,11 @@ public class VaultCredentialsProvider implements CredentialsProvider {
     @Inject
     private VaultKVSecretEngine vaultKVSecretEngine;
     @Inject
-    private VaultDbManager vaultDbManager;
+    private VaultDynamicCredentialsManager vaultDynamicCredentialsManager;
     @Inject
     private VaultConfigHolder vaultConfigHolder;
 
+    @SuppressWarnings("deprecation")
     @Override
     public Map<String, String> getCredentials(String credentialsProviderName) {
 
@@ -34,7 +38,13 @@ public class VaultCredentialsProvider implements CredentialsProvider {
         }
 
         if (config.databaseCredentialsRole.isPresent()) {
-            return vaultDbManager.getDynamicDbCredentials(config.databaseCredentialsRole.get());
+            return vaultDynamicCredentialsManager.getDynamicCredentials(DATABASE_MOUNT, DEFAULT_REQUEST_PATH,
+                    config.databaseCredentialsRole.get());
+        }
+
+        if (config.credentialsRole.isPresent()) {
+            return vaultDynamicCredentialsManager.getDynamicCredentials(config.credentialsMount, config.credentialsRequestPath,
+                    config.credentialsRole.get());
         }
 
         if (config.kvPath.isPresent()) {

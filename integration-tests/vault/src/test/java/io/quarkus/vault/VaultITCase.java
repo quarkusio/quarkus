@@ -3,6 +3,8 @@ package io.quarkus.vault;
 import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
 import static io.quarkus.vault.runtime.VaultAuthManager.USERPASS_WRAPPING_TOKEN_PASSWORD_KEY;
+import static io.quarkus.vault.runtime.config.CredentialsProviderConfig.DATABASE_MOUNT;
+import static io.quarkus.vault.runtime.config.CredentialsProviderConfig.DEFAULT_REQUEST_PATH;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.APPROLE;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.USERPASS;
 import static io.quarkus.vault.test.VaultTestExtension.APP_SECRET_PATH;
@@ -54,7 +56,7 @@ import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultLookupSelf;
 import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelf;
 import io.quarkus.vault.runtime.client.dto.auth.VaultUserPassAuth;
-import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentials;
+import io.quarkus.vault.runtime.client.dto.dynamic.VaultDynamicCredentials;
 import io.quarkus.vault.runtime.client.dto.kv.VaultKvListSecrets;
 import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV1;
 import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2;
@@ -75,7 +77,7 @@ import io.quarkus.vault.runtime.client.dto.transit.VaultTransitSignBody;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerify;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerifyBatchInput;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerifyBody;
-import io.quarkus.vault.runtime.client.secretengine.VaultInternalDatabaseSecretEngine;
+import io.quarkus.vault.runtime.client.secretengine.VaultInternalDynamicCredentialsSecretEngine;
 import io.quarkus.vault.runtime.client.secretengine.VaultInternalKvV1SecretEngine;
 import io.quarkus.vault.runtime.client.secretengine.VaultInternalKvV2SecretEngine;
 import io.quarkus.vault.runtime.client.secretengine.VaultInternalTransitSecretEngine;
@@ -127,7 +129,7 @@ public class VaultITCase {
     @Inject
     VaultInternalTokenAuthMethod vaultInternalTokenAuthMethod;
     @Inject
-    VaultInternalDatabaseSecretEngine vaultInternalDatabaseSecretEngine;
+    VaultInternalDynamicCredentialsSecretEngine vaultInternalDynamicCredentialsSecretEngine;
 
     @Test
     public void credentialsProvider() {
@@ -308,17 +310,17 @@ public class VaultITCase {
     }
 
     private void assertDynamicCredentials(String clientToken, VaultAuthenticationType authType) {
-        VaultDatabaseCredentials vaultDatabaseCredentials = vaultInternalDatabaseSecretEngine.generateCredentials(clientToken,
-                VAULT_DBROLE);
-        String username = vaultDatabaseCredentials.data.username;
+        VaultDynamicCredentials vaultDynamicCredentials = vaultInternalDynamicCredentialsSecretEngine.generateCredentials(
+                clientToken, DATABASE_MOUNT, DEFAULT_REQUEST_PATH, VAULT_DBROLE);
+        String username = vaultDynamicCredentials.data.username;
         assertTrue(username.startsWith("v-" + authType.name().toLowerCase() + "-" + VAULT_DBROLE + "-"));
 
         VaultLeasesLookup vaultLeasesLookup = vaultInternalSystemBackend.lookupLease(clientToken,
-                vaultDatabaseCredentials.leaseId);
-        assertEquals(vaultDatabaseCredentials.leaseId, vaultLeasesLookup.data.id);
+                vaultDynamicCredentials.leaseId);
+        assertEquals(vaultDynamicCredentials.leaseId, vaultLeasesLookup.data.id);
 
-        VaultRenewLease vaultRenewLease = vaultInternalSystemBackend.renewLease(clientToken, vaultDatabaseCredentials.leaseId);
-        assertEquals(vaultDatabaseCredentials.leaseId, vaultRenewLease.leaseId);
+        VaultRenewLease vaultRenewLease = vaultInternalSystemBackend.renewLease(clientToken, vaultDynamicCredentials.leaseId);
+        assertEquals(vaultDynamicCredentials.leaseId, vaultRenewLease.leaseId);
     }
 
     private void assertKvSecrets(String clientToken) {

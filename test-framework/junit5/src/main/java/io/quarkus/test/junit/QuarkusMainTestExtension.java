@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import org.junit.jupiter.api.Assertions;
@@ -142,12 +143,12 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
             //must be done after the TCCL has been set
             testResourceManager = (Closeable) startupAction.getClassLoader().loadClass(TestResourceManager.class.getName())
-                    .getConstructor(Class.class, Class.class, List.class, boolean.class, Map.class)
+                    .getConstructor(Class.class, Class.class, List.class, boolean.class, Map.class, Optional.class)
                     .newInstance(context.getRequiredTestClass(),
                             profile != null ? profile : null,
                             getAdditionalTestResources(profileInstance, startupAction.getClassLoader()),
                             profileInstance != null && profileInstance.disableGlobalTestResources(),
-                            startupAction.getDevServicesProperties());
+                            startupAction.getDevServicesProperties(), Optional.empty());
             testResourceManager.getClass().getMethod("init").invoke(testResourceManager);
             Map<String, String> properties = (Map<String, String>) testResourceManager.getClass().getMethod("start")
                     .invoke(testResourceManager);

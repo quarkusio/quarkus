@@ -1336,3 +1336,10 @@ a utility class.
 `QuarkusTestResourceLifecycleManager` implementations can also implement `ContextAware` to get access to these properties,
 which allows you to setup the resource before Quarkus starts (e.g. configure a KeyCloak instance, add data to a database etc).
 
+
+[NOTE]
+====
+For `@QuarkusIntegrationTest` tests that result in launcher the application as a container, `io.quarkus.test.common.DevServicesContext` also provides access to the id of the container network on which the application container was launched (via the `containerNetworkId` method).
+This can be used by `QuarkusTestResourceLifecycleManager` that need to launch additional containers that the application will communicate with.
+====
+

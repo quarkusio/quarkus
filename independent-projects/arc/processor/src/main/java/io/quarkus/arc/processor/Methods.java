@@ -192,7 +192,7 @@ final class Methods {
                         && !methodLevelBindings.isEmpty()
                         && !Annotations.contains(methodAnnnotations, DotNames.OBSERVES)
                         && !Annotations.contains(methodAnnnotations, DotNames.OBSERVES_ASYNC)) {
-                    if (merged.size() == 1) {
+                    if (methodLevelBindings.size() == 1) {
                         LOGGER.warnf("%s will have no effect on method %s.%s() because the method is private",
                                 methodLevelBindings.iterator().next(), classInfo.name(), method.name());
                     } else {

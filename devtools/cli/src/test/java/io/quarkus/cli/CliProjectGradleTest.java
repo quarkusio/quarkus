@@ -49,6 +49,8 @@ public class CliProjectGradleTest {
 
     @BeforeAll
     static void startGradleDaemon() throws Exception {
+        CliDriver.deleteDir(wrapperRoot);
+
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B",
                 "--no-code",
                 "-o", testProjectRoot.toString(),

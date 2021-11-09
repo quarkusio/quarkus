@@ -959,6 +959,44 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     }
                 }
             }
+
+            // Mostly a copy of the code above but to handle watched files that are set with absolute path (not in the app resources)
+            for (String watchedFilePath : timestampSet.watchedFilePaths.keySet()) {
+                Path watchedFile = Paths.get(watchedFilePath);
+                if (watchedFile.isAbsolute()) {
+                    if (watchedFile.toFile().exists()) {
+                        try {
+                            long value = Files.getLastModifiedTime(watchedFile).toMillis();
+                            Long existing = timestampSet.watchedFileTimestamps.get(watchedFile);
+                            //existing can be null when running tests
+                            //as there is both normal and test resources, but only one set of watched timestampts
+                            if (existing != null && value > existing) {
+                                ret.add(watchedFilePath);
+                                //a write can be a 'truncate' + 'write'
+                                //if the file is empty we may be seeing the middle of a write
+                                if (Files.size(watchedFile) == 0) {
+                                    try {
+                                        Thread.sleep(200);
+                                    } catch (InterruptedException e) {
+                                        //ignore
+                                    }
+                                }
+                                //re-read, as we may have read the original TS if the middle of
+                                //a truncate+write, even if the write had completed by the time
+                                //we read the size
+                                value = Files.getLastModifiedTime(watchedFile).toMillis();
+
+                                log.infof("File change detected: %s", watchedFile);
+                                timestampSet.watchedFileTimestamps.put(watchedFile, value);
+                            }
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    } else {
+                        timestampSet.watchedFileTimestamps.put(watchedFile, 0L);
+                    }
+                }
+            }
         }
 
         return ret;

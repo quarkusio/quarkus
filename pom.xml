@@ -190,6 +190,12 @@
             </properties>
         </profile>
         <profile>
+            <id>relocations</id>
+            <modules>
+                <module>relocations</module>
+            </modules>
+        </profile>
+        <profile>
             <id>release</id>
             <modules>
                 <module>relocations</module>

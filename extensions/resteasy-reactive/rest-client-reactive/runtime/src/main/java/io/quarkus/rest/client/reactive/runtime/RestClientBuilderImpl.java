@@ -23,6 +23,7 @@ import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.jboss.resteasy.reactive.client.api.InvalidRestClientDefinitionException;
+import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
@@ -31,6 +32,8 @@ import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.restclient.config.RestClientLoggingConfig;
+import io.quarkus.restclient.config.RestClientsConfig;
 
 /**
  * Builder implementation for MicroProfile Rest Client
@@ -265,6 +268,15 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         exceptionMappers.sort(Comparator.comparingInt(ResponseExceptionMapper::getPriority));
         clientBuilder.register(new MicroProfileRestClientResponseFilter(exceptionMappers));
         clientBuilder.followRedirects(followRedirects);
+
+        RestClientsConfig restClientsConfig = Arc.container().instance(RestClientsConfig.class).get();
+
+        RestClientLoggingConfig logging = restClientsConfig.logging;
+        LoggingScope loggingScope = logging != null ? logging.scope.map(LoggingScope::forName).orElse(LoggingScope.NONE)
+                : LoggingScope.NONE;
+        Integer loggingBodySize = logging != null ? logging.bodyLimit : 100;
+        clientBuilder.loggingScope(loggingScope);
+        clientBuilder.loggingBodySize(loggingBodySize);
 
         clientBuilder.multiQueryParamMode(toMultiQueryParamMode(queryParamStyle));
 

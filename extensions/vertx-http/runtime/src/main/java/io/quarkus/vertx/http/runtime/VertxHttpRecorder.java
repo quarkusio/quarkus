@@ -713,7 +713,8 @@ public class VertxHttpRecorder {
         serverOptions.setSni(sslConfig.sni);
         serverOptions.setHost(httpConfiguration.host);
         int sslPort = httpConfiguration.determineSslPort(launchMode);
-        serverOptions.setPort(sslPort == 0 ? -1 : sslPort);
+        // -2 instead of -1 (see http) to have vert.x assign two different random ports if both http and https shall be random
+        serverOptions.setPort(sslPort == 0 ? -2 : sslPort);
         serverOptions.setClientAuth(buildTimeConfig.tlsClientAuth);
         serverOptions.setReusePort(httpConfiguration.soReusePort);
         serverOptions.setTcpQuickAck(httpConfiguration.tcpQuickAck);

@@ -876,7 +876,7 @@ Alternatively, you can use the `@LookupIfProperty` and `@LookupUnlessProperty` a
 .`@LookupIfProperty` Example
 [source,java]
 ----
-interface Service {
+ interface Service {
     String name();
  }
  
@@ -890,7 +890,7 @@ interface Service {
  }
  
  @ApplicationScoped
- class ServiceBar {
+ class ServiceBar implements Service {
  
     public String name() {
        return "bar";
@@ -904,8 +904,8 @@ interface Service {
     Instance<Service> service;
     
     void printServiceName() {
-       // This will print "bar" if the property "service.foo.enabled" is set to "false"
-       // If "service.foo.enabled" is set to "true" then service.get() would result in AmbiguousResolutionException
+       // This will print "bar" if the property "service.foo.enabled" is NOT set to "true"
+       // If "service.foo.enabled" is set to "true" then service.get() would result in an AmbiguousResolutionException
        System.out.println(service.get().name());
     }
  }

@@ -1,0 +1,13 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Hibernate Reactive with Panache and Kotlin"
+metadata:
+  keywords:
+  - "hibernate-reactive-panache"
+  - "kotlin"
+  - "panache"
+  - "hibernate"
+  - "jpa"
+  categories:
+  - "data"
+  status: "preview"

@@ -59,6 +59,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @param params optional list of indexed parameters
      * @return the number of rows operated on.
      */
+    @GenerateBridge
     fun executeUpdate(query: String, vararg params: Any): Uni<Int> {
         return AbstractJpaOperations.executeUpdate(query, params);
     }
@@ -70,7 +71,8 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @param params {@link Map} of named parameters
      * @return the number of rows operated on.
      */
-    fun executeUpdate(query: String, params: Map<String, Any>): Uni<Int> {
+    @GenerateBridge
+    fun executeUpdate(query: String, params: Map<String, Object>): Uni<Int> {
         return AbstractJpaOperations.executeUpdate(query, params);
     }
 
@@ -90,7 +92,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      *
      * @return void
      */
-    fun flush(): Uni<Void> = getSession().flatMap { session -> session.flush() }
+//    fun flush(): Uni<Void> = getSession().flatMap { session -> session.flush() }
 
     /**
      * Returns the current transaction, if any, or <code>null</code>.

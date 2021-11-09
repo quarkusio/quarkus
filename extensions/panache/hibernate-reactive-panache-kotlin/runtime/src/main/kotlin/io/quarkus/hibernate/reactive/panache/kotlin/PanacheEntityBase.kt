@@ -2,6 +2,7 @@ package io.quarkus.hibernate.reactive.panache.kotlin;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.hibernate.reactive.panache.kotlin.runtime.KotlinJpaOperations.Companion.INSTANCE
+import io.quarkus.panache.common.impl.GenerateBridge
 import io.smallrye.mutiny.Uni
 
 
@@ -18,8 +19,7 @@ import javax.persistence.Transient;
  * @see PanacheEntity
  */
 interface PanacheEntityBase {
-
-
+    
     /**
      * Persist this entity in the database, if not already persisted. This will set your ID field if it is not already set.
      *
@@ -31,6 +31,7 @@ interface PanacheEntityBase {
      * @see .persist
      */
     @Suppress("UNCHECKED_CAST")
+    @GenerateBridge
     fun <T : PanacheEntityBase> persist(): Uni<T> {
         return INSTANCE.persist(this)
             .map { this as T }
@@ -47,10 +48,11 @@ interface PanacheEntityBase {
      * @see .persist
      * @see .persist
      */
-    fun persistAndFlush(): Uni<PanacheEntityBase> {
+    @Suppress("UNCHECKED_CAST")
+    fun <T : PanacheEntityBase> persistAndFlush(): Uni<T> {
         return INSTANCE.persist(this)
             .flatMap { INSTANCE.flush() }
-            .map { this }
+            .map { this as T }
     }
 
     /**
@@ -64,7 +66,8 @@ interface PanacheEntityBase {
      * @see .delete
      * @see .deleteAll
      */
-    fun delete(): Uni<Void?>? {
+    @GenerateBridge
+    fun delete(): Uni<Void> {
         return INSTANCE.delete(this)
     }
 
@@ -86,7 +89,8 @@ interface PanacheEntityBase {
      *
      * @return
      */
-    fun flush(): Uni<Void?>? {
+    @GenerateBridge
+    fun flush(): Uni<Void> {
         return INSTANCE.flush()
     }
 

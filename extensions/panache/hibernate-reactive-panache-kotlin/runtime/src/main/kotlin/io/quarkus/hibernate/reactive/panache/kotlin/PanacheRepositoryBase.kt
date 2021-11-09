@@ -719,7 +719,7 @@ interface PanacheRepositoryBase<Entity, Id> {
      * @see #update(String, Parameters)
      */
     @GenerateBridge
-    fun update(query: String, vararg params: Any): Uni<Integer> {
+    fun update(query: String, vararg params: Any): Uni<Int> {
         throw INSTANCE.implementationInjectionMissing();
     }
 
@@ -733,7 +733,7 @@ interface PanacheRepositoryBase<Entity, Id> {
      * @see #update(String, Parameters)
      */
     @GenerateBridge
-    fun update(query: String, params: Map<String, Any>): Uni<Integer> {
+    fun update(query: String, params: Map<String, Any>): Uni<Int> {
         throw INSTANCE.implementationInjectionMissing();
     }
 
@@ -747,7 +747,7 @@ interface PanacheRepositoryBase<Entity, Id> {
      * @see #update(String, Map)
      */
     @GenerateBridge
-    fun update(query: String, params: Parameters): Uni<Integer> {
+    fun update(query: String, params: Parameters): Uni<Int> {
         throw INSTANCE.implementationInjectionMissing();
     }
 }

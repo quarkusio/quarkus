@@ -14,6 +14,7 @@
         <postgres.reactive.url>vertx-reactive:postgresql://localhost:5432/hibernate_orm_test</postgres.reactive.url>
     </properties>
     
+    
     <artifactId>quarkus-hibernate-reactive-panache-kotlin-deployment</artifactId>
     <name>Quarkus - Hibernate Reactive with Panache and Kotlin - Deployment</name>
     <dependencies>
@@ -63,6 +64,7 @@
             <artifactId>quarkus-resteasy-reactive-jsonb-deployment</artifactId>
             <scope>test</scope>
         </dependency>
+        
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>

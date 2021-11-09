@@ -64,9 +64,9 @@ class TestAnalogs {
             it.name.endsWith("Optional") || it in implemented
         }
 
-//        methods("javaMethods", javaMethods)
-//        methods("kotlinMethods", kotlinMethods)
-//        methods("companionMethods", companionMethods)
+        methods("javaMethods", javaMethods)
+        methods("kotlinMethods", kotlinMethods)
+        methods("companionMethods", companionMethods)
 
         assertTrue(javaMethods.isEmpty(), "New methods not implemented: \n${javaMethods.byLine()}")
         assertTrue(kotlinMethods.isEmpty(), "Old methods not removed: \n${kotlinMethods.byLine()}")

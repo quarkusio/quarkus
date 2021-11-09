@@ -262,6 +262,13 @@ public class OidcCommonConfig {
             public String keyPassword;
 
             /**
+             * JWT audience ('aud') claim value.
+             * By default the audience is set to the address of the OpenId Connect Provider's token endpoint.
+             */
+            @ConfigItem
+            public Optional<String> audience = Optional.empty();
+
+            /**
              * Key identifier of the signing key added as a JWT 'kid' header
              */
             @ConfigItem
@@ -318,6 +325,14 @@ public class OidcCommonConfig {
 
             public void setSignatureAlgorithm(String signatureAlgorithm) {
                 this.signatureAlgorithm = Optional.of(signatureAlgorithm);
+            }
+
+            public Optional<String> getAudience() {
+                return audience;
+            }
+
+            public void setAudience(String audience) {
+                this.audience = Optional.of(audience);
             }
 
         }

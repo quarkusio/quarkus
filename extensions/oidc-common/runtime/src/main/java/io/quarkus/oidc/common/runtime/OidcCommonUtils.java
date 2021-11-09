@@ -157,11 +157,11 @@ public class OidcCommonUtils {
     }
 
     public static String getAuthServerUrl(OidcCommonConfig oidcConfig) {
-        String authServerUrl = oidcConfig.getAuthServerUrl().get();
-        if (authServerUrl.endsWith("/")) {
-            authServerUrl = authServerUrl.substring(0, authServerUrl.length() - 1);
-        }
-        return authServerUrl;
+        return removeLastPathSeparator(oidcConfig.getAuthServerUrl().get());
+    }
+
+    private static String removeLastPathSeparator(String value) {
+        return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 
     public static String getOidcEndpointUrl(String authServerUrl, Optional<String> endpointPath) {
@@ -272,16 +272,14 @@ public class OidcCommonUtils {
         }
     }
 
-    public static String signJwt(OidcCommonConfig oidcConfig) {
-        return signJwtWithKey(oidcConfig, clientJwtKey(oidcConfig.credentials));
-    }
-
-    public static String signJwtWithKey(OidcCommonConfig oidcConfig, Key key) {
+    public static String signJwtWithKey(OidcCommonConfig oidcConfig, String tokenRequestUri, Key key) {
         // 'jti' and 'iat' claim is created by default, iat - is set to the current time
         JwtSignatureBuilder builder = Jwt
                 .issuer(oidcConfig.clientId.get())
                 .subject(oidcConfig.clientId.get())
-                .audience(getAuthServerUrl(oidcConfig))
+                .audience(oidcConfig.credentials.jwt.getAudience().isPresent()
+                        ? removeLastPathSeparator(oidcConfig.credentials.jwt.getAudience().get())
+                        : tokenRequestUri)
                 .expiresIn(oidcConfig.credentials.jwt.lifespan)
                 .jws();
         if (oidcConfig.credentials.jwt.getTokenKeyId().isPresent()) {

@@ -19,12 +19,11 @@ import com.mongodb.client.result.InsertOneResult;
 import de.flapdoodle.embed.mongo.Command;
 import de.flapdoodle.embed.mongo.MongodExecutable;
 import de.flapdoodle.embed.mongo.MongodStarter;
-import de.flapdoodle.embed.mongo.config.IMongodConfig;
-import de.flapdoodle.embed.mongo.config.MongodConfigBuilder;
+import de.flapdoodle.embed.mongo.config.Defaults;
+import de.flapdoodle.embed.mongo.config.MongodConfig;
 import de.flapdoodle.embed.mongo.config.Net;
-import de.flapdoodle.embed.mongo.config.RuntimeConfigBuilder;
 import de.flapdoodle.embed.mongo.distribution.Version;
-import de.flapdoodle.embed.process.config.IRuntimeConfig;
+import de.flapdoodle.embed.process.config.RuntimeConfig;
 import de.flapdoodle.embed.process.config.io.ProcessOutput;
 import de.flapdoodle.embed.process.runtime.Network;
 import io.smallrye.mutiny.Uni;
@@ -67,7 +66,7 @@ public class MongoTestBase {
             Version.Main version = Version.Main.V4_0;
             int port = 27018;
             LOGGER.infof("Starting Mongo %s on port %s", version, port);
-            IMongodConfig config = new MongodConfigBuilder()
+            MongodConfig config = MongodConfig.builder()
                     .version(version)
                     .net(new Net(port, Network.localhostIsIPv6()))
                     .build();
@@ -88,7 +87,7 @@ public class MongoTestBase {
         }
     }
 
-    private static MongodExecutable getMongodExecutable(IMongodConfig config) {
+    private static MongodExecutable getMongodExecutable(MongodConfig config) {
         try {
             return doGetExecutable(config);
         } catch (Exception e) {
@@ -102,10 +101,9 @@ public class MongoTestBase {
         }
     }
 
-    private static MongodExecutable doGetExecutable(IMongodConfig config) {
-        IRuntimeConfig runtimeConfig = new RuntimeConfigBuilder()
-                .defaults(Command.MongoD)
-                .processOutput(ProcessOutput.getDefaultInstanceSilent())
+    private static MongodExecutable doGetExecutable(MongodConfig config) {
+        RuntimeConfig runtimeConfig = Defaults.runtimeConfigFor(Command.MongoD)
+                .processOutput(ProcessOutput.silent())
                 .build();
         return MongodStarter.getInstance(runtimeConfig).prepare(config);
     }

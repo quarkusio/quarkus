@@ -1,7 +1,5 @@
 package io.quarkus.test.mongodb;
 
-import static org.awaitility.Awaitility.await;
-
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -20,13 +18,13 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 
+import de.flapdoodle.embed.mongo.Command;
 import de.flapdoodle.embed.mongo.MongodExecutable;
 import de.flapdoodle.embed.mongo.MongodStarter;
-import de.flapdoodle.embed.mongo.config.IMongodConfig;
-import de.flapdoodle.embed.mongo.config.MongoCmdOptionsBuilder;
-import de.flapdoodle.embed.mongo.config.MongodConfigBuilder;
-import de.flapdoodle.embed.mongo.config.Net;
+import de.flapdoodle.embed.mongo.config.*;
 import de.flapdoodle.embed.mongo.distribution.Version;
+import de.flapdoodle.embed.process.config.RuntimeConfig;
+import de.flapdoodle.embed.process.config.io.ProcessOutput;
 import de.flapdoodle.embed.process.runtime.Network;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
@@ -45,13 +43,13 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
         } catch (ClassNotFoundException e) {
         }
         try {
-            List<IMongodConfig> configs = new ArrayList<>();
+            List<MongodConfig> configs = new ArrayList<>();
             for (int i = 0; i < 2; i++) {
                 int port = 27017 + i;
                 configs.add(buildMongodConfiguration("localhost", port, true));
             }
             configs.forEach(config -> {
-                MongodExecutable exec = MongodStarter.getDefaultInstance().prepare(config);
+                MongodExecutable exec = getMongodExecutable(config);
                 MONGOS.add(exec);
                 try {
                     exec.start();
@@ -66,6 +64,27 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
         }
     }
 
+    private MongodExecutable getMongodExecutable(MongodConfig config) {
+        try {
+            return doGetExecutable(config);
+        } catch (Exception e) {
+            // sometimes the download process can timeout so just sleep and try again
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ignored) {
+
+            }
+            return doGetExecutable(config);
+        }
+    }
+
+    private MongodExecutable doGetExecutable(MongodConfig config) {
+        RuntimeConfig runtimeConfig = Defaults.runtimeConfigFor(Command.MongoD)
+                .processOutput(ProcessOutput.silent())
+                .build();
+        return MongodStarter.getInstance(runtimeConfig).prepare(config);
+    }
+
     @Override
     public void stop() {
         MONGOS.forEach(mongod -> {
@@ -77,7 +96,7 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
         });
     }
 
-    private static void initializeReplicaSet(final List<IMongodConfig> mongodConfigList) throws UnknownHostException {
+    private static void initializeReplicaSet(final List<MongodConfig> mongodConfigList) throws UnknownHostException {
         final String arbitrerAddress = "mongodb://" + mongodConfigList.get(0).net().getServerAddress().getHostName() + ":"
                 + mongodConfigList.get(0).net().getPort();
         final MongoClientSettings mo = MongoClientSettings.builder()
@@ -109,13 +128,13 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
         }
     }
 
-    private static Document buildReplicaSetConfiguration(final List<IMongodConfig> configList) throws UnknownHostException {
+    private static Document buildReplicaSetConfiguration(final List<MongodConfig> configList) throws UnknownHostException {
         final Document replicaSetSetting = new Document();
         replicaSetSetting.append("_id", "test001");
 
         final List<Document> members = new ArrayList<>();
         int i = 0;
-        for (final IMongodConfig mongoConfig : configList) {
+        for (final MongodConfig mongoConfig : configList) {
             members.add(new Document().append("_id", i++).append("host",
                     mongoConfig.net().getServerAddress().getHostName() + ":" + mongoConfig.net().getPort()));
         }
@@ -143,7 +162,7 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
         return true;
     }
 
-    private static IMongodConfig buildMongodConfiguration(String url, int port, final boolean configureReplicaSet)
+    private static MongodConfig buildMongodConfiguration(String url, int port, final boolean configureReplicaSet)
             throws IOException {
         try {
             //JDK bug workaround
@@ -152,12 +171,12 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
             Class.forName("sun.net.ext.ExtendedSocketOptions", true, ClassLoader.getSystemClassLoader());
         } catch (ClassNotFoundException e) {
         }
-        final MongodConfigBuilder builder = new MongodConfigBuilder()
+        final ImmutableMongodConfig.Builder builder = MongodConfig.builder()
                 .version(Version.Main.V4_0)
                 .net(new Net(url, port, Network.localhostIsIPv6()));
         if (configureReplicaSet) {
-            builder.withLaunchArgument("--replSet", "test001");
-            builder.cmdOptions(new MongoCmdOptionsBuilder()
+            builder.putArgs("--replSet", "test001");
+            builder.cmdOptions(MongoCmdOptions.builder()
                     .syncDelay(10)
                     .useSmallFiles(true)
                     .useNoJournal(false)

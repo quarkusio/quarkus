@@ -23,13 +23,13 @@ import com.mongodb.client.MongoDatabase;
 import de.flapdoodle.embed.mongo.Command;
 import de.flapdoodle.embed.mongo.MongodExecutable;
 import de.flapdoodle.embed.mongo.MongodStarter;
-import de.flapdoodle.embed.mongo.config.IMongodConfig;
-import de.flapdoodle.embed.mongo.config.MongoCmdOptionsBuilder;
-import de.flapdoodle.embed.mongo.config.MongodConfigBuilder;
+import de.flapdoodle.embed.mongo.config.Defaults;
+import de.flapdoodle.embed.mongo.config.ImmutableMongodConfig;
+import de.flapdoodle.embed.mongo.config.MongoCmdOptions;
+import de.flapdoodle.embed.mongo.config.MongodConfig;
 import de.flapdoodle.embed.mongo.config.Net;
-import de.flapdoodle.embed.mongo.config.RuntimeConfigBuilder;
 import de.flapdoodle.embed.mongo.distribution.Version;
-import de.flapdoodle.embed.process.config.IRuntimeConfig;
+import de.flapdoodle.embed.process.config.RuntimeConfig;
 import de.flapdoodle.embed.process.config.io.ProcessOutput;
 import de.flapdoodle.embed.process.runtime.Network;
 
@@ -43,7 +43,7 @@ public class MongoWithReplicasTestBase {
         String uri = getConfiguredConnectionString();
         // This switch allow testing against a running mongo database.
         if (uri == null) {
-            List<IMongodConfig> configs = new ArrayList<>();
+            List<MongodConfig> configs = new ArrayList<>();
             for (int i = 0; i < 2; i++) {
                 int port = 27018 + i;
                 configs.add(buildMongodConfiguration("localhost", port, true));
@@ -74,7 +74,7 @@ public class MongoWithReplicasTestBase {
         }
     }
 
-    private static MongodExecutable getMongodExecutable(IMongodConfig config) {
+    private static MongodExecutable getMongodExecutable(MongodConfig config) {
         try {
             return doGetExecutable(config);
         } catch (Exception e) {
@@ -88,10 +88,9 @@ public class MongoWithReplicasTestBase {
         }
     }
 
-    private static MongodExecutable doGetExecutable(IMongodConfig config) {
-        IRuntimeConfig runtimeConfig = new RuntimeConfigBuilder()
-                .defaults(Command.MongoD)
-                .processOutput(ProcessOutput.getDefaultInstanceSilent())
+    private static MongodExecutable doGetExecutable(MongodConfig config) {
+        RuntimeConfig runtimeConfig = Defaults.runtimeConfigFor(Command.MongoD)
+                .processOutput(ProcessOutput.silent())
                 .build();
         return MongodStarter.getInstance(runtimeConfig).prepare(config);
     }
@@ -115,7 +114,7 @@ public class MongoWithReplicasTestBase {
         }
     }
 
-    private static void initializeReplicaSet(final List<IMongodConfig> mongodConfigList) throws UnknownHostException {
+    private static void initializeReplicaSet(final List<MongodConfig> mongodConfigList) throws UnknownHostException {
         final String arbiterAddress = "mongodb://" + mongodConfigList.get(0).net().getServerAddress().getHostName() + ":"
                 + mongodConfigList.get(0).net().getPort();
         final MongoClientSettings mo = MongoClientSettings.builder()
@@ -147,13 +146,13 @@ public class MongoWithReplicasTestBase {
         }
     }
 
-    private static Document buildReplicaSetConfiguration(final List<IMongodConfig> configList) throws UnknownHostException {
+    private static Document buildReplicaSetConfiguration(final List<MongodConfig> configList) throws UnknownHostException {
         final Document replicaSetSetting = new Document();
         replicaSetSetting.append("_id", "test001");
 
         final List<Document> members = new ArrayList<>();
         int i = 0;
-        for (final IMongodConfig mongoConfig : configList) {
+        for (final MongodConfig mongoConfig : configList) {
             members.add(new Document().append("_id", i++).append("host",
                     mongoConfig.net().getServerAddress().getHostName() + ":" + mongoConfig.net().getPort()));
         }
@@ -181,7 +180,7 @@ public class MongoWithReplicasTestBase {
         return true;
     }
 
-    private static IMongodConfig buildMongodConfiguration(String url, int port, final boolean configureReplicaSet)
+    private static MongodConfig buildMongodConfiguration(String url, int port, final boolean configureReplicaSet)
             throws IOException {
         try {
             //JDK bug workaround
@@ -190,12 +189,12 @@ public class MongoWithReplicasTestBase {
             Class.forName("sun.net.ext.ExtendedSocketOptions", true, ClassLoader.getSystemClassLoader());
         } catch (ClassNotFoundException e) {
         }
-        final MongodConfigBuilder builder = new MongodConfigBuilder()
+        final ImmutableMongodConfig.Builder builder = MongodConfig.builder()
                 .version(Version.Main.V4_0)
                 .net(new Net(url, port, Network.localhostIsIPv6()));
         if (configureReplicaSet) {
-            builder.withLaunchArgument("--replSet", "test001");
-            builder.cmdOptions(new MongoCmdOptionsBuilder()
+            builder.putArgs("--replSet", "test001");
+            builder.cmdOptions(MongoCmdOptions.builder()
                     .syncDelay(10)
                     .useSmallFiles(true)
                     .useNoJournal(false)

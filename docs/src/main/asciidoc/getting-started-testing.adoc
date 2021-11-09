@@ -1215,6 +1215,47 @@ As a test annotated with `@QuarkusIntegrationTest` tests the result of the build
 These tests will **not** work if run in the same phase as `@QuarkusTest` as Quarkus has not yet created the final artifact.
 ====
 
+=== Launching containers
+
+When `@QuarkusIntegrationTest` results in launching a container (because the application was built with `quarkus.container-image.build` set to `true`), the container is launched on a predictable container network. This facilitates writing integration tests that need to launch services to support the application.
+This means that `@QuarkusIntegrationTest` works out of the box with containers launched via link:dev-services[Dev Services], but it also means that it enables using <<quarkus-test-resource,QuarkusTestLifecycleManager>> resources that launch additional containers.
+This can be achieved by having your `QuarkusTestLifecycleManager` implement `io.quarkus.test.common.DevServicesContext.ContextAware`. A simple example could be the following:
+
+[source,java]
+----
+import io.quarkus.test.common.DevServicesContext;
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+public class CustomResource implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
+
+    private Optional<String> containerNetworkId;
+
+    @Override
+    public void setIntegrationTestContext(DevServicesContext context) {
+        containerNetworkId = context.containerNetworkId();
+    }
+
+    @Override
+    public Map<String, String> start() {
+        // start a container making sure to call withNetworkMode() with the value of containerNetworkId if present
+
+        // return a map containing the configuration the application needs to use the service
+        return new HashMap<>();
+    }
+
+    @Override
+    public void stop() {
+        // close container
+    }
+}
+----
+
+`CustomResource` would be activated on a `@QuarkusIntegrationTest` using `@QuarkusTestResource` as is described in the corresponding section of this doc.
+
 === Executing against a running application
 
 [WARNING]

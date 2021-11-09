@@ -200,6 +200,11 @@ public class NativeTestExtension
                     }
 
                     @Override
+                    public boolean manageNetwork() {
+                        return false;
+                    }
+
+                    @Override
                     public void close() {
 
                     }

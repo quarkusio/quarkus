@@ -9,6 +9,7 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -354,7 +355,7 @@ public abstract class QuarkusDevModeLauncher {
             // make sure the debug port is not used, we don't want to just fail if something else is using it
             // we don't check this on restarts, as the previous process is still running
             if (debugPortOk == null) {
-                try (Socket socket = new Socket(InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 }), port)) {
+                try (Socket socket = new Socket(getInetAddress(debugHost), port)) {
                     error("Port " + port + " in use, not starting in debug mode");
                     debugPortOk = false;
                 } catch (IOException e) {
@@ -454,6 +455,13 @@ public abstract class QuarkusDevModeLauncher {
         if (applicationArgs != null) {
             args.addAll(Arrays.asList(CommandLineUtils.translateCommandline(applicationArgs)));
         }
+    }
+
+    private InetAddress getInetAddress(String host) throws UnknownHostException {
+        if ("localhost".equals(host)) {
+            return InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 });
+        }
+        return InetAddress.getByName(host);
     }
 
     public Collection<Path> watchedBuildFiles() {

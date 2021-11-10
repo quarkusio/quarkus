@@ -48,7 +48,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
@@ -123,6 +122,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private final TestSupport testSupport;
     private volatile boolean firstTestScanComplete;
     private volatile Boolean instrumentationEnabled;
+    private volatile boolean configuredInstrumentationEnabled;
     private volatile boolean liveReloadEnabled = true;
 
     private WatchServiceFileSystemWatcher testClassChangeWatcher;
@@ -550,14 +550,12 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         if (instrumentationEnabled != null) {
             return instrumentationEnabled;
         }
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
-        try {
-            Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
-            return ConfigProvider.getConfig()
-                    .getOptionalValue("quarkus.live-reload.instrumentation", boolean.class).orElse(true);
-        } finally {
-            Thread.currentThread().setContextClassLoader(old);
-        }
+        return configuredInstrumentationEnabled;
+    }
+
+    public RuntimeUpdatesProcessor setConfiguredInstrumentationEnabled(boolean configuredInstrumentationEnabled) {
+        this.configuredInstrumentationEnabled = configuredInstrumentationEnabled;
+        return this;
     }
 
     @Override

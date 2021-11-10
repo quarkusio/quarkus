@@ -19,7 +19,7 @@ class FlowToPublisherHandler : ServerRestHandler {
         if (result is Flow<*>) {
 
             val requestScope = requestContext.captureCDIRequestScope()
-            val dispatcher: CoroutineDispatcher = Vertx.currentContext()?.let {VertxDispatcher(it,requestScope)}
+            val dispatcher: CoroutineDispatcher = Vertx.currentContext()?.let {VertxDispatcher(it,requestScope, requestContext)}
                     ?: throw IllegalStateException("No Vertx context found")
 
             val coroutineScope = CDI.current().select(ApplicationCoroutineScope::class.java)

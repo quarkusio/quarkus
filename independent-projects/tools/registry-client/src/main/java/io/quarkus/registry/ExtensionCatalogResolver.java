@@ -359,6 +359,24 @@ public class ExtensionCatalogResolver {
 
         ExtensionCatalog build() throws RegistryResolutionException {
             appendAllNonPlatformExtensions();
+            if (catalogs.isEmpty()) {
+                final List<RegistryExtensionResolver> registries = ExtensionCatalogResolver.this.registries;
+                if (registries.isEmpty()) {
+                    throw new RegistryResolutionException("Quarkus extension registry is not available");
+                }
+                if (registries.size() == 1) {
+                    throw new RegistryResolutionException("Quarkus extension registry " + registries.get(0).getId()
+                            + " did not provide any extension catalog");
+                }
+                final StringBuilder buf = new StringBuilder();
+                buf.append("Quarkus extension registries ");
+                buf.append(registries.get(0).getId());
+                for (int i = 1; i < registries.size(); ++i) {
+                    buf.append(", ").append(registries.get(i).getId());
+                }
+                buf.append(" did not provide any extension catalog");
+                throw new RegistryResolutionException(buf.toString());
+            }
             return JsonCatalogMerger.merge(catalogs);
         }
     }

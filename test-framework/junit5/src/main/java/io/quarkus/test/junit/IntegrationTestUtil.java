@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.JUnitException;
@@ -288,6 +289,7 @@ public final class IntegrationTestUtil {
             }
         }, DevServicesLauncherConfigResultBuildItem.class.getName());
 
+        boolean manageNetwork = false;
         if (isDockerAppLaunch) {
             // obtain the ID of the shared network - this needs to be done after the augmentation has been run
             // or else we run into various ClassLoader problems
@@ -297,11 +299,12 @@ public final class IntegrationTestUtil {
                 Object sharedNetwork = networkClass.getField("SHARED").get(null);
                 networkId = (String) networkClass.getMethod("getId").invoke(sharedNetwork);
             } catch (Exception e) {
-                networkId = null;
+                networkId = "quarkus-integration-test-" + RandomStringUtils.random(5, true, false);
+                manageNetwork = true;
             }
         }
 
-        return new DefaultDevServicesLaunchResult(propertyMap, networkId, curatedApplication);
+        return new DefaultDevServicesLaunchResult(propertyMap, networkId, manageNetwork, curatedApplication);
     }
 
     static void activateLogging() {
@@ -313,12 +316,14 @@ public final class IntegrationTestUtil {
     static class DefaultDevServicesLaunchResult implements ArtifactLauncher.InitContext.DevServicesLaunchResult {
         private final Map<String, String> properties;
         private final String networkId;
+        private final boolean manageNetwork;
         private final CuratedApplication curatedApplication;
 
         DefaultDevServicesLaunchResult(Map<String, String> properties, String networkId,
-                CuratedApplication curatedApplication) {
+                boolean manageNetwork, CuratedApplication curatedApplication) {
             this.properties = properties;
             this.networkId = networkId;
+            this.manageNetwork = manageNetwork;
             this.curatedApplication = curatedApplication;
         }
 
@@ -328,6 +333,11 @@ public final class IntegrationTestUtil {
 
         public String networkId() {
             return networkId;
+        }
+
+        @Override
+        public boolean manageNetwork() {
+            return manageNetwork;
         }
 
         @Override

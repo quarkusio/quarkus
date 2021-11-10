@@ -257,6 +257,12 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");
         }
 
+        persistenceUnitConfig.database.defaultCatalog.ifPresent(
+                catalog -> runtimeSettingsBuilder.put(AvailableSettings.DEFAULT_CATALOG, catalog));
+
+        persistenceUnitConfig.database.defaultSchema.ifPresent(
+                schema -> runtimeSettingsBuilder.put(AvailableSettings.DEFAULT_SCHEMA, schema));
+
         // Logging
         if (persistenceUnitConfig.log.sql) {
             runtimeSettingsBuilder.put(AvailableSettings.SHOW_SQL, "true");

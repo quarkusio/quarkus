@@ -359,6 +359,12 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                     persistenceUnitConfig.scripts.generation.dropTarget.get());
         }
 
+        persistenceUnitConfig.database.defaultCatalog.ifPresent(
+                catalog -> runtimeSettingsBuilder.put(AvailableSettings.DEFAULT_CATALOG, catalog));
+
+        persistenceUnitConfig.database.defaultSchema.ifPresent(
+                schema -> runtimeSettingsBuilder.put(AvailableSettings.DEFAULT_SCHEMA, schema));
+
         // Logging
         if (persistenceUnitConfig.log.sql) {
             runtimeSettingsBuilder.put(AvailableSettings.SHOW_SQL, "true");

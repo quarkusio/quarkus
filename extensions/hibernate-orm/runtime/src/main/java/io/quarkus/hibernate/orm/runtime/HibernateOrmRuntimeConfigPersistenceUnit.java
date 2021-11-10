@@ -45,8 +45,22 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
         @ConfigItem
         public HibernateOrmConfigPersistenceUnitDatabaseGeneration generation = new HibernateOrmConfigPersistenceUnitDatabaseGeneration();
 
+        /**
+         * The default catalog to use for the database objects.
+         */
+        @ConfigItem
+        public Optional<String> defaultCatalog;
+
+        /**
+         * The default schema to use for the database objects.
+         */
+        @ConfigItem
+        public Optional<String> defaultSchema;
+
         public boolean isAnyPropertySet() {
-            return generation.isAnyPropertySet();
+            return generation.isAnyPropertySet()
+                    || defaultCatalog.isPresent()
+                    || defaultSchema.isPresent();
         }
     }
 

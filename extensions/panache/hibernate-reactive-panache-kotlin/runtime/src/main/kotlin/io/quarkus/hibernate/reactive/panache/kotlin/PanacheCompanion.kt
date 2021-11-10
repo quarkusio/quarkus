@@ -35,73 +35,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
         return AbstractJpaOperations.getSession();
     }
 
-    /**
-     * Performs the given work within the scope of a database transaction, automatically flushing the session.
-     * The transaction will be rolled back if the work completes with an uncaught exception, or if
-     * {@link Mutiny.Transaction#markForRollback()} is called.
-     *
-     * @param <T> The function's return type
-     * @param work The function to execute in the new transaction
-     * @return the result of executing the function
-     * @see Panache#currentTransaction()
-     */
-    fun withTransaction(work: Supplier<Uni<Entity>>): Uni<Entity> {
-        return getSession()
-            .flatMap { session ->
-                session.withTransaction { work.get() }
-            }
-    }
-
-    /**
-     * Executes a database update operation and return the number of rows operated on.
-     *
-     * @param query a normal HQL query
-     * @param params optional list of indexed parameters
-     * @return the number of rows operated on.
-     */
-    @GenerateBridge
-    fun executeUpdate(query: String, vararg params: Any): Uni<Int> {
-        return AbstractJpaOperations.executeUpdate(query, params);
-    }
-
-    /**
-     * Executes a database update operation and return the number of rows operated on.
-     *
-     * @param query a normal HQL query
-     * @param params {@link Map} of named parameters
-     * @return the number of rows operated on.
-     */
-    @GenerateBridge
-    fun executeUpdate(query: String, params: Map<String, Object>): Uni<Int> {
-        return AbstractJpaOperations.executeUpdate(query, params);
-    }
-
-    /**
-     * Executes a database update operation and return the number of rows operated on.
-     *
-     * @param query a normal HQL query
-     * @param params {@link Parameters} of named parameters
-     * @return the number of rows operated on.
-     */
-    fun executeUpdate(query: String, params: Parameters): Uni<Int> {
-        return AbstractJpaOperations.executeUpdate(query, params.map());
-    }
-
-    /**
-     * Flush all pending changes to the database.
-     *
-     * @return void
-     */
-//    fun flush(): Uni<Void> = getSession().flatMap { session -> session.flush() }
-
-    /**
-     * Returns the current transaction, if any, or <code>null</code>.
-     *
-     * @return the current transaction, if any, or <code>null</code>.
-     * @see Panache#withTransaction(Supplier)
-     */
-    fun currentTransaction(): Uni<Mutiny.Transaction> = getSession().map { session -> session.currentTransaction() }
-
 // Queries
     /**
      * Find an entity of this type by ID.
@@ -109,7 +42,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @param id the ID of the entity to find.
      * @return the entity found, or `null` if not found.
      */
-    @GenerateBridge
+//    @GenerateBridge
     fun findById(id: Any?): Uni<Entity> {
         throw KotlinJpaOperations.INSTANCE.implementationInjectionMissing()
     }

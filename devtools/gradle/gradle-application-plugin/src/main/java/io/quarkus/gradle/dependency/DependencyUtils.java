@@ -16,15 +16,16 @@ import java.util.Set;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
-import org.gradle.api.UnknownDomainObjectException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.capabilities.Capability;
-import org.gradle.api.initialization.IncludedBuild;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.SourceSet;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
@@ -96,14 +97,6 @@ public class DependencyUtils {
         return false;
     }
 
-    public static IncludedBuild includedBuild(final Project project, final String projectName) {
-        try {
-            return project.getGradle().includedBuild(projectName);
-        } catch (UnknownDomainObjectException ignore) {
-            return null;
-        }
-    }
-
     public static String asDependencyNotation(Dependency dependency) {
         return String.join(":", dependency.getGroup(), dependency.getName(), dependency.getVersion());
     }
@@ -121,19 +114,32 @@ public class DependencyUtils {
         ModuleVersionIdentifier artifactId = artifact.getModuleVersion().getId();
         File artifactFile = artifact.getFile();
 
+        if (artifact.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
+            final Project projectDep = project.getRootProject().findProject(
+                    ((ProjectComponentIdentifier) artifact.getId().getComponentIdentifier()).getProjectPath());
+            final JavaPluginConvention javaExtension = projectDep == null ? null
+                    : projectDep.getConvention().findPlugin(JavaPluginConvention.class);
+            SourceSet mainSourceSet = javaExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+            File resourcesDir = mainSourceSet.getOutput().getResourcesDir();
+            Path descriptorPath = resourcesDir.toPath().resolve(BootstrapConstants.DESCRIPTOR_PATH);
+            if (Files.exists(descriptorPath)) {
+                return loadExtensionInfo(project, descriptorPath, artifactId, projectDep);
+            }
+        }
+
         if (!artifactFile.exists()) {
             return null;
         }
         if (artifactFile.isDirectory()) {
             Path descriptorPath = artifactFile.toPath().resolve(BootstrapConstants.DESCRIPTOR_PATH);
             if (Files.exists(descriptorPath)) {
-                return loadExtensionInfo(project, descriptorPath, artifactId);
+                return loadExtensionInfo(project, descriptorPath, artifactId, null);
             }
         } else if ("jar".equals(artifact.getExtension())) {
             try (FileSystem artifactFs = ZipUtils.newFileSystem(artifactFile.toPath())) {
                 Path descriptorPath = artifactFs.getPath(BootstrapConstants.DESCRIPTOR_PATH);
                 if (Files.exists(descriptorPath)) {
-                    return loadExtensionInfo(project, descriptorPath, artifactId);
+                    return loadExtensionInfo(project, descriptorPath, artifactId, null);
                 }
             } catch (IOException e) {
                 throw new GradleException("Failed to read " + artifactFile, e);
@@ -143,7 +149,7 @@ public class DependencyUtils {
     }
 
     private static ExtensionDependency loadExtensionInfo(Project project, Path descriptorPath,
-            ModuleVersionIdentifier exentionId) {
+            ModuleVersionIdentifier exentionId, Project extensionProject) {
         final Properties extensionProperties = new Properties();
         try (BufferedReader reader = Files.newBufferedReader(descriptorPath)) {
             extensionProperties.load(reader);
@@ -166,6 +172,10 @@ public class DependencyUtils {
 
         final ArtifactKey[] constraints = BootstrapUtils
                 .parseDependencyCondition(extensionProperties.getProperty(BootstrapConstants.DEPENDENCY_CONDITION));
+        if (extensionProject != null) {
+            return new LocalExtensionDependency(extensionProject, exentionId, deploymentModule, conditionalDependencies,
+                    constraints == null ? Collections.emptyList() : Arrays.asList(constraints));
+        }
         return new ExtensionDependency(exentionId, deploymentModule, conditionalDependencies,
                 constraints == null ? Collections.emptyList() : Arrays.asList(constraints));
     }

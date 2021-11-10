@@ -2,12 +2,10 @@ package io.quarkus.gradle.dependency;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
-import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
@@ -30,15 +28,6 @@ public class ExtensionDependency {
         this.dependencyConditions = dependencyConditions;
     }
 
-    public boolean needsResolution(Set<ResolvedArtifact> resolvedArtifacts) {
-        for (Dependency dependency : conditionalDependencies) {
-            if (!DependencyUtils.exists(resolvedArtifacts, dependency)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public void importConditionalDependency(DependencyHandler dependencies, ModuleVersionIdentifier capability) {
         Dependency dependency = findConditionalDependency(capability);
 
@@ -52,7 +41,7 @@ public class ExtensionDependency {
                         .withDependencies(d -> d.add(DependencyUtils.asDependencyNotation(dependency))))));
     }
 
-    public void createDeploymentVariant(DependencyHandler dependencies) {
+    public void installDeploymentVariant(DependencyHandler dependencies) {
         dependencies.components(handler -> handler.withModule(toModuleName(),
                 componentMetadataDetails -> componentMetadataDetails
                         .addVariant(DependencyUtils.asDependencyNotation(deploymentModule),
@@ -71,10 +60,6 @@ public class ExtensionDependency {
                                                 d.add(DependencyUtils.asDependencyNotation(deploymentModule));
                                             });
                                 })));
-    }
-
-    public Dependency asDependency(DependencyHandler dependencies) {
-        return dependencies.create(asDependencyNotation());
     }
 
     public String asDependencyNotation() {

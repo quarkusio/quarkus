@@ -47,6 +47,7 @@
 
         <!-- Dev tools -->
         <freemarker.version>2.3.31</freemarker.version>
+        <commonmark.version>0.18.0</commonmark.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.5.0.Final</arquillian.version>
@@ -109,7 +110,7 @@
 
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
-        <docker-maven-plugin.version>0.37.0</docker-maven-plugin.version>
+        <docker-maven-plugin.version>0.38.0</docker-maven-plugin.version>
         <formatter-maven-plugin.version>2.17.0</formatter-maven-plugin.version>
         <impsort-maven-plugin.version>1.6.2</impsort-maven-plugin.version>
         <maven-invoker-plugin.version>3.2.2</maven-invoker-plugin.version>
@@ -207,6 +208,11 @@
                 <groupId>org.freemarker</groupId>
                 <artifactId>freemarker</artifactId>
                 <version>${freemarker.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.commonmark</groupId>
+                <artifactId>commonmark</artifactId>
+                <version>${commonmark.version}</version>
             </dependency>
 
             <!-- Miscellaneous -->

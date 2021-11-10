@@ -5,6 +5,7 @@ import java.util.concurrent.CompletionStage;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
+import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 import org.eclipse.microprofile.reactive.messaging.spi.IncomingConnectorFactory;
 import org.eclipse.microprofile.reactive.messaging.spi.OutgoingConnectorFactory;
 import org.jboss.jandex.DotName;
@@ -13,6 +14,8 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.smallrye.reactive.messaging.annotations.Channel;
+import io.smallrye.reactive.messaging.annotations.ConnectorAttribute;
+import io.smallrye.reactive.messaging.annotations.ConnectorAttributes;
 import io.smallrye.reactive.messaging.annotations.Emitter;
 import io.smallrye.reactive.messaging.annotations.Incomings;
 import io.smallrye.reactive.messaging.annotations.Merge;
@@ -27,6 +30,11 @@ public final class ReactiveMessagingDotNames {
     static final DotName INCOMING = DotName.createSimple(Incoming.class.getName());
     static final DotName INCOMINGS = DotName.createSimple(Incomings.class.getName());
     static final DotName OUTGOING = DotName.createSimple(Outgoing.class.getName());
+
+    public static final DotName CONNECTOR = DotName.createSimple(Connector.class.getName());
+    static final DotName CONNECTOR_ATTRIBUTES = DotName.createSimple(ConnectorAttributes.class.getName());
+    static final DotName CONNECTOR_ATTRIBUTE = DotName.createSimple(ConnectorAttribute.class.getName());
+
     static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
     public static final DotName CHANNEL = DotName
             .createSimple(org.eclipse.microprofile.reactive.messaging.Channel.class.getName());

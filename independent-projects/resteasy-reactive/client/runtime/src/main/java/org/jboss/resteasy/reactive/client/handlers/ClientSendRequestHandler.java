@@ -31,6 +31,8 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Variant;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.AsyncResultUni;
+import org.jboss.resteasy.reactive.client.api.ClientLogger;
+import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
@@ -43,9 +45,13 @@ public class ClientSendRequestHandler implements ClientRestHandler {
     private static final Logger log = Logger.getLogger(ClientSendRequestHandler.class);
 
     private final boolean followRedirects;
+    private final LoggingScope loggingScope;
+    private final ClientLogger clientLogger;
 
-    public ClientSendRequestHandler(boolean followRedirects) {
+    public ClientSendRequestHandler(boolean followRedirects, LoggingScope loggingScope, ClientLogger logger) {
         this.followRedirects = followRedirects;
+        this.loggingScope = loggingScope;
+        this.clientLogger = logger;
     }
 
     @Override
@@ -74,6 +80,9 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     try {
                         actualEntity = ClientSendRequestHandler.this.setMultipartHeadersAndPrepareBody(httpClientRequest,
                                 requestContext);
+                        if (loggingScope != LoggingScope.NONE) {
+                            clientLogger.logRequest(httpClientRequest, null, true);
+                        }
 
                         Pipe<Buffer> pipe = actualEntity.pipe(); // Shouldn't this be called in an earlier phase ?
                         requestPromise.future().onComplete(ar -> {
@@ -113,8 +122,14 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     }
                     if (actualEntity == AsyncInvokerImpl.EMPTY_BUFFER) {
                         sent = httpClientRequest.send();
+                        if (loggingScope != LoggingScope.NONE) {
+                            clientLogger.logRequest(httpClientRequest, null, false);
+                        }
                     } else {
                         sent = httpClientRequest.send(actualEntity);
+                        if (loggingScope != LoggingScope.NONE) {
+                            clientLogger.logRequest(httpClientRequest, actualEntity, false);
+                        }
                     }
                 }
 
@@ -124,18 +139,27 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                         try {
                             requestContext.initialiseResponse(clientResponse);
                             int status = clientResponse.statusCode();
-                            if (status >= 500 && status < 600) {
-                                reportFinish(System.nanoTime() - startTime, new InternalServerErrorException(), requestContext);
-                            } else {
-                                reportFinish(System.nanoTime() - startTime, null, requestContext);
+                            if (requestContext.getCallStatsCollector() != null) {
+                                if (status >= 500 && status < 600) {
+                                    reportFinish(System.nanoTime() - startTime, new InternalServerErrorException(),
+                                            requestContext);
+                                } else {
+                                    reportFinish(System.nanoTime() - startTime, null, requestContext);
+                                }
                             }
                             if (!requestContext.isRegisterBodyHandler()) {
                                 clientResponse.pause();
+                                if (loggingScope != LoggingScope.NONE) {
+                                    clientLogger.logResponse(clientResponse, false);
+                                }
                                 requestContext.resume();
                             } else {
                                 clientResponse.bodyHandler(new Handler<>() {
                                     @Override
                                     public void handle(Buffer buffer) {
+                                        if (loggingScope != LoggingScope.NONE) {
+                                            clientLogger.logResponse(clientResponse, false);
+                                        }
                                         try {
                                             if (buffer.length() > 0) {
                                                 requestContext.setResponseEntityStream(

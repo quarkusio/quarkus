@@ -221,12 +221,12 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
             //must be done after the TCCL has been set
             testResourceManager = (Closeable) startupAction.getClassLoader().loadClass(TestResourceManager.class.getName())
-                    .getConstructor(Class.class, Class.class, List.class, boolean.class, Map.class)
+                    .getConstructor(Class.class, Class.class, List.class, boolean.class, Map.class, Optional.class)
                     .newInstance(requiredTestClass,
                             profile != null ? profile : null,
                             getAdditionalTestResources(profileInstance, startupAction.getClassLoader()),
                             profileInstance != null && profileInstance.disableGlobalTestResources(),
-                            startupAction.getDevServicesProperties());
+                            startupAction.getDevServicesProperties(), Optional.empty());
             testResourceManager.getClass().getMethod("init").invoke(testResourceManager);
             Map<String, String> properties = (Map<String, String>) testResourceManager.getClass().getMethod("start")
                     .invoke(testResourceManager);

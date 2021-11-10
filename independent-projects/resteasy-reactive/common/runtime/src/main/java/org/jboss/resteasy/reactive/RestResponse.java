@@ -541,8 +541,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      * @return a new response.
      * @throws IllegalArgumentException if status is {@code null}.
      */
-    public static RestResponse<Void> status(StatusType status) {
-        return ResponseBuilder.create(status).build();
+    public static <IGNORED> RestResponse<IGNORED> status(StatusType status) {
+        return ResponseBuilder.<IGNORED> create(status).build();
     }
 
     /**
@@ -563,8 +563,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      * @return a new response.
      * @throws IllegalArgumentException if status is {@code null}.
      */
-    public static RestResponse<Void> status(Status status) {
-        return ResponseBuilder.create(status).build();
+    public static <IGNORED> RestResponse<IGNORED> status(Status status) {
+        return ResponseBuilder.<IGNORED> create(status).build();
     }
 
     /**
@@ -586,8 +586,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      * @throws IllegalArgumentException if status is less than {@code 100} or greater
      *         than {@code 599}.
      */
-    public static RestResponse<Void> status(int status) {
-        return ResponseBuilder.create(status).build();
+    public static <IGNORED> RestResponse<IGNORED> status(int status) {
+        return ResponseBuilder.<IGNORED> create(status).build();
     }
 
     /**
@@ -599,8 +599,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      * @throws IllegalArgumentException if status is less than {@code 100} or greater
      *         than {@code 599}.
      */
-    public static RestResponse<Void> status(int status, String reasonPhrase) {
-        return ResponseBuilder.create(status, reasonPhrase).build();
+    public static <IGNORED> RestResponse<IGNORED> status(int status, String reasonPhrase) {
+        return ResponseBuilder.<IGNORED> create(status, reasonPhrase).build();
     }
 
     /**
@@ -608,8 +608,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      *
      * @return a new response.
      */
-    public static RestResponse<Void> ok() {
-        return ResponseBuilder.ok().build();
+    public static <IGNORED> RestResponse<IGNORED> ok() {
+        return ResponseBuilder.<IGNORED> ok().build();
     }
 
     /**
@@ -668,8 +668,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      *
      * @return a new response.
      */
-    public static RestResponse<Void> serverError() {
-        return ResponseBuilder.serverError().build();
+    public static <IGNORED> RestResponse<IGNORED> serverError() {
+        return ResponseBuilder.<IGNORED> serverError().build();
     }
 
     /**
@@ -683,8 +683,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      * @throws java.lang.IllegalArgumentException
      *         if location is {@code null}.
      */
-    public static RestResponse<Void> created(URI location) {
-        return ResponseBuilder.created(location).build();
+    public static <IGNORED> RestResponse<IGNORED> created(URI location) {
+        return ResponseBuilder.<IGNORED> created(location).build();
     }
 
     /**
@@ -692,8 +692,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      *
      * @return a new response.
      */
-    public static RestResponse<Void> accepted() {
-        return ResponseBuilder.accepted().build();
+    public static <IGNORED> RestResponse<IGNORED> accepted() {
+        return ResponseBuilder.<IGNORED> accepted().build();
     }
 
     /**
@@ -713,8 +713,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      *
      * @return a new response.
      */
-    public static RestResponse<Void> noContent() {
-        return ResponseBuilder.noContent().build();
+    public static <IGNORED> RestResponse<IGNORED> noContent() {
+        return ResponseBuilder.<IGNORED> noContent().build();
     }
 
     /**
@@ -722,8 +722,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      *
      * @return a new response.
      */
-    public static RestResponse<Void> notModified() {
-        return ResponseBuilder.notModified().build();
+    public static <IGNORED> RestResponse<IGNORED> notModified() {
+        return ResponseBuilder.<IGNORED> notModified().build();
     }
 
     /**
@@ -734,8 +734,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      * @throws java.lang.IllegalArgumentException
      *         if tag is {@code null}.
      */
-    public static RestResponse<Void> notModified(EntityTag tag) {
-        return ResponseBuilder.notModified(tag).build();
+    public static <IGNORED> RestResponse<IGNORED> notModified(EntityTag tag) {
+        return ResponseBuilder.<IGNORED> notModified(tag).build();
     }
 
     /**
@@ -749,8 +749,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      * @return a new response.
      * @throws IllegalArgumentException if tag is {@code null}.
      */
-    public static RestResponse<Void> notModified(String tag) {
-        return ResponseBuilder.notModified(tag).build();
+    public static <IGNORED> RestResponse<IGNORED> notModified(String tag) {
+        return ResponseBuilder.<IGNORED> notModified(tag).build();
     }
 
     /**
@@ -765,8 +765,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      * @throws java.lang.IllegalArgumentException
      *         if location is {@code null}.
      */
-    public static RestResponse<Void> seeOther(URI location) {
-        return ResponseBuilder.seeOther(location).build();
+    public static <IGNORED> RestResponse<IGNORED> seeOther(URI location) {
+        return ResponseBuilder.<IGNORED> seeOther(location).build();
     }
 
     /**
@@ -780,8 +780,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      * @throws java.lang.IllegalArgumentException
      *         if location is {@code null}.
      */
-    public static RestResponse<Void> temporaryRedirect(URI location) {
-        return ResponseBuilder.temporaryRedirect(location).build();
+    public static <IGNORED> RestResponse<IGNORED> temporaryRedirect(URI location) {
+        return ResponseBuilder.<IGNORED> temporaryRedirect(location).build();
     }
 
     /**
@@ -791,8 +791,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      *        equivalent to an empty list.
      * @return a new response.
      */
-    public static RestResponse<Void> notAcceptable(List<Variant> variants) {
-        return ResponseBuilder.notAcceptable(variants).build();
+    public static <IGNORED> RestResponse<IGNORED> notAcceptable(List<Variant> variants) {
+        return ResponseBuilder.<IGNORED> notAcceptable(variants).build();
     }
 
     /**
@@ -800,8 +800,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      *
      * @return a new response.
      */
-    public static RestResponse<Void> notFound() {
-        return ResponseBuilder.notFound().build();
+    public static <IGNORED> RestResponse<IGNORED> notFound() {
+        return ResponseBuilder.<IGNORED> notFound().build();
     }
 
     /**
@@ -1227,7 +1227,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
          * @return a new response builder.
          * @throws IllegalArgumentException if status is {@code null}.
          */
-        public static ResponseBuilder<Void> create(StatusType status) {
+        public static <IGNORED> ResponseBuilder<IGNORED> create(StatusType status) {
             return ResponseBuilder.newInstance().status(status);
         }
 
@@ -1249,7 +1249,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
          * @return a new response builder.
          * @throws IllegalArgumentException if status is {@code null}.
          */
-        public static ResponseBuilder<Void> create(Status status) {
+        public static <IGNORED> ResponseBuilder<IGNORED> create(Status status) {
             return create((StatusType) status);
         }
 
@@ -1272,8 +1272,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
          * @throws IllegalArgumentException if status is less than {@code 100} or greater
          *         than {@code 599}.
          */
-        public static ResponseBuilder<Void> create(int status) {
-            return ResponseBuilder.<Void> newInstance().status(status);
+        public static <IGNORED> ResponseBuilder<IGNORED> create(int status) {
+            return ResponseBuilder.<IGNORED> newInstance().status(status);
         }
 
         /**
@@ -1285,7 +1285,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
          * @throws IllegalArgumentException if status is less than {@code 100} or greater
          *         than {@code 599}.
          */
-        public static ResponseBuilder<Void> create(int status, String reasonPhrase) {
+        public static <IGNORED> ResponseBuilder<IGNORED> create(int status, String reasonPhrase) {
             return ResponseBuilder.newInstance().status(status, reasonPhrase);
         }
 
@@ -1294,7 +1294,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
          *
          * @return a new response builder.
          */
-        public static ResponseBuilder<Void> ok() {
+        public static <IGNORED> ResponseBuilder<IGNORED> ok() {
             return create(Status.OK);
         }
 
@@ -1354,7 +1354,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
          *
          * @return a new response builder.
          */
-        public static ResponseBuilder<Void> serverError() {
+        public static <IGNORED> ResponseBuilder<IGNORED> serverError() {
             return create(Status.INTERNAL_SERVER_ERROR);
         }
 
@@ -1369,8 +1369,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
          * @throws java.lang.IllegalArgumentException
          *         if location is {@code null}.
          */
-        public static ResponseBuilder<Void> created(URI location) {
-            return create(Status.CREATED).location(location);
+        public static <IGNORED> ResponseBuilder<IGNORED> created(URI location) {
+            return ResponseBuilder.<IGNORED> create(Status.CREATED).location(location);
         }
 
         /**
@@ -1378,7 +1378,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
          *
          * @return a new response builder.
          */
-        public static ResponseBuilder<Void> accepted() {
+        public static <IGNORED> ResponseBuilder<IGNORED> accepted() {
             return create(Status.ACCEPTED);
         }
 
@@ -1399,7 +1399,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
          *
          * @return a new response builder.
          */
-        public static ResponseBuilder<Void> noContent() {
+        public static <IGNORED> ResponseBuilder<IGNORED> noContent() {
             return create(Status.NO_CONTENT);
         }
 
@@ -1408,7 +1408,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
          *
          * @return a new response builder.
          */
-        public static ResponseBuilder<Void> notModified() {
+        public static <IGNORED> ResponseBuilder<IGNORED> notModified() {
             return create(Status.NOT_MODIFIED);
         }
 
@@ -1420,8 +1420,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
          * @throws java.lang.IllegalArgumentException
          *         if tag is {@code null}.
          */
-        public static ResponseBuilder<Void> notModified(EntityTag tag) {
-            return notModified().tag(tag);
+        public static <IGNORED> ResponseBuilder<IGNORED> notModified(EntityTag tag) {
+            return ResponseBuilder.<IGNORED> notModified().tag(tag);
         }
 
         /**
@@ -1435,8 +1435,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
          * @return a new response builder.
          * @throws IllegalArgumentException if tag is {@code null}.
          */
-        public static ResponseBuilder<Void> notModified(String tag) {
-            return notModified().tag(tag);
+        public static <IGNORED> ResponseBuilder<IGNORED> notModified(String tag) {
+            return ResponseBuilder.<IGNORED> notModified().tag(tag);
         }
 
         /**
@@ -1451,8 +1451,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
          * @throws java.lang.IllegalArgumentException
          *         if location is {@code null}.
          */
-        public static ResponseBuilder<Void> seeOther(URI location) {
-            return create(Status.SEE_OTHER).location(location);
+        public static <IGNORED> ResponseBuilder<IGNORED> seeOther(URI location) {
+            return ResponseBuilder.<IGNORED> create(Status.SEE_OTHER).location(location);
         }
 
         /**
@@ -1466,8 +1466,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
          * @throws java.lang.IllegalArgumentException
          *         if location is {@code null}.
          */
-        public static ResponseBuilder<Void> temporaryRedirect(URI location) {
-            return create(Status.TEMPORARY_REDIRECT).location(location);
+        public static <IGNORED> ResponseBuilder<IGNORED> temporaryRedirect(URI location) {
+            return ResponseBuilder.<IGNORED> create(Status.TEMPORARY_REDIRECT).location(location);
         }
 
         /**
@@ -1477,8 +1477,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
          *        equivalent to an empty list.
          * @return a new response builder.
          */
-        public static ResponseBuilder<Void> notAcceptable(List<Variant> variants) {
-            return create(Status.NOT_ACCEPTABLE).variants(variants);
+        public static <IGNORED> ResponseBuilder<IGNORED> notAcceptable(List<Variant> variants) {
+            return ResponseBuilder.<IGNORED> create(Status.NOT_ACCEPTABLE).variants(variants);
         }
 
         /**
@@ -1486,7 +1486,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
          *
          * @return a new response builder.
          */
-        public static ResponseBuilder<Void> notFound() {
+        public static <IGNORED> ResponseBuilder<IGNORED> notFound() {
             return create(Status.NOT_FOUND);
         }
     }

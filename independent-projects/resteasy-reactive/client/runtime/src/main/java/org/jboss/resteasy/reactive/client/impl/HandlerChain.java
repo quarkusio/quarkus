@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
+import org.jboss.resteasy.reactive.client.api.ClientLogger;
+import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import org.jboss.resteasy.reactive.client.handlers.ClientErrorHandler;
 import org.jboss.resteasy.reactive.client.handlers.ClientRequestFilterRestHandler;
 import org.jboss.resteasy.reactive.client.handlers.ClientResponseCompleteRestHandler;
@@ -25,11 +27,11 @@ class HandlerChain {
 
     private ClientRestHandler preClientSendHandler = null;
 
-    public HandlerChain(boolean followRedirects) {
-        this.clientSendHandler = new ClientSendRequestHandler(followRedirects);
+    public HandlerChain(boolean followRedirects, LoggingScope loggingScope, ClientLogger clientLogger) {
+        this.clientSendHandler = new ClientSendRequestHandler(followRedirects, loggingScope, clientLogger);
         this.clientSetResponseEntityRestHandler = new ClientSetResponseEntityRestHandler();
         this.clientResponseCompleteRestHandler = new ClientResponseCompleteRestHandler();
-        this.clientErrorHandler = new ClientErrorHandler();
+        this.clientErrorHandler = new ClientErrorHandler(loggingScope);
     }
 
     HandlerChain setPreClientSendHandler(ClientRestHandler preClientSendHandler) {

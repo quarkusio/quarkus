@@ -45,4 +45,6 @@ public class RestClientsConfig {
     @ConfigItem
     public Optional<String> multipartPostEncoderMode;
 
+    public RestClientLoggingConfig logging;
+
 }

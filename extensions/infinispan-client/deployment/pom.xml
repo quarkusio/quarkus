@@ -52,6 +52,10 @@
             <artifactId>infinispan-server-testdriver-core</artifactId>
             <exclusions>
                 <exclusion>
+                    <groupId>org.infinispan</groupId>
+                    <artifactId>infinispan-server-runtime</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>org.codehaus.plexus</groupId>
                     <artifactId>plexus-interpolation</artifactId>
                 </exclusion>

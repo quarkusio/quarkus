@@ -74,6 +74,33 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             }
         }
 
+        if (devServicesLaunchResult.manageNetwork() && (devServicesLaunchResult.networkId() != null)) {
+            try {
+                int networkCreateResult = new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
+                        .command(DOCKER_BINARY, "network", "create", devServicesLaunchResult.networkId()).start().waitFor();
+                if (networkCreateResult > 0) {
+                    throw new RuntimeException("Creating container network '" + devServicesLaunchResult.networkId()
+                            + "' completed unsuccessfully");
+                }
+                // do the cleanup in a shutdown hook because there might be more services (launched via QuarkusTestResourceLifecycleManager) connected to the network
+                Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
+                                    .command(DOCKER_BINARY, "network", "rm", devServicesLaunchResult.networkId()).start()
+                                    .waitFor();
+                        } catch (InterruptedException | IOException ignored) {
+                            System.out.println(
+                                    "Unable to delete container network '" + devServicesLaunchResult.networkId() + "'");
+                        }
+                    }
+                }));
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Unable to pull container image '" + containerImage + "'", e);
+            }
+        }
+
         System.setProperty("test.url", TestHTTPResourceManager.getUri());
 
         if (httpPort == 0) {

@@ -93,7 +93,7 @@ public class FlashScopeUtil {
         messageData.put("text", message);
         messageData.put("class", messageStatus.cssClass);
         data.put("message", messageData);
-        data.put("displayTime", displayTime != null ? displayTime.toMillis() : 2000);
+        data.put("displayTime", displayTime != null ? displayTime.toMillis() : 4000);
         setFlash(event, data);
     }
 }

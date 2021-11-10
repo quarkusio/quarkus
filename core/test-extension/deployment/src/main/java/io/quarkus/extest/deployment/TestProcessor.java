@@ -223,7 +223,7 @@ public final class TestProcessor {
      * Validate the expected BUILD_TIME configuration
      */
     @BuildStep
-    void checkConfig() {
+    void checkConfig(BuildProducer<ReflectiveClassBuildItem> unused) {
         if (!configRoot.validateBuildConfig) {
             return;
         }
@@ -312,6 +312,12 @@ public final class TestProcessor {
         if (buildTimeConfig.allValues.longList.get(2) != 3) {
             throw new IllegalStateException(
                     "buildTimeConfig.allValues.longList[2] != 3; " + buildTimeConfig.allValues.longList.get(2));
+        }
+        if (buildTimeConfig.btConfigValue == null || !buildTimeConfig.btConfigValue.getValue().equals("value")) {
+            throw new IllegalStateException("buildTimeConfig.btConfigValue");
+        }
+        if (buildTimeConfig.btConfigValueEmpty == null || !buildTimeConfig.btConfigValueEmpty.getValue().equals("")) {
+            throw new IllegalStateException("buildTimeConfig.btConfigValueEmpty");
         }
     }
 

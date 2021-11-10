@@ -12,6 +12,7 @@ import static org.twdata.maven.mojoexecutor.MojoExecutor.version;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -27,14 +28,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import org.aesh.readline.tty.terminal.TerminalConnection;
+import org.aesh.readline.terminal.impl.ExecPty;
+import org.aesh.readline.terminal.impl.Pty;
 import org.aesh.terminal.Attributes;
-import org.aesh.terminal.Connection;
 import org.aesh.terminal.utils.ANSI;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
@@ -337,7 +337,7 @@ public class DevMojo extends AbstractMojo {
     private Attributes attributes;
     private int windowsAttributes;
     private boolean windowsAttributesSet;
-    private Connection connection;
+    private Pty pty;
     private boolean windowsColorSupport;
 
     @Override
@@ -438,21 +438,15 @@ public class DevMojo extends AbstractMojo {
                 }
             }
         } catch (Throwable t) {
+            //this only works with a proper PTY based terminal
+            //Aesh creates an input pump thread, that will steal
+            //input from the dev mode process
             try {
-                //this does not work on windows
-                //jansi creates an input pump thread, that will steal
-                //input from the dev mode process
-                new TerminalConnection(new Consumer<Connection>() {
-                    @Override
-                    public void accept(Connection connection) {
-                        attributes = connection.getAttributes();
-                        DevMojo.this.connection = connection;
-                    }
-                });
-            } catch (IOException e) {
-                getLog().error(
-                        "Failed to setup console restore, console may be left in an inconsistent state if the process is killed",
-                        e);
+                Pty pty = ExecPty.current();
+                attributes = pty.getAttr();
+                DevMojo.this.pty = pty;
+            } catch (Exception e) {
+                getLog().debug("Failed to get a local tty", e);
             }
         }
     }
@@ -461,16 +455,21 @@ public class DevMojo extends AbstractMojo {
         if (windowsAttributesSet) {
             WindowsSupport.setConsoleMode(windowsAttributes);
         } else {
-            if (attributes == null || connection == null) {
+            if (attributes == null || pty == null) {
                 return;
             }
-            connection.setAttributes(attributes);
-            int height = connection.size().getHeight();
-            connection.write(ANSI.MAIN_BUFFER);
-            connection.write(ANSI.CURSOR_SHOW);
-            connection.write("\u001B[0m");
-            connection.write("\033[" + height + ";0H");
-            connection.close();
+            Pty finalPty = pty;
+            try (finalPty) {
+                finalPty.setAttr(attributes);
+                int height = finalPty.getSize().getHeight();
+                String sb = ANSI.MAIN_BUFFER +
+                        ANSI.CURSOR_SHOW +
+                        "\u001B[0m" +
+                        "\033[" + height + ";0H";
+                finalPty.getSlaveOutput().write(sb.getBytes(StandardCharsets.UTF_8));
+            } catch (IOException e) {
+                getLog().error("Error restoring console state", e);
+            }
         }
     }
 

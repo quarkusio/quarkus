@@ -6,6 +6,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -36,6 +37,7 @@ import org.reactivestreams.Subscriber;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
@@ -50,11 +52,12 @@ public class DefaultSerdeConfigTest {
 
         DefaultSerdeDiscoveryState discovery = new DefaultSerdeDiscoveryState(index(classesToIndex)) {
             @Override
-            boolean isKafkaConnector(boolean incoming, String channelName) {
+            boolean isKafkaConnector(List<ConnectorManagedChannelBuildItem> list, boolean incoming, String channelName) {
                 return true;
             }
         };
-        new SmallRyeReactiveMessagingKafkaProcessor().discoverDefaultSerdeConfig(discovery, configs::add);
+        new SmallRyeReactiveMessagingKafkaProcessor().discoverDefaultSerdeConfig(discovery, Collections.emptyList(),
+                configs::add);
 
         assertThat(configs)
                 .extracting(RunTimeConfigurationDefaultBuildItem::getKey, RunTimeConfigurationDefaultBuildItem::getValue)

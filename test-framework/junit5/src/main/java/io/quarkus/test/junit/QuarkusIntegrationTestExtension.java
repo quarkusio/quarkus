@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.function.Function;
@@ -53,6 +54,7 @@ public class QuarkusIntegrationTestExtension
     private static boolean hasPerTestResources;
 
     private static Map<String, String> devServicesProps;
+    private static String containerNetworkId;
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
@@ -124,7 +126,8 @@ public class QuarkusIntegrationTestExtension
 
         ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult = handleDevServices(context,
                 isDockerLaunch);
-        QuarkusIntegrationTestExtension.devServicesProps = devServicesLaunchResult.properties();
+        devServicesProps = devServicesLaunchResult.properties();
+        containerNetworkId = devServicesLaunchResult.networkId();
         quarkusTestProfile = profile;
         currentJUnitTestClass = context.getRequiredTestClass();
         TestResourceManager testResourceManager = null;
@@ -139,7 +142,7 @@ public class QuarkusIntegrationTestExtension
                             context.getRequiredTestClass().getClassLoader()),
                     testProfileAndProperties.testProfile != null
                             && testProfileAndProperties.testProfile.disableGlobalTestResources(),
-                    devServicesProps);
+                    devServicesProps, containerNetworkId == null ? Optional.empty() : Optional.of(containerNetworkId));
             testResourceManager.init();
             hasPerTestResources = testResourceManager.hasPerTestResources();
 
@@ -251,7 +254,8 @@ public class QuarkusIntegrationTestExtension
     private DevServicesContext createTestContext() {
         Map<String, String> devServicesPropsCopy = devServicesProps.isEmpty() ? Collections.emptyMap()
                 : Collections.unmodifiableMap(devServicesProps);
-        return new DefaultQuarkusIntegrationTestContext(devServicesPropsCopy);
+        return new DefaultQuarkusIntegrationTestContext(devServicesPropsCopy,
+                containerNetworkId == null ? Optional.empty() : Optional.of(containerNetworkId));
     }
 
     private void throwBootFailureException() {
@@ -301,15 +305,23 @@ public class QuarkusIntegrationTestExtension
 
     private static class DefaultQuarkusIntegrationTestContext implements DevServicesContext {
 
-        private final Map<String, String> map;
+        private final Map<String, String> devServicesProperties;
+        private final Optional<String> containerNetworkId;
 
-        private DefaultQuarkusIntegrationTestContext(Map<String, String> map) {
-            this.map = map;
+        private DefaultQuarkusIntegrationTestContext(Map<String, String> devServicesProperties,
+                Optional<String> containerNetworkId) {
+            this.devServicesProperties = devServicesProperties;
+            this.containerNetworkId = containerNetworkId;
         }
 
         @Override
         public Map<String, String> devServicesProperties() {
-            return map;
+            return devServicesProperties;
+        }
+
+        @Override
+        public Optional<String> containerNetworkId() {
+            return containerNetworkId;
         }
     }
 }

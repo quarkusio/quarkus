@@ -469,6 +469,7 @@ public class ArcProcessor {
             public void registerField(FieldInfo fieldInfo) {
                 reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
             }
+
         }, existingClasses.existingClasses, bytecodeTransformerConsumer,
                 config.shouldEnableBeanRemoval() && config.detectUnusedFalsePositives);
         for (ResourceOutput.Resource resource : resources) {
@@ -495,6 +496,11 @@ public class ArcProcessor {
         // Register all qualifiers for reflection to support type-safe resolution at runtime in native image
         for (ClassInfo qualifier : beanProcessor.getBeanDeployment().getQualifiers()) {
             reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, qualifier.name().toString()));
+        }
+
+        // Register all interceptor bindings for reflection so that AnnotationLiteral.equals() works in a native image
+        for (ClassInfo binding : beanProcessor.getBeanDeployment().getInterceptorBindings()) {
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, binding.name().toString()));
         }
 
         ArcContainer container = recorder.getContainer(shutdown);

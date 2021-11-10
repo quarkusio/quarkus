@@ -44,7 +44,7 @@ public class Version implements CommandLine.IVersionProvider, Callable<Integer> 
 
     @Override
     public String[] getVersion() throws Exception {
-        return new String[] { "Client Version " + clientVersion() };
+        return new String[] { clientVersion() };
     }
 
     public static String clientVersion() {

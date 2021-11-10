@@ -10,6 +10,7 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigValue;
 
 /**
  * A root config object for use during build time
@@ -41,6 +42,13 @@ public class TestBuildTimeConfig {
      */
     @ConfigItem
     public ClasspathRecordingConfig classpathRecording;
+
+    /** */
+    @ConfigItem
+    public ConfigValue btConfigValue;
+    /** */
+    @ConfigItem
+    public ConfigValue btConfigValueEmpty;
 
     @ConfigGroup
     public static class ClasspathRecordingConfig {

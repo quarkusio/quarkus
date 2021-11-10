@@ -188,6 +188,20 @@ final class Methods {
                 List<AnnotationInstance> methodLevelBindings = methodAnnnotations.stream()
                         .flatMap(a -> beanDeployment.extractInterceptorBindings(a).stream())
                         .collect(Collectors.toList());
+                if (Modifier.isPrivate(method.flags())
+                        && !methodLevelBindings.isEmpty()
+                        && !Annotations.contains(methodAnnnotations, DotNames.OBSERVES)
+                        && !Annotations.contains(methodAnnnotations, DotNames.OBSERVES_ASYNC)) {
+                    if (methodLevelBindings.size() == 1) {
+                        LOGGER.warnf("%s will have no effect on method %s.%s() because the method is private",
+                                methodLevelBindings.iterator().next(), classInfo.name(), method.name());
+                    } else {
+                        LOGGER.warnf("Annotations %s will have no effect on method %s.%s() because the method is private",
+                                methodLevelBindings.stream().map(AnnotationInstance::toString).collect(Collectors.joining(",")),
+                                classInfo.name(), method.name());
+                    }
+
+                }
                 merged.addAll(methodLevelBindings);
                 for (AnnotationInstance classLevelBinding : classLevelBindings) {
                     if (methodLevelBindings.isEmpty()

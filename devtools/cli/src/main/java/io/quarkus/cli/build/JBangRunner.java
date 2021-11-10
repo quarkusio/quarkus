@@ -88,7 +88,7 @@ public class JBangRunner implements BuildSystemRunner {
 
         args.add("build");
         args.addAll(flattenMappedProperties(propertiesOptions.properties));
-        args.add(registryClient.getRegistryClientProperty());
+        registryClient.addRegistryClientProperties(args);
         args.addAll(params);
         args.add(getMainPath());
         return prependExecutable(args);

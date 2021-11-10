@@ -22,7 +22,6 @@ import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.cli.registry.RegistryClientMixin;
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.registry.config.RegistriesConfigLocator;
 
 public class GradleRunner implements BuildSystemRunner {
     public static final String[] windowsWrapper = { "gradlew.cmd", "gradlew.bat" };
@@ -223,14 +222,7 @@ public class GradleRunner implements BuildSystemRunner {
             // Make sure we stay where we should
             args.add("--project-dir=" + projectRoot.toAbsolutePath());
         }
-        args.add(registryClient.getRegistryClientProperty());
-
-        final String configFile = registryClient.getConfigArg() == null
-                ? System.getProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY)
-                : registryClient.getConfigArg();
-        if (configFile != null) {
-            args.add("-D" + RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY + "=" + configFile);
-        }
+        registryClient.addRegistryClientProperties(args);
 
         // add any other discovered properties
         args.addAll(flattenMappedProperties(propertiesOptions.properties));

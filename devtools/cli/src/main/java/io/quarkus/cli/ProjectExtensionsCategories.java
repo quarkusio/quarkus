@@ -88,7 +88,7 @@ public class ProjectExtensionsCategories extends BaseBuildCommand implements Cal
 
     Integer listPlatformCategories() throws QuarkusCommandException, RegistryResolutionException {
         QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetQuarkusVersion,
-                BuildTool.MAVEN, output);
+                BuildTool.MAVEN);
 
         QuarkusCommandOutcome outcome = new ListCategories(qp, output)
                 .fromCli(true)

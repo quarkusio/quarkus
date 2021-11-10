@@ -15,6 +15,7 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+@Deprecated
 public class JsonCatalogMapperHelper {
 
     private static ObjectMapper mapper;

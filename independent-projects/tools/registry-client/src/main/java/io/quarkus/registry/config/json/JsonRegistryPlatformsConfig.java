@@ -3,6 +3,7 @@ package io.quarkus.registry.config.json;
 import io.quarkus.registry.config.RegistryPlatformsConfig;
 import java.util.Objects;
 
+@Deprecated
 public class JsonRegistryPlatformsConfig extends JsonRegistryArtifactConfig implements RegistryPlatformsConfig {
 
     private Boolean extensionCatalogsIncluded;

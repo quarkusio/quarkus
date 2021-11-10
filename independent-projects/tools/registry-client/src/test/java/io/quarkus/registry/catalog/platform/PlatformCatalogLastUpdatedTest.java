@@ -14,11 +14,11 @@ import io.quarkus.registry.catalog.json.JsonPlatformCatalog;
 import io.quarkus.registry.catalog.json.JsonPlatformRelease;
 import io.quarkus.registry.catalog.json.JsonPlatformReleaseVersion;
 import io.quarkus.registry.catalog.json.JsonPlatformStream;
+import io.quarkus.registry.config.RegistriesConfigMapperHelper;
 import io.quarkus.registry.config.json.JsonRegistriesConfig;
 import io.quarkus.registry.config.json.JsonRegistryConfig;
 import io.quarkus.registry.config.json.JsonRegistryDescriptorConfig;
 import io.quarkus.registry.config.json.JsonRegistryPlatformsConfig;
-import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
@@ -79,8 +79,8 @@ public class PlatformCatalogLastUpdatedTest {
     private ExtensionCatalogResolver newCatalogResolver(JsonRegistriesConfig config, MavenArtifactResolver mvn)
             throws Exception {
         return ExtensionCatalogResolver.builder()
-                .config(config)
-                .artifactResolver(mvn)
+                .withConfig(config)
+                .withResolver(mvn)
                 .build();
     }
 

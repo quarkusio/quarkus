@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import java.io.IOException;
 
+@Deprecated
 public class JsonPlatformReleaseVersionDeserializer extends JsonDeserializer<JsonPlatformReleaseVersion> {
 
     @Override

@@ -106,16 +106,7 @@ public class CheckForUpdatesMojo extends AbstractMojo {
             throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
         }
         final MojoMessageWriter log = new MojoMessageWriter(getLog());
-        final ExtensionCatalogResolver catalogResolver;
-        try {
-            catalogResolver = QuarkusProjectHelper.getCatalogResolver(mvn, log);
-        } catch (RegistryResolutionException e) {
-            throw new MojoExecutionException("Failed to initialize Quarkus extension registry client", e);
-        }
-
-        if (!catalogResolver.hasRegistries()) {
-            throw new MojoExecutionException("Configured Quarkus extension registries aren't available");
-        }
+        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.getCatalogResolver(mvn, log);
 
         final ExtensionCatalog latestCatalog;
         try {

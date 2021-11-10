@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.config.RegistriesConfig;
+import io.quarkus.registry.config.RegistriesConfigMapperHelper;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.StringReader;
@@ -19,6 +20,11 @@ import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
+/**
+ * TODO: remove me
+ * Tests the JsonRegistr*Config classes
+ */
+@Deprecated
 public class DevToolsConfigSerializationTest {
 
     @Test

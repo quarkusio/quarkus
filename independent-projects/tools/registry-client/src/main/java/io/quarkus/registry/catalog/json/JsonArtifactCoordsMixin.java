@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.quarkus.maven.ArtifactKey;
 
+@Deprecated
 @JsonSerialize(using = JsonArtifactCoordsSerializer.class)
 @JsonDeserialize(using = JsonArtifactCoordsDeserializer.class)
 public interface JsonArtifactCoordsMixin {

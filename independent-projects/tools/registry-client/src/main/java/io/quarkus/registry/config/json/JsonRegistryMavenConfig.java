@@ -6,6 +6,7 @@ import io.quarkus.registry.config.RegistryMavenConfig;
 import io.quarkus.registry.config.RegistryMavenRepoConfig;
 import java.util.Objects;
 
+@Deprecated
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class JsonRegistryMavenConfig implements RegistryMavenConfig {
 

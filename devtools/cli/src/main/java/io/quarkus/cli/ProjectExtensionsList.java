@@ -112,7 +112,7 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
         dryRunOutput.put("List installable extensions", Boolean.toString(installable));
         dryRunOutput.put("Search pattern", searchPattern);
         dryRunOutput.put("Category", category);
-        dryRunOutput.put("Registry Client", Boolean.toString(registryClient.enabled()));
+        dryRunOutput.put("Registry Client", Boolean.toString(registryClient.useRegistryClient()));
 
         output.info(help.createTextTable(dryRunOutput).toString());
         return CommandLine.ExitCode.OK;
@@ -120,7 +120,7 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
 
     Integer listPlatformExtensions() throws QuarkusCommandException, RegistryResolutionException {
         QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetQuarkusVersion,
-                BuildTool.MAVEN, output);
+                BuildTool.MAVEN);
 
         QuarkusCommandOutcome outcome = new ListExtensions(qp, output)
                 .fromCli(true)

@@ -21,4 +21,14 @@ public interface RegistriesConfig {
      * @return list of registries that should queried when generating catalogs of platforms and extensions
      */
     List<RegistryConfig> getRegistries();
+
+    /**
+     * @return a mutable copy of this registry configuration
+     */
+    MutableRegistriesConfig mutable();
+
+    /**
+     * @return ConfigSource that describes origin of this configuration
+     */
+    ConfigSource getSource();
 }

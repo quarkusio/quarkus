@@ -27,9 +27,7 @@ import io.quarkus.devtools.project.buildfile.GradleKotlinProjectBuildFile;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
-import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.ExtensionCatalogResolver;
-import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public abstract class QuarkusPlatformTask extends QuarkusTask {
@@ -40,22 +38,18 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
 
     private ExtensionCatalog extensionsCatalog(boolean limitExtensionsToImportedPlatforms, MessageWriter log) {
         final List<ArtifactCoords> platforms = importedPlatforms();
-        ExtensionCatalogResolver catalogResolver;
-        try {
-            catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
-                    ? QuarkusProjectHelper.getCatalogResolver(log)
-                    : ExtensionCatalogResolver.empty();
-        } catch (RegistryResolutionException e) {
-            throw new RuntimeException("Failed to initialize Quarkus extension catalog resolver", e);
-        }
-        if (catalogResolver.hasRegistries() && !limitExtensionsToImportedPlatforms) {
+        ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.getCatalogResolver(log);
+
+        if (!limitExtensionsToImportedPlatforms) {
             try {
                 return catalogResolver.resolveExtensionCatalog(platforms);
             } catch (Exception e) {
                 throw new RuntimeException("Failed to resolve extension catalog", e);
             }
         }
-        return ToolsUtils.mergePlatforms(platforms, extension().getAppModelResolver());
+        // TODO: FIXME
+        //return ToolsUtils.mergePlatforms(platforms, extension().getAppModelResolver());
+        throw new RuntimeException("FIXME");
     }
 
     protected List<ArtifactCoords> importedPlatforms() {

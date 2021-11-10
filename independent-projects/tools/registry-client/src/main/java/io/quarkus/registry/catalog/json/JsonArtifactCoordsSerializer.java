@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import io.quarkus.maven.ArtifactCoords;
 import java.io.IOException;
 
+@Deprecated
 public class JsonArtifactCoordsSerializer extends JsonSerializer<ArtifactCoords> {
 
     @Override

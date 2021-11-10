@@ -76,7 +76,7 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     QuarkusProject quarkusProject() throws Exception {
-        QuarkusProjectHelper.setToolsConfig(registryClient.resolveConfig());
+        QuarkusProjectHelper.setToolsConfig(registryClient.getConfig());
         return MavenProjectBuildFile.getProject(projectRoot, output, Version::clientVersion);
     }
 
@@ -205,7 +205,7 @@ public class MavenRunner implements BuildSystemRunner {
 
         // add specified properties
         args.addAll(flattenMappedProperties(propertiesOptions.properties));
-        args.add(registryClient.getRegistryClientProperty());
+        registryClient.addRegistryClientProperties(args);
     }
 
     void verifyBuildFile() {

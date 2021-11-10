@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+@Deprecated
 public class JsonRegistryConfigSerializer extends JsonSerializer<JsonRegistryConfig> {
 
     private JsonSerializer<Object> qerSerializer;

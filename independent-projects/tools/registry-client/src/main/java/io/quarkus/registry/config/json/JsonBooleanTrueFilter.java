@@ -1,5 +1,6 @@
 package io.quarkus.registry.config.json;
 
+@Deprecated
 public class JsonBooleanTrueFilter {
 
     @Override

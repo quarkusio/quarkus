@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@Deprecated
 public class JsonCatalogMerger {
 
     public static ExtensionCatalog merge(List<ExtensionCatalog> catalogs) {

@@ -4,6 +4,7 @@ import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.config.RegistryDescriptorConfig;
 import java.util.Objects;
 
+@Deprecated
 public class JsonRegistryDescriptorConfig implements RegistryDescriptorConfig {
 
     private ArtifactCoords artifact;

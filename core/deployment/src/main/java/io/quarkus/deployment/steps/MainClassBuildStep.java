@@ -6,9 +6,7 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import java.io.File;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,10 +88,8 @@ public class MainClassBuildStep {
     private static final String JAVAX_NET_SSL_TRUST_STORE_TYPE = "javax.net.ssl.trustStoreType";
     private static final String JAVAX_NET_SSL_TRUST_STORE_PROVIDER = "javax.net.ssl.trustStoreProvider";
     private static final String JAVAX_NET_SSL_TRUST_STORE_PASSWORD = "javax.net.ssl.trustStorePassword";
-    private static final List<String> BUILD_TIME_TRUST_STORE_PROPERTIES = Collections.unmodifiableList(Arrays.asList(
-            JAVAX_NET_SSL_TRUST_STORE,
-            JAVAX_NET_SSL_TRUST_STORE_TYPE, JAVAX_NET_SSL_TRUST_STORE_PROVIDER,
-            JAVAX_NET_SSL_TRUST_STORE_PASSWORD));
+    private static final List<String> BUILD_TIME_TRUST_STORE_PROPERTIES = List.of(JAVAX_NET_SSL_TRUST_STORE,
+            JAVAX_NET_SSL_TRUST_STORE_TYPE, JAVAX_NET_SSL_TRUST_STORE_PROVIDER, JAVAX_NET_SSL_TRUST_STORE_PASSWORD);
 
     public static final String GENERATE_APP_CDS_SYSTEM_PROPERTY = "quarkus.appcds.generate";
 

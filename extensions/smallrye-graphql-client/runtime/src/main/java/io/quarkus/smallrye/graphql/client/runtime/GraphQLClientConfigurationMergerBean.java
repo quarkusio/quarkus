@@ -6,8 +6,8 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import io.smallrye.graphql.client.GraphQLClientConfiguration;
-import io.smallrye.graphql.client.GraphQLClientsConfiguration;
+import io.smallrye.graphql.client.impl.GraphQLClientConfiguration;
+import io.smallrye.graphql.client.impl.GraphQLClientsConfiguration;
 
 /**
  * On startup, this beans takes Quarkus-specific configuration of GraphQL clients (quarkus.* properties)

@@ -41,7 +41,7 @@ public class SmallRyeGraphQLClientProcessor {
     private static final DotName GRAPHQL_CLIENT_API = DotName
             .createSimple("io.smallrye.graphql.client.typesafe.api.GraphQLClientApi");
     private static final DotName GRAPHQL_CLIENT = DotName.createSimple("io.smallrye.graphql.client.GraphQLClient");
-    private static final String NAMED_DYNAMIC_CLIENTS = "io.smallrye.graphql.client.dynamic.cdi.NamedDynamicClients";
+    private static final String NAMED_DYNAMIC_CLIENTS = "io.smallrye.graphql.client.impl.dynamic.cdi.NamedDynamicClients";
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> featureProducer) {
@@ -180,7 +180,7 @@ public class SmallRyeGraphQLClientProcessor {
 
     @BuildStep
     ServiceProviderBuildItem overrideErrorMessageProvider() {
-        return ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.ErrorMessageProvider");
+        return ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.impl.ErrorMessageProvider");
     }
 
 }

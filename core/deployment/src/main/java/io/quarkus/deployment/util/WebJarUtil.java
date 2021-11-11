@@ -19,7 +19,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -370,9 +369,7 @@ public class WebJarUtil {
     private static Path getCustomOverridePath(PathCollection paths, String filename, String modulename) {
 
         // First check if the developer supplied the files
-        Iterator<Path> iterator = paths.iterator();
-        while (iterator.hasNext()) {
-            Path root = iterator.next();
+        for (Path root : paths) {
             Path customModuleOverride = root.resolve(CUSTOM_MEDIA_FOLDER + modulename);
             if (Files.exists(customModuleOverride)) {
                 return customModuleOverride;
@@ -410,9 +407,7 @@ public class WebJarUtil {
     }
 
     private static boolean isCustomOverride(PathCollection paths, String filename, String modulename) {
-        Iterator<Path> iterator = paths.iterator();
-        while (iterator.hasNext()) {
-            Path root = iterator.next();
+        for (Path root : paths) {
             Path customModuleOverride = root.resolve(CUSTOM_MEDIA_FOLDER + modulename);
             if (Files.exists(customModuleOverride)) {
                 return true;

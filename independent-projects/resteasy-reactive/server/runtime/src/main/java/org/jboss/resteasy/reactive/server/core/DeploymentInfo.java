@@ -31,7 +31,7 @@ public class DeploymentInfo {
     private ResteasyReactiveConfig config;
     private Function<Object, Object> clientProxyUnwrapper;
     private String applicationPath;
-    private List<HandlerChainCustomizer> globalHandlerCustomers = new ArrayList<>();
+    private List<HandlerChainCustomizer> globalHandlerCustomizers = new ArrayList<>();
     private boolean developmentMode;
     private boolean resumeOn404;
 
@@ -162,11 +162,11 @@ public class DeploymentInfo {
     }
 
     public List<HandlerChainCustomizer> getGlobalHandlerCustomizers() {
-        return globalHandlerCustomers;
+        return globalHandlerCustomizers;
     }
 
-    public DeploymentInfo setGlobalHandlerCustomers(List<HandlerChainCustomizer> globalHandlerCustomers) {
-        this.globalHandlerCustomers = globalHandlerCustomers;
+    public DeploymentInfo setGlobalHandlerCustomizers(List<HandlerChainCustomizer> globalHandlerCustomers) {
+        this.globalHandlerCustomizers = globalHandlerCustomers;
         return this;
     }
 

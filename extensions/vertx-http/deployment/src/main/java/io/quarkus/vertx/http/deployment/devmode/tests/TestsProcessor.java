@@ -198,14 +198,10 @@ public class TestsProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     DevConsoleRouteBuildItem toggleInstrumentation(LaunchModeBuildItem launchModeBuildItem) {
-        Optional<TestSupport> ts = TestSupport.instance();
-        if (testsDisabled(launchModeBuildItem, ts)) {
-            return null;
-        }
         return new DevConsoleRouteBuildItem("tests/toggle-instrumentation", "POST", new Handler<>() {
             @Override
             public void handle(RoutingContext event) {
-                boolean instrumentationEnabled = ts.get().toggleInstrumentation();
+                boolean instrumentationEnabled = RuntimeUpdatesProcessor.INSTANCE.toggleInstrumentation();
                 Json.JsonObjectBuilder object = Json.object();
                 object.put("instrumentationEnabled", instrumentationEnabled);
                 event.response().putHeader("Content-Type", "application/json; charset=utf-8").end(object.build());

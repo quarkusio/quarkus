@@ -45,7 +45,9 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigSourceFactoryBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBuildItem;
@@ -120,7 +122,9 @@ public class ConfigGenerationBuildStep {
             List<AdditionalBootstrapConfigSourceProviderBuildItem> additionalBootstrapConfigSourceProviders,
             List<StaticInitConfigSourceProviderBuildItem> staticInitConfigSourceProviders,
             List<StaticInitConfigSourceFactoryBuildItem> staticInitConfigSourceFactories,
-            List<ConfigMappingBuildItem> configMappings)
+            List<ConfigMappingBuildItem> configMappings,
+            List<StaticInitConfigBuilderBuildItem> staticInitConfigBuilders,
+            List<RunTimeConfigBuilderBuildItem> runTimeConfigBuilders)
             throws IOException {
 
         if (liveReloadBuildItem.isLiveReload()) {
@@ -134,7 +138,7 @@ public class ConfigGenerationBuildStep {
         Set<String> staticConfigSourceProviders = new HashSet<>();
         staticConfigSourceProviders.addAll(staticSafeServices(discoveredConfigSourceProviders));
         staticConfigSourceProviders.addAll(staticInitConfigSourceProviders.stream()
-                .map(StaticInitConfigSourceProviderBuildItem::getProviderClassName).collect(Collectors.toSet()));
+                .map(StaticInitConfigSourceProviderBuildItem::getProviderClassName).collect(toSet()));
         Set<String> staticConfigSourceFactories = new HashSet<>();
         staticConfigSourceFactories.addAll(staticSafeServices(discoveredConfigSourceFactories));
         staticConfigSourceFactories.addAll(staticInitConfigSourceFactories.stream()
@@ -153,11 +157,15 @@ public class ConfigGenerationBuildStep {
                 .setStaticConfigSources(staticSafeServices(discoveredConfigSources))
                 .setStaticConfigSourceProviders(staticConfigSourceProviders)
                 .setStaticConfigSourceFactories(staticConfigSourceFactories)
+                .setStaticConfigMappings(staticSafeConfigMappings(configMappings))
+                .setStaticConfigBuilders(staticInitConfigBuilders.stream()
+                        .map(StaticInitConfigBuilderBuildItem::getBuilderClassName).collect(toSet()))
                 .setRuntimeConfigSources(discoveredConfigSources)
                 .setRuntimeConfigSourceProviders(discoveredConfigSourceProviders)
                 .setRuntimeConfigSourceFactories(discoveredConfigSourceFactories)
-                .setStaticConfigMappings(staticSafeConfigMappings(configMappings))
                 .setRuntimeConfigMappings(runtimeConfigMappings(configMappings))
+                .setRuntimeConfigBuilders(
+                        runTimeConfigBuilders.stream().map(RunTimeConfigBuilderBuildItem::getBuilderClassName).collect(toSet()))
                 .build()
                 .run();
     }

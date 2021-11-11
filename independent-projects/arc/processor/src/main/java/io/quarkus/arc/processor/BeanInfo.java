@@ -84,15 +84,16 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final boolean forceApplicationClass;
 
+    private final String targetPackageName;
+
     BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types,
-            Set<AnnotationInstance> qualifiers,
-            List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority,
-            List<StereotypeInfo> stereotypes,
-            String name, boolean isDefaultBean) {
+            Set<AnnotationInstance> qualifiers, List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer,
+            Integer alternativePriority,
+            List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean, String targetPackageName) {
         this(null, null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer,
                 alternativePriority,
                 stereotypes, name, isDefaultBean, null, null,
-                Collections.emptyMap(), true, false);
+                Collections.emptyMap(), true, false, targetPackageName);
     }
 
     BeanInfo(ClassInfo implClazz, Type providerType, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope,
@@ -102,7 +103,7 @@ public class BeanInfo implements InjectionTargetInfo {
             List<StereotypeInfo> stereotypes,
             String name, boolean isDefaultBean, Consumer<MethodCreator> creatorConsumer,
             Consumer<MethodCreator> destroyerConsumer,
-            Map<String, Object> params, boolean isRemovable, boolean forceApplicationClass) {
+            Map<String, Object> params, boolean isRemovable, boolean forceApplicationClass, String targetPackageName) {
         this.target = Optional.ofNullable(target);
         if (implClazz == null && target != null) {
             implClazz = initImplClazz(target, beanDeployment);
@@ -142,6 +143,7 @@ public class BeanInfo implements InjectionTargetInfo {
         this.decoratedMethods = new ConcurrentHashMap<>();
         this.lifecycleInterceptors = new ConcurrentHashMap<>();
         this.forceApplicationClass = forceApplicationClass;
+        this.targetPackageName = targetPackageName;
     }
 
     @Override
@@ -461,6 +463,29 @@ public class BeanInfo implements InjectionTargetInfo {
 
     Map<String, Object> getParams() {
         return params;
+    }
+
+    public String getTargetPackageName() {
+        if (targetPackageName != null) {
+            return targetPackageName;
+        }
+        DotName providerTypeName;
+        if (isProducerMethod() || isProducerField()) {
+            providerTypeName = declaringBean.getProviderType().name();
+        } else {
+            if (providerType.kind() == org.jboss.jandex.Type.Kind.ARRAY
+                    || providerType.kind() == org.jboss.jandex.Type.Kind.PRIMITIVE) {
+                providerTypeName = implClazz.name();
+            } else {
+                providerTypeName = providerType.name();
+            }
+        }
+        String packageName = DotNames.packageName(providerTypeName);
+        if (packageName.startsWith("java.")) {
+            // It is not possible to place a class in a JDK package
+            packageName = AbstractGenerator.DEFAULT_PACKAGE;
+        }
+        return packageName;
     }
 
     void validate(List<Throwable> errors, List<BeanDeploymentValidator> validators,
@@ -822,6 +847,8 @@ public class BeanInfo implements InjectionTargetInfo {
 
         private boolean forceApplicationClass;
 
+        private String targetPackageName;
+
         Builder() {
             injections = Collections.emptyList();
             stereotypes = Collections.emptyList();
@@ -917,10 +944,15 @@ public class BeanInfo implements InjectionTargetInfo {
             return this;
         }
 
+        Builder targetPackageName(String name) {
+            this.targetPackageName = name;
+            return this;
+        }
+
         BeanInfo build() {
             return new BeanInfo(implClazz, providerType, target, beanDeployment, scope, types, qualifiers, injections,
                     declaringBean, disposer, alternativePriority, stereotypes, name, isDefaultBean, creatorConsumer,
-                    destroyerConsumer, params, removable, forceApplicationClass);
+                    destroyerConsumer, params, removable, forceApplicationClass, targetPackageName);
         }
 
         public Builder forceApplicationClass(boolean forceApplicationClass) {

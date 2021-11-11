@@ -18,9 +18,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.AmbiguousResolutionException;
@@ -41,8 +39,6 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
                 new CreationalContextImpl<>(null),
                 Collections.emptySet(), null, -1);
     }
-
-    private static final Annotation[] EMPTY_ANNOTATION_ARRAY = new Annotation[] {};
 
     private final CreationalContextImpl<?> creationalContext;
     private final Set<InjectableBean<?>> resolvedBeans;
@@ -235,11 +231,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
     }
 
     private Set<InjectableBean<?>> resolve() {
-        return ArcContainerImpl.instance()
-                .getResolvedBeans(requiredType, requiredQualifiers.toArray(EMPTY_ANNOTATION_ARRAY))
-                .stream()
-                .filter(Predicate.not(InjectableBean::isSuppressed))
-                .collect(Collectors.toUnmodifiableSet());
+        return Instances.resolveBeans(requiredType, requiredQualifiers);
     }
 
     class InstanceIterator implements Iterator<T> {

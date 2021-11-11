@@ -71,11 +71,11 @@ public final class Types {
     private Types() {
     }
 
-    static ResultHandle getTypeHandle(BytecodeCreator creator, Type type) {
+    public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type) {
         return getTypeHandle(creator, type, null);
     }
 
-    static ResultHandle getTypeHandle(BytecodeCreator creator, Type type, ResultHandle tccl) {
+    public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type, ResultHandle tccl) {
         return getTypeHandle(creator, type, tccl, null);
     }
 

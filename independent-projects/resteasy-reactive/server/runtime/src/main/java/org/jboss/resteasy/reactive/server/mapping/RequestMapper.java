@@ -12,11 +12,12 @@ import org.jboss.resteasy.reactive.common.util.URIDecoder;
 public class RequestMapper<T> {
 
     private final PathMatcher<List<RequestPath<T>>> requestPaths;
+    private final PathMatcher.Builder<List<RequestPath<T>>> pathMatcherBuilder;
     private final List<RequestPath<T>> templates;
     final int maxParams;
 
     public RequestMapper(List<RequestPath<T>> templates) {
-        this.requestPaths = new PathMatcher<>();
+        pathMatcherBuilder = new PathMatcher.Builder<>();
         this.templates = templates;
         int max = 0;
         Map<String, List<RequestPath<T>>> aggregates = new HashMap<>();
@@ -31,6 +32,7 @@ public class RequestMapper<T> {
         aggregates.forEach(this::sortAggregates);
         aggregates.forEach(this::addPrefixPaths);
         maxParams = max;
+        requestPaths = pathMatcherBuilder.build();
     }
 
     private void sortAggregates(String stem, List<RequestPath<T>> list) {
@@ -43,7 +45,7 @@ public class RequestMapper<T> {
     }
 
     private void addPrefixPaths(String stem, List<RequestPath<T>> list) {
-        requestPaths.addPrefixPath(stem, list);
+        pathMatcherBuilder.addPrefixPath(stem, list);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

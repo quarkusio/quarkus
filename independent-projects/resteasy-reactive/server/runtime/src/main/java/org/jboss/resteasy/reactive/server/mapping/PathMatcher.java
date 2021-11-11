@@ -15,19 +15,16 @@ import java.util.TreeSet;
  *
  * @author Stuart Douglas
  */
-public class PathMatcher<T> implements Dumpable {
+class PathMatcher<T> implements Dumpable {
 
-    private static final String STRING_PATH_SEPARATOR = "/";
+    private final T defaultHandler;
+    private final SubstringMap<T> paths;
+    private final int[] lengths;
 
-    private volatile T defaultHandler;
-    private final SubstringMap<T> paths = new SubstringMap<T>();
-
-    /**
-     * lengths of all registered paths
-     */
-    private volatile int[] lengths = {};
-
-    public PathMatcher() {
+    PathMatcher(T defaultHandler, SubstringMap<T> paths, int[] lengths) {
+        this.defaultHandler = defaultHandler;
+        this.paths = paths;
+        this.lengths = lengths;
     }
 
     /**
@@ -36,7 +33,7 @@ public class PathMatcher<T> implements Dumpable {
      * @param path The relative path to match
      * @return The match match. This will never be null, however if none matched its value field will be
      */
-    public PathMatch<T> match(String path) {
+    PathMatch<T> match(String path) {
         int length = path.length();
         final int[] lengths = this.lengths;
         for (int i = 0; i < lengths.length; ++i) {
@@ -56,53 +53,63 @@ public class PathMatcher<T> implements Dumpable {
         return new PathMatch<>("/", path, defaultHandler);
     }
 
-    /**
-     * Adds a path prefix and a handler for that path. If the path does not start
-     * with a / then one will be prepended.
-     * <p>
-     * The match is done on a prefix bases, so registering /foo will also match /bar. Exact
-     * path matches are taken into account first.
-     * <p>
-     * If / is specified as the path then it will replace the default handler.
-     *
-     * @param path The path
-     * @param handler The handler
-     */
-    public synchronized PathMatcher addPrefixPath(final String path, final T handler) {
-        if (path.isEmpty()) {
-            throw new IllegalArgumentException("Path not specified");
-        }
+    static class Builder<T> {
 
-        if (PathMatcher.STRING_PATH_SEPARATOR.equals(path)) {
-            this.defaultHandler = handler;
-            return this;
-        } else if (path.endsWith(STRING_PATH_SEPARATOR)) {
-            throw new RuntimeException("Prefix path cannot end with /");
-        }
+        private static final String STRING_PATH_SEPARATOR = "/";
 
-        paths.put(path, handler);
+        private T defaultHandler;
+        private final SubstringMap.Builder<T> pathsBuilder = new SubstringMap.Builder<>();
 
-        buildLengths();
-        return this;
-    }
-
-    private void buildLengths() {
-        final Set<Integer> lengths = new TreeSet<>(new Comparator<Integer>() {
-            @Override
-            public int compare(Integer o1, Integer o2) {
-                return -o1.compareTo(o2);
+        /**
+         * Adds a path prefix and a handler for that path. If the path does not start
+         * with a / then one will be prepended.
+         * <p>
+         * The match is done on a prefix bases, so registering /foo will also match /bar. Exact
+         * path matches are taken into account first.
+         * <p>
+         * If / is specified as the path then it will replace the default handler.
+         *
+         * @param path The path
+         * @param handler The handler
+         */
+        void addPrefixPath(final String path, final T handler) {
+            if (path.isEmpty()) {
+                throw new IllegalArgumentException("Path not specified");
             }
-        });
-        for (String p : paths.keys()) {
-            lengths.add(p.length());
+
+            if (STRING_PATH_SEPARATOR.equals(path)) {
+                this.defaultHandler = handler;
+                return;
+            } else if (path.endsWith(STRING_PATH_SEPARATOR)) {
+                throw new RuntimeException("Prefix path cannot end with /");
+            }
+
+            pathsBuilder.put(path, handler);
         }
 
-        int[] lengthArray = new int[lengths.size()];
-        int pos = 0;
-        for (int i : lengths) {
-            lengthArray[pos++] = i;
+        private int[] buildLengths(SubstringMap<T> paths) {
+            final Set<Integer> lengths = new TreeSet<>(new Comparator<>() {
+                @Override
+                public int compare(Integer o1, Integer o2) {
+                    return -o1.compareTo(o2);
+                }
+            });
+            for (String p : paths.keys()) {
+                lengths.add(p.length());
+            }
+
+            int[] lengthArray = new int[lengths.size()];
+            int pos = 0;
+            for (int i : lengths) {
+                lengthArray[pos++] = i;
+            }
+            return lengthArray;
         }
-        this.lengths = lengthArray;
+
+        public PathMatcher<T> build() {
+            SubstringMap<T> paths = pathsBuilder.build();
+            return new PathMatcher<>(defaultHandler, paths, buildLengths(paths));
+        }
     }
 
     public static final class PathMatch<T> {

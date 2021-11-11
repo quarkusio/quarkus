@@ -15,4 +15,11 @@ public class GeneralResource {
     public String hello(@PathParam("id") String id) {
         return "general:" + id;
     }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("prefix-{id}")
+    public String prefixedHello(@PathParam("id") String id) {
+        return "prefix:" + id;
+    }
 }

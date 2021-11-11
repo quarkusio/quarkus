@@ -63,12 +63,9 @@ public class PathMatcher<T> implements Dumpable {
                     return new PathMatch<>(path, "", next.getValue());
                 }
             } else if (pathLength < length) {
-                char c = path.charAt(pathLength);
-                if (c == '/') {
-                    SubstringMap.SubstringMatch<T> next = paths.get(path, pathLength);
-                    if (next != null) {
-                        return new PathMatch<>(next.getKey(), path.substring(pathLength), next.getValue());
-                    }
+                SubstringMap.SubstringMatch<T> next = paths.get(path, pathLength);
+                if (next != null) {
+                    return new PathMatch<>(next.getKey(), path.substring(pathLength), next.getValue());
                 }
             }
         }

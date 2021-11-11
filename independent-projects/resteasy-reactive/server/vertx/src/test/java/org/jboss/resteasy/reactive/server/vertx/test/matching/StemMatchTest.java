@@ -30,6 +30,11 @@ public class StemMatchTest {
                 .statusCode(200)
                 .body(is("general:foo"));
         given()
+                .when().get("/hello/prefix-foo")
+                .then()
+                .statusCode(200)
+                .body(is("prefix:foo"));
+        given()
                 .when().get("/hello/foo/bar")
                 .then()
                 .statusCode(200)

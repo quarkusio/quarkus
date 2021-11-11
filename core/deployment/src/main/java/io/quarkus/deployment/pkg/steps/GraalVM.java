@@ -8,24 +8,22 @@ import java.util.stream.Stream;
 final class GraalVM {
     static final class Version implements Comparable<Version> {
         private static final Pattern PATTERN = Pattern.compile(
-                "(GraalVM|native-image)( Version)? ([1-9][0-9]*)\\.([0-9]+)\\.[0-9]+(-dev\\p{XDigit}*)?([^\n$]*)\\s*");
+                "(GraalVM|native-image)( Version)? ([1-9][0-9]*(\\.([0-9]+))+(-dev\\p{XDigit}*)?)([^\n$]*)\\s*");
 
-        static final Version UNVERSIONED = new Version("Undefined", -1, -1, Distribution.ORACLE);
-        static final Version VERSION_21_2 = new Version("GraalVM 21.2", 21, 2, Distribution.ORACLE);
-        static final Version VERSION_21_3 = new Version("GraalVM 21.3", 21, 3, Distribution.ORACLE);
+        static final Version UNVERSIONED = new Version("Undefined", "snapshot", Distribution.ORACLE);
+        static final Version VERSION_21_2 = new Version("GraalVM 21.2", "21.2", Distribution.ORACLE);
+        static final Version VERSION_21_3 = new Version("GraalVM 21.3", "21.3", Distribution.ORACLE);
 
         static final Version MINIMUM = VERSION_21_2;
         static final Version CURRENT = VERSION_21_3;
 
         final String fullVersion;
-        final int major;
-        final int minor;
+        final org.graalvm.home.Version version;
         final Distribution distribution;
 
-        Version(String fullVersion, int major, int minor, Distribution distro) {
+        Version(String fullVersion, String version, Distribution distro) {
             this.fullVersion = fullVersion;
-            this.major = major;
-            this.minor = minor;
+            this.version = org.graalvm.home.Version.parse(version);
             this.distribution = distro;
         }
 
@@ -55,19 +53,7 @@ final class GraalVM {
 
         @Override
         public int compareTo(Version o) {
-            if (major > o.major) {
-                return 1;
-            }
-
-            if (major == o.major) {
-                if (minor > o.minor) {
-                    return 1;
-                } else if (minor == o.minor) {
-                    return 0;
-                }
-            }
-
-            return -1;
+            return this.version.compareTo(o.version);
         }
 
         static Version of(Stream<String> lines) {
@@ -76,12 +62,11 @@ final class GraalVM {
                 final String line = it.next();
                 final Matcher matcher = PATTERN.matcher(line);
                 if (matcher.find() && matcher.groupCount() >= 3) {
-                    final String major = matcher.group(3);
-                    final String minor = matcher.group(4);
-                    final String distro = matcher.group(6);
+                    final String version = matcher.group(3);
+                    final String distro = matcher.group(7);
                     return new Version(
                             line,
-                            Integer.parseInt(major), Integer.parseInt(minor),
+                            version,
                             isMandrel(distro) ? Distribution.MANDREL : Distribution.ORACLE);
                 }
             }
@@ -96,8 +81,7 @@ final class GraalVM {
         @Override
         public String toString() {
             return "Version{" +
-                    "major=" + major +
-                    ", minor=" + minor +
+                    "version=" + version +
                     ", distribution=" + distribution +
                     '}';
         }

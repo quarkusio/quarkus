@@ -15,30 +15,30 @@ public class GraalVMTest {
 
     @Test
     public void testGraalVMVersionDetected() {
-        assertVersion(20, 1, ORACLE, Version.of(Stream.of("GraalVM Version 20.1.0 (Java Version 11.0.7)")));
-        assertVersion(20, 1, MANDREL, Version
+        assertVersion(org.graalvm.home.Version.create(20, 1), ORACLE,
+                Version.of(Stream.of("GraalVM Version 20.1.0 (Java Version 11.0.7)")));
+        assertVersion(org.graalvm.home.Version.create(20, 1, 0, 1), MANDREL, Version
                 .of(Stream.of("GraalVM Version 20.1.0.1.Alpha2 56d4ee1b28 (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(20, 1, MANDREL, Version
+        assertVersion(org.graalvm.home.Version.create(20, 1, 0, 1), MANDREL, Version
                 .of(Stream.of("GraalVM Version 20.1.0.1-Final 56d4ee1b28 (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(21, 0, MANDREL, Version
+        assertVersion(org.graalvm.home.Version.create(21, 0), MANDREL, Version
                 .of(Stream.of("GraalVM Version 21.0.0.0-0b3 (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(20, 3, MANDREL, Version
+        assertVersion(org.graalvm.home.Version.create(20, 3, 1, 2), MANDREL, Version
                 .of(Stream.of("GraalVM Version 20.3.1.2-dev (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(21, 1, MANDREL, Version
+        assertVersion(org.graalvm.home.Version.create(21, 1), MANDREL, Version
                 .of(Stream.of("native-image 21.1.0.0-Final (Mandrel Distribution) (Java Version 11.0.11+9)")));
-        assertVersion(21, 1, MANDREL, Version
+        assertVersion(org.graalvm.home.Version.create(21, 1), MANDREL, Version
                 .of(Stream.of("GraalVM 21.1.0.0-Final (Mandrel Distribution) (Java Version 11.0.11+9)")));
-        assertVersion(21, 1, ORACLE, Version
+        assertVersion(org.graalvm.home.Version.create(21, 1), ORACLE, Version
                 .of(Stream.of("GraalVM 21.1.0 Java 11 CE (Java Version 11.0.11+5-jvmci-21.1-b02)")));
-        assertVersion(21, 1, ORACLE, Version
+        assertVersion(org.graalvm.home.Version.create(21, 1), ORACLE, Version
                 .of(Stream.of("native-image 21.1.0.0 Java 11 CE (Java Version 11.0.11+5-jvmci-21.1-b02)")));
-        assertVersion(21, 2, MANDREL, Version
+        assertVersion(org.graalvm.home.Version.create(21, 2), MANDREL, Version
                 .of(Stream.of("native-image 21.2.0.0-Final Mandrel Distribution (Java Version 11.0.12+7)")));
     }
 
-    static void assertVersion(int major, int minor, Distribution distro, Version version) {
-        assertThat(version.major).isEqualTo(major);
-        assertThat(version.minor).isEqualTo(minor);
+    static void assertVersion(org.graalvm.home.Version graalVmVersion, Distribution distro, Version version) {
+        assertThat(graalVmVersion.compareTo(version.version)).isEqualTo(0);
 
         assertThat(version.distribution).isEqualTo(distro);
         if (distro == MANDREL)
@@ -69,10 +69,10 @@ public class GraalVMTest {
     public void testGraalVMVersionsCompareEqualTo() {
         assertCompareEqualTo("GraalVM Version 20.1.0", "GraalVM Version 20.1.0");
         // Distributions don't impact newer/older/same comparisons
-        assertCompareEqualTo("GraalVM Version 20.1.0",
+        assertCompareEqualTo("GraalVM Version 20.1.0.1",
                 "GraalVM Version 20.1.0.1.Alpha2 56d4ee1b28 (Mandrel Distribution) (Java Version 11.0.8)");
-        // Micro versions ignored, hence two micros are considered the same right now
-        assertCompareEqualTo("GraalVM Version 19.3.0", "GraalVM Version 19.3.3");
+        // Don't ignore micro versions
+        assertCompareNotEqualTo("GraalVM Version 19.3.0", "GraalVM Version 19.3.3");
     }
 
     /**
@@ -80,6 +80,10 @@ public class GraalVMTest {
      */
     static void assertCompareEqualTo(String version, String other) {
         assertThat(Version.of(Stream.of(version)).compareTo(Version.of(Stream.of(other)))).isEqualTo(0);
+    }
+
+    static void assertCompareNotEqualTo(String version, String other) {
+        assertThat(Version.of(Stream.of(version)).compareTo(Version.of(Stream.of(other)))).isNotEqualTo(0);
     }
 
     @Test

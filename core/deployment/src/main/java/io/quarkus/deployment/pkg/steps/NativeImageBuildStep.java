@@ -72,8 +72,7 @@ public class NativeImageBuildStep {
         NativeImageBuildItem.GraalVMVersion graalVMVersion = image.getGraalVMInfo();
         Map<String, Object> graalVMInfoProps = new HashMap<>();
         graalVMInfoProps.put("graalvm.version.full", graalVMVersion.getFullVersion());
-        graalVMInfoProps.put("graalvm.version.major", "" + graalVMVersion.getMajor());
-        graalVMInfoProps.put("graalvm.version.minor", "" + graalVMVersion.getMinor());
+        graalVMInfoProps.put("graalvm.version.version", graalVMVersion.getVersion());
         return new ArtifactResultBuildItem(image.getPath(), PackageConfig.NATIVE, graalVMInfoProps);
     }
 
@@ -175,8 +174,8 @@ public class NativeImageBuildStep {
         if (nativeConfig.reuseExisting) {
             if (Files.exists(finalExecutablePath)) {
                 return new NativeImageBuildItem(finalExecutablePath,
-                        new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion, graalVMVersion.major,
-                                graalVMVersion.minor,
+                        new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion,
+                                graalVMVersion.version.toString(),
                                 graalVMVersion.distribution.name()));
             }
         }
@@ -226,8 +225,8 @@ public class NativeImageBuildStep {
             System.setProperty("native.image.path", finalExecutablePath.toAbsolutePath().toString());
 
             return new NativeImageBuildItem(finalExecutablePath,
-                    new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion, graalVMVersion.major,
-                            graalVMVersion.minor,
+                    new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion,
+                            graalVMVersion.version.toString(),
                             graalVMVersion.distribution.name()));
         } catch (Exception e) {
             throw new RuntimeException("Failed to build native image", e);
@@ -373,10 +372,9 @@ public class NativeImageBuildStep {
     private void checkGraalVMVersion(GraalVM.Version version) {
         log.info("Running Quarkus native-image plugin on " + version.getFullVersion());
         if (version.isObsolete()) {
-            final int major = GraalVM.Version.CURRENT.major;
-            final int minor = GraalVM.Version.CURRENT.minor;
             throw new IllegalStateException("Out of date version of GraalVM detected: " + version.getFullVersion() + "."
-                    + " Quarkus currently supports " + major + "." + minor + ". Please upgrade GraalVM to this version.");
+                    + " Quarkus currently supports " + GraalVM.Version.CURRENT.version
+                    + ". Please upgrade GraalVM to this version.");
         }
     }
 

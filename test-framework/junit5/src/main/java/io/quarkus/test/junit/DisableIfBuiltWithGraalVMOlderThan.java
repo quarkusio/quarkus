@@ -22,43 +22,32 @@ public @interface DisableIfBuiltWithGraalVMOlderThan {
     GraalVMVersion value();
 
     enum GraalVMVersion {
-        GRAALVM_21_0(21, 0);
+        GRAALVM_21_0(org.graalvm.home.Version.create(21, 0));
 
-        private final int major;
-        private final int minor;
+        private final org.graalvm.home.Version version;
 
-        GraalVMVersion(int major, int minor) {
-            this.major = major;
-            this.minor = minor;
+        GraalVMVersion(org.graalvm.home.Version version) {
+            this.version = version;
         }
 
-        public int getMajor() {
-            return major;
-        }
-
-        public int getMinor() {
-            return minor;
+        public org.graalvm.home.Version getVersion() {
+            return version;
         }
 
         /**
-         * Compares this version with a tuple of major and minor parts representing another GraalVM version
+         * Compares this version with another GraalVM version
          * 
-         * @return {@code -1} if this version is older than the version represented by the supplied major and minor parts,
+         * @return {@code -1} if this version is older than the other version,
          *         {@code +1} if it's newer and {@code 0} if they represent the same version
          */
-        public int compareTo(int major, int minor) {
-            int majorComparison = Integer.compare(this.major, major);
-            if (majorComparison != 0) {
-                return majorComparison;
-            }
-            return Integer.compare(this.minor, minor);
+        public int compareTo(org.graalvm.home.Version version) {
+            return this.version.compareTo(version);
         }
 
         @Override
         public String toString() {
             return "GraalVMVersion{" +
-                    "major=" + major +
-                    ", minor=" + minor +
+                    "version=" + version.toString() +
                     '}';
         }
     }

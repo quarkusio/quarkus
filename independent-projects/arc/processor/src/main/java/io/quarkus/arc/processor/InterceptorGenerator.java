@@ -101,7 +101,7 @@ public class InterceptorGenerator extends BeanGenerator {
         implementCreate(classOutput, interceptorCreator, interceptor, providerType, baseName,
                 injectionPointToProviderField,
                 Collections.emptyMap(), Collections.emptyMap(),
-                reflectionRegistration, targetPackage, isApplicationClass);
+                targetPackage, isApplicationClass);
         implementGet(interceptor, interceptorCreator, providerType, baseName);
         implementGetTypes(interceptorCreator, beanTypes.getFieldDescriptor());
         implementGetBeanClass(interceptor, interceptorCreator);

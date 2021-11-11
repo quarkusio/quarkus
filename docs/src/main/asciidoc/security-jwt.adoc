@@ -115,34 +115,33 @@ import javax.ws.rs.core.SecurityContext;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 @Path("/secured")
-@RequestScoped // <1>
 public class TokenSecuredResource {
 
     @Inject
-    JsonWebToken jwt; // <2>
+    JsonWebToken jwt; // <1>
 
     @GET()
     @Path("permit-all")
-    @PermitAll // <3>
+    @PermitAll // <2>
     @Produces(MediaType.TEXT_PLAIN)
     public String hello(@Context SecurityContext ctx) {
-        return getResponseString(ctx); // <4>
+        return getResponseString(ctx); // <3>
     }
 
     private String getResponseString(SecurityContext ctx) {
         String name;
-        if (ctx.getUserPrincipal() == null) { // <5>
+        if (ctx.getUserPrincipal() == null) { // <4>
             name = "anonymous";
-        } else if (!ctx.getUserPrincipal().getName().equals(jwt.getName())) { // <6>
+        } else if (!ctx.getUserPrincipal().getName().equals(jwt.getName())) { // <5>
             throw new InternalServerErrorException("Principal and JsonWebToken names do not match");
         } else {
-            name = ctx.getUserPrincipal().getName(); // <7>
+            name = ctx.getUserPrincipal().getName(); // <6>
         }
         return String.format("hello + %s,"
             + " isHttps: %s,"
             + " authScheme: %s,"
             + " hasJWT: %s",
-            name, ctx.isSecure(), ctx.getAuthenticationScheme(), hasJwt()); // <8>
+            name, ctx.isSecure(), ctx.getAuthenticationScheme(), hasJwt()); // <7>
     }
 
     private boolean hasJwt() {
@@ -150,15 +149,13 @@ public class TokenSecuredResource {
     }
 }
 ----
-<1> Add a `RequestScoped` as Quarkus uses a default scoping of `ApplicationScoped` and this
-will produce undesirable behavior since JWT claims are naturally request scoped.
-<2> Here we inject the JsonWebToken interface, an extension of the java.security.Principal interface that provides access to the claims associated with the current authenticated token.
-<3> @PermitAll is a JSR 250 common security annotation that indicates that the given endpoint is accessible by any caller, authenticated or not.
-<4> Here we inject the JAX-RS SecurityContext to inspect the security state of the call and use a `getResponseString()` function to populate a response string.
-<5> Here we check if the call is insecure by checking the request user/caller `Principal` against null.
-<6> Here we check that the Principal and JsonWebToken have the same name since JsonWebToken does represent the current Principal.
-<7> Here we get the Principal name.
-<8> The reply we build up makes use of the caller name, the `isSecure()` and `getAuthenticationScheme()` states of the request `SecurityContext`, and whether a non-null `JsonWebToken` was injected.
+<1> Here we inject the JsonWebToken interface, an extension of the java.security.Principal interface that provides access to the claims associated with the current authenticated token.
+<2> @PermitAll is a JSR 250 common security annotation that indicates that the given endpoint is accessible by any caller, authenticated or not.
+<3> Here we inject the JAX-RS SecurityContext to inspect the security state of the call and use a `getResponseString()` function to populate a response string.
+<4> Here we check if the call is insecure by checking the request user/caller `Principal` against null.
+<5> Here we check that the Principal and JsonWebToken have the same name since JsonWebToken does represent the current Principal.
+<6> Here we get the Principal name.
+<7> The reply we build up makes use of the caller name, the `isSecure()` and `getAuthenticationScheme()` states of the request `SecurityContext`, and whether a non-null `JsonWebToken` was injected.
 
 === Run the application
 
@@ -666,7 +663,7 @@ If you need to verify the token signature using the symmetric secret key then ei
 }
 ```
 
-This secret key JWK will also need to be referred to with `smallrye.jwt.key.verify.location`.
+This secret key JWK will also need to be referred to with `smallrye.jwt.verify.key.location`.
 `smallrye.jwt.verify.algorithm` should be set to `HS256`/`HS384`/`HS512`.
 
 === Create JsonWebToken with JWTParser

@@ -77,7 +77,6 @@ public class SubclassGenerator extends AbstractGenerator {
             "bindings", Set.class);
 
     private final Predicate<DotName> applicationClassPredicate;
-    private final ReflectionRegistration reflectionRegistration;
     private final Set<String> existingClasses;
 
     static String generatedName(DotName providerTypeName, String baseName) {
@@ -90,10 +89,9 @@ public class SubclassGenerator extends AbstractGenerator {
     public SubclassGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
             boolean generateSources, ReflectionRegistration reflectionRegistration,
             Set<String> existingClasses) {
-        super(generateSources);
+        super(generateSources, reflectionRegistration);
         this.applicationClassPredicate = applicationClassPredicate;
         this.annotationLiterals = annotationLiterals;
-        this.reflectionRegistration = reflectionRegistration;
         this.existingClasses = existingClasses;
     }
 
@@ -259,7 +257,7 @@ public class SubclassGenerator extends AbstractGenerator {
                         constructor.writeArrayValue(bindingsArray, bindingsIndex++,
                                 bindingsLiterals.computeIfAbsent(binding, bindingsLiteralFun));
                     }
-                    return constructor.invokeStaticInterfaceMethod(MethodDescriptors.SET_OF, bindingsArray);
+                    return constructor.invokeStaticMethod(MethodDescriptors.SETS_OF, bindingsArray);
                 }
             }
         };
@@ -817,7 +815,7 @@ public class SubclassGenerator extends AbstractGenerator {
             // InvocationContextImpl.preDestroy(this,predestroys)
             ResultHandle invocationContext = tryCatch.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXTS_PRE_DESTROY,
                     tryCatch.getThis(), predestroysHandle,
-                    tryCatch.invokeStaticInterfaceMethod(MethodDescriptors.SET_OF, bindingsArray));
+                    tryCatch.invokeStaticMethod(MethodDescriptors.SETS_OF, bindingsArray));
 
             // InvocationContext.proceed()
             tryCatch.invokeInterfaceMethod(MethodDescriptors.INVOCATION_CONTEXT_PROCEED, invocationContext);

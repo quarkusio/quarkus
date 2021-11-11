@@ -43,6 +43,7 @@ import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.restassured.RestAssured;
 
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
@@ -313,7 +314,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         runAndCheck();
 
         // Enable instrumentation based reload to begin with
-        DevModeTestUtils.getHttpResponse("/app/enable");
+        RestAssured.post("/q/dev/io.quarkus.quarkus-vertx-http/tests/toggle-instrumentation").then().statusCode(200);
 
         //if there is an instrumentation based reload this will stay the same
         String firstUuid = DevModeTestUtils.getHttpResponse("/app/uuid");
@@ -346,7 +347,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
 
         //now disable instrumentation based restart, and try again
         //change it back to hello
-        DevModeTestUtils.getHttpResponse("/app/disable");
+        RestAssured.post("/q/dev/io.quarkus.quarkus-vertx-http/tests/toggle-instrumentation").then().statusCode(200);
         source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
         filter(source, Collections.singletonMap("return \"" + uuid + "\";", "return \"hello\";"));
 
@@ -361,7 +362,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
 
         //now re-enable
         //and repeat
-        DevModeTestUtils.getHttpResponse("/app/enable");
+        RestAssured.post("/q/dev/io.quarkus.quarkus-vertx-http/tests/toggle-instrumentation").then().statusCode(200);
         source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
         filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
 

@@ -41,9 +41,9 @@ import org.jboss.jandex.Type;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.hibernate.orm.deployment.xml.QuarkusMappingFileParser;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 /**
  * Scan the Jandex index to find JPA entities (and embeddables supporting entity models).
@@ -134,7 +134,7 @@ public final class JpaJandexScavenger {
             if (!unIgnorableIndexedClasses.isEmpty()) {
                 final String unindexedClassesErrorMessage = unIgnorableIndexedClasses.stream().map(d -> "\t- " + d + "\n")
                         .collect(Collectors.joining());
-                throw new ConfigurationError(
+                throw new ConfigurationException(
                         "Unable to properly register the hierarchy of the following JPA classes as they are not in the Jandex index:\n"
                                 + unindexedClassesErrorMessage
                                 + "Consider adding them to the index either by creating a Jandex index " +

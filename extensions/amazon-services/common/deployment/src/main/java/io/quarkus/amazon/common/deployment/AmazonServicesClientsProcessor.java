@@ -21,7 +21,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.deployment.configuration.ConfigurationError;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
 import software.amazon.awssdk.http.SdkHttpService;
 import software.amazon.awssdk.http.async.SdkAsyncHttpService;
@@ -76,7 +76,7 @@ public class AmazonServicesClientsProcessor {
                 clientSdkConfig.interceptors.orElse(Collections.emptyList()).forEach(interceptorClassName -> {
                     interceptorClassName = interceptorClassName.trim();
                     if (!knownInterceptorImpls.contains(interceptorClassName)) {
-                        throw new ConfigurationError(
+                        throw new ConfigurationException(
                                 String.format(
                                         "quarkus.%s.interceptors (%s) - must list only existing implementations of software.amazon.awssdk.core.interceptor.ExecutionInterceptor",
                                         client.getAwsClientName(),

@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.deployment.configuration.ConfigurationError;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class FileNotFoundSqlLoadScriptTestCase {
@@ -20,7 +20,7 @@ public class FileNotFoundSqlLoadScriptTestCase {
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.sql-load-script", "file-that-does-not-exist.sql")
             .assertException(t -> assertThat(t)
-                    .isInstanceOf(ConfigurationError.class)
+                    .isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll("Unable to find file referenced in '"
                             + "quarkus.hibernate-orm.sql-load-script=file-that-does-not-exist.sql'. Remove property or add file to your path."));
 

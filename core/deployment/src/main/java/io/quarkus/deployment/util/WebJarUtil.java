@@ -278,7 +278,7 @@ public class WebJarUtil {
     }
 
     public static void updateUrl(Path original, String path, String lineStartsWith, String format) throws IOException {
-        String content = new String(Files.readAllBytes(original), StandardCharsets.UTF_8);
+        String content = Files.readString(original);
         String result = updateUrl(content, path, lineStartsWith, format);
         if (result != null && !result.equals(content)) {
             Files.write(original, result.getBytes(StandardCharsets.UTF_8));

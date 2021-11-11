@@ -54,7 +54,7 @@ public class TestTracingProcessor {
     @Produce(ServiceStartBuildItem.class)
     void startTesting(TestConfig config, LiveReloadBuildItem liveReloadBuildItem,
             LaunchModeBuildItem launchModeBuildItem, List<TestListenerBuildItem> testListenerBuildItems) {
-        if (!TestSupport.instance().isPresent() || config.continuousTesting == TestConfig.Mode.DISABLED
+        if (TestSupport.instance().isEmpty() || config.continuousTesting == TestConfig.Mode.DISABLED
                 || config.flatClassPath) {
             return;
         }

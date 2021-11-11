@@ -25,7 +25,7 @@ public class ClasspathEntryRecordingBuildStep {
     void registerRecordedClasspathEntries(ClasspathEntriesRecorder classpathEntriesRecorder,
             TestBuildTimeConfig config, BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
         Optional<Path> recordFilePath = config.classpathRecording.recordFile;
-        if (!recordFilePath.isPresent()) {
+        if (recordFilePath.isEmpty()) {
             return;
         }
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(RecordedClasspathEntries.class)

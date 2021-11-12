@@ -54,8 +54,10 @@ public class GraalVMTest {
 
     @Test
     public void testGraalVMVersionsOlderThan() {
-        assertOlderThan("GraalVM Version 19.3.0", "GraalVM Version 20.2.0");
-        assertOlderThan("GraalVM Version 20.0.0", "GraalVM Version 20.1.0");
+        assertOlderThan("GraalVM Version 19.3.6 CE", "GraalVM Version 20.2.0 (Java Version 11.0.9)");
+        assertOlderThan("GraalVM Version 20.0.0 (Java Version 11.0.7)", "GraalVM Version 20.1.0 (Java Version 11.0.8)");
+        assertOlderThan("GraalVM Version 21.2.0 (Java Version 11.0.12)", Version.VERSION_21_3);
+        assertOlderThan("GraalVM Version 21.2.0 (Java Version 11.0.12)", Version.VERSION_21_3_0);
     }
 
     /**
@@ -65,14 +67,24 @@ public class GraalVMTest {
         assertThat(Version.of(Stream.of(version)).compareTo(Version.of(Stream.of(other)))).isLessThan(0);
     }
 
+    static void assertOlderThan(String version, GraalVM.Version other) {
+        assertThat(Version.of(Stream.of(version)).compareTo(other)).isLessThan(0);
+    }
+
     @Test
     public void testGraalVMVersionsCompareEqualTo() {
-        assertCompareEqualTo("GraalVM Version 20.1.0", "GraalVM Version 20.1.0");
+        assertCompareEqualTo("GraalVM Version 20.1.0 (Java Version 11.0.8)", "GraalVM Version 20.1.0 (Java Version 11.0.8)");
         // Distributions don't impact newer/older/same comparisons
-        assertCompareEqualTo("GraalVM Version 20.1.0.1",
+        assertCompareEqualTo("GraalVM Version 20.1.0.1 (Java Version 11.0.8)",
                 "GraalVM Version 20.1.0.1.Alpha2 56d4ee1b28 (Mandrel Distribution) (Java Version 11.0.8)");
         // Don't ignore micro versions
-        assertCompareNotEqualTo("GraalVM Version 19.3.0", "GraalVM Version 19.3.3");
+        assertCompareNotEqualTo("GraalVM Version 19.3.0", "GraalVM Version 19.3.6 CE");
+        // Trailing zeros don't affect comparison
+        assertCompareEqualTo("GraalVM 21.3 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)",
+                "GraalVM 21.3.0 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)");
+        assertCompareEqualTo("GraalVM 21.3.0 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)",
+                "GraalVM 21.3.0.0.0.0 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)");
+        assertThat(Version.VERSION_21_3.compareTo(Version.VERSION_21_3_0)).isEqualTo(0);
     }
 
     /**
@@ -88,9 +100,13 @@ public class GraalVMTest {
 
     @Test
     public void testGraalVMVersionsNewerThan() {
-        assertNewerThan("GraalVM Version 20.0.0", "GraalVM Version 19.3.0");
+        assertNewerThan("GraalVM Version 20.0.0 (Java Version 11.0.7)", "GraalVM Version 19.3.0");
         assertNewerThan("GraalVM Version 20.1.0.1.Alpha2 56d4ee1b28 (Mandrel Distribution) (Java Version 11.0.8)",
-                "GraalVM Version 20.0.0");
+                "GraalVM Version 20.0.0 (Java Version 11.0.7)");
+        assertNewerThan("GraalVM 21.3.1 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)",
+                "GraalVM 21.3.0 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)");
+        assertNewerThan("GraalVM 21.3.1 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)",
+                "GraalVM 21.3 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)");
     }
 
     /**

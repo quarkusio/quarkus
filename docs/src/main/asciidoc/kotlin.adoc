@@ -36,7 +36,7 @@ mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=rest-kotlin-quickstart \
     -DclassName="org.acme.rest.GreetingResource" \
     -Dpath="/greeting" \
-    -Dextensions="resteasy,kotlin,resteasy-jackson"
+    -Dextensions="resteasy-reactive,kotlin,resteasy-reactive-jackson"
 cd rest-kotlin-quickstart
 ----
 
@@ -206,8 +206,8 @@ dependencies {
 
    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
  
-    implementation 'io.quarkus:quarkus-resteasy'
-    implementation 'io.quarkus:quarkus-resteasy-jackson'
+    implementation 'io.quarkus:quarkus-resteasy-reactive'
+    implementation 'io.quarkus:quarkus-resteasy-reactive-jackson'
     implementation 'io.quarkus:quarkus-kotlin'
 
     testImplementation 'io.quarkus:quarkus-junit5'
@@ -245,7 +245,6 @@ or, if you use the Gradle Kotlin DSL:
 
 [source,kotlin,subs=attributes+]
 ----
-
 plugins {
     kotlin("jvm") version "{kotlin-version}" // <1>
     kotlin("plugin.allopen") version "{kotlin-version}"
@@ -276,8 +275,8 @@ dependencies {
     implementation(enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}"))
 
     implementation("io.quarkus:quarkus-kotlin")
-    implementation("io.quarkus:quarkus-resteasy")
-    implementation("io.quarkus:quarkus-resteasy-jackson")
+    implementation("io.quarkus:quarkus-resteasy-reactive")
+    implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
 
     testImplementation("io.quarkus:quarkus-junit5")
     testImplementation("io.rest-assured:rest-assured")
@@ -335,7 +334,7 @@ As usual, the application can be packaged using `./mvnw clean package` and execu
 
 == Kotlin and Jackson
 
-If the `com.fasterxml.jackson.module:jackson-module-kotlin` dependency and the `quarkus-jackson` extension (or the `quarkus-resteasy-jackson` extension) have been added to the project,
+If the `com.fasterxml.jackson.module:jackson-module-kotlin` dependency and the `quarkus-jackson` extension (or one of the `quarkus-resteasy-jackson` or `quarkus-resteasy-reactive-jackson` extensions) have been added to the project,
 then Quarkus automatically registers the `KotlinModule` to the `ObjectMapper` bean (see link:rest-json#jackson[this] guide for more details).
 
 When using Kotlin data classes with `native-image` you may experience serialization errors that do not occur with the `JVM` version, despite the Kotlin Jackson Module being registered. This is especially so if you have a more complex JSON hierarchy, where an issue on a lower node causes a serialization failure. The error message displayed is a catch-all and typically displays an issue with the root object, which may not necessarily be the case.
@@ -378,11 +377,42 @@ data class ResultItem(
 ...
 ----
 
+== Kotlin and the Kubernetes Client
+
+When working with the `quarkus-kubernetes` extension and have Kotlin classes bound to CustomResource definitions (like you do for building operators), you need to be aware that the underlying Fabric8 Kubernetes Client uses its own static Jackson `ObjectMapper` s, which can be configured as follows with the `KotlinModule`:
+
+[source,kotlin]
+----
+import io.fabric8.kubernetes.client.utils.Serialization
+import com.fasterxml.jackson.module.kotlin.KotlinModule
+
+...
+
+Serialization.jsonMapper().registerModule(KotlinModule())
+Serialization.yamlMapper().registerModule(KotlinModule())
+----
+
+_Please test this carefully on compilation to native images and fallback to Java-compatible Jackson bindings if you experience problems._
 
 == Kotlin coroutines and Mutiny
 
 Kotlin coroutines provide a imperative programming model that actually gets executed in an asynchronous, reactive manner.
 To simplify the interoperation between Mutiny and Kotlin there is the module `io.smallrye.reactive:mutiny-kotlin`, described link:https://smallrye.io/smallrye-mutiny/guides/kotlin[here].
+
+== RESTEasy Reactive and Coroutines
+
+The `quarkus-resteasy-reactive` extension supports Kotlin `suspend fun` ctions in combination with `quarkus-kotlin` as well:
+
+[source,kotlin]
+----
+@Path("/hello")
+class ReactiveGreetingResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    suspend fun hello() = "Hello RESTEasy Reactive with Coroutines"
+}
+----
 
 == CDI @Inject with Kotlin
 
@@ -391,11 +421,8 @@ Kotlin reflection annotation processing differs from Java.  You may experience a
 
 In the example below, this can be easily solved by adapting the annotation, adding @field: Default, to handle the lack of a @Target on the Kotlin reflection annotation definition. 
 
-Alternatively, prefer the use of constructor injection which works without modification of the Java examples.
-
 [source,kotlin]
 ----
-
 import javax.inject.Inject
 import javax.enterprise.inject.Default
 import javax.enterprise.context.ApplicationScoped
@@ -435,4 +462,36 @@ class GreetingResource {
 ----
 <1> Kotlin requires a @field: xxx qualifier as it has no @Target on the annotation definition. Add @field: xxx in this example. @Default is used as the qualifier, explicitly specifying the use of the default bean.
 
+Alternatively, prefer the use of constructor injection which works without modification of the Java examples, increases testability and complies best to a Kotlin programming style.
 
+[source,kotlin]
+----
+import javax.enterprise.context.ApplicationScoped
+
+import javax.ws.rs.GET
+import javax.ws.rs.Path
+import javax.ws.rs.PathParam
+import javax.ws.rs.Produces
+import javax.ws.rs.core.MediaType
+
+@ApplicationScoped
+class GreetingService {
+    fun greeting(name: String): String {
+        return "hello $name"
+    }
+}
+
+@Path("/")
+class GreetingResource(
+    private val service: GreetingService
+) {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/greeting/{name}")
+    fun greeting(@PathParam("name") name: String): String {
+        return service.greeting(name)
+    }
+
+}
+----

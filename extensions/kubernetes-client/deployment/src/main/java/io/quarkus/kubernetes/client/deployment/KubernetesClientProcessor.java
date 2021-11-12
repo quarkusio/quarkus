@@ -24,6 +24,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.jackson.deployment.IgnoreJsonDeserializeClassBuildItem;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
@@ -53,6 +54,12 @@ public class KubernetesClientProcessor {
             // wire up the KubernetesClient bean support
             additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesClientProducer.class));
         }
+    }
+
+    @BuildStep
+    public void nativeImageSupport(BuildProducer<RuntimeReinitializedClassBuildItem> runtimeInitializedClassProducer) {
+        runtimeInitializedClassProducer
+                .produce(new RuntimeReinitializedClassBuildItem("io.fabric8.kubernetes.client.utils.Utils"));
     }
 
     @BuildStep

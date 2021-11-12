@@ -25,11 +25,13 @@ public final class NativeImageBuildItem extends SimpleBuildItem {
     public static class GraalVMVersion {
         private final String fullVersion;
         private final String version;
+        private final int javaVersion;
         private final String distribution;
 
-        public GraalVMVersion(String fullVersion, String version, String distribution) {
+        public GraalVMVersion(String fullVersion, String version, int javaVersion, String distribution) {
             this.fullVersion = fullVersion;
             this.version = version;
+            this.javaVersion = javaVersion;
             this.distribution = distribution;
         }
 
@@ -39,6 +41,10 @@ public final class NativeImageBuildItem extends SimpleBuildItem {
 
         public String getVersion() {
             return version;
+        }
+
+        public int getJavaVersion() {
+            return javaVersion;
         }
 
         public String getDistribution() {

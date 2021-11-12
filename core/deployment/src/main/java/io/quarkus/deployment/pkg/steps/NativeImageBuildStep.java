@@ -73,6 +73,8 @@ public class NativeImageBuildStep {
         Map<String, Object> graalVMInfoProps = new HashMap<>();
         graalVMInfoProps.put("graalvm.version.full", graalVMVersion.getFullVersion());
         graalVMInfoProps.put("graalvm.version.version", graalVMVersion.getVersion());
+        graalVMInfoProps.put("graalvm.version.javaVersion", "" + graalVMVersion.getJavaVersion());
+        graalVMInfoProps.put("graalvm.version.distribution", graalVMVersion.getDistribution());
         return new ArtifactResultBuildItem(image.getPath(), PackageConfig.NATIVE, graalVMInfoProps);
     }
 
@@ -176,6 +178,7 @@ public class NativeImageBuildStep {
                 return new NativeImageBuildItem(finalExecutablePath,
                         new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion,
                                 graalVMVersion.version.toString(),
+                                graalVMVersion.javaVersion,
                                 graalVMVersion.distribution.name()));
             }
         }
@@ -227,6 +230,7 @@ public class NativeImageBuildStep {
             return new NativeImageBuildItem(finalExecutablePath,
                     new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion,
                             graalVMVersion.version.toString(),
+                            graalVMVersion.javaVersion,
                             graalVMVersion.distribution.name()));
         } catch (Exception e) {
             throw new RuntimeException("Failed to build native image", e);

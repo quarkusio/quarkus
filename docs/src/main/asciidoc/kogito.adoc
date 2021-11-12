@@ -44,7 +44,7 @@ You can reference to https://kiegroup.github.io/kogito-online/#/download[Busines
 * Eclipse
 
 To be able to make use of visual modelling of your processes, download Eclipse IDE and
-install from Market place Eclipse BPMN2 Modeller plugin (with jBPM Runtime Extension)
+install from Marketplace Eclipse BPMN2 Modeller plugin (with jBPM Runtime Extension)
 
 == Architecture
 
@@ -478,3 +478,4 @@ Once the dependency is added to the project, decision tables in `xls` or `xlsx` 
 
 * https://kogito.kie.org[Kogito Website]
 * https://docs.jboss.org/kogito/release/latest/html_single[Kogito Documentation]
+* link:kogito-dev-services.adoc[Kogito Dev Services]

@@ -68,6 +68,12 @@ link:security-openid-connect-dev-services[OIDC Dev Services Guide].
 :no-duration-note: true
 include::{generated-dir}/config/quarkus-keycloak-devservices-keycloak-keycloak-build-time-config.adoc[opts=optional, leveloffset=+1]
 
+== Kogito
+
+The Kogito Dev Service will be enabled when either `kogito-quarkus` or `kogito-quarkus-processes` extension is present in your application. More information can be found at the link:kogito-dev-services[Kogito Dev Services Guide].
+
+include::kogito-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+
 == MongoDB
 
 The MongoDB Dev Service will be enabled when the `quarkus-mongodb-client` extension is present in your application, and

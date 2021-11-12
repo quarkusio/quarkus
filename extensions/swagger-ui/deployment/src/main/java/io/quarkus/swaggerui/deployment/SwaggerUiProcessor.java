@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -22,10 +23,10 @@ import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
-import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.swaggerui.runtime.SwaggerUiRecorder;
 import io.quarkus.swaggerui.runtime.SwaggerUiRuntimeConfig;
@@ -91,14 +92,16 @@ public class SwaggerUiProcessor {
 
         if (shouldInclude(launchMode, swaggerUiConfig)) {
             if ("/".equals(swaggerUiConfig.path)) {
-                throw new ConfigurationError(
-                        "quarkus.swagger-ui.path was set to \"/\", this is not allowed as it blocks the application from serving anything else.");
+                throw new ConfigurationException(
+                        "quarkus.swagger-ui.path was set to \"/\", this is not allowed as it blocks the application from serving anything else.",
+                        Set.of("quarkus.swagger-ui.path"));
             }
 
             if (openapi.path.equalsIgnoreCase(swaggerUiConfig.path)) {
-                throw new ConfigurationError(
+                throw new ConfigurationException(
                         "quarkus.smallrye-openapi.path and quarkus.swagger-ui.path was set to the same value, this is not allowed as the paths needs to be unique ["
-                                + openapi.path + "].");
+                                + openapi.path + "].",
+                        Set.of("quarkus.smallrye-openapi.path", "quarkus.swagger-ui.path"));
 
             }
 

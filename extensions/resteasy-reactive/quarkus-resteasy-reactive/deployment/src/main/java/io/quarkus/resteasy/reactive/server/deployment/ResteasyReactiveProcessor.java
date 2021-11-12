@@ -739,8 +739,7 @@ public class ResteasyReactiveProcessor {
                 .setDynamicFeatures(dynamicFeats)
                 .setSerialisers(serialisers)
                 .setApplicationPath(applicationPath)
-                .setGlobalHandlerCustomers(
-                        new ArrayList<>(Collections.singletonList(new SecurityContextOverrideHandler.Customizer()))) //TODO: should be pluggable
+                .setGlobalHandlerCustomizers(Collections.singletonList(new SecurityContextOverrideHandler.Customizer())) //TODO: should be pluggable
                 .setResourceClasses(resourceClasses)
                 .setDevelopmentMode(launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT)
                 .setLocatableResourceClasses(subResourceClasses)

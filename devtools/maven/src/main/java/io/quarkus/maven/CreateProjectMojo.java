@@ -328,59 +328,56 @@ public class CreateProjectMojo extends AbstractMojo {
             ExtensionCatalogResolver catalogResolver, MavenArtifactResolver artifactResolver, MessageWriter log)
             throws MojoExecutionException {
 
-        if (!catalogResolver.hasRegistries()) {
-            groupId = getPlatformGroupId(mojo, groupId);
-            artifactId = getPlatformArtifactId(artifactId);
-            version = getPlatformVersion(mojo, version);
-            final StringBuilder buf = new StringBuilder();
-            buf.append("The extension catalog will be narrowed to the ").append(groupId).append(":").append(artifactId)
-                    .append(":").append(version).append(" platform release.");
-            buf.append(
-                    " To enable the complete Quarkiverse extension catalog along with the latest recommended platform releases, please, make sure ");
-            if (QuarkusProjectHelper.isRegistryClientEnabled()) {
-                buf.append("the following registries are accessible from your environment: ");
-                final Iterator<RegistryConfig> iterator = RegistriesConfigLocator.resolveConfig().getRegistries().iterator();
-                int i = 0;
-                while (iterator.hasNext()) {
-                    final RegistryConfig r = iterator.next();
-                    if (r.isEnabled()) {
-                        if (i++ > 0) {
-                            buf.append(", ");
-                        }
-                        buf.append(r.getId());
-                    }
+        if (catalogResolver.hasRegistries()) {
+            try {
+                return isBlank(groupId) && isBlank(artifactId) && isBlank(version)
+                        ? catalogResolver.resolveExtensionCatalog()
+                        : catalogResolver.resolveExtensionCatalog(Collections.singletonList(
+                                new ArtifactCoords(getPlatformGroupId(mojo, groupId), getPlatformArtifactId(artifactId), "pom",
+                                        getPlatformVersion(mojo, version))));
+            } catch (RegistryResolutionException e) {
+                final StringBuilder buf = new StringBuilder();
+                buf.append("Failed to resolve the extension catalog");
+                Throwable cause = e.getCause();
+                while (cause != null) {
+                    buf.append(": ").append(cause.getLocalizedMessage());
+                    cause = cause.getCause();
                 }
-
-            } else {
-                buf.append("the extension registry client is enabled.");
+                log.warn(buf.toString());
             }
-            log.warn(buf.toString());
-            return ToolsUtils.resolvePlatformDescriptorDirectly(groupId, artifactId, version, artifactResolver, log);
         }
+        return resolveExtensionCatalogDirectly(mojo, groupId, artifactId, version, catalogResolver, artifactResolver, log);
+    }
 
-        final ExtensionCatalog catalog;
-        try {
-            catalog = isBlank(groupId) && isBlank(artifactId) && isBlank(version)
-                    ? catalogResolver.resolveExtensionCatalog()
-                    : catalogResolver.resolveExtensionCatalog(Collections.singletonList(
-                            new ArtifactCoords(getPlatformGroupId(mojo, groupId), getPlatformArtifactId(artifactId), "pom",
-                                    getPlatformVersion(mojo, version))));
-        } catch (RegistryResolutionException e) {
-            throw new MojoExecutionException("Failed to resolve the extension catalog", e);
-        }
-
-        if (catalog == null) {
-            final StringBuilder buf = new StringBuilder();
-            buf.append(
-                    "The Quarkus registry client failed to resolve the extension catalog. Please make sure the following registries are accessible from your environment: ");
-            final Iterator<RegistryConfig> r = catalogResolver.getConfig().getRegistries().iterator();
-            buf.append(r.next().getId());
-            while (r.hasNext()) {
-                buf.append(", ").append(r.next().getId());
+    private static ExtensionCatalog resolveExtensionCatalogDirectly(AbstractMojo mojo, String groupId, String artifactId,
+            String version,
+            ExtensionCatalogResolver catalogResolver, MavenArtifactResolver artifactResolver, MessageWriter log) {
+        groupId = getPlatformGroupId(mojo, groupId);
+        artifactId = getPlatformArtifactId(artifactId);
+        version = getPlatformVersion(mojo, version);
+        final StringBuilder buf = new StringBuilder();
+        buf.append("The extension catalog will be narrowed to the ").append(groupId).append(":").append(artifactId)
+                .append(":").append(version).append(" platform release.");
+        buf.append(
+                " To enable the complete Quarkiverse extension catalog along with the latest recommended platform releases, please, make sure ");
+        if (QuarkusProjectHelper.isRegistryClientEnabled()) {
+            buf.append("the following registries are accessible from your environment: ");
+            final Iterator<RegistryConfig> iterator = RegistriesConfigLocator.resolveConfig().getRegistries().iterator();
+            int i = 0;
+            while (iterator.hasNext()) {
+                final RegistryConfig r = iterator.next();
+                if (r.isEnabled()) {
+                    if (i++ > 0) {
+                        buf.append(", ");
+                    }
+                    buf.append(r.getId());
+                }
             }
-            throw new MojoExecutionException(buf.toString());
+        } else {
+            buf.append("the extension registry client is enabled.");
         }
-        return catalog;
+        log.warn(buf.toString());
+        return ToolsUtils.resolvePlatformDescriptorDirectly(groupId, artifactId, version, artifactResolver, log);
     }
 
     private void askTheUserForMissingValues() throws MojoExecutionException {

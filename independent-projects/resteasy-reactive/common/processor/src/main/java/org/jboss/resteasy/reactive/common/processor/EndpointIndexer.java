@@ -1094,7 +1094,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             elementType = paramType.name().toString();
             handlePathSegmentParam(builder);
             typeHandled = true;
-        } else if ((paramType.name().equals(LOCAL_DATE)) && (type == ParameterType.PATH || type == ParameterType.QUERY)) {
+        } else if ((paramType.name().equals(LOCAL_DATE))
+                && (type == ParameterType.PATH || type == ParameterType.QUERY || type == ParameterType.FORM)) {
             elementType = paramType.name().toString();
             handleLocalDateParam(builder);
             typeHandled = true;

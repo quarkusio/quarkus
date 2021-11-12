@@ -49,7 +49,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.quartz.runtime.QuarkusQuartzConnectionPoolProvider;
 import io.quarkus.quartz.runtime.QuartzBuildTimeConfig;
@@ -58,6 +57,7 @@ import io.quarkus.quartz.runtime.QuartzRecorder;
 import io.quarkus.quartz.runtime.QuartzRuntimeConfig;
 import io.quarkus.quartz.runtime.QuartzScheduler;
 import io.quarkus.quartz.runtime.QuartzSupport;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 /**
  *
@@ -97,14 +97,14 @@ public class QuartzProcessor {
             Capabilities capabilities) {
         if (!config.storeType.isDbStore()) {
             if (config.clustered) {
-                throw new ConfigurationError("Clustered jobs configured with unsupported job store option");
+                throw new ConfigurationException("Clustered jobs configured with unsupported job store option");
             }
 
             return new QuartzJDBCDriverDialectBuildItem(Optional.empty());
         }
 
         if (capabilities.isMissing(Capability.AGROAL)) {
-            throw new ConfigurationError(
+            throw new ConfigurationException(
                     "The Agroal extension is missing and it is required when a Quartz JDBC store is used.");
         }
 
@@ -117,7 +117,7 @@ public class QuartzProcessor {
             String message = String.format(
                     "JDBC Store configured but the '%s' datasource is not configured properly. You can configure your datasource by following the guide available at: https://quarkus.io/guides/datasource",
                     config.dataSourceName.isPresent() ? config.dataSourceName.get() : "default");
-            throw new ConfigurationError(message);
+            throw new ConfigurationException(message);
         }
 
         return new QuartzJDBCDriverDialectBuildItem(Optional.of(guessDriver(selectedJdbcDataSourceBuildItem)));

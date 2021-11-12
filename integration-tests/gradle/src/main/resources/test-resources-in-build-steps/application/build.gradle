@@ -13,17 +13,10 @@ dependencies {
 }
 
 test {
-    dependsOn 'publishAcmeExt'
     dependsOn 'cleanTest'
     useJUnitPlatform()
     forkEvery 1
 }
 
-quarkusGenerateCode {
-    dependsOn 'publishAcmeExt'
-}
-
-task publishAcmeExt {
-    dependsOn ':runtime:publishToMavenLocal'
-    dependsOn ':deployment:publishToMavenLocal'
-}
+quarkusGenerateCodeDev.dependsOn(":deployment:classes")
+quarkusGenerateCode.dependsOn(":deployment:classes")

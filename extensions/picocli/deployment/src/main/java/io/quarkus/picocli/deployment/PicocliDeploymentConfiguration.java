@@ -26,4 +26,13 @@ class PicocliDeploymentConfiguration {
      */
     @ConfigItem(name = "native-image.processing.enable", defaultValue = "true")
     boolean nativeImageProcessingEnabled;
+
+    /**
+     * <p>
+     * Set this to <code>true</code> to disable reading configuration from the default Config Sources. This includes
+     * `application.properties` and `.env` files.
+     * </p>
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean disableDefaultConfigSources;
 }

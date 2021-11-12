@@ -3,12 +3,15 @@ package io.quarkus.deployment.steps;
 import static io.quarkus.deployment.steps.ConfigBuildSteps.SERVICES_PREFIX;
 import static io.quarkus.deployment.util.ServiceUtil.classNamesNamedIn;
 import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
+import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOCATIONS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,6 +23,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.commons.io.FilenameUtils;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
@@ -38,9 +42,12 @@ import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigSourceFactoryBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBuildItem;
@@ -58,10 +65,12 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.quarkus.runtime.configuration.ConfigRecorder;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.PropertiesLocationConfigSourceFactory;
+import io.smallrye.config.SmallRyeConfig;
 
 public class ConfigGenerationBuildStep {
 
@@ -113,7 +122,9 @@ public class ConfigGenerationBuildStep {
             List<AdditionalBootstrapConfigSourceProviderBuildItem> additionalBootstrapConfigSourceProviders,
             List<StaticInitConfigSourceProviderBuildItem> staticInitConfigSourceProviders,
             List<StaticInitConfigSourceFactoryBuildItem> staticInitConfigSourceFactories,
-            List<ConfigMappingBuildItem> configMappings)
+            List<ConfigMappingBuildItem> configMappings,
+            List<StaticInitConfigBuilderBuildItem> staticInitConfigBuilders,
+            List<RunTimeConfigBuilderBuildItem> runTimeConfigBuilders)
             throws IOException {
 
         if (liveReloadBuildItem.isLiveReload()) {
@@ -127,7 +138,7 @@ public class ConfigGenerationBuildStep {
         Set<String> staticConfigSourceProviders = new HashSet<>();
         staticConfigSourceProviders.addAll(staticSafeServices(discoveredConfigSourceProviders));
         staticConfigSourceProviders.addAll(staticInitConfigSourceProviders.stream()
-                .map(StaticInitConfigSourceProviderBuildItem::getProviderClassName).collect(Collectors.toSet()));
+                .map(StaticInitConfigSourceProviderBuildItem::getProviderClassName).collect(toSet()));
         Set<String> staticConfigSourceFactories = new HashSet<>();
         staticConfigSourceFactories.addAll(staticSafeServices(discoveredConfigSourceFactories));
         staticConfigSourceFactories.addAll(staticInitConfigSourceFactories.stream()
@@ -146,11 +157,15 @@ public class ConfigGenerationBuildStep {
                 .setStaticConfigSources(staticSafeServices(discoveredConfigSources))
                 .setStaticConfigSourceProviders(staticConfigSourceProviders)
                 .setStaticConfigSourceFactories(staticConfigSourceFactories)
+                .setStaticConfigMappings(staticSafeConfigMappings(configMappings))
+                .setStaticConfigBuilders(staticInitConfigBuilders.stream()
+                        .map(StaticInitConfigBuilderBuildItem::getBuilderClassName).collect(toSet()))
                 .setRuntimeConfigSources(discoveredConfigSources)
                 .setRuntimeConfigSourceProviders(discoveredConfigSourceProviders)
                 .setRuntimeConfigSourceFactories(discoveredConfigSourceFactories)
-                .setStaticConfigMappings(staticSafeConfigMappings(configMappings))
                 .setRuntimeConfigMappings(runtimeConfigMappings(configMappings))
+                .setRuntimeConfigBuilders(
+                        runTimeConfigBuilders.stream().map(RunTimeConfigBuilderBuildItem::getBuilderClassName).collect(toSet()))
                 .build()
                 .run();
     }
@@ -215,6 +230,47 @@ public class ConfigGenerationBuildStep {
             clazz.getFieldCreator(RuntimeOverrideConfigSource.FIELD_NAME, Map.class)
                     .setModifiers(Modifier.STATIC | Modifier.PUBLIC | Modifier.VOLATILE);
         }
+    }
+
+    @BuildStep
+    public void watchConfigFiles(BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
+        List<String> configWatchedFiles = new ArrayList<>();
+
+        SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
+        String userDir = System.getProperty("user.dir");
+
+        // Main files
+        configWatchedFiles.add("application.properties");
+        configWatchedFiles.add("META-INF/microprofile-config.properties");
+        configWatchedFiles.add(Paths.get(userDir, ".env").toAbsolutePath().toString());
+        configWatchedFiles.add(Paths.get(userDir, "config", "application.properties").toAbsolutePath().toString());
+
+        // Profiles
+        String profile = ProfileManager.getActiveProfile();
+        configWatchedFiles.add(String.format("application-%s.properties", profile));
+        configWatchedFiles.add(String.format("META-INF/microprofile-config-%s.properties", profile));
+        configWatchedFiles.add(Paths.get(userDir, String.format(".env-%s", profile)).toAbsolutePath().toString());
+        configWatchedFiles.add(
+                Paths.get(userDir, "config", String.format("application-%s.properties", profile)).toAbsolutePath().toString());
+
+        Optional<List<String>> optionalLocations = config.getOptionalValues(SMALLRYE_CONFIG_LOCATIONS, String.class);
+        optionalLocations.ifPresent(locations -> {
+            for (String location : locations) {
+                if (!Files.isDirectory(Paths.get(location))) {
+                    configWatchedFiles.add(location);
+                    configWatchedFiles.add(appendProfileToFilename(location, profile));
+                }
+            }
+        });
+
+        for (String configWatchedFile : configWatchedFiles) {
+            watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(configWatchedFile));
+        }
+    }
+
+    private String appendProfileToFilename(String path, String activeProfile) {
+        String pathWithoutExtension = FilenameUtils.removeExtension(path);
+        return String.format("%s-%s.%s", pathWithoutExtension, activeProfile, FilenameUtils.getExtension(path));
     }
 
     private void handleMembers(Config config, Map<String, String> values, Iterable<ClassDefinition.ClassMember> members,

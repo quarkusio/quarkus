@@ -1,6 +1,5 @@
 package io.quarkus.runtime.configuration;
 
-import static io.smallrye.config.DotEnvConfigSourceProvider.dotEnvSources;
 import static io.smallrye.config.PropertiesConfigSourceProvider.classPathSources;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOCATIONS;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
@@ -13,6 +12,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -70,7 +70,7 @@ public final class ConfigUtils {
         return size -> new TreeSet<>();
     }
 
-    public static SmallRyeConfigBuilder configBuilder(final boolean runTime, LaunchMode launchMode) {
+    public static SmallRyeConfigBuilder configBuilder(final boolean runTime, final LaunchMode launchMode) {
         return configBuilder(runTime, true, launchMode);
     }
 
@@ -82,7 +82,7 @@ public final class ConfigUtils {
      * @return the configuration builder
      */
     public static SmallRyeConfigBuilder configBuilder(final boolean runTime, final boolean addDiscovered,
-            LaunchMode launchMode) {
+            final LaunchMode launchMode) {
         return configBuilder(runTime, false, addDiscovered, launchMode);
     }
 
@@ -94,22 +94,22 @@ public final class ConfigUtils {
      * @return the configuration builder
      */
     public static SmallRyeConfigBuilder configBuilder(final boolean runTime, final boolean bootstrap,
-            final boolean addDiscovered,
-            LaunchMode launchMode) {
-        final SmallRyeConfigBuilder builder = emptyConfigBuilder();
+            final boolean addDiscovered, final LaunchMode launchMode) {
+        SmallRyeConfigBuilder builder = emptyConfigBuilder();
 
-        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        builder.withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem().getConfigSources(classLoader));
-        builder.withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath().getConfigSources(classLoader));
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        builder.forClassLoader(classLoader);
+        builder.withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem());
+        builder.withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath());
         if (launchMode.isDevOrTest() && (runTime || bootstrap)) {
             builder.withSources(new RuntimeOverrideConfigSource(classLoader));
         }
         if (runTime) {
             builder.addDefaultSources();
             builder.withDefaultValue(UUID_KEY, UUID.randomUUID().toString());
-            builder.withSources(dotEnvSources(classLoader));
+            builder.withSources(new DotEnvConfigSourceProvider());
         } else {
-            final List<ConfigSource> sources = new ArrayList<>();
+            List<ConfigSource> sources = new ArrayList<>();
             sources.addAll(classPathSources(META_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader));
             sources.addAll(new BuildTimeDotEnvConfigSourceProvider().getConfigSources(classLoader));
             sources.add(new BuildTimeEnvConfigSource());
@@ -127,10 +127,10 @@ public final class ConfigUtils {
     }
 
     public static SmallRyeConfigBuilder emptyConfigBuilder() {
-        final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
+        SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
         builder.withDefaultValue(SMALLRYE_CONFIG_PROFILE, ProfileManager.getActiveProfile());
 
-        final Map<String, String> relocations = new HashMap<>();
+        Map<String, String> relocations = new HashMap<>();
         relocations.put(SMALLRYE_CONFIG_LOCATIONS, "quarkus.config.locations");
         relocations.put(SMALLRYE_CONFIG_PROFILE_PARENT, "quarkus.config.profile.parent");
         // Override the priority, because of the ProfileConfigSourceInterceptor and profile.parent.
@@ -146,7 +146,7 @@ public final class ConfigUtils {
             }
         });
 
-        final Map<String, String> fallbacks = new HashMap<>();
+        Map<String, String> fallbacks = new HashMap<>();
         fallbacks.put("quarkus.config.locations", SMALLRYE_CONFIG_LOCATIONS);
         fallbacks.put("quarkus.config.profile.parent", SMALLRYE_CONFIG_PROFILE_PARENT);
         builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
@@ -165,6 +165,20 @@ public final class ConfigUtils {
         builder.addDiscoveredInterceptors();
         builder.addDiscoveredConverters();
         builder.addDiscoveredValidator();
+        return builder;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static SmallRyeConfigBuilder configBuilder(SmallRyeConfigBuilder builder, List<ConfigBuilder> configBuilders) {
+        configBuilders.sort(Comparator.comparing(ConfigBuilder::priority));
+
+        for (ConfigBuilder configBuilder : configBuilders) {
+            builder = configBuilder.configBuilder(builder);
+            if (builder == null) {
+                throw new ConfigurationException(configBuilder.getClass().getName() + " returned a null builder");
+            }
+        }
+
         return builder;
     }
 

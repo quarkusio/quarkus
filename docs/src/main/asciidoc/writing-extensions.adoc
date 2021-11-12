@@ -1967,7 +1967,7 @@ If you want to test that an extension properly fails at build time, use the `set
 
 package io.quarkus.hibernate.orm;
 
-import io.quarkus.deployment.configuration.ConfigurationError;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -1979,7 +1979,7 @@ public class PersistenceAndQuarkusConfigTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setExpectedException(ConfigurationError.class)                     <1>
+            .setExpectedException(ConfigurationException.class)                     <1>
             .withApplicationRoot((jar) -> jar
                     .addAsManifestResource("META-INF/some-persistence.xml", "persistence.xml")
                     .addAsResource("application.properties"));

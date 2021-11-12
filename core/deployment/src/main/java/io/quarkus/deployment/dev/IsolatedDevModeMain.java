@@ -143,6 +143,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
 
                 startCodeGenWatcher(deploymentClassLoader, codeGens, context.getBuildSystemProperties());
                 runner = start.runMainClass(context.getArgs());
+                RuntimeUpdatesProcessor.INSTANCE.setConfiguredInstrumentationEnabled(
+                        runner.getConfigValue("quarkus.live-reload.instrumentation", Boolean.class).orElse(false));
                 firstStartCompleted = true;
             } catch (Throwable t) {
                 Throwable rootCause = t;

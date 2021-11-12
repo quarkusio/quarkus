@@ -44,15 +44,4 @@ public class HelloResource {
         return uuid.toString();
     }
 
-    @GET
-    @Path("disable")
-    public void disable() {
-        System.setProperty("quarkus.live-reload.instrumentation", "false");
-    }
-
-    @GET
-    @Path("enable")
-    public void enable() {
-        System.setProperty("quarkus.live-reload.instrumentation","true");
-    }
 }

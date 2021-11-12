@@ -255,6 +255,7 @@ public class VertxHttpRecorder {
 
         if (startVirtual) {
             initializeVirtual(vertx.get());
+            shutdown.addShutdownTask(() -> virtualBootstrap = null);
         }
         HttpConfiguration httpConfiguration = this.httpConfiguration.getValue();
         if (startSocket && (httpConfiguration.hostEnabled || httpConfiguration.domainSocketEnabled)) {

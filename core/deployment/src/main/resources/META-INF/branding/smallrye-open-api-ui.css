@@ -37,7 +37,7 @@ html{
 }
 
 #swagger-ui .topbar-wrapper .download-url-wrapper::after {
-    content: "{applicationName} {applicationVersion} (powered by Quarkus {quarkusVersion})";
+    content: "{applicationHeader}";
     color: #9a9da0;
     padding-top: 12px;
     position: absolute;

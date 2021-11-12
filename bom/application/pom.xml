@@ -189,9 +189,9 @@
         <google-http-client.version>1.38.0</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
-        <grpc.version>1.42.0</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
+        <grpc.version>1.42.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
         <grpc-jprotoc.version>1.2.0</grpc-jprotoc.version>
-        <protobuf-java.version>3.17.3</protobuf-java.version>
+        <protobuf-java.version>3.19.1</protobuf-java.version>
         <protoc.version>${protobuf-java.version}</protoc.version>
         <picocli.version>4.6.2</picocli.version>
         <google-cloud-functions.version>1.0.1</google-cloud-functions.version>
@@ -5454,6 +5454,13 @@
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protoc</artifactId>
+                <classifier>osx-aarch_64</classifier>
+                <type>exe</type>
+                <version>${protoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protoc</artifactId>
                 <classifier>windows-x86_32</classifier>
                 <type>exe</type>
                 <version>${protoc.version}</version>
@@ -5491,6 +5498,13 @@
                 <artifactId>protoc-gen-grpc-java</artifactId>
                 <type>exe</type>
                 <classifier>osx-x86_64</classifier>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>protoc-gen-grpc-java</artifactId>
+                <type>exe</type>
+                <classifier>osx-aarch_64</classifier>
                 <version>${grpc.version}</version>
             </dependency>
             <dependency>

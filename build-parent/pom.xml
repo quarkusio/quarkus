@@ -118,8 +118,8 @@
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
 
         <!--TODO: remove when switched back to quarkus-maven-plugin for grpc stubs-->
-        <protoc.version>3.14.0</protoc.version> <!--keep in sync with the BOM-->
-        <grpc.version>1.35.0</grpc.version> <!--keep in sync with the BOM -->
+        <protoc.version>3.19.1</protoc.version> <!--keep in sync with the BOM-->
+        <grpc.version>1.42.1</grpc.version> <!--keep in sync with the BOM -->
 
         <!-- Webjars -->
         <webjar.bootstrap.version>4.6.0</webjar.bootstrap.version>

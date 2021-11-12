@@ -225,7 +225,17 @@ public class InjectionPointInfo {
             case FIELD:
                 return target.asField().declaringClass().name() + "#" + target.asField().name();
             case METHOD:
-                return target.asMethod().declaringClass().name() + "#" + target.asMethod().name() + "()";
+                String param = target.asMethod().parameterName(position);
+                if (param == null || param.isBlank()) {
+                    param = "arg" + position;
+                }
+                String method = target.asMethod().name();
+                if (method.equals(Methods.INIT)) {
+                    method = "";
+                } else {
+                    method = "#" + method;
+                }
+                return target.asMethod().declaringClass().name() + method + "()" + "." + param;
             default:
                 return target.toString();
         }

@@ -59,7 +59,7 @@ public class TestClassUsages implements Serializable {
                 if (testState.isFailed(testDescriptor)) {
                     return FilterResult.included("Test failed previously");
                 }
-                if (!testDescriptor.getSource().isPresent()) {
+                if (testDescriptor.getSource().isEmpty()) {
                     return FilterResult.included("No source information");
                 }
                 if (touchedIds.contains(testDescriptor.getUniqueId())) {

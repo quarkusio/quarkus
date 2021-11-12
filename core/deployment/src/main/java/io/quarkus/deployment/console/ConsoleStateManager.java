@@ -291,13 +291,7 @@ public class ConsoleStateManager {
         public void reset(ConsoleCommand... command) {
             synchronized (commands) {
                 internal.clear();
-                var it = commands.entrySet().iterator();
-                while (it.hasNext()) {
-                    var holder = it.next();
-                    if (holder.getValue().context == this) {
-                        it.remove();
-                    }
-                }
+                commands.entrySet().removeIf(entry -> entry.getValue().context == this);
             }
             for (var i : command) {
                 addCommandInternal(i);

@@ -44,9 +44,11 @@ public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper
     }
 
     private boolean hasReturnValueViolation(Set<ConstraintViolation<?>> violations) {
-        for (ConstraintViolation<?> violation : violations) {
-            if (isReturnValueViolation(violation)) {
-                return true;
+        if (violations != null) {
+            for (ConstraintViolation<?> violation : violations) {
+                if (isReturnValueViolation(violation)) {
+                    return true;
+                }
             }
         }
         return false;

@@ -720,6 +720,11 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add(excludeConfig.getResourceName());
                 }
 
+                // Work around https://github.com/quarkusio/quarkus/issues/21372
+                if (graalVMVersion.is(GraalVM.Version.VERSION_21_3_0) && graalVMVersion.isJava17()) {
+                    nativeImageArgs.add("-J--add-exports=java.management/sun.management=ALL-UNNAMED");
+                }
+
                 nativeImageArgs.add(nativeImageName);
 
                 //Make sure to have the -jar as last one, as it otherwise breaks "--exclude-config"

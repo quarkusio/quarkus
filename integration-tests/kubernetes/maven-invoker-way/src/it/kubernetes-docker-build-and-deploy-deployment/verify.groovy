@@ -15,5 +15,5 @@ kubernetesYml.withInputStream { stream ->
 
     //Check that ti contains a Deployment named after the project
     assert deployment != null
-    assert deployment.metadata.name == "kubernetes-docker-build-and-deploy"
+    assert deployment.metadata.name == "kubernetes-docker-build-and-deploy-deployment"
 }

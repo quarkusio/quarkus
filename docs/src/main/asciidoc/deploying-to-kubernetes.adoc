@@ -140,6 +140,13 @@ The full source of the `kubernetes.json` file looks something like this:
 }
 ----
 
+Beside generating a `Deployment` resource, you can also choose to get a `StatefulSet` instead via `application.properties`:
+
+[source,properties]
+----
+quarkus.kubernetes.deployment-kind=StatefulSet
+----
+
 The generated manifest can be applied to the cluster from the project root using `kubectl`:
 
 [source,bash]
@@ -147,7 +154,7 @@ The generated manifest can be applied to the cluster from the project root using
 kubectl apply -f target/kubernetes/kubernetes.json
 ----
 
-An important thing to note about the `Deployment` is that is uses `yourDockerUsername/test-quarkus-app:1.0.0-SNAPSHOT` as the container image of the `Pod`.
+An important thing to note about the `Deployment` (or `StatefulSet`) is that is uses `yourDockerUsername/test-quarkus-app:1.0.0-SNAPSHOT` as the container image of the `Pod`.
 The name of the image is controlled by the Jib extension and can be customized using the usual `application.properties`.
 
 For example with a configuration like:
@@ -630,6 +637,7 @@ The table below describe all the available configuration options.
 | Property                                           | Type                                      | Description | Default Value
 | quarkus.kubernetes.name                            | String                                    |             | ${quarkus.container-image.name}
 | quarkus.kubernetes.version                         | String                                    |             | ${quarkus.container-image.tag}
+| quarkus.kubernetes.deployment-kind                 | String                                    |             | Deployment
 | quarkus.kubernetes.part-of                         | String                                    |             |
 | quarkus.kubernetes.init-containers                 | Map<String, Container>                    |             |
 | quarkus.kubernetes.namespace                       | String                                    |             |
@@ -886,6 +894,7 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 | Property                                          | Type                                      | Description | Default Value
 | quarkus.openshift.name                            | String                                    |             | ${quarkus.container-image.name}
 | quarkus.openshift.version                         | String                                    |             | ${quarkus.container-image.tag}
+| quarkus.openshift.deployment-kind                 | String                                    |             | DeploymentConfig
 | quarkus.openshift.part-of                         | String                                    |             |
 | quarkus.openshift.init-containers                 | Map<String, Container>                    |             |
 | quarkus.openshift.labels                          | Map                                       |             |

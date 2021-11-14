@@ -2,7 +2,6 @@
 package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
-import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_GROUP;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
@@ -56,23 +55,25 @@ public class VanillaKubernetesProcessor {
     public void checkVanillaKubernetes(ApplicationInfoBuildItem applicationInfo, KubernetesConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
+        String kind = config.getDeploymentResourceKind();
+
         List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
         if (userSpecifiedDeploymentTargets.isEmpty() || userSpecifiedDeploymentTargets.contains(KUBERNETES)) {
             // when nothing was selected by the user, we enable vanilla Kubernetes by
             // default
             deploymentTargets
                     .produce(
-                            new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT, DEPLOYMENT_GROUP,
+                            new KubernetesDeploymentTargetBuildItem(KUBERNETES, kind, DEPLOYMENT_GROUP,
                                     DEPLOYMENT_VERSION,
                                     VANILLA_KUBERNETES_PRIORITY, true));
 
             String name = ResourceNameUtil.getResourceName(config, applicationInfo);
             resourceMeta.produce(new KubernetesResourceMetadataBuildItem(KUBERNETES, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,
-                    DEPLOYMENT, name));
+                    kind, name));
 
         } else {
             deploymentTargets
-                    .produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT, DEPLOYMENT_GROUP,
+                    .produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES, kind, DEPLOYMENT_GROUP,
                             DEPLOYMENT_VERSION,
                             VANILLA_KUBERNETES_PRIORITY, false));
         }
@@ -123,8 +124,17 @@ public class VanillaKubernetesProcessor {
         result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, config,
                 metricsConfiguration,
                 annotations, labels, command, ports, livenessPath, readinessPath, roles, roleBindings));
+
+        if (config.deploymentKind == KubernetesConfig.DeploymentResourceKind.StatefulSet) {
+            result.add(new DecoratorBuildItem(KUBERNETES, new RemoveDeploymentResourceDecorator(name)));
+            result.add(new DecoratorBuildItem(KUBERNETES, new AddStatefulSetResourceDecorator(name, config)));
+        }
+
         if (config.getReplicas() != 1) {
+            // This only affects Deployment
             result.add(new DecoratorBuildItem(KUBERNETES, new ApplyReplicasDecorator(name, config.getReplicas())));
+            // This only affects StatefulSet
+            result.add(new DecoratorBuildItem(KUBERNETES, new ApplyReplicasToStatefulSetDecorator(name, config.getReplicas())));
         }
 
         image.ifPresent(i -> {

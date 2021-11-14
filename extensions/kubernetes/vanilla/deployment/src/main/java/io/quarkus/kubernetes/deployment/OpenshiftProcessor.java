@@ -185,9 +185,15 @@ public class OpenshiftProcessor {
             result.add(new DecoratorBuildItem(new RemoveOptionalFromConfigMapKeySelectorDecorator()));
         }
 
-        if (config.deploymentKind == DeploymentResourceKind.Deployment) {
-            result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentConfigResourceDecorator(name)));
-            result.add(new DecoratorBuildItem(OPENSHIFT, new AddDeploymentResourceDecorator(name, config)));
+        switch (config.deploymentKind) {
+            case Deployment:
+                result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentConfigResourceDecorator(name)));
+                result.add(new DecoratorBuildItem(OPENSHIFT, new AddDeploymentResourceDecorator(name, config)));
+                break;
+            case StatefulSet:
+                result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentConfigResourceDecorator(name)));
+                result.add(new DecoratorBuildItem(OPENSHIFT, new AddStatefulSetResourceDecorator(name, config)));
+                break;
         }
 
         if (config.getReplicas() != 1) {
@@ -196,7 +202,10 @@ public class OpenshiftProcessor {
             // This only affects Deployment
             result.add(new DecoratorBuildItem(OPENSHIFT,
                     new io.dekorate.kubernetes.decorator.ApplyReplicasDecorator(name, config.getReplicas())));
+            // This only affects StatefulSet
+            result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyReplicasToStatefulSetDecorator(name, config.getReplicas())));
         }
+
         image.ifPresent(i -> {
             result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyContainerImageDecorator(name, i.getImage())));
         });

@@ -7,6 +7,7 @@ import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG_GROUP
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_GROUP;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_VERSION;
+import static io.quarkus.kubernetes.deployment.Constants.STATEFULSET;
 
 import java.util.List;
 import java.util.Map;
@@ -27,8 +28,19 @@ public class OpenshiftConfig implements PlatformConfiguration {
     }
 
     public static enum DeploymentResourceKind {
-        Deployment,
-        DeploymentConfig
+        Deployment(DEPLOYMENT, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION),
+        DeploymentConfig(DEPLOYMENT_CONFIG, DEPLOYMENT_CONFIG_GROUP, DEPLOYMENT_CONFIG_VERSION),
+        StatefulSet(STATEFULSET, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION);
+
+        final String kind;
+        final String apiGroup;
+        final String apiVersion;
+
+        DeploymentResourceKind(String kind, String apiGroup, String apiVersion) {
+            this.kind = kind;
+            this.apiGroup = apiGroup;
+            this.apiVersion = apiVersion;
+        }
     }
 
     /**
@@ -494,14 +506,14 @@ public class OpenshiftConfig implements PlatformConfiguration {
     }
 
     public String getDepoymentResourceGroup() {
-        return deploymentKind == DeploymentResourceKind.Deployment ? DEPLOYMENT_GROUP : DEPLOYMENT_CONFIG_GROUP;
+        return deploymentKind.apiGroup;
     }
 
     public String getDepoymentResourceVersion() {
-        return deploymentKind == DeploymentResourceKind.Deployment ? DEPLOYMENT_VERSION : DEPLOYMENT_CONFIG_VERSION;
+        return deploymentKind.apiVersion;
     }
 
     public String getDepoymentResourceKind() {
-        return deploymentKind == DeploymentResourceKind.Deployment ? DEPLOYMENT : DEPLOYMENT_CONFIG;
+        return deploymentKind.kind;
     }
 }

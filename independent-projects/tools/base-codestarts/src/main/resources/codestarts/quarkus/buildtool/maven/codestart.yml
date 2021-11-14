@@ -7,7 +7,7 @@ language:
       buildtool:
         build-dir: target
         cli: mvn
-        guide: https://quarkus.io/guides/maven-tooling.html
+        guide: https://quarkus.io/guides/maven-tooling
         guide-native: https://quarkus.io/guides/building-native-image
         cmd:
           dev: compile quarkus:dev

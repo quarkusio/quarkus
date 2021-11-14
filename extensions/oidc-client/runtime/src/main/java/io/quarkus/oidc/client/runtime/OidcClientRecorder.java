@@ -159,6 +159,12 @@ public class OidcClientRecorder {
                                                 grantOptions.get(OidcConstants.PASSWORD_GRANT_USERNAME));
                                         tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_PASSWORD,
                                                 grantOptions.get(OidcConstants.PASSWORD_GRANT_PASSWORD));
+                                        for (Map.Entry<String, String> entry : grantOptions.entrySet()) {
+                                            if (!OidcConstants.PASSWORD_GRANT_USERNAME.equals(entry.getKey())
+                                                    && !OidcConstants.PASSWORD_GRANT_PASSWORD.equals(entry.getKey())) {
+                                                tokenGrantParams.add(entry.getKey(), entry.getValue());
+                                            }
+                                        }
                                     } else {
                                         tokenGrantParams.addAll(grantOptions);
                                     }

@@ -1,16 +1,22 @@
 package io.quarkus.neo4j.deployment;
 
 import java.io.Closeable;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.function.BooleanSupplier;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.Neo4jContainer;
+import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
+
+import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -80,7 +86,11 @@ class Neo4jDevServicesProcessor {
                         neo4jContainer.getAdminPassword()));
 
                 log.infof("Dev Services started a Neo4j container reachable at %s.", neo4jContainer.getBoltUrl());
-
+                log.infof("Neo4j Browser is reachable at %s.", neo4jContainer.getBrowserUrl());
+                log.infof("The username for both endpoints is `%s`, authenticated by `%s`", "neo4j",
+                        neo4jContainer.getAdminPassword());
+                log.infof("Connect via Cypher-Shell: cypher-shell -u %s -p %s -a %s", "neo4j",
+                        neo4jContainer.getAdminPassword(), neo4jContainer.getBoltUrl());
                 closeable = neo4jContainer::close;
             }
         } catch (Throwable t) {
@@ -107,7 +117,7 @@ class Neo4jDevServicesProcessor {
         return new Neo4jDevServiceBuildItem();
     }
 
-    private Neo4jContainer<?> startNeo4j(Neo4jDevServiceConfig configuration, Optional<Duration> timeout) {
+    private ExtNeo4jContainer startNeo4j(Neo4jDevServiceConfig configuration, Optional<Duration> timeout) {
 
         if (!configuration.devServicesEnabled) {
             log.debug("Not starting Dev Services for Neo4j, as it has been disabled in the config.");
@@ -129,8 +139,7 @@ class Neo4jDevServicesProcessor {
             return null;
         }
 
-        var neo4jContainer = new Neo4jContainer<>(
-                DockerImageName.parse(configuration.imageName).asCompatibleSubstituteFor("neo4j"));
+        var neo4jContainer = ExtNeo4jContainer.of(configuration);
         configuration.additionalEnv.forEach(neo4jContainer::addEnv);
         timeout.ifPresent(neo4jContainer::withStartupTimeout);
         neo4jContainer.start();
@@ -149,15 +158,64 @@ class Neo4jDevServicesProcessor {
         }
     }
 
+    private final static class ExtNeo4jContainer extends Neo4jContainer<ExtNeo4jContainer> {
+
+        private static final int DEFAULT_HTTP_PORT = 7474;
+        private static final int DEFAULT_BOLT_PORT = 7687;
+
+        static ExtNeo4jContainer of(Neo4jDevServiceConfig config) {
+
+            var container = new ExtNeo4jContainer(DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("neo4j"));
+            config.fixedBoltPort.ifPresent(port -> {
+                container.addFixedExposedPort(port, DEFAULT_BOLT_PORT);
+            });
+            config.fixedHttpPort.ifPresent(port -> container.addFixedExposedPort(port, DEFAULT_HTTP_PORT));
+
+            var extensionScript = "/neo4j_dev_services_ext.sh";
+            return container
+                    .withCopyFileToContainer(
+                            MountableFile.forClasspathResource("/io/quarkus/neo4j/deployment" + extensionScript, 0777),
+                            extensionScript)
+                    .withEnv("EXTENSION_SCRIPT", extensionScript);
+        }
+
+        ExtNeo4jContainer(DockerImageName dockerImageName) {
+            super(dockerImageName);
+        }
+
+        String getBrowserUrl() {
+            return String.format("%s/browser?dbms=bolt://%s@%s:%d", getHttpUrl(), "neo4j", getHost(),
+                    getMappedPort(DEFAULT_BOLT_PORT));
+        }
+
+        @Override
+        protected void containerIsStarting(InspectContainerResponse containerInfo, boolean reused) {
+            super.containerIsStarting(containerInfo, reused);
+
+            if (reused) {
+                return;
+            }
+
+            var mappedPort = getMappedPort(DEFAULT_BOLT_PORT);
+            var command = String.format("export NEO4J_dbms_connector_bolt_advertised__address=bolt://%s:%d\n", getHost(),
+                    mappedPort);
+            copyFileToContainer(Transferable.of(command.getBytes(StandardCharsets.UTF_8)), "/testcontainers_env");
+        }
+    }
+
     private static final class Neo4jDevServiceConfig {
         final boolean devServicesEnabled;
         final String imageName;
         final Map<String, String> additionalEnv;
+        final OptionalInt fixedBoltPort;
+        final OptionalInt fixedHttpPort;
 
         Neo4jDevServiceConfig(DevServicesBuildTimeConfig devServicesConfig) {
             this.devServicesEnabled = devServicesConfig.enabled.orElse(true);
             this.imageName = devServicesConfig.imageName;
             this.additionalEnv = new HashMap<>(devServicesConfig.additionalEnv);
+            this.fixedBoltPort = devServicesConfig.boltPort;
+            this.fixedHttpPort = devServicesConfig.httpPort;
         }
 
         @Override
@@ -171,12 +229,14 @@ class Neo4jDevServicesProcessor {
             Neo4jDevServiceConfig that = (Neo4jDevServiceConfig) o;
             return devServicesEnabled == that.devServicesEnabled && imageName.equals(that.imageName)
                     && additionalEnv.equals(
-                            that.additionalEnv);
+                            that.additionalEnv)
+                    && fixedBoltPort.equals(that.fixedBoltPort) && fixedHttpPort.equals(
+                            that.fixedHttpPort);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(devServicesEnabled, imageName, additionalEnv);
+            return Objects.hash(devServicesEnabled, imageName, additionalEnv, fixedBoltPort, fixedHttpPort);
         }
     }
 }

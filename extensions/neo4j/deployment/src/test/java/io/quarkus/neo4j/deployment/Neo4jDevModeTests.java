@@ -4,6 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.ServerSocket;
+import java.util.function.Predicate;
 import java.util.logging.LogRecord;
 
 import javax.inject.Inject;
@@ -25,8 +29,8 @@ public class Neo4jDevModeTests {
         @RegisterExtension
         static QuarkusUnitTest test = new QuarkusUnitTest()
                 .withEmptyApplication()
-                .setLogRecordPredicate(record -> true)
                 .withConfigurationResource("application.properties")
+                .setLogRecordPredicate(record -> true)
                 .assertLogRecords(records -> assertThat(records).extracting(LogRecord::getMessage)
                         .contains("Dev Services started a Neo4j container reachable at %s."));
 
@@ -37,7 +41,91 @@ public class Neo4jDevModeTests {
         public void shouldBeAbleToConnect() {
 
             assertThatNoException().isThrownBy(() -> driver.verifyConnectivity());
+        }
+    }
 
+    static Predicate<LogRecord> recordMatches(String message, String port) {
+        return r -> message.equals(r.getMessage()) && r.getParameters().length > 0
+                && r.getParameters()[0] instanceof String && ((String) r.getParameters()[0]).contains(port);
+    }
+
+    @Testcontainers(disabledWithoutDocker = true)
+    static class DevServicesShouldBeAbleToUseFixedPorts {
+
+        // Let it burn when there's no free port
+        static final String FIXED_BOLD_PORT = PortUtils.findFreePort().get().toString();
+        static final String FIXED_HTTP_PORT = PortUtils.findFreePort().get().toString();
+
+        @RegisterExtension
+        static QuarkusUnitTest test = new QuarkusUnitTest()
+                .withEmptyApplication()
+                .withConfigurationResource("application.properties")
+                .overrideConfigKey("quarkus.neo4j.devservices.fixed-bolt-port", FIXED_BOLD_PORT)
+                .overrideConfigKey("quarkus.neo4j.devservices.fixed-http-port", FIXED_HTTP_PORT)
+                .setAllowTestClassOutsideDeployment(true) // Needed to use the PortUtils above.
+                .setLogRecordPredicate(record -> true)
+                .assertLogRecords(records -> assertThat(records)
+                        .isNotEmpty()
+                        .anyMatch(recordMatches("Dev Services started a Neo4j container reachable at %s.", FIXED_BOLD_PORT))
+                        .anyMatch(recordMatches("Neo4j Browser is reachable at %s.", FIXED_HTTP_PORT)));
+
+        @Inject
+        Driver driver;
+
+        @Test
+        public void shouldBeAbleToConnect() {
+
+            assertThatNoException().isThrownBy(() -> driver.verifyConnectivity());
+        }
+    }
+
+    @Testcontainers(disabledWithoutDocker = true)
+    static class DevServicesShouldNotFailWhen7474IsUsed {
+
+        static ServerSocket blockerFor7474;
+
+        static void block7474() {
+
+            if (PortUtils.isFree(7474)) {
+                try {
+                    blockerFor7474 = new ServerSocket(7474);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            } else {
+                blockerFor7474 = null;
+            }
+        }
+
+        static void unblock7474() {
+
+            if (blockerFor7474 != null && !blockerFor7474.isClosed()) {
+                try {
+                    blockerFor7474.close();
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+        }
+
+        @RegisterExtension
+        static QuarkusUnitTest test = new QuarkusUnitTest()
+                .withEmptyApplication()
+                .withConfigurationResource("application.properties")
+                .setBeforeAllCustomizer(DevServicesShouldNotFailWhen7474IsUsed::block7474)
+                .setAfterAllCustomizer(DevServicesShouldNotFailWhen7474IsUsed::unblock7474)
+                .setLogRecordPredicate(record -> true)
+                .assertLogRecords(records -> assertThat(records)
+                        .isNotEmpty()
+                        .noneMatch(recordMatches("Neo4j Browser is reachable at %s.", "7474")));
+
+        @Inject
+        Driver driver;
+
+        @Test
+        public void shouldBeAbleToConnect() {
+
+            assertThatNoException().isThrownBy(() -> driver.verifyConnectivity());
         }
     }
 

@@ -1302,7 +1302,11 @@ public class QuteProcessor {
                     // For "@Location("foo/bar/baz.txt") Template baz" we try to match "foo/bar/baz.txt"
                     if (!filePaths.contains(name)) {
                         validationErrors.produce(new ValidationErrorBuildItem(
-                                new TemplateException("No template found for " + injectionPoint.getTargetInfo())));
+                                new TemplateException(
+                                        String.format(
+                                                "No template found for path [%s] defined at %s\n\t- available templates: %s",
+                                                name, injectionPoint.getTargetInfo(), templatePaths.stream()
+                                                        .map(TemplatePathBuildItem::getPath).collect(Collectors.toList())))));
                     }
                 }
             }

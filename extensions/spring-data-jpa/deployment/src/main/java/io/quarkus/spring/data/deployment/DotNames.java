@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Stream;
 
+import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Inheritance;
@@ -86,6 +87,7 @@ public final class DotNames {
             .createSimple(Persistable.class.getName());
 
     public static final DotName JPA_ID = DotName.createSimple(Id.class.getName());
+    public static final DotName JPA_EMBEDDED_ID = DotName.createSimple(EmbeddedId.class.getName());
     public static final DotName VERSION = DotName.createSimple(Version.class.getName());
     public static final DotName JPA_INHERITANCE = DotName.createSimple(Inheritance.class.getName());
     public static final DotName JPA_MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());

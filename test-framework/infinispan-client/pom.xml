@@ -71,7 +71,6 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit4.version}</version>
-            <optional>true</optional>
         </dependency>
     </dependencies>
 

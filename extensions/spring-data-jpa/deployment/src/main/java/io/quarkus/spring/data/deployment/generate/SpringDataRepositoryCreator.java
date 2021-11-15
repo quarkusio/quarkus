@@ -116,7 +116,7 @@ public class SpringDataRepositoryCreator {
             derivedMethodsAdder.add(classCreator, entityClassFieldCreator.getFieldDescriptor(), generatedClassName,
                     repositoryToImplement, entityClassInfo);
             customQueryMethodsAdder.add(classCreator, entityClassFieldCreator.getFieldDescriptor(),
-                    repositoryToImplement, entityClassInfo);
+                    repositoryToImplement, entityClassInfo, idTypeStr);
         }
     }
 

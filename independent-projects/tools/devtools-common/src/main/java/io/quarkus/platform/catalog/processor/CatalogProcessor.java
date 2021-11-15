@@ -9,7 +9,9 @@ import java.util.*;
 
 public class CatalogProcessor {
     private static final String CODESTART_ARTIFACTS = "codestarts-artifacts";
-    private static final String UNCATEGORIZED = "uncategorized";
+    private static final String UNCATEGORIZED_ID = "uncategorized";
+    private static final String UNCATEGORIZED_NAME = "Uncategorized";
+    private static final String UNCATEGORIZED_DESCRIPTION = "The category is not defined for those extensions.";
 
     private final ExtensionCatalog catalog;
 
@@ -26,8 +28,8 @@ public class CatalogProcessor {
         for (Extension e : catalog.getExtensions()) {
             List<String> categories = ExtensionProcessor.of(e).getCategories();
             if (categories.isEmpty()) {
-                extsByCategory.put(UNCATEGORIZED, new ArrayList<>());
-                extsByCategory.get(UNCATEGORIZED).add(e);
+                extsByCategory.put(UNCATEGORIZED_ID, new ArrayList<>());
+                extsByCategory.get(UNCATEGORIZED_ID).add(e);
             }
             for (String c : categories) {
                 if (!extsByCategory.containsKey(c)) {
@@ -43,8 +45,10 @@ public class CatalogProcessor {
             }
         }
         JsonCategory category = new JsonCategory();
-        category.setId(UNCATEGORIZED);
-        orderedCategories.add(new ProcessedCategory(category, extsByCategory.get(UNCATEGORIZED)));
+        category.setId(UNCATEGORIZED_ID);
+        category.setName(UNCATEGORIZED_NAME);
+        category.setDescription(UNCATEGORIZED_DESCRIPTION);
+        orderedCategories.add(new ProcessedCategory(category, extsByCategory.get(UNCATEGORIZED_ID)));
         return orderedCategories;
     }
 

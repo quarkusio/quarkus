@@ -3,10 +3,14 @@ package io.quarkus.platform.catalog.processor;
 import io.quarkus.registry.catalog.Category;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.catalog.json.JsonCategory;
 import java.util.*;
 
 public class CatalogProcessor {
     private static final String CODESTART_ARTIFACTS = "codestarts-artifacts";
+    private static final String UNCATEGORIZED_ID = "uncategorized";
+    private static final String UNCATEGORIZED_NAME = "Uncategorized";
+    private static final String UNCATEGORIZED_DESCRIPTION = "The category is not defined for those extensions.";
 
     private final ExtensionCatalog catalog;
 
@@ -22,6 +26,10 @@ public class CatalogProcessor {
         final Map<String, List<Extension>> extsByCategory = new HashMap<>(catalog.getCategories().size());
         for (Extension e : catalog.getExtensions()) {
             List<String> categories = ExtensionProcessor.of(e).getCategories();
+            if (categories.isEmpty()) {
+                extsByCategory.put(UNCATEGORIZED_ID, new ArrayList<>());
+                extsByCategory.get(UNCATEGORIZED_ID).add(e);
+            }
             for (String c : categories) {
                 if (!extsByCategory.containsKey(c)) {
                     extsByCategory.put(c, new ArrayList<>());
@@ -35,6 +43,11 @@ public class CatalogProcessor {
                 orderedCategories.add(new ProcessedCategory(c, extsByCategory.get(c.getId())));
             }
         }
+        JsonCategory category = new JsonCategory();
+        category.setId(UNCATEGORIZED_ID);
+        category.setName(UNCATEGORIZED_NAME);
+        category.setDescription(UNCATEGORIZED_DESCRIPTION);
+        orderedCategories.add(new ProcessedCategory(category, extsByCategory.get(UNCATEGORIZED_ID)));
         return orderedCategories;
     }
 

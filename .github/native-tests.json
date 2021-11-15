@@ -133,9 +133,9 @@
             "os-name": "ubuntu-latest"
         },
         {
-            "category": "Windows - hibernate-validator",
+            "category": "Windows - RESTEasy Jackson",
             "timeout": 20,
-            "test-modules": "hibernate-validator",
+            "test-modules": "resteasy-jackson",
             "os-name": "windows-latest"
         },
         {

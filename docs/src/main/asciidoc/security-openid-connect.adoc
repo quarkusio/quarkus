@@ -350,7 +350,7 @@ public class AdminResource {
 }
 ----
 
-Injection of the `JsonWebToken` is supported in both `@RequestScoped` and `@ApplicationScoped` contexts.
+Injection of `JsonWebToken` is supported in `@ApplicationScoped`, `@Singleton` and `@RequestScoped` scopes however the use of `@RequestScoped` is required if the individual claims are injected as simple types, please see link:security-jwt#supported-injection-scopes[Support Injection Scopes for JsonWebToken and Claims] for more details.
 
 [[user-info]]
 === User Info

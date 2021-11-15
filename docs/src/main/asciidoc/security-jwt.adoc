@@ -516,10 +516,10 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 public class TokenSecuredResource {
 
     @Inject
-    JsonWebToken jwt;
+    JsonWebToken jwt; // <1>
     @Inject
     @Claim(standard = Claims.birthdate)
-    String birthdate; // <1>
+    String birthdate; // <2>
 
     @GET
     @Path("permit-all")
@@ -542,7 +542,7 @@ public class TokenSecuredResource {
     @RolesAllowed("Admin")
     @Produces(MediaType.TEXT_PLAIN)
     public String helloRolesAllowedAdmin(@Context SecurityContext ctx) {
-        return getResponseString(ctx) + ", birthdate: " + birthdate; // <2>
+        return getResponseString(ctx) + ", birthdate: " + birthdate; // <3>
     }
 
     private String getResponseString(SecurityContext ctx) {
@@ -566,8 +566,9 @@ public class TokenSecuredResource {
     }
 }
 ----
-<1> Here we use the injected `birthday` claim.
-<2> Here we use the injected `birthday` claim to build the final reply.
+<1> Here we inject the JsonWebToken.
+<2> Here we inject the `birthday` claim as `String` - this is why the `@RequestScoped` scope is now required.
+<3> Here we use the injected `birthday` claim to build the final reply.
 
 Now generate the token again and run:
 
@@ -632,6 +633,35 @@ explore the `security-jwt-quickstart` directory to learn more about the {extensi
 
 == Reference Guide
 
+[supported-injection-scopes]
+=== Supported Injection Scopes
+
+`@ApplicationScoped`, `@Singleton` and `@RequestScoped` outer bean injection scopes are all supported when an `org.eclipse.microprofile.jwt.JsonWebToken` is injected, with the `@RequestScoped` scoping for `JsonWebToken` enforced to ensure the current token is represented.
+
+However, `@RequestScoped` must be used when the individual token claims are injected as simple types such as `String`, for example:
+
+[source, java]
+----
+package org.acme.security.jwt;
+
+import javax.inject.Inject;
+import org.eclipse.microprofile.jwt.Claim;
+import org.eclipse.microprofile.jwt.Claims;
+
+@Path("/secured")
+@RequestScoped
+public class TokenSecuredResource {
+
+    @Inject
+    @Claim(standard = Claims.birthdate)
+    String birthdate;
+}
+----
+
+Note you can also use the injected `JsonWebToken` to access the individual claims in which case setting `@RequestScoped` is not necessary.
+
+Please see link:https://download.eclipse.org/microprofile/microprofile-jwt-auth-1.2/microprofile-jwt-auth-spec-1.2.html#_cdi_injection_requirements[MP JWT CDI Injection Requirements] for more details.
+
 === Supported Public Key Formats
 
 Public Keys may be formatted in any of the following formats, specified in order of
@@ -666,7 +696,8 @@ If you need to verify the token signature using the symmetric secret key then ei
 This secret key JWK will also need to be referred to with `smallrye.jwt.verify.key.location`.
 `smallrye.jwt.verify.algorithm` should be set to `HS256`/`HS384`/`HS512`.
 
-=== Create JsonWebToken with JWTParser
+[[jwt-parser]]
+=== Parse and Verify JsonWebToken with JWTParser
 
 If the JWT token can not be injected, for example, if it is embedded in the service request payload or the service endpoint acquires it out of band, then one can use `JWTParser`:
 
@@ -719,6 +750,8 @@ public class SecuredResource {
   }
 }
 ----
+
+Please also see the <<add-smallrye-jwt, How to Add SmallRye JWT directly>> section about using `JWTParser` without the `HTTP` support provided by `quarkus-smallrye-jwt`.
 
 === Token Decryption
 
@@ -911,6 +944,29 @@ quarkus.log.category."io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator".min-l
 If you'd like to skip the token verification when the public endpoint methods are invoked then please disable the link:security-built-in-authentication#proactive-authentication[proactive authentication].
 
 Note that you can't access the injected `JsonWebToken` in the public methods if the token verification has not been done.
+
+[[add-smallrye-jwt]]
+=== How to Add SmallRye JWT directly
+
+If you work with Quarkus extensions which do not support `HTTP` (for example, `Quarkus GRPC`) or provide their own extension specific `HTTP` support conflicting with the one offered by `quarkus-smallrye-jwt` and `Vert.x HTTP` (example, `Quarkus Amazon Lambda`) and you would like to <<jwt-parser, Parse and Verify JsonWebToken with JWTParser>> then please use `smallrye-jwt` directly instead of `quarkus-smallrye-jwt`.
+
+Add this Maven dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.smallrye</groupId>
+    <artifactId>smallrye-jwt</artifactId>
+</dependency>
+----
+
+and update `application.properties` to get all the CDI producers provided by `smallrye-jwt` included as follows:
+
+[source, propertyes]
+----
+quarkus.index-dependency.smallraye-jwt.group-id=io.smallrye
+quarkus.index-dependency.smallraye-jwt.artifact-id=smallrye-jwt
+----
 
 [[configuration-reference]]
 == Configuration Reference

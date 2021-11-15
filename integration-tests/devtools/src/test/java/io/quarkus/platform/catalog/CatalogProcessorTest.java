@@ -12,6 +12,8 @@ import io.quarkus.registry.catalog.Category;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 
+import java.util.List;
+
 public class CatalogProcessorTest extends PlatformAwareTestBase {
 
     @Test
@@ -20,7 +22,8 @@ public class CatalogProcessorTest extends PlatformAwareTestBase {
         assertThat(getProcessedCategoriesInOrder(catalog))
                 .map(ProcessedCategory::getCategory)
                 .map(Category::getId)
-                .startsWith("web", "data", "messaging", "core");
+                .startsWith("web", "data", "messaging", "core", "reactive", "cloud", "observability", "security",
+                        "serialization", "miscellaneous", "compatibility", "alt-languages", "uncategorized");
     }
 
     @Test

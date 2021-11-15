@@ -10,6 +10,7 @@ import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
 public class ConfigLocationsTest {
+
     @Test
     void locations() {
         given()
@@ -23,6 +24,15 @@ public class ConfigLocationsTest {
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("value", equalTo("1234"));
+    }
+
+    @Test
+    void fileSystemLocation() {
+        given()
+                .get("/config/{name}", "fs.key1")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body("value", equalTo("value1"));
     }
 
     @Test

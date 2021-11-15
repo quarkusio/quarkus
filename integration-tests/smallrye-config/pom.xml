@@ -37,6 +37,10 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-smallrye-opentracing</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.smallrye.config</groupId>
+      <artifactId>smallrye-config-source-file-system</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.quarkus</groupId>

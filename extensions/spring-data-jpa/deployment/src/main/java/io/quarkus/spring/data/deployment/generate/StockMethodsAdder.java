@@ -10,8 +10,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
@@ -1042,18 +1045,23 @@ public class StockMethodsAdder {
             throw new IllegalStateException("Entity " + originalEntityDotName + " was not part of the Quarkus index");
         }
 
-        if (!classInfo.annotations().containsKey(DotNames.JPA_ID)) {
+        List<AnnotationInstance> annotationInstances = Stream.of(DotNames.JPA_ID, DotNames.JPA_EMBEDDED_ID)
+                .map(classInfo.annotations()::get)
+                .filter(Objects::nonNull)
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+        if (annotationInstances.isEmpty()) {
             if (DotNames.OBJECT.equals(classInfo.superName())) {
-                throw new IllegalArgumentException("Currently only Entities with the @Id annotation are supported. " +
-                        "Offending class is " + originalEntityDotName);
+                throw new IllegalArgumentException(
+                        "Currently only Entities with the @Id or @EmbeddedId annotation are supported. Offending class is "
+                                + originalEntityDotName);
             }
             return getIdAnnotationTargetRec(classInfo.superName(), index, originalEntityDotName);
         }
 
-        List<AnnotationInstance> annotationInstances = classInfo.annotations().get(DotNames.JPA_ID);
         if (annotationInstances.size() > 1) {
             throw new IllegalArgumentException(
-                    "Currently the @Id annotation can only be placed on a single field or method. " +
+                    "Currently the @Id or @EmbeddedId annotation can only be placed on a single field or method. " +
                             "Offending class is " + originalEntityDotName);
         }
 

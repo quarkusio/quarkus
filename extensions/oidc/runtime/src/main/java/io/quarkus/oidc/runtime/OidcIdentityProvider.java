@@ -215,16 +215,14 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 });
     }
 
-    @Deprecated
     private static boolean tokenAutoRefreshPrepared(JsonObject tokenJson, RoutingContext vertxContext,
             OidcTenantConfig oidcConfig) {
         if (tokenJson != null
                 && oidcConfig.token.refreshExpired
-                && (oidcConfig.token.getRefreshTokenTimeSkew().isPresent() || oidcConfig.token.autoRefreshInterval.isPresent())
+                && oidcConfig.token.getRefreshTokenTimeSkew().isPresent()
                 && vertxContext.get(REFRESH_TOKEN_GRANT_RESPONSE) != Boolean.TRUE
                 && vertxContext.get(NEW_AUTHENTICATION) != Boolean.TRUE) {
-            final long refreshTokenTimeSkew = (oidcConfig.token.getRefreshTokenTimeSkew()
-                    .orElseGet(() -> oidcConfig.token.autoRefreshInterval.get())).getSeconds();
+            final long refreshTokenTimeSkew = oidcConfig.token.getRefreshTokenTimeSkew().get().getSeconds();
             final long expiry = tokenJson.getLong("exp");
             final long now = System.currentTimeMillis() / 1000;
             return now + refreshTokenTimeSkew > expiry;

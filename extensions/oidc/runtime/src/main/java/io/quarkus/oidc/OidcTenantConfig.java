@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
+import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -726,20 +727,6 @@ public class OidcTenantConfig extends OidcCommonConfig {
          */
         @ConfigItem
         public boolean refreshExpired;
-
-        /**
-         * Token auto-refresh interval in seconds during the user re-authentication.
-         * If this option is set then the valid ID token will be refreshed if it will expire in less than a number of seconds
-         * set by this option. The user will still be authenticated if the ID token can no longer be refreshed but is still
-         * valid.
-         * This option will be ignored if the 'refresh-expired' property is not enabled.
-         *
-         * Note this property is deprecated and will be removed in one of the next releases.
-         * Please use 'quarkus.oidc.token.refresh-token-time-skew'
-         */
-        @ConfigItem
-        @Deprecated
-        public Optional<Duration> autoRefreshInterval = Optional.empty();
 
         /**
          * Refresh token time skew in seconds.

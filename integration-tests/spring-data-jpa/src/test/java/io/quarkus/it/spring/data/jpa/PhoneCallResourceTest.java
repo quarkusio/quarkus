@@ -24,4 +24,12 @@ public class PhoneCallResourceTest {
                 .body(containsString("11111"))
                 .body(containsString("13"));
     }
+
+    @Test
+    public void testFindAllIds() {
+        when().get("/phonecall/ids").then()
+                .statusCode(200)
+                .body(containsString("11111"))
+                .body(containsString("56789"));
+    }
 }

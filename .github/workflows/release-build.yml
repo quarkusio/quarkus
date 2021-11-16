@@ -30,7 +30,10 @@ jobs:
         run: |
           ./mvnw --settings .github/mvn-settings.xml \
             -B \
-            -DskipITs -Dinvoker.skip=true \
+            -Prelease \
+            -Dmaven.test.skip=true \
+            -DskipTests -DskipITs \
+            -Ddokka \
             -Dmaven.repo.local=$HOME/release/repository \
             clean install
       - name: Report

@@ -345,6 +345,10 @@ public class KafkaProcessor {
                             "io.confluent.kafka.serializers.KafkaAvroSerializer"));
 
             reflectiveClass
+                    .produce(new ReflectiveClassBuildItem(true, false, false,
+                            "io.confluent.kafka.serializers.context.NullContextNameStrategy"));
+
+            reflectiveClass
                     .produce(new ReflectiveClassBuildItem(true, true, false,
                             "io.confluent.kafka.serializers.subject.TopicNameStrategy",
                             "io.confluent.kafka.serializers.subject.TopicRecordNameStrategy",

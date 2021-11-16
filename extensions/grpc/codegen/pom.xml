@@ -111,6 +111,12 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc-protoc-plugin</artifactId>
             <classifier>shaded</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

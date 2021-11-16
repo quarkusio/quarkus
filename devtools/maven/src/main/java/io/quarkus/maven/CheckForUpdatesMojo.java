@@ -8,6 +8,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -28,17 +29,19 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.ArtifactRequest;
-import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
+import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.tools.maven.MojoMessageWriter;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
@@ -72,7 +75,6 @@ public class CheckForUpdatesMojo extends AbstractMojo {
     @Component
     RemoteRepositoryManager remoteRepoManager;
 
-    @SuppressWarnings("unchecked")
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
@@ -87,24 +89,36 @@ public class CheckForUpdatesMojo extends AbstractMojo {
             throw new MojoExecutionException("This goal requires a Quarkus extension registry client to be enabled");
         }
 
-        final Map<ArtifactKey, String> previousExtensions = getDirectExtensionDependencies();
+        final MavenArtifactResolver mvn;
+        try {
+            mvn = MavenArtifactResolver.builder()
+                    .setArtifactTransferLogging(getLog().isDebugEnabled())
+                    .setRemoteRepositories(repos)
+                    .setRemoteRepositoryManager(remoteRepoManager)
+                    .setPreferPomsFromWorkspace(true)
+                    .build();
+        } catch (Exception e) {
+            throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
+        }
+        final Collection<Path> createdDirs = ensureResolvable(mvn, new DefaultArtifact(project.getGroupId(),
+                project.getArtifactId(), ArtifactCoords.TYPE_POM, project.getVersion()));
+        try {
+            checkForUpdates(mvn);
+        } finally {
+            for (Path p : createdDirs) {
+                IoUtils.recursiveDelete(p);
+            }
+        }
+    }
+
+    private void checkForUpdates(MavenArtifactResolver mvn) throws MojoExecutionException {
+
+        final Map<ArtifactKey, String> previousExtensions = getDirectExtensionDependencies(mvn);
         if (previousExtensions.isEmpty()) {
             getLog().info("The project does not appear to depend on any Quarkus extension directly");
             return;
         }
 
-        final MavenArtifactResolver mvn;
-        try {
-            mvn = MavenArtifactResolver.builder()
-                    .setRepositorySystem(repoSystem)
-                    .setRepositorySystemSession(
-                            getLog().isDebugEnabled() ? repoSession : MojoUtils.muteTransferListener(repoSession))
-                    .setRemoteRepositories(repos)
-                    .setRemoteRepositoryManager(remoteRepoManager)
-                    .build();
-        } catch (Exception e) {
-            throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
-        }
         final MojoMessageWriter log = new MojoMessageWriter(getLog());
         final ExtensionCatalogResolver catalogResolver;
         try {
@@ -253,6 +267,7 @@ public class CheckForUpdatesMojo extends AbstractMojo {
 
         ArtifactCoords recommendedPluginCoords = null;
         if (core != null) {
+            @SuppressWarnings("unchecked")
             final Map<String, ?> props = (Map<String, ?>) ((Map<String, Object>) core.getMetadata().getOrDefault("project",
                     Collections.emptyMap())).getOrDefault("properties", Collections.emptyMap());
             final String pluginGroupId = (String) props.get("maven-plugin-groupId");
@@ -353,24 +368,21 @@ public class CheckForUpdatesMojo extends AbstractMojo {
         writer.newLine();
     }
 
-    private Map<ArtifactKey, String> getDirectExtensionDependencies() throws MojoExecutionException {
+    private Map<ArtifactKey, String> getDirectExtensionDependencies(MavenArtifactResolver resolver)
+            throws MojoExecutionException {
         final List<Dependency> modelDeps = project.getModel().getDependencies();
-        final List<ArtifactRequest> requests = new ArrayList<>(modelDeps.size());
+        final Map<ArtifactKey, String> extensions = new HashMap<>(modelDeps.size());
         for (Dependency d : modelDeps) {
-            if ("jar".equals(d.getType())) {
-                requests.add(new ArtifactRequest().setArtifact(
-                        new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()))
-                        .setRepositories(repos));
+            if (!ArtifactCoords.TYPE_JAR.equals(d.getType())) {
+                continue;
             }
-        }
-        final List<ArtifactResult> artifactResults;
-        try {
-            artifactResults = repoSystem.resolveArtifacts(repoSession, requests);
-        } catch (ArtifactResolutionException e) {
-            throw new MojoExecutionException("Failed to resolve project dependencies", e);
-        }
-        final Map<ArtifactKey, String> extensions = new HashMap<>(artifactResults.size());
-        for (ArtifactResult ar : artifactResults) {
+            final ArtifactResult ar;
+            try {
+                ar = resolver.resolve(
+                        new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()));
+            } catch (BootstrapMavenException e) {
+                throw new MojoExecutionException("Failed to resolve project dependencies", e);
+            }
             final Artifact a = ar.getArtifact();
             if (isExtension(a.getFile().toPath())) {
                 extensions.put(new ArtifactKey(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getExtension()),
@@ -435,6 +447,44 @@ public class CheckForUpdatesMojo extends AbstractMojo {
         }
         if (eoBuilder != null) {
             extOrigins.add(eoBuilder.build());
+        }
+    }
+
+    private static Collection<Path> ensureResolvable(MavenArtifactResolver resolver, Artifact a) throws MojoExecutionException {
+        final DependencyNode root;
+        try {
+            root = resolver.collectDependencies(a, Collections.emptyList()).getRoot();
+        } catch (Exception e) {
+            throw new MojoExecutionException("Failed to collect dependencies of " + a, e);
+        }
+        final List<Path> createdDirs = new ArrayList<>();
+        ensureResolvableModule(root, resolver.getMavenContext().getWorkspace(), createdDirs);
+        return createdDirs;
+    }
+
+    private static void ensureResolvableModule(DependencyNode node, LocalWorkspace workspace, List<Path> createdDirs)
+            throws MojoExecutionException {
+        Artifact artifact = node.getArtifact();
+        if (artifact != null) {
+            final LocalProject module = workspace.getProject(artifact.getGroupId(), artifact.getArtifactId());
+            if (module != null && !module.getRawModel().getPackaging().equals(ArtifactCoords.TYPE_POM)) {
+                final Path classesDir = module.getClassesDir();
+                if (!Files.exists(classesDir)) {
+                    Path topDirToCreate = classesDir;
+                    while (!Files.exists(topDirToCreate.getParent())) {
+                        topDirToCreate = topDirToCreate.getParent();
+                    }
+                    try {
+                        Files.createDirectories(classesDir);
+                        createdDirs.add(topDirToCreate);
+                    } catch (IOException e) {
+                        throw new MojoExecutionException("Failed to create " + classesDir, e);
+                    }
+                }
+            }
+        }
+        for (DependencyNode c : node.getChildren()) {
+            ensureResolvableModule(c, workspace, createdDirs);
         }
     }
 }

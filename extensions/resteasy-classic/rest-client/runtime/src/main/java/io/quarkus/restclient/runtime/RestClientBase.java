@@ -324,20 +324,11 @@ public class RestClientBase {
     }
 
     private RestClientConfig clientConfigByConfigKey() {
-        if (configKey != null) {
-            return this.configRoot.configs.getOrDefault(configKey, RestClientConfig.EMPTY);
-        }
-        return RestClientConfig.EMPTY;
+        return this.configRoot.getClientConfig(this.configKey);
     }
 
     private RestClientConfig clientConfigByClassName() {
-        if (this.configRoot.configs.containsKey(proxyType.getName())) {
-            return this.configRoot.configs.get(proxyType.getName());
-        }
-        if (this.configRoot.configs.containsKey(proxyType.getSimpleName())) {
-            return this.configRoot.configs.get(proxyType.getSimpleName());
-        }
-        return RestClientConfig.EMPTY;
+        return this.configRoot.getClientConfig(this.proxyType);
     }
 
     private static <T> Optional<T> oneOf(Optional<T> o1, Optional<T> o2) {

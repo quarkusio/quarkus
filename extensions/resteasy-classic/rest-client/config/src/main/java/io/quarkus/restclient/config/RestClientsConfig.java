@@ -1,7 +1,10 @@
 package io.quarkus.restclient.config;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+
+import org.wildfly.common.annotation.NotNull;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -17,8 +20,7 @@ public class RestClientsConfig {
      * a class bearing that annotation, in which case it is possible to use the short name, as well as fully qualified
      * name.
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    public Map<String, RestClientConfig> configs;
+    private final Map<String, RestClientConfig> configs = new HashMap<>();
 
     /**
      * By default, REST Client Reactive uses text/plain content type for String values
@@ -46,5 +48,24 @@ public class RestClientsConfig {
     public Optional<String> multipartPostEncoderMode;
 
     public RestClientLoggingConfig logging;
+
+    public RestClientConfig getClientConfig(String configKey) {
+        if (configKey == null) {
+            return RestClientConfig.EMPTY;
+        }
+        return configs.computeIfAbsent(configKey, RestClientConfig::load);
+    }
+
+    public RestClientConfig getClientConfig(@NotNull Class<?> clientInterface) {
+        return configs.computeIfAbsent(clientInterface.getName(), name -> RestClientConfig.load(clientInterface));
+    }
+
+    public void putClientConfig(String configKey, RestClientConfig clientConfig) {
+        configs.put(configKey, clientConfig);
+    }
+
+    public void putClientConfig(Class<?> clientInterface, RestClientConfig clientConfig) {
+        configs.put(clientInterface.getName(), clientConfig);
+    }
 
 }

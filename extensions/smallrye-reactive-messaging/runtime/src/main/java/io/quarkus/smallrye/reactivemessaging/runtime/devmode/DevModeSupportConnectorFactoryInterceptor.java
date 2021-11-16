@@ -60,19 +60,19 @@ public class DevModeSupportConnectorFactoryInterceptor {
                 @Override
                 public void onNext(Message<?> o) {
                     subscriber.onNext(o);
-                    onMessage.get().join();
+                    onMessage.get();
                 }
 
                 @Override
                 public void onError(Throwable t) {
                     subscriber.onError(t);
-                    onMessage.get().join();
+                    onMessage.get();
                 }
 
                 @Override
                 public void onComplete() {
                     subscriber.onComplete();
-                    onMessage.get().join();
+                    onMessage.get();
                 }
             });
         }

@@ -911,6 +911,50 @@ Alternatively, you can use the `@LookupIfProperty` and `@LookupUnlessProperty` a
  }
 ----
 
+=== Injecting Multiple Bean Instances Intuitively
+
+In CDI, it's possible to inject multiple bean instances (aka contextual references) via the `javax.enterprise.inject.Instance` which implements `java.lang.Iterable`.
+However, it's not exactly intuitive.
+Therefore, a new way was introduced in Quarkus - you can inject a `java.util.List` annotated with the `io.quarkus.arc.All` qualifier.
+The type of elements in the list is used as the required type when performing the lookup.
+
+[source,java]
+----
+@ApplicationScoped
+public class Processor {
+
+     @Inject
+     @All
+     List<Service> services; <1> <2>
+}
+----
+<1> The injected instance is an _immutable list_ of the contextual references of the _disambiguated_ beans.
+<2> For this injection point the required type is `Service` and no additional qualifiers are declared.
+
+If an injection point declares no other qualifier than `@All` then `@Any` is used, i.e. the behavior is equivalent to `@Inject @Any Instance<Service>`.
+
+You can also inject a list of bean instances wrapped in `io.quarkus.arc.InstanceHandle`.
+This can be useful if you need to inspect the related bean metadata.
+
+[source,java]
+----
+@ApplicationScoped
+public class Processor {
+
+     @Inject
+     @All
+     List<InstanceHandle<Service>> services;
+     
+     public void doSomething() {
+       for (InstanceHandle<Service> handle : services) {
+         if (handle.getBean().getScope().equals(Dependent.class)) {
+           handle.get().process();
+           break;
+         }
+       }
+     }
+}
+----
 
 [[build_time_apis]]
 == Build Time Extensions

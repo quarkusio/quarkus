@@ -13,6 +13,7 @@ import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.DecoratorDelegateProvider;
 import io.quarkus.arc.impl.FixedValueSupplier;
 import io.quarkus.arc.impl.InjectableReferenceProviders;
+import io.quarkus.arc.impl.Instances;
 import io.quarkus.arc.impl.InterceptedMethodMetadata;
 import io.quarkus.arc.impl.InterceptorInvocation;
 import io.quarkus.arc.impl.InvocationContexts;
@@ -24,7 +25,9 @@ import io.quarkus.arc.impl.Sets;
 import io.quarkus.gizmo.MethodDescriptor;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -273,10 +276,20 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor DECORATOR_DELEGATE_PROVIDER_SET = MethodDescriptor
             .ofMethod(DecoratorDelegateProvider.class, "set", Object.class, Object.class);
+
     public static final MethodDescriptor DECORATOR_DELEGATE_PROVIDER_UNSET = MethodDescriptor
             .ofMethod(DecoratorDelegateProvider.class, "unset", void.class);
+
     public static final MethodDescriptor DECORATOR_DELEGATE_PROVIDER_GET = MethodDescriptor
             .ofMethod(DecoratorDelegateProvider.class, "get", Object.class);
+
+    public static final MethodDescriptor INSTANCES_LIST_OF = MethodDescriptor
+            .ofMethod(Instances.class, "listOf", List.class, InjectableBean.class, Type.class, Type.class,
+                    Set.class, CreationalContextImpl.class, Set.class, Member.class, int.class);
+
+    public static final MethodDescriptor INSTANCES_LIST_OF_HANDLES = MethodDescriptor
+            .ofMethod(Instances.class, "listOfHandles", List.class, InjectableBean.class, Type.class, Type.class,
+                    Set.class, CreationalContextImpl.class, Set.class, Member.class, int.class);
 
     private MethodDescriptors() {
     }

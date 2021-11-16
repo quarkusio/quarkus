@@ -3414,6 +3414,11 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye.config</groupId>
+                <artifactId>smallrye-config-source-file-system</artifactId>
+                <version>${smallrye-config.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.config</groupId>
                 <artifactId>smallrye-config-source-yaml</artifactId>
                 <version>${smallrye-config.version}</version>
             </dependency>

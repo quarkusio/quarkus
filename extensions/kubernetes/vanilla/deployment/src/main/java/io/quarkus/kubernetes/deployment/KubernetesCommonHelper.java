@@ -50,7 +50,6 @@ import io.dekorate.kubernetes.decorator.ApplyLimitsCpuDecorator;
 import io.dekorate.kubernetes.decorator.ApplyLimitsMemoryDecorator;
 import io.dekorate.kubernetes.decorator.ApplyRequestsCpuDecorator;
 import io.dekorate.kubernetes.decorator.ApplyRequestsMemoryDecorator;
-import io.dekorate.kubernetes.decorator.ApplyServiceAccountNamedDecorator;
 import io.dekorate.kubernetes.decorator.ApplyWorkingDirDecorator;
 import io.dekorate.kubernetes.decorator.RemoveAnnotationDecorator;
 import io.dekorate.project.BuildInfo;
@@ -183,7 +182,7 @@ public class KubernetesCommonHelper {
 
         //Handle RBAC
         if (!roleBindings.isEmpty()) {
-            result.add(new DecoratorBuildItem(new ApplyServiceAccountNamedDecorator()));
+            result.add(new DecoratorBuildItem(new ApplyServiceAccountNameDecorator()));
             result.add(new DecoratorBuildItem(new AddServiceAccountResourceDecorator()));
             roles.forEach(r -> result.add(new DecoratorBuildItem(new AddRoleResourceDecorator(r))));
             roleBindings.forEach(rb -> {
@@ -290,7 +289,7 @@ public class KubernetesCommonHelper {
         });
 
         config.getServiceAccount().ifPresent(s -> {
-            result.add(new DecoratorBuildItem(target, new ApplyServiceAccountNamedDecorator(name, s)));
+            result.add(new DecoratorBuildItem(target, new ApplyServiceAccountNameDecorator(name, s)));
         });
 
         config.getInitContainers().entrySet().forEach(e -> {

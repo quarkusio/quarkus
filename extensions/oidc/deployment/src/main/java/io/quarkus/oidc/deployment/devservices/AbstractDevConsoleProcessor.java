@@ -13,8 +13,6 @@ public abstract class AbstractDevConsoleProcessor {
             String oidcProviderName,
             String oidcApplicationType,
             String oidcGrantType,
-            String clientId,
-            String clientSecret,
             String authorizationUrl,
             String tokenUrl,
             String logoutUrl,
@@ -24,9 +22,6 @@ public abstract class AbstractDevConsoleProcessor {
         }
         devConsoleTemplate.produce(new DevConsoleTemplateInfoBuildItem("oidcApplicationType", oidcApplicationType));
         devConsoleTemplate.produce(new DevConsoleTemplateInfoBuildItem("oidcGrantType", oidcGrantType));
-
-        devConsoleTemplate.produce(new DevConsoleTemplateInfoBuildItem("clientId", clientId));
-        devConsoleTemplate.produce(new DevConsoleTemplateInfoBuildItem("clientSecret", clientSecret));
 
         devConsoleTemplate.produce(new DevConsoleTemplateInfoBuildItem("authorizationUrl", authorizationUrl));
         devConsoleTemplate.produce(new DevConsoleTemplateInfoBuildItem("tokenUrl", tokenUrl));

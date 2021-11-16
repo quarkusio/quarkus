@@ -2,7 +2,9 @@ package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
 import io.restassured.RestAssured;
 import java.time.LocalDate;
+import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
@@ -32,6 +34,12 @@ public class LocalDateParamTest {
                 .then().body(Matchers.equalTo("hello@1995-09-21"));
     }
 
+    @Test
+    public void localDateAsFormParam() {
+        RestAssured.given().formParam("date", "1995-09-22").post("/hello")
+                .then().body(Matchers.equalTo("hello:1995-09-22"));
+    }
+
     @Path("hello")
     public static class HelloResource {
 
@@ -44,6 +52,11 @@ public class LocalDateParamTest {
         @Path("{date}")
         public String helloPath(@PathParam("date") LocalDate date) {
             return "hello@" + date;
+        }
+
+        @POST
+        public String helloForm(@FormParam("date") LocalDate date) {
+            return "hello:" + date;
         }
     }
 }

@@ -40,13 +40,16 @@ public class ApplicationDeploymentClasspathBuilder {
                 extensions.add(knownExtension);
             }
         }
-
         for (ExtensionDependency extension : extensions) {
-            requireDeploymentDependency(deploymentConfigurationName, extension, dependencies);
-            if (!alreadyProcessed.add(extension.extensionId)) {
-                continue;
+            if (extension instanceof LocalExtensionDependency) {
+                addLocalDeploymentDependency(deploymentConfigurationName, (LocalExtensionDependency) extension, dependencies);
+            } else {
+                requireDeploymentDependency(deploymentConfigurationName, extension, dependencies);
+                if (!alreadyProcessed.add(extension.extensionId)) {
+                    continue;
+                }
+                extension.installDeploymentVariant(dependencies);
             }
-            extension.createDeploymentVariant(dependencies);
         }
     }
 
@@ -85,6 +88,12 @@ public class ApplicationDeploymentClasspathBuilder {
             }
         }
         return extensions;
+    }
+
+    private void addLocalDeploymentDependency(String deploymentConfigurationName, LocalExtensionDependency extension,
+            DependencyHandler dependencies) {
+        dependencies.add(deploymentConfigurationName,
+                dependencies.project(Collections.singletonMap("path", extension.findDeploymentModulePath())));
     }
 
     private void requireDeploymentDependency(String deploymentConfigurationName, ExtensionDependency extension,

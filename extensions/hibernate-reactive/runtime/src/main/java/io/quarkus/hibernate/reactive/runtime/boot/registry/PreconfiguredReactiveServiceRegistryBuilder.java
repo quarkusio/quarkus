@@ -26,11 +26,11 @@ import org.hibernate.reactive.provider.service.NoJtaPlatformInitiator;
 import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
 import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
 import org.hibernate.reactive.provider.service.ReactiveQueryTranslatorFactoryInitiator;
+import org.hibernate.reactive.provider.service.ReactiveSchemaManagementToolInitiator;
 import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilderInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
-import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.boot.registry.MirroringIntegratorService;
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusManagedBeanRegistryInitiator;
@@ -163,9 +163,6 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         // Custom one!
         serviceInitiators.add(QuarkusImportSqlCommandExtractorInitiator.INSTANCE);
 
-        // TODO disable?
-        serviceInitiators.add(SchemaManagementToolInitiator.INSTANCE);
-
         // Replaces JdbcEnvironmentInitiator.INSTANCE :
         serviceInitiators.add(new QuarkusNoJdbcEnvironmentInitiator(rs.getDialect()));
 
@@ -195,6 +192,7 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         serviceInitiators.add(RefCursorSupportInitiator.INSTANCE);
 
         // Custom for Hibernate Reactive:
+        serviceInitiators.add(ReactiveSchemaManagementToolInitiator.INSTANCE);
         //serviceInitiators.add(QueryTranslatorFactoryInitiator.INSTANCE);
         serviceInitiators.add(ReactiveQueryTranslatorFactoryInitiator.INSTANCE);
 

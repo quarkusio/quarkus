@@ -533,6 +533,20 @@ When running the production version of the application, the Vault connection nee
 so if you want to include a production Vault config in your `application.properties` and continue to use Dev Services
 we recommend that you use the `%prod.` profile to define your Vault connection settings.
 
+=== Shared server
+
+Most of the time you need to share the server between applications.
+Dev Services for Vault implements a _service discovery_ mechanism for your multiple Quarkus applications running in _dev_ mode to share a single server.
+
+NOTE: Dev Services for Vault starts the container with the `quarkus-dev-service-vault` label which is used to identify the container.
+
+If you need multiple (shared) servers, you can configure the `quarkus.vault.devservices.service-name` attribute and indicate the server name.
+It looks for a container with the same value, or starts a new one if none can be found.
+The default service name is `vault`.
+
+Sharing is enabled by default in dev mode, but disabled in test mode.
+You can disable the sharing with `quarkus.vault.devservices.shared=false`.
+
 === Automatic Secret Engine Provisioning
 
 To help with provisioning the automatically managed Vault instance, you can enable certain secret engines.

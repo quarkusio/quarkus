@@ -759,15 +759,13 @@ quarkus.oidc.credentials.client-secret.value=mysecret
 quarkus.oidc.credentials.client-secret.method=post
 ----
 
-`client_secret_jwt`:
+`client_secret_jwt`, signature algorithm is HS256:
 
 [source,properties]
 ----
 quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
 quarkus.oidc.client-id=quarkus-app
 quarkus.oidc.credentials.jwt.secret=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow
-# This is a token key identifier 'kid' header - set it if your OpenId Connect provider requires it,
-quarkus.oidc.credentials.jwt.token-key-id=mykey
 ----
 
 or with the secret retrieved from a link:credentials-provider[CredentialsProvider]:
@@ -783,18 +781,16 @@ quarkus.oidc.credentials.jwt.secret-provider.key=mysecret-key
 quarkus.oidc.credentials.jwt.secret-provider.name=oidc-credentials-provider
 ----
 
-`private_key_jwt` with the PEM key file:
+`private_key_jwt` with the PEM key file, signature algorithm is RS256:
 
 [source,properties]
 ----
 quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
 quarkus.oidc.client-id=quarkus-app
 quarkus.oidc.credentials.jwt.key-file=privateKey.pem
-# This is a token key identifier 'kid' header - set it if your OpenId Connect provider requires it
-quarkus.oidc.credentials.jwt.token-key-id=mykey
 ----
 
-`private_key_jwt` with the key store file:
+`private_key_jwt` with the key store file, signature algorithm is RS256:
 
 [source,properties]
 ----
@@ -803,14 +799,37 @@ quarkus.oidc.client-id=quarkus-app
 quarkus.oidc.credentials.jwt.key-store-file=keystore.jks
 quarkus.oidc.credentials.jwt.key-store-password=mypassword
 quarkus.oidc.credentials.jwt.key-password=mykeypassword
+
 # Private key alias inside the keystore
-quarkus.oidc.credentials.jwt.key-id=mykey
-# This is a token key identifier 'kid' header - set it if your OpenId Connect provider requires it,
-# Note it can be different to the `quarkus.oidc.credentials.jwt.key-id` value
-quarkus.oidc.credentials.jwt.token-key-id=mykey
+quarkus.oidc.credentials.jwt.key-id=mykeyAlias
 ----
 
 Using `client_secret_jwt` or `private_key_jwt` authentication methods ensures that no client secret goes over the wire.
+
+
+==== Additional JWT Authentication options
+
+If either `client_secret_jwt` or `private_key_jwt` authentication methods are used then the JWT signature algorithm, key identifier and audience can be customized, for example:
+
+[source,properties]
+----
+# private_key_jwt client authentication
+
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.client-id=quarkus-app
+quarkus.oidc.credentials.jwt.key-file=privateKey.pem
+
+# This is a token key identifier 'kid' header - set it if your OpenId Connect provider requires it.
+# Note if the key is represented in a JSON Web Key (JWK) format with a `kid` property then
+# using 'quarkus.oidc.credentials.jwt.token-key-id' is not necessary.
+quarkus.oidc.credentials.jwt.token-key-id=mykey
+
+# Use RS512 signature algorithm instead of the default RS256
+quarkus.oidc.credentials.jwt.signature-algorithm=RS512
+
+# The token endpoint URL is the default audience value, use the base address URL instead:
+quarkus.oidc.credentials.jwt.audience=${quarkus.oidc-client.auth-server-url}
+----
 
 [[integration-testing]]
 === Testing

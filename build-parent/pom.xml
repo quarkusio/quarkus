@@ -42,7 +42,9 @@
         <graal-sdk.version-for-documentation>21.3.0</graal-sdk.version-for-documentation>
         <mandrel.version-for-documentation>21.3</mandrel.version-for-documentation>
 
+        <asciidoctorj.version>2.3.0</asciidoctorj.version>
         <htmlunit.version>2.40.0</htmlunit.version>
+        <javaparser-core.version>3.14.10</javaparser-core.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
 
         <!-- Dev tools -->
@@ -63,7 +65,7 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.8.1</proposed-maven-version>
         <maven-wrapper.version>0.7.7</maven-wrapper.version>
-        <gradle-wrapper.version>7.2</gradle-wrapper.version>
+        <gradle-wrapper.version>7.3</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
 
@@ -90,9 +92,7 @@
 
         <!-- Align various dependencies that are not really part of the bom-->
         <findbugs.version>3.0.2</findbugs.version>
-        <jsoup.version>1.14.2</jsoup.version>
         <junit4.version>4.13.2</junit4.version>
-        <wagon-provider-api.version>3.4.3</wagon-provider-api.version>
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
@@ -118,8 +118,8 @@
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
 
         <!--TODO: remove when switched back to quarkus-maven-plugin for grpc stubs-->
-        <protoc.version>3.14.0</protoc.version> <!--keep in sync with the BOM-->
-        <grpc.version>1.35.0</grpc.version> <!--keep in sync with the BOM -->
+        <protoc.version>3.19.1</protoc.version> <!--keep in sync with the BOM-->
+        <grpc.version>1.42.1</grpc.version> <!--keep in sync with the BOM -->
 
         <!-- Webjars -->
         <webjar.bootstrap.version>4.6.0</webjar.bootstrap.version>
@@ -232,16 +232,6 @@
                 <version>${findbugs.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.jsoup</groupId>
-                <artifactId>jsoup</artifactId>
-                <version>${jsoup.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.maven.wagon</groupId>
-                <artifactId>wagon-provider-api</artifactId>
-                <version>${wagon-provider-api.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>com.unboundid</groupId>
                 <artifactId>unboundid-ldapsdk</artifactId>
                 <version>${unboundid-ldap.version}</version>
@@ -304,6 +294,18 @@
                 <artifactId>quarkus-security-test-utils</artifactId>
                 <version>${project.version}</version>
                 <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.asciidoctor</groupId>
+                <artifactId>asciidoctorj</artifactId>
+                <version>${asciidoctorj.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>javax.annotation</groupId>
+                        <artifactId>javax.annotation-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>

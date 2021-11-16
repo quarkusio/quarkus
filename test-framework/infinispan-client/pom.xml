@@ -66,12 +66,9 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- needed to make the junit version converge -->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit4.version}</version>
-            <optional>true</optional>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit4-mock</artifactId>
         </dependency>
     </dependencies>
 

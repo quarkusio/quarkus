@@ -5,7 +5,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
@@ -39,6 +41,12 @@ public class LocalDateCustomParamConverterProviderTest {
                 .then().body(Matchers.equalTo("hello@1995-09-21"));
     }
 
+    @Test
+    public void localDateAsFormParam() {
+        RestAssured.given().formParam("date", "1995-W38-5").post("/hello")
+                .then().body(Matchers.equalTo("hello:1995-09-22"));
+    }
+
     @Path("hello")
     public static class HelloResource {
 
@@ -51,6 +59,11 @@ public class LocalDateCustomParamConverterProviderTest {
         @Path("{date}")
         public String helloPath(@PathParam("date") LocalDate date) {
             return "hello@" + date;
+        }
+
+        @POST
+        public String helloForm(@FormParam("date") LocalDate date) {
+            return "hello:" + date;
         }
     }
 

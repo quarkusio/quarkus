@@ -99,7 +99,8 @@ public class OidcClientImpl implements OidcClient {
                     // if it is a refresh then a map has already been copied
                     body = !refresh ? copyMultiMap(body) : body;
                     body.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
-                    body.add(OidcConstants.CLIENT_ASSERTION, OidcCommonUtils.signJwtWithKey(oidcConfig, clientJwtKey));
+                    body.add(OidcConstants.CLIENT_ASSERTION,
+                            OidcCommonUtils.signJwtWithKey(oidcConfig, tokenRequestUri, clientJwtKey));
                 }
                 if (!additionalGrantParameters.isEmpty()) {
                     body = copyMultiMap(body);

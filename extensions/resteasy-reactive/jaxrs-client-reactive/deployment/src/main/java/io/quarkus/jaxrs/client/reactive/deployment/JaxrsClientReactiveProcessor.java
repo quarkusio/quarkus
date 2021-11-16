@@ -1348,7 +1348,7 @@ public class JaxrsClientReactiveProcessor {
                         genericReturnType = createGenericTypeFromParameterizedType(methodCreator,
                                 type.asParameterizedType());
                     } else {
-                        simpleReturnType = type.toString();
+                        simpleReturnType = type.name().toString();
                     }
                 }
             } else {
@@ -1388,7 +1388,7 @@ public class JaxrsClientReactiveProcessor {
                                 type = type.asWildcardType().extendsBound();
                             }
                         } else {
-                            simpleReturnType = type.toString();
+                            simpleReturnType = type.name().toString();
                             break;
                         }
                     }

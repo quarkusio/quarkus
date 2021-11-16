@@ -87,7 +87,13 @@ So, the more code you run during the two phases above, the faster your applicati
 
 Now that everything is explained, we can start coding!
 
-== Maven setup
+== Project setup
+
+Extensions can be built with either Maven or Gradle. Depending on your build tool, setup can be done as following:
+
+NOTE: The Gradle extension plugin is still experimental and may be missing features available in the Maven plugin.
+
+=== Maven setup
 
 Quarkus provides `create-extension` Maven Mojo to initialize your extension project.
 
@@ -140,7 +146,7 @@ applying codestarts...
 
 Maven has generated a `greeting-extension` directory containing the extension project which consists of the parent `pom.xml`, the `runtime` and the `deployment` modules.
 
-=== The parent pom.xml
+==== The parent pom.xml
 
 Your extension is a multi-module project. So let's start by checking out the parent POM at `./greeting-extension/pom.xml`.
 
@@ -221,7 +227,7 @@ Your extension is a multi-module project. So let's start by checking out the par
 <3> The `quarkus-bom` aligns your dependencies with those used by Quarkus during the augmentation phase.
 <4> Quarkus requires these configs to run tests properly
 
-=== The Deployment module
+==== The Deployment module
 
 Let's have a look at the deployment's `./greeting-extension/deployment/pom.xml`.
 [source, xml]
@@ -313,7 +319,7 @@ Be patient, we will explain the `Build Step Processor` concept and all the exten
 At this point, you just need to understand that this class explains to Quarkus how to deploy a feature named `greeting` which is your extension.
 In other words, you are augmenting your application to use the `greeting` extension with all the Quarkus benefits (build time optimization, native support, etc.).
 
-=== The Runtime module
+==== The Runtime module
 
 Finally `./greeting-extension/runtime/pom.xml`.
 
@@ -383,6 +389,104 @@ The key points are:
 <3> We add  the `quarkus-bootstrap-maven-plugin` to generate the Quarkus extension descriptor included into the runtime artifact which links it with the corresponding deployment artifact.
 <4> We add  the `quarkus-extension-processor` to the compiler annotation processors.
 
+=== Gradle setup
+
+Quarkus does not provide any way to initialize a Gradle project for extensions yet.
+
+As mentionned before, an extension is composed of two modules:
+
+* `runtime`
+* `deployment`
+
+We are going to create a Gradle multi module project with those two modules. Here is a simple `settings.gradle` example file:
+
+[source, groovy]
+----
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    plugins {
+        id 'io.quarkus.extension' version "${quarkus.version}" <1>
+    }
+}
+
+include 'runtime', 'deployment' <2>
+
+rootProject.name = 'greeting-extension'
+----
+
+<1> Configure the quarkus extension plugin version
+<2> Include both `runtime` and `deployment` modules
+
+Here is a sample of a root `build.gradle` file:
+
+[source, groovy]
+----
+subprojects {
+    apply plugin: 'java-library' <1>
+    apply plugin: 'maven-publish' <2>
+
+    group 'org.acme' <3>
+    version '1.0-SNAPSHOT'
+}
+----
+
+<1> Apply the `java-library` plugin for all sub-modules
+<2> Apply the `maven-publish` plugin used to publish our artifacts
+<3> Globally set the group id used for publication
+
+The `io.quarkus.extension` plugin will be used in order to help us building the extension.
+The plugin will *only* be applied to the `runtime` module.
+
+==== The deployment module
+
+The deployment module does not require any specific plugin.
+Here is an example of a minimal `build.gradle` file for the `deployment` module:
+
+[source, groovy]
+----
+name = 'greeting-extension-deployment' <1>
+
+dependencies {
+    implementation project(':runtime') <2>
+
+    implementation platform("io.quarkus:quarkus-bom:${quarkus.version}")
+
+    testImplementation 'io.quarkus:quarkus-junit5-internal'
+}
+----
+
+<1> By convention, the deployment module has the `-deployment` suffix (`greeting-extension-deployment`).
+<2> The deployment module *must* depend on the `runtime` module.
+
+==== The runtime module
+
+The runtime module applies the `io.quarkus.extension` plugin. This will:
+
+* Add `quarkus-extension-process` as annotation processor to both modules.
+* Generate extension description files.
+
+Here is an example of `build.gradle` file for the `runtime` module:
+
+[source, groovy]
+----
+plugins {
+    id 'io.quarkus.extension' <1>
+}
+
+name = 'greeting-extension' <2>
+description = 'Greeting extension'
+
+dependencies {
+    implementation platform("io.quarkus:quarkus-bom:${quarkus.version}")
+}
+----
+
+<1> Apply the `io.quarkus.extension` plugin.
+<2> By convention, the runtime module doesn't have a suffix (and thus is named `greeting-extension`) as it is the artifact exposed to the end user.
+
 == Basic version of the Sample Greeting extension
 
 === Implementing the Greeting feature
@@ -401,6 +505,13 @@ All we need to do is add `quarkus-undertow` as dependency to our `./greeting-ext
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-undertow</artifactId>
     </dependency>
+----
+
+For Gradle, add the dependency in `./greeting-extension/runtime/build.gradle` file:
+
+[source, groovy]
+----
+    implementation 'io.quarkus:quarkus-undertow'
 ----
 
 NOTE: The dependency on `quarkus-arc` generated by the `create-extension` mojo can now be removed since
@@ -501,6 +612,13 @@ Let's add `quarkus-undertow-deployment` as dependency to our `./greeting-extensi
 NOTE: The dependency on `quarkus-arc-deployment` generated by the `create-extension` mojo can now be removed since
 `quarkus-undertow-deployment` already depends on it.
 
+For Gradle, add the dependency in `./greeting-extension/deployment/build.gradle` file:
+
+[source, groovy]
+----
+    implementation 'io.quarkus:quarkus-undertow-deployment'
+----
+
 We can now update `org.acme.greeting.extension.deployment.GreetingExtensionProcessor`:
 
 [source, java]
@@ -552,10 +670,19 @@ Let's add the `rest-assured` dependency into the  `./greeting-extension/deployme
     ...
     <dependency>
       <groupId>io.rest-assured</groupId>
-      <artifactId>rest-assured</artifactId> <!--2-->
+      <artifactId>rest-assured</artifactId>
       <scope>test</scope>
     </dependency>
 ----
+
+For Gradle, add the dependency in `./greeting-extension/deployment/build.gradle` file:
+
+[source, groovy]
+----
+    ...
+    testImplementation 'io.rest-assured:rest-assured'
+----
+
 
 The `create-extension` Maven Mojo can create the test and integration-test structure (drop the `-DwithoutTests`). Here, we'll create it ourselves:
 

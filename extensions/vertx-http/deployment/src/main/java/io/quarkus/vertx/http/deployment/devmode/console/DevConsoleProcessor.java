@@ -473,7 +473,7 @@ public class DevConsoleProcessor {
                 new ConsoleCommand('d', "Open the Dev UI in a browser", null, () -> openBrowser(rp, np, "/q/dev", host, port)));
     }
 
-    private void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String path, String host,
+    public static void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String path, String host,
             String port) {
         if (path.startsWith("/q")) {
             path = np.resolvePath(path.substring(3));

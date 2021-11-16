@@ -16,6 +16,8 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
+import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.runtime.LaunchMode;
@@ -25,6 +27,11 @@ public class PostgresqlDevServicesProcessor {
     private static final Logger LOG = Logger.getLogger(PostgresqlDevServicesProcessor.class);
 
     public static final String TAG = "13.2";
+
+    @BuildStep
+    ConsoleCommandBuildItem psqlCommand(DevServicesLauncherConfigResultBuildItem devServices) {
+        return new ConsoleCommandBuildItem(new PostgresCommand(devServices));
+    }
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupPostgres(

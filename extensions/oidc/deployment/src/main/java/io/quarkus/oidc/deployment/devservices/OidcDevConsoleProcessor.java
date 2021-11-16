@@ -106,8 +106,8 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     : Duration.ofSeconds(4);
             produceDevConsoleRouteItems(devConsoleRoute,
                     new OidcTestServiceHandler(vertxInstance, webClientTimeout),
-                    new OidcAuthorizationCodePostHandler(vertxInstance, webClientTimeout),
-                    new OidcPasswordClientCredHandler(vertxInstance, webClientTimeout));
+                    new OidcAuthorizationCodePostHandler(vertxInstance, webClientTimeout, oidcConfig.devui.grantOptions),
+                    new OidcPasswordClientCredHandler(vertxInstance, webClientTimeout, oidcConfig.devui.grantOptions));
         }
     }
 

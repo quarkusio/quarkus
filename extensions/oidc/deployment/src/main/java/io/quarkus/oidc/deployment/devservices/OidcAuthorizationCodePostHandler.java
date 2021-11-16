@@ -1,6 +1,7 @@
 package io.quarkus.oidc.deployment.devservices;
 
 import java.time.Duration;
+import java.util.Map;
 
 import org.jboss.logging.Logger;
 
@@ -20,10 +21,13 @@ public class OidcAuthorizationCodePostHandler extends DevConsolePostHandler {
 
     Vertx vertxInstance;
     Duration timeout;
+    Map<String, String> grantOptions;
 
-    public OidcAuthorizationCodePostHandler(Vertx vertxInstance, Duration timeout) {
+    public OidcAuthorizationCodePostHandler(Vertx vertxInstance, Duration timeout,
+            Map<String, Map<String, String>> grantOptions) {
         this.vertxInstance = vertxInstance;
         this.timeout = timeout;
+        this.grantOptions = grantOptions.get("code");
     }
 
     @Override
@@ -46,6 +50,9 @@ public class OidcAuthorizationCodePostHandler extends DevConsolePostHandler {
             props.add("grant_type", "authorization_code");
             props.add("code", form.get("authorizationCode"));
             props.add("redirect_uri", form.get("redirectUri"));
+            if (grantOptions != null) {
+                props.addAll(grantOptions);
+            }
 
             String tokens = request.sendBuffer(OidcCommonUtils.encodeForm(props)).onItem()
                     .transform(resp -> getBodyAsString(resp))

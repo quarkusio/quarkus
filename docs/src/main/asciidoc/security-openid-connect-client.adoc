@@ -303,7 +303,7 @@ public class OidcClientResource {
 ----
 
 [[named-oidc-clients]]
-=== Inject named `OidcClient` and `Tokens`
+=== Inject named OidcClient and Tokens
 
 In case of multiple configured ``OidcClient``s you can specify the `OidcClient` injection target by the extra qualifier `@NamedOidcClient` instead of working with `OidcClients`:
 
@@ -350,7 +350,7 @@ public class OidcClientRequestCustomFilter implements ClientRequestFilter {
 ----
 
 [[oidc-client-reactive-filter]]
-=== Use OidcClient in MicroProfile RestClient Reactive client filter
+=== Use OidcClient in RestClient Reactive ClientFilter
 
 Add the following Maven Dependency:
 
@@ -391,7 +391,7 @@ public interface ProtectedResourceService {
 
 
 [[oidc-client-filter]]
-=== Use OidcClient in MicroProfile RestClient client filter
+=== Use OidcClient in RestClient ClientFilter
 
 Add the following Maven Dependency:
 
@@ -448,7 +448,7 @@ Alternatively, `OidcClientRequestFilter` can be registered automatically with al
 
 `OidcClientRequestFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-client-filter.client-name` configuration property.
 
-=== Use Custom MicroProfile RestClient client filter
+=== Use Custom RestClient ClientFilter
 
 If you prefer you can use your own custom filter and inject `Tokens`:
 
@@ -715,7 +715,7 @@ and finally write the test code. Given the Wiremock-based resource above, the fi
 
 If you work with Keycloak then you can use the same approach as described in the link:security-openid-connect#integration-testing-keycloak[OpenId Connect Bearer Token Integration testing] `Keycloak` section.
 
-=== How to check the errors in the logs ==
+=== How to check the errors in the logs
 
 Please enable `io.quarkus.oidc.client.runtime.OidcClientImpl` `TRACE` level logging to see more details about the token acquisition and refresh errors:
 
@@ -734,7 +734,7 @@ quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".min-lev
 ----
 
 [[token-propagation]]
-== Token Propagation in MicroProfile RestClient client filter
+== Token Propagation
 
 The `quarkus-oidc-token-propagation` extension provides two JAX-RS `javax.ws.rs.client.ClientRequestFilter` class implementations that simplify the propagation of authentication information.
 `io.quarkus.oidc.token.propagation.AccessTokenRequestFilter` propagates the link:security-openid-connect[Bearer] token present in the current active request or the token acquired from the link:security-openid-connect-web-authentication[Authorization Code Flow], as the HTTP `Authorization` header's `Bearer` scheme value.
@@ -748,7 +748,7 @@ Additionally, a complex application may need to exchange or update the tokens be
 
 The following sections show how `AccessTokenRequestFilter` and `JsonWebTokenRequestFilter` can help.
 
-=== AccessTokenRequestFilter
+=== RestClient AccessTokenRequestFilter
 
 `AccessTokenRequestFilter` treats all tokens as Strings and as such it can work with both JWT and opaque tokens.
 
@@ -807,7 +807,7 @@ Note `AccessTokenRequestFilter` will use `OidcClient` to exchange the current to
 
 `AccessTokenRequestFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-token-propagation.client-name` configuration property.
 
-=== JsonWebTokenRequestFilter
+=== RestClient JsonWebTokenRequestFilter
 
 Using `JsonWebTokenRequestFilter` is recommended if you work with Bearer JWT tokens where these tokens can have their claims such as `issuer` and `audience` modified and the updated tokens secured (for example, re-signed) again. It expects an injected `org.eclipse.microprofile.jwt.JsonWebToken` and therefore will not work with the opaque tokens. Also, if your OpenId Connect Provider supports a Token Exchange protocol then it is recommended to use `AccessTokenRequestFilter` instead - as both JWT and opaque bearer tokens can be securely exchanged with `AccessTokenRequestFilter`.
 

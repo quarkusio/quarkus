@@ -66,7 +66,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
     }
 
     public void add(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor, ClassInfo repositoryClassInfo,
-            ClassInfo entityClassInfo) {
+            ClassInfo entityClassInfo, String idTypeStr) {
 
         // Remember custom return types: {resultType:{methodName:[fieldNames]}}
         Map<DotName, Map<String, List<String>>> customResultTypes = new HashMap<>(3);
@@ -279,6 +279,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                     DotName customResultTypeName = resultType.name();
 
                     if (customResultTypeName.equals(entityClassInfo.name())
+                            || customResultTypeName.toString().equals(idTypeStr)
                             || isHibernateSupportedReturnType(customResultTypeName)) {
                         // no special handling needed
                         customResultTypeName = null;
@@ -291,7 +292,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                         if (Modifier.isInterface(resultClassInfo.flags())) {
                             // Find the implementation name, and use that for subsequent query result generation
                             customResultTypeName = customResultTypeNames.computeIfAbsent(customResultTypeName,
-                                    k -> createSimpleInterfaceImpl(resultType.name()));
+                                    this::createSimpleInterfaceImpl);
 
                             // Remember the parameters for this usage of the custom type, we'll deal with it later
                             customResultTypes.computeIfAbsent(customResultTypeName,

@@ -41,9 +41,6 @@ public class RestClientOverrideRuntimeConfigTest {
         assertTrue(specifiedDefaultValues.isPresent());
         assertTrue(specifiedDefaultValues.get().getPropertyNames()
                 .contains("io.quarkus.restclient.configuration.EchoClient/mp-rest/url"));
-        // This config key comes from the interceptor and it is recorded with an empty value. This allow the user to still override using the original key
-        assertEquals("", specifiedDefaultValues.get()
-                .getValue("quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url"));
 
         ConfigValue mpValue = config.getConfigValue("io.quarkus.restclient.configuration.EchoClient/mp-rest/url");
         // Fallbacks from runtime to the override build time value

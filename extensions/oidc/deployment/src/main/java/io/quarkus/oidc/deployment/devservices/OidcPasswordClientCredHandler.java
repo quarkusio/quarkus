@@ -18,15 +18,20 @@ public class OidcPasswordClientCredHandler extends DevConsolePostHandler {
 
     Vertx vertxInstance;
     Duration timeout;
+    Map<String, String> passwordGrantOptions;
+    Map<String, String> clientCredGrantOptions;
 
-    public OidcPasswordClientCredHandler(Vertx vertxInstance, Duration timeout) {
-        this(vertxInstance, timeout, Map.of());
+    public OidcPasswordClientCredHandler(Vertx vertxInstance, Duration timeout, Map<String, Map<String, String>> grantOptions) {
+        this(vertxInstance, timeout, Map.of(), grantOptions);
     }
 
-    public OidcPasswordClientCredHandler(Vertx vertxInstance, Duration timeout, Map<String, String> users) {
+    public OidcPasswordClientCredHandler(Vertx vertxInstance, Duration timeout, Map<String, String> users,
+            Map<String, Map<String, String>> grantOptions) {
         this.vertxInstance = vertxInstance;
         this.timeout = timeout;
         this.users = users;
+        this.passwordGrantOptions = grantOptions.get("password");
+        this.clientCredGrantOptions = grantOptions.get("client");
     }
 
     @Override
@@ -49,6 +54,7 @@ public class OidcPasswordClientCredHandler extends DevConsolePostHandler {
                         form.get("client"), form.get("clientSecret"),
                         userName,
                         password,
+                        passwordGrantOptions,
                         timeout);
             } else {
                 LOG.infof("Using a client_credentials grant to get a token token from '%s' with client id '%s'",
@@ -57,6 +63,7 @@ public class OidcPasswordClientCredHandler extends DevConsolePostHandler {
                 token = OidcDevServicesUtils.getClientCredAccessToken(client, tokenUrl,
                         form.get("client"),
                         form.get("clientSecret"),
+                        clientCredGrantOptions,
                         timeout);
             }
             LOG.infof("Test token: %s", token);

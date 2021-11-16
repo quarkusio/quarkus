@@ -1,6 +1,7 @@
 package io.quarkus.oidc.deployment;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -58,6 +59,12 @@ public class DevUiConfig {
         @ConfigItem
         public Optional<Type> type;
     }
+
+    /**
+     * Grant options
+     */
+    @ConfigItem
+    public Map<String, Map<String, String>> grantOptions;
 
     /**
      * The WebClient timeout.

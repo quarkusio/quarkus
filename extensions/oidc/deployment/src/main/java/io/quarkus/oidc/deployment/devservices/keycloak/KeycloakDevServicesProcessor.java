@@ -519,7 +519,7 @@ public class KeycloakDevServicesProcessor {
         try {
             String token = OidcDevServicesUtils.getPasswordAccessToken(client,
                     keycloakUrl + "/realms/master/protocol/openid-connect/token",
-                    "admin-cli", null, "admin", "admin", capturedDevServicesConfiguration.webClienTimeout);
+                    "admin-cli", null, "admin", "admin", null, capturedDevServicesConfiguration.webClienTimeout);
 
             HttpResponse<Buffer> response = client.postAbs(keycloakUrl + "/admin/realms")
                     .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")

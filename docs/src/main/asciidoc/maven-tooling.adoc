@@ -332,7 +332,7 @@ Executing `./mvnw quarkus:dependency-tree` on your project should result in an o
 
 [source,text,subs=attributes+]
 ----
-[INFO] --- quarkus-maven-plugin:{quarkus-version}:build-tree (default-cli) @ getting-started ---
+[INFO] --- quarkus-maven-plugin:{quarkus-version}:dependency-tree (default-cli) @ getting-started ---
 [INFO] org.acme:getting-started:jar:1.0.0-SNAPSHOT
 [INFO] └─ io.quarkus:quarkus-resteasy-deployment:jar:{quarkus-version} (compile)
 [INFO]    ├─ io.quarkus:quarkus-resteasy-server-common-deployment:jar:{quarkus-version} (compile)
@@ -344,6 +344,21 @@ Executing `./mvnw quarkus:dependency-tree` on your project should result in an o
 ----
 
 The goal accepts the optional `mode` parameter whose default value is `prod`, i.e. the production build dependency tree. Alternatively, it accepts values `test` to display the test dependency tree and `dev` to display the dev mode dependency tree.
+
+== Downloading Maven artifact dependencies for offline development and testing
+
+Quarkus extension dependencies are divided into the runtime extension dependencies that end up on the application runtime classpath and the deployment (or build time) extension dependencies that are resolved by Quarkus only at application build time to create
+the build classpath. Application developers are expected to express dependencies only on the runtime artifacts of Quarkus extensions. As a consequence, the deployment extension dependencies aren't visible to Maven plugins that aren't aware of the Quarkus
+extension dependency model, such as the `maven-dependency-plugin`, `go-offline-maven-plugin`, etc. That means those plugins can not be used to pre-download all the application dependencies to be able to build and test the application later in offline mode.
+
+To enable the use-case of building and testing a Quarkus application offline, the `quarkus-maven-plugin` includes the `go-offline` goal that could be called from the command line like this:
+
+[source,bash]
+----
+mvn quarkus:go-offline
+----
+
+This goal will resolve all the runtime, build time, test and dev mode dependencies of the application downloading them to the configured local Maven repository.
 
 == Building a native executable
 

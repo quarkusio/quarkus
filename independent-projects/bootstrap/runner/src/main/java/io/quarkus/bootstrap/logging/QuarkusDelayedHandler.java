@@ -23,8 +23,10 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -290,14 +292,21 @@ public class QuarkusDelayedHandler extends ExtHandler {
                 publishToNestedHandlers(record);
             }
         }
-
+        Map<String, List<java.util.logging.Level>> lostCategories = new TreeMap<>();
         for (CategoryAndLevel entry : droppedRecords) {
             if (Logger.getLogger(entry.category).isLoggable(entry.level)) {
-                reportError(
-                        "The delayed handler's queue was overrun and log record(s) were lost. Did you forget to configure logging?",
-                        null, ErrorManager.WRITE_FAILURE);
-                break;
+                lostCategories.computeIfAbsent(entry.category, (key) -> new ArrayList<>())
+                        .add(entry.level);
             }
+        }
+        if (lostCategories.size() > 0) {
+            StringBuilder msg = new StringBuilder(
+                    "The delayed handler's queue was overrun and log record(s) were lost (Did you forget to configure logging?): \n");
+            for (Map.Entry<String, List<java.util.logging.Level>> entry : lostCategories.entrySet()) {
+                msg.append(String.format("\t - %s: %s\n", entry.getKey(), entry.getValue()));
+            }
+            reportError(msg.toString(), null, ErrorManager.WRITE_FAILURE);
+            lostCategories.clear();
         }
         droppedRecords.clear();
         activated = true;
@@ -314,10 +323,12 @@ public class QuarkusDelayedHandler extends ExtHandler {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
+            if (this == o) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            }
+            if (o == null || getClass() != o.getClass()) {
                 return false;
+            }
             CategoryAndLevel that = (CategoryAndLevel) o;
             return Objects.equals(category, that.category) && Objects.equals(level, that.level);
         }

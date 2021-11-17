@@ -12,6 +12,8 @@ import io.quarkus.registry.catalog.Category;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 
+import java.util.List;
+
 public class CatalogProcessorTest extends PlatformAwareTestBase {
 
     @Test

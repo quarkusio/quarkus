@@ -172,6 +172,12 @@ public abstract class QuarkusDevModeLauncher {
         }
 
         @SuppressWarnings("unchecked")
+        public B releaseJavaVersion(String releaseJavaVersion) {
+            QuarkusDevModeLauncher.this.releaseJavaVersion = releaseJavaVersion;
+            return (B) this;
+        }
+
+        @SuppressWarnings("unchecked")
         public B sourceJavaVersion(String sourceJavaVersion) {
             QuarkusDevModeLauncher.this.sourceJavaVersion = sourceJavaVersion;
             return (B) this;
@@ -283,6 +289,7 @@ public abstract class QuarkusDevModeLauncher {
     private List<String> compilerOptions = new ArrayList<>(0);
     private List<String> compilerPluginArtifacts;
     private List<String> compilerPluginOptions;
+    private String releaseJavaVersion;
     private String sourceJavaVersion;
     private String targetJavaVersion;
     private Set<Path> buildFiles = new HashSet<>(0);
@@ -393,6 +400,7 @@ public abstract class QuarkusDevModeLauncher {
             devModeContext.setCompilerPluginsOptions(compilerPluginOptions);
         }
 
+        devModeContext.setReleaseJavaVersion(releaseJavaVersion);
         devModeContext.setSourceJavaVersion(sourceJavaVersion);
         devModeContext.setTargetJvmVersion(targetJavaVersion);
 

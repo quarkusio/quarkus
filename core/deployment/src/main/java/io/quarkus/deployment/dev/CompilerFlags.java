@@ -6,29 +6,30 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import io.quarkus.runtime.util.StringUtil;
-
 /**
  * A set of compiler flags for javac.
  *
- * Can combine system-provided default flags with user-supplied flags and <code>-source</code>
- * and <code>-target</code> settings.
+ * Can combine system-provided default flags with user-supplied flags and <code>--release</code>
+ * and <code>-source</code> and <code>-target</code> settings.
  */
 public class CompilerFlags {
 
     private final Set<String> defaultFlags;
     private final List<String> userFlags;
+    private final String releaseJavaVersion; //can be null
     private final String sourceJavaVersion; //can be null
     private final String targetJavaVersion; //can be null
 
     public CompilerFlags(
             Set<String> defaultFlags,
             Collection<String> userFlags,
+            String releaseJavaVersion,
             String sourceJavaVersion,
             String targetJavaVersion) {
 
         this.defaultFlags = defaultFlags == null ? new LinkedHashSet<>() : new LinkedHashSet<>(defaultFlags);
         this.userFlags = userFlags == null ? new ArrayList<>() : new ArrayList<>(userFlags);
+        this.releaseJavaVersion = releaseJavaVersion;
         this.sourceJavaVersion = sourceJavaVersion;
         this.targetJavaVersion = targetJavaVersion;
     }
@@ -43,7 +44,11 @@ public class CompilerFlags {
 
         flagList.addAll(effectiveDefaultFlags);
 
-        // Add -source and -target flags.
+        // Add --release and -source and -target flags.
+        if (releaseJavaVersion != null) {
+            flagList.add("--release");
+            flagList.add(releaseJavaVersion);
+        }
         if (sourceJavaVersion != null) {
             flagList.add("-source");
             flagList.add(sourceJavaVersion);
@@ -70,6 +75,6 @@ public class CompilerFlags {
 
     @Override
     public String toString() {
-        return "CompilerFlags@{" + StringUtil.join(", ", toList().iterator()) + "}";
+        return "CompilerFlags@{" + String.join(", ", toList()) + "}";
     }
 }

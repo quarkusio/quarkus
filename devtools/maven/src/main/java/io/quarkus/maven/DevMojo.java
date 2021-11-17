@@ -1,5 +1,6 @@
 package io.quarkus.maven;
 
+import static java.util.function.Predicate.not;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.artifactId;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.configuration;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.executeMojo;
@@ -28,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -295,6 +297,12 @@ public class DevMojo extends AbstractMojo {
      */
     @Parameter
     private List<String> compilerArgs;
+
+    /**
+     * The --release argument to javac.
+     */
+    @Parameter(defaultValue = "${maven.compiler.release}")
+    private String release;
 
     /**
      * The -source argument to javac.
@@ -886,23 +894,20 @@ public class DevMojo extends AbstractMojo {
                 builder.compilerOptions(compilerPluginArgs);
             }
         }
+        if (release != null) {
+            builder.releaseJavaVersion(release);
+        } else if (compilerPluginConfiguration.isPresent()) {
+            applyCompilerFlag(compilerPluginConfiguration, "release", builder::releaseJavaVersion);
+        }
         if (source != null) {
             builder.sourceJavaVersion(source);
         } else if (compilerPluginConfiguration.isPresent()) {
-            final Xpp3Dom javacSourceVersion = compilerPluginConfiguration.get().getChild("source");
-            if (javacSourceVersion != null && javacSourceVersion.getValue() != null
-                    && !javacSourceVersion.getValue().trim().isEmpty()) {
-                builder.sourceJavaVersion(javacSourceVersion.getValue().trim());
-            }
+            applyCompilerFlag(compilerPluginConfiguration, "source", builder::sourceJavaVersion);
         }
         if (target != null) {
             builder.targetJavaVersion(target);
         } else if (compilerPluginConfiguration.isPresent()) {
-            final Xpp3Dom javacTargetVersion = compilerPluginConfiguration.get().getChild("target");
-            if (javacTargetVersion != null && javacTargetVersion.getValue() != null
-                    && !javacTargetVersion.getValue().trim().isEmpty()) {
-                builder.targetJavaVersion(javacTargetVersion.getValue().trim());
-            }
+            applyCompilerFlag(compilerPluginConfiguration, "target", builder::targetJavaVersion);
         }
 
         setKotlinSpecificFlags(builder);
@@ -1038,6 +1043,16 @@ public class DevMojo extends AbstractMojo {
             }
             builder.jvmArgs(buf.toString());
         }
+    }
+
+    private void applyCompilerFlag(Optional<Xpp3Dom> compilerPluginConfiguration, String flagName,
+            Consumer<String> builderCall) {
+        compilerPluginConfiguration
+                .map(cfg -> cfg.getChild(flagName))
+                .map(Xpp3Dom::getValue)
+                .map(String::trim)
+                .filter(not(String::isEmpty))
+                .ifPresent(builderCall);
     }
 
     private void addQuarkusDevModeDeps(MavenDevModeLauncher.Builder builder)

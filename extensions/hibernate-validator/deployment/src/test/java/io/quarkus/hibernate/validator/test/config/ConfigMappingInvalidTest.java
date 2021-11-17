@@ -1,11 +1,11 @@
 package io.quarkus.hibernate.validator.test.config;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import javax.inject.Inject;
-import javax.validation.Valid;
-import javax.validation.constraints.Size;
+import javax.validation.constraints.Max;
 
+import org.eclipse.microprofile.config.Config;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -15,26 +15,29 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.ConfigValidationException;
+import io.smallrye.config.SmallRyeConfig;
 
-public class ConfigMappingValidatorTest {
+public class ConfigMappingInvalidTest {
     @RegisterExtension
     static final QuarkusUnitTest UNIT_TEST = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(new StringAsset("validator.server.host=localhost\n"), "application.properties"));
 
     @Inject
-    @Valid
-    Server server;
+    Config config;
 
     @Test
-    void valid() {
-        assertEquals("localhost", server.host());
+    void invalid() {
+        assertThrows(ConfigValidationException.class,
+                () -> config.unwrap(SmallRyeConfig.class).getConfigMapping(Server.class),
+                "validator.server.host must be less than or equal to 3");
     }
 
     @Unremovable
     @ConfigMapping(prefix = "validator.server")
     public interface Server {
-        @Size(min = 2, max = 10)
+        @Max(3)
         String host();
     }
 }

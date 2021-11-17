@@ -149,7 +149,7 @@ public class MongoHealthCheck implements HealthCheck {
                     public HealthCheckResponse apply(List<?> list) {
                         return MongoHealthCheck.this.combine(list, builder);
                     }
-                }).await().indefinitely(); // All checks fails after a timeout, so if won't be forever.
+                }).await().indefinitely(); // All checks fail after a timeout, so it won't be forever.
 
     }
 

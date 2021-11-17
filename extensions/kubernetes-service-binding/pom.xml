@@ -13,8 +13,11 @@
     <artifactId>quarkus-kubernetes-service-binding-parent</artifactId>
     <name>Quarkus - Kubernetes Service Binding</name>
     <packaging>pom</packaging>
+
     <modules>
         <module>deployment</module>
         <module>runtime</module>
+        <module>spi</module>
     </modules>
+
 </project>

@@ -1,14 +1,17 @@
-package io.quarkus.kubernetes.service.binding.buildtime;
+package io.quarkus.kubernetes.service.binding.spi;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
-public final class KubernetesServiceBindingBuildItem extends MultiBuildItem {
+/**
+ * Build item that describes a kubernetes resource that the application needs to bind to.
+ */
+public final class ServiceRequirementBuildItem extends MultiBuildItem {
 
     private final String apiVersion;
     private final String kind;
     private final String name;
 
-    public KubernetesServiceBindingBuildItem(String apiVersion, String kind, String name) {
+    public ServiceRequirementBuildItem(String apiVersion, String kind, String name) {
         this.apiVersion = apiVersion;
         this.kind = kind;
         this.name = name;

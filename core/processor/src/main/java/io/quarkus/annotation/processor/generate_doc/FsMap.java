@@ -22,7 +22,7 @@ public class FsMap {
         final Path file = dir.resolve(key);
         if (Files.exists(file)) {
             try {
-                return new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+                return Files.readString(file);
             } catch (IOException e) {
                 throw new RuntimeException("Could not read " + file, e);
             }
@@ -80,7 +80,7 @@ public class FsMap {
                         .forEach(f -> {
                             try {
                                 result.setProperty(f.getFileName().toString(),
-                                        new String(Files.readAllBytes(f), StandardCharsets.UTF_8));
+                                        Files.readString(f));
                             } catch (IOException e) {
                                 throw new IllegalStateException("Could not read from " + f, e);
                             }

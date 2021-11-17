@@ -87,6 +87,8 @@ public class AnnotationLiteralProcessor {
                             literal.constructorParams.stream().map(m -> m.returnType().name().toString()).toArray()),
                             constructorParams);
         } else {
+            Objects.requireNonNull(classOutput);
+            Objects.requireNonNull(targetPackage);
             String literalClassName = AnnotationLiteralGenerator.generatedLocalName(targetPackage,
                     DotNames.simpleName(annotationClass),
                     Hashes.sha1(annotationInstance.toString()));

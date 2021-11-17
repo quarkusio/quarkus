@@ -49,6 +49,12 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protoc</artifactId>
+            <classifier>osx-aarch_64</classifier>
+            <type>exe</type>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protoc</artifactId>
             <classifier>windows-x86_32</classifier>
             <type>exe</type>
         </dependency>
@@ -81,6 +87,12 @@
             <artifactId>protoc-gen-grpc-java</artifactId>
             <type>exe</type>
             <classifier>osx-x86_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>protoc-gen-grpc-java</artifactId>
+            <type>exe</type>
+            <classifier>osx-aarch_64</classifier>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>

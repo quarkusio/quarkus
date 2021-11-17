@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -82,6 +83,7 @@ public class InjectionPointInfo {
 
     private final TypeAndQualifiers typeAndQualifiers;
     private final AtomicReference<BeanInfo> resolvedBean;
+    private final AtomicReference<BeanInfo> targetBean;
     private final InjectionPointKind kind;
     private final boolean hasDefaultedQualifier;
     private final AnnotationTarget target;
@@ -101,6 +103,7 @@ public class InjectionPointInfo {
                         ? Collections.singleton(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()))
                         : requiredQualifiers);
         this.resolvedBean = new AtomicReference<BeanInfo>(null);
+        this.targetBean = new AtomicReference<BeanInfo>(null);
         this.kind = kind;
         this.hasDefaultedQualifier = requiredQualifiers.isEmpty();
         this.target = target;
@@ -115,6 +118,14 @@ public class InjectionPointInfo {
 
     BeanInfo getResolvedBean() {
         return resolvedBean.get();
+    }
+
+    public Optional<BeanInfo> getTargetBean() {
+        return Optional.ofNullable(targetBean.get());
+    }
+
+    public void setTargetBean(BeanInfo bean) {
+        this.targetBean.set(bean);
     }
 
     InjectionPointKind getKind() {
@@ -225,7 +236,17 @@ public class InjectionPointInfo {
             case FIELD:
                 return target.asField().declaringClass().name() + "#" + target.asField().name();
             case METHOD:
-                return target.asMethod().declaringClass().name() + "#" + target.asMethod().name() + "()";
+                String param = target.asMethod().parameterName(position);
+                if (param == null || param.isBlank()) {
+                    param = "arg" + position;
+                }
+                String method = target.asMethod().name();
+                if (method.equals(Methods.INIT)) {
+                    method = "";
+                } else {
+                    method = "#" + method;
+                }
+                return target.asMethod().declaringClass().name() + method + "()" + "." + param;
             default:
                 return target.toString();
         }
@@ -273,11 +294,11 @@ public class InjectionPointInfo {
         RESOURCE
     }
 
-    static class TypeAndQualifiers {
+    public static class TypeAndQualifiers {
 
-        final Type type;
+        public final Type type;
 
-        final Set<AnnotationInstance> qualifiers;
+        public final Set<AnnotationInstance> qualifiers;
 
         public TypeAndQualifiers(Type type, Set<AnnotationInstance> qualifiers) {
             this.type = type;

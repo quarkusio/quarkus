@@ -20,7 +20,8 @@ public class BasicRestClientTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloClient.class, HelloResource.class, TestBean.class, HelloClient2.class))
+                    .addClasses(HelloClient.class, HelloResource.class, TestBean.class, HelloClient2.class,
+                            HelloNonSimpleClient.class))
             .withConfigurationResource("basic-test-application.properties");
 
     @Inject
@@ -47,5 +48,15 @@ public class BasicRestClientTest {
     @Test
     void shouldInvokeClientResponseOnSameContext() {
         assertThat(testBean.bug18977()).isEqualTo("Hello");
+    }
+
+    @Test
+    void shouldHelloBytes() {
+        assertThat(testBean.helloNonSimpleSyncBytes()).isEqualTo(new byte[] { 1, 2, 3 });
+    }
+
+    @Test
+    void shouldHelloInts() {
+        assertThat(testBean.helloNonSimpleSyncInts()).isEqualTo(new Integer[] { 1, 2, 3 });
     }
 }

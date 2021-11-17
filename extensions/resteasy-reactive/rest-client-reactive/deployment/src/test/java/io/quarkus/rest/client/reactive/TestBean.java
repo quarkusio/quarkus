@@ -17,6 +17,9 @@ public class TestBean {
     @RestClient
     HelloClient2 client2;
 
+    @RestClient
+    HelloNonSimpleClient clientNonSimple;
+
     String helloViaInjectedClient(String name) {
         return client2.echo(name);
     }
@@ -30,5 +33,13 @@ public class TestBean {
 
     String bug18977() {
         return client2.bug18977();
+    }
+
+    byte[] helloNonSimpleSyncBytes() {
+        return clientNonSimple.echoSyncBytes(new byte[] { 1, 2, 3 });
+    }
+
+    Integer[] helloNonSimpleSyncInts() {
+        return clientNonSimple.echoSyncInts(new Integer[] { 1, 2, 3 });
     }
 }

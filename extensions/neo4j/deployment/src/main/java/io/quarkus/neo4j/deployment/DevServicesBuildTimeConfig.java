@@ -2,6 +2,7 @@ package io.quarkus.neo4j.deployment;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -29,4 +30,20 @@ public class DevServicesBuildTimeConfig {
      */
     @ConfigItem
     public Map<String, String> additionalEnv;
+
+    /**
+     * This value can be used to specify the port to which the bolt-port of the container is exposed. It must be a free
+     * port, otherwise startup will fail. A random, free port will be used by default. Either way, a messsage will be
+     * logged on which port the Neo4j container is reachable over bolt.
+     */
+    @ConfigItem
+    public OptionalInt boltPort = OptionalInt.empty();
+
+    /**
+     * This value can be used to specify the port to which the http-port of the container is exposed. It must be a free
+     * port, otherwise startup will fail. A random, free port will be used by default. Either way, a messsage will be
+     * logged on which port the Neo4j Browser is available.
+     */
+    @ConfigItem
+    public OptionalInt httpPort = OptionalInt.empty();
 }

@@ -25,6 +25,20 @@ public class HelloResource {
         return "hello, " + name;
     }
 
+    @POST
+    @Path("/bytes")
+    public byte[] bytes(byte[] value) {
+        return value;
+    }
+
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/ints")
+    public int[] bytes(int[] value) {
+        return value;
+    }
+
     @RestClient
     HelloClient2 client2;
 

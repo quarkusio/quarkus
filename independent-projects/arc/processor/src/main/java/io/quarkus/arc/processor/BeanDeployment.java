@@ -249,7 +249,6 @@ public class BeanDeployment {
             List<Predicate<BeanInfo>> additionalUnusedBeanExclusions) {
         long start = System.nanoTime();
 
-        initBeanByTypeMap();
         // Collect dependency resolution errors
         List<Throwable> errors = new ArrayList<>();
         for (BeanInfo bean : beans) {
@@ -288,7 +287,10 @@ public class BeanDeployment {
         LOGGER.debugf("Bean deployment initialized in %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
     }
 
-    private void initBeanByTypeMap() {
+    /**
+     * Re-initialize the map that is used to speed-up lookup requests.
+     */
+    public void initBeanByTypeMap() {
         Map<DotName, List<BeanInfo>> map = new HashMap<>();
         for (BeanInfo bean : beans) {
             bean.types.stream().map(Type::name).distinct().forEach(rawTypeName -> {
@@ -1008,7 +1010,8 @@ public class BeanDeployment {
             BeanInfo declaringBean = beanClassToBean.get(disposerMethod.declaringClass());
             if (declaringBean != null) {
                 Injection injection = Injection.forDisposer(disposerMethod, declaringBean.getImplClazz(), this,
-                        injectionPointTransformer);
+                        injectionPointTransformer, declaringBean);
+                injection.init(declaringBean);
                 disposers.add(new DisposerInfo(declaringBean, disposerMethod, injection));
                 injectionPoints.addAll(injection.injectionPoints);
             }
@@ -1079,6 +1082,7 @@ public class BeanDeployment {
             if (declaringBean != null) {
                 Injection injection = Injection.forObserver(observerMethod, declaringBean.getImplClazz(), this,
                         injectionPointTransformer);
+                injection.init(declaringBean);
                 ObserverInfo observer = ObserverInfo.create(declaringBean, observerMethod, injection, async,
                         observerTransformers, buildContext, jtaCapabilities);
                 if (observer != null) {

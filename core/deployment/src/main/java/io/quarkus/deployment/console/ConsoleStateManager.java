@@ -126,6 +126,7 @@ public class ConsoleStateManager {
                                 ? toLevel(((LogManager) LogManager.getLogManager()).getLogger("").getLevel()).toString()
                                 : currentLevel.toString())),
                 ConsoleStateManager.this::toggleLogLevel));
+        commands.add(new ConsoleCommand((char) 12, null, null, 10002, null, this::clearScreen));
         commands.add(new ConsoleCommand((char) 13, null, null, 10001, null, this::printBlankLine));
         commands.add(new ConsoleCommand('h', "Shows this help", "for more options", 10000, null, this::printHelp));
         commands.add(new ConsoleCommand('q', "Quits the application", null, this::exitQuarkus));
@@ -182,6 +183,10 @@ public class ConsoleStateManager {
             currentLevel = null;
             System.out.println("Restored log levels to configured values");
         }
+    }
+
+    private void clearScreen() {
+        System.out.println("\u001b[2J");
     }
 
     private void printBlankLine() {
@@ -291,13 +296,7 @@ public class ConsoleStateManager {
         public void reset(ConsoleCommand... command) {
             synchronized (commands) {
                 internal.clear();
-                var it = commands.entrySet().iterator();
-                while (it.hasNext()) {
-                    var holder = it.next();
-                    if (holder.getValue().context == this) {
-                        it.remove();
-                    }
-                }
+                commands.entrySet().removeIf(entry -> entry.getValue().context == this);
             }
             for (var i : command) {
                 addCommandInternal(i);

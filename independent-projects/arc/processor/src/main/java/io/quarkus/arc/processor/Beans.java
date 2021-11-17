@@ -35,7 +35,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-final class Beans {
+public final class Beans {
 
     static final Logger LOGGER = Logger.getLogger(Beans.class);
 
@@ -176,9 +176,13 @@ final class Beans {
                 }
             }
 
-            return new BeanInfo(beanClass, beanDeployment, scope, types, qualifiers,
-                    Injection.forBean(beanClass, null, beanDeployment, transformer), null, null,
-                    isAlternative ? alternativePriority : null, stereotypes, name, isDefaultBean);
+            List<Injection> injections = Injection.forBean(beanClass, null, beanDeployment, transformer);
+            BeanInfo bean = new BeanInfo(beanClass, beanDeployment, scope, types, qualifiers,
+                    injections, null, null, isAlternative ? alternativePriority : null, stereotypes, name, isDefaultBean, null);
+            for (Injection injection : injections) {
+                injection.init(bean);
+            }
+            return bean;
         }
 
         private static void processSuperClass(ClassInfo beanClass, BeanDeployment beanDeployment,
@@ -319,9 +323,12 @@ final class Beans {
             }
         }
 
+        List<Injection> injections = Injection.forBean(producerMethod, declaringBean, beanDeployment, transformer);
         BeanInfo bean = new BeanInfo(producerMethod, beanDeployment, scope, types, qualifiers,
-                Injection.forBean(producerMethod, declaringBean, beanDeployment, transformer), declaringBean,
-                disposer, alternativePriority, stereotypes, name, isDefaultBean);
+                injections, declaringBean, disposer, alternativePriority, stereotypes, name, isDefaultBean, null);
+        for (Injection injection : injections) {
+            injection.init(bean);
+        }
         return bean;
     }
 
@@ -411,7 +418,7 @@ final class Beans {
         }
 
         BeanInfo bean = new BeanInfo(producerField, beanDeployment, scope, types, qualifiers, Collections.emptyList(),
-                declaringBean, disposer, alternativePriority, stereotypes, name, isDefaultBean);
+                declaringBean, disposer, alternativePriority, stereotypes, name, isDefaultBean, null);
         return bean;
     }
 
@@ -502,7 +509,7 @@ final class Beans {
         return null;
     }
 
-    static boolean matches(BeanInfo bean, TypeAndQualifiers typeAndQualifiers) {
+    public static boolean matches(BeanInfo bean, TypeAndQualifiers typeAndQualifiers) {
         return matches(bean, typeAndQualifiers.type, typeAndQualifiers.qualifiers);
     }
 

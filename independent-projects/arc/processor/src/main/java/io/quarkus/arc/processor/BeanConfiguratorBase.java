@@ -41,6 +41,7 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
     protected final Map<String, Object> params;
     protected Type providerType;
     protected boolean forceApplicationClass;
+    protected String targetPackageName;
 
     protected BeanConfiguratorBase(DotName implClazz) {
         this.implClazz = implClazz;
@@ -65,6 +66,7 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
         qualifiers.clear();
         qualifiers.addAll(base.qualifiers);
         forceApplicationClass = base.forceApplicationClass;
+        targetPackageName = base.targetPackageName;
         scope(base.scope);
         if (base.alternativePriority != null) {
             alternativePriority(base.alternativePriority);
@@ -181,6 +183,11 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
      */
     public B forceApplicationClass() {
         this.forceApplicationClass = true;
+        return self();
+    }
+
+    public B targetPackageName(String name) {
+        this.targetPackageName = name;
         return self();
     }
 

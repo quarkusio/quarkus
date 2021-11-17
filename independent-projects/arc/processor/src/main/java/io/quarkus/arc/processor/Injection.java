@@ -35,12 +35,6 @@ public class Injection {
 
     private static final Logger LOGGER = Logger.getLogger(Injection.class);
 
-    /**
-     *
-     * @param beanTarget
-     * @param beanDeployment
-     * @return the list of injections
-     */
     static List<Injection> forBean(AnnotationTarget beanTarget, BeanInfo declaringBean, BeanDeployment beanDeployment,
             InjectionPointModifier transformer) {
         if (Kind.CLASS.equals(beanTarget.kind())) {
@@ -148,7 +142,7 @@ public class Injection {
     }
 
     static Injection forDisposer(MethodInfo disposerMethod, ClassInfo beanClass, BeanDeployment beanDeployment,
-            InjectionPointModifier transformer) {
+            InjectionPointModifier transformer, BeanInfo declaringBean) {
         return new Injection(disposerMethod, InjectionPointInfo.fromMethod(disposerMethod, beanClass, beanDeployment,
                 annotations -> annotations.stream().anyMatch(a -> a.name().equals(DotNames.DISPOSES)), transformer));
     }
@@ -184,6 +178,12 @@ public class Injection {
 
     public AnnotationTarget getTarget() {
         return target;
+    }
+
+    public void init(BeanInfo targetBean) {
+        for (InjectionPointInfo injectionPoint : injectionPoints) {
+            injectionPoint.setTargetBean(targetBean);
+        }
     }
 
     private static List<AnnotationInstance> getAllInjectionPoints(BeanDeployment beanDeployment, ClassInfo beanClass,

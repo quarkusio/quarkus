@@ -14,9 +14,11 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
+import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
+import io.quarkus.oidc.runtime.OidcConfigPropertySupplier;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
@@ -47,7 +49,8 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
-    void prepareOidcDevConsole(BuildProducer<DevConsoleTemplateInfoBuildItem> console,
+    void prepareOidcDevConsole(BuildProducer<DevConsoleTemplateInfoBuildItem> devConsoleInfo,
+            BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> devConsoleRuntimeInfo,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             BuildProducer<DevConsoleRouteBuildItem> devConsoleRoute,
             Capabilities capabilities) {
@@ -79,20 +82,25 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
             }
             String providerName = tryToGetProviderName(authServerUrl);
             if (KEYCLOAK.equals(providerName)) {
-                console.produce(new DevConsoleTemplateInfoBuildItem("keycloakAdminUrl",
+                devConsoleInfo.produce(new DevConsoleTemplateInfoBuildItem("keycloakAdminUrl",
                         authServerUrl.substring(0, authServerUrl.indexOf("/realms/"))));
             }
             produceDevConsoleTemplateItems(capabilities,
-                    console,
+                    devConsoleInfo,
                     providerName,
                     getApplicationType(),
                     oidcConfig.devui.grant.type.isPresent() ? oidcConfig.devui.grant.type.get().getGrantType() : "code",
-                    getConfigProperty(CLIENT_ID_CONFIG_KEY),
-                    getClientSecret(),
                     metadata.getString("authorization_endpoint"),
                     metadata.getString("token_endpoint"),
                     metadata.getString("end_session_endpoint"),
                     metadata.containsKey("introspection_endpoint"));
+
+            devConsoleRuntimeInfo.produce(
+                    new DevConsoleRuntimeTemplateInfoBuildItem("clientId",
+                            new OidcConfigPropertySupplier(CLIENT_ID_CONFIG_KEY)));
+            devConsoleRuntimeInfo.produce(
+                    new DevConsoleRuntimeTemplateInfoBuildItem("clientSecret",
+                            new OidcConfigPropertySupplier(CLIENT_SECRET_CONFIG_KEY, "")));
 
             Duration webClientTimeout = oidcConfig.devui.webClienTimeout.isPresent() ? oidcConfig.devui.webClienTimeout.get()
                     : Duration.ofSeconds(4);
@@ -150,10 +158,6 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
 
     private static boolean isClientIdSet() {
         return ConfigUtils.isPropertyPresent(CLIENT_ID_CONFIG_KEY);
-    }
-
-    private static String getClientSecret() {
-        return ConfigProvider.getConfig().getOptionalValue(CLIENT_SECRET_CONFIG_KEY, String.class).orElse("");
     }
 
     private static boolean isAuthServerUrlSet() {

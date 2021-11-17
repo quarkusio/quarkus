@@ -19,8 +19,13 @@ public class PrometheusConfigGroup implements MicrometerConfig.CapabilityEnabled
     public Optional<Boolean> enabled;
 
     /**
-     * The path for the prometheus metrics endpoint (produces text/plain).
-     * The default value is {@code metrics}.
+     * The path for the prometheus metrics endpoint (produces text/plain). The default value is
+     * `metrics` and is resolved relative to the non-application endpoint (`q`), e.g.
+     * `${quarkus.http.root-path}/${quarkus.http.non-application-root-path}/metrics`.
+     * If an absolute path is specified (`/metrics`), the prometheus endpoint will be served
+     * from the configured path.
+     *
+     * @asciidoclet
      */
     @ConfigItem(defaultValue = "metrics")
     public String path;

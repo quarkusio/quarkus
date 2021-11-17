@@ -1,5 +1,7 @@
 package io.quarkus.opentelemetry.runtime.tracing;
 
+import static io.quarkus.opentelemetry.runtime.OpenTelemetryConfig.INSTRUMENTATION_NAME;
+
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 
@@ -25,6 +27,6 @@ public class TracerProducer {
     @Singleton
     @DefaultBean
     public Tracer getTracer() {
-        return GlobalOpenTelemetry.getTracer("io.quarkus.opentelemetry");
+        return GlobalOpenTelemetry.getTracer(INSTRUMENTATION_NAME);
     }
 }

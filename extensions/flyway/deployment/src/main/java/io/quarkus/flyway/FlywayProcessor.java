@@ -31,6 +31,13 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
+import org.flywaydb.core.internal.command.DbBaseline;
+import org.flywaydb.core.internal.command.DbClean;
+import org.flywaydb.core.internal.command.DbInfo;
+import org.flywaydb.core.internal.command.DbMigrate;
+import org.flywaydb.core.internal.command.DbRepair;
+import org.flywaydb.core.internal.command.DbSchemas;
+import org.flywaydb.core.internal.command.DbValidate;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
@@ -211,43 +218,39 @@ class FlywayProcessor {
 
     private Collection<String> discoverApplicationMigrations(Collection<String> locations)
             throws IOException, URISyntaxException {
-        try {
-            LinkedHashSet<String> applicationMigrationResources = new LinkedHashSet<>();
-            // Locations can be a comma separated list
-            for (String location : locations) {
-                location = normalizeLocation(location);
-                if (location.startsWith(Location.FILESYSTEM_PREFIX)) {
-                    applicationMigrationResources.add(location);
-                    continue;
-                }
+        LinkedHashSet<String> applicationMigrationResources = new LinkedHashSet<>();
+        // Locations can be a comma separated list
+        for (String location : locations) {
+            location = normalizeLocation(location);
+            if (location.startsWith(Location.FILESYSTEM_PREFIX)) {
+                applicationMigrationResources.add(location);
+                continue;
+            }
 
-                Enumeration<URL> migrations = Thread.currentThread().getContextClassLoader().getResources(location);
-                while (migrations.hasMoreElements()) {
-                    URL path = migrations.nextElement();
-                    LOGGER.infov("Adding application migrations in path ''{0}'' using protocol ''{1}''", path.getPath(),
-                            path.getProtocol());
-                    final Set<String> applicationMigrations;
-                    if (JAR_APPLICATION_MIGRATIONS_PROTOCOL.equals(path.getProtocol())) {
-                        try (final FileSystem fileSystem = initFileSystem(path.toURI())) {
-                            applicationMigrations = getApplicationMigrationsFromPath(location, path);
-                        }
-                    } else if (FILE_APPLICATION_MIGRATIONS_PROTOCOL.equals(path.getProtocol())) {
+            Enumeration<URL> migrations = Thread.currentThread().getContextClassLoader().getResources(location);
+            while (migrations.hasMoreElements()) {
+                URL path = migrations.nextElement();
+                LOGGER.infov("Adding application migrations in path ''{0}'' using protocol ''{1}''", path.getPath(),
+                        path.getProtocol());
+                final Set<String> applicationMigrations;
+                if (JAR_APPLICATION_MIGRATIONS_PROTOCOL.equals(path.getProtocol())) {
+                    try (final FileSystem fileSystem = initFileSystem(path.toURI())) {
                         applicationMigrations = getApplicationMigrationsFromPath(location, path);
-                    } else {
-                        LOGGER.warnv(
-                                "Unsupported URL protocol ''{0}'' for path ''{1}''. Migration files will not be discovered.",
-                                path.getProtocol(), path.getPath());
-                        applicationMigrations = null;
                     }
-                    if (applicationMigrations != null) {
-                        applicationMigrationResources.addAll(applicationMigrations);
-                    }
+                } else if (FILE_APPLICATION_MIGRATIONS_PROTOCOL.equals(path.getProtocol())) {
+                    applicationMigrations = getApplicationMigrationsFromPath(location, path);
+                } else {
+                    LOGGER.warnv(
+                            "Unsupported URL protocol ''{0}'' for path ''{1}''. Migration files will not be discovered.",
+                            path.getProtocol(), path.getPath());
+                    applicationMigrations = null;
+                }
+                if (applicationMigrations != null) {
+                    applicationMigrationResources.addAll(applicationMigrations);
                 }
             }
-            return applicationMigrationResources;
-        } catch (IOException | URISyntaxException e) {
-            throw e;
         }
+        return applicationMigrationResources;
     }
 
     private String normalizeLocation(String location) {
@@ -297,6 +300,21 @@ class FlywayProcessor {
     public RuntimeReinitializedClassBuildItem reinitInsertRowLock() {
         return new RuntimeReinitializedClassBuildItem(
                 "org.flywaydb.core.internal.database.InsertRowLock");
+    }
+
+    /**
+     * Commands are executed through reflection, see {@link org.flywaydb.core.internal.FlywayTeamsObjectResolver}
+     */
+    @BuildStep
+    public ReflectiveClassBuildItem commands() {
+        return new ReflectiveClassBuildItem(false, false,
+                DbBaseline.class,
+                DbClean.class,
+                DbInfo.class,
+                DbMigrate.class,
+                DbRepair.class,
+                DbSchemas.class,
+                DbValidate.class);
     }
 
     public static final class MigrationStateBuildItem extends SimpleBuildItem {

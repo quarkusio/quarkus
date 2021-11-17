@@ -73,7 +73,7 @@ public class FlywayDevConsoleProcessor {
                 Path migrationDir = path.resolve(config.locations.get(0));
                 Files.createDirectories(migrationDir);
                 Path file = migrationDir.resolve(
-                        "V1.0.0__" + curateOutcomeBuildItem.getEffectiveModel().getAppArtifact().getArtifactId() + ".sql");
+                        "V1.0.0__" + curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getArtifactId() + ".sql");
                 Files.writeString(file, found.getSqlSupplier().get());
                 flashMessage(event, file + " was created");
                 Map<String, String> newConfig = new HashMap<>();

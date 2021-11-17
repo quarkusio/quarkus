@@ -355,7 +355,7 @@ Injection of `JsonWebToken` is supported in `@ApplicationScoped`, `@Singleton` a
 [[user-info]]
 === User Info
 
-Set `quarkus.oidc.user-info-required=true` if a UserInfo JSON object from the OIDC userinfo endpoint has to be requested.
+Set `quarkus.oidc.authentication.user-info-required=true` if a UserInfo JSON object from the OIDC userinfo endpoint has to be requested.
 A request will be sent to the OpenId Provider UserInfo endpoint and  an `io.quarkus.oidc.UserInfo` (a simple `javax.json.JsonObject` wrapper) object will be created.
 `io.quarkus.oidc.UserInfo` can be either injected or accessed as a SecurityIdentity `userinfo` attribute.
 

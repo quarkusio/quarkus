@@ -21,6 +21,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.All;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.Priority;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class ListInjectionTest {
@@ -41,6 +42,8 @@ public class ListInjectionTest {
         // The list is immutable
         assertThatExceptionOfType(UnsupportedOperationException.class)
                 .isThrownBy(() -> foo.services.add(new ServiceAlpha()));
+        // ServiceBravo has higher priority
+        assertEquals("bravo", foo.services.get(0).ping());
         for (Service service : foo.services) {
             Optional<InjectionPoint> ip = service.getInjectionPoint();
             if (ip.isPresent()) {
@@ -124,6 +127,7 @@ public class ListInjectionTest {
         }
     }
 
+    @Priority(5) // this impl should go first
     @Dependent
     static class ServiceBravo implements Service {
 

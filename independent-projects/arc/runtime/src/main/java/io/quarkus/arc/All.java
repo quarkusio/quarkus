@@ -58,6 +58,10 @@ import javax.inject.Qualifier;
  *     }
  * }
  * </pre>
+ * 
+ * By default, the list of beans is sorted by {@link InjectableBean#getPriority()}. Higher priority goes first.
+ * 
+ * @see Priority
  */
 @Qualifier
 @Retention(RUNTIME)

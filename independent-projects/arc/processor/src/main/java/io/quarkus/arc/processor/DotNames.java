@@ -87,6 +87,7 @@ public final class DotNames {
     public static final DotName AROUND_INVOKE = create(AroundInvoke.class);
     public static final DotName AROUND_CONSTRUCT = create(AroundConstruct.class);
     public static final DotName PRIORITY = create(Priority.class);
+    public static final DotName ARC_PRIORITY = create(io.quarkus.arc.Priority.class);
     public static final DotName DEFAULT = create(Default.class);
     public static final DotName ANY = create(Any.class);
     public static final DotName BEAN = create(Bean.class);

@@ -234,9 +234,10 @@ public class BeanGenerator extends AbstractGenerator {
         if (qualifiers != null) {
             implementGetQualifiers(bean, beanCreator, qualifiers.getFieldDescriptor());
         }
-        if (bean.isAlternative()) {
-            implementGetAlternativePriority(bean, beanCreator);
-        }
+
+        implementIsAlternative(bean, beanCreator);
+        implementGetPriority(bean, beanCreator);
+
         if (stereotypes != null) {
             implementGetStereotypes(bean, beanCreator, stereotypes.getFieldDescriptor());
         }
@@ -325,9 +326,10 @@ public class BeanGenerator extends AbstractGenerator {
         if (qualifiers != null) {
             implementGetQualifiers(bean, beanCreator, qualifiers.getFieldDescriptor());
         }
-        if (bean.isAlternative()) {
-            implementGetAlternativePriority(bean, beanCreator);
-        }
+
+        implementIsAlternative(bean, beanCreator);
+        implementGetPriority(bean, beanCreator);
+
         if (stereotypes != null) {
             implementGetStereotypes(bean, beanCreator, stereotypes.getFieldDescriptor());
         }
@@ -426,9 +428,10 @@ public class BeanGenerator extends AbstractGenerator {
         if (qualifiers != null) {
             implementGetQualifiers(bean, beanCreator, qualifiers.getFieldDescriptor());
         }
-        if (bean.isAlternative()) {
-            implementGetAlternativePriority(bean, beanCreator);
-        }
+
+        implementIsAlternative(bean, beanCreator);
+        implementGetPriority(bean, beanCreator);
+
         implementGetDeclaringBean(beanCreator);
         if (stereotypes != null) {
             implementGetStereotypes(bean, beanCreator, stereotypes.getFieldDescriptor());
@@ -513,9 +516,10 @@ public class BeanGenerator extends AbstractGenerator {
         if (qualifiers != null) {
             implementGetQualifiers(bean, beanCreator, qualifiers.getFieldDescriptor());
         }
-        if (bean.isAlternative()) {
-            implementGetAlternativePriority(bean, beanCreator);
-        }
+
+        implementIsAlternative(bean, beanCreator);
+        implementGetPriority(bean, beanCreator);
+
         implementGetDeclaringBean(beanCreator);
         if (stereotypes != null) {
             implementGetStereotypes(bean, beanCreator, stereotypes.getFieldDescriptor());
@@ -1722,12 +1726,22 @@ public class BeanGenerator extends AbstractGenerator {
                 MethodDescriptors.SUPPLIER_GET, declaringProviderSupplierHandle));
     }
 
-    protected void implementGetAlternativePriority(BeanInfo bean, ClassCreator beanCreator) {
-        MethodCreator getAlternativePriority = beanCreator.getMethodCreator("getAlternativePriority", Integer.class)
-                .setModifiers(ACC_PUBLIC);
-        getAlternativePriority
-                .returnValue(getAlternativePriority.newInstance(MethodDescriptor.ofConstructor(Integer.class, int.class),
-                        getAlternativePriority.load(bean.getAlternativePriority())));
+    protected void implementIsAlternative(BeanInfo bean, ClassCreator beanCreator) {
+        if (bean.isAlternative()) {
+            MethodCreator isAlternative = beanCreator.getMethodCreator("isAlternative", boolean.class)
+                    .setModifiers(ACC_PUBLIC);
+            isAlternative
+                    .returnValue(isAlternative.load(true));
+        }
+    }
+
+    protected void implementGetPriority(BeanInfo bean, ClassCreator beanCreator) {
+        if (bean.getPriority() != null) {
+            MethodCreator getPriority = beanCreator.getMethodCreator("getPriority", int.class)
+                    .setModifiers(ACC_PUBLIC);
+            getPriority
+                    .returnValue(getPriority.load(bean.getPriority()));
+        }
     }
 
     protected void implementIsDefaultBean(BeanInfo bean, ClassCreator beanCreator) {

@@ -64,7 +64,8 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final Map<InterceptionType, InterceptionInfo> lifecycleInterceptors;
 
-    private final Integer alternativePriority;
+    private final boolean alternative;
+    private final Integer priority;
 
     private final List<StereotypeInfo> stereotypes;
 
@@ -88,22 +89,20 @@ public class BeanInfo implements InjectionTargetInfo {
 
     BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types,
             Set<AnnotationInstance> qualifiers, List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer,
-            Integer alternativePriority,
-            List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean, String targetPackageName) {
+            boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean, String targetPackageName,
+            Integer priority) {
         this(null, null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer,
-                alternativePriority,
-                stereotypes, name, isDefaultBean, null, null,
-                Collections.emptyMap(), true, false, targetPackageName);
+                alternative, stereotypes, name, isDefaultBean, null, null, Collections.emptyMap(), true, false,
+                targetPackageName, priority);
     }
 
     BeanInfo(ClassInfo implClazz, Type providerType, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope,
-            Set<Type> types,
-            Set<AnnotationInstance> qualifiers,
-            List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority,
-            List<StereotypeInfo> stereotypes,
-            String name, boolean isDefaultBean, Consumer<MethodCreator> creatorConsumer,
-            Consumer<MethodCreator> destroyerConsumer,
-            Map<String, Object> params, boolean isRemovable, boolean forceApplicationClass, String targetPackageName) {
+            Set<Type> types, Set<AnnotationInstance> qualifiers, List<Injection> injections, BeanInfo declaringBean,
+            DisposerInfo disposer, boolean alternative,
+            List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean, Consumer<MethodCreator> creatorConsumer,
+            Consumer<MethodCreator> destroyerConsumer, Map<String, Object> params, boolean isRemovable,
+            boolean forceApplicationClass, String targetPackageName, Integer priority) {
+
         this.target = Optional.ofNullable(target);
         if (implClazz == null && target != null) {
             implClazz = initImplClazz(target, beanDeployment);
@@ -129,7 +128,8 @@ public class BeanInfo implements InjectionTargetInfo {
         this.injections = injections;
         this.declaringBean = declaringBean;
         this.disposer = disposer;
-        this.alternativePriority = alternativePriority;
+        this.alternative = alternative;
+        this.priority = priority;
         this.stereotypes = stereotypes;
         this.name = name;
         this.defaultBean = isDefaultBean;
@@ -418,11 +418,15 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     public boolean isAlternative() {
-        return alternativePriority != null;
+        return alternative;
     }
 
     public Integer getAlternativePriority() {
-        return alternativePriority;
+        return alternative ? priority : null;
+    }
+
+    public Integer getPriority() {
+        return priority;
     }
 
     public List<StereotypeInfo> getStereotypes() {
@@ -829,7 +833,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
         private DisposerInfo disposer;
 
-        private Integer alternativePriority;
+        private boolean alternative;
 
         private List<StereotypeInfo> stereotypes;
 
@@ -848,6 +852,8 @@ public class BeanInfo implements InjectionTargetInfo {
         private boolean forceApplicationClass;
 
         private String targetPackageName;
+
+        private Integer priority;
 
         Builder() {
             injections = Collections.emptyList();
@@ -905,7 +911,16 @@ public class BeanInfo implements InjectionTargetInfo {
         }
 
         Builder alternativePriority(Integer alternativePriority) {
-            this.alternativePriority = alternativePriority;
+            return alternative(true).priority(priority);
+        }
+
+        Builder alternative(boolean value) {
+            this.alternative = value;
+            return this;
+        }
+
+        Builder priority(Integer value) {
+            this.priority = value;
             return this;
         }
 
@@ -951,8 +966,8 @@ public class BeanInfo implements InjectionTargetInfo {
 
         BeanInfo build() {
             return new BeanInfo(implClazz, providerType, target, beanDeployment, scope, types, qualifiers, injections,
-                    declaringBean, disposer, alternativePriority, stereotypes, name, isDefaultBean, creatorConsumer,
-                    destroyerConsumer, params, removable, forceApplicationClass, targetPackageName);
+                    declaringBean, disposer, alternative, stereotypes, name, isDefaultBean, creatorConsumer,
+                    destroyerConsumer, params, removable, forceApplicationClass, targetPackageName, priority);
         }
 
         public Builder forceApplicationClass(boolean forceApplicationClass) {

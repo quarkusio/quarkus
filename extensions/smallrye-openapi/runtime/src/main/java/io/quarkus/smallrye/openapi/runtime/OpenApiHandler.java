@@ -45,7 +45,7 @@ public class OpenApiHandler implements Handler<RoutingContext> {
         if (req.method().equals(HttpMethod.OPTIONS)) {
             if (!corsEnabled) {
                 //if the cors filter is enabled we let it set the headers
-                resp.headers().setAll(RESPONSE_HEADERS);
+                resp.headers().addAll(RESPONSE_HEADERS);
             }
             resp.headers().set("Allow", ALLOWED_METHODS);
             event.next();
@@ -66,7 +66,7 @@ public class OpenApiHandler implements Handler<RoutingContext> {
 
             if (!corsEnabled) {
                 //if the cors filter is enabled we let it set the headers
-                resp.headers().setAll(RESPONSE_HEADERS);
+                resp.headers().addAll(RESPONSE_HEADERS);
             }
             resp.headers().set("Content-Type", format.getMimeType() + ";charset=UTF-8");
             byte[] schemaDocument = getOpenApiDocumentService().getDocument(format);

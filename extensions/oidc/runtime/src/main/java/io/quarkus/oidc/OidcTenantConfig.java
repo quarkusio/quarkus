@@ -34,7 +34,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public ApplicationType applicationType = ApplicationType.SERVICE;
 
     /**
-     * Relative path of the OIDC authorization endpoint which authenticates the users.
+     * Relative path or absolute URL of the OIDC authorization endpoint which authenticates the users.
      * This property must be set for the 'web-app' applications if OIDC discovery is disabled.
      * This property will be ignored if the discovery is enabled.
      */
@@ -42,7 +42,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public Optional<String> authorizationPath = Optional.empty();
 
     /**
-     * Relative path of the OIDC userinfo endpoint.
+     * Relative path or absolute URL of the OIDC userinfo endpoint.
      * This property must only be set for the 'web-app' applications if OIDC discovery is disabled
      * and 'authentication.user-info-required' property is enabled.
      * This property will be ignored if the discovery is enabled.
@@ -51,7 +51,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public Optional<String> userInfoPath = Optional.empty();
 
     /**
-     * Relative path of the OIDC RFC7662 introspection endpoint which can introspect both opaque and JWT tokens.
+     * Relative path or absolute URL of the OIDC RFC7662 introspection endpoint which can introspect both opaque and JWT tokens.
      * This property must be set if OIDC discovery is disabled and 1) the opaque bearer access tokens have to be verified
      * or 2) JWT tokens have to be verified while the cached JWK verification set with no matching JWK is being refreshed.
      * This property will be ignored if the discovery is enabled.
@@ -60,7 +60,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public Optional<String> introspectionPath = Optional.empty();
 
     /**
-     * Relative path of the OIDC JWKS endpoint which returns a JSON Web Key Verification Set.
+     * Relative path or absolute URL of the OIDC JWKS endpoint which returns a JSON Web Key Verification Set.
      * This property should be set if OIDC discovery is disabled and the local JWT verification is required.
      * This property will be ignored if the discovery is enabled.
      */
@@ -68,7 +68,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public Optional<String> jwksPath = Optional.empty();
 
     /**
-     * Relative path of the OIDC end_session_endpoint.
+     * Relative path or absolute URL of the OIDC end_session_endpoint.
      * This property must be set if OIDC discovery is disabled and RP Initiated Logout support for the 'web-app' applications is
      * required.
      * This property will be ignored if the discovery is enabled.

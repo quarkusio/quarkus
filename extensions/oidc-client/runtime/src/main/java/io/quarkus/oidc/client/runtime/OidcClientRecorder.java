@@ -105,6 +105,11 @@ public class OidcClientRecorder {
         }
 
         try {
+            if (oidcConfig.authServerUrl.isEmpty() && !OidcCommonUtils.isAbsoluteUrl(oidcConfig.tokenPath)) {
+                throw new ConfigurationException(
+                        "Either 'quarkus.oidc-client.auth-server-url' or absolute 'quarkus.oidc-client.token-path' URL must be set");
+            }
+            OidcCommonUtils.verifyEndpointUrl(getEndpointUrl(oidcConfig));
             OidcCommonUtils.verifyCommonConfiguration(oidcConfig, false, false);
         } catch (Throwable t) {
             LOG.debug(t.getMessage());
@@ -112,7 +117,6 @@ public class OidcClientRecorder {
             return Uni.createFrom().item(new DisabledOidcClient(message));
         }
 
-        String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcConfig);
         WebClientOptions options = new WebClientOptions();
 
         OidcCommonUtils.setHttpClientOptions(oidcConfig, tlsConfig, options);
@@ -120,11 +124,16 @@ public class OidcClientRecorder {
         WebClient client = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx.get()), options);
 
         Uni<String> tokenRequestUriUni = null;
-        if (!oidcConfig.discoveryEnabled) {
-            tokenRequestUriUni = Uni.createFrom()
-                    .item(OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.tokenPath));
+        if (OidcCommonUtils.isAbsoluteUrl(oidcConfig.tokenPath)) {
+            tokenRequestUriUni = Uni.createFrom().item(oidcConfig.tokenPath.get());
         } else {
-            tokenRequestUriUni = discoverTokenRequestUri(client, authServerUriString.toString(), oidcConfig);
+            String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcConfig);
+            if (!oidcConfig.discoveryEnabled) {
+                tokenRequestUriUni = Uni.createFrom()
+                        .item(OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.tokenPath));
+            } else {
+                tokenRequestUriUni = discoverTokenRequestUri(client, authServerUriString.toString(), oidcConfig);
+            }
         }
         return tokenRequestUriUni.onItemOrFailure()
                 .transform(new BiFunction<String, Throwable, OidcClient>() {
@@ -132,7 +141,7 @@ public class OidcClientRecorder {
                     @Override
                     public OidcClient apply(String tokenRequestUri, Throwable t) {
                         if (t != null) {
-                            throw toOidcClientException(authServerUriString, t);
+                            throw toOidcClientException(getEndpointUrl(oidcConfig), t);
                         }
 
                         if (tokenRequestUri == null) {
@@ -179,7 +188,12 @@ public class OidcClientRecorder {
                                 commonRefreshGrantParams,
                                 oidcConfig);
                     }
+
                 });
+    }
+
+    private static String getEndpointUrl(OidcClientConfig oidcConfig) {
+        return oidcConfig.authServerUrl.isPresent() ? oidcConfig.authServerUrl.get() : oidcConfig.tokenPath.get();
     }
 
     private static void setGrantClientParams(OidcClientConfig oidcConfig, MultiMap grantParams, String grantType) {

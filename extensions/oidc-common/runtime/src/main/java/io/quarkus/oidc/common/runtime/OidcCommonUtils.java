@@ -59,27 +59,24 @@ public class OidcCommonUtils {
 
     }
 
+    public static void verifyEndpointUrl(String endpointUrl) {
+        try {
+            // Verify that endpoint url is a valid URL
+            URI.create(endpointUrl).toURL();
+        } catch (Throwable ex) {
+            throw new ConfigurationException(
+                    String.format("'%s' is invalid", endpointUrl), ex);
+        }
+    }
+
     public static void verifyCommonConfiguration(OidcCommonConfig oidcConfig, boolean clientIdOptional,
             boolean isServerConfig) {
         final String configPrefix = isServerConfig ? "quarkus.oidc." : "quarkus.oidc-client.";
-        if (!oidcConfig.getAuthServerUrl().isPresent()) {
-            throw new ConfigurationException(
-                    String.format("'%sauth-server-url' property must be configured",
-                            configPrefix));
-        }
-
         if (!clientIdOptional && !oidcConfig.getClientId().isPresent()) {
             throw new ConfigurationException(
                     String.format("'%sclient-id' property must be configured", configPrefix));
         }
 
-        try {
-            // Verify that auth-server-url is a valid URL
-            URI.create(oidcConfig.getAuthServerUrl().get()).toURL();
-        } catch (Throwable ex) {
-            throw new ConfigurationException(
-                    String.format("'%sauth-server-url' is invalid", configPrefix), ex);
-        }
         Credentials creds = oidcConfig.getCredentials();
         if (creds.secret.isPresent() && creds.clientSecret.value.isPresent()) {
             throw new ConfigurationException(
@@ -167,13 +164,14 @@ public class OidcCommonUtils {
 
     public static String getOidcEndpointUrl(String authServerUrl, Optional<String> endpointPath) {
         if (endpointPath.isPresent()) {
-            if (endpointPath.get().startsWith(HTTP_SCHEME)) {
-                return endpointPath.get();
-            }
-            return authServerUrl + prependSlash(endpointPath.get());
+            return isAbsoluteUrl(endpointPath) ? endpointPath.get() : authServerUrl + prependSlash(endpointPath.get());
         } else {
             return null;
         }
+    }
+
+    public static boolean isAbsoluteUrl(Optional<String> endpointUrl) {
+        return endpointUrl.isPresent() && endpointUrl.get().startsWith(HTTP_SCHEME);
     }
 
     private static long getConnectionDelay(OidcCommonConfig oidcConfig) {

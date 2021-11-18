@@ -1,5 +1,6 @@
 package io.quarkus.it.mongodb;
 
+import static io.restassured.RestAssured.get;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
@@ -46,6 +47,8 @@ public class BookResourceTest {
 
     @Test
     public void health() throws Exception {
+        // trigger (lazy) creation of the client, otherwise the health check would fail
+        get("/books");
         RestAssured.when().get("/q/health/ready").then()
                 .body("status", is("UP"),
                         "checks.data", containsInAnyOrder(hasKey(MongoHealthCheck.CLIENT_DEFAULT)),

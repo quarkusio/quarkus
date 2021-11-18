@@ -414,10 +414,10 @@ class SmallRyeHealthProcessor {
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             SmallRyeHealthConfig healthConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            LaunchModeBuildItem launchMode,
+            LaunchModeBuildItem launchModeBuildItem,
             LiveReloadBuildItem liveReloadBuildItem) throws Exception {
 
-        if (shouldInclude(launchMode, healthConfig)) {
+        if (shouldInclude(launchModeBuildItem, healthConfig)) {
 
             if ("/".equals(healthConfig.ui.rootPath)) {
                 throw new ConfigurationError(
@@ -430,11 +430,12 @@ class SmallRyeHealthProcessor {
             ResolvedDependency artifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, HEALTH_UI_WEBJAR_GROUP_ID,
                     HEALTH_UI_WEBJAR_ARTIFACT_ID);
 
-            if (launchMode.getLaunchMode().isDevOrTest()) {
-                Path tempPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem, curateOutcomeBuildItem, launchMode,
+            if (launchModeBuildItem.getLaunchMode().isDevOrTest()) {
+                Path tempPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem, curateOutcomeBuildItem,
+                        launchModeBuildItem,
                         artifact,
                         HEALTH_UI_WEBJAR_PREFIX);
-                if (launchMode.equals(LaunchMode.DEVELOPMENT)) {
+                if (launchModeBuildItem.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
                     updateApiUrl(tempPath.resolve(JS_FILE_TO_UPDATE), healthPath);
                     updateApiUrl(tempPath.resolve(INDEX_FILE_TO_UPDATE), healthPath);
                 }
@@ -444,7 +445,7 @@ class SmallRyeHealthProcessor {
 
                 // Handle live reload of branding files
                 if (liveReloadBuildItem.isLiveReload() && !liveReloadBuildItem.getChangedResources().isEmpty()) {
-                    WebJarUtil.hotReloadBrandingChanges(curateOutcomeBuildItem, launchMode, artifact,
+                    WebJarUtil.hotReloadBrandingChanges(curateOutcomeBuildItem, launchModeBuildItem, artifact,
                             liveReloadBuildItem.getChangedResources());
                 }
             } else {

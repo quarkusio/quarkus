@@ -54,8 +54,10 @@ public class ServiceBindingProcessor {
                 .distinct()
                 .forEach(r -> {
                     if (!services.isEmpty()) {
-                        result.add(new DecoratorBuildItem(r.getTarget(), new AddServiceBindingResourceDecorator(r.getGroup(),
-                                r.getVersion(), r.getKind(), r.getName(), serviceBindingConfig, services)));
+                        services.forEach(service -> {
+                            result.add(new DecoratorBuildItem(r.getTarget(), new AddServiceBindingResourceDecorator(
+                                    r.getGroup(), r.getVersion(), r.getKind(), r.getName(), serviceBindingConfig, service)));
+                        });
                     }
                 });
         return result;

@@ -120,13 +120,6 @@
                     <streamLogs>true</streamLogs>
                     <invokerPropertiesFile>invoker.properties</invokerPropertiesFile>
                 </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.codehaus.groovy</groupId>
-                        <artifactId>groovy</artifactId>
-                        <version>3.0.8</version>
-                    </dependency>
-                </dependencies>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>

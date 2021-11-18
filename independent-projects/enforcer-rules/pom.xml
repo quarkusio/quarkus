@@ -83,6 +83,13 @@
                         </goals>
                     </execution>
                 </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.codehaus.groovy</groupId>
+                        <artifactId>groovy</artifactId>
+                        <version>3.0.9</version>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>net.revelc.code.formatter</groupId>

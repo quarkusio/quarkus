@@ -65,7 +65,7 @@ public class JavaCompilationProvider implements CompilationProvider {
             fileManager.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singleton(context.getOutputDirectory()));
 
             CompilerFlags compilerFlags = new CompilerFlags(COMPILER_OPTIONS, context.getCompilerOptions(),
-                    context.getSourceJavaVersion(), context.getTargetJvmVersion());
+                    context.getReleaseJavaVersion(), context.getSourceJavaVersion(), context.getTargetJvmVersion());
 
             Iterable<? extends JavaFileObject> sources = fileManager.getJavaFileObjectsFromFiles(filesToCompile);
             JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics,

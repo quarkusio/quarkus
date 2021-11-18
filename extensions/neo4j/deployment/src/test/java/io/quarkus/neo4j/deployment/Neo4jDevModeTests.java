@@ -32,7 +32,7 @@ public class Neo4jDevModeTests {
                 .withConfigurationResource("application.properties")
                 .setLogRecordPredicate(record -> true)
                 .assertLogRecords(records -> assertThat(records).extracting(LogRecord::getMessage)
-                        .contains("Dev Services started a Neo4j container reachable at %s."));
+                        .contains("Dev Services started a Neo4j container reachable at %s"));
 
         @Inject
         Driver driver;
@@ -60,14 +60,14 @@ public class Neo4jDevModeTests {
         static QuarkusUnitTest test = new QuarkusUnitTest()
                 .withEmptyApplication()
                 .withConfigurationResource("application.properties")
-                .overrideConfigKey("quarkus.neo4j.devservices.fixed-bolt-port", FIXED_BOLD_PORT)
-                .overrideConfigKey("quarkus.neo4j.devservices.fixed-http-port", FIXED_HTTP_PORT)
+                .overrideConfigKey("quarkus.neo4j.devservices.bolt-port", FIXED_BOLD_PORT)
+                .overrideConfigKey("quarkus.neo4j.devservices.http-port", FIXED_HTTP_PORT)
                 .setAllowTestClassOutsideDeployment(true) // Needed to use the PortUtils above.
                 .setLogRecordPredicate(record -> true)
                 .assertLogRecords(records -> assertThat(records)
                         .isNotEmpty()
-                        .anyMatch(recordMatches("Dev Services started a Neo4j container reachable at %s.", FIXED_BOLD_PORT))
-                        .anyMatch(recordMatches("Neo4j Browser is reachable at %s.", FIXED_HTTP_PORT)));
+                        .anyMatch(recordMatches("Dev Services started a Neo4j container reachable at %s", FIXED_BOLD_PORT))
+                        .anyMatch(recordMatches("Neo4j Browser is reachable at %s", FIXED_HTTP_PORT)));
 
         @Inject
         Driver driver;
@@ -117,7 +117,7 @@ public class Neo4jDevModeTests {
                 .setLogRecordPredicate(record -> true)
                 .assertLogRecords(records -> assertThat(records)
                         .isNotEmpty()
-                        .noneMatch(recordMatches("Neo4j Browser is reachable at %s.", "7474")));
+                        .noneMatch(recordMatches("Neo4j Browser is reachable at %s", "7474")));
 
         @Inject
         Driver driver;
@@ -140,7 +140,7 @@ public class Neo4jDevModeTests {
                 .overrideConfigKey("quarkus.neo4j.devservices.image-name", "neo4j:4.3-enterprise")
                 .overrideConfigKey("quarkus.neo4j.devservices.additional-env.NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
                 .assertLogRecords(records -> assertThat(records).extracting(LogRecord::getMessage)
-                        .contains("Dev Services started a Neo4j container reachable at %s."));
+                        .contains("Dev Services started a Neo4j container reachable at %s"));
 
         @Inject
         Driver driver;

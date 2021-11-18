@@ -85,8 +85,8 @@ class Neo4jDevServicesProcessor {
                 devServicePropertiesProducer.produce(new DevServicesConfigResultBuildItem(NEO4J_PASSWORD_PROP,
                         neo4jContainer.getAdminPassword()));
 
-                log.infof("Dev Services started a Neo4j container reachable at %s.", neo4jContainer.getBoltUrl());
-                log.infof("Neo4j Browser is reachable at %s.", neo4jContainer.getBrowserUrl());
+                log.infof("Dev Services started a Neo4j container reachable at %s", neo4jContainer.getBoltUrl());
+                log.infof("Neo4j Browser is reachable at %s", neo4jContainer.getBrowserUrl());
                 log.infof("The username for both endpoints is `%s`, authenticated by `%s`", "neo4j",
                         neo4jContainer.getAdminPassword());
                 log.infof("Connect via Cypher-Shell: cypher-shell -u %s -p %s -a %s", "neo4j",

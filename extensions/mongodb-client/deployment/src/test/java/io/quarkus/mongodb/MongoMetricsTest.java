@@ -44,9 +44,9 @@ public class MongoMetricsTest extends MongoTestBase {
 
     @Test
     void testMetricsInitialization() {
-        // Clients are created lazily, this metric should not be present yet
-        assertThat(getGaugeValueOrNull("mongodb.connection-pool.size", getTags())).isNull();
-        assertThat(getGaugeValueOrNull("mongodb.connection-pool.checked-out-count", getTags())).isNull();
+        // Clients are created eagerly, this metric should always be initialized to zero once connected
+        assertEquals(0L, getGaugeValueOrNull("mongodb.connection-pool.size", getTags()));
+        assertEquals(0L, getGaugeValueOrNull("mongodb.connection-pool.checked-out-count", getTags()));
 
         // Just need to execute something so that an connection is opened
         String name = client.listDatabaseNames().first();

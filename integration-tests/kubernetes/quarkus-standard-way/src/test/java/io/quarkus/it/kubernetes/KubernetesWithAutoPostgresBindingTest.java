@@ -19,14 +19,14 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithAutoServiceBindingTest {
+public class KubernetesWithAutoPostgresBindingTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("kubernetes-with-auto-service-binding")
+            .setApplicationName("kubernetes-with-auto-postgres-binding")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("kubernetes-with-auto-service-binding.properties")
+            .withConfigurationResource("kubernetes-with-auto-postgres-binding.properties")
             .setLogFileName("k8s.log")
             .setForcedDependencies(
                     Arrays.asList(
@@ -50,7 +50,7 @@ public class KubernetesWithAutoServiceBindingTest {
         assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Deployment.class, d -> {
                 assertThat(d.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("kubernetes-with-auto-service-binding");
+                    assertThat(m.getName()).isEqualTo("kubernetes-with-auto-postgres-binding");
                 });
                 assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                     assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
@@ -64,7 +64,7 @@ public class KubernetesWithAutoServiceBindingTest {
         assertThat(kubernetesList).filteredOn(i -> "ServiceBinding".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(ServiceBinding.class, s -> {
                 assertThat(s.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("kubernetes-with-auto-service-binding-postgresql");
+                    assertThat(m.getName()).isEqualTo("kubernetes-with-auto-postgres-binding-postgresql");
                 });
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertThat(spec.getApplication()).satisfies(a -> {

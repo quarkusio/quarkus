@@ -9,11 +9,12 @@ import io.quarkus.kubernetes.service.binding.spi.ServiceQualifierBuildItem;
 public class DataSourceBindingProcessor {
 
     private static final String DB_KIND = "DB_KIND";
+    private static final String DEFAULT_DATASOURCE = "default";
 
     @BuildStep
     public void process(DataSourcesBuildTimeConfig config, BuildProducer<ServiceQualifierBuildItem> bindings) {
         config.defaultDataSource.dbKind.ifPresent(k -> {
-            bindings.produce(createBuildItem(k, k));
+            bindings.produce(createBuildItem(k, DEFAULT_DATASOURCE));
         });
 
         config.namedDataSources.forEach((n, c) -> {

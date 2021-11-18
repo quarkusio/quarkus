@@ -7,14 +7,20 @@ import io.quarkus.builder.item.MultiBuildItem;
  */
 public final class ServiceRequirementBuildItem extends MultiBuildItem {
 
+    private final String binding;
     private final String apiVersion;
     private final String kind;
     private final String name;
 
-    public ServiceRequirementBuildItem(String apiVersion, String kind, String name) {
+    public ServiceRequirementBuildItem(String binding, String apiVersion, String kind, String name) {
+        this.binding = binding;
         this.apiVersion = apiVersion;
         this.kind = kind;
         this.name = name;
+    }
+
+    public String getBinding() {
+        return this.binding;
     }
 
     public String getApiVersion() {

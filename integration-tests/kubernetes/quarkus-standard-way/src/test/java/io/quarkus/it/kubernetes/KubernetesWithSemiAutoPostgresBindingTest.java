@@ -19,19 +19,19 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithAutoMysqlBindingTest {
+public class KubernetesWithSemiAutoPostgresBindingTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("kubernetes-with-auto-mysql-binding")
+            .setApplicationName("kubernetes-with-semi-auto-postgres-binding")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("kubernetes-with-auto-mysql-binding.properties")
+            .withConfigurationResource("kubernetes-with-semi-auto-postgres-binding.properties")
             .setLogFileName("k8s.log")
             .setForcedDependencies(
                     Arrays.asList(
                             new AppArtifact("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
-                            new AppArtifact("io.quarkus", "quarkus-jdbc-mysql", Version.getVersion()),
+                            new AppArtifact("io.quarkus", "quarkus-jdbc-postgresql", Version.getVersion()),
                             new AppArtifact("io.quarkus", "quarkus-datasource", Version.getVersion()),
                             new AppArtifact("io.quarkus", "quarkus-kubernetes-service-binding", Version.getVersion())));
 
@@ -50,7 +50,7 @@ public class KubernetesWithAutoMysqlBindingTest {
         assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Deployment.class, d -> {
                 assertThat(d.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("kubernetes-with-auto-mysql-binding");
+                    assertThat(m.getName()).isEqualTo("kubernetes-with-semi-auto-postgres-binding");
                 });
                 assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                     assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
@@ -64,7 +64,7 @@ public class KubernetesWithAutoMysqlBindingTest {
         assertThat(kubernetesList).filteredOn(i -> "ServiceBinding".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(ServiceBinding.class, s -> {
                 assertThat(s.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("kubernetes-with-auto-mysql-binding-mysql-default");
+                    assertThat(m.getName()).isEqualTo("kubernetes-with-semi-auto-postgres-binding-postgresql-default");
                 });
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertThat(spec.getApplication()).satisfies(a -> {
@@ -74,10 +74,10 @@ public class KubernetesWithAutoMysqlBindingTest {
                     });
 
                     assertThat(spec.getServices()).hasOnlyOneElementSatisfying(service -> {
-                        assertThat(service.getGroup()).isEqualTo("pxc.percona.com");
-                        assertThat(service.getVersion()).isEqualTo("v1-9-0");
-                        assertThat(service.getKind()).isEqualTo("PerconaXtraDBCluster");
-                        assertThat(service.getName()).isEqualTo("mysql-default");
+                        assertThat(service.getGroup()).isEqualTo("my.custom-operator.com");
+                        assertThat(service.getVersion()).isEqualTo("v1alpha1");
+                        assertThat(service.getKind()).isEqualTo("Postgres");
+                        assertThat(service.getName()).isEqualTo("postgresql-default");
                     });
                 });
             });

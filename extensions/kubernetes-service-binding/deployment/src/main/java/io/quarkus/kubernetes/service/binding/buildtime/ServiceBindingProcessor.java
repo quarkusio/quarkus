@@ -9,38 +9,60 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.kubernetes.service.binding.spi.ServiceQualifierBuildItem;
 import io.quarkus.kubernetes.service.binding.spi.ServiceRequirementBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 
+/***
+ * Processor that handles the generation of ServiceBinding resources.
+ * 
+ * Generated ServiceBinding rules:
+ *
+ * 1. .metadata.name:
+ * When no user configuration is present then the combination [app.name] - [qualifier kind] + [qualifier name] will be used.
+ *
+ * Examples:
+ * - app-postgresql-default
+ * - app-mysql-default
+ * - app-mongodb-default
+ * 
+ * 2. .spec.service[*].name:
+ * Since services are qualified using apiVersion, we don't need to carry over the [qualifier kind]. In this case the name is
+ * just [qualifier name].*
+ * 
+ */
 public class ServiceBindingProcessor {
 
-    private static final Map<String, String> DEFAULTS = new HashMap<>();
+    protected static final Map<String, String> DEFAULTS = new HashMap<>();
 
     static {
         DEFAULTS.put("postgresql", "PostgresCluster.postgres-operator.crunchydata.com/v1beta1");
         DEFAULTS.put("mysql", "PerconaXtraDBCluster.pxc.percona.com/v1-9-0");
         DEFAULTS.put("redis", "Redis.redis.redis.opstreelabs.in/v1beta1");
-        DEFAULTS.put("mongo", "PerconaServerMongoDB.psmdb.percona.com/v1-9-0");
+        DEFAULTS.put("mongodb", "PerconaServerMongoDB.psmdb.percona.com/v1-9-0");
         DEFAULTS.put("kafka", "Kafka.kafka.strimzi.io/v1beta2");
     }
 
     @BuildStep
-    public List<ServiceRequirementBuildItem> createServiceBindingDecorators(KubernetesServiceBindingConfig config,
-            List<ServiceQualifierBuildItem> qualifiers) {
+    public List<ServiceRequirementBuildItem> createServiceBindingDecorators(ApplicationInfoBuildItem applicationInfo,
+            KubernetesServiceBindingConfig config, List<ServiceQualifierBuildItem> qualifiers) {
         Map<String, ServiceRequirementBuildItem> requirements = new HashMap<>();
 
+        String applicationName = applicationInfo.getName();
         //First we add all user provided services
-        config.services.forEach((id, s) -> {
-            requirements.put(id, new ServiceRequirementBuildItem(s.apiVersion, s.kind, s.name.orElse(id)));
+        config.services.forEach((key, s) -> {
+            System.out.println("Config with key:" + key);
+            createRequirement(applicationName, key, config).ifPresent(r -> requirements.put(key, r));
         });
 
         //Then we try to make requirements out of qualifies for services not already provided by the user
         qualifiers.forEach(q -> {
-            Optional<ServiceRequirementBuildItem> requirement = createRequirement(config, q);
+            Optional<ServiceRequirementBuildItem> requirement = createRequirement(applicationName, config, q);
             requirement.ifPresent(r -> {
-                requirements.putIfAbsent(r.getName(), r);
+                String key = q.getKind() + "-" + q.getName();
+                requirements.putIfAbsent(key, r);
             });
         });
         return requirements.values().stream().collect(Collectors.toList());
@@ -63,18 +85,57 @@ public class ServiceBindingProcessor {
         return result;
     }
 
-    private static Optional<ServiceRequirementBuildItem> createRequirement(KubernetesServiceBindingConfig config,
-            ServiceQualifierBuildItem qualifier) {
-        String id = qualifier.getName();
-        if (config.services.containsKey(id)) {
-            ServiceConfig provided = config.services.get(id);
-            return Optional.of(new ServiceRequirementBuildItem(provided.apiVersion, provided.kind, provided.name.orElse(id)));
-        } else if (DEFAULTS.containsKey(id)) {
-            String qualifiedName = DEFAULTS.get(id);
-            String kind = qualifiedName.substring(0, qualifiedName.indexOf("."));
-            String apiVersion = qualifiedName.substring(qualifiedName.indexOf(".") + 1);
-            return Optional.of(new ServiceRequirementBuildItem(apiVersion, kind, id));
+    protected static Optional<ServiceRequirementBuildItem> createRequirement(String applicationName, String serviceKey,
+            KubernetesServiceBindingConfig config) {
+        String name = config.services != null && config.services.containsKey(serviceKey)
+                ? config.services.get(serviceKey).name.orElse(serviceKey)
+                : serviceKey;
+
+        return createRequirement(applicationName, serviceKey, serviceKey, name, config);
+    }
+
+    protected static Optional<ServiceRequirementBuildItem> createRequirement(String applicationName, String serviceKey,
+            String serviceId, String serviceName, KubernetesServiceBindingConfig config) {
+        if (config.services != null && config.services.containsKey(serviceId)) {
+            ServiceConfig provided = config.services.get(serviceId);
+            String apiVersion = provided.apiVersion
+                    .orElseGet(() -> getDefaultQualifiedKind(serviceKey).map(ServiceBindingProcessor::apiVersion).orElse(""));
+            String kind = provided.kind.orElseGet(() -> getDefaultQualifiedKind(serviceKey).map(ServiceBindingProcessor::kind)
+                    .orElseThrow(() -> new IllegalStateException("Failed to determing bindable service kind.")));
+            //When a service is partically or fully configured, use the configured binding or fallback to the application name and service id combination.
+            return Optional.of(new ServiceRequirementBuildItem(provided.binding.orElse(applicationName + "-" + serviceId),
+                    apiVersion, kind, provided.name.orElse(serviceName)));
         }
         return Optional.empty();
+    }
+
+    protected static Optional<ServiceRequirementBuildItem> createRequirement(String applicationName,
+            KubernetesServiceBindingConfig config, ServiceQualifierBuildItem qualifier) {
+        String serviceId = qualifier.getKind() + "-" + qualifier.getName();
+
+        if (config.services != null && config.services.containsKey(serviceId)) {
+            return createRequirement(applicationName, qualifier.getKind(), serviceId, qualifier.getName(), config);
+        } else if (DEFAULTS.containsKey(qualifier.getKind())) {
+            String value = DEFAULTS.get(qualifier.getKind());
+            //When no service is configured, we use as binding name the combination of kind and name.
+            return Optional.of(new ServiceRequirementBuildItem(applicationName + "-" + serviceId, apiVersion(value),
+                    kind(value), serviceId));
+        }
+        return Optional.empty();
+    }
+
+    protected static Optional<String> getDefaultQualifiedKind(String id) {
+        if (!DEFAULTS.containsKey(id)) {
+            return Optional.empty();
+        }
+        return Optional.of(DEFAULTS.get(id));
+    }
+
+    protected static String apiVersion(String name) {
+        return name.substring(name.indexOf(".") + 1);
+    }
+
+    protected static String kind(String name) {
+        return name.substring(0, name.indexOf("."));
     }
 }

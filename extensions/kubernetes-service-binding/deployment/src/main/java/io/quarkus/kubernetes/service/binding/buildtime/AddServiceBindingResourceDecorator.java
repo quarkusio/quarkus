@@ -60,7 +60,7 @@ public class AddServiceBindingResourceDecorator extends ResourceProvidingDecorat
 
         ServiceBindingBuilder binding = new ServiceBindingBuilder()
                 .withNewMetadata()
-                .withName(name + "-" + service.getName())
+                .withName(service.getBinding())
                 .endMetadata()
                 .withSpec(spec.build());
 

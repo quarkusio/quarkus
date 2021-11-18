@@ -14,7 +14,7 @@ public final class ServiceQualifierBuildItem extends MultiBuildItem {
 
     public ServiceQualifierBuildItem(String kind, String name) {
         this.kind = kind;
-        this.name = name;
+        this.name = name.replaceAll("[^a-zA-Z0-9_-]", "");
     }
 
     public String getKind() {

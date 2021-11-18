@@ -1,5 +1,7 @@
 package io.quarkus.platform.catalog.processor;
 
+import static io.quarkus.platform.catalog.processor.ExtensionProcessor.isUnlisted;
+
 import io.quarkus.registry.catalog.Category;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -8,11 +10,17 @@ import java.util.*;
 
 public class CatalogProcessor {
     private static final String CODESTART_ARTIFACTS = "codestarts-artifacts";
-    private static final String UNCATEGORIZED_ID = "uncategorized";
-    private static final String UNCATEGORIZED_NAME = "Uncategorized";
-    private static final String UNCATEGORIZED_DESCRIPTION = "The category is not defined for those extensions.";
+    private static final Category UNCATEGORIZED_CATEGORY;
 
     private final ExtensionCatalog catalog;
+
+    static {
+        JsonCategory uncategorized = new JsonCategory();
+        uncategorized.setId("uncategorized");
+        uncategorized.setName("Uncategorized");
+        uncategorized.setDescription("The category is not defined for those extensions.");
+        UNCATEGORIZED_CATEGORY = uncategorized;
+    }
 
     private CatalogProcessor(ExtensionCatalog catalog) {
         this.catalog = Objects.requireNonNull(catalog);
@@ -25,29 +33,31 @@ public class CatalogProcessor {
     public static List<ProcessedCategory> getProcessedCategoriesInOrder(ExtensionCatalog catalog) {
         final Map<String, List<Extension>> extsByCategory = new HashMap<>(catalog.getCategories().size());
         for (Extension e : catalog.getExtensions()) {
-            List<String> categories = ExtensionProcessor.of(e).getCategories();
-            if (categories.isEmpty()) {
-                extsByCategory.put(UNCATEGORIZED_ID, new ArrayList<>());
-                extsByCategory.get(UNCATEGORIZED_ID).add(e);
-            }
-            for (String c : categories) {
-                if (!extsByCategory.containsKey(c)) {
-                    extsByCategory.put(c, new ArrayList<>());
+            List<String> categories = new ArrayList<>(ExtensionProcessor.of(e).getCategories());
+            if (!isUnlisted(e)) {
+                if (categories.isEmpty()) {
+                    categories.add(UNCATEGORIZED_CATEGORY.getId());
                 }
-                extsByCategory.get(c).add(e);
+                for (String c : categories) {
+                    if (!extsByCategory.containsKey(c)) {
+                        extsByCategory.put(c, new ArrayList<>());
+                    }
+                    extsByCategory.get(c).add(e);
+                }
             }
         }
+
         final List<ProcessedCategory> orderedCategories = new ArrayList<>(catalog.getCategories().size());
-        for (Category c : catalog.getCategories()) {
+        final List<Category> categories = new ArrayList<>(catalog.getCategories());
+        if (categories.stream().noneMatch(c -> Objects.equals(c.getId(), UNCATEGORIZED_CATEGORY.getId()))) {
+            categories.add(UNCATEGORIZED_CATEGORY);
+        }
+        for (Category c : categories) {
             if (extsByCategory.containsKey(c.getId())) {
                 orderedCategories.add(new ProcessedCategory(c, extsByCategory.get(c.getId())));
             }
         }
-        JsonCategory category = new JsonCategory();
-        category.setId(UNCATEGORIZED_ID);
-        category.setName(UNCATEGORIZED_NAME);
-        category.setDescription(UNCATEGORIZED_DESCRIPTION);
-        orderedCategories.add(new ProcessedCategory(category, extsByCategory.get(UNCATEGORIZED_ID)));
+
         return orderedCategories;
     }
 

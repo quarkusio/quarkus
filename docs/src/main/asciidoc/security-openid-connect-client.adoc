@@ -54,6 +54,15 @@ quarkus.oidc-client.discovery-enabled=false
 quarkus.oidc-client.token-path=/protocol/openid-connect/tokens
 ----
 
+A more compact way to configure the token endpoint URL without the discovery is to set `quarkus.oidc-client.token-path` to an absolute URL:
+
+[source, properties]
+----
+quarkus.oidc-client.token-path=http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens
+----
+
+Setting 'quarkus.oidc-client.auth-server-url' and 'quarkus.oidc-client.discovery-enabled' is not required in this case.
+
 === Supported Token Grants
 
 The main token grants which `OidcClient` can use to acquire the tokens are the `client_credentials` (default) and `password` grants.

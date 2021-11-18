@@ -142,6 +142,7 @@ public class OidcRecorder {
         }
 
         try {
+            verifyAuthServerUrl(oidcConfig);
             OidcCommonUtils.verifyCommonConfiguration(oidcConfig, isServiceApp(oidcConfig), true);
         } catch (ConfigurationException t) {
             return Uni.createFrom().failure(t);
@@ -316,6 +317,13 @@ public class OidcRecorder {
 
     private static boolean isServiceApp(OidcTenantConfig oidcConfig) {
         return ApplicationType.SERVICE.equals(oidcConfig.applicationType);
+    }
+
+    private static void verifyAuthServerUrl(OidcCommonConfig oidcConfig) {
+        if (!oidcConfig.getAuthServerUrl().isPresent()) {
+            throw new ConfigurationException("'quarkus.oidc.auth-server-url' property must be configured");
+        }
+        OidcCommonUtils.verifyEndpointUrl(oidcConfig.getAuthServerUrl().get());
     }
 
 }

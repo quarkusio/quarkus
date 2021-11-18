@@ -21,14 +21,13 @@ public class OidcCommonConfig {
 
     /**
      * Enables OIDC discovery.
-     * If the discovery is disabled then the 'token-path' property must be configured.
+     * If the discovery is disabled then the OIDC endpoint URLs must be configured individually.
      */
     @ConfigItem(defaultValue = "true")
     public boolean discoveryEnabled = true;
 
     /**
-     * Relative path of the OIDC token endpoint which issues access and refresh tokens
-     * using either 'client_credentials' or 'password' grants
+     * Relative path or absolute URL of the OIDC token endpoint which issues access and refresh tokens.
      */
     @ConfigItem
     public Optional<String> tokenPath = Optional.empty();

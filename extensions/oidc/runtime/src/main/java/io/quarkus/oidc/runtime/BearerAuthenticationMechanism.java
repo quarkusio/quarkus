@@ -28,7 +28,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
                 String token = extractBearerToken(context, oidcTenantConfig);
                 // if a bearer token is provided try to authenticate
                 if (token != null) {
-                    return authenticate(identityProviderManager, context, new AccessTokenCredential(token, context));
+                    return authenticate(identityProviderManager, context, new AccessTokenCredential(token));
                 }
                 return Uni.createFrom().nullItem();
             }

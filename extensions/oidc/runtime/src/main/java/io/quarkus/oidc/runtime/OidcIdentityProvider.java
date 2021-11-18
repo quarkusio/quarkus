@@ -16,7 +16,6 @@ import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
-import io.quarkus.oidc.OidcTokenCredential;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.UserInfo;
@@ -29,6 +28,7 @@ import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
@@ -58,8 +58,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     @Override
     public Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             AuthenticationRequestContext context) {
-        OidcTokenCredential credential = (OidcTokenCredential) request.getToken();
-        RoutingContext vertxContext = credential.getRoutingContext();
+        RoutingContext vertxContext = HttpSecurityUtils.getRoutingContextAttribute(request);
         vertxContext.put(AuthenticationRequestContext.class.getName(), context);
 
         Uni<TenantConfigContext> tenantConfigContext = tenantResolver.resolveContext(vertxContext);
@@ -209,6 +208,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             }
                             OidcUtils.setBlockinApiAttribute(builder, vertxContext);
                             OidcUtils.setTenantIdAttribute(builder, resolvedContext.oidcConfig);
+                            OidcUtils.setRoutingContextAttribute(builder, vertxContext);
                             return Uni.createFrom().item(builder.build());
                         }
                     }

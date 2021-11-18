@@ -112,7 +112,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         context.put(OidcConstants.ACCESS_TOKEN_VALUE, session.getAccessToken());
                         context.put(AuthorizationCodeTokens.class.getName(), session);
                         return authenticate(identityProviderManager, context,
-                                new IdTokenCredential(session.getIdToken(), context,
+                                new IdTokenCredential(session.getIdToken(),
                                         !configContext.oidcConfig.authentication.isIdTokenRequired()))
                                                 .call(new Function<SecurityIdentity, Uni<?>>() {
                                                     @Override
@@ -317,7 +317,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         context.put(AuthorizationCodeTokens.class.getName(), tokens);
 
                         return authenticate(identityProviderManager, context,
-                                new IdTokenCredential(tokens.getIdToken(), context, internalIdToken))
+                                new IdTokenCredential(tokens.getIdToken(), internalIdToken))
                                         .call(new Function<SecurityIdentity, Uni<?>>() {
                                             @Override
                                             public Uni<Void> apply(SecurityIdentity identity) {
@@ -586,7 +586,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             context.put(REFRESH_TOKEN_GRANT_RESPONSE, Boolean.TRUE);
 
                             return authenticate(identityProviderManager, context,
-                                    new IdTokenCredential(tokens.getIdToken(), context))
+                                    new IdTokenCredential(tokens.getIdToken()))
                                             .call(new Function<SecurityIdentity, Uni<?>>() {
                                                 @Override
                                                 public Uni<Void> apply(SecurityIdentity identity) {

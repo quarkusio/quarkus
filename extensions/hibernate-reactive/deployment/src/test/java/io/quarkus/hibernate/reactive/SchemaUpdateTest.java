@@ -37,8 +37,10 @@ public class SchemaUpdateTest {
     }
 
     @Entity(name = "Hero")
-    @Table(name = "hero")
+    @Table(name = Hero.TABLE)
     public static class Hero {
+
+        public static final String TABLE = "Hero_for_SchemaUpdateTest";
 
         @javax.persistence.Id
         @javax.persistence.GeneratedValue

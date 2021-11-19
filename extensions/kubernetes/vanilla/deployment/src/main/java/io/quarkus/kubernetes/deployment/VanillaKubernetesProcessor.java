@@ -9,6 +9,7 @@ import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.VANILLA_KUBERNETES_PRIORITY;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -107,6 +108,35 @@ public class VanillaKubernetesProcessor {
     }
 
     @BuildStep
+    public void createRolePoliciesAndBindings(ApplicationInfoBuildItem applicationInfo, KubernetesConfig config,
+            BuildProducer<KubernetesRoleBuildItem> rolePolicies,
+            BuildProducer<KubernetesRoleBindingBuildItem> roleBinding) {
+        final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
+
+        List<KubernetesRoleBuildItem.PolicyRule> clusterRules = new ArrayList<>();
+        List<KubernetesRoleBuildItem.PolicyRule> namespacedRules = new ArrayList<>();
+        config.getRolePolicies().forEach(p -> {
+            KubernetesRoleBuildItem.PolicyRule rule = new KubernetesRoleBuildItem.PolicyRule(
+                    p.apiGroups.orElseGet(() -> List.of("")), p.nonResourceURLs.orElseGet(Collections::emptyList),
+                    p.resourceNames.orElseGet(Collections::emptyList),
+                    p.resources.orElseGet(Collections::emptyList), p.verbs.orElseGet(Collections::emptyList));
+            if (p.clusterWide) {
+                clusterRules.add(rule);
+            } else {
+                namespacedRules.add(rule);
+            }
+        });
+        if (!clusterRules.isEmpty()) {
+            rolePolicies.produce(new KubernetesRoleBuildItem(name + "-cluster-role", clusterRules));
+            roleBinding.produce(new KubernetesRoleBindingBuildItem(name + "-cluster-role", true));
+        }
+        if (!namespacedRules.isEmpty()) {
+            rolePolicies.produce(new KubernetesRoleBuildItem(name, namespacedRules));
+            roleBinding.produce(new KubernetesRoleBindingBuildItem(name, false));
+        }
+    }
+
+    @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget, KubernetesConfig config, PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration, List<KubernetesAnnotationBuildItem> annotations,
@@ -141,8 +171,7 @@ public class VanillaKubernetesProcessor {
             result.add(new DecoratorBuildItem(KUBERNETES, new ApplyContainerImageDecorator(name, i.getImage())));
         });
 
-        result
-                .add(new DecoratorBuildItem(KUBERNETES, new ApplyImagePullPolicyDecorator(name, config.getImagePullPolicy())));
+        result.add(new DecoratorBuildItem(KUBERNETES, new ApplyImagePullPolicyDecorator(name, config.getImagePullPolicy())));
         result.add(new DecoratorBuildItem(KUBERNETES, new AddSelectorToDeploymentDecorator(name)));
 
         Stream.concat(config.convertToBuildItems().stream(),

@@ -5,6 +5,7 @@ import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_COMMIT_ID;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_VCS_URL;
+import static io.quarkus.kubernetes.deployment.Constants.VIEW_CLUSTER_ROLE;
 
 import java.nio.file.Path;
 import java.time.ZoneOffset;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import io.dekorate.kubernetes.config.Annotation;
@@ -58,6 +60,8 @@ import io.dekorate.project.Project;
 import io.dekorate.project.ScmInfo;
 import io.dekorate.utils.Annotations;
 import io.dekorate.utils.Strings;
+import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
+import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
@@ -184,15 +188,33 @@ public class KubernetesCommonHelper {
         if (!roleBindings.isEmpty()) {
             result.add(new DecoratorBuildItem(new ApplyServiceAccountNameDecorator()));
             result.add(new DecoratorBuildItem(new AddServiceAccountResourceDecorator()));
-            roles.forEach(r -> result.add(new DecoratorBuildItem(new AddRoleResourceDecorator(r))));
+
+            List<String> clusterRoleNames = roleBindings.stream().filter(KubernetesRoleBindingBuildItem::isClusterWide)
+                    .map(KubernetesRoleBindingBuildItem::getRole).collect(Collectors.toList());
+            // the VIEW_CLUSTER_ROLE is externally managed and must not be generated
+            Predicate<String> createClusterRoleAndBinding = roleName -> clusterRoleNames.contains(roleName)
+                    && !VIEW_CLUSTER_ROLE.equals(roleName);
+            Predicate<String> createRole = roleName -> !clusterRoleNames.contains(roleName)
+                    && !VIEW_CLUSTER_ROLE.equals(roleName);
+            roles.forEach(r -> {
+                if (createClusterRoleAndBinding.test(r.getName())) {
+                    result.add(new DecoratorBuildItem(new AddClusterRoleResourceDecorator(r)));
+                } else if (createRole.test(r.getName())) {
+                    result.add(new DecoratorBuildItem(new AddRoleResourceDecorator(r)));
+                }
+            });
             roleBindings.forEach(rb -> {
-                result.add(new DecoratorBuildItem(new AddRoleBindingResourceDecorator(rb.getName(), null, rb.getRole(),
-                        rb.isClusterWide() ? AddRoleBindingResourceDecorator.RoleKind.ClusterRole
-                                : AddRoleBindingResourceDecorator.RoleKind.Role)));
-                labels.forEach(l -> {
+                if (createClusterRoleAndBinding.test(rb.getRole())) {
                     result.add(new DecoratorBuildItem(
-                            new AddLabelDecorator(rb.getName(), l.getKey(), l.getValue(), "RoleBinding")));
-                });
+                            new AddClusterRoleBindingResourceDecorator(rb.getName(), null, rb.getRole())));
+                } else {
+                    result.add(new DecoratorBuildItem(new AddRoleBindingResourceDecorator(rb.getName(), null, rb.getRole(),
+                            rb.isClusterWide() ? AddRoleBindingResourceDecorator.RoleKind.ClusterRole
+                                    : AddRoleBindingResourceDecorator.RoleKind.Role)));
+                }
+                labels.forEach(l -> result.add(new DecoratorBuildItem(
+                        new AddLabelDecorator(rb.getName(), l.getKey(), l.getValue(), RoleBinding.class.getSimpleName(),
+                                ClusterRoleBinding.class.getSimpleName()))));
             });
         }
 

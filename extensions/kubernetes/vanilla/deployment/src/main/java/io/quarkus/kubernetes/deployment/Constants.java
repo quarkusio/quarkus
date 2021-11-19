@@ -10,6 +10,12 @@ public final class Constants {
     public static final String DEPLOYMENT_VERSION = "v1";
     static final String DOCKER = "docker";
 
+    /**
+     * Cluster role name that's externally managed and should not be generated.
+     * See {@code io.quarkus.kubernetes.client.deployment.KubernetesClientProcessor}
+     */
+    public static final String VIEW_CLUSTER_ROLE = "view";
+
     public static final String OPENSHIFT = "openshift";
     public static final String DEPLOYMENT_CONFIG = "DeploymentConfig";
     public static final String DEPLOYMENT_CONFIG_GROUP = "apps.openshift.io";

@@ -42,12 +42,13 @@ final class Decorators {
 
         InjectionPointInfo delegateInjectionPoint = delegateInjectionPoints.get(0);
 
-        Integer priority = 0;
-        boolean priorityDeclared = false;
+        Integer priority = null;
         for (AnnotationInstance annotation : store.getAnnotations(decoratorClass)) {
             if (annotation.name().equals(DotNames.PRIORITY)) {
                 priority = annotation.value().asInt();
-                priorityDeclared = true;
+            }
+            if (priority == null && annotation.name().equals(DotNames.ARC_PRIORITY)) {
+                priority = annotation.value().asInt();
             }
             ScopeInfo scopeAnnotation = beanDeployment.getScope(annotation.name());
             if (scopeAnnotation != null && !BuiltinScope.DEPENDENT.is(scopeAnnotation)) {
@@ -81,9 +82,10 @@ final class Decorators {
             }
         }
 
-        if (!priorityDeclared) {
+        if (priority == null) {
             LOGGER.info("The decorator " + decoratorClass + " does not declare any @Priority. " +
                     "It will be assigned a default priority value of 0.");
+            priority = 0;
         }
 
         if (Modifier.isAbstract(decoratorClass.flags())) {

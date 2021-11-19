@@ -8,6 +8,7 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -20,26 +21,30 @@ public final class Instances {
 
     static final Annotation[] EMPTY_ANNOTATION_ARRAY = new Annotation[] {};
 
+    static final Comparator<InjectableBean<?>> PRIORITY_COMPARATOR = Collections
+            .reverseOrder(Comparator.comparingInt(InjectableBean::getPriority));
+
     private Instances() {
     }
 
-    public static Set<InjectableBean<?>> resolveBeans(Type requiredType, Set<Annotation> requiredQualifiers) {
+    public static List<InjectableBean<?>> resolveBeans(Type requiredType, Set<Annotation> requiredQualifiers) {
         return resolveBeans(requiredType, requiredQualifiers.toArray(EMPTY_ANNOTATION_ARRAY));
     }
 
-    public static Set<InjectableBean<?>> resolveBeans(Type requiredType, Annotation... requiredQualifiers) {
+    public static List<InjectableBean<?>> resolveBeans(Type requiredType, Annotation... requiredQualifiers) {
         return ArcContainerImpl.instance()
                 .getResolvedBeans(requiredType, requiredQualifiers)
                 .stream()
                 .filter(Predicate.not(InjectableBean::isSuppressed))
-                .collect(Collectors.toUnmodifiableSet());
+                .sorted(PRIORITY_COMPARATOR)
+                .collect(Collectors.toUnmodifiableList());
     }
 
     @SuppressWarnings("unchecked")
     public static <T> List<T> listOf(InjectableBean<?> targetBean, Type injectionPointType, Type requiredType,
             Set<Annotation> requiredQualifiers,
             CreationalContextImpl<?> creationalContext, Set<Annotation> annotations, Member javaMember, int position) {
-        Set<InjectableBean<?>> beans = resolveBeans(requiredType, requiredQualifiers);
+        List<InjectableBean<?>> beans = resolveBeans(requiredType, requiredQualifiers);
         if (beans.isEmpty()) {
             return Collections.emptyList();
         }
@@ -63,7 +68,7 @@ public final class Instances {
             Type requiredType,
             Set<Annotation> requiredQualifiers,
             CreationalContextImpl<?> creationalContext, Set<Annotation> annotations, Member javaMember, int position) {
-        Set<InjectableBean<?>> beans = resolveBeans(requiredType, requiredQualifiers);
+        List<InjectableBean<?>> beans = resolveBeans(requiredType, requiredQualifiers);
         if (beans.isEmpty()) {
             return Collections.emptyList();
         }

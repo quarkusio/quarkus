@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.BeanDestroyer;
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanRegistrar;
@@ -83,6 +84,15 @@ public class BeanRegistrarTest {
         List<String> list = Arc.container().instance(ListConsumer.class).get().list;
         assertEquals(1, list.size());
         assertEquals("foo", list.get(0));
+
+        InjectableInstance<Long> instance = Arc.container().select(Long.class);
+        // test configurator with higher priority
+        assertEquals(42l, instance.iterator().next());
+        long val = 0;
+        for (Long v : instance) {
+            val += v;
+        }
+        assertEquals(64l, val);
     }
 
     @Singleton
@@ -111,7 +121,8 @@ public class BeanRegistrarTest {
                     context.beans().withQualifier(MyQualifier.class).firstResult().get().getIdentifier());
 
             BeanConfigurator<Integer> integerConfigurator = context.configure(Integer.class);
-            integerConfigurator.unremovable().types(Integer.class).creator(mc -> {
+            integerConfigurator.unremovable();
+            integerConfigurator.types(Integer.class).creator(mc -> {
                 ResultHandle ret = mc.newInstance(MethodDescriptor.ofConstructor(Integer.class, int.class), mc.load(152));
                 mc.returnValue(ret);
             });
@@ -139,6 +150,21 @@ public class BeanRegistrarTest {
                     .addType(ParameterizedType.create(DotName.createSimple(List.class.getName()),
                             new Type[] { Type.create(DotName.createSimple(String.class.getName()), Kind.CLASS) }, null))
                     .creator(ListCreator.class)
+                    .unremovable()
+                    .done();
+
+            context.configure(Long.class)
+                    .addType(Long.class)
+                    .priority(10)
+                    .creator(mc -> mc.returnValue(mc.load(42l)))
+                    .unremovable()
+                    .done();
+
+            context.configure(Long.class)
+                    .addType(Long.class)
+                    .addType(Double.class)
+                    .priority(5)
+                    .creator(mc -> mc.returnValue(mc.load(22l)))
                     .unremovable()
                     .done();
 

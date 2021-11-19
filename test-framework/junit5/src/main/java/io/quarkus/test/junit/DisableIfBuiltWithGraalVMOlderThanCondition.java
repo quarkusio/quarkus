@@ -38,12 +38,12 @@ public class DisableIfBuiltWithGraalVMOlderThanCondition implements ExecutionCon
         DisableIfBuiltWithGraalVMOlderThan.GraalVMVersion annotationValue = optional.get().value();
         Properties quarkusArtifactProperties = readQuarkusArtifactProperties(context);
         try {
-            int major = Integer.parseInt(quarkusArtifactProperties.getProperty("metadata.graalvm.version.major"));
-            int minor = Integer.parseInt(quarkusArtifactProperties.getProperty("metadata.graalvm.version.minor"));
-            int comparison = annotationValue.compareTo(major, minor);
+            org.graalvm.home.Version version = org.graalvm.home.Version
+                    .parse(quarkusArtifactProperties.getProperty("metadata.graalvm.version.version"));
+            int comparison = annotationValue.compareTo(version);
             if (comparison > 0) {
-                return ConditionEvaluationResult.disabled("Native binary was built with GraalVM{major=" + major + ", minor= "
-                        + minor + "} but the test is disabled for GraalVM versions older than " + annotationValue);
+                return ConditionEvaluationResult.disabled("Native binary was built with GraalVM{version=" + version.toString()
+                        + "} but the test is disabled for GraalVM versions older than " + annotationValue);
             }
             return ConditionEvaluationResult
                     .enabled("Native binary was built with a GraalVM version compatible with the required version by the test");

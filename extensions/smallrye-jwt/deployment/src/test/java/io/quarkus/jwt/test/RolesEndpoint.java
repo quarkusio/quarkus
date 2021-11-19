@@ -8,7 +8,9 @@ import javax.annotation.security.PermitAll;
 import javax.annotation.security.RolesAllowed;
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
@@ -142,6 +144,21 @@ public class RolesEndpoint {
     public String getInjectedPrincipal(@Context SecurityContext sec) {
         boolean isJsonWebToken = this.jwtPrincipal instanceof JsonWebToken;
         return "isJsonWebToken:" + isJsonWebToken;
+    }
+
+    @POST
+    @Path("/postInjectedPrincipal")
+    @RolesAllowed("Tester")
+    public String postInjectedPrincipal(String body) {
+        return body + jwtPrincipal.getName();
+    }
+
+    @POST
+    @Path("/postInjectedPrincipalJson")
+    @RolesAllowed("Tester")
+    @Consumes("application/json")
+    public String postInjectedPrincipalJson(User user) {
+        return "name:" + user.getName() + ",principal:" + jwtPrincipal.getName();
     }
 
     @GET

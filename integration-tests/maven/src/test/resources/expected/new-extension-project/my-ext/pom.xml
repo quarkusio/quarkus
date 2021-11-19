@@ -14,9 +14,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
+        <maven.compiler.release>11</maven.compiler.release>
         <quarkus.version>${project.version}</quarkus.version>
         <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
     </properties>
@@ -43,6 +41,11 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>\${compiler-plugin.version}</version>
+                    <configuration>
+                        <compilerArgs>
+                            <arg>-parameters</arg>
+                        </compilerArgs>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>

@@ -168,9 +168,7 @@ Your extension is a multi-module project. So let's start by checking out the par
   <properties>
     <compiler-plugin.version>3.8.1</compiler-plugin.version><!--2-->
     <failsafe-plugin.version>${surefire-plugin.version}</failsafe-plugin.version>
-    <maven.compiler.parameters>true</maven.compiler.parameters>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.release>11</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus.version>{quarkus-version}</quarkus.version>
@@ -215,6 +213,11 @@ Your extension is a multi-module project. So let's start by checking out the par
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${compiler-plugin.version}</version>
+          <configuration>
+            <compilerArgs>
+              <arg>-parameters</arg><!--5-->
+            </compilerArgs>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -225,7 +228,8 @@ Your extension is a multi-module project. So let's start by checking out the par
 <1> Your extension declares 2 sub-modules `deployment` and `runtime`.
 <2> Quarkus requires a recent version of the Maven compiler plugin supporting the annotationProcessorPaths configuration.
 <3> The `quarkus-bom` aligns your dependencies with those used by Quarkus during the augmentation phase.
-<4> Quarkus requires these configs to run tests properly
+<4> Quarkus requires these configs to run tests properly.
+<5> Setting the `parameters` flag this way works around https://issues.apache.org/jira/browse/MCOMPILER-413[MCOMPILER-413].
 
 ==== The Deployment module
 

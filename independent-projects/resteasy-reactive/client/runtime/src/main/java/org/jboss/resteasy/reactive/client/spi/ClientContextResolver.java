@@ -8,8 +8,11 @@ public interface ClientContextResolver {
     ClientContext resolve(ClassLoader classLoader);
 
     static ClientContextResolver getInstance() {
-        ServiceLoader<ClientContextResolver> services = ServiceLoader.load(ClientContextResolver.class,
-                Thread.currentThread().getContextClassLoader());
+        return getInstance(Thread.currentThread().getContextClassLoader());
+    }
+
+    static ClientContextResolver getInstance(ClassLoader classLoader) {
+        ServiceLoader<ClientContextResolver> services = ServiceLoader.load(ClientContextResolver.class, classLoader);
         ClientContextResolver selected = null;
         for (ClientContextResolver i : services) {
             if (selected != null) {

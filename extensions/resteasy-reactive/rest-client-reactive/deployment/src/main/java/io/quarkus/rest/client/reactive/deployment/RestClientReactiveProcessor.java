@@ -80,6 +80,7 @@ import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
 import io.quarkus.restclient.config.RestClientConfigUtils;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
+import io.quarkus.runtime.LaunchMode;
 
 class RestClientReactiveProcessor {
 
@@ -324,13 +325,16 @@ class RestClientReactiveProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
     void addRestClientBeans(Capabilities capabilities,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            RestClientReactiveConfig clientConfig) {
+            RestClientReactiveConfig clientConfig,
+            RestClientRecorder recorder) {
 
         CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
         Set<AnnotationInstance> registerRestClientAnnos = new HashSet<>(index.getAnnotations(REGISTER_REST_CLIENT));
+        Map<String, String> configKeys = new HashMap<>();
         for (AnnotationInstance registerRestClient : registerRestClientAnnos) {
             ClassInfo jaxrsInterface = registerRestClient.target().asClass();
             // for each interface annotated with @RegisterRestClient, generate a $$CDIWrapper CDI bean that can be injected
@@ -353,6 +357,10 @@ class RestClientReactiveProcessor {
 
                     // CLASS LEVEL
                     final Optional<String> configKey = getConfigKey(registerRestClient);
+
+                    configKey.ifPresent(
+                            key -> configKeys.put(jaxrsInterface.name().toString(), key));
+
                     final ScopeInfo scope = computeDefaultScope(capabilities, ConfigProvider.getConfig(), jaxrsInterface,
                             configKey, clientConfig);
                     // add a scope annotation, e.g. @Singleton
@@ -421,6 +429,9 @@ class RestClientReactiveProcessor {
                     }
                 }
             }
+        }
+        if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+            recorder.setConfigKeys(configKeys);
         }
     }
 

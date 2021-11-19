@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
 import javax.ws.rs.client.WebTarget;
@@ -30,5 +31,20 @@ public class ClientProxies {
         }
         //noinspection unchecked
         return (T) function.apply(webTarget);
+    }
+
+    // for dev console
+    public ClientData getClientData() {
+        return new ClientData(clientProxies.keySet(), failures);
+    }
+
+    public static class ClientData {
+        public final Collection<Class<?>> clientClasses;
+        public final Map<Class<?>, String> failures;
+
+        public ClientData(Collection<Class<?>> clientClasses, Map<Class<?>, String> failures) {
+            this.clientClasses = clientClasses;
+            this.failures = failures;
+        }
     }
 }

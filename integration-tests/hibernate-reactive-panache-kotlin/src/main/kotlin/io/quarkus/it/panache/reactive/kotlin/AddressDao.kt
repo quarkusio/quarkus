@@ -1,6 +1,7 @@
 package io.quarkus.it.panache.reactive.kotlin
 
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepositoryBase
+import io.quarkus.hibernate.reactive.panache.kotlin.PanacheRepositoryBase
+import io.smallrye.mutiny.Uni
 import javax.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
@@ -11,5 +12,5 @@ open class AddressDao : PanacheRepositoryBase<Address, Int> {
         }
     }
 
-    override fun count(query: String, params: Map<String, Any>): Long = shouldBeOverridden()
+    override fun count(query: String, params: Map<String, Any>): Uni<Long> = shouldBeOverridden()
 }

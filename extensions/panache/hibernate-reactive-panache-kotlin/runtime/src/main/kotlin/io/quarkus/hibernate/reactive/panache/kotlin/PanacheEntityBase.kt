@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.hibernate.reactive.panache.kotlin.runtime.KotlinJpaOperations.Companion.INSTANCE
 import io.quarkus.panache.common.impl.GenerateBridge
 import io.smallrye.mutiny.Uni
+import org.hibernate.reactive.mutiny.Mutiny
+import java.util.function.Function
 
 
 import javax.json.bind.annotation.JsonbTransient;
@@ -36,7 +38,7 @@ interface PanacheEntityBase {
         return INSTANCE.persist(this)
             .map { this as T }
     }
-
+    
     /**
      * Persist this entity in the database, if not already persisted. This will set your ID field if it is not already set.
      * Then flushes all pending changes to the database.
@@ -49,6 +51,7 @@ interface PanacheEntityBase {
      * @see .persist
      */
     @Suppress("UNCHECKED_CAST")
+    @GenerateBridge
     fun <T : PanacheEntityBase> persistAndFlush(): Uni<T> {
         return INSTANCE.persist(this)
             .flatMap { INSTANCE.flush() }

@@ -63,6 +63,11 @@
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
 
+            <quarkus-plugin.version>999-SNAPSHOT</quarkus-plugin.version>
+            <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+            <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
+            <quarkus.platform.version>999-SNAPSHOT</quarkus.platform.version>
+
     </properties>
 
     <modules>

@@ -919,11 +919,6 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-reactive-panache</artifactId>
                 <version>${project.version}</version>
-            </dependency> 
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-hibernate-orm-panache-kotlin-deployment</artifactId>
-                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>

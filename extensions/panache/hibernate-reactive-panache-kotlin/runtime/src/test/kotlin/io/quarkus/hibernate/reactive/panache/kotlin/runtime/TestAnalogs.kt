@@ -43,25 +43,34 @@ class TestAnalogs {
         val kotlinMethods = map(PanacheEntityBase::class).methods
         val companionMethods = map(
             PanacheCompanionBase::class,
-            ByteCodeType(PanacheEntityBase::class.java)).methods
+            ByteCodeType(PanacheEntityBase::class.java)
+        ).methods
         val implemented = mutableListOf<Method>()
 
         javaMethods
-                .forEach {
-                    if (!it.isStatic()) {
-                        if (it in kotlinMethods) {
-                            kotlinMethods -= it
-                            implemented += it
-                        }
-                    } else {
-                        if (it in companionMethods) {
-                            companionMethods -= it
-                            implemented += it
-                        }
+            .map {
+                if (it.name.startsWith("lambda")) {
+                    it.parameters = "()"
+                    it.name = it.name.split("$")[1]
+                }
+                it
+                
+            }
+            .forEach {
+                if (!it.isStatic()) {
+                    if (it in kotlinMethods) {
+                        kotlinMethods -= it
+                        implemented += it
+                    }
+                } else {
+                    if (it in companionMethods) {
+                        companionMethods -= it
+                        implemented += it
                     }
                 }
+            }
         javaMethods.removeIf {
-            it.name.endsWith("Optional") || it.name.startsWith("lambda$")|| it in implemented
+            it.name.endsWith("Optional") || it in implemented
         }
 
 //        methods("javaMethods", javaMethods)
@@ -81,7 +90,7 @@ class TestAnalogs {
 
 
     private fun KClass<*>.bytes() =
-            java.classLoader.getResourceAsStream(qualifiedName.toString().replace(".", "/") + ".class")
+        java.classLoader.getResourceAsStream(qualifiedName.toString().replace(".", "/") + ".class")
 
     private fun compare(javaClass: AnalogVisitor, kotlinClass: AnalogVisitor, allowList: List<String> = listOf()) {
         val javaMethods = javaClass.methods
@@ -89,17 +98,17 @@ class TestAnalogs {
         val implemented = mutableListOf<Method>()
 
         javaMethods
-                .forEach {
-                    if (it in kotlinMethods) {
-                        kotlinMethods -= it
-                        implemented += it
-                    }
+            .forEach {
+                if (it in kotlinMethods) {
+                    kotlinMethods -= it
+                    implemented += it
                 }
+            }
 
         javaMethods.removeIf {
             it.name.endsWith("Optional") ||
-                it.name in allowList ||
-                it in implemented
+                    it.name in allowList ||
+                    it in implemented
         }
 
 //        methods("javaMethods", javaMethods)
@@ -113,29 +122,31 @@ class TestAnalogs {
     private fun methods(label: String, methods: List<Method>) {
         println("$label: ")
         methods.toSortedSet(compareBy { it.toString() })
-                .forEach {
-                    println(it)
-                }
+            .forEach {
+                println(it)
+            }
     }
 }
 
 private fun <E> List<E>.byLine(): String {
     val map = map { it.toString() }
     return map
-        .joinToString("\n" )
+        .joinToString("\n")
 }
 
 class AnalogVisitor(val erasedType: ByteCodeType? = null) : ClassVisitor(Gizmo.ASM_API_VERSION) {
     val methods = mutableListOf<Method>()
-    override fun visitMethod(access: Int, name: String, descriptor: String, signature: String?,
-                             exceptions: Array<out String>?): MethodVisitor? {
+    override fun visitMethod(
+        access: Int, name: String, descriptor: String, signature: String?,
+        exceptions: Array<out String>?
+    ): MethodVisitor? {
         if (name != "<init>") {
             val type = descriptor.substringAfterLast(")").trim()
             var parameters = descriptor.substring(
                 descriptor.indexOf("("),
                 descriptor.lastIndexOf(")") + 1
             )
-            erasedType?.let { type->
+            erasedType?.let { type ->
                 parameters = parameters.replace(type.descriptor(), OBJECT.descriptor())
             }
 
@@ -145,7 +156,7 @@ class AnalogVisitor(val erasedType: ByteCodeType? = null) : ClassVisitor(Gizmo.A
     }
 }
 
-class Method(val access: Int, val name: String, val type: String, val parameters: String) {
+class Method(val access: Int, var name: String, val type: String, var parameters: String) {
     fun isStatic() = access.matches(Opcodes.ACC_STATIC)
 
     override fun toString(): String {

@@ -4,7 +4,6 @@ import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactiona
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.Uni
 import org.junit.jupiter.api.Assertions
-import java.util.function.Function
 import java.util.function.Supplier
 import javax.persistence.NoResultException
 import javax.ws.rs.GET
@@ -13,7 +12,7 @@ import javax.ws.rs.Path
 /**
  * Various tests covering Panache functionality. All tests should work in both standard JVM and in native mode.
  */
-@javax.ws.rs.Path("test")
+@Path("test")
 class TestEndpoint() {
     @ReactiveTransactional
     @GET

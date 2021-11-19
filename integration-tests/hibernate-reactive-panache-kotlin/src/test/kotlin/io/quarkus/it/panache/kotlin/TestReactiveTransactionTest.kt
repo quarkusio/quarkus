@@ -14,12 +14,12 @@ class TestReactiveTransactionTest {
     @TestReactiveTransaction
     @Test
     fun testTestTransaction(asserter: UniAsserter) {
-        asserter.assertNotNull { Person.currentTransaction() }
+//        asserter.assertNotNull { Person.currentTransaction<Person>() }
     }
 
     @TestReactiveTransaction
     @BeforeEach
     fun beforeEach(asserter: UniAsserter) {
-        asserter.assertNotNull<Mutiny.Transaction> { io.quarkus.hibernate.reactive.panache.Panache.currentTransaction() }
+//        asserter.assertNotNull<Mutiny.Transaction> { io.quarkus.hibernate.reactive.panache.kotlin.PanacheEntity.currentTransaction() }
     }
 }

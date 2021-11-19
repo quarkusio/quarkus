@@ -8,7 +8,6 @@ import io.quarkus.panache.common.impl.GenerateBridge
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.Uni
 import org.hibernate.reactive.mutiny.Mutiny
-import java.util.function.Supplier
 import java.util.stream.Stream
 import javax.persistence.LockModeType
 
@@ -34,7 +33,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
     fun getSession(): Uni<Mutiny.Session> {
         return AbstractJpaOperations.getSession();
     }
-
+    
 // Queries
     /**
      * Find an entity of this type by ID.
@@ -42,7 +41,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @param id the ID of the entity to find.
      * @return the entity found, or `null` if not found.
      */
-//    @GenerateBridge
+    @GenerateBridge
     fun findById(id: Any?): Uni<Entity> {
         throw KotlinJpaOperations.INSTANCE.implementationInjectionMissing()
     }
@@ -772,7 +771,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @see .update
      */
     @GenerateBridge
-    fun update(query: String?, params: Parameters?): Uni<Int?>? {
+    fun update(query: String?, params: Parameters?): Uni<Int> {
         throw KotlinJpaOperations.INSTANCE.implementationInjectionMissing()
     }
 }

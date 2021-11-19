@@ -1,24 +1,21 @@
 package io.quarkus.hibernate.reactive.panache;
 
-import static io.quarkus.hibernate.reactive.panache.runtime.JpaOperations.INSTANCE;
-
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
-import javax.json.bind.annotation.JsonbTransient;
-import javax.persistence.LockModeType;
-import javax.persistence.Transient;
-
-import org.hibernate.reactive.mutiny.Mutiny;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.impl.GenerateBridge;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import org.hibernate.reactive.mutiny.Mutiny;
+
+import javax.json.bind.annotation.JsonbTransient;
+import javax.persistence.LockModeType;
+import javax.persistence.Transient;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import static io.quarkus.hibernate.reactive.panache.runtime.JpaOperations.INSTANCE;
 
 /**
  * <p>
@@ -52,6 +49,7 @@ public abstract class PanacheEntityBase {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
+    @GenerateBridge(targetReturnTypeErased = true)
     public <T extends PanacheEntityBase> Uni<T> persist() {
         return INSTANCE.persist(this).map(v -> (T) this);
     }
@@ -67,6 +65,7 @@ public abstract class PanacheEntityBase {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
+    @GenerateBridge(targetReturnTypeErased = true)
     public <T extends PanacheEntityBase> Uni<T> persistAndFlush() {
         return INSTANCE.persist(this)
                 .flatMap(v -> INSTANCE.flush())

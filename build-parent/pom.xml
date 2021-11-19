@@ -218,6 +218,13 @@
             <!-- Miscellaneous -->
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-core</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-war-launcher-runner</artifactId>
                 <version>${project.version}</version>
             </dependency>

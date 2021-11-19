@@ -706,6 +706,13 @@
                 <plugin>
                     <artifactId>maven-invoker-plugin</artifactId>
                     <version>${maven-invoker-plugin.version}</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.codehaus.groovy</groupId>
+                            <artifactId>groovy</artifactId>
+                            <version>3.0.9</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.asciidoctor</groupId>

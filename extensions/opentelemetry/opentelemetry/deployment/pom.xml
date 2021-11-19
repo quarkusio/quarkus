@@ -66,6 +66,16 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-web-client</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-deployment</artifactId>
             <scope>test</scope>
         </dependency>

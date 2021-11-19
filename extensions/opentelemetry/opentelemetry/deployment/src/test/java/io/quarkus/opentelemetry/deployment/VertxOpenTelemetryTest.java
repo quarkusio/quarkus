@@ -21,6 +21,7 @@ import java.util.List;
 
 import javax.inject.Inject;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -43,10 +44,14 @@ public class VertxOpenTelemetryTest {
                     .addClass(TestUtil.class));
 
     @Inject
-    TestSpanExporter testSpanExporter;
-
+    TestSpanExporter spanExporter;
     @Inject
     OpenTelemetry openTelemetry;
+
+    @AfterEach
+    void tearDown() {
+        spanExporter.reset();
+    }
 
     @Test
     void trace() throws NoSuchFieldException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
@@ -54,13 +59,12 @@ public class VertxOpenTelemetryTest {
                 .statusCode(200)
                 .body(is("Hello Tracer!"));
 
-        List<SpanData> spans = testSpanExporter.getFinishedSpanItems();
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
 
         TextMapPropagator[] textMapPropagators = TestUtil.getTextMapPropagators(openTelemetry);
         IdGenerator idGenerator = TestUtil.getIdGenerator(openTelemetry);
         Sampler sampler = TestUtil.getSampler(openTelemetry);
 
-        assertEquals(2, spans.size());
         assertEquals("io.quarkus.vertx.opentelemetry", spans.get(0).getName());
         assertEquals("hello!", spans.get(0).getAttributes().get(stringKey("test.message")));
         assertEquals(200, spans.get(1).getAttributes().get(HTTP_STATUS_CODE));
@@ -73,6 +77,26 @@ public class VertxOpenTelemetryTest {
                 W3CBaggagePropagator.getInstance()));
         assertThat(idGenerator, instanceOf(IdGenerator.random().getClass()));
         assertThat(sampler.getDescription(), stringContainsInOrder("ParentBased", "AlwaysOnSampler"));
+        assertNotNull(spans.get(1).getAttributes().get(HTTP_USER_AGENT));
+    }
+
+    @Test
+    void spanNameWithoutQueryString() {
+        RestAssured.when().get("/tracer?id=1").then()
+                .statusCode(200)
+                .body(is("Hello Tracer!"));
+
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
+
+        assertEquals("io.quarkus.vertx.opentelemetry", spans.get(0).getName());
+        assertEquals("hello!", spans.get(0).getAttributes().get(stringKey("test.message")));
+        assertEquals("tracer", spans.get(1).getName());
+        assertEquals(200, spans.get(1).getAttributes().get(HTTP_STATUS_CODE));
+        assertEquals("1.1", spans.get(1).getAttributes().get(HTTP_FLAVOR));
+        assertEquals("/tracer?id=1", spans.get(1).getAttributes().get(HTTP_TARGET));
+        assertEquals("http", spans.get(1).getAttributes().get(HTTP_SCHEME));
+        assertEquals("localhost:8081", spans.get(1).getAttributes().get(HTTP_HOST));
+        assertEquals("127.0.0.1", spans.get(1).getAttributes().get(HTTP_CLIENT_IP));
         assertNotNull(spans.get(1).getAttributes().get(HTTP_USER_AGENT));
     }
 }

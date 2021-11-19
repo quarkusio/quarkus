@@ -85,7 +85,7 @@ class QuarkusCodestartGenerationTest {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addData(getGenerationTestInputData())
                 .addBoms(QuarkusCodestartTesting.getPlatformBoms())
-                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
+                .addExtension(ArtifactCoords.fromString("io.quarkus:quarkus-resteasy:1.8"))
                 .addExtension(ArtifactCoords.fromString("commons-io:commons-io:2.5"))
 
                 .build();
@@ -102,6 +102,7 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("<dependency>\n" +
                         "      <groupId>io.quarkus</groupId>\n" +
                         "      <artifactId>quarkus-resteasy</artifactId>\n" +
+                        "      <version>1.8</version>\n" +
                         "    </dependency>\n"));
     }
 

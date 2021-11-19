@@ -59,18 +59,18 @@ public final class CodestartData {
         final Set<CodestartDep> boms = new LinkedHashSet<>();
         final Set<CodestartDep> dependencies = new LinkedHashSet<>();
         final Set<CodestartDep> testDependencies = new LinkedHashSet<>();
-        codestartsStream
-                .flatMap(s -> Stream.of(s.getBaseLanguageSpec(), s.getLanguageSpec(languageName)))
-                .forEach(d -> {
-                    dependencies.addAll(d.getDependencies());
-                    testDependencies.addAll(d.getTestDependencies());
-                });
         platforms.stream()
                 .map(CodestartDep::new)
                 .forEach(boms::add);
         extensions.stream()
                 .map(CodestartDep::new)
                 .forEach(dependencies::add);
+        codestartsStream
+                .flatMap(s -> Stream.of(s.getBaseLanguageSpec(), s.getLanguageSpec(languageName)))
+                .forEach(d -> {
+                    dependencies.addAll(d.getDependencies());
+                    testDependencies.addAll(d.getTestDependencies());
+                });
         depsData.put("dependencies", dependencies);
         depsData.put("boms", boms);
         depsData.put("test-dependencies", testDependencies);

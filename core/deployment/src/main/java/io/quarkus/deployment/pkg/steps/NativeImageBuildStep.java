@@ -592,6 +592,15 @@ public class NativeImageBuildStep {
                  */
                 nativeImageArgs.add("-H:-ParseOnce");
 
+                /**
+                 * This makes sure the Kerberos integration module is made available in case any library
+                 * refers to it (e.g. the PostgreSQL JDBC requires it, seems plausible that many others will as well):
+                 * the module is not available by default on Java 17.
+                 * No flag was introduced as this merely exposes the visibility of the module, it doesn't
+                 * control its actual inclusion which will depend on the usual analysis.
+                 */
+                nativeImageArgs.add("-J--add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED");
+
                 handleAdditionalProperties(nativeImageArgs);
 
                 nativeImageArgs.add(

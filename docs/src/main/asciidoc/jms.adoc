@@ -364,8 +364,7 @@ Create a new project with the following command:
 mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=jms-quickstart \
-    -DclassName="org.acme.jms.PriceResource" \
-    -Dpath="/prices" \
+    -DnoCode \
     -Dextensions="resteasy,artemis-jms"
 cd jms-quickstart
 ----

@@ -75,7 +75,7 @@ public class FlywayDevModeCreateFromHibernateTest {
 
         @GET
         public List<Fruit> list() {
-            return entityManager.createQuery("from Fruit").getResultList();
+            return entityManager.createQuery("from Fruit", Fruit.class).getResultList();
         }
 
         @PostConstruct

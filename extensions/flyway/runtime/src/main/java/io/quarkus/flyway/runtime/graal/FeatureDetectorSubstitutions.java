@@ -1,10 +1,12 @@
 package io.quarkus.flyway.runtime.graal;
 
+import org.flywaydb.core.internal.util.FeatureDetector;
+
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
 @Substitute
-@TargetClass(className = "org.flywaydb.core.internal.util.FeatureDetector")
+@TargetClass(FeatureDetector.class)
 public final class FeatureDetectorSubstitutions {
 
     @Substitute

@@ -3,6 +3,7 @@ package io.quarkus.kubernetes.deployment;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
 import static io.quarkus.kubernetes.deployment.Constants.STATEFULSET;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -292,6 +293,12 @@ public class KubernetesConfig implements PlatformConfiguration {
     @ConfigItem
     Optional<String> appConfigMap;
 
+    /**
+     * ClusterRole policy rules to be added in addition to the automatic detected ones.
+     */
+    @ConfigItem
+    Optional<List<RolePolicyConfig>> policies;
+
     public Optional<String> getPartOf() {
         return partOf;
     }
@@ -484,5 +491,9 @@ public class KubernetesConfig implements PlatformConfiguration {
     @Override
     public Optional<ExpositionConfig> getExposition() {
         return Optional.of(ingress);
+    }
+
+    public List<RolePolicyConfig> getRolePolicies() {
+        return policies.orElseGet(ArrayList::new);
     }
 }

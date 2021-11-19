@@ -107,6 +107,31 @@ public class VanillaKubernetesProcessor {
     }
 
     @BuildStep
+    public void createRolePolicies(KubernetesConfig config,
+            BuildProducer<KubernetesRoleBuildItem> rolePolicies,
+            BuildProducer<KubernetesRoleBindingBuildItem> roleBinding) {
+        List<KubernetesRoleBuildItem.PolicyRule> clusterRules = new ArrayList<>();
+        List<KubernetesRoleBuildItem.PolicyRule> namespacedRules = new ArrayList<>();
+        config.getRolePolicies().forEach(p -> {
+            KubernetesRoleBuildItem.PolicyRule rule = new KubernetesRoleBuildItem.PolicyRule(
+                    p.apiGroups, p.nonResourceURLs, p.resourceNames, p.resources, p.verbs);
+            if (p.clusterWide) {
+                clusterRules.add(rule);
+            } else {
+                namespacedRules.add(rule);
+            }
+        });
+        if (!clusterRules.isEmpty()) {
+            rolePolicies.produce(new KubernetesRoleBuildItem("custom-cluster-role", clusterRules));
+            roleBinding.produce(new KubernetesRoleBindingBuildItem("custom-cluster-role", true));
+        }
+        if (!namespacedRules.isEmpty()) {
+            rolePolicies.produce(new KubernetesRoleBuildItem("custom-namespaced-role", namespacedRules));
+            roleBinding.produce(new KubernetesRoleBindingBuildItem("custom-namespaced-role", false));
+        }
+    }
+
+    @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget, KubernetesConfig config, PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration, List<KubernetesAnnotationBuildItem> annotations,
@@ -141,8 +166,7 @@ public class VanillaKubernetesProcessor {
             result.add(new DecoratorBuildItem(KUBERNETES, new ApplyContainerImageDecorator(name, i.getImage())));
         });
 
-        result
-                .add(new DecoratorBuildItem(KUBERNETES, new ApplyImagePullPolicyDecorator(name, config.getImagePullPolicy())));
+        result.add(new DecoratorBuildItem(KUBERNETES, new ApplyImagePullPolicyDecorator(name, config.getImagePullPolicy())));
         result.add(new DecoratorBuildItem(KUBERNETES, new AddSelectorToDeploymentDecorator(name)));
 
         Stream.concat(config.convertToBuildItems().stream(),

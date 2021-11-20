@@ -53,8 +53,8 @@
                 <version>${maven-core.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>javax.enterprise</groupId>
-                        <artifactId>cdi-api</artifactId>
+                        <groupId>javax.annotation</groupId>
+                        <artifactId>javax.annotation-api</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>javax.inject</groupId>
@@ -97,15 +97,11 @@
                     </exclusion>
                     <exclusion>
                         <groupId>javax.annotation</groupId>
-                        <artifactId>jsr250-api</artifactId>
+                        <artifactId>javax.annotation-api</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>javax.inject</groupId>
                         <artifactId>javax.inject</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>javax.enterprise</groupId>
-                        <artifactId>cdi-api</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>org.checkerframework</groupId>
@@ -114,6 +110,10 @@
                     <exclusion>
                         <groupId>org.slf4j</groupId>
                         <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                    <exclusion><!-- let's prefer the plexus-utils pulled by maven-resolver-provider -->
+                        <groupId>org.codehaus.plexus</groupId>
+                        <artifactId>plexus-utils</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -142,11 +142,6 @@
                 <groupId>jakarta.annotation</groupId>
                 <artifactId>jakarta.annotation-api</artifactId>
                 <version>${jakarta.annotation-api.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.enterprise</groupId>
-                <artifactId>jakarta.enterprise.cdi-api</artifactId>
-                <version>${jakarta.enterprise.cdi-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.inject</groupId>

@@ -30,8 +30,7 @@ import io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.catalog.Extension;
-import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
-import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public class AllConfigGenerator {
 
@@ -55,8 +54,7 @@ public class AllConfigGenerator {
         }
         MavenArtifactResolver resolver = MavenArtifactResolver.builder().setWorkspaceDiscovery(false).build();
 
-        final JsonExtensionCatalog extensionJson = JsonCatalogMapperHelper.deserialize(jsonFile.toPath(),
-                JsonExtensionCatalog.class);
+        final ExtensionCatalog extensionJson = ExtensionCatalog.fromFile(jsonFile.toPath());
 
         // now get all the listed extension jars via Maven
         List<ArtifactRequest> requests = new ArrayList<>(extensionJson.getExtensions().size());

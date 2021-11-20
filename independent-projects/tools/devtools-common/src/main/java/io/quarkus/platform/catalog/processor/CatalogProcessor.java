@@ -5,7 +5,6 @@ import static io.quarkus.platform.catalog.processor.ExtensionProcessor.isUnliste
 import io.quarkus.registry.catalog.Category;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.catalog.json.JsonCategory;
 import java.util.*;
 
 public class CatalogProcessor {
@@ -15,11 +14,11 @@ public class CatalogProcessor {
     private final ExtensionCatalog catalog;
 
     static {
-        JsonCategory uncategorized = new JsonCategory();
-        uncategorized.setId("uncategorized");
-        uncategorized.setName("Uncategorized");
-        uncategorized.setDescription("The category is not defined for those extensions.");
-        UNCATEGORIZED_CATEGORY = uncategorized;
+        Category.Mutable draft = Category.builder()
+                .setId("uncategorized")
+                .setName("Uncategorized")
+                .setDescription("The category is not defined for those extensions.");
+        UNCATEGORIZED_CATEGORY = draft.build();
     }
 
     private CatalogProcessor(ExtensionCatalog catalog) {

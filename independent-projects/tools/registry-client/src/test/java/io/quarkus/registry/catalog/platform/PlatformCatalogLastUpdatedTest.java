@@ -6,19 +6,17 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.Constants;
 import io.quarkus.registry.ExtensionCatalogResolver;
+import io.quarkus.registry.catalog.CatalogMapperHelper;
 import io.quarkus.registry.catalog.Platform;
 import io.quarkus.registry.catalog.PlatformCatalog;
-import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
-import io.quarkus.registry.catalog.json.JsonPlatform;
-import io.quarkus.registry.catalog.json.JsonPlatformCatalog;
-import io.quarkus.registry.catalog.json.JsonPlatformRelease;
-import io.quarkus.registry.catalog.json.JsonPlatformReleaseVersion;
-import io.quarkus.registry.catalog.json.JsonPlatformStream;
-import io.quarkus.registry.config.json.JsonRegistriesConfig;
-import io.quarkus.registry.config.json.JsonRegistryConfig;
-import io.quarkus.registry.config.json.JsonRegistryDescriptorConfig;
-import io.quarkus.registry.config.json.JsonRegistryPlatformsConfig;
-import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
+import io.quarkus.registry.catalog.PlatformRelease;
+import io.quarkus.registry.catalog.PlatformReleaseVersion;
+import io.quarkus.registry.catalog.PlatformStream;
+import io.quarkus.registry.config.RegistriesConfig;
+import io.quarkus.registry.config.RegistriesConfigMapperHelper;
+import io.quarkus.registry.config.RegistryConfig;
+import io.quarkus.registry.config.RegistryDescriptorConfig;
+import io.quarkus.registry.config.RegistryPlatformsConfig;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
@@ -51,23 +49,24 @@ public class PlatformCatalogLastUpdatedTest {
         final MavenArtifactResolver mvn = MavenArtifactResolver.builder().setWorkspaceDiscovery(false)
                 .setLocalRepository(registryRepoDir.toString()).build();
 
-        final JsonRegistriesConfig config = new JsonRegistriesConfig();
+        RegistriesConfig.Mutable registriesConfig = RegistriesConfig.builder();
+        registriesConfig.addRegistry(configureRegistry("foo", registryWorkDir, mvn));
 
-        configureRegistry("foo", config, registryWorkDir, mvn);
         final String fooTimestamp = "20210101010101";
         setLastUpdated("foo", fooTimestamp, registryRepoDir, mvn);
 
-        PlatformCatalog platformCatalog = newCatalogResolver(config, mvn).resolvePlatformCatalog();
+        PlatformCatalog platformCatalog = newCatalogResolver(registriesConfig.build(), mvn).resolvePlatformCatalog();
         assertThat(platformCatalog).isNotNull();
         assertThat(platformCatalog.getPlatforms()).hasSize(1);
         assertThat(platformCatalog.getPlatforms().iterator().next().getPlatformKey()).isEqualTo(toPlatformKey("foo"));
         assertThat(platformCatalog.getMetadata().get(Constants.LAST_UPDATED)).isEqualTo(fooTimestamp);
 
-        configureRegistry("bar", config, registryWorkDir, mvn);
+        registriesConfig.addRegistry(configureRegistry("bar", registryWorkDir, mvn));
+
         final String barTimestamp = "20210101010102";
         setLastUpdated("bar", barTimestamp, registryRepoDir, mvn);
 
-        platformCatalog = newCatalogResolver(config, mvn).resolvePlatformCatalog();
+        platformCatalog = newCatalogResolver(registriesConfig, mvn).resolvePlatformCatalog();
         assertThat(platformCatalog).isNotNull();
         assertThat(platformCatalog.getPlatforms()).hasSize(2);
         final Iterator<Platform> platforms = platformCatalog.getPlatforms().iterator();
@@ -76,7 +75,7 @@ public class PlatformCatalogLastUpdatedTest {
         assertThat(platformCatalog.getMetadata().get(Constants.LAST_UPDATED)).isEqualTo(barTimestamp);
     }
 
-    private ExtensionCatalogResolver newCatalogResolver(JsonRegistriesConfig config, MavenArtifactResolver mvn)
+    private ExtensionCatalogResolver newCatalogResolver(RegistriesConfig config, MavenArtifactResolver mvn)
             throws Exception {
         return ExtensionCatalogResolver.builder()
                 .config(config)
@@ -84,55 +83,59 @@ public class PlatformCatalogLastUpdatedTest {
                 .build();
     }
 
-    private static void configureRegistry(String shortName, final JsonRegistriesConfig config,
+    private static RegistryConfig configureRegistry(String shortName,
             final Path registryWorkDir, final MavenArtifactResolver mvn) throws Exception {
-        final JsonRegistryConfig registry = new JsonRegistryConfig();
-        config.addRegistry(registry);
-        registry.setId("registry." + shortName + ".org");
-
         final String groupId = toRegistryGroupId(shortName);
-        final JsonRegistryDescriptorConfig descriptorConfig = new JsonRegistryDescriptorConfig();
-        registry.setDescriptor(descriptorConfig);
         final ArtifactCoords descriptorCoords = ArtifactCoords
                 .fromString(groupId + ":quarkus-registry-descriptor::json:1.0-SNAPSHOT");
-        descriptorConfig.setArtifact(descriptorCoords);
-
-        final JsonRegistryPlatformsConfig platformsConfig = new JsonRegistryPlatformsConfig();
-        registry.setPlatforms(platformsConfig);
-        ArtifactCoords platformsCoords = ArtifactCoords
+        final ArtifactCoords platformsCoords = ArtifactCoords
                 .fromString(groupId + ":quarkus-registry-platforms::json:1.0-SNAPSHOT");
-        platformsConfig.setArtifact(platformsCoords);
+
+        RegistryConfig registry = RegistryConfig.builder()
+                .setId("registry." + shortName + ".org")
+                .setDescriptor(RegistryDescriptorConfig.builder()
+                        .setArtifact(descriptorCoords)
+                        .build())
+                .setPlatforms(RegistryPlatformsConfig.builder()
+                        .setArtifact(platformsCoords)
+                        .build())
+                .build();
 
         Path json = registryWorkDir.resolve(shortName + "-quarkus-registry-descriptor.json");
         RegistriesConfigMapperHelper.serialize(registry, json);
+
         Artifact a = new DefaultArtifact(descriptorCoords.getGroupId(), descriptorCoords.getArtifactId(),
                 descriptorCoords.getClassifier(), descriptorCoords.getType(),
                 descriptorCoords.getVersion());
         a = a.setFile(json.toFile());
         mvn.install(a);
 
-        JsonPlatformCatalog platforms = new JsonPlatformCatalog();
-        JsonPlatform platform = new JsonPlatform();
-        platforms.addPlatform(platform);
         final String platformKey = toPlatformKey(shortName);
-        platform.setPlatformKey(platformKey);
-        JsonPlatformStream stream = new JsonPlatformStream();
-        platform.addStream(stream);
-        stream.setId("1.0");
-        JsonPlatformRelease release = new JsonPlatformRelease();
-        stream.addRelease(release);
-        release.setVersion(JsonPlatformReleaseVersion.fromString("1.0.0"));
-        release.setQuarkusCoreVersion("1.2.3");
-        release.setMemberBoms(Collections
-                .singletonList(ArtifactCoords.fromString(platformKey + ":" + shortName + "-quarkus-bom::pom:1.0.0")));
+        PlatformCatalog platforms = PlatformCatalog.builder()
+                .addPlatform(Platform.builder()
+                        .setPlatformKey(platformKey)
+                        .addStream(PlatformStream.builder()
+                                .setId("1.0")
+                                .addRelease(PlatformRelease.builder()
+                                        .setVersion(PlatformReleaseVersion.fromString("1.0.0"))
+                                        .setQuarkusCoreVersion("1.2.3")
+                                        .setMemberBoms(Collections
+                                                .singletonList(ArtifactCoords
+                                                        .fromString(platformKey + ":" + shortName + "-quarkus-bom::pom:1.0.0")))
+                                        .build())
+                                .build())
+                        .build())
+                .build();
 
         json = registryWorkDir.resolve(shortName + "-quarkus-platforms.json");
-        JsonCatalogMapperHelper.serialize(platforms, json);
+        CatalogMapperHelper.serialize(platforms, json);
         a = new DefaultArtifact(platformsCoords.getGroupId(), platformsCoords.getArtifactId(), platformsCoords.getClassifier(),
                 platformsCoords.getType(),
                 platformsCoords.getVersion());
         a = a.setFile(json.toFile());
         mvn.install(a);
+
+        return registry;
     }
 
     private static void setLastUpdated(final String shortName, final String timestamp, final Path registryRepoDir,

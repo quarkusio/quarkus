@@ -1,0 +1,12 @@
+{
+  "descriptor" : {
+    "artifact" : "registry.quarkus.test:quarkus-registry-descriptor::json:1.0-SNAPSHOT"
+  },
+  "platforms" : {
+    "artifact" : "registry.quarkus.test:quarkus-platforms::json:1.0-SNAPSHOT"
+  },
+  "non-platform-extensions" : {
+    "disabled" : true,
+    "artifact" : "registry.quarkus.test:quarkus-non-platform-extensions::json:1.0-SNAPSHOT"
+  }
+}

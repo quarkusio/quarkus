@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.ClassDescriptor;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.ClassOrdererContext;
+import org.junit.jupiter.api.Nested;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -38,6 +39,7 @@ import io.quarkus.test.junit.main.QuarkusMainTest;
  * Limitations:
  * <ul>
  * <li>Only JUnit5 test classes are subject to ordering, e.g. ArchUnit test classes are not passed to this orderer.</li>
+ * <li>This orderer does not handle {@link Nested} test classes.</li>
  * </ul>
  */
 public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
@@ -54,7 +56,8 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
 
     @Override
     public void orderClasses(ClassOrdererContext context) {
-        if (context.getClassDescriptors().size() <= 1) {
+        // don't do anything if there is just one test class or the current order request is for @Nested tests
+        if (context.getClassDescriptors().size() <= 1 || context.getClassDescriptors().get(0).isAnnotated(Nested.class)) {
             return;
         }
         var prefixQuarkusTest = context

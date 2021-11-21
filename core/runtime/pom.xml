@@ -199,6 +199,7 @@
                         <parentFirstArtifact>au.com.dius.pact.consumer:junit5</parentFirstArtifact>
                         <parentFirstArtifact>au.com.dius.pact:consumer</parentFirstArtifact>
 
+                        <parentFirstArtifact>com.google.protobuf:protobuf-java</parentFirstArtifact>
                     </parentFirstArtifacts>
                     <runnerParentFirstArtifacts>
                         <runnerParentFirstArtifact>org.graalvm.sdk:graal-sdk</runnerParentFirstArtifact>

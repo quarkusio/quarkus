@@ -3,7 +3,7 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.acme</groupId>
-  <artifactId>kubernetes-docker-build-and-deploy</artifactId>
+  <artifactId>kubernetes-docker-build-and-deploy-deployment</artifactId>
   <version>0.1-SNAPSHOT</version>
   <properties>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>

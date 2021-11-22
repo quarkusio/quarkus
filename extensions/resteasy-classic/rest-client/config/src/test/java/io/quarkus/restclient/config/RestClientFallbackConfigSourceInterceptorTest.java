@@ -87,7 +87,7 @@ public class RestClientFallbackConfigSourceInterceptorTest {
     }
 
     @Test
-    public void testInterceptorGetValue() {
+    public void testGetValue() {
         RestClientFallbackConfigSourceInterceptor interceptor = new RestClientFallbackConfigSourceInterceptor();
         ConfigSourceInterceptorContext interceptorContext = new TestContext();
         ConfigValue value;
@@ -112,7 +112,7 @@ public class RestClientFallbackConfigSourceInterceptorTest {
     }
 
     @Test
-    public void testInterceptorIterateNames() {
+    public void testIterateNames() {
         RestClientFallbackConfigSourceInterceptor interceptor = new RestClientFallbackConfigSourceInterceptor();
         Iterator<String> iterator;
 
@@ -135,6 +135,33 @@ public class RestClientFallbackConfigSourceInterceptorTest {
 
                 "quarkus.rest-client-reactive.disable-smart-produces",
                 "quarkus.rest-client.disable-smart-produces");
+    }
+
+    @Test
+    public void testIterateNamesExcludeInactiveProfiles() {
+        RestClientFallbackConfigSourceInterceptor interceptor = new RestClientFallbackConfigSourceInterceptor();
+        Iterator<String> iterator;
+
+        // client properties
+        iterator = interceptor.iterateNames(new TestContext(Arrays.asList(
+                "%prod.key/mp-rest/url",
+                "%dev.key/mp-rest/url",
+                "key/mp-rest/url",
+                "%prod.quarkus.rest-client.key2.url",
+                "%dev.quarkus.rest-client.key2.url",
+                "quarkus.rest-client.key2.url")));
+
+        assertThat(iteratorToCollection(iterator)).containsOnly(
+                // all the original property names should be included
+                "%prod.key/mp-rest/url",
+                "%dev.key/mp-rest/url",
+                "key/mp-rest/url",
+                "%prod.quarkus.rest-client.key2.url",
+                "%dev.quarkus.rest-client.key2.url",
+                "quarkus.rest-client.key2.url",
+
+                // only the conversion of "key/mp-rest/url" should be added
+                "quarkus.rest-client.key.url");
     }
 
     private static Collection<String> iteratorToCollection(Iterator<String> iterator) {

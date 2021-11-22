@@ -71,6 +71,13 @@ public class RestClientFallbackConfigSourceInterceptor extends FallbackConfigSou
             final String name = namesIterator.next();
             names.add(name);
 
+            if (name.startsWith("%")) {
+                // Don't do any conversions on properties that belong to inactive profiles.
+                // The active profile property names are normalized by the ProfileConfigSourceInterceptor, so they do not have
+                // the "%profile." prefix at this point.
+                continue;
+            }
+
             String[] prefixAndProperty = extractMPClientPrefixAndProperty(name);
             if (prefixAndProperty != null) { // effectively if name.contains("/mp-rest/")
                 String clientPrefix = prefixAndProperty[0];

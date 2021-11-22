@@ -70,7 +70,9 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                         "    \"token_endpoint\": \"" + server.baseUrl() + "/auth/realms/quarkus/token\"," +
                                         "    \"issuer\" : \"" + TOKEN_ISSUER + "\"," +
                                         "    \"introspection_endpoint\": \"" + server.baseUrl()
-                                        + "/auth/realms/quarkus/protocol/openid-connect/token/introspect\""
+                                        + "/auth/realms/quarkus/protocol/openid-connect/token/introspect\","
+                                        + "    \"end_session_endpoint\": \"" + server.baseUrl()
+                                        + "/auth/realms/quarkus/protocol/openid-connect/end-session\""
                                         +
                                         "}")));
 
@@ -147,6 +149,15 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                         .willReturn(aResponse()
                                 .withHeader("Location",
                                         "{{request.query.redirect_uri}}?state={{request.query.state}}&code=58af24f2-9093-4674-a431-4a9d66be719c.50437113-cd78-48a2-838e-b936fe458c5d.0ac5df91-e044-4051-bd03-106a3a5fb9cc")
+                                .withStatus(302)
+                                .withTransformers("response-template")));
+
+        // Logout Request
+        server.stubFor(
+                get(urlPathMatching("/auth/realms/quarkus/protocol/openid-connect/end-session"))
+                        .willReturn(aResponse()
+                                .withHeader("Location",
+                                        "{{request.query.returnTo}}?clientId={{request.query.client_id}}")
                                 .withStatus(302)
                                 .withTransformers("response-template")));
 

@@ -18,13 +18,8 @@ import io.quarkus.oidc.deployment.devservices.AbstractDevConsoleProcessor;
 import io.quarkus.oidc.deployment.devservices.OidcAuthorizationCodePostHandler;
 import io.quarkus.oidc.deployment.devservices.OidcPasswordClientCredHandler;
 import io.quarkus.oidc.deployment.devservices.OidcTestServiceHandler;
-import io.quarkus.oidc.runtime.OidcConfigPropertySupplier;
 
 public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
-
-    private static final String CONFIG_PREFIX = "quarkus.oidc.";
-    private static final String CLIENT_ID_CONFIG_KEY = CONFIG_PREFIX + "client-id";
-    private static final String CLIENT_SECRET_CONFIG_KEY = CONFIG_PREFIX + "credentials.secret";
 
     KeycloakBuildTimeConfig keycloakConfig;
     OidcBuildTimeConfig oidcConfig;
@@ -45,6 +40,7 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
 
             produceDevConsoleTemplateItems(capabilities,
                     devConsoleInfo,
+                    devConsoleRuntimeInfo,
                     "Keycloak",
                     (String) configProps.get().getProperties().get("quarkus.oidc.application-type"),
                     oidcConfig.devui.grant.type.isPresent() ? oidcConfig.devui.grant.type.get().getGrantType()
@@ -53,12 +49,6 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     realmUrl + "/protocol/openid-connect/token",
                     realmUrl + "/protocol/openid-connect/logout",
                     true);
-            devConsoleRuntimeInfo.produce(
-                    new DevConsoleRuntimeTemplateInfoBuildItem("clientId",
-                            new OidcConfigPropertySupplier(CLIENT_ID_CONFIG_KEY)));
-            devConsoleRuntimeInfo.produce(
-                    new DevConsoleRuntimeTemplateInfoBuildItem("clientSecret",
-                            new OidcConfigPropertySupplier(CLIENT_SECRET_CONFIG_KEY, "")));
 
         }
     }

@@ -410,6 +410,7 @@ By default the logout is based on the expiration time of the ID Token issued by 
 
 The current user session may be automatically extended by enabling a `quarkus.oidc.token.refresh-expired` property. If it is set to `true` then when the current ID Token expires a Refresh Token Grant will be used to refresh ID Token as well as Access and Refresh Tokens.
 
+[[user-initiated-logout]]
 ==== User-Initiated Logout
 
 Users can request a logout by sending a request to the Quarkus endpoint logout path set with a `quarkus.oidc.logout.path` property.
@@ -429,10 +430,11 @@ Here is an example of how to configure an RP initiated logout flow:
 ----
 quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
 quarkus.oidc.client-id=frontend
+quarkus.oidc.credentials.secret=secret
 quarkus.oidc.application-type=web-app
 
-quarkus.oidc.tenant-logout.logout.path=/logout
-quarkus.oidc.tenant-logout.logout.post-logout-path=/postlogout
+quarkus.oidc.logout.path=/logout
+quarkus.oidc.logout.post-logout-path=/welcome.html
 
 # Only the authenticated users can initiate a logout:
 quarkus.http.auth.permission.authenticated.paths=/logout
@@ -445,6 +447,32 @@ quarkus.http.auth.permission.authenticated.policy=permit
 
 You may also need to set `quarkus.oidc.authentication.cookie-path` to a path value common to all of the application resources which is `/` in this example.
 See <<oidc-cookies, Dealing with Cookies>> for more information.
+
+Note that some OpenId Connect providers do not support https://openid.net/specs/openid-connect-session-1_0.html#RPLogout[RP-Initiated Logout] specification (possibly because it is still technically a draft) and do not return an OpenId Connect well-known `end_session_endpoint` metadata property. However it should not be a problem since these providers' specific logout mechanisms may only differ in how the logout URL query parameters are named.
+
+According to the https://openid.net/specs/openid-connect-session-1_0.html#RPLogout[RP-Initiated Logout] specification, the `quarkus.oidc.logout.post-logout-path` property is represented as a `post_logout_redirect_uri` query parameter which will not be recognized by the providers which do not support this specification.
+
+You can use `quarkus.oidc.logout.post-logout-url-param` to work around this issue. You can also request more logout query parameters added with `quarkus.oidc.logout.extra-params`. For example, here is how you can support a logout with `Auth0`:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=https://dev-xxx.us.auth0.com
+quarkus.oidc.client-id=redacted
+quarkus.oidc.credentials.secret=redacted
+quarkus.oidc.application-type=web-app
+
+quarkus.oidc.tenant-logout.logout.path=/logout
+quarkus.oidc.tenant-logout.logout.post-logout-path=/welcome.html
+
+# Auth0 does not return the `end_session_endpoint` metadata property, configire it instead
+quarkus.oidc.end-session-path=v2/logout
+# Auth0 will not recognize the 'post_logout_redirect_uri' query parameter so make sure it is named as 'returnTo'
+quarkus.oidc.logout.post-logout-uri-param=returnTo
+
+# Set more properties if needed.
+# For example, if 'client_id' is provided then a valid logout URI should be set as Auth0 Application property, without it - as Auth0 Tenant property.
+quarkus.oidc.logout.extra-params.client_id=${quarkus.oidc.client-id}
+----
 
 [[session-management]]
 === Session Management

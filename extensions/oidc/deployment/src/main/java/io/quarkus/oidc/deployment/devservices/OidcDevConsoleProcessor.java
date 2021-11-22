@@ -18,7 +18,6 @@ import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
-import io.quarkus.oidc.runtime.OidcConfigPropertySupplier;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
@@ -31,13 +30,11 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
     static volatile Vertx vertxInstance;
     private static final Logger LOG = Logger.getLogger(OidcDevConsoleProcessor.class);
 
-    private static final String CONFIG_PREFIX = "quarkus.oidc.";
     private static final String TENANT_ENABLED_CONFIG_KEY = CONFIG_PREFIX + "tenant-enabled";
+    private static final String DISCOVERY_ENABLED_CONFIG_KEY = CONFIG_PREFIX + "discovery-enabled";
     private static final String AUTH_SERVER_URL_CONFIG_KEY = CONFIG_PREFIX + "auth-server-url";
     private static final String APP_TYPE_CONFIG_KEY = CONFIG_PREFIX + "application-type";
     private static final String SERVICE_APP_TYPE = "service";
-    private static final String CLIENT_ID_CONFIG_KEY = CONFIG_PREFIX + "client-id";
-    private static final String CLIENT_SECRET_CONFIG_KEY = CONFIG_PREFIX + "credentials.secret";
 
     // Well-known providers
 
@@ -76,9 +73,12 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
             }
 
             String authServerUrl = getConfigProperty(AUTH_SERVER_URL_CONFIG_KEY);
-            JsonObject metadata = discoverMetadata(authServerUrl);
-            if (metadata == null) {
-                return;
+            JsonObject metadata = null;
+            if (isDiscoveryEnabled()) {
+                metadata = discoverMetadata(authServerUrl);
+                if (metadata == null) {
+                    return;
+                }
             }
             String providerName = tryToGetProviderName(authServerUrl);
             if (KEYCLOAK.equals(providerName)) {
@@ -87,20 +87,14 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
             }
             produceDevConsoleTemplateItems(capabilities,
                     devConsoleInfo,
+                    devConsoleRuntimeInfo,
                     providerName,
                     getApplicationType(),
                     oidcConfig.devui.grant.type.isPresent() ? oidcConfig.devui.grant.type.get().getGrantType() : "code",
-                    metadata.getString("authorization_endpoint"),
-                    metadata.getString("token_endpoint"),
-                    metadata.getString("end_session_endpoint"),
-                    metadata.containsKey("introspection_endpoint"));
-
-            devConsoleRuntimeInfo.produce(
-                    new DevConsoleRuntimeTemplateInfoBuildItem("clientId",
-                            new OidcConfigPropertySupplier(CLIENT_ID_CONFIG_KEY)));
-            devConsoleRuntimeInfo.produce(
-                    new DevConsoleRuntimeTemplateInfoBuildItem("clientSecret",
-                            new OidcConfigPropertySupplier(CLIENT_SECRET_CONFIG_KEY, "")));
+                    metadata != null ? metadata.getString("authorization_endpoint") : null,
+                    metadata != null ? metadata.getString("token_endpoint") : null,
+                    metadata != null ? metadata.getString("end_session_endpoint") : null,
+                    metadata != null ? metadata.containsKey("introspection_endpoint") : false);
 
             Duration webClientTimeout = oidcConfig.devui.webClienTimeout.isPresent() ? oidcConfig.devui.webClienTimeout.get()
                     : Duration.ofSeconds(4);
@@ -153,7 +147,15 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
     }
 
     private static boolean isOidcTenantEnabled() {
-        return ConfigProvider.getConfig().getOptionalValue(TENANT_ENABLED_CONFIG_KEY, Boolean.class).orElse(true);
+        return getBooleanProperty(TENANT_ENABLED_CONFIG_KEY);
+    }
+
+    private static boolean isDiscoveryEnabled() {
+        return getBooleanProperty(DISCOVERY_ENABLED_CONFIG_KEY);
+    }
+
+    private static boolean getBooleanProperty(String name) {
+        return ConfigProvider.getConfig().getOptionalValue(name, Boolean.class).orElse(true);
     }
 
     private static boolean isClientIdSet() {

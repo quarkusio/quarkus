@@ -10,7 +10,6 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.smallrye.mutiny.Uni;
-import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
 public class CustomSecurityIdentityAugmentor implements SecurityIdentityAugmentor {
@@ -25,7 +24,6 @@ public class CustomSecurityIdentityAugmentor implements SecurityIdentityAugmento
         IdTokenCredential cred = identity.getCredential(IdTokenCredential.class);
         if (cred != null) {
             QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
-            builder.addAttribute(RoutingContext.class.getName(), cred.getRoutingContext());
             builder.addAttribute(OidcConstants.ACCESS_TOKEN_VALUE,
                     identity.getCredential(AccessTokenCredential.class).getToken());
             identity = builder.build();

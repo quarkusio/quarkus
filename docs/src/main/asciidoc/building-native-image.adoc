@@ -458,7 +458,7 @@ The project generation has provided a `Dockerfile.native` in the `src/main/docke
 
 [source,dockerfile]
 ----
-FROM registry.access.redhat.com/ubi8/ubi-minimal
+FROM quay.io/quarkus/quarkus-micro-image:1.0
 WORKDIR /work/
 COPY target/*-runner /work/application
 RUN chmod 775 /work
@@ -467,17 +467,18 @@ CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 ----
 
 [NOTE]
-.Ubi?
+.Quarkus Micro Image?
 ====
-The provided `Dockerfiles` use https://access.redhat.com/containers/?tab=overview#/registry.access.redhat.com/ubi8/ubi[UBI] (Universal Base Image) as parent image.
+The Quarkus Micro Image is a small container image providing the right set of dependencies to run your native application.
+It is based on https://catalog.redhat.com/software/containers/ubi8-micro/601a84aadd19c7786c47c8ea?container-tabs=overview[UBI Micro].
 This base image has been tailored to work perfectly in containers.
-The `Dockerfiles` use the https://access.redhat.com/containers/#/registry.access.redhat.com/ubi8/ubi-minimal[_minimal_ version] of the base image to reduce the size of the produced image.
 
-You can read more about UBI on:
+You can read more about UBI images on:
 
-* https://access.redhat.com/containers/?tab=overview#/registry.access.redhat.com/ubi8/ubi[the UBI image page]
-* https://access.redhat.com/containers/#/registry.access.redhat.com/ubi8/ubi-minimal[the _UBI-minimal_ image page]
-* https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/ubi-minimal[the list of _UBI-minimal_ tags]
+* https://www.redhat.com/en/blog/introducing-red-hat-universal-base-image[Introduction to Universal Base Image]
+* https://catalog.redhat.com/software/container-stacks/detail/5ec53f50ef29fd35586d9a56[Red Hat Universal Base Image 8]
+
+UBI images can be used without any limitations.
 ====
 
 Then, if you didn't delete the generated native executable, you can build the docker image with:
@@ -523,7 +524,7 @@ COPY src /code/src
 RUN ./mvnw package -Pnative
 
 ## Stage 2 : create the docker final image
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4
+FROM quay.io/quarkus/quarkus-micro-image:1.0
 WORKDIR /work/
 COPY --from=build /code/target/*-runner /work/application
 
@@ -562,7 +563,7 @@ COPY src /code/src
 RUN gradle -b /code/build.gradle buildNative
 
 ## Stage 2 : create the docker final image
-FROM registry.access.redhat.com/ubi8/ubi-minimal
+FROM quay.io/quarkus/quarkus-micro-image:1.0
 WORKDIR /work/
 COPY --from=build /code/build/*-runner /work/application
 RUN chmod 775 /work

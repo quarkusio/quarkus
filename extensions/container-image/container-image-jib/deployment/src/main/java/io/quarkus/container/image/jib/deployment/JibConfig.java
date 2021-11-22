@@ -21,7 +21,7 @@ public class JibConfig {
     /**
      * The base image to be used when a container image is being produced for the native binary build
      */
-    @ConfigItem(defaultValue = "registry.access.redhat.com/ubi8/ubi-minimal")
+    @ConfigItem(defaultValue = "quay.io/quarkus/quarkus-micro-image:1.0")
     public String baseNativeImage;
 
     /**

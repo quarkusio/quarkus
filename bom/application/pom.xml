@@ -5437,6 +5437,17 @@
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java-util</artifactId>
+                <version>${protobuf-java.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.checkerframework</groupId>
+                        <artifactId>checker-qual</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
                 <artifactId>protoc</artifactId>
                 <classifier>linux-aarch_64</classifier>
                 <type>exe</type>

@@ -95,6 +95,9 @@
                     <parentFirstArtifacts>
                         <parentFirstArtifact>com.microsoft.sqlserver:mssql-jdbc</parentFirstArtifact>
                     </parentFirstArtifacts>
+                    <capabilities>
+                        <provides>io.quarkus.jdbc-mssql</provides>
+                    </capabilities>
                 </configuration>
             </plugin>
             <plugin>

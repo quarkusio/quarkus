@@ -1,5 +1,6 @@
 package io.quarkus.flyway;
 
+import static io.quarkus.deployment.Capability.JDBC_MSSQL;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
@@ -50,6 +51,7 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -315,6 +317,14 @@ class FlywayProcessor {
                 DbRepair.class,
                 DbSchemas.class,
                 DbValidate.class);
+    }
+
+    @BuildStep
+    public void dbSpecificReflectiveClasses(Capabilities capabilities, BuildProducer<ReflectiveClassBuildItem> producer) {
+        if (capabilities.isPresent(JDBC_MSSQL)) {
+            producer.produce(new ReflectiveClassBuildItem(false, false,
+                    org.flywaydb.core.internal.database.sqlserver.SQLServerDatabase.class));
+        }
     }
 
     public static final class MigrationStateBuildItem extends SimpleBuildItem {

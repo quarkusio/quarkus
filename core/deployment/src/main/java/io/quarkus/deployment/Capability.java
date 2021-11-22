@@ -116,4 +116,6 @@ public interface Capability {
 
     String APICURIO_REGISTRY = QUARKUS_PREFIX + "apicurio.registry";
     String APICURIO_REGISTRY_AVRO = APICURIO_REGISTRY + ".avro";
+
+    String JDBC_MSSQL = QUARKUS_PREFIX + "jdbc-mssql";
 }

@@ -18,6 +18,7 @@ public class RolesAllowedUnitTest {
             AuthenticatedEndpoint.class,
             PermitAllEndpoint.class,
             GreetingService.class,
+            User.class,
             TokenUtils.class
     };
     /**

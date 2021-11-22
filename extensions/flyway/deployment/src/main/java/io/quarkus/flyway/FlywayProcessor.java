@@ -31,13 +31,6 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
-import org.flywaydb.core.internal.command.DbBaseline;
-import org.flywaydb.core.internal.command.DbClean;
-import org.flywaydb.core.internal.command.DbInfo;
-import org.flywaydb.core.internal.command.DbMigrate;
-import org.flywaydb.core.internal.command.DbRepair;
-import org.flywaydb.core.internal.command.DbSchemas;
-import org.flywaydb.core.internal.command.DbValidate;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
@@ -300,21 +293,6 @@ class FlywayProcessor {
     public RuntimeReinitializedClassBuildItem reinitInsertRowLock() {
         return new RuntimeReinitializedClassBuildItem(
                 "org.flywaydb.core.internal.database.InsertRowLock");
-    }
-
-    /**
-     * Commands are executed through reflection, see {@link org.flywaydb.core.internal.FlywayTeamsObjectResolver}
-     */
-    @BuildStep
-    public ReflectiveClassBuildItem commands() {
-        return new ReflectiveClassBuildItem(false, false,
-                DbBaseline.class,
-                DbClean.class,
-                DbInfo.class,
-                DbMigrate.class,
-                DbRepair.class,
-                DbSchemas.class,
-                DbValidate.class);
     }
 
     public static final class MigrationStateBuildItem extends SimpleBuildItem {

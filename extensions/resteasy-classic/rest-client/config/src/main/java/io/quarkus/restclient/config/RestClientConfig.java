@@ -2,6 +2,8 @@ package io.quarkus.restclient.config;
 
 import java.util.Optional;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -159,4 +161,83 @@ public class RestClientConfig {
     @ConfigItem
     public Optional<Integer> maxRedirects;
 
+    public static RestClientConfig load(String configKey) {
+        final RestClientConfig instance = new RestClientConfig();
+
+        instance.url = getConfigValue(configKey, "url", String.class);
+        instance.uri = getConfigValue(configKey, "uri", String.class);
+        instance.scope = getConfigValue(configKey, "scope", String.class);
+        instance.providers = getConfigValue(configKey, "providers", String.class);
+        instance.connectTimeout = getConfigValue(configKey, "connect-timeout", Long.class);
+        instance.readTimeout = getConfigValue(configKey, "read-timeout", Long.class);
+        instance.followRedirects = getConfigValue(configKey, "follow-redirects", Boolean.class);
+        instance.proxyAddress = getConfigValue(configKey, "proxy-address", String.class);
+        instance.queryParamStyle = getConfigValue(configKey, "query-param-style", QueryParamStyle.class);
+        instance.trustStore = getConfigValue(configKey, "trust-store", String.class);
+        instance.trustStorePassword = getConfigValue(configKey, "trust-store-password", String.class);
+        instance.trustStoreType = getConfigValue(configKey, "trust-store-type", String.class);
+        instance.keyStore = getConfigValue(configKey, "key-store", String.class);
+        instance.keyStorePassword = getConfigValue(configKey, "key-store-password", String.class);
+        instance.keyStoreType = getConfigValue(configKey, "key-store-type", String.class);
+        instance.hostnameVerifier = getConfigValue(configKey, "hostname-verifier", String.class);
+        instance.connectionTTL = getConfigValue(configKey, "connection-ttl", Integer.class);
+        instance.connectionPoolSize = getConfigValue(configKey, "connection-pool-size", Integer.class);
+        instance.maxRedirects = getConfigValue(configKey, "max-redirects", Integer.class);
+
+        return instance;
+    }
+
+    public static RestClientConfig load(Class<?> interfaceClass) {
+        final RestClientConfig instance = new RestClientConfig();
+
+        instance.url = getConfigValue(interfaceClass, "url", String.class);
+        instance.uri = getConfigValue(interfaceClass, "uri", String.class);
+        instance.scope = getConfigValue(interfaceClass, "scope", String.class);
+        instance.providers = getConfigValue(interfaceClass, "providers", String.class);
+        instance.connectTimeout = getConfigValue(interfaceClass, "connect-timeout", Long.class);
+        instance.readTimeout = getConfigValue(interfaceClass, "read-timeout", Long.class);
+        instance.followRedirects = getConfigValue(interfaceClass, "follow-redirects", Boolean.class);
+        instance.proxyAddress = getConfigValue(interfaceClass, "proxy-address", String.class);
+        instance.queryParamStyle = getConfigValue(interfaceClass, "query-param-style", QueryParamStyle.class);
+        instance.trustStore = getConfigValue(interfaceClass, "trust-store", String.class);
+        instance.trustStorePassword = getConfigValue(interfaceClass, "trust-store-password", String.class);
+        instance.trustStoreType = getConfigValue(interfaceClass, "trust-store-type", String.class);
+        instance.keyStore = getConfigValue(interfaceClass, "key-store", String.class);
+        instance.keyStorePassword = getConfigValue(interfaceClass, "key-store-password", String.class);
+        instance.keyStoreType = getConfigValue(interfaceClass, "key-store-type", String.class);
+        instance.hostnameVerifier = getConfigValue(interfaceClass, "hostname-verifier", String.class);
+        instance.connectionTTL = getConfigValue(interfaceClass, "connection-ttl", Integer.class);
+        instance.connectionPoolSize = getConfigValue(interfaceClass, "connection-pool-size", Integer.class);
+        instance.maxRedirects = getConfigValue(interfaceClass, "max-redirects", Integer.class);
+
+        return instance;
+    }
+
+    private static <T> Optional<T> getConfigValue(String configKey, String fieldName, Class<T> type) {
+        final Config config = ConfigProvider.getConfig();
+        Optional<T> optional = config.getOptionalValue(composePropertyKey(configKey, fieldName), type);
+        if (optional.isEmpty()) { // try to find property with quoted configKey
+            optional = config.getOptionalValue(composePropertyKey('"' + configKey + '"', fieldName), type);
+        }
+        return optional;
+    }
+
+    private static <T> Optional<T> getConfigValue(Class<?> clientInterface, String fieldName, Class<T> type) {
+        final Config config = ConfigProvider.getConfig();
+        // first try interface full name
+        Optional<T> optional = config.getOptionalValue(composePropertyKey('"' + clientInterface.getName() + '"', fieldName),
+                type);
+        if (optional.isEmpty()) { // then interface simple name
+            optional = config.getOptionalValue(composePropertyKey(clientInterface.getSimpleName(), fieldName), type);
+        }
+        if (optional.isEmpty()) { // lastly quoted interface simple name
+            optional = config.getOptionalValue(composePropertyKey('"' + clientInterface.getSimpleName() + '"', fieldName),
+                    type);
+        }
+        return optional;
+    }
+
+    private static String composePropertyKey(String key, String fieldName) {
+        return Constants.QUARKUS_CONFIG_PREFIX + key + "." + fieldName;
+    }
 }

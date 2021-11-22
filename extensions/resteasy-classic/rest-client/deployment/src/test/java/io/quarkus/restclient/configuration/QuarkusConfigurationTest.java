@@ -36,12 +36,6 @@ public class QuarkusConfigurationTest {
     RestClientsConfig configRoot;
 
     @Test
-    public void shouldConnect() {
-        // TODO move to separate test
-        //Assertions.assertEquals("Hello", client.echo("Hello"));
-    }
-
-    @Test
     void shouldHaveSingletonScope() {
         BeanManager beanManager = Arc.container().beanManager();
         Set<Bean<?>> beans = beanManager.getBeans(EchoClientWithConfigKey.class, RestClient.LITERAL);
@@ -51,13 +45,11 @@ public class QuarkusConfigurationTest {
 
     @Test
     void configurationsShouldBeLoaded() {
-        assertThat(configRoot.configs.size()).isEqualTo(5);
-
-        verifyClientConfig(configRoot.configs.get("echo-client"), true);
-        verifyClientConfig(configRoot.configs.get("io.quarkus.restclient.configuration.EchoClient"), true);
-        verifyClientConfig(configRoot.configs.get("EchoClient"), true);
-        verifyClientConfig(configRoot.configs.get("mp-client"), false); // non-standard properties cannot be set via MP style config
-        verifyClientConfig(configRoot.configs.get("a.b.c.Client"), false);
+        verifyClientConfig(configRoot.getClientConfig("echo-client"), true);
+        verifyClientConfig(configRoot.getClientConfig("io.quarkus.restclient.configuration.EchoClient"), true);
+        verifyClientConfig(configRoot.getClientConfig("EchoClient"), true);
+        verifyClientConfig(configRoot.getClientConfig("mp-client"), false); // non-standard properties cannot be set via MP style config
+        verifyClientConfig(configRoot.getClientConfig("a.b.c.Client"), false);
     }
 
     void verifyClientConfig(RestClientConfig clientConfig, boolean verifyNonStandardProperties) {

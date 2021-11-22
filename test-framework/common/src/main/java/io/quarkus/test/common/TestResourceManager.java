@@ -515,8 +515,7 @@ public class TestResourceManager implements Closeable {
                 }
                 c = c.getSuperclass();
             }
-            System.err.println("Unable to determine matching fields for injection of test instance '"
-                    + testInstance.getClass().getName() + "'");
+            // no need to warn here because it's perfectly valid to have tests that don't use the injected fields
         }
 
     }

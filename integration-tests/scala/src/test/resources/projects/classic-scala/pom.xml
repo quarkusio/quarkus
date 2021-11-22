@@ -11,8 +11,9 @@
         <maven.compiler.source>11</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.target>11</maven.compiler.target>
-        <scala.version>2.12.13</scala.version>
-        <scala-maven-plugin.version>4.4.0</scala-maven-plugin.version>
+        <scala.version>@scala.version@</scala.version>
+        <scala-maven-plugin.version>@scala-maven-plugin.version@</scala-maven-plugin.version>
+        <surefire-plugin.version>@version.surefire.plugin@</surefire-plugin.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -106,6 +107,10 @@
                         <arg>-Ypartial-unification</arg>
                     </args>
                 </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire-plugin.version}</version>
             </plugin>
         </plugins>
     </build>

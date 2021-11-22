@@ -139,7 +139,8 @@ public class MicrometerRecorder {
                         Metrics.globalRegistry.remove(meter);
                     }
                 }
-                for (MeterRegistry meterRegistry : Metrics.globalRegistry.getRegistries()) {
+                // iterate over defensive copy to avoid ConcurrentModificationException
+                for (MeterRegistry meterRegistry : new ArrayList<>(Metrics.globalRegistry.getRegistries())) {
                     meterRegistry.close();
                     Metrics.removeRegistry(meterRegistry);
                 }

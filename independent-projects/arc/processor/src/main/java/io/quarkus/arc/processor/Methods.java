@@ -541,7 +541,15 @@ final class Methods {
                         continue; // hope for the best
                     }
                     if (Modifier.isPrivate(parameterClassInfo.flags())) {
-                        return true; // parameters whose class is private can not be loaded, as we would end up with IllegalAccessError when trying to access the use the load the class
+                        if (Modifier.isPrivate(method.flags())) {
+                            return true;
+                        }
+                        //non private method with private param type
+                        //this is really dangerous, as interceptors won't be applied but other things may work as normal
+                        //this can result in skipped security checks
+                        //just error out
+                        throw new RuntimeException("Method " + method + " on class " + method.declaringClass().name()
+                                + " has a private parameter on a non-private class. This will prevent it from being intercepted. Please either make the method private, or change the parameter type to be non-private.");
                     }
                     if (!Modifier.isPublic(parameterClassInfo.flags())) {
                         // parameters whose class is package-private and the package is not the same as the package of the method for which we are checking can not be loaded,

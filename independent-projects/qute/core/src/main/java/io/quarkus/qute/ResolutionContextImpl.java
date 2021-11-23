@@ -108,9 +108,9 @@ class ResolutionContextImpl implements ResolutionContext {
                 if (block != null) {
                     return block;
                 }
-                if (parent != null) {
-                    return parent.getExtendingBlock(name);
-                }
+            }
+            if (parent != null) {
+                return parent.getExtendingBlock(name);
             }
             return null;
         }

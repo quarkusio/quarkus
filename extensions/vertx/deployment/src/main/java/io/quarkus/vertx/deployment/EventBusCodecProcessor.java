@@ -3,8 +3,6 @@ package io.quarkus.vertx.deployment;
 import static io.quarkus.vertx.deployment.VertxConstants.COMPLETION_STAGE;
 import static io.quarkus.vertx.deployment.VertxConstants.CONSUME_EVENT;
 import static io.quarkus.vertx.deployment.VertxConstants.LOCAL_EVENT_BUS_CODEC;
-import static io.quarkus.vertx.deployment.VertxConstants.MESSAGE;
-import static io.quarkus.vertx.deployment.VertxConstants.MUTINY_MESSAGE;
 import static io.quarkus.vertx.deployment.VertxConstants.UNI;
 
 import java.util.Arrays;
@@ -181,7 +179,6 @@ public class EventBusCodecProcessor {
      * @return {@code true} if it matches, {@code false} otherwise.
      */
     private static boolean isMessageClass(ParameterizedType type) {
-        return type.name().equals(MESSAGE)
-                || type.name().equals(MUTINY_MESSAGE);
+        return VertxConstants.isMessage(type.name());
     }
 }

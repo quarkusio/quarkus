@@ -11,6 +11,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -115,8 +116,13 @@ class VertxProcessor {
                     List<Type> params = method.parameters();
                     if (params.size() != 1) {
                         throw new IllegalStateException(String.format(
-                                "Event consumer business method must accept exactly one parameter: %s [method: %s, bean:%s",
+                                "An event consumer business method must accept exactly one parameter: %s [method: %s, bean:%s]",
                                 params, method, bean));
+                    }
+                    if (method.returnType().kind() != Kind.VOID && VertxConstants.isMessage(params.get(0).name())) {
+                        throw new IllegalStateException(String.format(
+                                "An event consumer business method that accepts io.vertx.core.eventbus.Message or io.vertx.mutiny.core.eventbus.Message must return void [method: %s, bean:%s]",
+                                method, bean));
                     }
                     messageConsumerBusinessMethods
                             .produce(new EventConsumerBusinessMethodItem(bean, method, consumeEvent));

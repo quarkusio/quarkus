@@ -18,4 +18,8 @@ public class VertxConstants {
     static final DotName UNI = DotName.createSimple(Uni.class.getName());
     static final DotName LOCAL_EVENT_BUS_CODEC = DotName.createSimple(LocalEventBusCodec.class.getName());
     static final DotName CONSUME_EVENT = DotName.createSimple(ConsumeEvent.class.getName());
+
+    static boolean isMessage(DotName name) {
+        return MESSAGE.equals(name) || MUTINY_MESSAGE.equals(name);
+    }
 }

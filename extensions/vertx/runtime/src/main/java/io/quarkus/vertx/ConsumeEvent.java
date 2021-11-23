@@ -11,10 +11,10 @@ import io.vertx.core.eventbus.MessageCodec;
 /**
  * Marks a business method to be automatically registered as a Vertx message consumer.
  * <p>
- * The method must accept exactly one parameter. If it accepts {@link io.vertx.core.eventbus.Message} then the return type must
- * be void. For any other type the {@link io.vertx.core.eventbus.Message#body()} is passed as the parameter value and the method
- * may return an object that is passed to
- * {@link io.vertx.core.eventbus.Message#reply(Object)}, either directly or via
+ * The method must accept exactly one parameter. If it accepts {@link io.vertx.core.eventbus.Message} or
+ * {@link io.vertx.mutiny.core.eventbus.Message} then the return type must be void. For any other type the
+ * {@link io.vertx.core.eventbus.Message#body()} is passed as the parameter value and the method
+ * may return an object that is passed to {@link io.vertx.core.eventbus.Message#reply(Object)}, either directly or via
  * {@link java.util.concurrent.CompletionStage#thenAccept(java.util.function.Consumer)} in case of the method returns a
  * completion stage.
  * 

@@ -167,13 +167,21 @@ public class VertxOutputStream extends AsyncOutputStream {
         }
 
         if (bufferCount == 1) {
-            pooledBuffer = allocator.allocateBuffer();
-            pooledBuffer.writeBytes(b);
+            if (pooledBuffer == null) {
+                pooledBuffer = allocator.allocateBuffer();
+            }
+            pooledBuffer.writeBytes(b, 0, len);
         } else {
             for (int i = 0; i < bufferCount - 1; i++) {
                 int bufferIndex = i;
                 ret = ret.thenCompose(v -> {
-                    ByteBuf tmpBuf = allocator.allocateBuffer();
+                    ByteBuf tmpBuf = null;
+                    if ((bufferIndex == 0) && ((pooledBuffer != null))) {
+                        tmpBuf = pooledBuffer;
+                    }
+                    if (tmpBuf == null) {
+                        tmpBuf = allocator.allocateBuffer();
+                    }
                     tmpBuf.writeBytes(b, bufferIndex * bufferSize, bufferSize);
                     return response.writeNonBlocking(tmpBuf, false);
                 });

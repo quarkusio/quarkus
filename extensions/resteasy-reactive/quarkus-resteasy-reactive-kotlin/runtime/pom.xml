@@ -27,10 +27,6 @@
             <artifactId>quarkus-resteasy-reactive-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-common</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus.resteasy.reactive</groupId>
             <artifactId>resteasy-reactive</artifactId>
         </dependency>

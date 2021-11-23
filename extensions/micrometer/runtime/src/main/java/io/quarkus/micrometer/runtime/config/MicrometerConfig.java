@@ -105,6 +105,11 @@ public final class MicrometerConfig {
         public Optional<Boolean> jvm;
 
         public KafkaConfigGroup kafka;
+
+        public GrpcServerConfigGroup grpcServer;
+
+        public GrpcClientConfigGroup grpcClient;
+
         public MPMetricsConfigGroup mpMetrics;
 
         /**
@@ -127,7 +132,7 @@ public final class MicrometerConfig {
         public PrometheusConfigGroup prometheus;
     }
 
-    public static interface CapabilityEnabled {
+    public interface CapabilityEnabled {
         Optional<Boolean> getEnabled();
     }
 }

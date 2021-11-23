@@ -21,6 +21,8 @@ class StreamingEndpointTest {
     public void testSource() {
         List<String> response = get("/streaming").as(LIST_OF_STRING);
         assertThat(response).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+
+        ensureThatMetricsAreProduced();
     }
 
     @Test
@@ -34,6 +36,16 @@ class StreamingEndpointTest {
     public void testSink() {
         get("/streaming/sink/3")
                 .then().statusCode(204);
+    }
+
+    public void ensureThatMetricsAreProduced() {
+        String metrics = get("/q/metrics")
+                .then().statusCode(200)
+                .extract().asString();
+
+        assertThat(metrics)
+                .contains("grpc_server_processing_duration_seconds_max") // server
+                .contains("grpc_client_processing_duration_seconds_count"); // client
     }
 
 }

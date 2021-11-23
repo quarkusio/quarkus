@@ -18,7 +18,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -68,7 +67,6 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
-import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -89,7 +87,6 @@ import io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcIntercepto
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
@@ -104,7 +101,6 @@ public class GrpcServerProcessor {
     private static final String KEY = SSL_PREFIX + "key";
     private static final String KEY_STORE = SSL_PREFIX + "key-store";
     private static final String TRUST_STORE = SSL_PREFIX + "trust-store";
-    private static final String METRICS_SERVER_INTERCEPTOR = "io.quarkus.grpc.runtime.metrics.GrpcMetricsServerInterceptor";
 
     @BuildStep
     MinNettyAllocatorMaxOrderBuildItem setMinimalNettyMaxOrderSize() {
@@ -547,25 +543,6 @@ public class GrpcServerProcessor {
     @BuildStep
     ExtensionSslNativeSupportBuildItem extensionSslNativeSupport() {
         return new ExtensionSslNativeSupportBuildItem(GRPC_SERVER);
-    }
-
-    @BuildStep
-    void configureMetrics(GrpcBuildTimeConfig configuration, Optional<MetricsCapabilityBuildItem> metricsCapability,
-            BuildProducer<AdditionalBeanBuildItem> beans,
-            BuildProducer<AdditionalGlobalInterceptorBuildItem> additionalInterceptors) {
-
-        // Note that this build steps configures both the server side and the client side
-        if (configuration.metricsEnabled && metricsCapability.isPresent()) {
-            if (metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
-                // Strings are used intentionally - micrometer-core is an optional dependency of the runtime module
-                beans.produce(new AdditionalBeanBuildItem(METRICS_SERVER_INTERCEPTOR,
-                        "io.quarkus.grpc.runtime.metrics.GrpcMetricsClientInterceptor"));
-                additionalInterceptors
-                        .produce(new AdditionalGlobalInterceptorBuildItem(METRICS_SERVER_INTERCEPTOR));
-            } else {
-                log.warn("Only Micrometer-based metrics system is supported by quarkus-grpc");
-            }
-        }
     }
 
     @BuildStep

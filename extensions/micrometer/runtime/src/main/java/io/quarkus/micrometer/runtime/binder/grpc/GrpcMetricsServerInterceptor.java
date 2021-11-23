@@ -1,4 +1,4 @@
-package io.quarkus.grpc.runtime.metrics;
+package io.quarkus.micrometer.runtime.binder.grpc;
 
 import javax.enterprise.inject.spi.Prioritized;
 import javax.inject.Inject;

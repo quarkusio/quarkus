@@ -2,9 +2,9 @@
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>${groupId}</groupId>
-  <artifactId>${artifactId}</artifactId>
-  <version>${version}</version>
+  <groupId>\${groupId}</groupId>
+  <artifactId>\${artifactId}</artifactId>
+  <version>\${version}</version>
   <properties>
     <compiler-plugin.version>3.8.1</compiler-plugin.version>
     <maven.compiler.parameters>true</maven.compiler.parameters>
@@ -24,15 +24,15 @@
     <functionAppRegion>${appRegion}</functionAppRegion>
     <functionResourceGroup>${resourceGroup}</functionResourceGroup>
     <function>${function}</function>
-    <stagingDirectory>${project.build.directory}/azure-functions/${functionAppName}</stagingDirectory>
+    <stagingDirectory>\${project.build.directory}/azure-functions/\${functionAppName}</stagingDirectory>
     <quarkus.package.type>uber-jar</quarkus.package.type>
   </properties>
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>${quarkus.platform.group-id}</groupId>
-        <artifactId>${quarkus.platform.artifact-id}</artifactId>
-        <version>${quarkus.platform.version}</version>
+        <groupId>\${quarkus.platform.group-id}</groupId>
+        <artifactId>\${quarkus.platform.artifact-id}</artifactId>
+        <version>\${quarkus.platform.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -79,7 +79,7 @@
       <plugin>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
-        <version>${quarkus-plugin.version}</version>
+        <version>\${quarkus-plugin.version}</version>
         <executions>
           <execution>
             <goals>
@@ -90,15 +90,15 @@
       </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>${compiler-plugin.version}</version>
+        <version>\${compiler-plugin.version}</version>
       </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>${surefire-plugin.version}</version>
+        <version>\${surefire-plugin.version}</version>
         <configuration>
           <systemPropertyVariables>
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-            <maven.home>${maven.home}</maven.home>
+            <maven.home>\${maven.home}</maven.home>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -107,11 +107,11 @@
       <plugin>
         <groupId>com.microsoft.azure</groupId>
         <artifactId>azure-functions-maven-plugin</artifactId>
-        <version>${azure.functions.maven.plugin.version}</version>
+        <version>\${azure.functions.maven.plugin.version}</version>
         <configuration>
-          <resourceGroup>${functionResourceGroup}</resourceGroup>
-          <appName>${functionAppName}</appName>
-          <region>${functionAppRegion}</region>
+          <resourceGroup>\${functionResourceGroup}</resourceGroup>
+          <appName>\${functionAppName}</appName>
+          <region>\${functionAppRegion}</region>
           <runtime>
             <!-- runtime os, could be windows, linux or docker-->
             <os>windows</os>
@@ -132,7 +132,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
-        <version>${resources-plugin.version}</version>
+        <version>\${resources-plugin.version}</version>
         <executions>
           <!-- add azure required json files
                to Azure staging directory -->
@@ -144,10 +144,10 @@
             </goals>
             <configuration>
               <overwrite>true</overwrite>
-              <outputDirectory>${stagingDirectory}</outputDirectory>
+              <outputDirectory>\${stagingDirectory}</outputDirectory>
               <resources>
                 <resource>
-                  <directory>${project.basedir}/azure-config</directory>
+                  <directory>\${project.basedir}/azure-config</directory>
                   <includes>
                     <include>host.json</include>
                     <include>local.settings.json</include>
@@ -165,10 +165,10 @@
             </goals>
             <configuration>
               <overwrite>true</overwrite>
-              <outputDirectory>${stagingDirectory}/${function}</outputDirectory>
+              <outputDirectory>\${stagingDirectory}/\${function}</outputDirectory>
               <resources>
                 <resource>
-                  <directory>${project.basedir}/azure-config</directory>
+                  <directory>\${project.basedir}/azure-config</directory>
                   <filtering>true</filtering>
                   <includes>
                     <include>function.json</include>
@@ -192,8 +192,8 @@
               <goal>copy</goal>
             </goals>
             <configuration>
-              <sourceFile>${project.build.directory}/${project.artifactId}-${project.version}-runner.jar</sourceFile>
-              <destinationFile>${stagingDirectory}/${project.artifactId}-${project.version}.jar</destinationFile>
+              <sourceFile>\${project.build.directory}/\${project.artifactId}-\${project.version}-runner.jar</sourceFile>
+              <destinationFile>\${stagingDirectory}/\${project.artifactId}-\${project.version}.jar</destinationFile>
             </configuration>
           </execution>
         </executions>

@@ -11,7 +11,6 @@ PRG_PATH=$( cd "$(dirname "$0")" ; pwd -P )
 DEP_TEMPLATE='        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>XXX</artifactId>
-            <version>\${project.version}</version>
         </dependency>'
 
 DEP_TEMPLATE_DEPLOYMENT='        <dependency>

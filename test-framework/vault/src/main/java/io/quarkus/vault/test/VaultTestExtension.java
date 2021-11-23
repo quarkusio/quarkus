@@ -4,7 +4,6 @@ import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 import static io.quarkus.vault.runtime.VaultAuthManager.USERPASS_WRAPPING_TOKEN_PASSWORD_KEY;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.regex.Pattern.MULTILINE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -463,7 +462,7 @@ public class VaultTestExtension {
     private String exec(GenericContainer container, String command, String[] cmd, String outFile)
             throws IOException, InterruptedException {
         exec(container, cmd);
-        String out = new String(Files.readAllBytes(Paths.get(outFile)), UTF_8);
+        String out = Files.readString(Paths.get(outFile));
         log.info("> " + command + "\n" + out);
         return out;
     }

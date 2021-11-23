@@ -3,7 +3,6 @@ package io.quarkus.kubernetes.service.binding.runtime;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -83,7 +82,7 @@ public final class ServiceBinding {
             for (File f : files) {
                 try {
                     result.put(f.toPath().getFileName().toString(),
-                            new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8).trim());
+                            Files.readString(f.toPath()).trim());
                 } catch (IOException e) {
                     throw new IllegalStateException("Unable to read file '" + f + "'", e);
                 }

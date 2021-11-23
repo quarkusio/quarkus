@@ -502,7 +502,7 @@ class SmallRyeHealthProcessor {
     }
 
     private void updateApiUrl(Path fileToUpdate, String healthPath) throws IOException {
-        String content = new String(Files.readAllBytes(fileToUpdate), StandardCharsets.UTF_8);
+        String content = Files.readString(fileToUpdate);
         String result = updateApiUrl(content, healthPath);
         if (result != null) {
             Files.write(fileToUpdate, result.getBytes(StandardCharsets.UTF_8));

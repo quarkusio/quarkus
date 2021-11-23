@@ -766,7 +766,7 @@ public class DevConsoleProcessor {
 
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    String contents = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+                    String contents = Files.readString(file);
                     // don't move tags yet, since we don't know how to use them afterwards
                     String relativePath = devTemplatesPath.relativize(file).toString();
                     String correctedPath;

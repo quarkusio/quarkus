@@ -344,6 +344,7 @@ Executing `./mvnw quarkus:dependency-tree` on your project should result in an o
 ----
 
 The goal accepts the following optional parameters:
+
 * `mode` - the default value is `prod`, i.e. the production build dependency tree. Alternatively, it accepts values `test` to display the test dependency tree and `dev` to display the dev mode dependency tree;
 * `outputFile` - specifies the file to persist the dependency tree to;
 * `appendOutput` - the default value is `false`, indicates whether the output to the command should be appended to the file specified with the `outputFile` parameter or it should be overriden.

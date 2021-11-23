@@ -1,6 +1,8 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
 import io.smallrye.common.annotation.Blocking;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 import java.util.Optional;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -12,7 +14,6 @@ import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
-import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.Providers;
 import javax.ws.rs.sse.Sse;
@@ -73,24 +74,26 @@ public class NewParamsRestResource {
             UriInfo uriInfo,
             HttpHeaders headers,
             Request request,
-            SecurityContext securityContext,
             Providers providers,
             ResourceContext resourceContext,
             Configuration configuration,
             // Extras
             ResourceInfo resourceInfo,
             SimpleResourceInfo simplifiedResourceInfo,
-            ServerRequestContext restContext) {
+            ServerRequestContext restContext,
+            HttpServerRequest httpServerRequest,
+            HttpServerResponse httpServerResponse) {
         Assertions.assertNotNull(uriInfo);
         Assertions.assertNotNull(headers);
         Assertions.assertNotNull(request);
-        Assertions.assertNotNull(securityContext);
         Assertions.assertNotNull(providers);
         Assertions.assertNotNull(resourceContext);
         Assertions.assertNotNull(configuration);
         Assertions.assertNotNull(resourceInfo);
         Assertions.assertNotNull(simplifiedResourceInfo);
         Assertions.assertNotNull(restContext);
+        Assertions.assertNotNull(httpServerRequest);
+        Assertions.assertNotNull(httpServerResponse);
         return "OK";
     }
 

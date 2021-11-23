@@ -61,6 +61,8 @@
         <jakarta.validation-api.version>2.0.2</jakarta.validation-api.version>
         <yasson.version>2.0.2</yasson.version>
         <jakarta.json.bind-api.version>1.0.2</jakarta.json.bind-api.version>
+        <awaitility.version>4.1.1</awaitility.version>
+        <smallrye-mutiny-vertx-core.version>2.15.1</smallrye-mutiny-vertx-core.version>
     </properties>
 
     <modules>
@@ -190,6 +192,11 @@
                 <artifactId>mutiny</artifactId>
                 <version>${mutiny.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-mutiny-vertx-core</artifactId>
+                <version>${smallrye-mutiny-vertx-core.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>io.smallrye.common</groupId>
@@ -261,6 +268,13 @@
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
                 <version>${version.assertj}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.awaitility</groupId>
+                <artifactId>awaitility</artifactId>
+                <version>${awaitility.version}</version>
                 <scope>test</scope>
             </dependency>
 

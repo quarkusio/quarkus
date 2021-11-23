@@ -39,7 +39,7 @@ public class BlockingWithFilterTest {
         assertEquals(2, parts.length);
         assertEquals(parts[0], parts[1]);
         assertFalse(parts[0].contains("eventloop"));
-        assertTrue(parts[0].contains(ResteasyReactiveUnitTest.EXECUTOR_THREAD_NAME));
+        assertTrue(parts[0].contains("executor"));
     }
 
     public static class TestFilter {

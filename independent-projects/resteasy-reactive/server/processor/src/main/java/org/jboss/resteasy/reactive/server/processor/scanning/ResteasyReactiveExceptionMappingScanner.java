@@ -13,7 +13,6 @@ import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.common.processor.JandexUtil;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
-import org.jboss.resteasy.reactive.common.reflection.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
@@ -26,7 +25,7 @@ public class ResteasyReactiveExceptionMappingScanner {
      * Creates a fully populated exception mapper instance, that are created via reflection.
      */
     public static ExceptionMapping createExceptionMappers(IndexView indexView, ApplicationScanningResult result) {
-        return createExceptionMappers(indexView, result, new ReflectionBeanFactoryCreator());
+        return scanForExceptionMappers(indexView, result);
     }
 
     /**

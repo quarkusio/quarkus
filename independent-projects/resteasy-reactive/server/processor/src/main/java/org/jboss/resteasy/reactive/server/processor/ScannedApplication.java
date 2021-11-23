@@ -6,6 +6,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
 import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
+import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.SerializerScanningResult;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
@@ -15,6 +16,7 @@ import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 
 public class ScannedApplication {
 
+    final ResourceScanningResult resourceScanningResult;
     final AdditionalReaders readers;
     final AdditionalWriters writers;
     final SerializerScanningResult serializerScanningResult;
@@ -28,11 +30,13 @@ public class ScannedApplication {
     final ExceptionMapping exceptionMappers;
     final ContextResolvers contextResolvers;
 
-    public ScannedApplication(AdditionalReaders readers, AdditionalWriters writers,
+    public ScannedApplication(ResourceScanningResult resourceScanningResult, AdditionalReaders readers,
+            AdditionalWriters writers,
             SerializerScanningResult serializerScanningResult, ApplicationScanningResult applicationScanningResult,
             List<ResourceClass> resourceClasses, List<ResourceClass> subResourceClasses, Features scannedFeatures,
             ResourceInterceptors resourceInterceptors, DynamicFeatures dynamicFeatures, ParamConverterProviders paramConverters,
             ExceptionMapping exceptionMappers, ContextResolvers contextResolvers) {
+        this.resourceScanningResult = resourceScanningResult;
         this.readers = readers;
         this.writers = writers;
         this.serializerScanningResult = serializerScanningResult;
@@ -45,6 +49,10 @@ public class ScannedApplication {
         this.paramConverters = paramConverters;
         this.exceptionMappers = exceptionMappers;
         this.contextResolvers = contextResolvers;
+    }
+
+    public ResourceScanningResult getResourceScanningResult() {
+        return resourceScanningResult;
     }
 
     public AdditionalReaders getReaders() {

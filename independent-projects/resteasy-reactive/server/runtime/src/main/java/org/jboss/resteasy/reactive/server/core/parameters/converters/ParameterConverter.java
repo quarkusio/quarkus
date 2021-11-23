@@ -8,5 +8,7 @@ public interface ParameterConverter {
 
     Object convert(Object parameter);
 
-    void init(ParamConverterProviders deployment, Class<?> rawType, Type genericType, Annotation[] annotations);
+    default void init(ParamConverterProviders deployment, Class<?> rawType, Type genericType, Annotation[] annotations) {
+
+    }
 }

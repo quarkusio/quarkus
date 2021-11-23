@@ -9,7 +9,7 @@ public class ResourceInterceptor<T>
         implements Comparable<ResourceInterceptor<T>>, SettableResourceInterceptor<T>, HasPriority {
 
     private BeanFactory<T> factory;
-    private Integer priority = Priorities.USER; // default priority as defined by spec
+    private int priority = Priorities.USER; // default priority as defined by spec
     private boolean nonBlockingRequired; // whether or not @NonBlocking was specified on the class
 
     /**
@@ -36,7 +36,11 @@ public class ResourceInterceptor<T>
     }
 
     public void setPriority(Integer priority) {
-        this.priority = priority;
+        if (priority == null) {
+            this.priority = Priorities.USER;
+        } else {
+            this.priority = priority;
+        }
     }
 
     public Set<String> getNameBindingNames() {

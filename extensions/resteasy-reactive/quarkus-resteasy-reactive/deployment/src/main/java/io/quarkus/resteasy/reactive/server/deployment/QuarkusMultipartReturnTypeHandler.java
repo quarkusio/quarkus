@@ -17,7 +17,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
-public class QuarkusMultipartReturnTypeHandler implements EndpointIndexer.MultipartReturnTypeHandler {
+public class QuarkusMultipartReturnTypeHandler implements EndpointIndexer.MultipartReturnTypeIndexerExtension {
     private final Map<String, Boolean> multipartOutputGeneratedPopulators = new HashMap<>();
     final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
     final Predicate<String> applicationClassPredicate;

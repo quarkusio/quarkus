@@ -5,8 +5,6 @@ import javax.ws.rs.BeanParam;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
 import org.junit.jupiter.api.Assertions;
 
 public class BeanParamSuperClass {
@@ -24,9 +22,6 @@ public class BeanParamSuperClass {
 
     @HeaderParam("header")
     String header;
-
-    @Context
-    UriInfo uriInfo;
 
     @BeanParam
     OtherBeanParam otherBeanParam;
@@ -67,8 +62,6 @@ public class BeanParamSuperClass {
         Assertions.assertEquals("one-query", protectedQuery);
         Assertions.assertEquals("one-query", publicQuery);
         Assertions.assertEquals("one-header", header);
-        Assertions.assertNotNull(uriInfo);
-        Assertions.assertEquals(path, uriInfo.getPath());
         Assertions.assertNotNull(otherBeanParam);
         otherBeanParam.check(path);
         Assertions.assertNotNull(queryList);

@@ -5,9 +5,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
@@ -16,8 +14,6 @@ import javax.ws.rs.ext.ParamConverterProvider;
 import javax.ws.rs.ext.Provider;
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -25,7 +21,7 @@ public class LocalDateCustomParamConverterProviderTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(HelloResource.class, CustomLocalDateParamConverterProvider.class,
                             CustomLocalDateParamConverter.class));
 
@@ -41,12 +37,6 @@ public class LocalDateCustomParamConverterProviderTest {
                 .then().body(Matchers.equalTo("hello@1995-09-21"));
     }
 
-    @Test
-    public void localDateAsFormParam() {
-        RestAssured.given().formParam("date", "1995-W38-5").post("/hello")
-                .then().body(Matchers.equalTo("hello:1995-09-22"));
-    }
-
     @Path("hello")
     public static class HelloResource {
 
@@ -59,11 +49,6 @@ public class LocalDateCustomParamConverterProviderTest {
         @Path("{date}")
         public String helloPath(@PathParam("date") LocalDate date) {
             return "hello@" + date;
-        }
-
-        @POST
-        public String helloForm(@FormParam("date") LocalDate date) {
-            return "hello:" + date;
         }
     }
 

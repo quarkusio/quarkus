@@ -15,10 +15,8 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_VALUED_MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_DATE_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_TIME;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ZONED_DATE_TIME;
 
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -65,12 +63,11 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeReso
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SetConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SortedSetConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ZonedDateTimeParamConverter;
-import org.jboss.resteasy.reactive.server.core.reflection.ReflectionConstructorParameterConverterSupplier;
-import org.jboss.resteasy.reactive.server.core.reflection.ReflectionValueOfParameterConverterSupplier;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
+import org.jboss.resteasy.reactive.server.processor.reflection.ReflectionConverterIndexerExtension;
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFormUrlEncodedProvider;
 import org.jboss.resteasy.reactive.server.providers.serialisers.jsonp.ServerJsonArrayHandler;
@@ -83,11 +80,15 @@ public class ServerEndpointIndexer
         extends EndpointIndexer<ServerEndpointIndexer, ServerIndexedParameter, ServerResourceMethod> {
     protected final EndpointInvokerFactory endpointInvokerFactory;
     protected final List<MethodScanner> methodScanners;
+    protected final FieldInjectionIndexerExtension fieldInjectionHandler;
+    protected final ConverterSupplierIndexerExtension converterSupplierIndexerExtension;
 
     protected ServerEndpointIndexer(AbstractBuilder builder) {
         super(builder);
         this.endpointInvokerFactory = builder.endpointInvokerFactory;
         this.methodScanners = new ArrayList<>(builder.methodScanners);
+        this.fieldInjectionHandler = builder.fieldInjectionIndexerExtension;
+        this.converterSupplierIndexerExtension = builder.converterSupplierIndexerExtension;
     }
 
     protected void addWriterForType(AdditionalWriters additionalWriters, Type paramType) {
@@ -239,9 +240,6 @@ public class ServerEndpointIndexer
                 //BODY means no annotation, so for fields not injectable
                 fieldExtractors.put(field, result);
             }
-            if (result.getConverter() != null) {
-                handleConverter(currentTypeName, field);
-            }
             if (result.getType() == ParameterType.BEAN) {
                 beanParamFields.put(field, result);
                 // transform the bean param
@@ -276,18 +274,11 @@ public class ServerEndpointIndexer
             }
         }
 
-        if (!fieldExtractors.isEmpty()) {
-            handleFieldExtractors(currentTypeName, fieldExtractors, superTypeIsInjectable);
+        if (!fieldExtractors.isEmpty() && fieldInjectionHandler != null) {
+            fieldInjectionHandler.handleFieldInjection(currentTypeName, fieldExtractors, superTypeIsInjectable);
         }
         currentInjectableBean.setInjectionRequired(!fieldExtractors.isEmpty() || superTypeIsInjectable);
         return currentInjectableBean;
-    }
-
-    protected void handleFieldExtractors(String currentTypeName, Map<FieldInfo, ServerIndexedParameter> fieldExtractors,
-            boolean superTypeIsInjectable) {
-    }
-
-    protected void handleConverter(String currentTypeName, FieldInfo field) {
     }
 
     protected MethodParameter createMethodParameter(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo, boolean encoded,
@@ -426,58 +417,8 @@ public class ServerEndpointIndexer
         } else if (elementType.equals(PathSegment.class.getName())) {
             return new PathSegmentParamConverter.Supplier();
         }
-        return extractConverterImpl(elementType, indexView, existingConverters, errorLocation, hasRuntimeConverters);
-    }
-
-    protected ParameterConverterSupplier extractConverterImpl(String elementType, IndexView indexView,
-            Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters) {
-        MethodInfo fromString = null;
-        MethodInfo valueOf = null;
-        MethodInfo stringCtor = null;
-        String primitiveWrapperType = primitiveTypes.get(elementType);
-        String prefix = "";
-        if (primitiveWrapperType != null) {
-            return new ReflectionValueOfParameterConverterSupplier(primitiveWrapperType);
-        } else {
-            ClassInfo type = indexView.getClassByName(DotName.createSimple(elementType));
-            if (type != null) {
-                for (MethodInfo i : type.methods()) {
-                    boolean isStatic = ((i.flags() & Modifier.STATIC) != 0);
-                    boolean isNotPrivate = (i.flags() & Modifier.PRIVATE) == 0;
-                    if ((i.parameters().size() == 1) && isNotPrivate) {
-                        if (i.parameters().get(0).name().equals(STRING)) {
-                            if (i.name().equals("<init>")) {
-                                stringCtor = i;
-                            } else if (i.name().equals("valueOf") && isStatic) {
-                                valueOf = i;
-                            } else if (i.name().equals("fromString") && isStatic) {
-                                fromString = i;
-                            }
-                        }
-                    }
-                }
-                if (type.isEnum()) {
-                    //spec weirdness, enums order is different
-                    if (fromString != null) {
-                        valueOf = null;
-                    }
-                }
-            }
-        }
-        ParameterConverterSupplier delegate = null;
-        if (stringCtor != null) {
-            delegate = new ReflectionConstructorParameterConverterSupplier(stringCtor.declaringClass().name().toString());
-        } else if (valueOf != null) {
-            delegate = new ReflectionValueOfParameterConverterSupplier(valueOf.declaringClass().name().toString());
-        } else if (fromString != null) {
-            delegate = new ReflectionValueOfParameterConverterSupplier(fromString.declaringClass().name().toString(),
-                    "fromString");
-        }
-        if (hasRuntimeConverters)
-            return new RuntimeResolvedConverter.Supplier().setDelegate(delegate);
-        if (delegate == null)
-            throw new RuntimeException("Failed to find converter for " + elementType);
-        return delegate;
+        return converterSupplierIndexerExtension.extractConverterImpl(elementType, indexView, existingConverters, errorLocation,
+                hasRuntimeConverters);
     }
 
     @SuppressWarnings("unchecked")
@@ -486,6 +427,8 @@ public class ServerEndpointIndexer
 
         private EndpointInvokerFactory endpointInvokerFactory = new ReflectionEndpointInvokerFactory();
         private List<MethodScanner> methodScanners = new ArrayList<>();
+        private FieldInjectionIndexerExtension fieldInjectionIndexerExtension;
+        private ConverterSupplierIndexerExtension converterSupplierIndexerExtension = new ReflectionConverterIndexerExtension();
 
         public EndpointInvokerFactory getEndpointInvokerFactory() {
             return endpointInvokerFactory;
@@ -501,8 +444,18 @@ public class ServerEndpointIndexer
             return (B) this;
         }
 
+        public B setConverterSupplierIndexerExtension(ConverterSupplierIndexerExtension converterSupplierIndexerExtension) {
+            this.converterSupplierIndexerExtension = converterSupplierIndexerExtension;
+            return (B) this;
+        }
+
         public B addMethodScanners(Collection<MethodScanner> methodScanners) {
             this.methodScanners.addAll(methodScanners);
+            return (B) this;
+        }
+
+        public B setFieldInjectionIndexerExtension(FieldInjectionIndexerExtension fieldInjectionHandler) {
+            this.fieldInjectionIndexerExtension = fieldInjectionHandler;
             return (B) this;
         }
 
@@ -515,4 +468,16 @@ public class ServerEndpointIndexer
     public static class Builder extends AbstractBuilder<Builder> {
 
     }
+
+    public interface FieldInjectionIndexerExtension {
+
+        void handleFieldInjection(String currentTypeName, Map<FieldInfo, ServerIndexedParameter> fieldExtractors,
+                boolean superTypeIsInjectable);
+    }
+
+    public interface ConverterSupplierIndexerExtension {
+        ParameterConverterSupplier extractConverterImpl(String elementType, IndexView indexView,
+                Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters);
+    }
+
 }

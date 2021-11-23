@@ -844,7 +844,6 @@ public class ArcContainerImpl implements ArcContainer {
 
     private static final class Resolvable {
 
-        private static final Set<Type> BUILT_IN_TYPES = Set.of(Event.class, Instance.class);
         private static final Annotation[] ANY_QUALIFIER = { Any.Literal.INSTANCE };
 
         final Type requiredType;
@@ -852,10 +851,10 @@ public class ArcContainerImpl implements ArcContainer {
         final Annotation[] qualifiers;
 
         Resolvable(Type requiredType, Annotation[] qualifiers) {
-            // if the type is any of BUILT_IN_TYPES, the resolution simplifies type to raw type and ignores qualifiers
+            // if the type is Event or Instance (the built-in types), the resolution simplifies type to raw type and ignores qualifiers
             // this is so that every injection point matches the bean we provide for that type
             Type rawType = Reflections.getRawType(requiredType);
-            if (BUILT_IN_TYPES.contains(rawType)) {
+            if (Event.class.equals(rawType) || Instance.class.equals(rawType)) {
                 this.requiredType = rawType;
                 this.qualifiers = ANY_QUALIFIER;
             } else {

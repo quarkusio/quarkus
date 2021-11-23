@@ -67,16 +67,16 @@ runtime: java11
 
 This will create a default service for your App Engine application.
 
-Then, you can choose to build the application by yourself or letting `gcloud` or the Google Cloud Maven plugin build it for you.
-
-=== Building the application manually
-
-Set up your application to be packaged as an uber-jar via your `application.properties` file:
+App Engine Standard does not support the default Quarkus' specific packaging layout, therefore, you must set up your application to be packaged as an uber-jar via your `application.properties` file:
 
 [source, properties]
 ----
 quarkus.package.type=uber-jar
 ----
+
+Then, you can choose to build the application manually or delegating that responsibility to `gcloud` or the Google Cloud Maven plugin.
+
+=== Building the application manually
 
 Use Maven to build the application using `mvn clean package`, it will generate a single JAR that contains all the classes of your application including its dependencies.
 
@@ -89,23 +89,16 @@ gcloud app deploy target/getting-started-1.0.0-SNAPSHOT-runner.jar
 
 This command will upload your application jar and launch it on App Engine.
 
-When done, the output will display the URL of your application (target url), you can use it with curl or directly open it in your browser using `gcloud app browse`.
+When it’s done, the output will display the URL of your application (target url), you can use it with curl or directly open it in your browser using `gcloud app browse`.
 
 === Building the application via gcloud
 
 You can choose to let `gcloud` build your application for you, this is the simplest way to deploy to App Engine.
 
-In this case, you need to configure your application to be packaged as an uber-jar in your `application.properties` file:
-
-[source, properties]
-----
-quarkus.package.type=uber-jar
-----
-
 Then, you can just launch `gcloud app deploy` in the root of your project, it will upload all your project files (the list can be reduced via the  `.gcloudignore` file),
 package your JAR via Maven (or Gradle) and launch it on App Engine.
 
-When done, the output will display the URL of your application (target url), you can use it with curl or directly open it in your browser using `gcloud app browse`.
+When it’s done, the output will display the URL of your application (target url), you can use it with curl or directly open it in your browser using `gcloud app browse`.
 
 === Building the application via the Google Cloud Maven plugin
 
@@ -122,7 +115,7 @@ First, add the plugin to your `pom.xml`:
     <configuration>
         <projectId>GCLOUD_CONFIG</projectId> <1>
         <version>gettingstarted</version>
-        <artifact>${project.build.directory}/quarkus-app/quarkus-run.jar</artifact> <2>
+        <artifact>${project.build.directory}/${project.artifactId}-${project.version}-runner.jar</artifact> <2>
     </configuration>
 </plugin>
 ----

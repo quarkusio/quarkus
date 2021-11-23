@@ -26,6 +26,7 @@ import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
+import org.jboss.resteasy.reactive.server.core.RuntimeExceptionMapper;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.core.serialization.DynamicEntityWriter;
 import org.jboss.resteasy.reactive.server.handlers.ClassRoutingHandler;
@@ -52,7 +53,6 @@ public class RuntimeDeploymentManager {
     public static final ServerRestHandler[] EMPTY_REST_HANDLER_ARRAY = new ServerRestHandler[0];
     private final DeploymentInfo info;
     private final Supplier<Executor> executorSupplier;
-    private final CustomServerRestHandlers customServerRestHandlers;
     private final Consumer<Closeable> closeTaskHandler;
     private final RequestContextFactory requestContextFactory;
     private final ThreadSetupAction threadSetupAction;
@@ -62,12 +62,10 @@ public class RuntimeDeploymentManager {
 
     public RuntimeDeploymentManager(DeploymentInfo info,
             Supplier<Executor> executorSupplier,
-            CustomServerRestHandlers customServerRestHandlers,
             Consumer<Closeable> closeTaskHandler,
             RequestContextFactory requestContextFactory, ThreadSetupAction threadSetupAction, String rootPath) {
         this.info = info;
         this.executorSupplier = executorSupplier;
-        this.customServerRestHandlers = customServerRestHandlers;
         this.closeTaskHandler = closeTaskHandler;
         this.requestContextFactory = requestContextFactory;
         this.threadSetupAction = threadSetupAction;
@@ -87,7 +85,9 @@ public class RuntimeDeploymentManager {
 
         DynamicEntityWriter dynamicEntityWriter = new DynamicEntityWriter(serialisers);
 
-        ConfigurationImpl configurationImpl = configureFeatures(features, interceptors, exceptionMapping);
+        RuntimeExceptionMapper exceptionMapper = new RuntimeExceptionMapper(exceptionMapping,
+                Thread.currentThread().getContextClassLoader());
+        ConfigurationImpl configurationImpl = configureFeatures(features, interceptors, exceptionMapper);
 
         RuntimeInterceptorDeployment interceptorDeployment = new RuntimeInterceptorDeployment(info, configurationImpl,
                 closeTaskHandler);
@@ -100,7 +100,6 @@ public class RuntimeDeploymentManager {
                 });
         List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers = new ArrayList<>();
         RuntimeResourceDeployment runtimeResourceDeployment = new RuntimeResourceDeployment(info, executorSupplier,
-                customServerRestHandlers,
                 interceptorDeployment, dynamicEntityWriter, resourceLocatorHandler, requestContextFactory.isDefaultBlocking());
         List<ResourceClass> possibleSubResource = new ArrayList<>(locatableResourceClasses);
         possibleSubResource.addAll(resourceClasses); //the TCK uses normal resources also as sub resources
@@ -188,12 +187,11 @@ public class RuntimeDeploymentManager {
                     .addAll(info.getGlobalHandlerCustomizers().get(i).handlers(HandlerChainCustomizer.Phase.AFTER_PRE_MATCH,
                             null, null));
         }
-
         return new Deployment(exceptionMapping, info.getCtxResolvers(), serialisers,
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
                 prefix, paramConverterProviders, configurationImpl, applicationSupplier,
                 threadSetupAction, requestContextFactory, preMatchHandlers, classMappers,
-                runtimeConfigurableServerRestHandlers, info.isResumeOn404());
+                runtimeConfigurableServerRestHandlers, exceptionMapper, info.isResumeOn404());
     }
 
     private void forEachMapperEntry(URITemplate path,
@@ -219,7 +217,7 @@ public class RuntimeDeploymentManager {
 
     //TODO: this needs plenty more work to support all possible types and provide all information the FeatureContext allows
     private ConfigurationImpl configureFeatures(Features features, ResourceInterceptors interceptors,
-            ExceptionMapping exceptionMapping) {
+            RuntimeExceptionMapper exceptionMapping) {
 
         ConfigurationImpl configuration = new ConfigurationImpl(RuntimeType.SERVER);
         if (features.getResourceFeatures().isEmpty()) {

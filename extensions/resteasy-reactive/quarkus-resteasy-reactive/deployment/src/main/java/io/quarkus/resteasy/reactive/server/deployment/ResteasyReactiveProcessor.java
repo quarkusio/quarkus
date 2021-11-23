@@ -16,14 +16,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import javax.ws.rs.Priorities;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.MessageBodyWriter;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -72,6 +71,7 @@ import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
+import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -411,6 +411,14 @@ public class ResteasyReactiveProcessor {
 
             List<ResteasyReactiveResourceMethodEntriesBuildItem.Entry> resourceMethodEntries = new ArrayList<>();
 
+            Predicate<String> applicationClassPredicate = s -> {
+                for (ApplicationClassPredicateBuildItem i : applicationClassPredicateBuildItems) {
+                    if (i.test(s)) {
+                        return true;
+                    }
+                }
+                return false;
+            };
             QuarkusServerEndpointIndexer.Builder serverEndpointIndexerBuilder = new QuarkusServerEndpointIndexer.Builder()
                     .addMethodScanners(
                             methodScanners.stream().map(MethodScannerBuildItem::getMethodScanner).collect(toList()))
@@ -495,14 +503,7 @@ public class ResteasyReactiveProcessor {
                     })
                     .setInitConverters(initConverters)
                     .setResteasyReactiveRecorder(recorder)
-                    .setApplicationClassPredicate(s -> {
-                        for (ApplicationClassPredicateBuildItem i : applicationClassPredicateBuildItems) {
-                            if (i.test(s)) {
-                                return true;
-                            }
-                        }
-                        return false;
-                    });
+                    .setApplicationClassPredicate(applicationClassPredicate);
 
             if (!serverDefaultProducesHandlers.isEmpty()) {
                 List<DefaultProducesHandler> handlers = new ArrayList<>(serverDefaultProducesHandlers.size());
@@ -521,6 +522,8 @@ public class ResteasyReactiveProcessor {
                 serverEndpointIndexerBuilder.setAnnotationsTransformers(annotationsTransformers);
             }
 
+            serverEndpointIndexerBuilder.setMultipartReturnTypeHandler(new QuarkusMultipartReturnTypeHandler(
+                    generatedClassBuildItemBuildProducer, applicationClassPredicate, reflectiveClassBuildItemBuildProducer));
             serverEndpointIndexer = serverEndpointIndexerBuilder.build();
 
             for (ClassInfo i : scannedResources.values()) {
@@ -599,13 +602,13 @@ public class ResteasyReactiveProcessor {
 
         // built-ins
         for (Serialisers.BuiltinWriter builtinWriter : ServerSerialisers.BUILTIN_WRITERS) {
-            registerWriter(recorder, serialisers, builtinWriter.entityClass, builtinWriter.writerClass,
+            registerWriter(recorder, serialisers, builtinWriter.entityClass.getName(), builtinWriter.writerClass.getName(),
                     beanContainerBuildItem.getValue(),
                     builtinWriter.mediaType);
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, builtinWriter.writerClass.getName()));
         }
         for (Serialisers.BuiltinReader builtinReader : ServerSerialisers.BUILTIN_READERS) {
-            registerReader(recorder, serialisers, builtinReader.entityClass, builtinReader.readerClass,
+            registerReader(recorder, serialisers, builtinReader.entityClass.getName(), builtinReader.readerClass.getName(),
                     beanContainerBuildItem.getValue(),
                     builtinReader.mediaType, builtinReader.constraint);
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, builtinReader.readerClass.getName()));
@@ -700,17 +703,17 @@ public class ResteasyReactiveProcessor {
         ServerSerialisers serialisers = serverSerialisersBuildItem.getSerialisers();
 
         for (AdditionalReaderWriter.Entry additionalReader : additionalReaders.get()) {
-            Class readerClass = additionalReader.getHandlerClass();
+            String readerClass = additionalReader.getHandlerClass();
             registerReader(recorder, serialisers, additionalReader.getEntityClass(), readerClass,
                     beanContainerBuildItem.getValue(), additionalReader.getMediaType(), additionalReader.getConstraint());
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, readerClass.getName()));
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, readerClass));
         }
 
         for (AdditionalReaderWriter.Entry entry : additionalWriters.get()) {
-            Class writerClass = entry.getHandlerClass();
+            String writerClass = entry.getHandlerClass();
             registerWriter(recorder, serialisers, entry.getEntityClass(), writerClass,
                     beanContainerBuildItem.getValue(), entry.getMediaType());
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, writerClass.getName()));
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, writerClass));
         }
 
         BeanFactory<ResteasyReactiveInitialiser> initClassFactory = recorder.factory(QUARKUS_INIT_CLASS,
@@ -924,22 +927,22 @@ public class ResteasyReactiveProcessor {
         return applicationPath;
     }
 
-    private void registerWriter(ResteasyReactiveRecorder recorder, ServerSerialisers serialisers, Class<?> entityClass,
-            Class<? extends MessageBodyWriter<?>> writerClass, BeanContainer beanContainer,
+    private void registerWriter(ResteasyReactiveRecorder recorder, ServerSerialisers serialisers, String entityClass,
+            String writerClass, BeanContainer beanContainer,
             String mediaType) {
         ResourceWriter writer = new ResourceWriter();
-        writer.setFactory(recorder.factory(writerClass.getName(), beanContainer));
+        writer.setFactory(recorder.factory(writerClass, beanContainer));
         writer.setMediaTypeStrings(Collections.singletonList(mediaType));
-        recorder.registerWriter(serialisers, entityClass.getName(), writer);
+        recorder.registerWriter(serialisers, entityClass, writer);
     }
 
-    private void registerReader(ResteasyReactiveRecorder recorder, ServerSerialisers serialisers, Class<?> entityClass,
-            Class<? extends MessageBodyReader<?>> readerClass, BeanContainer beanContainer, String mediaType,
+    private void registerReader(ResteasyReactiveRecorder recorder, ServerSerialisers serialisers, String entityClass,
+            String readerClass, BeanContainer beanContainer, String mediaType,
             RuntimeType constraint) {
         ResourceReader reader = new ResourceReader();
-        reader.setFactory(recorder.factory(readerClass.getName(), beanContainer));
+        reader.setFactory(recorder.factory(readerClass, beanContainer));
         reader.setMediaTypeStrings(Collections.singletonList(mediaType));
         reader.setConstraint(constraint);
-        recorder.registerReader(serialisers, entityClass.getName(), reader);
+        recorder.registerReader(serialisers, entityClass, reader);
     }
 }

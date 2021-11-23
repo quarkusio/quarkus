@@ -10,11 +10,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.xml.bind.JAXB;
 
+import org.jboss.resteasy.reactive.common.util.StreamUtil;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
-
-import io.quarkus.resteasy.reactive.server.runtime.StreamUtil;
 
 public class JaxbMessageBodyReader implements ServerMessageBodyReader<Object> {
 

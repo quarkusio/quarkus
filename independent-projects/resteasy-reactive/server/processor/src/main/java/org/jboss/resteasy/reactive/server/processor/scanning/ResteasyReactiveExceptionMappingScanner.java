@@ -60,13 +60,7 @@ public class ResteasyReactiveExceptionMappingScanner {
                 ResourceExceptionMapper mapper = new ResourceExceptionMapper<>();
                 mapper.setPriority(priority);
                 mapper.setClassName(mapperClass.name().toString());
-                try {
-                    Class mappedClass = Class.forName(handledExceptionDotName.toString(), false,
-                            Thread.currentThread().getContextClassLoader());
-                    exceptionMapping.addExceptionMapper(mappedClass, mapper);
-                } catch (ClassNotFoundException e) {
-                    throw new RuntimeException("Unable to load mapped exception: " + handledExceptionDotName);
-                }
+                exceptionMapping.addExceptionMapper(handledExceptionDotName.toString(), mapper);
             }
         }
         return exceptionMapping;

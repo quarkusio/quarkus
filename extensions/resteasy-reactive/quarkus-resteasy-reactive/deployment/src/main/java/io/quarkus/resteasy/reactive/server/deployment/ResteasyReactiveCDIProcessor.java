@@ -13,6 +13,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 import org.jboss.resteasy.reactive.server.injection.ContextProducers;
+import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;

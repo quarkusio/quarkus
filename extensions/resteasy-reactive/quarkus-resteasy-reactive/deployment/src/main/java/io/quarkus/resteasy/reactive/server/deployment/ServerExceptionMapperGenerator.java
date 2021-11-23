@@ -3,18 +3,20 @@ package io.quarkus.resteasy.reactive.server.deployment;
 import static io.quarkus.gizmo.MethodDescriptor.ofConstructor;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_REQUEST;
-import static io.quarkus.resteasy.reactive.server.deployment.GeneratorUtils.paramHandleFromReqContextMethod;
-import static io.quarkus.resteasy.reactive.server.deployment.GeneratorUtils.routingContextHandler;
-import static io.quarkus.resteasy.reactive.server.deployment.GeneratorUtils.runtimeResourceHandle;
-import static io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveServerDotNames.QUARKUS_REST_CONTAINER_REQUEST_CONTEXT;
-import static io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveServerDotNames.ROUTING_CONTEXT;
-import static io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveServerDotNames.SIMPLIFIED_RESOURCE_INFO;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.*;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONTAINER_REQUEST_CONTEXT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HTTP_HEADERS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REQUEST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESOURCE_INFO;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESPONSE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_RESPONSE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI_INFO;
+import static org.jboss.resteasy.reactive.server.processor.generation.GeneratorUtils.paramHandleFromReqContextMethod;
+import static org.jboss.resteasy.reactive.server.processor.generation.GeneratorUtils.runtimeResourceHandle;
+import static org.jboss.resteasy.reactive.server.processor.generation.GeneratorUtils.unwrapObject;
+import static org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames.QUARKUS_REST_CONTAINER_REQUEST_CONTEXT;
+import static org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames.SIMPLIFIED_RESOURCE_INFO;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -55,10 +57,9 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AsyncExceptionMappingUtil;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.ext.web.RoutingContext;
 
 final class ServerExceptionMapperGenerator {
 
@@ -71,14 +72,14 @@ final class ServerExceptionMapperGenerator {
     /**
      * Generates an exception mapper that delegates exception handling to a method of a Resource class.
      * For example, for a method like:
-     * 
+     *
      * <pre>
      * &#64;ServerExceptionMapper(IllegalArgumentException.class)
      * public Response perClassMapper(IllegalArgumentException e, Request r) {
      *
      * }
      * </pre>
-     *
+     * <p>
      * a generated exception mapper would look like this (only the actual called method is displayed)
      *
      * <pre>
@@ -233,7 +234,7 @@ final class ServerExceptionMapperGenerator {
      * }
      *
      * </pre>
-     *
+     * <p>
      * Returns a map containing the handled exception name as the key and the generated class name as the value
      */
     public static Map<String, String> generateGlobalMapper(MethodInfo targetMethod, ClassOutput classOutput) {
@@ -548,9 +549,7 @@ final class ServerExceptionMapperGenerator {
                         "getRequest",
                         REQUEST);
             } else if (HTTP_SERVER_REQUEST.equals(paramDotName)) {
-                ResultHandle routingContextHandle = routingContextHandler(mc, contextHandle);
-                targetMethodParamHandles[i] = mc.invokeInterfaceMethod(
-                        ofMethod(RoutingContext.class, "request", HttpServerRequest.class), routingContextHandle);
+                targetMethodParamHandles[i] = unwrapObject(mc, contextHandle, HTTP_SERVER_REQUEST);
             } else if (RESOURCE_INFO.equals(paramDotName)) {
                 ResultHandle runtimeResourceHandle = runtimeResourceHandle(mc, contextHandle);
                 AssignableResultHandle resourceInfo = mc.createVariable(ResourceInfo.class);
@@ -571,8 +570,8 @@ final class ServerExceptionMapperGenerator {
                         ofMethod(RuntimeResource.class, "getSimplifiedResourceInfo", SimpleResourceInfo.class),
                         runtimeResourceHandle));
                 targetMethodParamHandles[i] = resourceInfo;
-            } else if (ROUTING_CONTEXT.equals(paramDotName)) {
-                targetMethodParamHandles[i] = routingContextHandler(mc, contextHandle);
+            } else if (QuarkusResteasyReactiveDotNames.ROUTING_CONTEXT.equals(paramDotName)) {
+                targetMethodParamHandles[i] = unwrapObject(mc, contextHandle, paramDotName);
             } else {
                 throw new RuntimeException("Parameter '" + parameterName + "' of method '" + targetMethod.name()
                         + " of class '" + targetClass.name()

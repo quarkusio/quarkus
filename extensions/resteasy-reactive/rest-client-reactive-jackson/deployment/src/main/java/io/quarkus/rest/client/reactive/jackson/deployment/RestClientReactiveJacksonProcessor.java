@@ -7,13 +7,14 @@ import java.util.List;
 
 import javax.ws.rs.core.MediaType;
 
+import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.rest.client.reactive.jackson.runtime.serialisers.ClientJacksonMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.deployment.processor.ResteasyReactiveJacksonProviderDefinedBuildItem;
-import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.JacksonBasicMessageBodyReader;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayBasicMessageBodyReader;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayBasicMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonObjectBasicMessageBodyReader;

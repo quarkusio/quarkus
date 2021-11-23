@@ -14,7 +14,6 @@ import org.jboss.resteasy.reactive.common.model.ResourceInterceptor;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.common.processor.NameBindingUtil;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
-import org.jboss.resteasy.reactive.common.reflection.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 /**
@@ -30,7 +29,7 @@ public class ResteasyReactiveInterceptorScanner {
      * Creates a fully populated resource interceptors instance, that are created via reflection.
      */
     public static ResourceInterceptors createResourceInterceptors(IndexView indexView, ApplicationScanningResult result) {
-        return createResourceInterceptors(indexView, result, new ReflectionBeanFactoryCreator());
+        return createResourceInterceptors(indexView, result, null);
     }
 
     /**
@@ -41,7 +40,9 @@ public class ResteasyReactiveInterceptorScanner {
         ResourceInterceptors interceptors = new ResourceInterceptors();
         scanForInterceptors(interceptors, indexView, result);
         scanForIOInterceptors(interceptors, indexView, result);
-        interceptors.initializeDefaultFactories(factoryCreator);
+        if (factoryCreator != null) {
+            interceptors.initializeDefaultFactories(factoryCreator);
+        }
         return interceptors;
     }
 

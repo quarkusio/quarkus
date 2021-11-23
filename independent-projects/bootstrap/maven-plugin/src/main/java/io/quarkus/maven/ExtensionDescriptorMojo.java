@@ -445,7 +445,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         codestartObject.put("artifact", codestartArtifactCoords.toString());
         if (!skipCodestartValidation) {
             // first we look for it in the workspace, if it's in there we don't need to actually resolve the artifact, because it might not have been built yet
-            if (workspaceProvider.workspace().getProject(codestartArtifactCoords.getGroupId(),
+            if (workspaceProvider.getProject(codestartArtifactCoords.getGroupId(),
                     codestartArtifactCoords.getArtifactId()) == null) {
                 try {
                     resolve(new DefaultArtifact(codestartArtifact));

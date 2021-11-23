@@ -1,6 +1,10 @@
 package io.quarkus.vertx.web.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.vertx.web.ReactiveRoutes.APPLICATION_JSON;
+import static io.quarkus.vertx.web.ReactiveRoutes.EVENT_STREAM;
+import static io.quarkus.vertx.web.ReactiveRoutes.JSON_STREAM;
+import static io.quarkus.vertx.web.ReactiveRoutes.ND_JSON;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
@@ -376,7 +380,7 @@ class ReactiveRoutesProcessor {
                 if (routeHandler == null) {
                     String handlerClass = generateHandler(
                             new HandlerDescriptor(businessMethod.getMethod(), beanValidationAnnotations.orElse(null),
-                                    handlerType),
+                                    handlerType, produces),
                             businessMethod.getBean(), businessMethod.getMethod(), classOutput, transformedAnnotations,
                             routeString, reflectiveHierarchy, produces.length > 0 ? produces[0] : null,
                             validatorAvailable, index);
@@ -408,15 +412,15 @@ class ReactiveRoutesProcessor {
                             businessMethod.getMethod().declaringClass().name().withoutPackagePrefix() + "#"
                                     + businessMethod.getMethod().name() + "()",
                             regex != null ? regex : path,
-                            Arrays.stream(methods).collect(Collectors.joining(", ")), produces,
-                            consumes));
+                            String.join(", ", methods), produces, consumes));
                 }
             }
         }
 
         for (AnnotatedRouteFilterBuildItem filterMethod : routeFilterBusinessMethods) {
             String handlerClass = generateHandler(
-                    new HandlerDescriptor(filterMethod.getMethod(), beanValidationAnnotations.orElse(null), HandlerType.NORMAL),
+                    new HandlerDescriptor(filterMethod.getMethod(), beanValidationAnnotations.orElse(null), HandlerType.NORMAL,
+                            new String[0]),
                     filterMethod.getBean(), filterMethod.getMethod(), classOutput, transformedAnnotations,
                     filterMethod.getRouteFilter().toString(true), reflectiveHierarchy, null, validatorAvailable, index);
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
@@ -752,8 +756,8 @@ class ReactiveRoutesProcessor {
                 block.assign(res, value);
             }
             CatchBlockCreator caught = block.addCatch(Methods.VALIDATION_CONSTRAINT_VIOLATION_EXCEPTION);
-            boolean forceJsonEncoding = !descriptor.isContentTypeString() && !descriptor.isContentTypeBuffer()
-                    && !descriptor.isContentTypeMutinyBuffer();
+            boolean forceJsonEncoding = !descriptor.isPayloadString() && !descriptor.isPayloadTypeBuffer()
+                    && !descriptor.isPayloadMutinyBuffer();
             caught.invokeStaticMethod(
                     Methods.VALIDATION_HANDLE_VIOLATION_EXCEPTION,
                     caught.getCaughtException(), invoke.getMethodParam(0), invoke.load(forceJsonEncoding));
@@ -775,33 +779,49 @@ class ReactiveRoutesProcessor {
             ResultHandle sub = invoke.invokeInterfaceMethod(Methods.UNI_SUBSCRIBE, res);
             invoke.invokeVirtualMethod(Methods.UNI_SUBSCRIBE_WITH, sub, successCallback.getInstance(),
                     failureCallback);
-            registerForReflection(descriptor.getContentType(), reflectiveHierarchy);
+            registerForReflection(descriptor.getPayloadType(), reflectiveHierarchy);
 
         } else if (descriptor.isReturningMulti()) {
             // 3 cases - regular multi vs. sse multi vs. json array multi, we need to check the type.
-            BranchResult isItSSE = invoke.ifTrue(invoke.invokeStaticMethod(Methods.IS_SSE, res));
-            BytecodeCreator isSSE = isItSSE.trueBranch();
-            handleSSEMulti(descriptor, isSSE, routingContext, res);
-            isSSE.close();
+            // Let's check if we have a content type and use that one to decide which serialization we need to apply.
+            String contentType = descriptor.getFirstContentType();
+            if (contentType != null) {
+                if (contentType.toLowerCase().startsWith(EVENT_STREAM)) {
+                    handleSSEMulti(descriptor, invoke, routingContext, res);
+                } else if (contentType.toLowerCase().startsWith(APPLICATION_JSON)) {
+                    handleJsonArrayMulti(descriptor, invoke, routingContext, res);
+                } else if (contentType.toLowerCase().startsWith(ND_JSON)
+                        || contentType.toLowerCase().startsWith(JSON_STREAM)) {
+                    handleNdjsonMulti(descriptor, invoke, routingContext, res);
+                } else {
+                    handleRegularMulti(descriptor, invoke, routingContext, res);
+                }
+            } else {
+                // No content type, use the Multi Type - this approach does not work when using Quarkus security
+                // (as it wraps the produced Multi).
+                BranchResult isItSSE = invoke.ifTrue(invoke.invokeStaticMethod(Methods.IS_SSE, res));
+                BytecodeCreator isSSE = isItSSE.trueBranch();
+                handleSSEMulti(descriptor, isSSE, routingContext, res);
+                isSSE.close();
 
-            BytecodeCreator isNotSSE = isItSSE.falseBranch();
-            BranchResult isItNdJson = isNotSSE.ifTrue(isNotSSE.invokeStaticMethod(Methods.IS_NDJSON, res));
-            BytecodeCreator isNdjson = isItNdJson.trueBranch();
-            handleNdjsonMulti(descriptor, isNdjson, routingContext, res);
-            isNdjson.close();
+                BytecodeCreator isNotSSE = isItSSE.falseBranch();
+                BranchResult isItNdJson = isNotSSE.ifTrue(isNotSSE.invokeStaticMethod(Methods.IS_NDJSON, res));
+                BytecodeCreator isNdjson = isItNdJson.trueBranch();
+                handleNdjsonMulti(descriptor, isNdjson, routingContext, res);
+                isNdjson.close();
 
-            BytecodeCreator isNotNdjson = isItNdJson.falseBranch();
-            BranchResult isItJson = isNotNdjson.ifTrue(isNotNdjson.invokeStaticMethod(Methods.IS_JSON_ARRAY, res));
-            BytecodeCreator isJson = isItJson.trueBranch();
-            handleJsonArrayMulti(descriptor, isJson, routingContext, res);
-            isJson.close();
+                BytecodeCreator isNotNdjson = isItNdJson.falseBranch();
+                BranchResult isItJson = isNotNdjson.ifTrue(isNotNdjson.invokeStaticMethod(Methods.IS_JSON_ARRAY, res));
+                BytecodeCreator isJson = isItJson.trueBranch();
+                handleJsonArrayMulti(descriptor, isJson, routingContext, res);
+                isJson.close();
 
-            BytecodeCreator isRegular = isItJson.falseBranch();
-            handleRegularMulti(descriptor, isRegular, routingContext, res);
-            isRegular.close();
-            isNotSSE.close();
-
-            registerForReflection(descriptor.getContentType(), reflectiveHierarchy);
+                BytecodeCreator isRegular = isItJson.falseBranch();
+                handleRegularMulti(descriptor, isRegular, routingContext, res);
+                isRegular.close();
+                isNotSSE.close();
+            }
+            registerForReflection(descriptor.getPayloadType(), reflectiveHierarchy);
         } else if (descriptor.isReturningCompletionStage()) {
             // The method returns a CompletionStage - we write the provided item in the HTTP response
             // If the method returned null, we fail
@@ -812,9 +832,9 @@ class ReactiveRoutesProcessor {
             ResultHandle consumer = getWhenCompleteCallback(descriptor, invoke, routingContext, end, validatorField)
                     .getInstance();
             invoke.invokeInterfaceMethod(Methods.CS_WHEN_COMPLETE, res, consumer);
-            registerForReflection(descriptor.getContentType(), reflectiveHierarchy);
+            registerForReflection(descriptor.getPayloadType(), reflectiveHierarchy);
 
-        } else if (descriptor.getContentType() != null) {
+        } else if (descriptor.getPayloadType() != null) {
             // The method returns "something" in a synchronous manner, write it into the response
             ResultHandle response = invoke.invokeInterfaceMethod(Methods.RESPONSE, routingContext);
             // If the method returned null, we fail
@@ -825,7 +845,7 @@ class ReactiveRoutesProcessor {
                     invoke.getThis());
             invoke.invokeInterfaceMethod(end, response, content);
 
-            registerForReflection(descriptor.getContentType(), reflectiveHierarchy);
+            registerForReflection(descriptor.getPayloadType(), reflectiveHierarchy);
         }
 
         // Destroy dependent instance afterwards
@@ -889,11 +909,11 @@ class ReactiveRoutesProcessor {
 
         if (Methods.isNoContent(descriptor)) { // Multi<Void> - so return a 204.
             writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_VOID, res, rc);
-        } else if (descriptor.isContentTypeBuffer()) {
+        } else if (descriptor.isPayloadTypeBuffer()) {
             writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_BUFFER, res, rc);
-        } else if (descriptor.isContentTypeMutinyBuffer()) {
+        } else if (descriptor.isPayloadMutinyBuffer()) {
             writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_MUTINY_BUFFER, res, rc);
-        } else if (descriptor.isContentTypeString()) {
+        } else if (descriptor.isPayloadString()) {
             writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_STRING, res, rc);
         } else { // Multi<Object> - encode to json.
             writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_OBJECT, res, rc);
@@ -913,11 +933,11 @@ class ReactiveRoutesProcessor {
 
         if (Methods.isNoContent(descriptor)) { // Multi<Void> - so return a 204.
             writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_VOID, res, rc);
-        } else if (descriptor.isContentTypeBuffer()) {
+        } else if (descriptor.isPayloadTypeBuffer()) {
             writer.invokeStaticMethod(Methods.MULTI_SSE_SUBSCRIBE_BUFFER, res, rc);
-        } else if (descriptor.isContentTypeMutinyBuffer()) {
+        } else if (descriptor.isPayloadMutinyBuffer()) {
             writer.invokeStaticMethod(Methods.MULTI_SSE_SUBSCRIBE_MUTINY_BUFFER, res, rc);
-        } else if (descriptor.isContentTypeString()) {
+        } else if (descriptor.isPayloadString()) {
             writer.invokeStaticMethod(Methods.MULTI_SSE_SUBSCRIBE_STRING, res, rc);
         } else { // Multi<Object> - encode to json.
             writer.invokeStaticMethod(Methods.MULTI_SSE_SUBSCRIBE_OBJECT, res, rc);
@@ -937,9 +957,9 @@ class ReactiveRoutesProcessor {
 
         if (Methods.isNoContent(descriptor)) { // Multi<Void> - so return a 204.
             writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_VOID, res, rc);
-        } else if (descriptor.isContentTypeString()) {
+        } else if (descriptor.isPayloadString()) {
             writer.invokeStaticMethod(Methods.MULTI_NDJSON_SUBSCRIBE_STRING, res, rc);
-        } else if (descriptor.isContentTypeBuffer() || descriptor.isContentTypeMutinyBuffer()) {
+        } else if (descriptor.isPayloadTypeBuffer() || descriptor.isPayloadMutinyBuffer()) {
             writer.invokeStaticMethod(Methods.MULTI_JSON_FAIL, rc);
         } else { // Multi<Object> - encode to json.
             writer.invokeStaticMethod(Methods.MULTI_NDJSON_SUBSCRIBE_OBJECT, res, rc);
@@ -960,9 +980,9 @@ class ReactiveRoutesProcessor {
 
         if (Methods.isNoContent(descriptor)) { // Multi<Void> - so return a 204.
             writer.invokeStaticMethod(Methods.MULTI_JSON_SUBSCRIBE_VOID, res, rc);
-        } else if (descriptor.isContentTypeString()) {
+        } else if (descriptor.isPayloadString()) {
             writer.invokeStaticMethod(Methods.MULTI_JSON_SUBSCRIBE_STRING, res, rc);
-        } else if (descriptor.isContentTypeBuffer() || descriptor.isContentTypeMutinyBuffer()) {
+        } else if (descriptor.isPayloadTypeBuffer() || descriptor.isPayloadMutinyBuffer()) {
             writer.invokeStaticMethod(Methods.MULTI_JSON_FAIL, rc);
         } else { // Multi<Object> - encode to json.
             writer.invokeStaticMethod(Methods.MULTI_JSON_SUBSCRIBE_OBJECT, res, rc);
@@ -1022,7 +1042,6 @@ class ReactiveRoutesProcessor {
      * @param invoke the main bytecode writer
      * @param rc the reference to the routing context variable
      * @param end the end method to use
-     * @param response the reference to the response variable
      * @param validatorField the validator field if validation is enabled
      * @return the function creator
      */
@@ -1100,11 +1119,11 @@ class ReactiveRoutesProcessor {
 
     private ResultHandle getContentToWrite(HandlerDescriptor descriptor, ResultHandle response, ResultHandle res,
             BytecodeCreator writer, FieldCreator validatorField, ResultHandle owner) {
-        if (descriptor.isContentTypeString() || descriptor.isContentTypeBuffer()) {
+        if (descriptor.isPayloadString() || descriptor.isPayloadTypeBuffer()) {
             return res;
         }
 
-        if (descriptor.isContentTypeMutinyBuffer()) {
+        if (descriptor.isPayloadMutinyBuffer()) {
             return writer.invokeVirtualMethod(Methods.MUTINY_GET_DELEGATE, res);
         }
 

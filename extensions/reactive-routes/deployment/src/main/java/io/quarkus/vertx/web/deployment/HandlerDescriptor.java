@@ -16,31 +16,30 @@ class HandlerDescriptor {
     private final MethodInfo method;
     private final BeanValidationAnnotationsBuildItem validationAnnotations;
     private final HandlerType handlerType;
-    private final Type contentType;
+    private final Type payloadType;
+    private final String[] contentTypes;
 
-    HandlerDescriptor(MethodInfo method, BeanValidationAnnotationsBuildItem bvAnnotations, HandlerType handlerType) {
+    HandlerDescriptor(MethodInfo method, BeanValidationAnnotationsBuildItem bvAnnotations, HandlerType handlerType,
+            String[] producedTypes) {
         this.method = method;
         this.validationAnnotations = bvAnnotations;
         this.handlerType = handlerType;
         Type returnType = method.returnType();
         if (returnType.kind() == Kind.VOID) {
-            contentType = null;
+            payloadType = null;
         } else {
             if (returnType.name().equals(DotNames.UNI) || returnType.name().equals(DotNames.MULTI)
                     || returnType.name().equals(DotNames.COMPLETION_STAGE)) {
-                contentType = returnType.asParameterizedType().arguments().get(0);
+                payloadType = returnType.asParameterizedType().arguments().get(0);
             } else {
-                contentType = returnType;
+                payloadType = returnType;
             }
         }
+        this.contentTypes = producedTypes;
     }
 
     Type getReturnType() {
         return method.returnType();
-    }
-
-    boolean isReturningVoid() {
-        return method.returnType().kind().equals(Type.Kind.VOID);
     }
 
     boolean isReturningUni() {
@@ -53,6 +52,13 @@ class HandlerDescriptor {
 
     boolean isReturningCompletionStage() {
         return method.returnType().name().equals(DotNames.COMPLETION_STAGE);
+    }
+
+    public String getFirstContentType() {
+        if (contentTypes == null || contentTypes.length == 0) {
+            return null;
+        }
+        return contentTypes[0];
     }
 
     /**
@@ -86,28 +92,28 @@ class HandlerDescriptor {
         return false;
     }
 
-    Type getContentType() {
-        return contentType;
+    Type getPayloadType() {
+        return payloadType;
     }
 
-    boolean isContentTypeString() {
-        Type type = getContentType();
+    boolean isPayloadString() {
+        Type type = getPayloadType();
         if (type == null) {
             return false;
         }
         return type.name().equals(io.quarkus.arc.processor.DotNames.STRING);
     }
 
-    boolean isContentTypeBuffer() {
-        Type type = getContentType();
+    boolean isPayloadTypeBuffer() {
+        Type type = getPayloadType();
         if (type == null) {
             return false;
         }
         return type.name().equals(DotNames.BUFFER);
     }
 
-    boolean isContentTypeMutinyBuffer() {
-        Type type = getContentType();
+    boolean isPayloadMutinyBuffer() {
+        Type type = getPayloadType();
         if (type == null) {
             return false;
         }

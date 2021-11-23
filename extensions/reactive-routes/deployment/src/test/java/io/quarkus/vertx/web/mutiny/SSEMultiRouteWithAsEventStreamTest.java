@@ -15,7 +15,7 @@ import io.smallrye.mutiny.Multi;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
 
-public class SSEMultiRouteTest {
+public class SSEMultiRouteWithAsEventStreamTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()

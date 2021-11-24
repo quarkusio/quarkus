@@ -55,8 +55,7 @@ public final class ResteasyDotNames {
     public static final DotName JSONB_TRANSIENT = DotName.createSimple("javax.json.bind.annotation.JsonbTransient");
     public static final DotName XML_TRANSIENT = DotName.createSimple("javax.xml.bind.annotation.XmlTransient");
 
-    public static final List<DotName> JAXRS_METHOD_ANNOTATIONS = Collections
-            .unmodifiableList(Arrays.asList(GET, POST, HEAD, DELETE, PUT, PATCH, OPTIONS));
+    public static final List<DotName> JAXRS_METHOD_ANNOTATIONS = List.of(GET, POST, HEAD, DELETE, PUT, PATCH, OPTIONS);
 
     public static final IgnoreTypeForReflectionPredicate IGNORE_TYPE_FOR_REFLECTION_PREDICATE = new IgnoreTypeForReflectionPredicate();
     public static final IgnoreFieldForReflectionPredicate IGNORE_FIELD_FOR_REFLECTION_PREDICATE = new IgnoreFieldForReflectionPredicate();

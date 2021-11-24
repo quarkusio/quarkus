@@ -57,8 +57,7 @@ final class Substitute_RestClient {
             nodesByHost.put(node.getHost(), node);
             authCache.put(node.getHost(), new BasicScheme());
         }
-        this.nodeTuple = new NodeTuple<>(Collections.unmodifiableList(new ArrayList<>(nodesByHost.values())),
-                authCache);
+        this.nodeTuple = new NodeTuple<>(List.copyOf(nodesByHost.values()), authCache);
         this.blacklist.clear();
     }
 

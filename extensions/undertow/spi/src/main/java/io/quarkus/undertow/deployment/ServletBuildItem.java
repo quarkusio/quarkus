@@ -28,7 +28,7 @@ public final class ServletBuildItem extends MultiBuildItem {
         this.servletClass = builder.servletClass;
         this.loadOnStartup = builder.loadOnStartup;
         this.asyncSupported = builder.asyncSupported;
-        this.mappings = Collections.unmodifiableList(new ArrayList<>(builder.mappings));
+        this.mappings = List.copyOf(builder.mappings);
         this.instanceFactory = builder.instanceFactory;
         this.initParams = Collections.unmodifiableMap(new HashMap<>(builder.initParams));
         this.multipartConfig = builder.multipartConfig;

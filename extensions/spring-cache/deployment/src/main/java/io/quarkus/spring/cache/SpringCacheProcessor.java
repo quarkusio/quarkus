@@ -33,8 +33,7 @@ public class SpringCacheProcessor {
     static final DotName CACHE_PUT = DotName.createSimple(CachePut.class.getName());
     static final DotName CACHE_EVICT = DotName.createSimple(CacheEvict.class.getName());
 
-    private static final List<DotName> CACHE_ANNOTATIONS = Collections
-            .unmodifiableList(Arrays.asList(CACHEABLE, CACHE_PUT, CACHE_EVICT));
+    private static final List<DotName> CACHE_ANNOTATIONS = List.of(CACHEABLE, CACHE_PUT, CACHE_EVICT);
 
     // some of these restrictions can probably be lifted by us doing additional work on caching after https://github.com/quarkusio/quarkus/pull/8631 lands
     private static final Set<String> CURRENTLY_UNSUPPORTED_ANNOTATION_VALUES = Collections

@@ -627,7 +627,7 @@ You can find more information about this feature and others detailed in the http
 
 ==== MySQL Limitations
 
-When compiling a Quarkus application to native-image, the MySQL support for JMX and OCI integrations are disabled as they are not compatible
+When compiling a Quarkus application to native-image, the MySQL support for JMX and Oracle Cloud Infrastructure (OCI) integrations are disabled as they are not compatible
 with GraalVM native-images.
 The lack of JMX support is a natural consequence of running in native and is unlikely to be resolved.
 The integration with OCI could be resolved, if you need it we suggest opening a support request with the MySQL Connector/J maintainers.

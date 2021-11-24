@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
 import static java.util.stream.Collectors.toList;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DATE_FORMAT;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -579,6 +580,26 @@ public class ResteasyReactiveProcessor {
                     .produce(new ResteasyReactiveResourceMethodEntriesBuildItem(resourceMethodEntries));
 
             initConverters.returnValue(null);
+        }
+
+        handleDateFormatReflection(reflectiveClass, index);
+    }
+
+    private void handleDateFormatReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, IndexView index) {
+        Collection<AnnotationInstance> dateFormatInstances = index.getAnnotations(DATE_FORMAT);
+        if (dateFormatInstances.isEmpty()) {
+            return;
+        }
+        List<String> dateTimeFormatterProviderClassNames = new ArrayList<>();
+        for (AnnotationInstance instance : dateFormatInstances) {
+            AnnotationValue dateTimeFormatterProviderValue = instance.value("dateTimeFormatterProvider");
+            if (dateTimeFormatterProviderValue != null) {
+                dateTimeFormatterProviderClassNames.add(dateTimeFormatterProviderValue.asClass().name().toString());
+            }
+        }
+        if (!dateTimeFormatterProviderClassNames.isEmpty()) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, false,
+                    dateTimeFormatterProviderClassNames.toArray(new String[0])));
         }
     }
 

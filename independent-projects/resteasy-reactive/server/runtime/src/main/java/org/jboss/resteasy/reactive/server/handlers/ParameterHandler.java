@@ -5,6 +5,7 @@ import java.util.function.BiConsumer;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
@@ -12,6 +13,8 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterCo
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public class ParameterHandler implements ServerRestHandler {
+
+    private static final Logger log = Logger.getLogger(ParameterHandler.class);
 
     private final int index;
     private final String defaultValue;
@@ -89,6 +92,7 @@ public class ParameterHandler implements ServerRestHandler {
                     } catch (WebApplicationException x) {
                         toThrow = x;
                     } catch (Throwable x) {
+                        log.debug("Unable to handle parameter", x);
                         toThrow = new BadRequestException(x);
                     }
                     break;
@@ -100,6 +104,7 @@ public class ParameterHandler implements ServerRestHandler {
                     } catch (WebApplicationException x) {
                         toThrow = x;
                     } catch (Throwable x) {
+                        log.debug("Unable to handle parameter", x);
                         toThrow = new NotFoundException(x);
                     }
                     break;
@@ -107,6 +112,7 @@ public class ParameterHandler implements ServerRestHandler {
                     try {
                         result = converter.convert(result);
                     } catch (Throwable x) {
+                        log.debug("Unable to handle parameter", x);
                         toThrow = x;
                     }
                     break;

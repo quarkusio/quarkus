@@ -20,11 +20,15 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.INTEGER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LIST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE_TIME;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LONG;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_PART_FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.NON_BLOCKING;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_DATE_TIME;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OPTIONAL;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_PARAM;
@@ -51,6 +55,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SUSPENDED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.TRANSACTIONAL;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ZONED_DATE_TIME;
 
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
@@ -122,6 +127,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             ResteasyReactiveDotNames.SERVER_REQUEST_CONTEXT,
             DotName.createSimple("org.jboss.resteasy.reactive.server.SimpleResourceInfo"), //TODO: fixme
             ResteasyReactiveDotNames.RESOURCE_INFO)));
+
+    private static final Set<DotName> SUPPORT_TEMPORAL_PARAMS = Set.of(LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME, OFFSET_TIME,
+            OFFSET_DATE_TIME, ZONED_DATE_TIME);
 
     protected static final Logger log = Logger.getLogger(EndpointIndexer.class);
     protected static final String[] EMPTY_STRING_ARRAY = new String[] {};
@@ -450,7 +458,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 Type paramType = currentMethodInfo.parameters().get(i);
                 String errorLocation = "method " + currentMethodInfo + " on class " + currentMethodInfo.declaringClass();
 
-                PARAM parameterResult = extractParameterInfo(currentClassInfo, actualEndpointInfo,
+                PARAM parameterResult = extractParameterInfo(currentClassInfo, actualEndpointInfo, currentMethodInfo,
                         existingConverters, additionalReaders,
                         anns, paramType, errorLocation, false, hasRuntimeConverters, pathParameters,
                         currentMethodInfo.parameterName(i),
@@ -893,7 +901,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     protected abstract PARAM createIndexedParam();
 
     public PARAM extractParameterInfo(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
-            Map<String, String> existingConverters, AdditionalReaders additionalReaders,
+            MethodInfo currentMethodInfo, Map<String, String> existingConverters, AdditionalReaders additionalReaders,
             Map<DotName, AnnotationInstance> anns, Type paramType, String errorLocation, boolean field,
             boolean hasRuntimeConverters, Set<String> pathParameters, String sourceName,
             String[] declaredConsumes,
@@ -1090,10 +1098,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             elementType = paramType.name().toString();
             handlePathSegmentParam(builder);
             typeHandled = true;
-        } else if ((paramType.name().equals(LOCAL_DATE))
+        } else if (SUPPORT_TEMPORAL_PARAMS.contains(paramType.name())
                 && (type == ParameterType.PATH || type == ParameterType.QUERY || type == ParameterType.FORM)) {
             elementType = paramType.name().toString();
-            handleLocalDateParam(builder);
+            handleTemporalParam(builder, paramType.name(), anns, currentMethodInfo);
             typeHandled = true;
         } else if (paramType.name().equals(LIST) && (type == ParameterType.QUERY)) { // RESTEasy Classic handles the non-generic List type
             elementType = String.class.getName();
@@ -1131,7 +1139,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     protected void handlePathSegmentParam(PARAM builder) {
     }
 
-    protected void handleLocalDateParam(PARAM builder) {
+    protected void handleTemporalParam(PARAM builder, DotName name, Map<DotName, AnnotationInstance> parameterAnnotations,
+            MethodInfo currentMethodInfo) {
     }
 
     protected DeclaredTypes getDeclaredTypes(Type paramType, ClassInfo currentClassInfo, ClassInfo actualEndpointInfo) {

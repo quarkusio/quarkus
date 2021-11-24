@@ -2,14 +2,21 @@ package org.jboss.resteasy.reactive.server.processor;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DATE_FORMAT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_ARRAY;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_NUMBER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_OBJECT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_STRING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_STRUCTURE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_VALUE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE_TIME;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_VALUED_MAP;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_DATE_TIME;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ZONED_DATE_TIME;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -26,6 +33,7 @@ import java.util.regex.PatternSyntaxException;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.PathSegment;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -45,13 +53,18 @@ import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ListConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LoadedParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalDateParamConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalDateTimeParamConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalTimeParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.NoopParameterConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.OffsetDateTimeParamConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.OffsetTimeParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.OptionalConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupplier;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.PathSegmentParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SetConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SortedSetConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.ZonedDateTimeParamConverter;
 import org.jboss.resteasy.reactive.server.core.reflection.ReflectionConstructorParameterConverterSupplier;
 import org.jboss.resteasy.reactive.server.core.reflection.ReflectionValueOfParameterConverterSupplier;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
@@ -122,7 +135,7 @@ public class ServerEndpointIndexer
             ParameterExtractor res = i.handleCustomParameter(paramType, anns, field, methodContext);
             if (res != null) {
                 builder.setType(ParameterType.CUSTOM);
-                builder.setCustomerParameterExtractor(res);
+                builder.setCustomParameterExtractor(res);
                 return true;
             }
         }
@@ -217,7 +230,7 @@ public class ServerEndpointIndexer
             for (AnnotationInstance i : field.annotations()) {
                 annotations.put(i.name(), i);
             }
-            ServerIndexedParameter result = extractParameterInfo(currentClassInfo, actualEndpointInfo, existingConverters,
+            ServerIndexedParameter result = extractParameterInfo(currentClassInfo, actualEndpointInfo, null, existingConverters,
                     additionalReaders,
                     annotations, field.type(), field.toString(), true, hasRuntimeConverters,
                     // We don't support annotation-less path params in injectable beans: only annotations
@@ -286,7 +299,7 @@ public class ServerEndpointIndexer
                 elementType, declaredTypes.getDeclaredType(), declaredTypes.getDeclaredUnresolvedType(),
                 type, single, signature,
                 converter, defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded,
-                parameterResult.getCustomerParameterExtractor());
+                parameterResult.getCustomParameterExtractor());
     }
 
     protected void handleOtherParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
@@ -332,8 +345,63 @@ public class ServerEndpointIndexer
         builder.setConverter(new PathSegmentParamConverter.Supplier());
     }
 
-    protected void handleLocalDateParam(ServerIndexedParameter builder) {
-        builder.setConverter(new LocalDateParamConverter.Supplier());
+    protected void handleTemporalParam(ServerIndexedParameter builder, DotName paramType,
+            Map<DotName, AnnotationInstance> parameterAnnotations,
+            MethodInfo currentMethodInfo) {
+        String format = null;
+        String dateTimeFormatterProviderClassName = null;
+
+        AnnotationInstance dateFormatInstance = parameterAnnotations.get(DATE_FORMAT);
+
+        if (dateFormatInstance != null) {
+            AnnotationValue formatValue = dateFormatInstance.value("pattern");
+            if (formatValue != null) {
+                format = formatValue.asString();
+            }
+
+            AnnotationValue dateTimeFormatterProviderValue = dateFormatInstance.value("dateTimeFormatterProvider");
+            if (dateTimeFormatterProviderValue != null) {
+                dateTimeFormatterProviderClassName = dateTimeFormatterProviderValue.asClass().name().toString();
+            }
+        }
+
+        if ((format != null) && (dateTimeFormatterProviderClassName != null)) {
+            throw new RuntimeException(contextualizeErrorMessage(
+                    "Using both 'format' and 'dateTimeFormatterProvider' is not allowed when using '@DateFormat'",
+                    currentMethodInfo));
+        } else if ((format == null) && (dateTimeFormatterProviderClassName == null) && (dateFormatInstance != null)) {
+            throw new RuntimeException(contextualizeErrorMessage(
+                    "One of 'format' or 'dateTimeFormatterProvider' must be set when using '@DateFormat'", currentMethodInfo));
+        }
+
+        if (LOCAL_DATE.equals(paramType)) {
+            builder.setConverter(new LocalDateParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
+            return;
+        } else if (LOCAL_DATE_TIME.equals(paramType)) {
+            builder.setConverter(new LocalDateTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
+            return;
+        } else if (LOCAL_TIME.equals(paramType)) {
+            builder.setConverter(new LocalTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
+            return;
+        } else if (OFFSET_DATE_TIME.equals(paramType)) {
+            builder.setConverter(new OffsetDateTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
+            return;
+        } else if (OFFSET_TIME.equals(paramType)) {
+            builder.setConverter(new OffsetTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
+            return;
+        } else if (ZONED_DATE_TIME.equals(paramType)) {
+            builder.setConverter(new ZonedDateTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
+            return;
+        }
+
+        throw new RuntimeException(
+                contextualizeErrorMessage("Unable to handle temporal type '" + paramType + "'", currentMethodInfo));
+    }
+
+    private String contextualizeErrorMessage(String errorMessage, MethodInfo currentMethodInfo) {
+        errorMessage += ". Offending method if '" + currentMethodInfo.name() + "' of class '"
+                + currentMethodInfo.declaringClass().name() + "'";
+        return errorMessage;
     }
 
     private ParameterConverterSupplier extractConverter(String elementType, IndexView indexView,

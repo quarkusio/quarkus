@@ -1825,6 +1825,11 @@ public class Endpoint {
 }
 ----
 
+==== Handling dates
+
+RESTEasy Reactive supports the use of the implementations of `java.time.Temporal` (like `java.time.LocalDateTime`) as query, path or form params. Furthermore it provides the `@org.jboss.resteasy.reactive.DateFormat` annotation which can be used to
+set a custom expected pattern (otherwise the JDK's default format for each type is used implicitly).
+
 === Preconditions
 
 https://tools.ietf.org/html/rfc7232[HTTP allows requests to be conditional], based on a number of

@@ -147,7 +147,7 @@ public class ApplicationArchiveBuildStep {
         return appArchives;
     }
 
-    public void addIndexDependencyPaths(List<IndexDependencyBuildItem> indexDependencyBuildItems,
+    private void addIndexDependencyPaths(List<IndexDependencyBuildItem> indexDependencyBuildItems,
             ClassLoader classLoader, ArchiveRootBuildItem root, Set<Path> indexedDeps, List<ApplicationArchive> appArchives,
             QuarkusBuildCloseablesBuildItem buildCloseables, IndexCache indexCache,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -189,17 +189,19 @@ public class ApplicationArchiveBuildStep {
             IndexCache indexCache, Path dep, ArtifactKey artifactKey, Map<ArtifactKey, Set<String>> removedResources)
             throws IOException {
         Path rootDir = dep;
-        if (!Files.isDirectory(dep)) {
+        boolean isDirectory = Files.isDirectory(dep);
+        if (!isDirectory) {
             final FileSystem fs = buildCloseables.add(FileSystems.newFileSystem(dep, classLoader));
             rootDir = fs.getRootDirectories().iterator().next();
         }
-        final IndexView index = indexPath(indexCache, dep, removedResources.get(artifactKey));
+        final IndexView index = indexPath(indexCache, dep, removedResources.get(artifactKey), isDirectory);
         return new ApplicationArchiveImpl(index, rootDir, dep, artifactKey);
     }
 
-    private static IndexView indexPath(IndexCache indexCache, Path dep, Set<String> removed) throws IOException {
+    private static IndexView indexPath(IndexCache indexCache, Path dep, Set<String> removed, boolean isWorkspaceModule)
+            throws IOException {
         LOGGER.debugf("Indexing dependency: %s", dep);
-        return Files.isDirectory(dep) ? handleFilePath(dep, removed) : handleJarPath(dep, indexCache, removed);
+        return isWorkspaceModule ? handleFilePath(dep, removed) : handleJarPath(dep, indexCache, removed);
     }
 
     private static void addMarkerFilePaths(Set<String> applicationArchiveFiles,
@@ -213,6 +215,7 @@ public class ApplicationArchiveBuildStep {
             }
             final PathCollection artifactPaths = dep.getResolvedPaths();
             boolean containsMarker = false;
+            FileSystem fs = null;
             for (Path p : artifactPaths) {
                 if (root.isExcludedFromIndexing(p)) {
                     continue;
@@ -222,8 +225,11 @@ public class ApplicationArchiveBuildStep {
                         break;
                     }
                 } else {
-                    try (FileSystem fs = FileSystems.newFileSystem(p, classLoader)) {
+                    boolean close = true;
+                    try {
+                        fs = FileSystems.newFileSystem(p, classLoader);
                         if (containsMarker = containsMarker(fs.getPath("/"), applicationArchiveFiles)) {
+                            close = false;
                             break;
                         }
                     } catch (ProviderNotFoundException | FileSystemNotFoundException e) {
@@ -231,6 +237,10 @@ public class ApplicationArchiveBuildStep {
                         // it's not a dir and not a jar, it could be anything (e.g. a pom file that
                         // ended up in some project deps)
                         // not necessarily a wrong state
+                    } finally {
+                        if (close && fs != null) {
+                            fs.close();
+                        }
                     }
                 }
             }
@@ -239,13 +249,17 @@ public class ApplicationArchiveBuildStep {
                 final PathList.Builder rootDirs = PathList.builder();
                 final List<IndexView> indexes = new ArrayList<>(artifactPaths.size());
                 for (Path p : artifactPaths) {
-                    if (Files.isDirectory(p)) {
+                    boolean isDirectory = Files.isDirectory(p);
+                    if (isDirectory) {
                         rootDirs.add(p);
                     } else {
-                        final FileSystem fs = buildCloseables.add(FileSystems.newFileSystem(p, classLoader));
+                        if (fs == null) {
+                            fs = FileSystems.newFileSystem(p, classLoader);
+                        }
+                        buildCloseables.add(fs);
                         fs.getRootDirectories().forEach(rootDirs::add);
                     }
-                    indexes.add(indexPath(indexCache, p, removed.get(dep.getKey())));
+                    indexes.add(indexPath(indexCache, p, removed.get(dep.getKey()), isDirectory));
                     indexedPaths.add(p);
                 }
                 appArchives
@@ -255,7 +269,7 @@ public class ApplicationArchiveBuildStep {
         }
     }
 
-    private static boolean containsMarker(Path dir, Set<String> applicationArchiveFiles) throws IOException {
+    private static boolean containsMarker(Path dir, Set<String> applicationArchiveFiles) {
         for (String file : applicationArchiveFiles) {
             if (Files.exists(dir.resolve(file))) {
                 return true;
@@ -265,10 +279,6 @@ public class ApplicationArchiveBuildStep {
     }
 
     private static Index handleFilePath(Path path, Set<String> removed) throws IOException {
-        return indexFilePath(path, removed);
-    }
-
-    private static Index indexFilePath(Path path, Set<String> removed) throws IOException {
         Indexer indexer = new Indexer();
         try (Stream<Path> stream = Files.walk(path)) {
             stream.forEach(path1 -> {

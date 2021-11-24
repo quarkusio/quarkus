@@ -1,6 +1,5 @@
 package io.quarkus.resteasy.common.spi;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -99,7 +98,7 @@ public final class ResteasyDotNames {
     }
 
     // Types ignored for reflection used by the RESTEasy and SmallRye REST client extensions.
-    private static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(
+    private static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(List.of(
     // Consider adding packages below instead if it makes more sense
     ));
 

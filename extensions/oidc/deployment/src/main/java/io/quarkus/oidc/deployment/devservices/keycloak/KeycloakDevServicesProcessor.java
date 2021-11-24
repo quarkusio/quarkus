@@ -12,7 +12,6 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -586,15 +585,15 @@ public class KeycloakDevServicesProcessor {
         ClientRepresentation client = new ClientRepresentation();
 
         client.setClientId(clientId);
-        client.setRedirectUris(Arrays.asList("*"));
+        client.setRedirectUris(List.of("*"));
         client.setPublicClient(false);
         client.setSecret(oidcClientSecret);
         client.setDirectAccessGrantsEnabled(true);
         client.setServiceAccountsEnabled(true);
         client.setImplicitFlowEnabled(true);
         client.setEnabled(true);
-        client.setRedirectUris(Arrays.asList("*"));
-        client.setDefaultClientScopes(Arrays.asList("microprofile-jwt"));
+        client.setRedirectUris(List.of("*"));
+        client.setDefaultClientScopes(List.of("microprofile-jwt"));
 
         return client;
     }
@@ -605,7 +604,7 @@ public class KeycloakDevServicesProcessor {
         user.setUsername(username);
         user.setEnabled(true);
         user.setCredentials(new ArrayList<>());
-        user.setRealmRoles(Arrays.asList(realmRoles));
+        user.setRealmRoles(List.of(realmRoles));
 
         CredentialRepresentation credential = new CredentialRepresentation();
 

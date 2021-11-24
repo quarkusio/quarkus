@@ -1,7 +1,6 @@
 package io.quarkus.micrometer.runtime.binder.mpmetrics;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -68,7 +67,7 @@ class MetricDescriptor {
     }
 
     public String toString() {
-        return name + Arrays.asList(tags);
+        return name + List.of(tags);
     }
 
     // Deal with ubiquitous MetricID containing nefarious TreeSet and arbitrary

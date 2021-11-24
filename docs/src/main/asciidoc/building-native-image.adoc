@@ -602,6 +602,8 @@ NOTE: To use Mandrel instead of GraalVM CE, update the `FROM` clause to: `FROM q
 
 === Using a distroless base image
 
+IMPORTANT: Distroless image support is experimental.
+
 If you are looking for small container images, the https://github.com/GoogleContainerTools/distroless[distroless] approach reduces the size of the base layer.
 The idea behind _distroless_ is the usage of a single and minimal base image containing all the requirements, and sometimes even the application itself.
 
@@ -624,6 +626,11 @@ TIP: Projects generated with https://code.quarkus.io already have this Dockerfil
 Quarkus provides the `quay.io/quarkus/quarkus-distroless-image:1.0` image.
 It contains the required packages to run a native executable and is only **9Mb**.
 Just add your application on top of this image, and you will get a tiny container image.
+
+=== Native executable compression
+
+Quarkus can compress the produced native executable using UPX.
+More details on xref:./upx.adoc[UPX Compression documentation].
 
 === Separating Java and native image compilation
 

@@ -40,9 +40,7 @@ public class DevReactiveMessagingInfos {
 
                 // Unfortunately, there is no easy way to obtain the connectors metadata
                 Connectors connectors = container.instance(Connectors.class).get();
-                for (Entry<String, Component> entry : connectors.outgoingConnectors.entrySet()) {
-                    publishers.put(entry.getKey(), entry.getValue());
-                }
+                publishers.putAll(connectors.outgoingConnectors);
                 for (Entry<String, Component> entry : connectors.incomingConnectors.entrySet()) {
                     consumers.computeIfAbsent(entry.getKey(), fun)
                             .add(entry.getValue());

@@ -109,9 +109,7 @@ public class BeanArchiveProcessor {
                 .initBeanDefiningAnnotations(additionalBeanDefiningAnnotations.stream()
                         .map(bda -> new BeanDefiningAnnotation(bda.getName(), bda.getDefaultScope()))
                         .collect(Collectors.toList()), stereotypes);
-        for (DotName customScopeAnnotationName : customScopes.getCustomScopeNames()) {
-            beanDefiningAnnotations.add(customScopeAnnotationName);
-        }
+        beanDefiningAnnotations.addAll(customScopes.getCustomScopeNames());
         // Also include archives that are not bean archives but contain qualifiers or interceptor bindings
         beanDefiningAnnotations.add(DotNames.QUALIFIER);
         beanDefiningAnnotations.add(DotNames.INTERCEPTOR_BINDING);

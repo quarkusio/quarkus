@@ -44,11 +44,7 @@ public class SecDispatcherImpl implements SecDispatcher {
     protected String _configurationFile = "~/.m2/settings-security.xml";
 
     public SecDispatcherImpl() {
-        try {
-            this._cipher = new DefaultPlexusCipher();
-        } catch (PlexusCipherException e) {
-            throw new IllegalStateException("Failed to init Security Dispatcher", e);
-        }
+        this._cipher = new DefaultPlexusCipher();
     }
 
     // ---------------------------------------------------------------

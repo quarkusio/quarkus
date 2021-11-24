@@ -23,7 +23,7 @@
         <kotlin.version>1.6.0</kotlin.version>
         <dokka.version>1.5.31</dokka.version>
         <scala.version>2.12.13</scala.version>
-        <scala-maven-plugin.version>4.4.0</scala-maven-plugin.version>
+        <scala-maven-plugin.version>4.5.4</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
 
@@ -63,7 +63,7 @@
         <supported-maven-versions>[3.6.2,)</supported-maven-versions>
 
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
-        <proposed-maven-version>3.8.1</proposed-maven-version>
+        <proposed-maven-version>3.8.4</proposed-maven-version>
         <maven-wrapper.version>0.7.7</maven-wrapper.version>
         <gradle-wrapper.version>7.3</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>

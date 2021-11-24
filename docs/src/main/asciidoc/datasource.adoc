@@ -625,6 +625,13 @@ Example:: `jdbc:mysql://localhost:3306/test`
 
 You can find more information about this feature and others detailed in the https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference.html[official documentation].
 
+==== MySQL Limitations
+
+When compiling a Quarkus application to native-image, the MySQL support for JMX and OCI integrations are disabled as they are not compatible
+with GraalVM native-images.
+The lack of JMX support is a natural consequence of running in native and is unlikely to be resolved.
+The integration with OCI could be resolved, if you need it we suggest opening a support request with the MySQL Connector/J maintainers.
+
 === Microsoft SQL Server
 
 Microsoft SQL Server takes a connection URL in the following form:

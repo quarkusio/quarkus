@@ -1,7 +1,6 @@
 package io.quarkus.infinispan.client.deployment.devservices;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;

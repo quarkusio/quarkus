@@ -1,7 +1,5 @@
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.MINIKUBE;
-
 import java.util.Optional;
 
 import io.dekorate.AbstractKubernetesManifestGenerator;

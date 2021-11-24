@@ -1,7 +1,6 @@
 package io.quarkus.jdbc.mariadb.runtime.graal;
 
 import org.mariadb.jdbc.internal.io.socket.SocketHandlerFunction;
-import org.mariadb.jdbc.internal.util.Utils;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;

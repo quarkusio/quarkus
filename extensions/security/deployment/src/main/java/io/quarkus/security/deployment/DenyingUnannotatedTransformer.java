@@ -1,7 +1,6 @@
 package io.quarkus.security.deployment;
 
 import static io.quarkus.security.deployment.SecurityTransformerUtils.DENY_ALL;
-import static io.quarkus.security.deployment.SecurityTransformerUtils.hasStandardSecurityAnnotation;
 
 import java.util.List;
 

@@ -2,9 +2,6 @@ package io.quarkus.spring.data.deployment;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.net.URL;
-import java.sql.Blob;
-import java.sql.NClob;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;

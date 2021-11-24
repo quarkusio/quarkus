@@ -36,7 +36,6 @@ import org.gradle.util.GradleVersion;
 
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.dependency.ConditionalDependenciesEnabler;
-import io.quarkus.gradle.dependency.ExtensionDependency;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.quarkus.gradle.extension.SourceSetExtension;
 import io.quarkus.gradle.tasks.QuarkusAddExtension;
@@ -53,6 +52,7 @@ import io.quarkus.gradle.tasks.QuarkusTest;
 import io.quarkus.gradle.tasks.QuarkusTestConfig;
 import io.quarkus.gradle.tasks.QuarkusTestNative;
 import io.quarkus.gradle.tooling.GradleApplicationModelBuilder;
+import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
 
 public class QuarkusPlugin implements Plugin<Project> {
 

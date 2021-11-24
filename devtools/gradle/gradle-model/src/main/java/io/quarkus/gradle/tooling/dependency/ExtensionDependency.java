@@ -1,4 +1,4 @@
-package io.quarkus.gradle.dependency;
+package io.quarkus.gradle.tooling.dependency;
 
 import java.util.List;
 import java.util.Objects;
@@ -19,7 +19,7 @@ public class ExtensionDependency {
     List<ArtifactKey> dependencyConditions;
     boolean isConditional;
 
-    ExtensionDependency(ModuleVersionIdentifier extensionId, AppArtifactCoords deploymentModule,
+    public ExtensionDependency(ModuleVersionIdentifier extensionId, AppArtifactCoords deploymentModule,
             List<Dependency> conditionalDependencies,
             List<ArtifactKey> dependencyConditions) {
         this.extensionId = extensionId;
@@ -90,6 +90,26 @@ public class ExtensionDependency {
 
     public String getVersion() {
         return extensionId.getVersion();
+    }
+
+    public ModuleVersionIdentifier getExtensionId() {
+        return extensionId;
+    }
+
+    public List<ArtifactKey> getDependencyConditions() {
+        return dependencyConditions;
+    }
+
+    public List<Dependency> getConditionalDependencies() {
+        return conditionalDependencies;
+    }
+
+    public AppArtifactCoords getDeploymentModule() {
+        return deploymentModule;
+    }
+
+    public boolean isConditional() {
+        return isConditional;
     }
 
     public void setConditional(boolean isConditional) {

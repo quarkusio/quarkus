@@ -42,6 +42,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
+import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.LaunchMode;
 
@@ -290,12 +291,12 @@ public class QuarkusDev extends QuarkusTask {
 
         modifyDevModeContext(builder);
 
-        final Path serializedModel = QuarkusGradleUtils.serializeAppModel(appModel, this, false);
+        final Path serializedModel = ToolingUtils.serializeAppModel(appModel, this, false);
         serializedModel.toFile().deleteOnExit();
         builder.jvmArgs("-D" + BootstrapConstants.SERIALIZED_APP_MODEL + "=" + serializedModel.toAbsolutePath());
 
         final ApplicationModel testAppModel = extension().getApplicationModel(LaunchMode.TEST);
-        final Path serializedTestModel = QuarkusGradleUtils.serializeAppModel(testAppModel, this, true);
+        final Path serializedTestModel = ToolingUtils.serializeAppModel(testAppModel, this, true);
         serializedTestModel.toFile().deleteOnExit();
         builder.jvmArgs("-D" + BootstrapConstants.SERIALIZED_TEST_APP_MODEL + "=" + serializedTestModel.toAbsolutePath());
 

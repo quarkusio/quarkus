@@ -607,7 +607,11 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         for (File classesDir : s.getOutput().getClassesDirs()) {
             resolvedPathBuilder.add(classesDir.toPath());
         }
-        resolvedPathBuilder.add(s.getOutput().getResourcesDir().toPath());
+        File resourceDir = s.getOutput().getResourcesDir();
+        if (resourceDir != null && resourceDir.exists()) {
+            resolvedPathBuilder.add(resourceDir.toPath());
+        }
+
         return ResolvedDependencyBuilder
                 .newInstance()
                 .setResolvedPaths(resolvedPathBuilder.build())

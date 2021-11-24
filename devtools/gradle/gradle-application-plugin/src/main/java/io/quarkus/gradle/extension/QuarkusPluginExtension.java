@@ -24,12 +24,10 @@ import org.gradle.jvm.tasks.Jar;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.model.gradle.ModelParameter;
-import io.quarkus.bootstrap.model.gradle.impl.ModelParameterImpl;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.gradle.AppModelGradleResolver;
 import io.quarkus.gradle.tasks.QuarkusGradleUtils;
-import io.quarkus.gradle.tooling.GradleApplicationModelBuilder;
+import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusPluginExtension {
@@ -58,7 +56,7 @@ public class QuarkusPluginExtension {
             final Map<String, Object> props = task.getSystemProperties();
 
             final ApplicationModel appModel = getApplicationModel(LaunchMode.TEST);
-            final Path serializedModel = QuarkusGradleUtils.serializeAppModel(appModel, task, true);
+            final Path serializedModel = ToolingUtils.serializeAppModel(appModel, task, true);
             props.put(BootstrapConstants.SERIALIZED_TEST_APP_MODEL, serializedModel.toString());
 
             StringJoiner outputSourcesDir = new StringJoiner(",");
@@ -208,14 +206,7 @@ public class QuarkusPluginExtension {
     }
 
     public ApplicationModel getApplicationModel(LaunchMode mode) {
-        return create(project, mode);
-    }
-
-    private ApplicationModel create(Project project, LaunchMode mode) {
-        final ModelParameter params = new ModelParameterImpl();
-        params.setMode(mode.toString());
-        return (ApplicationModel) new GradleApplicationModelBuilder().buildAll(ApplicationModel.class.getName(), params,
-                project);
+        return ToolingUtils.create(project, mode);
     }
 
     /**

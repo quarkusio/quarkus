@@ -12,6 +12,7 @@ import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.log.LoggerName;
 
 @Singleton
@@ -21,6 +22,7 @@ public class LoggerProducer {
 
     @Dependent
     @Produces
+    @DefaultBean
     Logger getSimpleLogger(InjectionPoint injectionPoint) {
         return loggers.computeIfAbsent(injectionPoint.getMember().getDeclaringClass().getName(), Logger::getLogger);
     }
@@ -28,6 +30,7 @@ public class LoggerProducer {
     @LoggerName("")
     @Dependent
     @Produces
+    @DefaultBean
     Logger getLoggerWithCustomName(InjectionPoint injectionPoint) {
         String name = null;
         for (Annotation qualifier : injectionPoint.getQualifiers()) {

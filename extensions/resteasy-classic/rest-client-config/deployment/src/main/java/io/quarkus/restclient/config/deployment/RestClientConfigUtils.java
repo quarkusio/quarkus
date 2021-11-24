@@ -1,4 +1,4 @@
-package io.quarkus.restclient.config;
+package io.quarkus.restclient.config.deployment;
 
 import static io.quarkus.restclient.config.Constants.MP_REST_SCOPE_FORMAT;
 import static io.quarkus.restclient.config.Constants.QUARKUS_REST_SCOPE_FORMAT;

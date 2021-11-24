@@ -2,8 +2,22 @@ package io.quarkus.jdbc.mysql.runtime.graal.com.mysql.cj.jdbc;
 
 import java.sql.SQLException;
 
+import com.mysql.cj.exceptions.ExceptionFactory;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
+
+@TargetClass(className = "com.mysql.cj.protocol.a.authentication.AuthenticationOciClient")
+final class AuthenticationOciClient {
+
+    @Substitute
+    private void initializePrivateKey() {
+        throw ExceptionFactory
+                .createException("OciClient authentication is not available in Quarkus when compiling to native-image:" +
+                        " the MySQL JDBC driver team needs to cleanup the dependency requirements to make this possible." +
+                        " If you need this resolved, please open a support request.");
+    }
+
+}
 
 @TargetClass(className = "com.mysql.cj.jdbc.ConnectionGroupManager")
 final class ConnectionGroupManager {

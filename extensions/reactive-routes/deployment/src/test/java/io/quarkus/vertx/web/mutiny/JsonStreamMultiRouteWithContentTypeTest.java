@@ -1,7 +1,11 @@
 package io.quarkus.vertx.web.mutiny;
 
+import static io.quarkus.vertx.web.ReactiveRoutes.JSON_STREAM;
 import static io.restassured.RestAssured.when;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasLength;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 import java.io.IOException;
 
@@ -9,16 +13,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.vertx.web.ReactiveRoutes;
 import io.quarkus.vertx.web.Route;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.RoutingContext;
 
-public class NdjsonMultiRouteTest {
-
-    public static final String CONTENT_TYPE_NDJSON = "application/x-ndjson";
-    public static final String CONTENT_TYPE_STREAM_JSON = "application/stream+json";
+public class JsonStreamMultiRouteWithContentTypeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -28,7 +28,7 @@ public class NdjsonMultiRouteTest {
     public void testNdjsonMultiRoute() {
         when().get("/hello").then().statusCode(200)
                 .body(is("\"Hello world!\"\n"))
-                .header(HttpHeaders.CONTENT_TYPE.toString(), CONTENT_TYPE_NDJSON);
+                .header(HttpHeaders.CONTENT_TYPE.toString(), JSON_STREAM);
 
         when().get("/hellos").then().statusCode(200)
                 .body(containsString(
@@ -37,10 +37,10 @@ public class NdjsonMultiRouteTest {
                             + "\"world\"\n"
                             + "\"!\"\n"))
                         // @formatter:on
-                .header(HttpHeaders.CONTENT_TYPE.toString(), CONTENT_TYPE_NDJSON);
+                .header(HttpHeaders.CONTENT_TYPE.toString(), JSON_STREAM);
 
         when().get("/no-hello").then().statusCode(200).body(hasLength(0))
-                .header(HttpHeaders.CONTENT_TYPE.toString(), CONTENT_TYPE_NDJSON);
+                .header(HttpHeaders.CONTENT_TYPE.toString(), JSON_STREAM);
 
         // We get the item followed by the exception
         when().get("/hello-and-fail").then().statusCode(200)
@@ -57,7 +57,7 @@ public class NdjsonMultiRouteTest {
                                 "{\"name\":\"spiderman\",\"id\":3}\n"
                 ))
                 // @formatter:on
-                .header(HttpHeaders.CONTENT_TYPE.toString(), CONTENT_TYPE_NDJSON);
+                .header(HttpHeaders.CONTENT_TYPE.toString(), JSON_STREAM);
 
         when().get("/people-content-type").then().statusCode(200)
                 .body(is(
@@ -66,7 +66,7 @@ public class NdjsonMultiRouteTest {
                                 "{\"name\":\"batman\",\"id\":2}\n" +
                                 "{\"name\":\"spiderman\",\"id\":3}\n"))
                 // @formatter:on
-                .header(HttpHeaders.CONTENT_TYPE.toString(), is(CONTENT_TYPE_NDJSON + ";charset=utf-8"));
+                .header(HttpHeaders.CONTENT_TYPE.toString(), is(JSON_STREAM + ";charset=utf-8"));
 
         when().get("/people-content-type-stream-json").then().statusCode(200)
                 .body(is(
@@ -75,7 +75,7 @@ public class NdjsonMultiRouteTest {
                                 "{\"name\":\"batman\",\"id\":2}\n" +
                                 "{\"name\":\"spiderman\",\"id\":3}\n"))
                 // @formatter:on
-                .header(HttpHeaders.CONTENT_TYPE.toString(), CONTENT_TYPE_STREAM_JSON);
+                .header(HttpHeaders.CONTENT_TYPE.toString(), JSON_STREAM);
 
         when().get("/failure").then().statusCode(500).body(containsString("boom"));
         when().get("/null").then().statusCode(500).body(containsString(NullPointerException.class.getName()));
@@ -84,71 +84,71 @@ public class NdjsonMultiRouteTest {
 
     static class SimpleBean {
 
-        @Route(path = "hello")
-        Multi<String> hello(RoutingContext context) {
-            return ReactiveRoutes.asJsonStream(Multi.createFrom().item("Hello world!"));
+        @Route(path = "hello", produces = JSON_STREAM)
+        Multi<String> hello() {
+            return Multi.createFrom().item("Hello world!");
         }
 
-        @Route(path = "hellos")
-        Multi<String> hellos(RoutingContext context) {
-            return ReactiveRoutes.asJsonStream(Multi.createFrom().items("hello", "world", "!"));
+        @Route(path = "hellos", produces = JSON_STREAM)
+        Multi<String> hellos() {
+            return Multi.createFrom().items("hello", "world", "!");
         }
 
-        @Route(path = "no-hello")
-        Multi<String> noHello(RoutingContext context) {
-            return ReactiveRoutes.asJsonStream(Multi.createFrom().empty());
+        @Route(path = "no-hello", produces = JSON_STREAM)
+        Multi<String> noHello() {
+            return Multi.createFrom().empty();
         }
 
-        @Route(path = "hello-and-fail")
-        Multi<String> helloAndFail(RoutingContext context) {
-            return ReactiveRoutes.asJsonStream(Multi.createBy().concatenating().streams(
+        @Route(path = "hello-and-fail", produces = JSON_STREAM)
+        Multi<String> helloAndFail() {
+            return Multi.createBy().concatenating().streams(
                     Multi.createFrom().item("Hello"),
-                    Multi.createFrom().failure(() -> new IOException("boom"))));
+                    Multi.createFrom().failure(() -> new IOException("boom")));
         }
 
-        @Route(path = "void")
-        Multi<Void> multiVoid(RoutingContext context) {
-            return ReactiveRoutes.asJsonStream(Multi.createFrom().range(0, 200)
-                    .onItem().ignore());
+        @Route(path = "void", produces = JSON_STREAM)
+        Multi<Void> multiVoid() {
+            return Multi.createFrom().range(0, 200)
+                    .onItem().ignore();
         }
 
-        @Route(path = "/people")
-        Multi<Person> people(RoutingContext context) {
-            return ReactiveRoutes.asJsonStream(Multi.createFrom().items(
+        @Route(path = "/people", produces = JSON_STREAM)
+        Multi<Person> people() {
+            return Multi.createFrom().items(
                     new Person("superman", 1),
                     new Person("batman", 2),
-                    new Person("spiderman", 3)));
+                    new Person("spiderman", 3));
         }
 
-        @Route(path = "/people-content-type")
+        @Route(path = "/people-content-type", produces = JSON_STREAM)
         Multi<Person> peopleWithContentType(RoutingContext context) {
-            context.response().putHeader(HttpHeaders.CONTENT_TYPE, CONTENT_TYPE_NDJSON + ";charset=utf-8");
-            return ReactiveRoutes.asJsonStream(Multi.createFrom().items(
+            context.response().putHeader(HttpHeaders.CONTENT_TYPE, JSON_STREAM + ";charset=utf-8");
+            return Multi.createFrom().items(
                     new Person("superman", 1),
                     new Person("batman", 2),
-                    new Person("spiderman", 3)));
+                    new Person("spiderman", 3));
         }
 
-        @Route(path = "/people-content-type-stream-json", produces = { CONTENT_TYPE_STREAM_JSON })
-        Multi<Person> peopleWithContentTypeStreamJson(RoutingContext context) {
-            return ReactiveRoutes.asJsonStream(Multi.createFrom().items(
+        @Route(path = "/people-content-type-stream-json", produces = { JSON_STREAM })
+        Multi<Person> peopleWithContentTypeNDJson() {
+            return Multi.createFrom().items(
                     new Person("superman", 1),
                     new Person("batman", 2),
-                    new Person("spiderman", 3)));
+                    new Person("spiderman", 3));
         }
 
-        @Route(path = "/failure")
-        Multi<Person> fail(RoutingContext context) {
-            return ReactiveRoutes.asJsonStream(Multi.createFrom().failure(new IOException("boom")));
+        @Route(path = "/failure", produces = JSON_STREAM)
+        Multi<Person> fail() {
+            return Multi.createFrom().failure(new IOException("boom"));
         }
 
-        @Route(path = "/sync-failure")
-        Multi<Person> failSync(RoutingContext context) {
+        @Route(path = "/sync-failure", produces = JSON_STREAM)
+        Multi<Person> failSync() {
             throw new IllegalStateException("boom");
         }
 
-        @Route(path = "/null")
-        Multi<String> uniNull(RoutingContext context) {
+        @Route(path = "/null", produces = JSON_STREAM)
+        Multi<String> uniNull() {
             return null;
         }
     }

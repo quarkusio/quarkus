@@ -17,7 +17,7 @@ import io.smallrye.mutiny.Multi;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
 
-public class JsonMultiRouteTest {
+public class JsonMultiRouteWithContentTypeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -64,69 +64,69 @@ public class JsonMultiRouteTest {
 
     static class SimpleBean {
 
-        @Route(path = "hello")
-        Multi<String> hello(RoutingContext context) {
-            return ReactiveRoutes.asJsonArray(Multi.createFrom().item("Hello world!"));
+        @Route(path = "hello", produces = ReactiveRoutes.APPLICATION_JSON)
+        Multi<String> hello() {
+            return Multi.createFrom().item("Hello world!");
         }
 
-        @Route(path = "hellos")
-        Multi<String> hellos(RoutingContext context) {
-            return ReactiveRoutes.asJsonArray(Multi.createFrom().items("hello", "world", "!"));
+        @Route(path = "hellos", produces = ReactiveRoutes.APPLICATION_JSON)
+        Multi<String> hellos() {
+            return Multi.createFrom().items("hello", "world", "!");
         }
 
-        @Route(path = "no-hello")
-        Multi<String> noHello(RoutingContext context) {
-            return ReactiveRoutes.asJsonArray(Multi.createFrom().empty());
+        @Route(path = "no-hello", produces = ReactiveRoutes.APPLICATION_JSON)
+        Multi<String> noHello() {
+            return Multi.createFrom().empty();
         }
 
-        @Route(path = "hello-and-fail")
+        @Route(path = "hello-and-fail", produces = ReactiveRoutes.APPLICATION_JSON)
         Multi<String> helloAndFail() {
-            return ReactiveRoutes.asJsonArray(Multi.createBy().concatenating().streams(
+            return Multi.createBy().concatenating().streams(
                     Multi.createFrom().item("Hello"),
-                    Multi.createFrom().failure(new IOException("boom"))));
+                    Multi.createFrom().failure(new IOException("boom")));
         }
 
-        @Route(path = "buffers")
-        Multi<Buffer> buffers(RoutingContext context) {
-            return ReactiveRoutes.asJsonArray(Multi.createFrom()
-                    .items(Buffer.buffer("Buffer"), Buffer.buffer(" Buffer"), Buffer.buffer(" Buffer.")));
+        @Route(path = "buffers", produces = ReactiveRoutes.APPLICATION_JSON)
+        Multi<Buffer> buffers() {
+            return Multi.createFrom()
+                    .items(Buffer.buffer("Buffer"), Buffer.buffer(" Buffer"), Buffer.buffer(" Buffer."));
         }
 
-        @Route(path = "void")
-        Multi<Void> multiVoid(RoutingContext context) {
-            return ReactiveRoutes.asJsonArray(Multi.createFrom().range(0, 200)
-                    .onItem().ignore());
+        @Route(path = "void", produces = ReactiveRoutes.APPLICATION_JSON)
+        Multi<Void> multiVoid() {
+            return Multi.createFrom().range(0, 200)
+                    .onItem().ignore();
         }
 
-        @Route(path = "/people")
+        @Route(path = "/people", produces = ReactiveRoutes.APPLICATION_JSON)
         Multi<Person> people() {
-            return ReactiveRoutes.asJsonArray(Multi.createFrom().items(
+            return Multi.createFrom().items(
                     new Person("superman", 1),
                     new Person("batman", 2),
-                    new Person("spiderman", 3)));
+                    new Person("spiderman", 3));
         }
 
-        @Route(path = "/people-content-type")
+        @Route(path = "/people-content-type", produces = ReactiveRoutes.APPLICATION_JSON)
         Multi<Person> peopleWithContentType(RoutingContext context) {
             context.response().putHeader("content-type", "application/json;charset=utf-8");
-            return ReactiveRoutes.asJsonArray(Multi.createFrom().items(
+            return Multi.createFrom().items(
                     new Person("superman", 1),
                     new Person("batman", 2),
-                    new Person("spiderman", 3)));
+                    new Person("spiderman", 3));
         }
 
-        @Route(path = "/failure")
-        Multi<Person> fail(RoutingContext context) {
+        @Route(path = "/failure", produces = ReactiveRoutes.APPLICATION_JSON)
+        Multi<Person> fail() {
             return Multi.createFrom().failure(new IOException("boom"));
         }
 
-        @Route(path = "/sync-failure")
-        Multi<Person> failSync(RoutingContext context) {
+        @Route(path = "/sync-failure", produces = ReactiveRoutes.APPLICATION_JSON)
+        Multi<Person> failSync() {
             throw new IllegalStateException("boom");
         }
 
-        @Route(path = "/null")
-        Multi<String> uniNull(RoutingContext context) {
+        @Route(path = "/null", produces = ReactiveRoutes.APPLICATION_JSON)
+        Multi<String> uniNull() {
             return null;
         }
 

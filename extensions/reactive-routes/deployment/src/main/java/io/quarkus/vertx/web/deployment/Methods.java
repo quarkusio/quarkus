@@ -238,7 +238,7 @@ class Methods {
     }
 
     static boolean isNoContent(HandlerDescriptor descriptor) {
-        return descriptor.getContentType().name()
+        return descriptor.getPayloadType().name()
                 .equals(DotName.createSimple(Void.class.getName()));
     }
 
@@ -249,7 +249,7 @@ class Methods {
     }
 
     static MethodDescriptor getEndMethodForContentType(HandlerDescriptor descriptor) {
-        if (descriptor.isContentTypeBuffer() || descriptor.isContentTypeMutinyBuffer()) {
+        if (descriptor.isPayloadTypeBuffer() || descriptor.isPayloadMutinyBuffer()) {
             return END_WITH_BUFFER;
         }
         return END_WITH_STRING;

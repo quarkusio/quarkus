@@ -22,7 +22,6 @@ import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -30,7 +29,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.assertj.core.api.AbstractPathAssert;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ListAssert;
@@ -280,9 +283,12 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
     }
 
     private String getTestId() {
-        String tool = buildTool != null ? buildTool.getKey() + "-" : "";
-        String suffix = codestarts.isEmpty() ? String.valueOf(Instant.now().toEpochMilli()) : String.join("-", codestarts);
-        return tool + suffix;
+        final String id = Stream.of(
+                buildTool != null ? Stream.of(buildTool.getKey()) : Stream.<String> empty(),
+                this.extensions.stream().map(ArtifactCoords::getArtifactId),
+                this.codestarts.stream(),
+                Stream.of(UUID.randomUUID().toString())).flatMap(Function.identity()).collect(Collectors.joining("-"));
+        return id;
     }
 
     private void generateRealDataProjectIfNeeded(Path path, Language language) throws IOException {

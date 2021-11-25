@@ -162,4 +162,11 @@ public class JibConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean offlineMode;
+
+    /**
+     * Name of binary used to execute the docker commands. This is only used by Jib
+     * when the container image is being built locally.
+     */
+    @ConfigItem
+    public Optional<String> dockerExecutableName;
 }

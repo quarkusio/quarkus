@@ -24,7 +24,7 @@ public interface ProjectGenerator {
     String EXTENSIONS = "extensions";
     String IS_SPRING = "is_spring";
     String RESOURCE_PATH = "path";
-    String JAVA_TARGET = "java_target";
+    String JAVA_VERSION = "java_version";
     String APP_CONFIG = "app-config"; // codestart uses dashes
 
     String getName();

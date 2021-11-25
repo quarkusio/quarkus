@@ -351,11 +351,10 @@ public class DevServicesKafkaProcessor {
             this.port = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
             withNetwork(Network.SHARED);
+            withExposedPorts(KAFKA_PORT);
             if (useSharedNetwork) {
                 hostName = "kafka-" + Base58.randomString(5);
                 setNetworkAliases(Collections.singletonList(hostName));
-            } else {
-                withExposedPorts(KAFKA_PORT);
             }
             if (serviceName != null) { // Only adds the label in dev mode.
                 withLabel(DEV_SERVICE_LABEL, serviceName);
@@ -381,8 +380,7 @@ public class DevServicesKafkaProcessor {
             command += "/usr/bin/rpk redpanda start --check=false --node-id 0 --smp 1 ";
             command += "--memory 1G --overprovisioned --reserve-memory 0M ";
             command += "--kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092 ";
-            command += String.format("--advertise-kafka-addr PLAINTEXT://%s:29092,OUTSIDE://%s:%d", getHostToUse(),
-                    getHostToUse(), getPortToUse());
+            command += advertisedKafkaAddresses();
 
             //noinspection OctalInteger
             copyFileToContainer(
@@ -399,15 +397,29 @@ public class DevServicesKafkaProcessor {
         }
 
         public String getBootstrapServers() {
-            return String.format("PLAINTEXT://%s:%d", getHostToUse(), getPortToUse());
+            String servers = String.format("PLAINTEXT://%s:%d", getHost(), getMappedPort(KAFKA_PORT));
+            if (useSharedNetwork) {
+                servers += String.format(",OUTSIDE://%s:%d", hostName, KAFKA_PORT);
+            }
+            return servers;
+        }
+
+        private String advertisedKafkaAddresses() {
+            String addresses = "--advertise-kafka-addr ";
+            addresses += String.format("PLAINTEXT://%s:29092,OUTSIDE://%s:%d",
+                    getHostToUse(),
+                    getHost(),
+                    getMappedPort(KAFKA_PORT));
+            if (useSharedNetwork) {
+                addresses += String.format(",OUTSIDE://%s:%d",
+                        hostName,
+                        KAFKA_PORT);
+            }
+            return addresses;
         }
 
         private String getHostToUse() {
             return useSharedNetwork ? hostName : getHost();
-        }
-
-        private int getPortToUse() {
-            return useSharedNetwork ? KAFKA_PORT : getMappedPort(KAFKA_PORT);
         }
     }
 }

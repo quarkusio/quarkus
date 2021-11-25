@@ -24,8 +24,8 @@ public class ApplicationConfig {
     public Optional<String> version;
 
     /**
-     * The header to use for UI Screen (Swagger UI, GraphQL UI etc)
+     * The header to use for UI Screen (Swagger UI, GraphQL UI etc).
      */
-    @ConfigItem(defaultValue = "{applicationName} {applicationVersion} (powered by Quarkus {quarkusVersion})")
+    @ConfigItem(defaultValue = "{applicationName} (powered by Quarkus)")
     public Optional<String> uiHeader;
 }

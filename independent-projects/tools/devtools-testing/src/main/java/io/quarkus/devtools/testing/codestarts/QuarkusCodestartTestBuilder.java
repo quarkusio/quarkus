@@ -209,15 +209,13 @@ public class QuarkusCodestartTestBuilder {
             Objects.requireNonNull(buildWithQuarkusCoreVersion, "quarkus version not found in extensions");
             String quarkusVersion = quarkusBomVersion != null ? quarkusBomVersion : buildWithQuarkusCoreVersion;
             enableRegistryClientTestConfig(quarkusBomGroupId != null ? quarkusBomGroupId : "io.quarkus", quarkusVersion);
-            final ExtensionCatalog extensionCatalog = QuarkusProjectHelper
-                    .getExtensionCatalog(quarkusVersion);
+            final ExtensionCatalog extensionCatalog = QuarkusProjectHelper.getExtensionCatalog(quarkusVersion);
             disableRegistryClientTestConfig();
-            if (!(extensionCatalog instanceof ExtensionCatalog.Mutable)) {
-                throw new IllegalStateException("Problem with the given ExtensionCatalog type");
-            }
-            extensions.addAll(extensionCatalog.getExtensions());
-            ((ExtensionCatalog.Mutable) extensionCatalog).setExtensions(extensions);
-            this.extensionCatalog = extensionCatalog;
+            final ExtensionCatalog.Mutable mutableCatalog = extensionCatalog instanceof ExtensionCatalog.Mutable
+                    ? (ExtensionCatalog.Mutable) extensionCatalog
+                    : extensionCatalog.mutable();
+            extensions.forEach(mutableCatalog::addExtension);
+            this.extensionCatalog = mutableCatalog.build();
         } catch (IOException e) {
             throw new IllegalStateException("Error while reading standalone extension catalog", e);
         }

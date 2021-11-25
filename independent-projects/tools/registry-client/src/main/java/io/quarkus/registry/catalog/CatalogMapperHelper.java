@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.json.JsonArtifactCoordsMixin;
 import java.io.BufferedReader;
@@ -19,9 +20,18 @@ import java.nio.file.Path;
 public class CatalogMapperHelper {
 
     private static ObjectMapper mapper;
+    private static ObjectMapper yamlMapper;
 
     public static ObjectMapper mapper() {
         return mapper == null ? mapper = initMapper(new ObjectMapper()) : mapper;
+    }
+
+    private static ObjectMapper yamlMapper() {
+        return yamlMapper == null ? yamlMapper = initMapper(new ObjectMapper(new YAMLFactory())) : yamlMapper;
+    }
+
+    private static ObjectMapper mapperForPath(Path p) {
+        return p.getFileName().toString().endsWith("json") ? mapper() : yamlMapper();
     }
 
     public static ObjectMapper initMapper(ObjectMapper mapper) {
@@ -35,7 +45,7 @@ public class CatalogMapperHelper {
     }
 
     public static void serialize(Object catalog, Path p) throws IOException {
-        serialize(mapper(), catalog, p);
+        serialize(mapperForPath(p), catalog, p);
     }
 
     public static void serialize(ObjectMapper mapper, Object catalog, Path p) throws IOException {
@@ -56,7 +66,7 @@ public class CatalogMapperHelper {
     }
 
     public static <T> T deserialize(Path p, Class<T> t) throws IOException {
-        return deserialize(mapper(), p, t);
+        return deserialize(mapperForPath(p), p, t);
     }
 
     public static <T> T deserialize(ObjectMapper mapper, Path p, Class<T> t) throws IOException {

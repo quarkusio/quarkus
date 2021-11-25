@@ -7,6 +7,7 @@ import javax.interceptor.InvocationContext;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheInvalidateAll;
 
 @CacheInvalidateAll(cacheName = "") // The `cacheName` attribute is @Nonbinding.
@@ -26,11 +27,11 @@ public class CacheInvalidateAllInterceptor extends CacheInterceptor {
             LOGGER.warn(INTERCEPTOR_BINDINGS_ERROR_MSG);
         } else {
             for (CacheInvalidateAll binding : interceptionContext.getInterceptorBindings()) {
-                AbstractCache cache = (AbstractCache) cacheManager.getCache(binding.cacheName()).get();
+                Cache cache = cacheManager.getCache(binding.cacheName()).get();
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debugf("Invalidating all entries from cache [%s]", binding.cacheName());
                 }
-                cache.invalidateAll();
+                cache.invalidateAll().await().indefinitely();
             }
         }
         return invocationContext.proceed();

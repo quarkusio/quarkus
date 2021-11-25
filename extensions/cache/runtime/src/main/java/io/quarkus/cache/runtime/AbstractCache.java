@@ -1,9 +1,7 @@
 package io.quarkus.cache.runtime;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-
 import io.quarkus.cache.Cache;
+import io.quarkus.cache.DefaultCacheKey;
 import io.smallrye.mutiny.Uni;
 
 public abstract class AbstractCache implements Cache {
@@ -12,15 +10,7 @@ public abstract class AbstractCache implements Cache {
 
     private Object defaultKey;
 
-    public abstract String getName();
-
-    /**
-     * Returns the unique and immutable default key for the current cache. This key is used by the annotations caching API when
-     * a no-args method annotated with {@link io.quarkus.cache.CacheResult CacheResult} or
-     * {@link io.quarkus.cache.CacheInvalidate CacheInvalidate} is invoked.
-     * 
-     * @return default cache key
-     */
+    @Override
     public Object getDefaultKey() {
         if (defaultKey == null) {
             defaultKey = new DefaultCacheKey(getName());
@@ -28,11 +18,15 @@ public abstract class AbstractCache implements Cache {
         return defaultKey;
     }
 
-    public abstract CompletableFuture<Object> get(Object key, Function<Object, Object> valueLoader);
-
-    public abstract void invalidate(Object key);
-
-    public abstract void invalidateAll();
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends Cache> T as(Class<T> type) {
+        if (type.isInstance(this)) {
+            return (T) this;
+        } else {
+            throw new IllegalStateException("This cache is not an instance of " + type.getName());
+        }
+    }
 
     /**
      * Replaces the cache value associated with the given key by an item emitted by a {@link Uni}. This method can be called

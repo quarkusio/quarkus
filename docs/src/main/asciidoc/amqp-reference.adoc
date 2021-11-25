@@ -476,6 +476,26 @@ mp.messaging.outgoing.generated-price.use-anonymous-sender=false
 
 As a consequence, it’s not possible to change the destination dynamically (using message metadata) when using RabbitMQ.
 
+== Receiving Cloud Events
+
+The AMQP connector supports https://cloudevents.io/[Cloud Events].
+When the connector detects a _structured_ or _binary_ Cloud Events, it adds a  `IncomingCloudEventMetadata<T>` into the metadata of the `Message`.
+`IncomingCloudEventMetadata` contains accessors to the mandatory and optional Cloud Event attributes.
+
+If the connector cannot extract the Cloud Event metadata, it sends the Message without the metadata.
+
+For more information on receiving Cloud Events, see https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.12/amqp/amqp.html#_receiving_cloud_events[Receiving Cloud Events] in SmallRye Reactive Messaging documentation.
+
+=== Sending Cloud Events
+
+The AMQP connector supports https://cloudevents.io/[Cloud Events].
+The connector sends the outbound record as Cloud Events if:
+
+* the message metadata contains an `io.smallrye.reactive.messaging.ce.OutgoingCloudEventMetadata` instance,
+* the channel configuration defines the `cloud-events-type` and `cloud-events-source` attributes.
+
+For more information on sending Cloud Events, see https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.12/amqp/amqp.html#_sending_cloud_events[Sending Cloud Events] in SmallRye Reactive Messaging documentation.
+
 [[configuration-reference]]
 == AMQP Connector Configuration Reference
 
@@ -489,103 +509,111 @@ include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-amqp.adoc[opt
 |===
 |Attribute (_alias_) | Description | Mandatory | Default
 
-| *username*
-
-_(amqp-username)_ | The username used to authenticate to the broker
+| [.no-hyphens]#*address*# | The AMQP address. If not set, the channel name is used
 
 Type: _string_ | false |
 
-| *password*
-
-_(amqp-password)_ | The password used to authenticate to the broker
-
-Type: _string_ | false |
-
-| *host*
-
-_(amqp-host)_ | The broker hostname
-
-Type: _string_ | false | `localhost`
-
-| *port*
-
-_(amqp-port)_ | The broker port
-
-Type: _int_ | false | `5672`
-
-| *use-ssl*
-
-_(amqp-use-ssl)_ | Whether the AMQP connection uses SSL/TLS
+| [.no-hyphens]#*auto-acknowledgement*# | Whether the received AMQP messages must be acknowledged when received
 
 Type: _boolean_ | false | `false`
 
-| *virtual-host*
+| [.no-hyphens]#*broadcast*# | Whether the received AMQP messages must be dispatched to multiple _subscribers_
 
-_(amqp-virtual-host)_ | If set, configure the hostname value used for the connection AMQP Open frame and TLS SNI server name (if TLS is in use)
+Type: _boolean_ | false | `false`
 
-Type: _string_ | false |
+| [.no-hyphens]#*client-options-name*#
 
-| *sni-server-name*
-
-_(amqp-sni-server-name)_ | If set, explicitly override the hostname to use for the TLS SNI server name
+[.no-hyphens]#_(amqp-client-options-name)_# | The name of the AMQP Client Option bean used to customize the AMQP client configuration
 
 Type: _string_ | false |
 
-| *reconnect-attempts*
-
-_(amqp-reconnect-attempts)_ | The number of reconnection attempts
-
-Type: _int_ | false | `100`
-
-| *reconnect-interval*
-
-_(amqp-reconnect-interval)_ | The interval in second between two reconnection attempts
-
-Type: _int_ | false | `10`
-
-| *connect-timeout*
-
-_(amqp-connect-timeout)_ | The connection timeout in milliseconds
-
-Type: _int_ | false | `1000`
-
-| *container-id* | The AMQP container id
-
-Type: _string_ | false |
-
-| *address* | The AMQP address. If not set, the channel name is used
-
-Type: _string_ | false |
-
-| *link-name* | The name of the link. If not set, the channel name is used.
-
-Type: _string_ | false |
-
-| *client-options-name*
-
-_(amqp-client-options-name)_ | The name of the AMQP Client Option bean used to customize the AMQP client configuration
-
-Type: _string_ | false |
-
-| *tracing-enabled* | Whether tracing is enabled (default) or disabled
+| [.no-hyphens]#*cloud-events*# | Enables (default) or disables the Cloud Event support. If enabled on an _incoming_ channel, the connector analyzes the incoming records and try to create Cloud Event metadata. If enabled on an _outgoing_, the connector sends the outgoing messages as Cloud Event if the message includes Cloud Event Metadata.
 
 Type: _boolean_ | false | `true`
 
-| *broadcast* | Whether the received AMQP messages must be dispatched to multiple _subscribers_
+| [.no-hyphens]#*connect-timeout*#
+
+[.no-hyphens]#_(amqp-connect-timeout)_# | The connection timeout in milliseconds
+
+Type: _int_ | false | `1000`
+
+| [.no-hyphens]#*container-id*# | The AMQP container id
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*durable*# | Whether AMQP subscription is durable
 
 Type: _boolean_ | false | `false`
 
-| *durable* | Whether AMQP subscription is durable
-
-Type: _boolean_ | false | `false`
-
-| *auto-acknowledgement* | Whether the received AMQP messages must be acknowledged when received
-
-Type: _boolean_ | false | `false`
-
-| *failure-strategy* | Specify the failure strategy to apply when a message produced from an AMQP message is nacked. Accepted values are `fail` (default), `accept`, `release`, `reject`, `modified-failed`, `modified-failed-undeliverable-here`
+| [.no-hyphens]#*failure-strategy*# | Specify the failure strategy to apply when a message produced from an AMQP message is nacked. Accepted values are `fail` (default), `accept`, `release`, `reject`, `modified-failed`, `modified-failed-undeliverable-here`
 
 Type: _string_ | false | `fail`
+
+| [.no-hyphens]#*health-timeout*# | The max number of seconds to wait to determine if the connection with the broker is still established for the readiness check. After that threshold, the check is considered as failed.
+
+Type: _int_ | false | `3`
+
+| [.no-hyphens]#*host*#
+
+[.no-hyphens]#_(amqp-host)_# | The broker hostname
+
+Type: _string_ | false | `localhost`
+
+| [.no-hyphens]#*link-name*# | The name of the link. If not set, the channel name is used.
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*password*#
+
+[.no-hyphens]#_(amqp-password)_# | The password used to authenticate to the broker
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*port*#
+
+[.no-hyphens]#_(amqp-port)_# | The broker port
+
+Type: _int_ | false | `5672`
+
+| [.no-hyphens]#*reconnect-attempts*#
+
+[.no-hyphens]#_(amqp-reconnect-attempts)_# | The number of reconnection attempts
+
+Type: _int_ | false | `100`
+
+| [.no-hyphens]#*reconnect-interval*#
+
+[.no-hyphens]#_(amqp-reconnect-interval)_# | The interval in second between two reconnection attempts
+
+Type: _int_ | false | `10`
+
+| [.no-hyphens]#*sni-server-name*#
+
+[.no-hyphens]#_(amqp-sni-server-name)_# | If set, explicitly override the hostname to use for the TLS SNI server name
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*tracing-enabled*# | Whether tracing is enabled (default) or disabled
+
+Type: _boolean_ | false | `true`
+
+| [.no-hyphens]#*use-ssl*#
+
+[.no-hyphens]#_(amqp-use-ssl)_# | Whether the AMQP connection uses SSL/TLS
+
+Type: _boolean_ | false | `false`
+
+| [.no-hyphens]#*username*#
+
+[.no-hyphens]#_(amqp-username)_# | The username used to authenticate to the broker
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*virtual-host*#
+
+[.no-hyphens]#_(amqp-virtual-host)_# | If set, configure the hostname value used for the connection AMQP Open frame and TLS SNI server name (if TLS is in use)
+
+Type: _string_ | false |
 
 |===
 
@@ -596,105 +624,153 @@ Type: _string_ | false | `fail`
 |===
 |Attribute (_alias_) | Description | Mandatory | Default
 
-| *address* | The AMQP address. If not set, the channel name is used
+| [.no-hyphens]#*address*# | The AMQP address. If not set, the channel name is used
 
 Type: _string_ | false |
 
-| *client-options-name*
+| [.no-hyphens]#*client-options-name*#
 
-_(amqp-client-options-name)_ | The name of the AMQP Client Option bean used to customize the AMQP client configuration
+[.no-hyphens]#_(amqp-client-options-name)_# | The name of the AMQP Client Option bean used to customize the AMQP client configuration
 
 Type: _string_ | false |
 
-| *connect-timeout*
+| [.no-hyphens]#*cloud-events*# | Enables (default) or disables the Cloud Event support. If enabled on an _incoming_ channel, the connector analyzes the incoming records and try to create Cloud Event metadata. If enabled on an _outgoing_, the connector sends the outgoing messages as Cloud Event if the message includes Cloud Event Metadata.
 
-_(amqp-connect-timeout)_ | The connection timeout in milliseconds
+Type: _boolean_ | false | `true`
+
+| [.no-hyphens]#*cloud-events-data-content-type*#
+
+[.no-hyphens]#_(cloud-events-default-data-content-type)_# | Configure the default `datacontenttype` attribute of the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `datacontenttype` attribute itself
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*cloud-events-data-schema*#
+
+[.no-hyphens]#_(cloud-events-default-data-schema)_# | Configure the default `dataschema` attribute of the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `dataschema` attribute itself
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*cloud-events-insert-timestamp*#
+
+[.no-hyphens]#_(cloud-events-default-timestamp)_# | Whether or not the connector should insert automatically the `time` attribute into the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `time` attribute itself
+
+Type: _boolean_ | false | `true`
+
+| [.no-hyphens]#*cloud-events-mode*# | The Cloud Event mode (`structured` or `binary` (default)). Indicates how are written the cloud events in the outgoing record
+
+Type: _string_ | false | `binary`
+
+| [.no-hyphens]#*cloud-events-source*#
+
+[.no-hyphens]#_(cloud-events-default-source)_# | Configure the default `source` attribute of the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `source` attribute itself
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*cloud-events-subject*#
+
+[.no-hyphens]#_(cloud-events-default-subject)_# | Configure the default `subject` attribute of the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `subject` attribute itself
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*cloud-events-type*#
+
+[.no-hyphens]#_(cloud-events-default-type)_# | Configure the default `type` attribute of the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `type` attribute itself
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*connect-timeout*#
+
+[.no-hyphens]#_(amqp-connect-timeout)_# | The connection timeout in milliseconds
 
 Type: _int_ | false | `1000`
 
-| *container-id* | The AMQP container id
+| [.no-hyphens]#*container-id*# | The AMQP container id
 
 Type: _string_ | false |
 
-| *credit-retrieval-period* | The period (in milliseconds) between two attempts to retrieve the credits granted by the broker. This time is used when the sender run out of credits.
+| [.no-hyphens]#*credit-retrieval-period*# | The period (in milliseconds) between two attempts to retrieve the credits granted by the broker. This time is used when the sender run out of credits.
 
 Type: _int_ | false | `2000`
 
-| *durable* | Whether sent AMQP messages are marked durable
+| [.no-hyphens]#*durable*# | Whether sent AMQP messages are marked durable
 
 Type: _boolean_ | false | `false`
 
-| *host*
+| [.no-hyphens]#*health-timeout*# | The max number of seconds to wait to determine if the connection with the broker is still established for the readiness check. After that threshold, the check is considered as failed.
 
-_(amqp-host)_ | The broker hostname
+Type: _int_ | false | `3`
+
+| [.no-hyphens]#*host*#
+
+[.no-hyphens]#_(amqp-host)_# | The broker hostname
 
 Type: _string_ | false | `localhost`
 
-| *link-name* | The name of the link. If not set, the channel name is used.
+| [.no-hyphens]#*link-name*# | The name of the link. If not set, the channel name is used.
 
 Type: _string_ | false |
 
-| *merge* | Whether the connector should allow multiple upstreams
+| [.no-hyphens]#*merge*# | Whether the connector should allow multiple upstreams
 
 Type: _boolean_ | false | `false`
 
-| *password*
+| [.no-hyphens]#*password*#
 
-_(amqp-password)_ | The password used to authenticate to the broker
+[.no-hyphens]#_(amqp-password)_# | The password used to authenticate to the broker
 
 Type: _string_ | false |
 
-| *port*
+| [.no-hyphens]#*port*#
 
-_(amqp-port)_ | The broker port
+[.no-hyphens]#_(amqp-port)_# | The broker port
 
 Type: _int_ | false | `5672`
 
-| *reconnect-attempts*
+| [.no-hyphens]#*reconnect-attempts*#
 
-_(amqp-reconnect-attempts)_ | The number of reconnection attempts
+[.no-hyphens]#_(amqp-reconnect-attempts)_# | The number of reconnection attempts
 
 Type: _int_ | false | `100`
 
-| *reconnect-interval*
+| [.no-hyphens]#*reconnect-interval*#
 
-_(amqp-reconnect-interval)_ | The interval in second between two reconnection attempts
+[.no-hyphens]#_(amqp-reconnect-interval)_# | The interval in second between two reconnection attempts
 
 Type: _int_ | false | `10`
 
-| *sni-server-name*
+| [.no-hyphens]#*sni-server-name*#
 
-_(amqp-sni-server-name)_ | If set, explicitly override the hostname to use for the TLS SNI server name
+[.no-hyphens]#_(amqp-sni-server-name)_# | If set, explicitly override the hostname to use for the TLS SNI server name
 
 Type: _string_ | false |
 
-| *tracing-enabled* | Whether tracing is enabled (default) or disabled
+| [.no-hyphens]#*tracing-enabled*# | Whether tracing is enabled (default) or disabled
 
 Type: _boolean_ | false | `true`
 
-| *ttl* | The time-to-live of the send AMQP messages. 0 to disable the TTL
+| [.no-hyphens]#*ttl*# | The time-to-live of the send AMQP messages. 0 to disable the TTL
 
 Type: _long_ | false | `0`
 
-| *use-anonymous-sender* | Whether or not the connector should use an anonymous sender.
+| [.no-hyphens]#*use-anonymous-sender*# | Whether or not the connector should use an anonymous sender. Default value is `true` if the broker supports it, `false` otherwise. If not supported, it is not possible to dynamically change the destination address.
 
-Type: _boolean_ | false | `true`
+Type: _boolean_ | false |
 
-| *use-ssl*
+| [.no-hyphens]#*use-ssl*#
 
-_(amqp-use-ssl)_ | Whether the AMQP connection uses SSL/TLS
+[.no-hyphens]#_(amqp-use-ssl)_# | Whether the AMQP connection uses SSL/TLS
 
 Type: _boolean_ | false | `false`
 
-| *username*
+| [.no-hyphens]#*username*#
 
-_(amqp-username)_ | The username used to authenticate to the broker
+[.no-hyphens]#_(amqp-username)_# | The username used to authenticate to the broker
 
 Type: _string_ | false |
 
-| *virtual-host*
+| [.no-hyphens]#*virtual-host*#
 
-_(amqp-virtual-host)_ | If set, configure the hostname value used for the connection AMQP Open frame and TLS SNI server name (if TLS is in use)
+[.no-hyphens]#_(amqp-virtual-host)_# | If set, configure the hostname value used for the connection AMQP Open frame and TLS SNI server name (if TLS is in use)
 
 Type: _string_ | false |
 

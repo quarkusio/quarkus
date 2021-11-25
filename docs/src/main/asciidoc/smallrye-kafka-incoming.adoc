@@ -132,15 +132,19 @@ Type: _string_ | false |
 
 Type: _int_ | false | `1`
 
+| [.no-hyphens]#*requests*# | When `partitions` is greater than 1, this attribute allows configuring how many records are requested by each consumers every time.
+
+Type: _int_ | false | `128`
+
 | [.no-hyphens]#*consumer-rebalance-listener.name*# | The name set in `@Identifier` of a bean that implements `io.smallrye.reactive.messaging.kafka.KafkaConsumerRebalanceListener`. If set, this rebalance listener is applied to the consumer.
 
 Type: _string_ | false |
 
-| [.no-hyphens]#*key-deserialization-failure-handler*# | The name set in `@Identifier` of a bean that implements `io.smallrye.reactive.messaging.kafka.DeserializationFailureHandler`. If set, deserialization failure happening when deserializing keys are delegated to this handler which may provide a fallback value.
+| [.no-hyphens]#*key-deserialization-failure-handler*# | The name set in `@Identifier` of a bean that implements `io.smallrye.reactive.messaging.kafka.DeserializationFailureHandler`. If set, deserialization failure happening when deserializing keys are delegated to this handler which may retry or provide a fallback value.
 
 Type: _string_ | false |
 
-| [.no-hyphens]#*value-deserialization-failure-handler*# | The name set in `@Identifier` of a bean that implements `io.smallrye.reactive.messaging.kafka.DeserializationFailureHandler`. If set, deserialization failure happening when deserializing values are delegated to this handler which may provide a fallback value.
+| [.no-hyphens]#*value-deserialization-failure-handler*# | The name set in `@Identifier` of a bean that implements `io.smallrye.reactive.messaging.kafka.DeserializationFailureHandler`. If set, deserialization failure happening when deserializing values are delegated to this handler which may retry or provide a fallback value.
 
 Type: _string_ | false |
 

@@ -25,6 +25,9 @@ public class DevConsoleQuteSmokeTest {
         RestAssured.get("q/dev/io.quarkus.quarkus-qute/templates")
                 .then()
                 .statusCode(200).body(Matchers.containsString("hello.txt"));
+        RestAssured.get("q/dev/io.quarkus.quarkus-qute/preview")
+                .then()
+                .statusCode(200).body(Matchers.containsString("Test JSON data"));
     }
 
 }

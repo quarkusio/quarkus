@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.jboss.logging.Logger;
+import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -32,9 +33,10 @@ public class PostgresqlDevServicesProcessor {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
+                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout,
+                    boolean useTestContainersSharedNetwork) {
                 QuarkusPostgreSQLContainer container = new QuarkusPostgreSQLContainer(imageName, fixedExposedPort,
-                        devServicesSharedNetworkBuildItem.isPresent());
+                        devServicesSharedNetworkBuildItem.isPresent(), useTestContainersSharedNetwork);
                 startupTimeout.ifPresent(container::withStartupTimeout);
                 container.withPassword(password.orElse("quarkus"))
                         .withUsername(username.orElse("quarkus"))
@@ -65,11 +67,15 @@ public class PostgresqlDevServicesProcessor {
 
         private String hostName = null;
 
-        public QuarkusPostgreSQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
+        public QuarkusPostgreSQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
+                boolean useTestContainersSharedNetwork) {
             super(DockerImageName.parse(imageName.orElse(PostgreSQLContainer.IMAGE + ":" + PostgresqlDevServicesProcessor.TAG))
                     .asCompatibleSubstituteFor(DockerImageName.parse(PostgreSQLContainer.IMAGE)));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            if (useTestContainersSharedNetwork) {
+                withNetwork(Network.SHARED);
+            }
         }
 
         @Override

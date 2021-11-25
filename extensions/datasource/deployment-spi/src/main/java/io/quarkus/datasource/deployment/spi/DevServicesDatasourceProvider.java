@@ -13,7 +13,8 @@ public interface DevServicesDatasourceProvider {
     RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
             Optional<String> datasourceName,
             Optional<String> imageName, Map<String, String> additionalProperties,
-            OptionalInt port, LaunchMode launchMode, Optional<Duration> startupTimeout);
+            OptionalInt port, LaunchMode launchMode, Optional<Duration> startupTimeout,
+            boolean useTestContainersSharedNetwork);
 
     default boolean isDockerRequired() {
         return true;

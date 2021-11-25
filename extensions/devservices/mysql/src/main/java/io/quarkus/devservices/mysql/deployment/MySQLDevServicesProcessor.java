@@ -9,6 +9,7 @@ import java.util.OptionalInt;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
@@ -32,9 +33,10 @@ public class MySQLDevServicesProcessor {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
+                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout,
+                    boolean useTestContainersSharedNetwork) {
                 QuarkusMySQLContainer container = new QuarkusMySQLContainer(imageName, fixedExposedPort,
-                        devServicesSharedNetworkBuildItem.isPresent());
+                        devServicesSharedNetworkBuildItem.isPresent(), useTestContainersSharedNetwork);
                 startupTimeout.ifPresent(container::withStartupTimeout);
                 container.withPassword(password.orElse("quarkus"))
                         .withUsername(username.orElse("quarkus"))
@@ -64,11 +66,15 @@ public class MySQLDevServicesProcessor {
 
         private String hostName = null;
 
-        public QuarkusMySQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
+        public QuarkusMySQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
+                boolean useTestContainersSharedNetwork) {
             super(DockerImageName.parse(imageName.orElse(MySQLContainer.IMAGE + ":" + MySQLDevServicesProcessor.TAG))
                     .asCompatibleSubstituteFor(DockerImageName.parse(MySQLContainer.IMAGE)));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            if (useTestContainersSharedNetwork) {
+                withNetwork(Network.SHARED);
+            }
         }
 
         @Override

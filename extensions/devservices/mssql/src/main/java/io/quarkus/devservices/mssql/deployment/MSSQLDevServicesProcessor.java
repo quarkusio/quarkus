@@ -9,6 +9,7 @@ import java.util.OptionalInt;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.MSSQLServerContainer;
+import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
@@ -35,9 +36,10 @@ public class MSSQLDevServicesProcessor {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
+                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout,
+                    boolean useTestContainersSharedNetwork) {
                 QuarkusMSSQLServerContainer container = new QuarkusMSSQLServerContainer(imageName, fixedExposedPort,
-                        devServicesSharedNetworkBuildItem.isPresent());
+                        devServicesSharedNetworkBuildItem.isPresent(), useTestContainersSharedNetwork);
                 startupTimeout.ifPresent(container::withStartupTimeout);
                 container.withPassword(password.orElse("Quarkuspassword1"));
                 additionalProperties.forEach(container::withUrlParam);
@@ -65,12 +67,16 @@ public class MSSQLDevServicesProcessor {
 
         private String hostName = null;
 
-        public QuarkusMSSQLServerContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
+        public QuarkusMSSQLServerContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
+                boolean useTestContainersSharedNetwork) {
             super(DockerImageName
                     .parse(imageName.orElse(MSSQLServerContainer.IMAGE + ":" + MSSQLDevServicesProcessor.TAG))
                     .asCompatibleSubstituteFor(MSSQLServerContainer.IMAGE));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            if (useTestContainersSharedNetwork) {
+                withNetwork(Network.SHARED);
+            }
         }
 
         @Override

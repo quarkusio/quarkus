@@ -38,6 +38,9 @@ public class ClientCallingResource {
     @RestClient
     ClientWithExceptionMapper clientWithExceptionMapper;
 
+    @RestClient
+    FaultToleranceClient faultToleranceClient;
+
     @Inject
     InMemorySpanExporter inMemorySpanExporter;
 
@@ -131,6 +134,10 @@ public class ClientCallingResource {
                     .end(Json.encodePrettily(inMemorySpanExporter.getFinishedSpanItems()
                             .stream().filter(sd -> !sd.getName().contains("export"))
                             .collect(Collectors.toList())));
+        });
+
+        router.route("/call-with-fault-tolerance").blockingHandler(rc -> {
+            rc.end(faultToleranceClient.helloWithFallback());
         });
     }
 

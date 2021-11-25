@@ -96,7 +96,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -121,7 +120,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-undertow</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

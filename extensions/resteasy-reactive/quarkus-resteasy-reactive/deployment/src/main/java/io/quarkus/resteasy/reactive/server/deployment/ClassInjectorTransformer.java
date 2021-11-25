@@ -296,7 +296,10 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
 
         private ParameterConverterSupplier removeRuntimeResolvedConverterDelegate(ParameterConverterSupplier converter) {
             if (converter instanceof RuntimeResolvedConverter.Supplier) {
-                return ((RuntimeResolvedConverter.Supplier) converter).getDelegate();
+                ParameterConverterSupplier delegate = ((RuntimeResolvedConverter.Supplier) converter).getDelegate();
+                if (delegate != null) {
+                    return delegate;
+                }
             }
             return converter;
         }

@@ -1,3 +1,10 @@
+{#if info:devQuteInfos.templates.isEmpty}
+  {#include main}
+    {#body}
+      <h1>No Templates found</h1>
+    {/body}
+  {/include}
+{#else}
 {#include main}
   {#title}Render Preview{/title}
   {#style}
@@ -101,4 +108,5 @@
   
 
   {/script}
-{/include}
+  {/include}
+{/if}

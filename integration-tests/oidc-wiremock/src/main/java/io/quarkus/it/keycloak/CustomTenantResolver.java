@@ -11,6 +11,9 @@ public class CustomTenantResolver implements TenantResolver {
     @Override
     public String resolve(RoutingContext context) {
         String path = context.normalizedPath();
+        if (path.contains("recovered-no-discovery")) {
+            return "no-discovery";
+        }
         if (path.endsWith("code-flow")) {
             return "code-flow";
         }

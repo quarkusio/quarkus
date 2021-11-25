@@ -2,6 +2,7 @@ package io.quarkus.rest.client.reactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Map;
 import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -58,5 +59,17 @@ public class BasicRestClientTest {
     @Test
     void shouldHelloInts() {
         assertThat(testBean.helloNonSimpleSyncInts()).isEqualTo(new Integer[] { 1, 2, 3 });
+    }
+
+    @Test
+    void shouldMapQueryParamsWithSpecialCharacters() {
+        Map<String, String> map = testBean.helloQueryParamsToMap();
+        assertThat(map).size().isEqualTo(6);
+        assertThat(map.get("p1")).isEqualTo("1");
+        assertThat(map.get("p2")).isEqualTo("2");
+        assertThat(map.get("p3")).isEqualTo("3");
+        assertThat(map.get("p4")).isEqualTo("4");
+        assertThat(map.get("p5")).isEqualTo("5");
+        assertThat(map.get("p6")).isEqualTo("6");
     }
 }

@@ -72,8 +72,9 @@ public class NativeImageBuildStep {
         NativeImageBuildItem.GraalVMVersion graalVMVersion = image.getGraalVMInfo();
         Map<String, Object> graalVMInfoProps = new HashMap<>();
         graalVMInfoProps.put("graalvm.version.full", graalVMVersion.getFullVersion());
-        graalVMInfoProps.put("graalvm.version.major", "" + graalVMVersion.getMajor());
-        graalVMInfoProps.put("graalvm.version.minor", "" + graalVMVersion.getMinor());
+        graalVMInfoProps.put("graalvm.version.version", graalVMVersion.getVersion());
+        graalVMInfoProps.put("graalvm.version.javaVersion", "" + graalVMVersion.getJavaVersion());
+        graalVMInfoProps.put("graalvm.version.distribution", graalVMVersion.getDistribution());
         return new ArtifactResultBuildItem(image.getPath(), PackageConfig.NATIVE, graalVMInfoProps);
     }
 
@@ -175,8 +176,9 @@ public class NativeImageBuildStep {
         if (nativeConfig.reuseExisting) {
             if (Files.exists(finalExecutablePath)) {
                 return new NativeImageBuildItem(finalExecutablePath,
-                        new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion, graalVMVersion.major,
-                                graalVMVersion.minor,
+                        new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion,
+                                graalVMVersion.version.toString(),
+                                graalVMVersion.javaVersion,
                                 graalVMVersion.distribution.name()));
             }
         }
@@ -226,8 +228,9 @@ public class NativeImageBuildStep {
             System.setProperty("native.image.path", finalExecutablePath.toAbsolutePath().toString());
 
             return new NativeImageBuildItem(finalExecutablePath,
-                    new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion, graalVMVersion.major,
-                            graalVMVersion.minor,
+                    new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion,
+                            graalVMVersion.version.toString(),
+                            graalVMVersion.javaVersion,
                             graalVMVersion.distribution.name()));
         } catch (Exception e) {
             throw new RuntimeException("Failed to build native image", e);
@@ -373,10 +376,9 @@ public class NativeImageBuildStep {
     private void checkGraalVMVersion(GraalVM.Version version) {
         log.info("Running Quarkus native-image plugin on " + version.getFullVersion());
         if (version.isObsolete()) {
-            final int major = GraalVM.Version.CURRENT.major;
-            final int minor = GraalVM.Version.CURRENT.minor;
             throw new IllegalStateException("Out of date version of GraalVM detected: " + version.getFullVersion() + "."
-                    + " Quarkus currently supports " + major + "." + minor + ". Please upgrade GraalVM to this version.");
+                    + " Quarkus currently supports " + GraalVM.Version.CURRENT.version
+                    + ". Please upgrade GraalVM to this version.");
         }
     }
 
@@ -592,6 +594,15 @@ public class NativeImageBuildStep {
                  */
                 nativeImageArgs.add("-H:-ParseOnce");
 
+                /**
+                 * This makes sure the Kerberos integration module is made available in case any library
+                 * refers to it (e.g. the PostgreSQL JDBC requires it, seems plausible that many others will as well):
+                 * the module is not available by default on Java 17.
+                 * No flag was introduced as this merely exposes the visibility of the module, it doesn't
+                 * control its actual inclusion which will depend on the usual analysis.
+                 */
+                nativeImageArgs.add("-J--add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED");
+
                 handleAdditionalProperties(nativeImageArgs);
 
                 nativeImageArgs.add(
@@ -716,6 +727,11 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("--exclude-config");
                     nativeImageArgs.add(excludeConfig.getJarFile());
                     nativeImageArgs.add(excludeConfig.getResourceName());
+                }
+
+                // Work around https://github.com/quarkusio/quarkus/issues/21372
+                if (graalVMVersion.is(GraalVM.Version.VERSION_21_3_0) && graalVMVersion.isJava17()) {
+                    nativeImageArgs.add("-J--add-exports=java.management/sun.management=ALL-UNNAMED");
                 }
 
                 nativeImageArgs.add(nativeImageName);

@@ -172,6 +172,21 @@
       "origins": [
         "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
       ]
+    },
+    {
+      "name": "Uncategorized extension",
+      "description": "Some uncategorized extension",
+      "metadata": {
+        "keywords": [
+          "uncategorized"
+        ],
+        "status": "preview",
+        "built-with-quarkus-core": "999-FAKE"
+      },
+      "artifact": "io.quarkus:quarkus-uncategorized-extension::jar:999-FAKE",
+      "origins": [
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
+      ]
     }
   ],
   "categories": [

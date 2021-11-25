@@ -22,7 +22,7 @@
       -->
 
     <properties>
-        <apicurio.version>2.1.1.Final</apicurio.version>
+        <apicurio.version>2.1.3.Final</apicurio.version>
     </properties>
 
     <dependencies>
@@ -65,11 +65,15 @@
         <dependency>
             <groupId>io.confluent</groupId>
             <artifactId>kafka-avro-serializer</artifactId>
-            <version>6.1.1</version>
+            <version>7.0.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>jakarta.ws.rs</groupId>
                     <artifactId>jakarta.ws.rs-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.checkerframework</groupId>
+                    <artifactId>checker-qual</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

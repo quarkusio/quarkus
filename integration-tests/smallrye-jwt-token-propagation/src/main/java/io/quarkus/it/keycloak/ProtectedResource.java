@@ -4,6 +4,7 @@ import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -27,6 +28,13 @@ public class ProtectedResource {
     public String principalName() {
         checkIssuerAndAudience();
         return jwt.getName();
+    }
+
+    @POST
+    @RolesAllowed("user")
+    public String echoPrincipalName(String name) {
+        checkIssuerAndAudience();
+        return name + ":" + jwt.getName();
     }
 
     private void checkIssuerAndAudience() {

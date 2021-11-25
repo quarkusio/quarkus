@@ -156,4 +156,11 @@ public class IncludeTest {
         }
     }
 
+    @Test
+    public void testInsertInLoop() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("super", engine.parse("{#for i in 5}{#insert row}No row{/}{/for}"));
+        assertEquals("1:2:3:4:5:", engine.parse("{#include super}{#row}{i}:{/row}{/}").render());
+    }
+
 }

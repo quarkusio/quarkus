@@ -73,8 +73,10 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     : KeycloakDevServicesProcessor.capturedDevServicesConfiguration.webClienTimeout;
             produceDevConsoleRouteItems(devConsoleRoute,
                     new OidcTestServiceHandler(KeycloakDevServicesProcessor.vertxInstance, webClientTimeout),
-                    new OidcAuthorizationCodePostHandler(KeycloakDevServicesProcessor.vertxInstance, webClientTimeout),
-                    new OidcPasswordClientCredHandler(KeycloakDevServicesProcessor.vertxInstance, webClientTimeout, users));
+                    new OidcAuthorizationCodePostHandler(KeycloakDevServicesProcessor.vertxInstance, webClientTimeout,
+                            oidcConfig.devui.grantOptions),
+                    new OidcPasswordClientCredHandler(KeycloakDevServicesProcessor.vertxInstance, webClientTimeout, users,
+                            oidcConfig.devui.grantOptions));
         }
     }
 }

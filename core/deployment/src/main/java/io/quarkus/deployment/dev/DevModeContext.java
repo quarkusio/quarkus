@@ -49,6 +49,7 @@ public class DevModeContext implements Serializable {
     private String[] args;
 
     private List<String> compilerOptions;
+    private String releaseJavaVersion;
     private String sourceJavaVersion;
     private String targetJvmVersion;
 
@@ -141,6 +142,14 @@ public class DevModeContext implements Serializable {
 
     public void setCompilerOptions(List<String> compilerOptions) {
         this.compilerOptions = compilerOptions;
+    }
+
+    public String getReleaseJavaVersion() {
+        return releaseJavaVersion;
+    }
+
+    public void setReleaseJavaVersion(String releaseJavaVersion) {
+        this.releaseJavaVersion = releaseJavaVersion;
     }
 
     public String getSourceJavaVersion() {

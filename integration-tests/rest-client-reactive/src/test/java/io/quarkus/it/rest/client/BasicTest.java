@@ -85,6 +85,14 @@ public class BasicTest {
     }
 
     @Test
+    void shouldInterceptDefaultMethod() {
+        RestAssured.with().body(baseUrl).post("/call-with-fault-tolerance")
+                .then()
+                .statusCode(200)
+                .body(equalTo("Hello fallback!"));
+    }
+
+    @Test
     void shouldCreateClientSpans() {
         // Reset captured traces
         RestAssured.given().when().get("/export-clear").then().statusCode(200);

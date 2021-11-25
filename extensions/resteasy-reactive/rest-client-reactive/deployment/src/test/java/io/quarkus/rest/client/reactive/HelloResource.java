@@ -1,12 +1,15 @@
 package io.quarkus.rest.client.reactive;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
@@ -37,6 +40,23 @@ public class HelloResource {
     @Path("/ints")
     public int[] bytes(int[] value) {
         return value;
+    }
+
+    @GET
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/query-params-to-map")
+    public Map<String, String> queryParamsToMap(@QueryParam("p1") String p1, @QueryParam("p2(") String p2,
+            @QueryParam("p3[") String p3, @QueryParam("p4?") String p4, @QueryParam("p5=") String p5,
+            @QueryParam("p6-") String p6) {
+        Map<String, String> map = new HashMap<>();
+        map.put("p1", p1);
+        map.put("p2", p2);
+        map.put("p3", p3);
+        map.put("p4", p4);
+        map.put("p5", p5);
+        map.put("p6", p6);
+        return map;
     }
 
     @RestClient

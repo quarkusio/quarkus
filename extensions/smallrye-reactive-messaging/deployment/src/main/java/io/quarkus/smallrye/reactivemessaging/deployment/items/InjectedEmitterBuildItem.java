@@ -3,7 +3,7 @@ package io.quarkus.smallrye.reactivemessaging.deployment.items;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.BroadcastLiteral;
 import io.quarkus.smallrye.reactivemessaging.deployment.OnOverflowLiteral;
-import io.smallrye.reactive.messaging.extension.EmitterConfiguration;
+import io.smallrye.reactive.messaging.providers.extension.EmitterConfiguration;
 
 /**
  * Represents an emitter injection.

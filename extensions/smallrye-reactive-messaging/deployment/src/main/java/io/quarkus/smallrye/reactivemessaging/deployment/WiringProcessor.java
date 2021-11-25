@@ -48,7 +48,7 @@ import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedEmitterBui
 import io.quarkus.smallrye.reactivemessaging.deployment.items.MediatorBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.OrphanChannelBuildItem;
 import io.smallrye.reactive.messaging.annotations.ConnectorAttribute;
-import io.smallrye.reactive.messaging.wiring.WiringException;
+import io.smallrye.reactive.messaging.providers.wiring.WiringException;
 
 public class WiringProcessor {
 

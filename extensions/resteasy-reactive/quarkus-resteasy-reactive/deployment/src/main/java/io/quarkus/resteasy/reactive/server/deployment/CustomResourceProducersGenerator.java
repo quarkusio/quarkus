@@ -9,7 +9,6 @@ import java.util.Set;
 
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -37,7 +36,6 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.util.HashUtil;
-import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 
 final class CustomResourceProducersGenerator {
 

@@ -1,6 +1,5 @@
 package io.quarkus.resteasy.reactive.common.runtime;
 
-import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;

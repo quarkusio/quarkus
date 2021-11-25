@@ -14,7 +14,6 @@ import io.quarkus.rest.data.panache.RestDataResource;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
-import io.quarkus.rest.data.panache.runtime.hal.HalEntityWrapper;
 
 public final class GetHalMethodImplementor extends HalMethodImplementor {
 

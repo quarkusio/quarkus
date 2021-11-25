@@ -1,7 +1,5 @@
 package io.quarkus.vertx.web.runtime.devmode;
 
-import static io.quarkus.runtime.TemplateHtmlBuilder.adjustRoot;
-
 import java.util.List;
 
 import io.quarkus.runtime.TemplateHtmlBuilder;

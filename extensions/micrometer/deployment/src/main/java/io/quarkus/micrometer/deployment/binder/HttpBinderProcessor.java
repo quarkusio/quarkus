@@ -22,7 +22,6 @@ import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpServerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
-import io.quarkus.vertx.http.deployment.FilterBuildItem;
 
 /**
  * Avoid directly referencing optional dependencies

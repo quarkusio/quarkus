@@ -1,7 +1,7 @@
 package io.quarkus.kubernetes.config.deployment;
 
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import org.jboss.logmanager.Level;
 
@@ -43,7 +43,7 @@ public class KubernetesConfigProcessor {
                     new KubernetesRoleBuildItem.PolicyRule(
                             Collections.singletonList(""),
                             Collections.singletonList("secrets"),
-                            Arrays.asList("get")))));
+                            List.of("get")))));
             roleBindingProducer.produce(new KubernetesRoleBindingBuildItem("view-secrets", false));
         }
 

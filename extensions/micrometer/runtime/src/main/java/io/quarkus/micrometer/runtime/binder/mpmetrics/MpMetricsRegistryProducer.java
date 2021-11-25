@@ -1,7 +1,5 @@
 package io.quarkus.micrometer.runtime.binder.mpmetrics;
 
-import java.util.*;
-
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 

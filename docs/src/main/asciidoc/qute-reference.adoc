@@ -1448,7 +1448,7 @@ The first matching extension method is used to resolve an expression.
 [source,java]
 ----
 @TemplateExtension(namespace = "str")
-public static class StringExtensions {
+public class StringExtensions {
 
    static String format(String fmt, Object... args) {
       return String.format(fmt, args);

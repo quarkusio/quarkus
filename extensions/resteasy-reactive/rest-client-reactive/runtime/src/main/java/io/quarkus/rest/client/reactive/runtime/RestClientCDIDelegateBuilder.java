@@ -30,8 +30,8 @@ import io.quarkus.restclient.config.RestClientsConfig;
 
 public class RestClientCDIDelegateBuilder<T> {
 
-    private static final String REST_URL_FORMAT = "quarkus.rest-client.%s.url";
-    private static final String REST_URI_FORMAT = "quarkus.rest-client.%s.uri";
+    private static final String REST_URL_FORMAT = "quarkus.rest-config.%s.url";
+    private static final String REST_URI_FORMAT = "quarkus.rest-config.%s.uri";
 
     private final Class<T> jaxrsInterface;
     private final String baseUriFromAnnotation;

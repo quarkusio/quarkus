@@ -29,8 +29,8 @@ import io.quarkus.restclient.config.RestClientsConfig;
 
 public class RestClientBase {
 
-    public static final String QUARKUS_CONFIG_REST_URL_FORMAT = "quarkus.rest-config.\"%s\".url";
-    public static final String QUARKUS_CONFIG_REST_URI_FORMAT = "quarkus.rest-config.\"%s\".uri";
+    public static final String QUARKUS_CONFIG_REST_URL_FORMAT = "quarkus.rest-client.\"%s\".url";
+    public static final String QUARKUS_CONFIG_REST_URI_FORMAT = "quarkus.rest-client.\"%s\".uri";
 
     private final Class<?> proxyType;
     private final String baseUriFromAnnotation;

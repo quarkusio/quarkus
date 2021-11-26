@@ -1214,14 +1214,6 @@ public final class HibernateOrmProcessor {
 
     private static Map<String, Set<String>> getModelClassesAndPackagesPerPersistenceUnits(HibernateOrmConfig hibernateOrmConfig,
             JpaModelBuildItem jpaModel, IndexView index, boolean enableDefaultPersistenceUnit) {
-        if (hibernateOrmConfig.persistenceUnits.isEmpty()) {
-            // no named persistence units, all the entities will be associated with the default one
-            // so we don't need to split them
-            Set<String> allModelClassesAndPackages = new HashSet<>(jpaModel.getAllModelClassNames());
-            allModelClassesAndPackages.addAll(jpaModel.getAllModelPackageNames());
-            return Collections.singletonMap(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, allModelClassesAndPackages);
-        }
-
         Map<String, Set<String>> modelClassesAndPackagesPerPersistenceUnits = new HashMap<>();
 
         boolean hasPackagesInQuarkusConfig = hasPackagesInQuarkusConfig(hibernateOrmConfig);
@@ -1280,9 +1272,16 @@ public final class HibernateOrmProcessor {
                             .add(persistenceUnitName);
                 }
             }
-        } else {
+        } else if (!hibernateOrmConfig.persistenceUnits.isEmpty()) {
             throw new ConfigurationException(
                     "Multiple persistence units are defined but the entities are not mapped to them. You should either use the .packages Quarkus configuration property or package-level @PersistenceUnit annotations.");
+        } else {
+            // No .packages configuration, no package-level persistence unit annotations,
+            // and no named persistence units: all the entities will be associated with the default one
+            // so we don't need to split them
+            Set<String> allModelClassesAndPackages = new HashSet<>(jpaModel.getAllModelClassNames());
+            allModelClassesAndPackages.addAll(jpaModel.getAllModelPackageNames());
+            return Collections.singletonMap(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, allModelClassesAndPackages);
         }
 
         Set<String> modelClassesWithPersistenceUnitAnnotations = new TreeSet<>();

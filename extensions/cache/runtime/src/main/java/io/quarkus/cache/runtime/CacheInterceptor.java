@@ -53,6 +53,7 @@ public abstract class CacheInterceptor {
             InvocationContext invocationContext, Class<T> interceptorBindingClass) {
         Set<Annotation> bindings = InterceptorBindings.getInterceptorBindings(invocationContext);
         if (bindings == null) {
+            LOGGER.trace("Interceptor bindings not found in ArC");
             // This should only happen when the interception is not managed by Arc.
             return Optional.empty();
         }
@@ -72,6 +73,7 @@ public abstract class CacheInterceptor {
 
     private <T extends Annotation> CacheInterceptionContext<T> getNonArcCacheInterceptionContext(
             InvocationContext invocationContext, Class<T> interceptorBindingClass, boolean supportsCacheKey) {
+        LOGGER.trace("Retrieving interceptor bindings using reflection");
         List<T> interceptorBindings = new ArrayList<>();
         List<Short> cacheKeyParameterPositions = new ArrayList<>();
         boolean cacheKeyParameterPositionsFound = false;

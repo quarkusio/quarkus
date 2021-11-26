@@ -1,5 +1,7 @@
 package io.quarkus.cache.runtime.caffeine.metrics;
 
+import org.jboss.logging.Logger;
+
 import com.github.benmanes.caffeine.cache.AsyncCache;
 
 /**
@@ -8,6 +10,8 @@ import com.github.benmanes.caffeine.cache.AsyncCache;
  */
 public class NoOpMetricsInitializer implements MetricsInitializer {
 
+    private static final Logger LOGGER = Logger.getLogger(NoOpMetricsInitializer.class);
+
     @Override
     public boolean metricsEnabled() {
         return false;
@@ -15,6 +19,7 @@ public class NoOpMetricsInitializer implements MetricsInitializer {
 
     @Override
     public void recordMetrics(AsyncCache<Object, Object> cache, String cacheName) {
-        // Do nothing.
+        LOGGER.tracef("Initializing no-op metrics for cache [%s]", cacheName);
+        // Do nothing more.
     }
 }

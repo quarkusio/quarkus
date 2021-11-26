@@ -74,4 +74,11 @@ public class QuteConfig {
     @ConfigItem(defaultValue = "<alias_>")
     public String iterationMetadataPrefix;
 
+    /**
+     * The list of content types for which the {@code '}, {@code "}, {@code <}, {@code >} and {@code &} characters are escaped
+     * if a template variant is set.
+     */
+    @ConfigItem(defaultValue = "text/html,text/xml,application/xml,application/xhtml+xml")
+    public List<String> escapeContentTypes;
+
 }

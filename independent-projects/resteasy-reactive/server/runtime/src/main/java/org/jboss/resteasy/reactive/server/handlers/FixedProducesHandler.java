@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
+import java.util.List;
 import java.util.Locale;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
@@ -31,25 +32,34 @@ public class FixedProducesHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        String accept = requestContext.serverRequest().getRequestHeader(HttpHeaders.ACCEPT);
-        if (accept == null) {
+        List<String> acceptValues = requestContext.serverRequest().getAllRequestHeaders(HttpHeaders.ACCEPT);
+        if (acceptValues.isEmpty()) {
             requestContext.setResponseContentType(mediaType);
             requestContext.setEntityWriter(writer);
         } else {
-            //TODO: this needs to be optimised
-            if (accept.contains(mediaTypeString) || accept.contains("*/*") || accept.contains(mediaTypeSubstring)) {
-                requestContext.setResponseContentType(mediaType);
-                requestContext.setEntityWriter(writer);
-            } else {
-                // some clients might be sending the header with incorrect casing...
-                String lowercaseAccept = accept.toLowerCase(Locale.ROOT);
-                if (lowercaseAccept.contains(mediaTypeString) || lowercaseAccept.contains(mediaTypeSubstring)) {
+            boolean handled = false;
+            for (int i = 0; i < acceptValues.size(); i++) {
+                String accept = acceptValues.get(i);
+                //TODO: this needs to be optimised
+                if (accept.contains(mediaTypeString) || accept.contains("*/*") || accept.contains(mediaTypeSubstring)) {
                     requestContext.setResponseContentType(mediaType);
                     requestContext.setEntityWriter(writer);
+                    handled = true;
+                    break;
                 } else {
-                    throw new WebApplicationException(
-                            Response.notAcceptable(Variant.mediaTypes(mediaType.getMediaType()).build()).build());
+                    // some clients might be sending the header with incorrect casing...
+                    String lowercaseAccept = accept.toLowerCase(Locale.ROOT);
+                    if (lowercaseAccept.contains(mediaTypeString) || lowercaseAccept.contains(mediaTypeSubstring)) {
+                        requestContext.setResponseContentType(mediaType);
+                        requestContext.setEntityWriter(writer);
+                        handled = true;
+                        break;
+                    }
                 }
+            }
+            if (!handled) {
+                throw new WebApplicationException(
+                        Response.notAcceptable(Variant.mediaTypes(mediaType.getMediaType()).build()).build());
             }
         }
     }

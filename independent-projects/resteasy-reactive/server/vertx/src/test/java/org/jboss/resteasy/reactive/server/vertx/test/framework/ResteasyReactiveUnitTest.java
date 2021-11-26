@@ -90,6 +90,8 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCallback {
 
+    public static final int SERVER_PORT = 8080;
+
     private static final Logger rootLogger;
     private Handler[] originalHandlers;
 
@@ -225,7 +227,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
             vertx = Vertx.vertx();
             HttpServer server = vertx.createHttpServer();
             router = Router.router(vertx);
-            server.requestHandler(router).listen(8080).toCompletionStage().toCompletableFuture().get();
+            server.requestHandler(router).listen(SERVER_PORT).toCompletionStage().toCompletableFuture().get();
             store.put(ResteasyReactiveUnitTest.class.getName(), new ExtensionContext.Store.CloseableResource() {
                 @Override
                 public void close() throws Throwable {

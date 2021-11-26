@@ -1,6 +1,7 @@
 package io.quarkus.rest.client.reactive;
 
 import java.net.URL;
+import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -41,5 +42,9 @@ public class TestBean {
 
     Integer[] helloNonSimpleSyncInts() {
         return clientNonSimple.echoSyncInts(new Integer[] { 1, 2, 3 });
+    }
+
+    Map<String, String> helloQueryParamsToMap() {
+        return clientNonSimple.echoQueryAsMap("1", "2", "3", "4", "5", "6");
     }
 }

@@ -44,7 +44,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
 
     private static final int BUFFER_SIZE = 8096;
 
-    private static Headers errorHeaders = new Headers();
+    private static final Headers errorHeaders = new Headers();
     static {
         errorHeaders.putSingle("Content-Type", "application/json");
     }
@@ -126,7 +126,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                             responseBuilder.setBase64Encoded(true);
                             responseBuilder.setBody(Base64.getEncoder().encodeToString(baos.toByteArray()));
                         } else {
-                            responseBuilder.setBody(new String(baos.toByteArray(), StandardCharsets.UTF_8));
+                            responseBuilder.setBody(baos.toString(StandardCharsets.UTF_8));
                         }
                     }
                     future.complete(responseBuilder);

@@ -18,6 +18,8 @@
     <modules>
         <module>quarkus-vertx-web</module>
         <module>quarkus-vertx-web-deployment</module>
+        <module>quarkus-tika</module>
+        <module>quarkus-tika-deployment</module>
     </modules>
 
 </project>

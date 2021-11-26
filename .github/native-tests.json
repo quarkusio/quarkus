@@ -105,7 +105,7 @@
         {
             "category": "Misc2",
             "timeout": 65,
-            "test-modules": "tika, hibernate-validator, test-extension, logging-gelf, bootstrap-config, mailer, native-config-profile",
+            "test-modules": "hibernate-validator, test-extension, logging-gelf, bootstrap-config, mailer, native-config-profile",
             "os-name": "ubuntu-latest"
         },
         {

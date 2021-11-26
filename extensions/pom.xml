@@ -98,7 +98,6 @@
         <module>jgit</module>
         <module>kafka-client</module>
         <module>kafka-streams</module>
-        <module>tika</module>
         <module>neo4j</module>
         <module>mongodb-client</module>
         <module>artemis-core</module>

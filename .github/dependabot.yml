@@ -65,8 +65,6 @@ updates:
       - dependency-name: io.smallrye.reactive:smallrye-reactive-messaging
       # Swagger-UI
       - dependency-name: org.webjars:swagger-ui
-      # Tika
-      - dependency-name: org.apache.tika:tika-parsers
       # RX Java 2
       - dependency-name: io.reactivex.rxjava2:rxjava
       # Test dependencies

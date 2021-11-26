@@ -43,7 +43,7 @@ public class CreateProject {
     public static final String EXTRA_CODESTARTS = "quarkus.create-project.extra-codestarts";
 
     private QuarkusProject quarkusProject;
-    private String javaTarget;
+    private String javaVersion;
     private Set<String> extensions = new HashSet<>();
 
     private Map<String, Object> values = new HashMap<>();
@@ -98,8 +98,8 @@ public class CreateProject {
         return this;
     }
 
-    public CreateProject javaTarget(String javaTarget) {
-        this.javaTarget = javaTarget;
+    public CreateProject javaVersion(String javaVersion) {
+        this.javaVersion = javaVersion;
         return this;
     }
 

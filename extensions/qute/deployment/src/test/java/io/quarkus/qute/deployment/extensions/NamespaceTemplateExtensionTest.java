@@ -2,6 +2,7 @@ package io.quarkus.qute.deployment.extensions;
 
 import static io.quarkus.qute.TemplateExtension.ANY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -38,6 +39,11 @@ public class NamespaceTemplateExtensionTest {
                 engine.parse("{str:format('%s',1)}").render());
         assertEquals("olleh",
                 engine.parse("{str:reverse('hello')}").render());
+        try {
+            engine.parse("{str:reverse(null)}").render();
+            fail();
+        } catch (NullPointerException expected) {
+        }
         assertEquals("foolish:olleh",
                 engine.parse("{str:foolish('hello')}").render());
         assertEquals("ONE=ONE",

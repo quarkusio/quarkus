@@ -9,8 +9,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import org.jboss.logging.AzureFunctionsLoggerProvider;
 import org.jboss.logging.Logger;
 
+import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
@@ -61,9 +63,9 @@ public class BaseFunction {
         deploymentStatus = error.toString();
     }
 
-    protected HttpResponseMessage dispatch(HttpRequestMessage<Optional<String>> request) {
+    protected HttpResponseMessage dispatch(HttpRequestMessage<Optional<String>> request, ExecutionContext context) {
         try {
-            return nettyDispatch(request);
+            return nettyDispatch(request, context);
         } catch (Exception e) {
             e.printStackTrace();
             return request
@@ -71,38 +73,43 @@ public class BaseFunction {
         }
     }
 
-    protected HttpResponseMessage nettyDispatch(HttpRequestMessage<Optional<String>> request)
+    protected HttpResponseMessage nettyDispatch(HttpRequestMessage<Optional<String>> request, ExecutionContext context)
             throws Exception {
-        String path = request.getUri().getRawPath();
-        String query = request.getUri().getRawQuery();
-        if (query != null)
-            path = path + '?' + query;
-        String host = request.getUri().getHost();
-        if (request.getUri().getPort() != -1) {
-            host = host + ':' + request.getUri().getPort();
-        }
-        DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
-                HttpMethod.valueOf(request.getHttpMethod().name()), path);
-        nettyRequest.headers().set("Host", host);
-        for (Map.Entry<String, String> header : request.getHeaders().entrySet()) {
-            nettyRequest.headers().add(header.getKey(), header.getValue());
-        }
-
-        HttpContent requestContent = LastHttpContent.EMPTY_LAST_CONTENT;
-        if (request.getBody().isPresent()) {
-            ByteBuf body = Unpooled.wrappedBuffer(request.getBody().get().getBytes());
-            requestContent = new DefaultLastHttpContent(body);
-        }
-
-        ResponseHandler handler = new ResponseHandler(request);
-        VirtualClientConnection<?> connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP);
-
-        connection.sendMessage(nettyRequest);
-        connection.sendMessage(requestContent);
+        AzureFunctionsLoggerProvider.setAzureFunctionsLogger(context.getLogger());
         try {
-            return handler.future.get();
+            String path = request.getUri().getRawPath();
+            String query = request.getUri().getRawQuery();
+            if (query != null)
+                path = path + '?' + query;
+            String host = request.getUri().getHost();
+            if (request.getUri().getPort() != -1) {
+                host = host + ':' + request.getUri().getPort();
+            }
+            DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
+                HttpMethod.valueOf(request.getHttpMethod().name()), path);
+            nettyRequest.headers().set("Host", host);
+            for (Map.Entry<String, String> header : request.getHeaders().entrySet()) {
+                nettyRequest.headers().add(header.getKey(), header.getValue());
+            }
+
+            HttpContent requestContent = LastHttpContent.EMPTY_LAST_CONTENT;
+            if (request.getBody().isPresent()) {
+                ByteBuf body = Unpooled.wrappedBuffer(request.getBody().get().getBytes());
+                requestContent = new DefaultLastHttpContent(body);
+            }
+
+            ResponseHandler handler = new ResponseHandler(request);
+            VirtualClientConnection<?> connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP);
+
+            connection.sendMessage(nettyRequest);
+            connection.sendMessage(requestContent);
+            try {
+                return handler.future.get();
+            } finally {
+                connection.close();
+            }
         } finally {
-            connection.close();
+            AzureFunctionsLoggerProvider.resetAzureFunctionsLogger();
         }
     }
 

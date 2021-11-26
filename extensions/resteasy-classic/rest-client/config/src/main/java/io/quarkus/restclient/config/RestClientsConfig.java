@@ -20,7 +20,12 @@ public class RestClientsConfig {
      * a class bearing that annotation, in which case it is possible to use the short name, as well as fully qualified
      * name.
      */
-    private final Map<String, RestClientConfig> configs = new HashMap<>();
+    // This variable is only here to avoid warnings about unrecognized configuration keys. The map is otherwise ignored,
+    // and the RestClientConfig instances are loaded via `RestClientConfig#load()` methods instead.
+    @ConfigItem(name = ConfigItem.PARENT)
+    Map<String, RestClientConfig> preloadedConfigs;
+
+    final Map<String, RestClientConfig> configs = new HashMap<>();
 
     /**
      * By default, REST Client Reactive uses text/plain content type for String values

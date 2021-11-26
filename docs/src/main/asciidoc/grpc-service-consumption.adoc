@@ -334,3 +334,40 @@ public class MyInterceptor implements ClientInterceptor, Prioritized {
 
 Interceptors with the highest priority are called first.
 The default priority, used if the interceptor does not implement the `Prioritized` interface, is `0`.
+
+== gRPC Client metrics
+
+=== Enabling metrics collection
+
+gRPC client metrics are automatically enabled when the application also uses the xref:micrometer.adoc[`quarkus-micrometer`] extension.
+Micrometer collects the metrics of all the gRPC clients used by the application.
+
+As an example, if you export the metrics to Prometheus, you will get:
+
+[source, text]
+----
+# HELP grpc_client_responses_received_messages_total The total number of responses received
+# TYPE grpc_client_responses_received_messages_total counter
+grpc_client_responses_received_messages_total{method="SayHello",methodType="UNARY",service="helloworld.Greeter",} 6.0
+# HELP grpc_client_requests_sent_messages_total The total number of requests sent
+# TYPE grpc_client_requests_sent_messages_total counter
+grpc_client_requests_sent_messages_total{method="SayHello",methodType="UNARY",service="helloworld.Greeter",} 6.0
+# HELP grpc_client_processing_duration_seconds The total time taken for the client to complete the call, including network delay
+# TYPE grpc_client_processing_duration_seconds summary
+grpc_client_processing_duration_seconds_count{method="SayHello",methodType="UNARY",service="helloworld.Greeter",statusCode="OK",} 6.0
+grpc_client_processing_duration_seconds_sum{method="SayHello",methodType="UNARY",service="helloworld.Greeter",statusCode="OK",} 0.167411625
+# HELP grpc_client_processing_duration_seconds_max The total time taken for the client to complete the call, including network delay
+# TYPE grpc_client_processing_duration_seconds_max gauge
+grpc_client_processing_duration_seconds_max{method="SayHello",methodType="UNARY",service="helloworld.Greeter",statusCode="OK",} 0.136478028
+----
+
+The service name, method and type can be found in the _tags_.
+
+=== Disabling metrics collection
+
+To disable the gRPC client metrics when `quarkus-micrometer` is used, add the following property to the application configuration:
+
+[source, properties]
+----
+quarkus.micrometer.binder.grpc-client.enabled=false
+----

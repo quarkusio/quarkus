@@ -51,7 +51,7 @@
         {
             "category": "Amazon",
             "timeout": 45,
-            "test-modules": "amazon-services, amazon-lambda, amazon-lambda-http",
+            "test-modules": "amazon-lambda, amazon-lambda-http",
             "os-name": "ubuntu-latest"
         },
         {

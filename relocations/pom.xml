@@ -28,6 +28,24 @@
         <module>quarkus-amazon-alexa-deployment</module>
         <module>quarkus-hibernate-search-orm-elasticsearch-aws</module>
         <module>quarkus-hibernate-search-orm-elasticsearch-aws-deployment</module>
+        <module>quarkus-amazon-dynamodb</module>
+        <module>quarkus-amazon-dynamodb-deployment</module>
+        <module>quarkus-amazon-iam</module>
+        <module>quarkus-amazon-iam-deployment</module>
+        <module>quarkus-amazon-kms</module>
+        <module>quarkus-amazon-kms-deployment</module>
+        <module>quarkus-amazon-s3</module>
+        <module>quarkus-amazon-s3-deployment</module>
+        <module>quarkus-amazon-secretsmanager</module>
+        <module>quarkus-amazon-secretsmanager-deployment</module>
+        <module>quarkus-amazon-ses</module>
+        <module>quarkus-amazon-ses-deployment</module>
+        <module>quarkus-amazon-sns</module>
+        <module>quarkus-amazon-sns-deployment</module>
+        <module>quarkus-amazon-sqs</module>
+        <module>quarkus-amazon-sqs-deployment</module>
+        <module>quarkus-amazon-ssm</module>
+        <module>quarkus-amazon-ssm-deployment</module>
     </modules>
 
 </project>

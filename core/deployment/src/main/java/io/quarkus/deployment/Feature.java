@@ -10,16 +10,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 public enum Feature {
 
     AGROAL,
-    AMAZON_DYNAMODB,
     AMAZON_LAMBDA,
-    AMAZON_IAM,
-    AMAZON_S3,
-    AMAZON_SNS,
-    AMAZON_SQS,
-    AMAZON_SES,
-    AMAZON_KMS,
-    AMAZON_SSM,
-    AMAZON_SECRETS_MANAGER,
     APICURIO_REGISTRY_AVRO,
     ARTEMIS_CORE,
     ARTEMIS_JMS,

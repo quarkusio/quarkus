@@ -103,7 +103,6 @@ updates:
       # Yasson
       - dependency-name: org.eclipse:yasson
       # AWS
-      - dependency-name: software.amazon.awssdk:*
       - dependency-name: com.amazonaws:*
       - dependency-name: com.amazonaws.serverless:*
       # Azure

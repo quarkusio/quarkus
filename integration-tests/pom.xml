@@ -217,7 +217,6 @@
                 <module>reactive-pg-client</module>
                 <module>reactive-mysql-client</module>
                 <module>reactive-mssql-client</module>
-                <module>amazon-services</module>
                 <module>test-extension</module>
                 <module>amazon-lambda</module>
                 <module>amazon-lambda-s3event</module>

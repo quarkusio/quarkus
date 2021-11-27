@@ -76,18 +76,18 @@ public class CreateProjectHelper {
         return sourceType.orElse(SourceType.JAVA);
     }
 
-    public static void setJavaVersion(Map<String, Object> values, String javaTarget) {
+    public static void setJavaVersion(Map<String, Object> values, String javaVersion) {
         requireNonNull(values, "Must provide values");
 
         Matcher matcher = JAVA_VERSION_PATTERN
-                .matcher(javaTarget != null ? javaTarget : System.getProperty("java.version", ""));
+                .matcher(javaVersion != null ? javaVersion : System.getProperty("java.version", ""));
 
         if (matcher.matches()) {
             String versionExtracted = matcher.group(1);
             String version = JAVA_VERSIONS_LTS.contains(versionExtracted) ? versionExtracted : DEFAULT_JAVA_VERSION;
-            values.put(ProjectGenerator.JAVA_TARGET, version);
+            values.put(ProjectGenerator.JAVA_VERSION, version);
         } else {
-            values.put(ProjectGenerator.JAVA_TARGET, DEFAULT_JAVA_VERSION);
+            values.put(ProjectGenerator.JAVA_VERSION, DEFAULT_JAVA_VERSION);
         }
     }
 

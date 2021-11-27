@@ -26,6 +26,8 @@
         <module>quarkus-jsch-deployment</module>
         <module>quarkus-amazon-alexa</module>
         <module>quarkus-amazon-alexa-deployment</module>
+        <module>quarkus-hibernate-search-orm-elasticsearch-aws</module>
+        <module>quarkus-hibernate-search-orm-elasticsearch-aws-deployment</module>
     </modules>
 
 </project>

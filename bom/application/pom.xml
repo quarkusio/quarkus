@@ -153,7 +153,6 @@
         <maven-invoker.version>3.0.1</maven-invoker.version>
         <awaitility.version>4.1.1</awaitility.version>
         <jboss-logmanager.version>1.0.9</jboss-logmanager.version>
-        <jgit.version>6.0.0.202111291000-r</jgit.version>
         <flyway.version>8.1.0</flyway.version>
         <yasson.version>1.0.10</yasson.version>
         <liquibase.version>4.6.2</liquibase.version>
@@ -2459,16 +2458,6 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-jgit</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-jgit-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jsch</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -3931,21 +3920,6 @@
                 <groupId>com.jcraft</groupId>
                 <artifactId>jzlib</artifactId>
                 <version>${jzlib.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jgit</groupId>
-                <artifactId>org.eclipse.jgit</artifactId>
-                <version>${jgit.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jgit</groupId>
-                <artifactId>org.eclipse.jgit.http.server</artifactId>
-                <version>${jgit.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jgit</groupId>
-                <artifactId>org.eclipse.jgit.ssh.jsch</artifactId>
-                <version>${jgit.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.microprofile.config</groupId>
@@ -5632,6 +5606,17 @@
                 <artifactId>quarkus-tika-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jgit</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jgit-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 

@@ -55,7 +55,6 @@ public enum Feature {
     JDBC_MSSQL,
     JDBC_MYSQL,
     JDBC_ORACLE,
-    JGIT,
     JSCH,
     KAFKA_CLIENT,
     KAFKA_STREAMS,

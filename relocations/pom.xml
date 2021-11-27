@@ -20,6 +20,8 @@
         <module>quarkus-vertx-web-deployment</module>
         <module>quarkus-tika</module>
         <module>quarkus-tika-deployment</module>
+        <module>quarkus-jgit</module>
+        <module>quarkus-jgit-deployment</module>
     </modules>
 
 </project>

@@ -17,7 +17,6 @@ updates:
       - dependency-name: org.liquibase:liquibase-core
       - dependency-name: org.liquibase.ext:liquibase-mongodb
       - dependency-name: org.freemarker:freemarker
-      - dependency-name: org.eclipse.jgit:*
       - dependency-name: io.fabric8:kubernetes-client-bom
       - dependency-name: org.apache.httpcomponents:*
       - dependency-name: org.quartz-scheduler:quartz

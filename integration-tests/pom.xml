@@ -237,7 +237,6 @@
                 <module>jsonb</module>
                 <module>resteasy-jackson</module>
                 <module>resteasy-mutiny</module>
-                <module>jsch</module>
                 <module>virtual-http</module>
                 <module>virtual-http-resteasy</module>
                 <module>artemis-core</module>

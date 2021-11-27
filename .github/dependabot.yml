@@ -25,7 +25,6 @@ updates:
       - dependency-name: org.yaml:snakeyaml
       - dependency-name: com.google.guava:guava
       - dependency-name: com.vackosar.gitflowincrementalbuilder:gitflow-incremental-builder
-      - dependency-name: com.jcraft:jzlib
       - dependency-name: org.jboss.logging:*
       - dependency-name: org.jboss.logmanager:*
       - dependency-name: org.ow2.asm:*

@@ -94,7 +94,6 @@
         <module>elasticsearch-rest-client-common</module>
         <module>elasticsearch-rest-client</module>
         <module>elasticsearch-rest-high-level-client</module>
-        <module>jsch</module>
         <module>kafka-client</module>
         <module>kafka-streams</module>
         <module>neo4j</module>

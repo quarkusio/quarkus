@@ -53,6 +53,8 @@
         <module>quarkus-test-artemis</module>
         <module>quarkus-consul-config</module>
         <module>quarkus-consul-config-deployment</module>
+        <module>quarkus-logging-sentry</module>
+        <module>quarkus-logging-sentry-deployment</module>
     </modules>
 
 </project>

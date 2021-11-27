@@ -117,7 +117,6 @@ updates:
       - dependency-name: org.bouncycastle:*
       # Logstash
       - dependency-name: biz.paluch.logging:logstash-gelf
-      - dependency-name: io.sentry:*
       # MongoDB
       - dependency-name: org.mongodb:*
       # Avro

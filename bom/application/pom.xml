@@ -163,7 +163,6 @@
         <artemis.version>2.19.0</artemis.version>
         <proton-j.version>0.33.10</proton-j.version>
         <okhttp.version>3.14.9</okhttp.version>
-        <sentry.version>5.4.3</sentry.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kubernetes-client.version>5.10.1</kubernetes-client.version>
         <flapdoodle.mongo.version>3.2.0</flapdoodle.mongo.version>
@@ -2370,16 +2369,6 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-logging-sentry</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-logging-sentry-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-logging-gelf</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -3624,11 +3613,6 @@
                 <groupId>com.squareup.okhttp3</groupId>
                 <artifactId>logging-interceptor</artifactId>
                 <version>${okhttp.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.sentry</groupId>
-                <artifactId>sentry-jul</artifactId>
-                <version>${sentry.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.assertj</groupId>
@@ -5505,6 +5489,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-consul-config-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-logging-sentry</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-logging-sentry-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

@@ -30,8 +30,8 @@ import io.quarkus.smallrye.reactivemessaging.deployment.QuarkusMediatorConfigura
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MediatorConfiguration;
-import io.smallrye.reactive.messaging.MediatorConfigurationSupport;
 import io.smallrye.reactive.messaging.Shape;
+import io.smallrye.reactive.messaging.providers.MediatorConfigurationSupport;
 
 @SuppressWarnings("ConstantConditions")
 public class MediatorConfigurationSupportTest {

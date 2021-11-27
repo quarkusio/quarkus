@@ -16,8 +16,8 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.impl.LazyValue;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder.SmallRyeReactiveMessagingContext;
 import io.smallrye.reactive.messaging.MediatorConfiguration;
-import io.smallrye.reactive.messaging.extension.ChannelConfiguration;
-import io.smallrye.reactive.messaging.extension.EmitterConfiguration;
+import io.smallrye.reactive.messaging.providers.extension.ChannelConfiguration;
+import io.smallrye.reactive.messaging.providers.extension.EmitterConfiguration;
 
 public class DevReactiveMessagingInfos {
 

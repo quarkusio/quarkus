@@ -454,6 +454,12 @@ Type: _string_ | false |
 
 Type: _string_ | false |
 
+| [.no-hyphens]#*credentials-provider-name*#
+
+[.no-hyphens]#_(rabbitmq-credentials-provider-name)_# | The name of the RabbitMQ Credentials Provider bean used to provide dynamic credentials to the RabbitMQ client
+
+Type: _string_ | false |
+
 | [.no-hyphens]#*connection-timeout*# | The TCP connection timeout (ms); 0 is interpreted as no timeout
 
 Type: _int_ | false | `60000`
@@ -748,6 +754,12 @@ Type: _string_ | false |
 | [.no-hyphens]#*trust-store-path*#
 
 [.no-hyphens]#_(rabbitmq-trust-store-path)_# | The path to a JKS trust store
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*credentials-provider-name*#
+
+[.no-hyphens]#_(rabbitmq-credentials-provider-name)_# | The name of the RabbitMQ Credentials Provider bean used to provide dynamic credentials to the RabbitMQ client
 
 Type: _string_ | false |
 

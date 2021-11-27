@@ -396,6 +396,33 @@ The incoming messages are acknowledged only once the processing completes succes
 So, it commits the offset after the successful processing.
 If the processing still fails, even after all retries, the message is _nacked_ and the failure strategy is applied.
 
+==== Handling Deserialization Failures
+
+When a deserialization failure occurs, you can intercept it and provide a failure strategy.
+To achieve this, you need to create a bean implementing `DeserializationFailureHandler<T>` interface:
+
+[source, java]
+----
+@ApplicationScoped
+@Identifier("failure-retry") // Set the name of the failure handler
+public class MyDeserializationFailureHandler
+    implements DeserializationFailureHandler<JsonObject> { // Specify the expected type
+
+    @Override
+    public JsonObject decorateDeserialization(Uni<JsonObject> deserialization, String topic, boolean isKey,
+            String deserializer, byte[] data, Headers headers) {
+        return deserialization
+                    .onFailure().retry().atMost(3)
+                    .await().atMost(Duration.ofMillis(200));
+    }
+}
+----
+
+To use this failure handler, the bean must be exposed with the `@Identifier` qualifier and the connector configuration must specify the attribute `mp.messaging.incoming.$channel.[key|value]-deserialization-failure-handler` (for key or value deserializers).
+
+The handler is called with details of the deserialization, including the action represented as `Uni<T>`.
+On the deserialization `Uni` failure strategies like retry, providing a fallback value or applying timeout can be implemented.
+
 === Consumer Groups
 
 In Kafka, a consumer group is a set of consumers which cooperate to consume data from a topic.
@@ -895,6 +922,33 @@ Note that while having retries in a reliable system is a best practice, the `max
 If the message order is a must for your use case, setting `max.in.flight.requests.per.connection` to `1` will make sure a single batch of messages is sent at a time, in the expense of limiting the throughput of the producer.
 
 For applying retry mechanism on processing errors, see the section on <<retrying-processing>>.
+
+=== Handling Serialization Failures
+
+For Kafka producer client serialization failures are not recoverable, thus the message dispatch is not retried. In these cases you may need to apply a failure strategy for the serializer.
+To achieve this, you need to create a bean implementing `SerializationFailureHandler<T>` interface:
+
+[source, java]
+----
+@ApplicationScoped
+@Identifier("failure-fallback") // Set the name of the failure handler
+public class MySerializationFailureHandler
+    implements SerializationFailureHandler<JsonObject> { // Specify the expected type
+
+    @Override
+    public byte[] decorateSerialization(Uni<byte[]> serialization, String topic, boolean isKey,
+        String serializer, Object data, Headers headers) {
+        return serialization
+                    .onFailure().retry().atMost(3)
+                    .await().indefinitely();
+    }
+}
+----
+
+To use this failure handler, the bean must be exposed with the `@Identifier` qualifier and the connector configuration must specify the attribute `mp.messaging.outgoing.$channel.[key|value]-serialization-failure-handler` (for key or value serializers).
+
+The handler is called with details of the serialization, including the action represented as `Uni<byte[]>`.
+Note that the method must await on the result and return the serialized byte array.
 
 === In-memory channels
 

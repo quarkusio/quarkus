@@ -237,8 +237,6 @@
                 <module>resteasy-mutiny</module>
                 <module>virtual-http</module>
                 <module>virtual-http-resteasy</module>
-                <module>artemis-core</module>
-                <module>artemis-jms</module>
                 <module>maven</module>
                 <module>scala</module>
                 <module>kotlin</module>

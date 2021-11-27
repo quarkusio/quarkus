@@ -529,31 +529,6 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-artemis-core</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-artemis-core-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-test-artemis</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-artemis-jms</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-artemis-jms-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-config-yaml</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -3534,49 +3509,6 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.activemq</groupId>
-                <artifactId>artemis-core-client</artifactId>
-                <version>${artemis.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.geronimo.specs</groupId>
-                        <artifactId>geronimo-json_1.0_spec</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.johnzon</groupId>
-                        <artifactId>johnzon-core</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.activemq</groupId>
-                <artifactId>artemis-jms-client</artifactId>
-                <version>${artemis.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.geronimo.specs</groupId>
-                        <artifactId>geronimo-json_1.0_spec</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.johnzon</groupId>
-                        <artifactId>johnzon-core</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.activemq</groupId>
-                <artifactId>artemis-commons</artifactId>
-                <version>${artemis.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.activemq</groupId>
                 <artifactId>artemis-server</artifactId>
                 <version>${artemis.version}</version>
                 <exclusions>
@@ -3589,11 +3521,6 @@
             <dependency>
                 <groupId>org.apache.activemq</groupId>
                 <artifactId>artemis-amqp-protocol</artifactId>
-                <version>${artemis.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.activemq</groupId>
-                <artifactId>artemis-mqtt-protocol</artifactId>
                 <version>${artemis.version}</version>
             </dependency>
             <dependency>
@@ -5553,6 +5480,31 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-amazon-secretsmanager-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-artemis-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-artemis-core-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-test-artemis</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-artemis-jms</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-artemis-jms-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

@@ -46,6 +46,11 @@
         <module>quarkus-amazon-sqs-deployment</module>
         <module>quarkus-amazon-ssm</module>
         <module>quarkus-amazon-ssm-deployment</module>
+        <module>quarkus-artemis-core</module>
+        <module>quarkus-artemis-core-deployment</module>
+        <module>quarkus-artemis-jms</module>
+        <module>quarkus-artemis-jms-deployment</module>
+        <module>quarkus-test-artemis</module>
     </modules>
 
 </project>

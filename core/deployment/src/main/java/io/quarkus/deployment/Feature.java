@@ -12,8 +12,6 @@ public enum Feature {
     AGROAL,
     AMAZON_LAMBDA,
     APICURIO_REGISTRY_AVRO,
-    ARTEMIS_CORE,
-    ARTEMIS_JMS,
     AWT,
     CACHE,
     CDI,

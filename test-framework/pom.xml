@@ -19,7 +19,6 @@
     </properties>
 
     <modules>
-        <module>artemis</module>
         <module>common</module>
         <module>h2</module>
         <module>derby</module>

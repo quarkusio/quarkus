@@ -216,9 +216,12 @@ public class ProxyFactory<T> {
 
                     ResultHandle getDeclaredMethodParamsArray = mc.newArray(Class.class,
                             methodInfo.getParameterCount());
-                    for (int i = 0; i < methodInfo.getParameterCount(); i++) {
-                        ResultHandle paramClass = mc.loadClass(methodInfo.getParameters()[i].getType());
-                        mc.writeArrayValue(getDeclaredMethodParamsArray, i, paramClass);
+                    if (methodInfo.getParameterCount() > 0) {
+                        Parameter[] methodInfoParameters = methodInfo.getParameters();
+                        for (int i = 0; i < methodInfo.getParameterCount(); i++) {
+                            ResultHandle paramClass = mc.loadClass(methodInfoParameters[i].getType());
+                            mc.writeArrayValue(getDeclaredMethodParamsArray, i, paramClass);
+                        }
                     }
                     ResultHandle method = mc.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class,

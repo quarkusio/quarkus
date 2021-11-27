@@ -10,6 +10,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.Proxy;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -1168,9 +1169,12 @@ public class BytecodeRecorderImpl implements RecorderContext {
             }
             nonDefaultConstructorHolder = new NonDefaultConstructorHolder(current, null);
             nonDefaultConstructorHandles = new DeferredParameter[current.getParameterCount()];
-            for (int i = 0; i < current.getParameterCount(); ++i) {
-                String name = current.getParameters()[i].getName();
-                constructorParamNameMap.put(name, i);
+            if (current.getParameterCount() > 0) {
+                Parameter[] parameters = current.getParameters();
+                for (int i = 0; i < current.getParameterCount(); ++i) {
+                    String name = parameters[i].getName();
+                    constructorParamNameMap.put(name, i);
+                }
             }
         } else {
             for (Constructor<?> ctor : param.getClass().getConstructors()) {

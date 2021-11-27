@@ -24,6 +24,8 @@
         <module>quarkus-jgit-deployment</module>
         <module>quarkus-jsch</module>
         <module>quarkus-jsch-deployment</module>
+        <module>quarkus-amazon-alexa</module>
+        <module>quarkus-amazon-alexa-deployment</module>
     </modules>
 
 </project>

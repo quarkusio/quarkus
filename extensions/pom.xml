@@ -150,7 +150,6 @@
         <!-- AWS API Gateway REST API -->
         <module>amazon-lambda-rest</module>
         <module>amazon-services</module>
-        <module>amazon-alexa</module>
         <module>azure-functions-http</module>
 
         <!-- New Frameworks -->

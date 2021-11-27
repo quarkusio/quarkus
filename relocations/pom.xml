@@ -55,6 +55,8 @@
         <module>quarkus-consul-config-deployment</module>
         <module>quarkus-logging-sentry</module>
         <module>quarkus-logging-sentry-deployment</module>
+        <module>quarkus-neo4j</module>
+        <module>quarkus-neo4j-deployment</module>
     </modules>
 
 </project>

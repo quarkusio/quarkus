@@ -157,7 +157,6 @@
         <liquibase-mongodb.version>4.6.2</liquibase-mongodb.version>
         <snakeyaml.version>1.29</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
-        <neo4j-java-driver.version>4.4.1</neo4j-java-driver.version>
         <mongo-client.version>4.3.4</mongo-client.version>
         <mongo-crypt.version>1.2.1</mongo-crypt.version>
         <artemis.version>2.19.0</artemis.version>
@@ -2270,11 +2269,6 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-openshift-client-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-neo4j</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -4403,11 +4397,6 @@
                 <version>${elasticsearch-rest-client.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.neo4j.driver</groupId>
-                <artifactId>neo4j-java-driver</artifactId>
-                <version>${neo4j-java-driver.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
                 <version>${mockito.version}</version>
@@ -5499,6 +5488,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-logging-sentry-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-neo4j</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-neo4j-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

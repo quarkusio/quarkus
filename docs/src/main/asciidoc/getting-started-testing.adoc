@@ -482,11 +482,11 @@ To get around this Quarkus supports the idea of a test profile. If a test has a 
 run test then Quarkus will be shut down and started with the new profile before running the tests. This is obviously
 a bit slower, as it adds a shutdown/startup cycle to the test time, but gives a great deal of flexibility.
 
-NOTE: In order to reduce the amount of times Quarkus needs to restart it is recommended that you place all tests
-that need a specific profile into their own package, and then run tests alphabetically.
-Alternatively, you can register `io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer` as a global `ClassOrderer`
-in `junit-platform.properties` as described in the
+NOTE: To reduce the amount of times Quarkus needs to restart, `io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer`
+is registered as a global `ClassOrderer` as described in the
 link:https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order-classes[JUnit 5 User Guide].
+The behavior of this orderer is configurable via `junit-platform.properties` (see the source code or javadoc for more details).
+It can also be disabled entirely by setting another orderer that is provided by JUnit 5 or even your own custom one.
 
 === Writing a Profile
 

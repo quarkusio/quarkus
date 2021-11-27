@@ -274,7 +274,6 @@
                 <module>rest-client-reactive-stork</module>
                 <module>packaging</module>
                 <module>simple with space</module>
-                <module>consul-config</module>
                 <module>picocli</module>
                 <module>picocli-native</module>
                 <module>webjars-locator</module>

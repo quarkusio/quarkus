@@ -163,9 +163,6 @@
         <module>openshift-client</module>
         <module>kubernetes-service-binding</module>
 
-        <!-- Consul -->
-        <module>consul-config</module>
-
         <!-- Database migrations -->
         <module>flyway</module>
         <module>liquibase</module>

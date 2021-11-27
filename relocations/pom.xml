@@ -51,6 +51,8 @@
         <module>quarkus-artemis-jms</module>
         <module>quarkus-artemis-jms-deployment</module>
         <module>quarkus-test-artemis</module>
+        <module>quarkus-consul-config</module>
+        <module>quarkus-consul-config-deployment</module>
     </modules>
 
 </project>

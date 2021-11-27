@@ -441,7 +441,7 @@
                                         <version>[${maven.compiler.release},)</version>
                                     </requireJavaVersion>
                                     <requireMavenVersion>
-                                        <version>${supported-maven-versions}</version>
+                                        <version>[${proposed-maven-version},)</version>
                                     </requireMavenVersion>
                                     <!-- Disabled due to https://issues.apache.org/jira/browse/MENFORCER-359 (3.0.0-M3)
                                          3.0.0 suffers from https://issues.apache.org/jira/browse/MENFORCER-394, so we need to wait for a fixed release.

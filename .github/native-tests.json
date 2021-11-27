@@ -81,7 +81,7 @@
         {
             "category": "Security3",
             "timeout": 50,
-            "test-modules": "vault, vault-app, vault-agroal, keycloak-authorization, smallrye-jwt-token-propagation",
+            "test-modules": "keycloak-authorization, smallrye-jwt-token-propagation",
             "os-name": "ubuntu-latest"
         },
         {

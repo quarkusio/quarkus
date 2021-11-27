@@ -130,6 +130,7 @@
         <module>oidc-client-reactive-filter</module>
         <module>keycloak-authorization</module>
         <module>keycloak-admin-client</module>
+        <module>credentials</module>
 
         <!-- Infinispan -->
         <module>infinispan-client</module>
@@ -166,10 +167,6 @@
         <module>flyway</module>
         <module>liquibase</module>
         <module>liquibase-mongodb</module>
-
-        <!-- Vault -->
-        <module>vault</module>
-        <module>credentials</module>
 
         <!-- GraphQL -->
         <module>vertx-graphql</module>

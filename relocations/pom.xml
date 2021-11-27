@@ -57,6 +57,9 @@
         <module>quarkus-logging-sentry-deployment</module>
         <module>quarkus-neo4j</module>
         <module>quarkus-neo4j-deployment</module>
+        <module>quarkus-vault</module>
+        <module>quarkus-vault-deployment</module>
+        <module>quarkus-test-vault</module>
     </modules>
 
 </project>

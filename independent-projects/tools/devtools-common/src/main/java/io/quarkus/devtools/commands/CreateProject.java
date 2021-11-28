@@ -199,7 +199,7 @@ public class CreateProject {
     }
 
     public QuarkusCommandOutcome execute() throws QuarkusCommandException {
-        CreateProjectHelper.setJavaVersion(values, javaTarget);
+        CreateProjectHelper.setJavaVersion(values, javaVersion);
         CreateProjectHelper.handleSpringConfiguration(values, extensions);
 
         // TODO: sanitize? handle language extensions?

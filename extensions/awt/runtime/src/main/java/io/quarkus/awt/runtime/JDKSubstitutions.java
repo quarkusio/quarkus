@@ -30,3 +30,6 @@ final class Target_com_sun_imageio_plugins_common_I18NImpl {
         return (String) bundle.handleGetObject(key);
     }
 }
+
+public class JDKSubstitutions {
+}

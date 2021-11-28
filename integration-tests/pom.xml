@@ -131,6 +131,7 @@
             <modules>
                 <module>avro-reload</module>
                 <module>awt</module>
+                <module>no-awt</module>
                 <module>bouncycastle</module>
                 <module>bouncycastle-fips</module>
                 <module>bouncycastle-fips-jsse</module>

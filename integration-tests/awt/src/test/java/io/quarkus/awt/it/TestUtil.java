@@ -41,7 +41,7 @@ public class TestUtil {
         org.awaitility.Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
                 .atMost(3, TimeUnit.SECONDS)
                 .untilAsserted(() -> {
-                    assertTrue(Files.exists(accessLogFilePath), "access log file " + accessLogFilePath + " is missing");
+                    assertTrue(Files.exists(accessLogFilePath), "Quarkus log file " + accessLogFilePath + " is missing");
                     boolean found = false;
                     final StringBuilder sbLog = new StringBuilder();
                     final Set<String> offendingLines = new HashSet<>();

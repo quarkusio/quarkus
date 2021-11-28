@@ -587,21 +587,32 @@ If you plan to consume this application from a Single Page Application running o
 
 Some well known providers such as `GitHub` or `LinkedIn` are not `OpenId Connect` but `OAuth2` providers which support the `authorization code flow`, for example, link:https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps[GitHub OAuth2] and link:https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow[LinkedIn OAuth2].
 
-The main difference between `OAuth2` and `OpenId Connect` providers is that `OpenId Connect` providers, by building on top of `OAuth2`, return an `ID Token` representing a user authentication, in addition to the standard authorization code flow access and refresh tokens returned by `OAuth2` providers. With `OAuth2` providers, the fact of the user authentication is implicit and is indirectly represented by the access token which represents an authenticated user authorizing the current Quarkus `web-app` application to access some data on behalf of this user.
+The main difference between `OpenId Connect` and `OAuth2` providers is that `OpenId Connect` providers, by building on top of `OAuth2`, return an `ID Token` representing a user authentication, in addition to the standard authorization code flow `access` and `refresh` tokens returned by `OAuth2` providers.
 
-For example, when working with `GitHub`, the Quarkus endpoint can acquire an access token which will allow it to request a `GitHub` user profile of the current user.
-In fact this is exactly how a standard `OpenId Connect` `UserInfo` acqusition also works - by authenticating into your `OpenId Connect` provider you also give a permission to Quarkus application to acquire your `UserInfo` on your behalf - and it also shows what is meant by `OpenId Connect` being built on top of `OAuth2`.
+`OAuth2` providers such as `GitHub` do not return `IdToken`, the fact of the user authentication is implicit and is indirectly represented by the `access` token which represents an authenticated user authorizing the current Quarkus `web-app` application to access some data on behalf of the authenticated user.
+
+For example, when working with `GitHub`, the Quarkus endpoint can acquire an `access` token which will allow it to request a `GitHub` profile of the current user.
+In fact this is exactly how a standard `OpenId Connect` `UserInfo` acqusition also works - by authenticating into your `OpenId Connect` provider you also give a permission to Quarkus application to acquire your <<user-info,UserInfo>> on your behalf - and it also shows what is meant by `OpenId Connect` being built on top of `OAuth2`.
 
 In order to support the integration with such `OAuth2` servers, `quarkus-oidc` needs to be configured to allow the authorization code flow responses without `IdToken`: `quarkus.oidc.authentication.id-token-required=false`.
 
+It is required because `quarkus-oidc` expects that not only `access` and `refresh` tokens but also `IdToken` will be returned once the authorization code flow completes.
+
+Note, even though you will configure the extension to support the authorization code flows without `IdToken`, an internal `IdToken` will be generated to support the way `quarkus-oidc` operates where an `IdToken` is used to support the authentication session and to avoid redirecting the user to the provider such as `GitHub` on every request. In this case the session lifespan is set to 5 minutes which can be extended further as described in the link:#session_management[session management] section.
+
 The next step is to ensure that the returned access token can be useful to the current Quarkus endpoint.
-If the `OAuth2` provider supports the introspection endpoint then you may be able to use this access token as a source of roles with `quarkus.oidc.roles.source=accesstoken`. If no introspection endpoint is available then at the very least it should be possible to request a user information from this provider with `quarkus.oidc.authentication.user-info-required` - this is the case with `GitHib`.
+If the `OAuth2` provider supports the introspection endpoint then you may be able to use this access token as a source of roles with `quarkus.oidc.roles.source=accesstoken`. If no introspection endpoint is available then at the very least it should be possible to request <<user-info,UserInfo>> from this provider with `quarkus.oidc.authentication.user-info-required` - this is the case with `GitHib`.
+
+Configuring the endpoint to request <<user-info,UserInfo>> is the only way `quarkus-oidc` can be integrated with the providers such as `GitHib`.
+
+Note that requiring <<user-info,UserInfo>> involves making a remote call on every request - therefore you may want tp consider caching `UserInfo` data, see <<token-introspection-userinfo-cache,Token Introspection and UserInfo Cache> for more details.
 
 Also, OAuth2 servers may not support a well-known configuration endpoint in which case the discovery has to be disabled and the authorization, token, and introspection and/or userinfo endpoint paths have to be configured manually.
 
 Here is how you can integrate `quarkus-oidc` with `GitHub` after you have link:https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app[created a GitHub OAuth application]. Configure your Quarkus endpoint like this:
 
-```properties
+[source,properties]
+----
 quarkus.oidc.auth-server-url=https://github.com/login/oauth
 quarkus.oidc.discovery-enabled=false
 quarkus.oidc.authorization-path=authorize
@@ -614,6 +625,10 @@ quarkus.oidc.authentication.scopes=user:email
 # Make sure a user info is required
 quarkus.oidc.authentication.user-info-required=true
 
+# Consider enabling UserInfo Cache 
+# quarkus.oidc.token-cache.max-size=1000
+# quarkus.oidc.token-cache.time-to-live=5M
+
 # Allow the code flow responses without ID tokens
 quarkus.oidc.authentication.id-token-required=false
 
@@ -621,11 +636,12 @@ quarkus.oidc.application-type=web-app
 
 quarkus.oidc.client-id=github_app_clientid
 quarkus.oidc.credentials.secret=github_app_clientsecret
-```
+----
 
-This is all what is needed for an endpoint like this one to return the currently authenticated user's profile with `GET http:localhost:8080/github/userinfo`:
+This is all what is needed for an endpoint like this one to return the currently authenticated user's profile with `GET http://localhost:8080/github/userinfo` and access it as the individual `UserInfo` properties:
 
-```java
+[source,java]
+----
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -648,9 +664,87 @@ public class TokenResource {
         return userInfo.getUserInfoString();
     }
 }
-```
+----
 
-In your own endpoint you can access individual `UserInfo` properties as required.
+If you support more than one social provider with the help of link:security-openid-connect-multitenancy[OpenId Connect Multi-Tenancy], for example, `Google` which is an OpenId Connect Provider returning `IdToken` and `GitHub` which is an `OAuth2` provider returning no `IdToken` and only allowing to access `UserInfo` then you can have your endpoint working with only the injected `SecurityIdentity` for both `Google` and `GitHub` flows. A simple augmentation of `SecurityIdentity` will be required where a principal created with the internally generated `IdToken` will be replaced with the `UserInfo` based principal when the GiHub flow is active:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import java.security.Principal;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import io.quarkus.oidc.UserInfo;
+import io.quarkus.security.identity.AuthenticationRequestContext;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.SecurityIdentityAugmentor;
+import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
+
+@ApplicationScoped
+public class CustomSecurityIdentityAugmentor implements SecurityIdentityAugmentor {
+
+    @Override
+    public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
+        RoutingContext routingContext = identity.getAttribute(RoutingContext.class.getName());
+        if (routingContext != null && routingContext.normalizedPath().endsWith("/github")) {
+	        QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
+	        UserInfo userInfo = identity.getAttribute("userinfo");
+	        builder.setPrincipal(new Principal() {
+	
+	            @Override
+	            public String getName() {
+	                return userInfo.getString("preferred_username");
+	            }
+	
+	        });
+	        identity = builder.build();
+        }
+        return Uni.createFrom().item(identity);
+    }
+
+}
+----
+
+Now, the following code will work when the user is signing in into your application with both `Google` or `GitHub`:   
+ 
+[source,java]
+----
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+
+import io.quarkus.security.Authenticated;
+import io.quarkus.security.identity.SecurityIdentity;
+
+@Path("/service")
+@Authenticated
+public class TokenResource {
+
+    @Inject
+    SecurityIdentity identity;
+
+    @GET
+    @Path("/google")
+    @Produces("application/json")
+    public String getUserName() {
+        return identity.getPrincipal().getName();
+    }
+
+    @GET
+    @Path("/github")
+    @Produces("application/json")
+    public String getUserName() {
+        return identity.getPrincipal().getUserName();
+    }
+}
+----
+
+Possibly a simpler alternative is to inject both `@IdToken JsonWebToken` and `UserInfo` and use `JsonWebToken` when dealing with the providers returning `IdToken` and `UserInfo` - with the providers which do not return `IdToken`.
 
 The last important point is to make sure the callback path you enter in the GitHub OAuth application configuration matches the endpoint path where you'd like the user be redirected to after a successful GitHub authentication and application authorization, in this case it has to be set to `http:localhost:8080/github/userinfo`.
 

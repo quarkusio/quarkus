@@ -80,11 +80,14 @@ import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 
 public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCallback, InvocationInterceptor {
 
+    public static final int SERVER_PORT = 8080;
+
     public static final DotName HTTP_SERVER_REQUEST = DotName.createSimple(HttpServerRequest.class.getName());
     public static final DotName HTTP_SERVER_RESPONSE = DotName.createSimple(HttpServerResponse.class.getName());
     public static final DotName ROUTING_CONTEXT = DotName.createSimple(RoutingContext.class.getName());
     private static final Logger rootLogger;
     public static final String EXECUTOR_THREAD_NAME = "blocking executor thread";
+
     private Handler[] originalHandlers;
 
     static {
@@ -336,12 +339,13 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
             @Override
             public void start(Promise<Void> startPromise) throws Exception {
                 server = vertx.createHttpServer();
-                server.requestHandler(router).listen(8080).onComplete(new io.vertx.core.Handler<AsyncResult<HttpServer>>() {
-                    @Override
-                    public void handle(AsyncResult<HttpServer> event) {
-                        startPromise.complete();
-                    }
-                });
+                server.requestHandler(router).listen(SERVER_PORT)
+                        .onComplete(new io.vertx.core.Handler<AsyncResult<HttpServer>>() {
+                            @Override
+                            public void handle(AsyncResult<HttpServer> event) {
+                                startPromise.complete();
+                            }
+                        });
             }
 
             @Override

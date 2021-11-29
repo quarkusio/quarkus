@@ -91,7 +91,6 @@
         <elasticsearch.protocol>http</elasticsearch.protocol>
 
         <!-- Align various dependencies that are not really part of the bom-->
-        <findbugs.version>3.0.2</findbugs.version>
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
@@ -116,10 +115,6 @@
         <maven-invoker-plugin.version>3.2.2</maven-invoker-plugin.version>
         <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
-
-        <!--TODO: remove when switched back to quarkus-maven-plugin for grpc stubs-->
-        <protoc.version>3.19.1</protoc.version> <!--keep in sync with the BOM-->
-        <grpc.version>1.42.1</grpc.version> <!--keep in sync with the BOM -->
 
         <!-- Webjars -->
         <webjar.bootstrap.version>4.6.0</webjar.bootstrap.version>
@@ -232,11 +227,6 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-legacy-launcher</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.google.code.findbugs</groupId>
-                <artifactId>jsr305</artifactId>
-                <version>${findbugs.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.unboundid</groupId>

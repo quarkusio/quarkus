@@ -37,6 +37,11 @@ public class BeanWithSecuredMethods {
         return Uni.createFrom().item("accessibleForAdminOnly").subscribeAsCompletionStage();
     }
 
+    @RolesAllowed("admin")
+    public CompletionStage<String> securedMethodCompletionStageException() {
+        throw new TestException();
+    }
+
     public String unsecuredMethod() {
         return "accessibleForAll";
     }

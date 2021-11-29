@@ -116,4 +116,17 @@ public class GraalVMTest {
         assertThat(Version.of(Stream.of(version)).isNewerThan(Version.of(Stream.of(other)))).isTrue();
     }
 
+    @Test
+    public void testGraalVMVersionIsJava17() {
+        Version graalVM21_3_11 = Version.of(Stream.of("GraalVM 21.3.0 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)"));
+        assertThat(graalVM21_3_11.isJava17()).isFalse();
+        Version graalVM21_3_17 = Version.of(Stream.of("GraalVM 21.3.0 Java 17 CE (Java Version 17.0.1+12-jvmci-21.3-b05)"));
+        assertThat(graalVM21_3_17.isJava17()).isTrue();
+        Version mandrel21_3_11 = Version
+                .of(Stream.of("native-image 21.3.0.0-Final Mandrel Distribution (Java Version 11.0.13+8)"));
+        assertThat(mandrel21_3_11.isJava17()).isFalse();
+        Version mandrel21_3_17 = Version
+                .of(Stream.of("native-image 21.3.0.0-Final Mandrel Distribution (Java Version 17.0.1+12)"));
+        assertThat(mandrel21_3_17.isJava17()).isTrue();
+    }
 }

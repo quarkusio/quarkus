@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 final class GraalVM {
     static final class Version implements Comparable<Version> {
         private static final Pattern PATTERN = Pattern.compile(
-                "(GraalVM|native-image)( Version)? (?<version>[1-9][0-9]*(\\.[0-9]+)+(-dev\\p{XDigit}*)?)(?<distro>[^\n$]*)(Java Version (?<javaVersion>[^)]+))?\\s*");
+                "(GraalVM|native-image)( Version)? (?<version>[1-9][0-9]*(\\.[0-9]+)+(-dev\\p{XDigit}*)?)(?<distro>.*?)?(\\(Java Version (?<javaVersion>[^)]+)\\))?$");
 
         static final Version UNVERSIONED = new Version("Undefined", "snapshot", Distribution.ORACLE);
         static final Version VERSION_21_2 = new Version("GraalVM 21.2", "21.2", Distribution.ORACLE);
@@ -100,6 +100,7 @@ final class GraalVM {
         public String toString() {
             return "Version{" +
                     "version=" + version +
+                    ", fullVersion=" + fullVersion +
                     ", distribution=" + distribution +
                     ", javaVersion=" + javaVersion +
                     '}';

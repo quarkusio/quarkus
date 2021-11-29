@@ -323,6 +323,7 @@ public class DevConsoleProcessor {
         for (DevConsoleRuntimeTemplateInfoBuildItem i : items) {
             recorder.addInfo(i.getGroupId(), i.getArtifactId(), i.getName(), i.getObject());
         }
+        recorder.initConfigFun();
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -567,8 +568,9 @@ public class DevConsoleProcessor {
                 });
             } else {
                 return ctx.evaluate(params.get(0)).thenCompose(propertyName -> {
-                    String val = ConfigProvider.getConfig().getOptionalValue(propertyName.toString(), String.class)
-                            .orElse(defaultValues.get(propertyName.toString()));
+                    // Use the function stored in the DevConsoleRecorder to make sure the config is obtained using the correct TCCL
+                    Function<String, Optional<String>> configFun = DevConsoleManager.getGlobal("devui-config-fun");
+                    String val = configFun.apply(propertyName.toString()).orElse(defaultValues.get(propertyName.toString()));
                     return CompletableFuture.completedFuture(val != null ? val : Results.NotFound.from(ctx));
                 });
             }

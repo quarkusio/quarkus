@@ -9,15 +9,18 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.testing.ContinuousTestingSharedStateManager;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.config.SmallRyeConfig;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -36,6 +39,16 @@ public class DevConsoleRecorder {
                     }
                 });
         data.put(name, supplier.get());
+    }
+
+    public void initConfigFun() {
+        SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
+        DevConsoleManager.setGlobal("devui-config-fun", new Function<String, Optional<String>>() {
+            @Override
+            public Optional<String> apply(String name) {
+                return config.getOptionalValue(name, String.class);
+            }
+        });
     }
 
     public Handler<RoutingContext> devConsoleHandler(String devConsoleFinalDestination,

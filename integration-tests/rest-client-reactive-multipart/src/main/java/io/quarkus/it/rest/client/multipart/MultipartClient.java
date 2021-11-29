@@ -13,6 +13,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.PartType;
 
+import io.smallrye.mutiny.Multi;
 import io.vertx.core.buffer.Buffer;
 
 @Path("/echo")
@@ -24,6 +25,12 @@ public interface MultipartClient {
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/binary")
     String sendByteArrayAsBinaryFile(@MultipartForm WithByteArrayAsBinaryFile data);
+
+    @POST
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/binary")
+    String sendMultiByteAsBinaryFile(@MultipartForm WithMultiByteAsBinaryFile data);
 
     @POST
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -128,6 +135,17 @@ public interface MultipartClient {
         @FormParam("file")
         @PartType(MediaType.APPLICATION_OCTET_STREAM)
         public byte[] file;
+
+        @FormParam("fileName")
+        @PartType(MediaType.TEXT_PLAIN)
+        public String fileName;
+    }
+
+    class WithMultiByteAsBinaryFile {
+
+        @FormParam("file")
+        @PartType(MediaType.APPLICATION_OCTET_STREAM)
+        public Multi<Byte> file;
 
         @FormParam("fileName")
         @PartType(MediaType.TEXT_PLAIN)

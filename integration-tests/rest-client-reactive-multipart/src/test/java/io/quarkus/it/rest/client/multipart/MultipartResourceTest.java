@@ -83,6 +83,18 @@ public class MultipartResourceTest {
     }
 
     @Test
+    public void shouldMultiAsBinaryFile() {
+        // @formatter:off
+        given()
+                .header("Content-Type", "text/plain")
+        .when().get("/client/multi-byte-as-binary-file")
+        .then()
+                .statusCode(200)
+                .body(equalTo("fileOk:true,nameOk:true"));
+        // @formatter:on
+    }
+
+    @Test
     public void shouldSendNullFileAsBinaryFile() {
         // @formatter:off
         given()

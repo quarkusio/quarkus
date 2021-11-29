@@ -13,6 +13,8 @@ import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
 
+    public static final String NATIVE_IMAGE_NAME = "foo-1.0.0-SNAPSHOT-runner";
+
     @Test
     public void shouldBuildNativeImage() throws Exception {
         final File projectDir = getProjectDir("basic-java-native-module");
@@ -22,10 +24,17 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
         assertThat(build.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
         final String buildOutput = build.getOutput();
         // make sure the output log during the build contains some expected logs from the native-image process
+        CharSequence[] expectedOutput;
+        if (buildOutput.contains("Version info:")) { // Starting with 22.0 the native-image output changed
+            expectedOutput = new CharSequence[] { "Initializing...", "Performing analysis...",
+                    "Finished generating '" + NATIVE_IMAGE_NAME + "' in" };
+        } else {
+            expectedOutput = new CharSequence[] { "(clinit):", "(typeflow):", "[total]:" };
+        }
         assertThat(buildOutput)
                 .withFailMessage("native-image build log is missing certain expected log messages: \n\n %s", buildOutput)
-                .contains("(clinit):", "(typeflow):", "[total]:");
-        Path nativeImagePath = projectDir.toPath().resolve("build").resolve("foo-1.0.0-SNAPSHOT-runner");
+                .contains(expectedOutput);
+        Path nativeImagePath = projectDir.toPath().resolve("build").resolve(NATIVE_IMAGE_NAME);
         assertThat(nativeImagePath).exists();
         Process nativeImageProcess = runNativeImage(nativeImagePath.toAbsolutePath().toString());
         try {

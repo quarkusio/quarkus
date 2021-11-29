@@ -25,6 +25,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathAggregateBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
@@ -86,7 +87,8 @@ public class NativeImageBuildStep {
             PackageConfig packageConfig,
             List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
             List<ExcludeConfigBuildItem> excludeConfigs,
-            NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed) {
+            NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed,
+            List<JPMSExportBuildItem> jpmsExportBuildItems) {
 
         Path outputDir;
         try {
@@ -107,6 +109,7 @@ public class NativeImageBuildStep {
                 .setNativeImageProperties(nativeImageProperties)
                 .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
                 .setExcludeConfigs(excludeConfigs)
+                .setJPMSExportBuildItems(jpmsExportBuildItems)
                 .setOutputDir(outputDir)
                 .setRunnerJarName(runnerJar.getFileName().toString())
                 // the path to native-image is not known now, it is only known at the time the native-sources will be consumed
@@ -139,6 +142,7 @@ public class NativeImageBuildStep {
             List<ExcludeConfigBuildItem> excludeConfigs,
             NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed,
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
+            List<JPMSExportBuildItem> jpmsExportBuildItems,
             Optional<ProcessInheritIODisabled> processInheritIODisabled) {
         if (nativeConfig.debug.enabled) {
             copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
@@ -199,6 +203,7 @@ public class NativeImageBuildStep {
                     .setExcludeConfigs(excludeConfigs)
                     .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
                     .setNativeImageSecurityProviders(nativeImageSecurityProviders)
+                    .setJPMSExportBuildItems(jpmsExportBuildItems)
                     .setOutputDir(outputDir)
                     .setRunnerJarName(runnerJarName)
                     .setNativeImageName(nativeImageName)
@@ -473,6 +478,7 @@ public class NativeImageBuildStep {
             private List<NativeImageSystemPropertyBuildItem> nativeImageProperties;
             private List<ExcludeConfigBuildItem> excludeConfigs;
             private List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders;
+            private List<JPMSExportBuildItem> jpmsExports;
             private Path outputDir;
             private String runnerJarName;
             private String noPIE = "";
@@ -508,6 +514,11 @@ public class NativeImageBuildStep {
             public Builder setNativeImageSecurityProviders(
                     List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders) {
                 this.nativeImageSecurityProviders = nativeImageSecurityProviders;
+                return this;
+            }
+
+            public Builder setJPMSExportBuildItems(List<JPMSExportBuildItem> JPMSExportBuildItems) {
+                this.jpmsExports = JPMSExportBuildItems;
                 return this;
             }
 
@@ -721,6 +732,13 @@ public class NativeImageBuildStep {
                             .map(p -> p.getSecurityProvider())
                             .collect(Collectors.joining(","));
                     nativeImageArgs.add("-H:AdditionalSecurityProviders=" + additionalSecurityProviders);
+                }
+
+                if (jpmsExports != null) {
+                    for (JPMSExportBuildItem jpmsExport : jpmsExports) {
+                        nativeImageArgs.add(
+                                "-J--add-exports=" + jpmsExport.getModule() + "/" + jpmsExport.getPackage() + "=ALL-UNNAMED");
+                    }
                 }
 
                 for (ExcludeConfigBuildItem excludeConfig : excludeConfigs) {

@@ -196,7 +196,7 @@ public class ProxyFactory<T> {
             try (MethodCreator ctor = cc
                     .getMethodCreator(MethodDescriptor.ofConstructor(proxyName, args.toArray(Class[]::new)))) {
                 List<ResultHandle> params = new ArrayList<>();
-                for (int i = 0; i < injectConstructor.getParameterTypes().length; ++i) {
+                for (int i = 0; i < injectConstructor.getParameterCount(); ++i) {
                     params.add(ctor.getMethodParam(i + 1));
                 }
                 ctor.invokeSpecialMethod(

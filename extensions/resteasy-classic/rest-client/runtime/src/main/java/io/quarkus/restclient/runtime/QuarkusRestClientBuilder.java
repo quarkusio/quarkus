@@ -604,14 +604,14 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
             // Makes it possible to configure some of the ResteasyClientBuilder delegate properties
             String builderMethodName = name.substring(RESTEASY_PROPERTY_PREFIX.length());
             Method builderMethod = Arrays.stream(ResteasyClientBuilder.class.getMethods())
-                    .filter(m -> builderMethodName.equals(m.getName()) && m.getParameterTypes().length >= 1)
+                    .filter(m -> builderMethodName.equals(m.getName()) && m.getParameterCount() >= 1)
                     .findFirst()
                     .orElse(null);
             if (builderMethod == null) {
                 throw new IllegalArgumentException("ResteasyClientBuilder setter method not found: " + builderMethodName);
             }
             Object[] arguments;
-            if (builderMethod.getParameterTypes().length > 1) {
+            if (builderMethod.getParameterCount() > 1) {
                 if (value instanceof List) {
                     arguments = ((List<?>) value).toArray();
                 } else {

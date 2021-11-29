@@ -46,7 +46,7 @@ public class InjectionEnricher implements TestEnricher {
     @Override
     public Object[] resolve(Method method) {
         //we need to resolve from inside the
-        if (method.getParameterTypes().length > 0) {
+        if (method.getParameterCount() > 0) {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {
                 CreationContextHolder holder = getCreationalContext();
@@ -132,7 +132,7 @@ public class InjectionEnricher implements TestEnricher {
 
         @Override
         public Object[] apply(Method method, Object creationalContext) {
-            Object[] values = new Object[method.getParameterTypes().length];
+            Object[] values = new Object[method.getParameterCount()];
 
             // TestNG - we want to skip resolution if a non-arquillian dataProvider is used
             boolean hasNonArquillianDataProvider = false;

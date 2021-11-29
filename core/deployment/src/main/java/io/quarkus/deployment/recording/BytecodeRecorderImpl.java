@@ -328,7 +328,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 storedMethodCalls.add(storedMethodCall);
                 Class<?> returnType = method.getReturnType();
                 if (method.getName().equals("toString")
-                        && method.getParameterTypes().length == 0
+                        && method.getParameterCount() == 0
                         && returnType.equals(String.class)) {
                     return proxy.getClass().getName();
                 }
@@ -415,17 +415,17 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     return staticInit;
                 }
                 if (method.getName().equals("toString")
-                        && method.getParameterTypes().length == 0
+                        && method.getParameterCount() == 0
                         && method.getReturnType().equals(String.class)) {
                     return "Runtime proxy of " + returnType + " with id " + key;
                 }
                 if (method.getName().equals("hashCode")
-                        && method.getParameterTypes().length == 0
+                        && method.getParameterCount() == 0
                         && method.getReturnType().equals(int.class)) {
                     return System.identityHashCode(proxy);
                 }
                 if (method.getName().equals("equals")
-                        && method.getParameterTypes().length == 1
+                        && method.getParameterCount() == 1
                         && method.getParameterTypes()[0] == Object.class
                         && method.getReturnType().equals(boolean.class)) {
                     return proxy == args[0];
@@ -1157,10 +1157,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
             Constructor<?> current = null;
             int count = 0;
             for (var c : param.getClass().getConstructors()) {
-                if (current == null || current.getParameterTypes().length < c.getParameterTypes().length) {
+                if (current == null || current.getParameterCount() < c.getParameterCount()) {
                     current = c;
                     count = 0;
-                } else if (current != null && current.getParameterTypes().length == c.getParameterTypes().length) {
+                } else if (current != null && current.getParameterCount() == c.getParameterCount()) {
                     count++;
                 }
             }
@@ -1323,7 +1323,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
                                 for (Method m : param.getClass().getMethods()) {
                                     if (m.getName().equals(i.getWriteMethod().getName())) {
-                                        if (m.getParameterTypes().length > 0
+                                        if (m.getParameterCount() > 0
                                                 && m.getParameterTypes()[0].isAssignableFrom(param.getClass())) {
                                             propertyType = m.getParameterTypes()[0];
                                             break;

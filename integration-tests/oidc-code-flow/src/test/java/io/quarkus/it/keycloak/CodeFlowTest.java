@@ -93,7 +93,7 @@ public class CodeFlowTest {
                     .loadWebResponse(
                             new WebRequest(URI.create("http://localhost:8081/tenant-https").toURL()));
             String keycloakUrl = webResponse.getResponseHeaderValue("location");
-            verifyLocationHeader(webClient, keycloakUrl, "tenant-https", "xforwarded%2Ftenant-https",
+            verifyLocationHeader(webClient, keycloakUrl, "tenant-https_test", "xforwarded%2Ftenant-https",
                     true);
 
             HtmlPage page = webClient.getPage(keycloakUrl);
@@ -131,6 +131,8 @@ public class CodeFlowTest {
 
             page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
             assertEquals("tenant-https", page.getBody().asText());
+            Cookie sessionCookie = getSessionCookie(webClient, "tenant-https_test");
+            assertNotNull(sessionCookie);
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -144,7 +146,7 @@ public class CodeFlowTest {
                     .loadWebResponse(
                             new WebRequest(URI.create("http://localhost:8081/tenant-https/query?a=b").toURL()));
             String keycloakUrl = webResponse.getResponseHeaderValue("location");
-            verifyLocationHeader(webClient, keycloakUrl, "tenant-https", "tenant-https",
+            verifyLocationHeader(webClient, keycloakUrl, "tenant-https_test", "tenant-https",
                     true);
 
             HtmlPage page = webClient.getPage(keycloakUrl);
@@ -177,6 +179,8 @@ public class CodeFlowTest {
 
             page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
             assertEquals("tenant-https?a=b", page.getBody().asText());
+            Cookie sessionCookie = getSessionCookie(webClient, "tenant-https_test");
+            assertNotNull(sessionCookie);
             webClient.getCookieManager().clearCookies();
         }
     }

@@ -670,11 +670,11 @@ public class ExtensionMethodGenerator {
         }
     }
 
-    static class Parameters implements Iterable<Param> {
+    public static final class Parameters implements Iterable<Param> {
 
         final List<Param> params;
 
-        Parameters(MethodInfo method, boolean matchAnyOrRegex, boolean hasNamespace) {
+        public Parameters(MethodInfo method, boolean matchAnyOrRegex, boolean hasNamespace) {
             List<Type> parameters = method.parameters();
             Map<Integer, String> attributeParamNames = new HashMap<>();
             for (AnnotationInstance annotation : method.annotations()) {
@@ -721,20 +721,20 @@ public class ExtensionMethodGenerator {
             if (matchAnyOrRegex) {
                 Param nameParam = getFirst(ParamKind.NAME);
                 if (nameParam == null || !nameParam.type.name().equals(DotNames.STRING)) {
-                    throw new IllegalStateException(
+                    throw new TemplateException(
                             "Template extension method declared on " + method.declaringClass().name()
                                     + " must accept at least one string parameter to match the name: " + method);
                 }
             }
             if (!hasNamespace && getFirst(ParamKind.BASE) == null) {
-                throw new IllegalStateException(
+                throw new TemplateException(
                         "Template extension method declared on " + method.declaringClass().name()
                                 + " must accept at least one parameter to match the base object: " + method);
             }
 
             for (Param param : params) {
                 if (param.kind == ParamKind.ATTR && !param.type.name().equals(DotNames.OBJECT)) {
-                    throw new IllegalStateException(
+                    throw new TemplateException(
                             "Template extension method parameter annotated with @TemplateAttribute declared on "
                                     + method.declaringClass().name()
                                     + " must be of type java.lang.Object: " + method);
@@ -742,7 +742,7 @@ public class ExtensionMethodGenerator {
             }
         }
 
-        String[] parameterTypesAsStringArray() {
+        public String[] parameterTypesAsStringArray() {
             String[] types = new String[params.size()];
             for (int i = 0; i < params.size(); i++) {
                 types[i] = params.get(i).type.name().toString();
@@ -750,7 +750,7 @@ public class ExtensionMethodGenerator {
             return types;
         }
 
-        Param getFirst(ParamKind kind) {
+        public Param getFirst(ParamKind kind) {
             for (Param param : params) {
                 if (param.kind == kind) {
                     return param;
@@ -759,15 +759,15 @@ public class ExtensionMethodGenerator {
             return null;
         }
 
-        Param get(int index) {
+        public Param get(int index) {
             return params.get(index);
         }
 
-        int size() {
+        public int size() {
             return params.size();
         }
 
-        boolean needsEvaluation() {
+        public boolean needsEvaluation() {
             for (Param param : params) {
                 if (param.kind == ParamKind.EVAL) {
                     return true;
@@ -776,7 +776,7 @@ public class ExtensionMethodGenerator {
             return false;
         }
 
-        List<Param> evaluated() {
+        public List<Param> evaluated() {
             if (params.isEmpty()) {
                 return Collections.emptyList();
             }
@@ -796,12 +796,12 @@ public class ExtensionMethodGenerator {
 
     }
 
-    static class Param {
+    public static final class Param {
 
-        final String name;
-        final Type type;
-        final int position;
-        final ParamKind kind;
+        public final String name;
+        public final Type type;
+        public final int position;
+        public final ParamKind kind;
 
         public Param(String name, Type type, int position, ParamKind paramKind) {
             this.name = name;

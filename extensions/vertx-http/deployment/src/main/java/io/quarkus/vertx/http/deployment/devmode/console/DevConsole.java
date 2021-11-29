@@ -61,32 +61,41 @@ public class DevConsole implements Handler<RoutingContext> {
         this.globalData.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
         this.globalData.put("applicationVersion",
                 config.getOptionalValue("quarkus.application.version", String.class).orElse(""));
+    }
 
-        try {
-            final Yaml yaml = new Yaml();
-            ClassPathUtils.consumeAsPaths("/META-INF/quarkus-extension.yaml", p -> {
-                final String desc;
-                try (Scanner scanner = new Scanner(Files.newBufferedReader(p, StandardCharsets.UTF_8))) {
-                    scanner.useDelimiter("\\A");
-                    desc = scanner.hasNext() ? scanner.next() : null;
-                } catch (IOException e) {
-                    throw new RuntimeException("Failed to read " + p, e);
+    private void initLazyState() {
+        if (extensions.isEmpty()) {
+            synchronized (extensions) {
+                if (extensions.isEmpty()) {
+                    try {
+                        final Yaml yaml = new Yaml();
+                        ClassPathUtils.consumeAsPaths("/META-INF/quarkus-extension.yaml", p -> {
+                            final String desc;
+                            try (Scanner scanner = new Scanner(Files.newBufferedReader(p, StandardCharsets.UTF_8))) {
+                                scanner.useDelimiter("\\A");
+                                desc = scanner.hasNext() ? scanner.next() : null;
+                            } catch (IOException e) {
+                                throw new RuntimeException("Failed to read " + p, e);
+                            }
+                            if (desc == null) {
+                                // should be an exception?
+                                return;
+                            }
+                            final Map<String, Object> metadata = yaml.load(desc);
+                            extensions.put(getExtensionNamespace(metadata), metadata);
+                        });
+                        this.globalData.put("configKeyMap", getConfigKeyMap());
+                    } catch (IOException x) {
+                        throw new RuntimeException(x);
+                    }
                 }
-                if (desc == null) {
-                    // should be an exception?
-                    return;
-                }
-                final Map<String, Object> metadata = yaml.load(desc);
-                extensions.put(getExtensionNamespace(metadata), metadata);
-            });
-        } catch (IOException x) {
-            throw new RuntimeException(x);
+            }
         }
-        this.globalData.put("configKeyMap", getConfigKeyMap());
     }
 
     @Override
     public void handle(RoutingContext ctx) {
+        initLazyState();
         // Redirect /q/dev to /q/dev/
         if (ctx.normalizedPath().length() == devRootAppend.length()) {
             ctx.response().setStatusCode(302);

@@ -69,8 +69,9 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bom</artifactId>
-            <type>pom</type>
             <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>

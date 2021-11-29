@@ -28,10 +28,15 @@ The UPX compression requires:
 * or to have built the native executable using an in-container build.
 
 If you have the `upx` command available on your path, Quarkus uses it.
-
 Otherwise, if you built the native image using an in-container build (using `quarkus.native.container-build=true`) and if the builder image provides the `upx` command, Quarkus compresses the executable from inside the container.
 
 If you are not in one of these cases, the compression fails.
+
+[IMPORTANT]
+.upx is cross-platform.
+====
+`upx` can compress executables using a different architecture and OS than your host machine. For example, `upx` on a MacOS X machine can compress a Linux 64bits executables.
+====
 
 == Configuring the UPX compression
 

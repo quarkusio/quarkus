@@ -111,6 +111,7 @@ import io.quarkus.qute.deployment.TypeInfos.Info;
 import io.quarkus.qute.generator.ExtensionMethodGenerator;
 import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceResolverCreator;
 import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceResolverCreator.ResolveCreator;
+import io.quarkus.qute.generator.ExtensionMethodGenerator.Param;
 import io.quarkus.qute.generator.ValueResolverGenerator;
 import io.quarkus.qute.runtime.ContentTypes;
 import io.quarkus.qute.runtime.EngineProducer;
@@ -1729,31 +1730,26 @@ public class QuteProcessor {
                 // Name does not match
                 continue;
             }
-            List<Type> parameters = extensionMethod.getMethod().parameters();
-            int realParamSize = parameters.size();
-            if (!extensionMethod.hasNamespace()) {
-                realParamSize -= 1;
-            }
-            if (TemplateExtension.ANY.equals(extensionMethod.getMatchName())) {
-                realParamSize -= 1;
-            }
-            if (realParamSize > 0 && !info.isVirtualMethod()) {
+
+            List<Param> evaluatedParams = extensionMethod.getParams().evaluated();
+            if (evaluatedParams.size() > 0 && !info.isVirtualMethod()) {
                 // If method accepts additional params the info must be a virtual method
                 continue;
             }
             if (info.isVirtualMethod()) {
                 // For virtual method validate the number of params and attempt to validate the parameter types if available
                 VirtualMethodPart virtualMethod = info.part.asVirtualMethod();
+
                 boolean isVarArgs = ValueResolverGenerator.isVarArgs(extensionMethod.getMethod());
-                int lastParamIdx = parameters.size() - 1;
+                int lastParamIdx = evaluatedParams.size() - 1;
 
                 if (isVarArgs) {
                     // For varargs methods match the minimal number of params
-                    if ((realParamSize - 1) > virtualMethod.getParameters().size()) {
+                    if ((evaluatedParams.size() - 1) > virtualMethod.getParameters().size()) {
                         continue;
                     }
                 } else {
-                    if (virtualMethod.getParameters().size() != realParamSize) {
+                    if (virtualMethod.getParameters().size() != evaluatedParams.size()) {
                         // Check number of parameters; some of params of the extension method must be ignored
                         continue;
                     }
@@ -1761,8 +1757,7 @@ public class QuteProcessor {
 
                 // Check parameter types if available
                 boolean matches = true;
-                // Skip base and name param if needed
-                int idx = parameters.size() - realParamSize;
+                int idx = 0;
 
                 for (Expression param : virtualMethod.getParameters()) {
 
@@ -1772,9 +1767,9 @@ public class QuteProcessor {
                         Type paramType;
                         if (isVarArgs && (idx >= lastParamIdx)) {
                             // Replace the type for varargs methods
-                            paramType = parameters.get(lastParamIdx).asArrayType().component();
+                            paramType = evaluatedParams.get(lastParamIdx).type.asArrayType().component();
                         } else {
-                            paramType = parameters.get(idx);
+                            paramType = evaluatedParams.get(idx).type;
                         }
                         if (!Types.isAssignableFrom(paramType,
                                 result.type, index)) {

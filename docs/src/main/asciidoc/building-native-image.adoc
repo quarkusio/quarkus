@@ -479,6 +479,8 @@ You can read more about UBI images on:
 * https://catalog.redhat.com/software/container-stacks/detail/5ec53f50ef29fd35586d9a56[Red Hat Universal Base Image 8]
 
 UBI images can be used without any limitations.
+
+xref:quarkus-runtime-base-image.adoc[This page] explains how to extend the `quarkus-micro` image when your application has specific requirements.
 ====
 
 Then, if you didn't delete the generated native executable, you can build the docker image with:

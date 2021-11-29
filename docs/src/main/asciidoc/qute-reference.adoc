@@ -430,6 +430,8 @@ If you need to render the unescaped value:
 <1> `title` that resolves to `Expressions & Escapes` will be rendered as `Expressions &amp;amp; Escapes`
 <2> `paragraph` that resolves to `<p>My text!</p>` will be rendered as `<p>My text!</p>`
 
+TIP: By default, a template with one of the following content types is escaped: `text/html`, `text/xml`, `application/xml` and `application/xhtml+xml`. However, it's possible to extend this list via the `quarkus.qute.escape-content-types` configuration property.
+
 [[virtual_methods]]
 ==== Virtual Methods
 

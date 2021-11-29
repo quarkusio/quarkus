@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.qute.TemplateNode.Origin;
 import java.io.IOException;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,7 @@ public class HtmlEscaperTest {
 
     @Test
     public void testAppliesTo() {
-        HtmlEscaper html = new HtmlEscaper();
+        HtmlEscaper html = new HtmlEscaper(List.of(Variant.TEXT_HTML));
         Origin htmlOrigin = new Origin() {
 
             @Override
@@ -53,7 +54,7 @@ public class HtmlEscaperTest {
 
     @Test
     public void testEscaping() throws IOException {
-        HtmlEscaper html = new HtmlEscaper();
+        HtmlEscaper html = new HtmlEscaper(List.of(Variant.TEXT_HTML));
         assertEquals("Čolek", html.escape("Čolek"));
         assertEquals("&lt;strong&gt;Čolek&lt;/strong&gt;", html.escape("<strong>Čolek</strong>"));
         assertEquals("&lt;a&gt;&amp;link&quot;&#39;&lt;/a&gt;", html.escape("<a>&link\"'</a>"));

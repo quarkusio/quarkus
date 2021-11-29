@@ -113,8 +113,8 @@ public class EngineProducer {
             }
         }
 
-        // Escape some characters for HTML templates
-        builder.addResultMapper(new HtmlEscaper());
+        // Escape some characters for HTML/XML templates
+        builder.addResultMapper(new HtmlEscaper(List.copyOf(config.escapeContentTypes)));
 
         // Fallback reflection resolver
         builder.addValueResolver(new ReflectionValueResolver());

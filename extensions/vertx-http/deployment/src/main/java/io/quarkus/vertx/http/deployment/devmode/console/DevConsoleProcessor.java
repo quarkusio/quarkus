@@ -516,7 +516,7 @@ public class DevConsoleProcessor {
         EngineBuilder builder = Engine.builder().addDefaults();
 
         // Escape some characters for HTML templates
-        builder.addResultMapper(new HtmlEscaper());
+        builder.addResultMapper(new HtmlEscaper(List.of(Variant.TEXT_HTML)));
 
         builder.strictRendering(true)
                 .addValueResolver(new ReflectionValueResolver())

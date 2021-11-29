@@ -26,11 +26,13 @@ public class EscapingTest {
                     .addAsResource(new StringAsset("{text} {other} {text.raw} {text.safe} {item.foo}"),
                             "templates/foo.html")
                     .addAsResource(new StringAsset("{item} {item.raw}"),
-                            "templates/item.html")
+                            "templates/item.xhtml")
                     .addAsResource(new StringAsset("{text} {other} {text.raw} {text.safe} {item.foo}"),
                             "templates/bar.txt")
                     .addAsResource(new StringAsset("{@java.lang.String text}{text} {text.raw} {text.safe}"),
-                            "templates/validation.html"));
+                            "templates/validation.html"))
+            .overrideConfigKey("quarkus.qute.content-types.xhtml", "application/xhtml+xml")
+            .overrideConfigKey("quarkus.qute.suffixes", "qute.html,qute.txt,html,txt,xhtml");
 
     @Inject
     Template foo;
@@ -67,6 +69,13 @@ public class EscapingTest {
         assertEquals("&lt;div&gt; <div>",
                 engine.parse("{text} {text.raw}",
                         new Variant(Locale.ENGLISH, "text/html", "UTF-8")).data("text", "<div>").render());
+        assertEquals("&lt;div&gt; <div>",
+                engine.parse("{text} {text.raw}",
+                        new Variant(Locale.ENGLISH, "application/xml", "UTF-8")).data("text", "<div>").render());
+        assertEquals("&lt;div&gt; <div>",
+                engine.parse("{text} {text.raw}",
+                        new Variant(Locale.ENGLISH, "application/xhtml+xml;charset=UTF-8", "UTF-8")).data("text", "<div>")
+                        .render());
     }
 
     @TemplateData

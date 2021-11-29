@@ -130,6 +130,7 @@
         <module>smallrye-jwt-build</module>
         <module>smallrye-jwt</module>
         <module>oidc-common</module>
+        <module>oidc-code-tokens-persistence</module>
         <module>oidc</module>
         <module>oidc-token-propagation</module>
         <module>oidc-client</module>

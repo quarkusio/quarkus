@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,6 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.ws.rs.core.Application;
@@ -34,6 +36,7 @@ import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningRes
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveInterceptorScanner;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner;
 import org.jboss.resteasy.reactive.common.processor.scanning.SerializerScanningResult;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
 import org.jboss.resteasy.reactive.common.reflection.ReflectionBeanFactory;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
@@ -54,10 +57,12 @@ import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveExc
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveFeatureScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveParamConverterScanner;
 import org.jboss.resteasy.reactive.server.processor.util.GeneratedClass;
+import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfigurableServerRestHandler;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
+import org.objectweb.asm.ClassVisitor;
 
 /**
  * Class that hides some complexity of assembling a RESTEasy Reactive application.
@@ -92,11 +97,19 @@ public class ResteasyReactiveDeploymentManager {
         private Map<DotName, ClassInfo> additionalResources = new HashMap<>();
         private Map<DotName, String> additionalResourcePaths = new HashMap<>();
         private Set<String> excludedClasses = new HashSet<>();
+        private Set<DotName> contextTypes = new HashSet<>();
+        private String applicationPath;
         private final List<MethodScanner> methodScanners = new ArrayList<>();
         private final List<FeatureScanner> featureScanners = new ArrayList<>();
+        private final List<AnnotationsTransformer> annotationsTransformers = new ArrayList<>();
 
         public ScanStep(IndexView nonCalculatingIndex) {
             index = JandexUtil.createCalculatingIndex(nonCalculatingIndex);
+            //we force the indexing of some internal classes
+            //so we can correctly detect their inheritors
+            index.getClassByName(ResteasyReactiveServerDotNames.SERVER_MESSAGE_BODY_READER);
+            index.getClassByName(ResteasyReactiveServerDotNames.SERVER_MESSAGE_BODY_WRITER_ALL_WRITER);
+            index.getClassByName(ResteasyReactiveServerDotNames.SERVER_MESSAGE_BODY_WRITER);
         }
 
         public int getInputBufferSize() {
@@ -114,6 +127,16 @@ public class ResteasyReactiveDeploymentManager {
 
         public ScanStep setSingleDefaultProduces(boolean singleDefaultProduces) {
             this.singleDefaultProduces = singleDefaultProduces;
+            return this;
+        }
+
+        public ScanStep addContextType(DotName type) {
+            contextTypes.add(type);
+            return this;
+        }
+
+        public ScanStep addContextTypes(Collection<DotName> types) {
+            contextTypes.addAll(types);
             return this;
         }
 
@@ -146,6 +169,20 @@ public class ResteasyReactiveDeploymentManager {
             return this;
         }
 
+        public ScanStep addAnnotationsTransformer(AnnotationsTransformer annotationsTransformer) {
+            this.annotationsTransformers.add(annotationsTransformer);
+            return this;
+        }
+
+        public String getApplicationPath() {
+            return applicationPath;
+        }
+
+        public ScanStep setApplicationPath(String applicationPath) {
+            this.applicationPath = applicationPath;
+            return this;
+        }
+
         public ScanResult scan() {
 
             ApplicationScanningResult applicationScanningResult = ResteasyReactiveScanner.scanForApplicationClass(index,
@@ -157,8 +194,14 @@ public class ResteasyReactiveDeploymentManager {
 
             AdditionalReaders readers = new AdditionalReaders();
             AdditionalWriters writers = new AdditionalWriters();
+
+            List<ResourceClass> resourceClasses = new ArrayList<>();
+            List<ResourceClass> subResourceClasses = new ArrayList<>();
+
             ServerEndpointIndexer.Builder builder = new ServerEndpointIndexer.Builder()
                     .setIndex(index)
+                    .addContextTypes(contextTypes)
+                    .setAnnotationsTransformers(annotationsTransformers)
                     .setScannedResourcePaths(resources.getScannedResourcePaths())
                     .setClassLevelExceptionMappers(new HashMap<>())
                     .setAdditionalReaders(readers)
@@ -170,11 +213,12 @@ public class ResteasyReactiveDeploymentManager {
             for (MethodScanner scanner : methodScanners) {
                 builder.addMethodScanner(scanner);
             }
+            for (var i : featureScanners) {
+                i.integrateWithIndexer(builder, index);
+            }
+
             ServerEndpointIndexer serverEndpointIndexer = builder
                     .build();
-
-            List<ResourceClass> resourceClasses = new ArrayList<>();
-            List<ResourceClass> subResourceClasses = new ArrayList<>();
             for (Map.Entry<DotName, ClassInfo> i : resources.getScannedResources().entrySet()) {
                 Optional<ResourceClass> res = serverEndpointIndexer.createEndpoints(i.getValue(), true);
                 if (res.isPresent()) {
@@ -199,15 +243,21 @@ public class ResteasyReactiveDeploymentManager {
                     applicationScanningResult);
             ContextResolvers contextResolvers = ResteasyReactiveContextResolverScanner.createContextResolvers(index,
                     applicationScanningResult);
-            ScannedApplication scannedApplication = new ScannedApplication(readers, writers, serializerScanningResult,
+            ScannedApplication scannedApplication = new ScannedApplication(resources, readers, writers,
+                    serializerScanningResult,
                     applicationScanningResult, resourceClasses, subResourceClasses, scannedFeatures, resourceInterceptors,
                     dynamicFeatures, paramConverters, exceptionMappers, contextResolvers);
 
             List<GeneratedClass> generatedClasses = new ArrayList<>();
+            Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> transformers = new HashMap<>();
             for (var i : featureScanners) {
-                generatedClasses.addAll(i.integrate(index, scannedApplication));
+                FeatureScanner.FeatureScanResult scanResult = i.integrate(index, scannedApplication);
+                generatedClasses.addAll(scanResult.getGeneratedClasses());
+                for (var entry : scanResult.getTransformers().entrySet()) {
+                    transformers.computeIfAbsent(entry.getKey(), (k) -> new ArrayList<>()).addAll(entry.getValue());
+                }
             }
-            return new ScanResult(this, scannedApplication, generatedClasses);
+            return new ScanResult(this, scannedApplication, generatedClasses, transformers);
         }
 
     }
@@ -216,15 +266,22 @@ public class ResteasyReactiveDeploymentManager {
         final ScanStep scanStep;
         final ScannedApplication scannedApplication;
         final List<GeneratedClass> generatedClasses;
+        final Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> transformers;
 
-        ScanResult(ScanStep scanStep, ScannedApplication scannedApplication, List<GeneratedClass> generatedClasses) {
+        ScanResult(ScanStep scanStep, ScannedApplication scannedApplication, List<GeneratedClass> generatedClasses,
+                Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> transformers) {
             this.scanStep = scanStep;
             this.scannedApplication = scannedApplication;
             this.generatedClasses = generatedClasses;
+            this.transformers = transformers;
         }
 
         public List<GeneratedClass> getGeneratedClasses() {
             return generatedClasses;
+        }
+
+        public Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> getTransformers() {
+            return transformers;
         }
 
         public PreparedApplication prepare(ClassLoader loader, Function<String, BeanFactory<?>> factoryCreator) {
@@ -284,13 +341,13 @@ public class ResteasyReactiveDeploymentManager {
         public void addBuiltinSerializers() {
             for (Serialisers.BuiltinReader builtinReader : ServerSerialisers.BUILTIN_READERS) {
                 serialisers.addReader(builtinReader.entityClass,
-                        new ResourceReader().setFactory(new ReflectiveContextInjectedBeanFactory(builtinReader.readerClass))
+                        new ResourceReader().setFactory(ReflectiveContextInjectedBeanFactory.create(builtinReader.readerClass))
                                 .setConstraint(builtinReader.constraint)
                                 .setMediaTypeStrings(Collections.singletonList(builtinReader.mediaType)).setBuiltin(true));
             }
             for (Serialisers.BuiltinWriter builtinReader : ServerSerialisers.BUILTIN_WRITERS) {
                 serialisers.addWriter(builtinReader.entityClass,
-                        new ResourceWriter().setFactory(new ReflectiveContextInjectedBeanFactory(builtinReader.writerClass))
+                        new ResourceWriter().setFactory(ReflectiveContextInjectedBeanFactory.create(builtinReader.writerClass))
                                 .setConstraint(builtinReader.constraint)
                                 .setMediaTypeStrings(Collections.singletonList(builtinReader.mediaType)).setBuiltin(true));
             }
@@ -301,13 +358,24 @@ public class ResteasyReactiveDeploymentManager {
             sa.getResourceInterceptors().initializeDefaultFactories(factoryCreator);
             sa.getExceptionMappers().initializeDefaultFactories(factoryCreator);
             sa.getContextResolvers().initializeDefaultFactories(factoryCreator);
+            sa.getScannedFeatures().initializeDefaultFactories(factoryCreator);
+            sa.getDynamicFeatures().initializeDefaultFactories(factoryCreator);
             sa.getParamConverters().initializeDefaultFactories(factoryCreator);
             sa.getParamConverters().sort();
             sa.getResourceInterceptors().sort();
             sa.getResourceInterceptors().getContainerRequestFilters().validateThreadModel();
+            for (var cl : sa.getResourceClasses()) {
+                if (cl.getFactory() == null) {
+                    cl.setFactory((BeanFactory<Object>) factoryCreator.apply(cl.getClassName()));
+                }
+            }
+            for (var cl : sa.getSubResourceClasses()) {
+                if (cl.getFactory() == null) {
+                    cl.setFactory((BeanFactory<Object>) factoryCreator.apply(cl.getClassName()));
+                }
+            }
 
             DeploymentInfo info = new DeploymentInfo()
-                    .setApplicationPath("/")
                     .setConfig(new ResteasyReactiveConfig())
                     .setFeatures(sa.scannedFeatures)
                     .setInterceptors(sa.resourceInterceptors)
@@ -339,10 +407,16 @@ public class ResteasyReactiveDeploymentManager {
                             }
                         }
                     });
+            String path;
+            if (scanStep.applicationPath != null) {
+                path = scanStep.getApplicationPath();
+            } else {
+                path = getApplicationPath();
+            }
+            info.setApplicationPath(path);
             List<Closeable> closeTasks = new ArrayList<>();
-            String path = getApplicationPath();
             RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, () -> executor,
-                    closeTasks::add, requestContextFactory, ThreadSetupAction.NOOP, path);
+                    closeTasks::add, requestContextFactory, ThreadSetupAction.NOOP, "/");
             Deployment deployment = runtimeDeploymentManager.deploy();
             deployment.setRuntimeConfiguration(runtimeConfiguration);
             RestInitialHandler initialHandler = new RestInitialHandler(deployment);
@@ -351,7 +425,7 @@ public class ResteasyReactiveDeploymentManager {
             for (RuntimeConfigurableServerRestHandler handler : runtimeConfigurableServerRestHandlers) {
                 handler.configure(runtimeConfiguration);
             }
-            return new RunnableApplication(closeTasks, initialHandler, path);
+            return new RunnableApplication(closeTasks, initialHandler, deployment, path);
         }
 
         private String getApplicationPath() {
@@ -373,12 +447,19 @@ public class ResteasyReactiveDeploymentManager {
     public static class RunnableApplication implements AutoCloseable {
         final List<Closeable> closeTasks;
         final RestInitialHandler initialHandler;
+        final Deployment deployment;
         final String path;
 
-        public RunnableApplication(List<Closeable> closeTasks, RestInitialHandler initialHandler, String path) {
+        public RunnableApplication(List<Closeable> closeTasks, RestInitialHandler initialHandler, Deployment deployment,
+                String path) {
             this.closeTasks = closeTasks;
             this.initialHandler = initialHandler;
+            this.deployment = deployment;
             this.path = path;
+        }
+
+        public Deployment getDeployment() {
+            return deployment;
         }
 
         @Override

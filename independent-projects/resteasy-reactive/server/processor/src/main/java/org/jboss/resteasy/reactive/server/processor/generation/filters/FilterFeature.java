@@ -29,7 +29,7 @@ public class FilterFeature implements FeatureScanner {
     }
 
     @Override
-    public List<GeneratedClass> integrate(IndexView application, ScannedApplication scannedApplication) {
+    public FeatureScanResult integrate(IndexView application, ScannedApplication scannedApplication) {
         List<GeneratedClass> generatedClasses = new ArrayList<>();
         List<FilterGeneration.GeneratedFilter> result = FilterGeneration.generate(application, unwrappableTypes,
                 additionalBeanAnnotations);
@@ -67,6 +67,6 @@ public class FilterFeature implements FeatureScanner {
                 }
             }
         }
-        return generatedClasses;
+        return new FeatureScanResult(generatedClasses);
     }
 }

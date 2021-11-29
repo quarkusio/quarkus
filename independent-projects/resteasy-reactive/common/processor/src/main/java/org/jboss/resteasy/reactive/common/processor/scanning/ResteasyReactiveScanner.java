@@ -11,10 +11,12 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -130,6 +132,7 @@ public class ResteasyReactiveScanner {
 
     public static SerializerScanningResult scanForSerializers(IndexView index,
             ApplicationScanningResult applicationScanningResult) {
+
         Collection<ClassInfo> readers = index
                 .getAllKnownImplementors(ResteasyReactiveDotNames.MESSAGE_BODY_READER);
         List<ScannedSerializer> readerList = new ArrayList<>();
@@ -218,7 +221,6 @@ public class ResteasyReactiveScanner {
 
         Map<DotName, ClassInfo> scannedResources = new HashMap<>(additionalResources);
         Map<DotName, String> scannedResourcePaths = new HashMap<>(additionalResourcePaths);
-        Map<DotName, ClassInfo> possibleSubResources = new HashMap<>();
         Map<DotName, String> pathInterfaces = new HashMap<>();
         Map<DotName, MethodInfo> resourcesThatNeedCustomProducer = new HashMap<>();
         List<MethodInfo> methodExceptionMappers = new ArrayList<>();
@@ -304,17 +306,48 @@ public class ResteasyReactiveScanner {
                             && Modifier.isAbstract(classWithJaxrsMethod.flags())
                             && !clientInterfaces.containsKey(classWithJaxrsMethod.name())) {
                         clientInterfaces.put(classWithJaxrsMethod.name(), "");
-                    } else if (classWithJaxrsMethod.classAnnotation(PATH) == null) {
-                        possibleSubResources.put(classWithJaxrsMethod.name(), classWithJaxrsMethod);
                     }
                 }
             }
         }
 
+        //now index possible sub resources. These are all classes that have method annotations
+        //that are not annotated @Path
+        Deque<ClassInfo> toScan = new ArrayDeque<>();
+        for (DotName methodAnnotation : httpAnnotationToMethod.keySet()) {
+            for (AnnotationInstance instance : index.getAnnotations(methodAnnotation)) {
+                MethodInfo method = instance.target().asMethod();
+                ClassInfo classInfo = method.declaringClass();
+                toScan.add(classInfo);
+            }
+        }
+        //sub resources can also have just a path annotation
+        //if they are 'intermediate' sub resources
+        for (AnnotationInstance instance : index.getAnnotations(ResteasyReactiveDotNames.PATH)) {
+            if (instance.target().kind() == AnnotationTarget.Kind.METHOD) {
+                MethodInfo method = instance.target().asMethod();
+                ClassInfo classInfo = method.declaringClass();
+                toScan.add(classInfo);
+            }
+        }
+        Map<DotName, ClassInfo> possibleSubResources = new HashMap<>();
+        while (!toScan.isEmpty()) {
+            ClassInfo classInfo = toScan.poll();
+            if (scannedResources.containsKey(classInfo.name()) ||
+                    pathInterfaces.containsKey(classInfo.name()) ||
+                    possibleSubResources.containsKey(classInfo.name())) {
+                continue;
+            }
+            possibleSubResources.put(classInfo.name(), classInfo);
+            //we need to also look for all sub classes and interfaces
+            //they may have type variables that need to be handled
+            toScan.addAll(index.getKnownDirectImplementors(classInfo.name()));
+            toScan.addAll(index.getKnownDirectSubclasses(classInfo.name()));
+        }
+
         Set<String> beanParams = new HashSet<>();
 
         Set<ClassInfo> beanParamAsBeanUsers = new HashSet<>(scannedResources.values());
-        beanParamAsBeanUsers.addAll(possibleSubResources.values());
 
         Collection<AnnotationInstance> unregisteredBeanParamAnnotations = new ArrayList<>(
                 index.getAnnotations(ResteasyReactiveDotNames.BEAN_PARAM));

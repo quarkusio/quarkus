@@ -12,7 +12,6 @@ import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
-import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.Providers;
 import javax.ws.rs.sse.Sse;
@@ -78,7 +77,6 @@ public class NewParamsRestResource {
             UriInfo uriInfo,
             HttpHeaders headers,
             Request request,
-            SecurityContext securityContext,
             Providers providers,
             ResourceContext resourceContext,
             Configuration configuration,
@@ -91,7 +89,6 @@ public class NewParamsRestResource {
         Assertions.assertNotNull(uriInfo);
         Assertions.assertNotNull(headers);
         Assertions.assertNotNull(request);
-        Assertions.assertNotNull(securityContext);
         Assertions.assertNotNull(providers);
         Assertions.assertNotNull(resourceContext);
         Assertions.assertNotNull(configuration);

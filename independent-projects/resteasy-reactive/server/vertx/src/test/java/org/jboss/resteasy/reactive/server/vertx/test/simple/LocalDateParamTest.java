@@ -12,8 +12,6 @@ import javax.ws.rs.QueryParam;
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.DateFormat;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -21,7 +19,7 @@ public class LocalDateParamTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(HelloResource.class, CustomDateTimeFormatterProvider.class));
 
     @Test

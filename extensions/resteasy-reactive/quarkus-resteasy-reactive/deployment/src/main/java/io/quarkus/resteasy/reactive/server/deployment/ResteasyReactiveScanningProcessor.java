@@ -36,6 +36,7 @@ import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveInt
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
+import org.jboss.resteasy.reactive.server.processor.generation.exceptionmappers.ServerExceptionMapperGenerator;
 import org.jboss.resteasy.reactive.server.processor.generation.filters.FilterGeneration;
 import org.jboss.resteasy.reactive.server.processor.scanning.AsyncReturnTypeScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.CacheControlScanner;
@@ -351,7 +352,8 @@ public class ResteasyReactiveScanningProcessor {
             // the user class itself is made to be a bean as we want the user to be able to declare dependencies
             additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
             Map<String, String> generatedClassNames = ServerExceptionMapperGenerator.generateGlobalMapper(methodInfo,
-                    new GeneratedBeanGizmoAdaptor(generatedBean));
+                    new GeneratedBeanGizmoAdaptor(generatedBean),
+                    Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()));
             for (Map.Entry<String, String> entry : generatedClassNames.entrySet()) {
                 ExceptionMapperBuildItem.Builder builder = new ExceptionMapperBuildItem.Builder(entry.getValue(),
                         entry.getKey()).setRegisterAsBean(false);// it has already been made a bean

@@ -5,7 +5,17 @@ import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class ResourceDynamicFeature {
 
+    private String className;
     private BeanFactory<DynamicFeature> factory;
+
+    public String getClassName() {
+        return className;
+    }
+
+    public ResourceDynamicFeature setClassName(String className) {
+        this.className = className;
+        return this;
+    }
 
     public BeanFactory<DynamicFeature> getFactory() {
         return factory;

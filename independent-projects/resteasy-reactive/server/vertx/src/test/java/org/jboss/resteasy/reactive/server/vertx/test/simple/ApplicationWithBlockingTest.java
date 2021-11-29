@@ -29,20 +29,16 @@ public class ApplicationWithBlockingTest {
     @Test
     public void test() {
         RestAssured.get("/tname/blocking")
-                .then().body(Matchers.containsString(ResteasyReactiveUnitTest.EXECUTOR_THREAD_NAME),
-                        Matchers.not(Matchers.containsString("loop")));
+                .then().body(Matchers.containsString("executor"), Matchers.not(Matchers.containsString("loop")));
 
         RestAssured.get("/tname/nonblocking")
-                .then().body(Matchers.containsString("loop"),
-                        Matchers.not(Matchers.containsString(ResteasyReactiveUnitTest.EXECUTOR_THREAD_NAME)));
+                .then().body(Matchers.containsString("loop"), Matchers.not(Matchers.containsString("executor")));
 
         RestAssured.get("/tname2/blocking")
-                .then().body(Matchers.containsString(ResteasyReactiveUnitTest.EXECUTOR_THREAD_NAME),
-                        Matchers.not(Matchers.containsString("loop")));
+                .then().body(Matchers.containsString("executor"), Matchers.not(Matchers.containsString("loop")));
 
         RestAssured.get("/tname2/nonblocking")
-                .then().body(Matchers.containsString("loop"),
-                        Matchers.not(Matchers.containsString(ResteasyReactiveUnitTest.EXECUTOR_THREAD_NAME)));
+                .then().body(Matchers.containsString("loop"), Matchers.not(Matchers.containsString("executor")));
     }
 
     @Blocking

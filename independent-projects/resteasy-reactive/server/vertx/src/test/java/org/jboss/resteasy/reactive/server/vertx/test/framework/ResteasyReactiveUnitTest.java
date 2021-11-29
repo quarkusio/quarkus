@@ -11,11 +11,16 @@ import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.mutiny.core.file.AsyncFile;
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -31,6 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -40,25 +46,39 @@ import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import javax.ws.rs.core.MediaType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.resteasy.reactive.common.processor.JandexUtil;
+import org.jboss.resteasy.reactive.common.processor.scanning.ScannedSerializer;
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.server.core.reflection.ReflectiveContextInjectedBeanFactory;
 import org.jboss.resteasy.reactive.server.processor.ResteasyReactiveDeploymentManager;
+import org.jboss.resteasy.reactive.server.processor.ScannedApplication;
+import org.jboss.resteasy.reactive.server.processor.generation.converters.GeneratedConvertersFeature;
+import org.jboss.resteasy.reactive.server.processor.generation.exceptionmappers.ServerExceptionMappingFeature;
 import org.jboss.resteasy.reactive.server.processor.generation.filters.FilterFeature;
+import org.jboss.resteasy.reactive.server.processor.generation.injection.FieldInjectionFeature;
+import org.jboss.resteasy.reactive.server.processor.generation.multipart.MultipartFeature;
 import org.jboss.resteasy.reactive.server.processor.scanning.AsyncReturnTypeScanner;
+import org.jboss.resteasy.reactive.server.processor.scanning.FeatureScanner;
+import org.jboss.resteasy.reactive.server.processor.scanning.ResponseHeaderMethodScanner;
+import org.jboss.resteasy.reactive.server.processor.scanning.ResponseStatusMethodScanner;
 import org.jboss.resteasy.reactive.server.spi.DefaultRuntimeConfiguration;
 import org.jboss.resteasy.reactive.server.vertx.ResteasyReactiveVertxHandler;
 import org.jboss.resteasy.reactive.server.vertx.VertxRequestContextFactory;
+import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyAsyncFileMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxAsyncFileMessageBodyWriter;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.InvocationInterceptor;
+import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 
-public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCallback {
+public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCallback, InvocationInterceptor {
 
     public static final DotName HTTP_SERVER_REQUEST = DotName.createSimple(HttpServerRequest.class.getName());
     public static final DotName HTTP_SERVER_RESPONSE = DotName.createSimple(HttpServerResponse.class.getName());
@@ -92,8 +112,49 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
     static String verticleId;
     static Vertx vertx;
     static ExecutorService executor;
+    boolean deleteUploadedFilesOnEnd = true;
+    Path uploadPath;
+
+    private List<Consumer<ResteasyReactiveDeploymentManager.ScanStep>> scanCustomizers = new ArrayList<>();
+    private List<Consumer<Route>> routeCustomisers = new ArrayList<>();
 
     List<Closeable> closeTasks = new ArrayList<>();
+    private Charset defaultCharset = StandardCharsets.UTF_8;;
+    private int maxFormAttributeSize = 2048;
+
+    public static Vertx getVertx() {
+        return vertx;
+    }
+
+    public ResteasyReactiveUnitTest addScanCustomizer(Consumer<ResteasyReactiveDeploymentManager.ScanStep> consumer) {
+        scanCustomizers.add(consumer);
+        return this;
+    }
+
+    public ResteasyReactiveUnitTest addRouteCustomizer(Consumer<Route> consumer) {
+        routeCustomisers.add(consumer);
+        return this;
+    }
+
+    public ResteasyReactiveUnitTest setDeleteUploadedFilesOnEnd(boolean deleteUploadedFilesOnEnd) {
+        this.deleteUploadedFilesOnEnd = deleteUploadedFilesOnEnd;
+        return this;
+    }
+
+    public ResteasyReactiveUnitTest setUploadPath(Path uploadPath) {
+        this.uploadPath = uploadPath;
+        return this;
+    }
+
+    public ResteasyReactiveUnitTest setDefaultCharset(Charset defaultCharset) {
+        this.defaultCharset = defaultCharset;
+        return this;
+    }
+
+    public ResteasyReactiveUnitTest setMaxFormAttributeSize(int maxFormAttributeSize) {
+        this.maxFormAttributeSize = maxFormAttributeSize;
+        return this;
+    }
 
     public ResteasyReactiveUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
         return assertException(t -> {
@@ -140,6 +201,21 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
         }
         this.assertLogRecords = assertLogRecords;
         return this;
+    }
+
+    /**
+     * Customize the application root.
+     *
+     * @param applicationRootConsumer
+     * @return self
+     */
+    public ResteasyReactiveUnitTest withApplicationRoot(Consumer<JavaArchive> applicationRootConsumer) {
+        Objects.requireNonNull(applicationRootConsumer);
+        return setArchiveProducer(() -> {
+            JavaArchive jar = ShrinkWrap.create(JavaArchive.class);
+            applicationRootConsumer.accept(jar);
+            return jar;
+        });
     }
 
     private void exportArchive(Path deploymentDir, Class<?> testClass) {
@@ -195,16 +271,52 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
 
         exportArchive(deploymentDir, testClass);
 
+        try {
+            doDeployment();
+        } catch (Throwable t) {
+            if (assertException == null) {
+                throw t;
+            }
+            assertException.accept(t);
+        }
+
+    }
+
+    private void doDeployment() throws MalformedURLException, InterruptedException, ExecutionException, ClassNotFoundException {
+        FieldInjectionFeature fieldInjectionSupport = new FieldInjectionFeature();
         IndexView nonCalcIndex = JandexUtil.createIndex(deploymentDir);
         ResteasyReactiveDeploymentManager.ScanStep scanStep = ResteasyReactiveDeploymentManager.start(nonCalcIndex);
+        scanStep.addContextTypes(Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT));
+        scanStep.addFeatureScanner(new MultipartFeature());
+        scanStep.addFeatureScanner(new GeneratedConvertersFeature());
+        scanStep.addFeatureScanner(fieldInjectionSupport);
         scanStep.addMethodScanner(new AsyncReturnTypeScanner());
+        scanStep.addMethodScanner(new ResponseStatusMethodScanner());
+        scanStep.addMethodScanner(new ResponseHeaderMethodScanner());
+        scanStep.addFeatureScanner(new FeatureScanner() {
+            @Override
+            public FeatureScanResult integrate(IndexView application, ScannedApplication scannedApplication) {
+                scannedApplication.getSerializerScanningResult().getWriters()
+                        .add(new ScannedSerializer(ServerMutinyAsyncFileMessageBodyWriter.class.getName(),
+                                AsyncFile.class.getName(), List.of(MediaType.WILDCARD)));
+                scannedApplication.getSerializerScanningResult().getWriters()
+                        .add(new ScannedSerializer(ServerVertxAsyncFileMessageBodyWriter.class.getName(),
+                                io.vertx.core.file.AsyncFile.class.getName(), List.of(MediaType.WILDCARD)));
+                return new FeatureScanResult(List.of());
+            }
+        });
         scanStep.addFeatureScanner(
                 new FilterFeature(Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of()));
+        scanStep.addFeatureScanner(
+                new ServerExceptionMappingFeature(Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT),
+                        Set.of()));
+        scanCustomizers.forEach((c) -> c.accept(scanStep));
+
         ResteasyReactiveDeploymentManager.ScanResult scanned = scanStep.scan();
 
         ResteasyReactiveTestClassLoader testClassLoader = new ResteasyReactiveTestClassLoader(
                 new URL[] { deploymentDir.toUri().toURL() }, Thread.currentThread().getContextClassLoader(),
-                scanned.getGeneratedClasses());
+                scanned.getGeneratedClasses(), scanned.getTransformers());
         Thread.currentThread().setContextClassLoader(testClassLoader);
         vertx = Vertx.vertx();
         Router router = Router.router(vertx);
@@ -244,24 +356,37 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                 return new Thread(r, EXECUTOR_THREAD_NAME);
             }
         });
+
         ResteasyReactiveDeploymentManager.PreparedApplication prepared = scanned
                 .prepare(testClassLoader, ReflectiveContextInjectedBeanFactory.STRING_FACTORY);
+
         prepared.addScannedSerializers();
         prepared.addBuiltinSerializers();
-        DefaultRuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(Duration.ofMinutes(1), true,
-                System.getProperty("java.io.tmpdir"), StandardCharsets.UTF_8, Optional.empty(), 100000);
+        DefaultRuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(Duration.ofMinutes(1),
+                deleteUploadedFilesOnEnd,
+                uploadPath != null ? uploadPath.toAbsolutePath().toString() : System.getProperty("java.io.tmpdir"),
+                defaultCharset, Optional.empty(), maxFormAttributeSize);
         ResteasyReactiveDeploymentManager.RunnableApplication application = prepared.createApplication(runtimeConfiguration,
                 new VertxRequestContextFactory(), executor);
+        fieldInjectionSupport.runtimeInit(testClassLoader, application.getDeployment());
 
         ResteasyReactiveVertxHandler handler = new ResteasyReactiveVertxHandler(application.getInitialHandler());
         String path = application.getPath();
-        router.route(path).handler(handler);
-        if (path.endsWith("/")) {
-            router.route(path + "*").handler(handler);
-        } else {
-            router.route(path + "/*").handler(handler);
+        Route route = router.route(path);
+        for (Consumer<Route> customizer : routeCustomisers) {
+            customizer.accept(route);
         }
-
+        route.handler(handler);
+        Route starRoute;
+        if (path.endsWith("/")) {
+            starRoute = router.route(path + "*");
+        } else {
+            starRoute = router.route(path + "/*");
+        }
+        for (Consumer<Route> customizer : routeCustomisers) {
+            customizer.accept(starRoute);
+        }
+        starRoute.handler(handler);
     }
 
     @Override
@@ -294,6 +419,16 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                 vertx = null;
             }
             Thread.currentThread().setContextClassLoader(originalClassLoader);
+        }
+    }
+
+    @Override
+    public void interceptTestMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
+            ExtensionContext extensionContext) throws Throwable {
+        if (assertException == null) {
+            invocation.proceed();
+        } else {
+            invocation.skip();
         }
     }
 

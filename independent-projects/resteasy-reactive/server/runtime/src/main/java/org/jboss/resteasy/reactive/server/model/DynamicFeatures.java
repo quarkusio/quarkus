@@ -2,7 +2,10 @@ package org.jboss.resteasy.reactive.server.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
+import javax.ws.rs.container.DynamicFeature;
 import org.jboss.resteasy.reactive.common.model.ResourceDynamicFeature;
+import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 /**
  * Container for {@link javax.ws.rs.container.DynamicFeature}
@@ -17,5 +20,13 @@ public class DynamicFeatures {
 
     public List<ResourceDynamicFeature> getResourceDynamicFeatures() {
         return resourceDynamicFeatures;
+    }
+
+    public void initializeDefaultFactories(Function<String, BeanFactory<?>> factoryCreator) {
+        for (ResourceDynamicFeature i : resourceDynamicFeatures) {
+            if (i.getFactory() == null) {
+                i.setFactory((BeanFactory<DynamicFeature>) factoryCreator.apply(i.getClassName()));
+            }
+        }
     }
 }

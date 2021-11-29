@@ -103,13 +103,12 @@ import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
-import org.jboss.resteasy.reactive.common.reflection.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.common.util.URLUtils;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD>, PARAM extends IndexedParameter<PARAM>, METHOD extends ResourceMethod> {
 
-    protected static final Map<String, String> primitiveTypes;
+    public static final Map<String, String> primitiveTypes;
     private static final Map<DotName, Class<?>> supportedReaderJavaTypes;
     // NOTE: sync with ContextProducer and ContextParamExtractor
     private static final Set<DotName> DEFAULT_CONTEXT_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
@@ -195,7 +194,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final AnnotationStore annotationStore;
     private final ApplicationScanningResult applicationScanningResult;
     private final Set<DotName> contextTypes;
-    private final MultipartReturnTypeHandler multipartReturnTypeHandler;
+    private final MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension;
+    private final MultipartParameterIndexerExtension multipartParameterIndexerExtension;
 
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
         this.index = builder.index;
@@ -214,7 +214,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.annotationStore = new AnnotationStore(builder.annotationsTransformers);
         this.applicationScanningResult = builder.applicationScanningResult;
         this.contextTypes = builder.contextTypes;
-        this.multipartReturnTypeHandler = builder.multipartReturnTypeHandler;
+        this.multipartReturnTypeIndexerExtension = builder.multipartReturnTypeIndexerExtension;
+        this.multipartParameterIndexerExtension = builder.multipartParameterIndexerExtension;
     }
 
     public Optional<ResourceClass> createEndpoints(ClassInfo classInfo, boolean considerApplication) {
@@ -238,7 +239,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
                 clazz.setPath(path);
             }
-            clazz.setFactory(factoryCreator.apply(classInfo.name().toString()));
+            if (factoryCreator != null) {
+                clazz.setFactory((BeanFactory<Object>) factoryCreator.apply(classInfo.name().toString()));
+            }
             Map<String, String> classLevelExceptionMappers = this.classLevelExceptionMappers.get(classInfo.name());
             if (classLevelExceptionMappers != null) {
                 clazz.setClassLevelExceptionMappers(classLevelExceptionMappers);
@@ -493,7 +496,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 } else if (type == ParameterType.MULTI_PART_FORM) {
                     multipart = true;
                     ClassInfo multipartClassInfo = index.getClassByName(paramType.name());
-                    handleMultipartForParamType(multipartClassInfo);
+                    multipartParameterIndexerExtension.handleMultipartParameter(multipartClassInfo, index);
                 }
             }
 
@@ -547,7 +550,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 } else if (MediaType.MULTIPART_FORM_DATA.equals(produces[0])) {
                     // Handle multipart form data responses
                     ClassInfo multipartClassInfo = index.getClassByName(nonAsyncReturnType.name());
-                    returnsMultipart = multipartReturnTypeHandler.handleMultipartForReturnType(additionalWriters,
+                    returnsMultipart = multipartReturnTypeIndexerExtension.handleMultipartForReturnType(additionalWriters,
                             multipartClassInfo, index);
                 }
             }
@@ -651,10 +654,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected boolean doesMethodHaveBlockingSignature(MethodInfo info) {
         return true;
-    }
-
-    protected void handleMultipartForParamType(ClassInfo multipartClassInfo) {
-
     }
 
     private String determineReturnType(MethodInfo info, TypeArgMapper typeArgMapper, ClassInfo currentClassInfo,
@@ -1208,7 +1207,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static abstract class Builder<T extends EndpointIndexer<T, ?, METHOD>, B extends Builder<T, B, METHOD>, METHOD extends ResourceMethod> {
-        private Function<String, BeanFactory<Object>> factoryCreator = new ReflectionBeanFactoryCreator();
+        private Function<String, BeanFactory<Object>> factoryCreator;
         private BlockingDefault defaultBlocking = BlockingDefault.AUTOMATIC;
         private IndexView index;
         private Map<String, String> existingConverters = new HashMap<>();
@@ -1224,17 +1223,27 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Collection<AnnotationsTransformer> annotationsTransformers;
         private ApplicationScanningResult applicationScanningResult;
         private Set<DotName> contextTypes = new HashSet<>(DEFAULT_CONTEXT_TYPES);
-        private MultipartReturnTypeHandler multipartReturnTypeHandler = new MultipartReturnTypeHandler() {
+        private MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension = new MultipartReturnTypeIndexerExtension() {
             @Override
             public boolean handleMultipartForReturnType(AdditionalWriters additionalWriters, ClassInfo multipartClassInfo,
                     IndexView indexView) {
                 return false;
             }
         };
+        public MultipartParameterIndexerExtension multipartParameterIndexerExtension = new MultipartParameterIndexerExtension() {
+            @Override
+            public void handleMultipartParameter(ClassInfo multipartClassInfo, IndexView indexView) {
+            }
+        };
 
-        public Builder<T, B, METHOD> setMultipartReturnTypeHandler(MultipartReturnTypeHandler multipartReturnTypeHandler) {
-            this.multipartReturnTypeHandler = multipartReturnTypeHandler;
-            return this;
+        public B setMultipartReturnTypeIndexerExtension(MultipartReturnTypeIndexerExtension multipartReturnTypeHandler) {
+            this.multipartReturnTypeIndexerExtension = multipartReturnTypeHandler;
+            return (B) this;
+        }
+
+        public B setMultipartParameterIndexerExtension(MultipartParameterIndexerExtension multipartParameterHandler) {
+            this.multipartParameterIndexerExtension = multipartParameterHandler;
+            return (B) this;
         }
 
         public B setDefaultBlocking(BlockingDefault defaultBlocking) {
@@ -1414,8 +1423,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     /**
      * @return true if return type is compatible to handle multipart types.
      */
-    public interface MultipartReturnTypeHandler {
+    public interface MultipartReturnTypeIndexerExtension {
         boolean handleMultipartForReturnType(AdditionalWriters additionalWriters, ClassInfo multipartClassInfo,
                 IndexView index);
+    }
+
+    /**
+     * @return true if return type is compatible to handle multipart types.
+     */
+    public interface MultipartParameterIndexerExtension {
+        void handleMultipartParameter(ClassInfo multipartClassInfo, IndexView index);
     }
 }

@@ -25,7 +25,11 @@ public class PerRequestInstanceHandler implements ServerRestHandler {
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         BeanFactory.BeanInstance<Object> instance = factory.createInstance();
         requestContext.setEndpointInstance(instance.getInstance());
-        ((ResteasyReactiveInjectionTarget) clientProxyUnwrapper.apply(instance.getInstance()))
+        Object unwrapped = instance.getInstance();
+        if (clientProxyUnwrapper != null) {
+            clientProxyUnwrapper.apply(instance);
+        }
+        ((ResteasyReactiveInjectionTarget) unwrapped)
                 .__quarkus_rest_inject(requestContext);
         requestContext.registerCompletionCallback(new CompletionCallback() {
             @Override

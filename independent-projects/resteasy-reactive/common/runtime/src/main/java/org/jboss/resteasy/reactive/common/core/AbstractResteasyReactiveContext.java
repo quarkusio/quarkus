@@ -160,6 +160,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                             }
                         }
                     }
+
                 } catch (Throwable t) {
                     aborted = abortHandlerChainStarted;
                     if (t instanceof PreserveTargetException) {

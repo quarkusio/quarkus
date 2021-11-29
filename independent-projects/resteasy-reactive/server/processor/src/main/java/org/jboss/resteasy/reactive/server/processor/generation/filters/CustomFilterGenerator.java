@@ -47,7 +47,7 @@ import org.jboss.resteasy.reactive.server.filters.FilterUtil;
 import org.jboss.resteasy.reactive.server.filters.PreventAbortResteasyReactiveContainerRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.HttpHeadersImpl;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
-import org.jboss.resteasy.reactive.server.processor.generation.GeneratorUtils;
+import org.jboss.resteasy.reactive.server.processor.generation.multipart.GeneratorUtils;
 import org.jboss.resteasy.reactive.server.processor.util.KotlinUtils;
 import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;

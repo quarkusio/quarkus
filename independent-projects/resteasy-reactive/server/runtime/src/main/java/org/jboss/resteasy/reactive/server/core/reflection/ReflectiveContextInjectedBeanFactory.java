@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.inject.Inject;
+import javax.ws.rs.HeaderParam;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.parameters.ContextParamExtractor;
@@ -22,15 +24,40 @@ import org.jboss.resteasy.reactive.spi.BeanFactory;
 public class ReflectiveContextInjectedBeanFactory<T> implements BeanFactory<T> {
     public static final Function<Class<?>, BeanFactory<?>> FACTORY = new Function<Class<?>, BeanFactory<?>>() {
         @Override
-        public BeanFactory<?> apply(Class<?> aClass) {
-            return new ReflectiveContextInjectedBeanFactory<>(aClass);
+        public BeanFactory<?> apply(Class<?> clazz) {
+            return create(clazz);
         }
     };
+
+    public static <T> BeanFactory<T> create(Class<?> clazz) {
+        Constructor<?> ctor = null;
+        Constructor<?>[] declaredConstructors = clazz.getDeclaredConstructors();
+        for (var i : declaredConstructors) {
+            if (i.isAnnotationPresent(Inject.class) || declaredConstructors.length == 1) {
+                ctor = i;
+            }
+        }
+        if (ctor == null) {
+            try {
+                ctor = clazz.getDeclaredConstructor();
+            } catch (NoSuchMethodException e) {
+                return new BeanFactory<T>() {
+                    @Override
+                    public BeanInstance<T> createInstance() {
+                        throw new RuntimeException("Unable to create " + clazz, e);
+                    }
+                };
+            }
+        }
+        ctor.setAccessible(true);
+        return new ReflectiveContextInjectedBeanFactory<T>((Constructor<T>) ctor);
+    }
+
     public static final Function<String, BeanFactory<?>> STRING_FACTORY = new Function<String, BeanFactory<?>>() {
         @Override
         public BeanFactory<?> apply(String name) {
             try {
-                return new ReflectiveContextInjectedBeanFactory<>(
+                return FACTORY.apply(
                         Thread.currentThread().getContextClassLoader().loadClass(name));
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
@@ -39,53 +66,61 @@ public class ReflectiveContextInjectedBeanFactory<T> implements BeanFactory<T> {
     };
 
     private final Constructor<T> constructor;
-    private final Map<Field, Object> proxiesToInject;
+    private final Map<Field, Supplier<Object>> proxiesToInject;
     private final List<Supplier<Object>> constructorParams;
 
     public static <T> BeanFactory<T> create(String name) {
         return (BeanFactory<T>) STRING_FACTORY.apply(name);
     }
 
-    public ReflectiveContextInjectedBeanFactory(Class<T> clazz) {
+    public ReflectiveContextInjectedBeanFactory(Constructor<T> constructor) {
 
-        try {
-            Constructor<T> ctor = null;
-            Constructor<?>[] declaredConstructors = clazz.getDeclaredConstructors();
-            for (var i : declaredConstructors) {
-                if (i.isAnnotationPresent(Inject.class) || declaredConstructors.length == 1) {
-                    ctor = (Constructor<T>) i;
+        this.constructor = constructor;
+        constructor.setAccessible(true);
+        constructorParams = new ArrayList<>();
+        for (var i : constructor.getParameterTypes()) {
+            //assume @Contextual object
+            if (i.isInterface() && (i.getName().startsWith("javax.ws.rs") || i.getName().startsWith("jakarta.ws.rs"))) {
+                var val = extractContextParam(i);
+                constructorParams.add(() -> val);
+            } else if (i.isAnnotationPresent(QueryParam.class)) {
+                //todo: this is all super hacky
+                //we need better SPI's around this
+                //we don't handle conversion at all
+                QueryParam param = i.getAnnotation(QueryParam.class);
+                constructorParams.add(() -> CurrentRequestManager.get().getQueryParameter(param.value(), true, false));
+            } else if (i.isAnnotationPresent(HeaderParam.class)) {
+                HeaderParam param = i.getAnnotation(HeaderParam.class);
+                constructorParams.add(() -> CurrentRequestManager.get().getHeader(param.value(), true));
+            } else {
+                BeanFactory factory = create(i);
+                constructorParams.add(() -> factory.createInstance().getInstance());
+            }
+        }
+        Class<?> c = constructor.getDeclaringClass();
+        proxiesToInject = new HashMap<>();
+        while (c != Object.class) {
+            for (Field f : c.getDeclaredFields()) {
+                if (Modifier.isStatic(f.getModifiers()) || Modifier.isFinal(f.getModifiers())) {
+                    continue;
+                }
+                if (f.isAnnotationPresent(Context.class)) {
+                    f.setAccessible(true);
+                    Object contextParam = extractContextParam(f.getType());
+                    proxiesToInject.put(f, () -> contextParam);
+                } else if (f.isAnnotationPresent(Inject.class)) {
+                    f.setAccessible(true);
+                    BeanFactory<?> factory = create(f.getType());
+                    proxiesToInject.put(f, () -> {
+                        try {
+                            return factory.createInstance().getInstance();
+                        } catch (Throwable t) {
+                            throw new RuntimeException("Failed to inject field " + f, t);
+                        }
+                    });
                 }
             }
-            constructor = ctor == null ? clazz.getConstructor() : ctor;
-            constructor.setAccessible(true);
-            constructorParams = new ArrayList<>();
-            for (var i : constructor.getParameterTypes()) {
-                //assume @Contextual object
-                if (i.isInterface() && (i.getName().startsWith("javax.ws.rs") || i.getName().startsWith("jakarta.ws.rs"))) {
-                    var val = extractContextParam(i);
-                    constructorParams.add(() -> val);
-                } else {
-                    ReflectiveContextInjectedBeanFactory factory = new ReflectiveContextInjectedBeanFactory(i);
-                    constructorParams.add(() -> factory.createInstance().getInstance());
-                }
-            }
-            Class<?> c = clazz;
-            proxiesToInject = new HashMap<>();
-            while (c != Object.class) {
-                for (Field f : c.getDeclaredFields()) {
-                    if (Modifier.isStatic(f.getModifiers()) || Modifier.isFinal(f.getModifiers())) {
-                        continue;
-                    }
-                    if (f.isAnnotationPresent(Context.class)) {
-                        f.setAccessible(true);
-                        Object contextParam = extractContextParam(f.getType());
-                        proxiesToInject.put(f, contextParam);
-                    }
-                }
-                c = c.getSuperclass();
-            }
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
+            c = c.getSuperclass();
         }
     }
 
@@ -111,7 +146,7 @@ public class ReflectiveContextInjectedBeanFactory<T> implements BeanFactory<T> {
             }
             T instance = constructor.newInstance(params);
             for (var i : proxiesToInject.entrySet()) {
-                i.getKey().set(instance, i.getValue());
+                i.getKey().set(instance, i.getValue().get());
             }
             return new BeanInstance<T>() {
                 @Override

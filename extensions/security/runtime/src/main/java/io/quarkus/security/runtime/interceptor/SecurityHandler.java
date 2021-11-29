@@ -36,7 +36,7 @@ public class SecurityHandler {
                         try {
                             return Uni.createFrom().completionStage((CompletionStage<?>) ic.proceed());
                         } catch (Exception e) {
-                            throw new RuntimeException(e);
+                            return Uni.createFrom().failure(e);
                         }
                     }).subscribeAsCompletionStage();
         } else if (Multi.class.isAssignableFrom(returnType)) {

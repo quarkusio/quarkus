@@ -97,6 +97,8 @@ To make the test pass, we also need to update `GreetingResourceTest.kt` like so:
 
 [source,kotlin]
 ----
+import org.hamcrest.Matchers.equalTo
+
 @QuarkusTest
 class GreetingResourceTest {
 

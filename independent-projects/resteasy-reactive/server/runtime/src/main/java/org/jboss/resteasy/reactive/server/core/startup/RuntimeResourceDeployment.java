@@ -160,10 +160,17 @@ public class RuntimeResourceDeployment {
             }
         }
 
-        Set<String> classAnnotationNames = new HashSet<>();
-        for (Annotation annotation : resourceClass.getAnnotations()) {
-            classAnnotationNames.add(annotation.annotationType().getName());
+        Annotation[] resourceClassAnnotations = resourceClass.getAnnotations();
+        Set<String> classAnnotationNames;
+        if (resourceClassAnnotations.length == 0) {
+            classAnnotationNames = Collections.emptySet();
+        } else {
+            classAnnotationNames = new HashSet<>(resourceClassAnnotations.length);
+            for (Annotation annotation : resourceClassAnnotations) {
+                classAnnotationNames.add(annotation.annotationType().getName());
+            }
         }
+
         ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
                 parameterDeclaredUnresolvedTypes, classAnnotationNames, method.getMethodAnnotationNames());
 
@@ -171,13 +178,19 @@ public class RuntimeResourceDeployment {
                 .forMethod(method, lazyMethod);
 
         //setup reader and writer interceptors first
-        List<ServerRestHandler> interceptorHandlers = interceptorDeployment.setupInterceptorHandler();
+        ServerRestHandler interceptorHandler = interceptorDeployment.setupInterceptorHandler();
         //we want interceptors in the abort handler chain
-        List<ServerRestHandler> abortHandlingChain = new ArrayList<>(interceptorHandlers);
+        List<ServerRestHandler> abortHandlingChain = new ArrayList<>(3 + (interceptorHandler != null ? 1 : 0));
 
-        List<ServerRestHandler> handlers = new ArrayList<>();
+        List<ServerRestHandler> handlers = new ArrayList<>(10);
+        // we add null as the first item to make sure that subsequent items are added in the proper positions
+        // and that the items don't need to shifted when at the end of the method we set the
+        // first item
+        handlers.add(null);
         addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.AFTER_MATCH);
-        handlers.addAll(interceptorHandlers);
+        if (interceptorHandler != null) {
+            handlers.add(interceptorHandler);
+        }
 
         // when a method is blocking, we also want all the request filters to run on the worker thread
         // because they can potentially set thread local variables
@@ -202,7 +215,7 @@ public class RuntimeResourceDeployment {
         }
 
         //spec doesn't seem to test this, but RESTEasy does not run request filters for both root and sub resources (which makes sense)
-        //so only only run request filters for methods that are leaf resources - i.e. have a HTTP method annotation so we ensure only one will run
+        //so only run request filters for methods that are leaf resources - i.e. have a HTTP method annotation so we ensure only one will run
         if (method.getHttpMethod() != null) {
             List<ResourceRequestFilterHandler> containerRequestFilterHandlers = interceptorDeployment
                     .setupRequestFilterHandler();
@@ -419,9 +432,9 @@ public class RuntimeResourceDeployment {
         abortHandlingChain.add(ExceptionHandler.INSTANCE);
         abortHandlingChain.add(ResponseHandler.NO_CUSTOMIZER_INSTANCE);
         abortHandlingChain.addAll(responseFilterHandlers);
-
         abortHandlingChain.add(responseWriterHandler);
-        handlers.add(0, new AbortChainHandler(abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY)));
+
+        handlers.set(0, new AbortChainHandler(abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY)));
 
         return new RuntimeResource(method.getHttpMethod(), methodPathTemplate,
                 classPathTemplate,

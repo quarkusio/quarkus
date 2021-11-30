@@ -190,9 +190,10 @@ public class ProxyFactory<T> {
                 ctor.returnValue(null);
             }
 
+            Class<?>[] parameterTypes = injectConstructor.getParameterTypes();
             List<Class<?>> args = new ArrayList<>();
             args.add(InvocationHandler.class);
-            args.addAll(Arrays.asList(injectConstructor.getParameterTypes()));
+            args.addAll(Arrays.asList(parameterTypes));
             try (MethodCreator ctor = cc
                     .getMethodCreator(MethodDescriptor.ofConstructor(proxyName, args.toArray(Class[]::new)))) {
                 List<ResultHandle> params = new ArrayList<>();
@@ -201,7 +202,7 @@ public class ProxyFactory<T> {
                 }
                 ctor.invokeSpecialMethod(
                         MethodDescriptor.ofConstructor(injectConstructor.getDeclaringClass(),
-                                injectConstructor.getParameterTypes()),
+                                parameterTypes),
                         ctor.getThis(),
                         params.toArray(ResultHandle[]::new));
                 ctor.writeInstanceField(invocationHandlerField, ctor.getThis(), ctor.getMethodParam(0));
@@ -268,8 +269,9 @@ public class ProxyFactory<T> {
                 defineClass();
                 Object[] args = new Object[constructor.getParameterCount()];
                 args[0] = handler;
+                Class<?>[] parameterTypes = this.constructor.getParameterTypes();
                 for (int i = 1; i < constructor.getParameterCount(); ++i) {
-                    Constructor<?> ctor = this.constructor.getParameterTypes()[i].getConstructor();
+                    Constructor<?> ctor = parameterTypes[i].getConstructor();
                     ctor.setAccessible(true);
                     args[i] = ctor.newInstance();
                 }

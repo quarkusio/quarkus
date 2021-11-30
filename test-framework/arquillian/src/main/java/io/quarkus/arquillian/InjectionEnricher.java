@@ -156,15 +156,15 @@ public class InjectionEnricher implements TestEnricher {
             if (beanManager == null) {
                 return values;
             }
+            Class<?>[] parameterTypes = method.getParameterTypes();
             try {
                 // obtain the same method definition but from the TCCL
                 method = getClass().getClassLoader()
                         .loadClass(method.getDeclaringClass().getName())
-                        .getMethod(method.getName(), convertToCL(method.getParameterTypes(), getClass().getClassLoader()));
+                        .getMethod(method.getName(), convertToCL(parameterTypes, getClass().getClassLoader()));
             } catch (Throwable t) {
                 throw new RuntimeException(t);
             }
-            Class<?>[] parameterTypes = method.getParameterTypes();
             for (int i = 0; i < parameterTypes.length; i++) {
                 try {
                     values[i] = getInstanceByType(beanManager, i, method, (CreationalContext<?>) creationalContext);

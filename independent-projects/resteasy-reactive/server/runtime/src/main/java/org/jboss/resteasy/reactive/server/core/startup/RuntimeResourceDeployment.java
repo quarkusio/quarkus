@@ -290,14 +290,15 @@ public class RuntimeResourceDeployment {
                     Method javaMethod = lazyMethod.getMethod();
                     // Workaround our lack of support for generic params by not doing this init if there are not runtime
                     // param converter providers
-                    converter.init(paramConverterProviders, javaMethod.getParameterTypes()[i],
-                            javaMethod.getGenericParameterTypes()[i],
-                            javaMethod.getParameterAnnotations()[i]);
+                    Class<?>[] parameterTypes = javaMethod.getParameterTypes();
+                    Type[] genericParameterTypes = javaMethod.getGenericParameterTypes();
+                    Annotation[][] parameterAnnotations = javaMethod.getParameterAnnotations();
+                    converter.init(paramConverterProviders, parameterTypes[i], genericParameterTypes[i],
+                            parameterAnnotations[i]);
                     // make sure we give the user provided resolvers the chance to convert
                     converter = new RuntimeResolvedConverter(converter);
-                    converter.init(paramConverterProviders, javaMethod.getParameterTypes()[i],
-                            javaMethod.getGenericParameterTypes()[i],
-                            javaMethod.getParameterAnnotations()[i]);
+                    converter.init(paramConverterProviders, parameterTypes[i], genericParameterTypes[i],
+                            parameterAnnotations[i]);
                 }
             }
 

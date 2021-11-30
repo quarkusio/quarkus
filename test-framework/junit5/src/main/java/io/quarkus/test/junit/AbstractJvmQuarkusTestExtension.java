@@ -154,6 +154,7 @@ public class AbstractJvmQuarkusTestExtension {
             final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder()
                     .setIsolateDeployment(true)
                     .setMode(QuarkusBootstrap.Mode.TEST);
+            runnerBuilder.setBaseClassLoader(AbstractJvmQuarkusTestExtension.class.getClassLoader());
             runnerBuilder.setTargetDirectory(outputDir);
             runnerBuilder.setProjectRoot(projectRoot);
             runnerBuilder.setApplicationRoot(rootBuilder.build());

@@ -13,6 +13,7 @@ import org.hibernate.annotations.FilterDef;
 
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
+import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -97,6 +98,7 @@ public interface PanacheQuery<Entity> {
      * @see #firstPage()
      * @see #count()
      */
+    @CheckReturnValue
     public <T extends Entity> Uni<PanacheQuery<T>> lastPage();
 
     /**
@@ -108,6 +110,7 @@ public interface PanacheQuery<Entity> {
      * @see #hasPreviousPage()
      * @see #count()
      */
+    @CheckReturnValue
     public Uni<Boolean> hasNextPage();
 
     /**
@@ -126,6 +129,7 @@ public interface PanacheQuery<Entity> {
      * @return the total number of pages to be read using the current page size.
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
      */
+    @CheckReturnValue
     public Uni<Integer> pageCount();
 
     /**
@@ -221,6 +225,7 @@ public interface PanacheQuery<Entity> {
      * 
      * @return the total number of entities this query operates on, cached.
      */
+    @CheckReturnValue
     public Uni<Long> count();
 
     /**
@@ -231,6 +236,7 @@ public interface PanacheQuery<Entity> {
      * @see #page(Page)
      * @see #page()
      */
+    @CheckReturnValue
     public <T extends Entity> Uni<List<T>> list();
 
     /**
@@ -241,6 +247,7 @@ public interface PanacheQuery<Entity> {
      * @see #page(Page)
      * @see #page()
      */
+    @CheckReturnValue
     public <T extends Entity> Multi<T> stream();
 
     /**
@@ -250,6 +257,7 @@ public interface PanacheQuery<Entity> {
      * @return the first result of the current page index, or null if there are no results.
      * @see #singleResult()
      */
+    @CheckReturnValue
     public <T extends Entity> Uni<T> firstResult();
 
     /**
@@ -260,5 +268,6 @@ public interface PanacheQuery<Entity> {
      * @throws NonUniqueResultException if there are more than one result
      * @see #firstResult()
      */
+    @CheckReturnValue
     public <T extends Entity> Uni<T> singleResult();
 }

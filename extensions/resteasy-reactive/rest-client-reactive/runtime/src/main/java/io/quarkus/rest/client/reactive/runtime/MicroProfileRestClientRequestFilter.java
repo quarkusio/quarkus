@@ -13,9 +13,11 @@ import javax.ws.rs.core.MultivaluedMap;
 
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.eclipse.microprofile.rest.client.ext.DefaultClientHeadersFactoryImpl;
+import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.rest.client.reactive.HeaderFiller;
+import io.quarkus.rest.client.reactive.ReactiveClientHeadersFactory;
 
 @Priority(Integer.MIN_VALUE)
 public class MicroProfileRestClientRequestFilter implements ClientRequestFilter {
@@ -63,7 +65,20 @@ public class MicroProfileRestClientRequestFilter implements ClientRequestFilter 
         }
 
         if (clientHeadersFactory != null) {
-            incomingHeaders = clientHeadersFactory.update(incomingHeaders, headers);
+            if (clientHeadersFactory instanceof ReactiveClientHeadersFactory) {
+                // reactive
+                ResteasyReactiveClientRequestContext reactiveRequestContext = (ResteasyReactiveClientRequestContext) requestContext;
+                ReactiveClientHeadersFactory reactiveClientHeadersFactory = (ReactiveClientHeadersFactory) clientHeadersFactory;
+                reactiveRequestContext.suspend();
+                MultivaluedMap<String, String> outgoingHeaders = incomingHeaders;
+                reactiveClientHeadersFactory.getHeaders(incomingHeaders).subscribe().with(newHeaders -> {
+                    outgoingHeaders.putAll(newHeaders);
+                    reactiveRequestContext.resume();
+                }, reactiveRequestContext::resume);
+            } else {
+                // blocking
+                incomingHeaders = clientHeadersFactory.update(incomingHeaders, headers);
+            }
         }
 
         for (Map.Entry<String, List<String>> headerEntry : incomingHeaders.entrySet()) {

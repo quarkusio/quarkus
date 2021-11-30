@@ -458,7 +458,7 @@ public class ArcContainerImpl implements ArcContainer {
         if (qualifiers == null || qualifiers.length == 0) {
             qualifiers = new Annotation[] { Default.Literal.INSTANCE };
         } else {
-            Qualifiers.verify(qualifiers);
+            Qualifiers.verify(qualifiers, qualifierNonbindingMembers.keySet());
         }
         Set<InjectableBean<?>> resolvedBeans = resolved.getValue(new Resolvable(requiredType, qualifiers));
         return resolvedBeans.size() != 1 ? null : (InjectableBean<T>) resolvedBeans.iterator().next();
@@ -468,7 +468,7 @@ public class ArcContainerImpl implements ArcContainer {
         if (requiredType instanceof TypeVariable) {
             throw new IllegalArgumentException("The given type is a type variable: " + requiredType);
         }
-        Qualifiers.verify(qualifiers);
+        Qualifiers.verify(qualifiers, qualifierNonbindingMembers.keySet());
         // This method does not cache the results
         return Set.of(getMatchingBeans(new Resolvable(requiredType, qualifiers)).toArray(new Bean<?>[] {}));
     }
@@ -480,6 +480,10 @@ public class ArcContainerImpl implements ArcContainer {
 
     Map<Class<? extends Annotation>, Set<Annotation>> getTransitiveInterceptorBindings() {
         return transitiveInterceptorBindings;
+    }
+
+    Set<String> getCustomQualifiers() {
+        return qualifierNonbindingMembers.keySet();
     }
 
     boolean isScope(Class<? extends Annotation> annotationType) {
@@ -698,7 +702,7 @@ public class ArcContainerImpl implements ArcContainer {
 
     @SuppressWarnings("unchecked")
     <T> List<InjectableObserverMethod<? super T>> resolveObservers(Type eventType, Set<Annotation> eventQualifiers) {
-        Qualifiers.verify(eventQualifiers);
+        Qualifiers.verify(eventQualifiers, qualifierNonbindingMembers.keySet());
         if (observers.isEmpty()) {
             return Collections.emptyList();
         }

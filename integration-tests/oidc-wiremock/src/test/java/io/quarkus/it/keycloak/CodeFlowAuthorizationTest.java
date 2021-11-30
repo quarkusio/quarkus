@@ -56,7 +56,7 @@ public class CodeFlowAuthorizationTest {
 
             page = form.getInputByValue("login").click();
 
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice:alice", page.getBody().asText());
         }
     }
 

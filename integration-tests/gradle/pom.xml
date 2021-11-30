@@ -52,6 +52,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-testing</artifactId>
+            <scope>test</scope>
         </dependency>
         <!-- The following dependencies are generated in a way that is consistent with other normal IT modules,
              that is "runtime" deps are defined with scope compile and "minimal extension deployment dependencies"

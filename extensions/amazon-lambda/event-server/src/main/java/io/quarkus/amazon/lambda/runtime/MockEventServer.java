@@ -14,7 +14,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
 
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServer;
 import io.vertx.ext.web.Router;
@@ -49,7 +52,7 @@ public class MockEventServer implements Closeable {
 
     public void start(int port) {
         this.port = port;
-        vertx = Vertx.vertx();
+        vertx = Vertx.vertx(new VertxOptions().setMaxWorkerExecuteTime(60).setMaxWorkerExecuteTimeUnit(TimeUnit.MINUTES));
         httpServer = vertx.createHttpServer();
         router = Router.router(vertx);
         setupRoutes();
@@ -59,10 +62,6 @@ public class MockEventServer implements Closeable {
             throw new RuntimeException(e);
         }
         log.info("Mock Lambda Event Server Started");
-    }
-
-    public HttpServer getHttpServer() {
-        return httpServer;
     }
 
     public void setupRoutes() {
@@ -100,54 +99,56 @@ public class MockEventServer implements Closeable {
     }
 
     public void nextEvent(RoutingContext ctx) {
-        // Vert.x barfs if you block too long so we have our own executor
-        blockingPool.execute(() -> {
-            final AtomicBoolean closed = new AtomicBoolean(false);
-            ctx.response().closeHandler((v) -> closed.set(true));
-            ctx.response().exceptionHandler((v) -> closed.set(true));
-            ctx.request().connection().closeHandler((v) -> closed.set(true));
-            ctx.request().connection().exceptionHandler((v) -> closed.set(true));
-            RoutingContext request = null;
-            try {
-                for (;;) {
-                    request = queue.poll(10, TimeUnit.MILLISECONDS);
-                    if (request != null) {
-                        if (closed.get()) {
-                            log.debugf("Polled message %s but connection was closed, returning to queue",
-                                    request.get(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID));
-                            queue.put(request);
+        vertx.executeBlocking(new Handler<>() {
+            @Override
+            public void handle(Promise<Object> event) {
+                final AtomicBoolean closed = new AtomicBoolean(false);
+                ctx.response().closeHandler((v) -> closed.set(true));
+                ctx.response().exceptionHandler((v) -> closed.set(true));
+                ctx.request().connection().closeHandler((v) -> closed.set(true));
+                ctx.request().connection().exceptionHandler((v) -> closed.set(true));
+                RoutingContext request = null;
+                try {
+                    for (;;) {
+                        request = queue.poll(10, TimeUnit.MILLISECONDS);
+                        if (request != null) {
+                            if (closed.get()) {
+                                log.debugf("Polled message %s but connection was closed, returning to queue",
+                                        request.get(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID));
+                                queue.put(request);
+                                return;
+                            } else {
+                                break;
+                            }
+                        } else if (closed.get()) {
                             return;
-                        } else {
-                            break;
                         }
-                    } else if (closed.get()) {
-                        return;
                     }
+                } catch (InterruptedException e) {
+                    log.error("nextEvent interrupted");
+                    ctx.fail(500);
                 }
-            } catch (InterruptedException e) {
-                log.error("nextEvent interrupted");
-                ctx.fail(500);
-            }
 
-            String contentType = getEventContentType(request);
-            if (contentType != null) {
-                ctx.response().putHeader("content-type", contentType);
+                String contentType = getEventContentType(request);
+                if (contentType != null) {
+                    ctx.response().putHeader("content-type", contentType);
+                }
+                String traceId = request.get(AmazonLambdaApi.LAMBDA_TRACE_HEADER_KEY);
+                if (traceId != null) {
+                    ctx.response().putHeader(AmazonLambdaApi.LAMBDA_TRACE_HEADER_KEY, traceId);
+                }
+                String requestId = request.get(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID);
+                log.debugf("Starting processing %s, added to pending request map", requestId);
+                responsePending.put(requestId, request);
+                ctx.response().putHeader(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID, requestId);
+                Buffer body = processEventBody(request);
+                if (body != null) {
+                    ctx.response().setStatusCode(200).end(body);
+                } else {
+                    ctx.response().setStatusCode(200).end();
+                }
             }
-            String traceId = request.get(AmazonLambdaApi.LAMBDA_TRACE_HEADER_KEY);
-            if (traceId != null) {
-                ctx.response().putHeader(AmazonLambdaApi.LAMBDA_TRACE_HEADER_KEY, traceId);
-            }
-            String requestId = request.get(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID);
-            log.debugf("Starting processing %s, added to pending request map", requestId);
-            responsePending.put(requestId, request);
-            ctx.response().putHeader(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID, requestId);
-            Buffer body = processEventBody(request);
-            if (body != null) {
-                ctx.response().setStatusCode(200).end(body);
-            } else {
-                ctx.response().setStatusCode(200).end();
-            }
-        });
+        }, false, null);
     }
 
     protected String getEventContentType(RoutingContext request) {

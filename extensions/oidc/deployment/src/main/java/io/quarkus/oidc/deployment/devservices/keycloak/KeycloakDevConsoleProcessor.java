@@ -10,6 +10,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
@@ -29,7 +30,7 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
     public void setConfigProperties(BuildProducer<DevConsoleTemplateInfoBuildItem> devConsoleInfo,
             BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> devConsoleRuntimeInfo,
             Optional<KeycloakDevServicesConfigBuildItem> configProps,
-            Capabilities capabilities) {
+            Capabilities capabilities, CurateOutcomeBuildItem curateOutcomeBuildItem) {
         if (configProps.isPresent() && configProps.get().getProperties().containsKey("keycloak.url")) {
             String keycloakUrl = (String) configProps.get().getProperties().get("keycloak.url");
             String realmUrl = keycloakUrl + "/realms/" + configProps.get().getProperties().get("keycloak.realm");
@@ -41,6 +42,7 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
             produceDevConsoleTemplateItems(capabilities,
                     devConsoleInfo,
                     devConsoleRuntimeInfo,
+                    curateOutcomeBuildItem,
                     "Keycloak",
                     (String) configProps.get().getProperties().get("quarkus.oidc.application-type"),
                     oidcConfig.devui.grant.type.isPresent() ? oidcConfig.devui.grant.type.get().getGrantType()
@@ -49,7 +51,6 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     realmUrl + "/protocol/openid-connect/token",
                     realmUrl + "/protocol/openid-connect/logout",
                     true);
-
         }
     }
 

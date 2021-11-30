@@ -13,6 +13,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
@@ -50,7 +51,7 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
             BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> devConsoleRuntimeInfo,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             BuildProducer<DevConsoleRouteBuildItem> devConsoleRoute,
-            Capabilities capabilities) {
+            Capabilities capabilities, CurateOutcomeBuildItem curateOutcomeBuildItem) {
         if (isOidcTenantEnabled() && isAuthServerUrlSet() && isClientIdSet()) {
 
             if (vertxInstance == null) {
@@ -88,6 +89,7 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
             produceDevConsoleTemplateItems(capabilities,
                     devConsoleInfo,
                     devConsoleRuntimeInfo,
+                    curateOutcomeBuildItem,
                     providerName,
                     getApplicationType(),
                     oidcConfig.devui.grant.type.isPresent() ? oidcConfig.devui.grant.type.get().getGrantType() : "code",

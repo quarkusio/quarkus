@@ -31,8 +31,9 @@ public class FlywayDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public DevConsoleRuntimeTemplateInfoBuildItem collectBeanInfo(
-            FlywayProcessor.MigrationStateBuildItem migrationStateBuildItem) {
-        return new DevConsoleRuntimeTemplateInfoBuildItem("containers", new FlywayContainersSupplier());
+            FlywayProcessor.MigrationStateBuildItem migrationStateBuildItem, CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        return new DevConsoleRuntimeTemplateInfoBuildItem("containers", new FlywayContainersSupplier(), this.getClass(),
+                curateOutcomeBuildItem);
     }
 
     @BuildStep

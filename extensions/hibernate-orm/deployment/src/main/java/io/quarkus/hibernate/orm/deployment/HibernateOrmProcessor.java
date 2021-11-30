@@ -105,6 +105,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBui
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.IoUtil;
@@ -189,36 +190,40 @@ public final class HibernateOrmProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     void handleMoveSql(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> runtimeInfoProducer,
             BuildProducer<JdbcInitialSQLGeneratorBuildItem> initialSQLGeneratorBuildItemBuildProducer,
-            HibernateOrmConfig config) {
+            HibernateOrmConfig config, CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
         DevConsoleRuntimeTemplateInfoBuildItem devConsoleRuntimeTemplateInfoBuildItem = new DevConsoleRuntimeTemplateInfoBuildItem(
                 "create-ddl." + PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
-                new HibernateOrmDevConsoleCreateDDLSupplier(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME));
+                new HibernateOrmDevConsoleCreateDDLSupplier(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME), this.getClass(),
+                curateOutcomeBuildItem);
         runtimeInfoProducer.produce(devConsoleRuntimeTemplateInfoBuildItem);
         if (config.defaultPersistenceUnit.datasource.isEmpty()) {
             handleGenerateSqlForPu(runtimeInfoProducer, initialSQLGeneratorBuildItemBuildProducer,
-                    PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, DataSourceUtil.DEFAULT_DATASOURCE_NAME);
+                    PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                    curateOutcomeBuildItem);
         } else {
             handleGenerateSqlForPu(runtimeInfoProducer, initialSQLGeneratorBuildItemBuildProducer,
-                    PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, config.defaultPersistenceUnit.datasource.get());
+                    PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, config.defaultPersistenceUnit.datasource.get(),
+                    curateOutcomeBuildItem);
         }
         for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.persistenceUnits.entrySet()) {
 
             if (entry.getValue().datasource.isEmpty()) {
                 handleGenerateSqlForPu(runtimeInfoProducer, initialSQLGeneratorBuildItemBuildProducer, entry.getKey(),
-                        DataSourceUtil.DEFAULT_DATASOURCE_NAME);
+                        DataSourceUtil.DEFAULT_DATASOURCE_NAME, curateOutcomeBuildItem);
             } else {
                 handleGenerateSqlForPu(runtimeInfoProducer, initialSQLGeneratorBuildItemBuildProducer, entry.getKey(),
-                        entry.getValue().datasource.get());
+                        entry.getValue().datasource.get(), curateOutcomeBuildItem);
             }
         }
     }
 
     private void handleGenerateSqlForPu(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> runtimeInfoProducer,
             BuildProducer<JdbcInitialSQLGeneratorBuildItem> initialSQLGeneratorBuildItemBuildProducer, String puName,
-            String dsName) {
+            String dsName, CurateOutcomeBuildItem curateOutcomeBuildItem) {
         DevConsoleRuntimeTemplateInfoBuildItem devConsoleRuntimeTemplateInfoBuildItem = new DevConsoleRuntimeTemplateInfoBuildItem(
-                "create-ddl." + puName, new HibernateOrmDevConsoleCreateDDLSupplier(puName));
+                "create-ddl." + puName, new HibernateOrmDevConsoleCreateDDLSupplier(puName), this.getClass(),
+                curateOutcomeBuildItem);
         runtimeInfoProducer.produce(devConsoleRuntimeTemplateInfoBuildItem);
         initialSQLGeneratorBuildItemBuildProducer.produce(new JdbcInitialSQLGeneratorBuildItem(dsName, new Supplier<String>() {
             @Override

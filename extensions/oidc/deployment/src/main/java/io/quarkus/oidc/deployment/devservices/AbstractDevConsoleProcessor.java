@@ -3,6 +3,7 @@ package io.quarkus.oidc.deployment.devservices;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
@@ -21,6 +22,7 @@ public abstract class AbstractDevConsoleProcessor {
     protected void produceDevConsoleTemplateItems(Capabilities capabilities,
             BuildProducer<DevConsoleTemplateInfoBuildItem> devConsoleTemplate,
             BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> devConsoleRuntimeInfo,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
             String oidcProviderName,
             String oidcApplicationType,
             String oidcGrantType,
@@ -44,22 +46,26 @@ public abstract class AbstractDevConsoleProcessor {
 
         devConsoleRuntimeInfo.produce(
                 new DevConsoleRuntimeTemplateInfoBuildItem("clientId",
-                        new OidcConfigPropertySupplier(CLIENT_ID_CONFIG_KEY)));
+                        new OidcConfigPropertySupplier(CLIENT_ID_CONFIG_KEY), this.getClass(), curateOutcomeBuildItem));
         devConsoleRuntimeInfo.produce(
                 new DevConsoleRuntimeTemplateInfoBuildItem("clientSecret",
-                        new OidcConfigPropertySupplier(CLIENT_SECRET_CONFIG_KEY, "")));
+                        new OidcConfigPropertySupplier(CLIENT_SECRET_CONFIG_KEY, ""), this.getClass(), curateOutcomeBuildItem));
         devConsoleRuntimeInfo.produce(
                 new DevConsoleRuntimeTemplateInfoBuildItem("authorizationUrl",
-                        new OidcConfigPropertySupplier(AUTHORIZATION_PATH_CONFIG_KEY, authorizationUrl, true)));
+                        new OidcConfigPropertySupplier(AUTHORIZATION_PATH_CONFIG_KEY, authorizationUrl, true), this.getClass(),
+                        curateOutcomeBuildItem));
         devConsoleRuntimeInfo.produce(
                 new DevConsoleRuntimeTemplateInfoBuildItem("tokenUrl",
-                        new OidcConfigPropertySupplier(TOKEN_PATH_CONFIG_KEY, tokenUrl, true)));
+                        new OidcConfigPropertySupplier(TOKEN_PATH_CONFIG_KEY, tokenUrl, true), this.getClass(),
+                        curateOutcomeBuildItem));
         devConsoleRuntimeInfo.produce(
                 new DevConsoleRuntimeTemplateInfoBuildItem("logoutUrl",
-                        new OidcConfigPropertySupplier(END_SESSION_PATH_CONFIG_KEY, logoutUrl, true)));
+                        new OidcConfigPropertySupplier(END_SESSION_PATH_CONFIG_KEY, logoutUrl, true), this.getClass(),
+                        curateOutcomeBuildItem));
         devConsoleRuntimeInfo.produce(
                 new DevConsoleRuntimeTemplateInfoBuildItem("postLogoutUriParam",
-                        new OidcConfigPropertySupplier(POST_LOGOUT_URI_PARAM_CONFIG_KEY)));
+                        new OidcConfigPropertySupplier(POST_LOGOUT_URI_PARAM_CONFIG_KEY), this.getClass(),
+                        curateOutcomeBuildItem));
 
     }
 

@@ -27,12 +27,11 @@ import io.vertx.ext.web.RoutingContext;
 
 public class MockRestEventServer extends MockEventServer {
 
-    private final ObjectMapper objectMapper;
     private final ObjectWriter eventWriter;
     private final ObjectReader responseReader;
 
     public MockRestEventServer() {
-        objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
         eventWriter = objectMapper.writerFor(AwsProxyRequest.class);

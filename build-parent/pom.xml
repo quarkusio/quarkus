@@ -174,23 +174,12 @@
             <!-- Dev tools -->
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-devtools-testing</artifactId>
-                <version>${project.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devmode-test-utils</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devtools-utilities</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-devtools-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

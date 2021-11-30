@@ -8,8 +8,8 @@
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
-    <artifactId>quarkus-no-awt-integration-tests</artifactId>
-    <name>Quarkus - No Awt - Integration Tests</name>
+    <artifactId>quarkus-integration-test-no-awt</artifactId>
+    <name>Quarkus - Integration Tests - No AWT</name>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -89,28 +89,5 @@
             </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>native-image</id>
-            <activation>
-                <property>
-                    <name>native</name>
-                </property>
-            </activation>
-            <properties>
-                <quarkus.package.type>native</quarkus.package.type>
-            </properties>
-            <!-- add some custom config, the rest comes from parent -->
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 
 </project>

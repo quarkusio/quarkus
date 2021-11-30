@@ -8,7 +8,7 @@
         <version>999-SNAPSHOT</version>
     </parent>
     <artifactId>quarkus-awt</artifactId>
-    <name>Quarkus - Awt - Runtime</name>
+    <name>Quarkus - AWT - Runtime</name>
     <description>Enable AWT and Java2D usage</description>
     <dependencies>
         <dependency>

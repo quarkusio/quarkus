@@ -9,7 +9,7 @@
         <version>999-SNAPSHOT</version>
     </parent>
     <artifactId>quarkus-awt-deployment</artifactId>
-    <name>Quarkus - Awt - Deployment</name>
+    <name>Quarkus - AWT - Deployment</name>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

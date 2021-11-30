@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Produce;
@@ -26,7 +27,6 @@ import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 
 class AwtProcessor {
-    private static final String FEATURE = "awt";
 
     private static final Logger LOGGER = Logger.getLogger(AwtProcessor.class.getName());
 
@@ -34,6 +34,11 @@ class AwtProcessor {
             .compile(".*(Java Version ([0-9]*)\\.([0-9]*)\\.([0-9]*).*)\\).*");
 
     private static final String IIO_PLUGIN_I18N = "iio-plugin.properties";
+
+    @BuildStep
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(Feature.AWT);
+    }
 
     /**
      * TODO: Is there a better way to disable an extension's native build on a particular platform?
@@ -60,7 +65,7 @@ class AwtProcessor {
      * Do I have to go and refactor NativeImageBuildItem to move GraalVMInfo up the chain,
      * to e.g. NativeImageResourceBuildItem...?
      */
-    @BuildStep
+    @BuildStep(onlyIf = NativeBuild.class)
     @Produce(ArtifactResultBuildItem.class)
     public void jdkVersionCheck(NativeImageBuildItem image) {
         final Matcher m = JDK_VERSION_FROM_NATIVE_IMAGE.matcher(image.getGraalVMInfo().getFullVersion());
@@ -73,11 +78,6 @@ class AwtProcessor {
                         "awt.image.ConvolveOp will not work. See https://bugs.openjdk.java.net/browse/JDK-8254024");
             }
         }
-    }
-
-    @BuildStep
-    FeatureBuildItem feature() {
-        return new FeatureBuildItem(FEATURE);
     }
 
     /**

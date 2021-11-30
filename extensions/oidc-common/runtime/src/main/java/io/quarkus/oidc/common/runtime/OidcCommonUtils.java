@@ -163,7 +163,7 @@ public class OidcCommonUtils {
     }
 
     public static String getOidcEndpointUrl(String authServerUrl, Optional<String> endpointPath) {
-        if (endpointPath.isPresent()) {
+        if (endpointPath != null && endpointPath.isPresent()) {
             return isAbsoluteUrl(endpointPath) ? endpointPath.get() : authServerUrl + prependSlash(endpointPath.get());
         } else {
             return null;

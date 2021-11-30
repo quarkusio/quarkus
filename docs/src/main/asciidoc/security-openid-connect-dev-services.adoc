@@ -53,6 +53,7 @@ image::dev-ui-oidc-keycloak-card.png[alt=Dev UI OpenId Connect Card,role="center
 
 Click on the `Provider: Keycloak` link and you will see a Keycloak page which will be presented slightly differently depending on how `Dev Services for Keycloak` feature has been configured.
 
+[[develop-service-applications]]
 === Developing Service Applications
 
 By default the Keycloak page can be used to support the development of a link:security-openid-connect[Quarkus OIDC service application].
@@ -146,6 +147,7 @@ image::dev-ui-keycloak-client-credentials-grant.png[alt=Dev UI OpenId Connect Ke
 
 You can test the service the same way as with the `Password` grant.
 
+[[develop-web-app-applications]]
 === Developing OpenId Connect Web App Applications
 
 If you develop a link:security-openid-connect-web-authentication[Quarkus OIDC web-app application] then you should set `quarkus.oidc.application-type=web-app` in `application.properties` before starting the application.
@@ -155,6 +157,20 @@ You will see a screen like this one:
 image::dev-ui-keycloak-sign-in-to-service.png[alt=Dev UI OpenId Connect Keycloak Sign In,role="center"]
 
 Set a relative service endpoint path, click on `Sign In To Service` and you will be redirected to Keycloak to enter a username and password in a new browser tab and get a response from the Quarkus application.
+
+Note that in this case Dev UI does not really enrich a dev experience since it is a Quarkus OIDC `web-app` application which controls the authorization code flow and acquires the tokens.
+
+To make Dev UI more useful for supporting the development of OIDC `web-app` applications you may want to consider setting profile specific values for `quarkus.oidc.application-type`:
+
+[source,properties]
+----
+%prod.quarkus.oidc.application-type=web-app
+%test.quarkus.oidc.application-type=web-app
+%dev.quarkus.oidc.application-type=service
+----
+
+It will ensure that all Dev UI options described in <<develop-service-applications, Developing OpenId Connect Service Applications>> will be available when your `web-app` application is run in dev mode. The limitation of this approach is that both access and ID tokens returned with the code flow and acquired with Dev UI will be sent to the endpoint as HTTP `Bearer` tokens - which will not work well if your endpoint requires the injection of `IdToken`.
+However it will work as expected if your `web-app` application only uses the access token, for example, as a source of roles or to get `UserInfo`, even if it is assumed to be a `service` application in devmode.
 
 === Running the tests
 
@@ -233,9 +249,15 @@ If you work with other providers then a Dev UI experience described in the <<key
 The current access token is used by default to test the service with `Swagger UI` or `GrapghQL UI`. If the provider (other than Keycloak) returns a binary access token then it will be used with `Swagger UI` or `GrapghQL UI` only if this provider has a token introspection endpoint otherwise an `IdToken` which is always in a JWT format will be passed to `Swagger UI` or `GrapghQL UI`. In such cases you can verify with the manual Dev UI test that `401` will always be returned for the current binary access token. Also note that using `IdToken` as a fallback with either of these UIs is only possible with the authorization code flow.
 ====
 
-Some providers such as `Auth0` do not support a standard RP initiated logout so a logout option will also be hidden.
+Some providers such as `Auth0` do not support a standard RP initiated logout so the provider specific logout properties will have to be confogured for a logout option be visible, please see link:security-openid-connect-web-authentication#user-initiated-logout[OpenId Connect User-Initiated Logout] for more information.
 
-At the moment `Dev UI for all OpenId Connect Providers` only supports an authorization code grant. More grants may be supported in the future, similarly to how it is done with `Dev Services for Keycloak`.
+Similarly, if you'd like to use a `password` or `client_credentials` grant for Dev UI to acquire the tokens then you may have to configure some extra provider specific properties, for example:
+
+[source,properties]
+----
+quarkus.oidc.devui.grant.type=password
+quarkus.oidc.devui.grant-options.password.audience=http://localhost:8080
+----
 
 == Dev Services and UI Support for other OpenId Connect Providers
 

@@ -14,7 +14,7 @@ public class CustomTenantResolver implements TenantResolver {
         if (path.contains("recovered-no-discovery")) {
             return "no-discovery";
         }
-        if (path.endsWith("code-flow")) {
+        if (path.endsWith("code-flow") || path.endsWith("code-flow/logout")) {
             return "code-flow";
         }
         if (path.endsWith("code-flow-user-info")) {

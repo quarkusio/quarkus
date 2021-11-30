@@ -153,9 +153,12 @@ public final class EvaluatedParams {
         int i = 0;
         Class<?> paramType = boxType(types[i]);
         while (i < results.length) {
-            Class<?> resultClass = boxType(getResult(i).getClass());
-            if (!paramType.isAssignableFrom(resultClass)) {
-                return false;
+            Object result = getResult(i);
+            if (result != null) {
+                Class<?> resultClass = boxType(result.getClass());
+                if (!paramType.isAssignableFrom(resultClass)) {
+                    return false;
+                }
             }
             if (types.length > ++i) {
                 paramType = boxType(types[i]);

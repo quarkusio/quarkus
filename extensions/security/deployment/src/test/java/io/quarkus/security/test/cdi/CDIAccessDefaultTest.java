@@ -21,6 +21,7 @@ import io.quarkus.security.test.cdi.app.BeanWithSecuredMethods;
 import io.quarkus.security.test.cdi.app.SubclassWithDenyAll;
 import io.quarkus.security.test.cdi.app.SubclassWithPermitAll;
 import io.quarkus.security.test.cdi.app.SubclassWithoutAnnotations;
+import io.quarkus.security.test.cdi.app.TestException;
 import io.quarkus.security.test.utils.AuthData;
 import io.quarkus.security.test.utils.IdentityMock;
 import io.quarkus.security.test.utils.SecurityTestUtils;
@@ -53,6 +54,7 @@ public class CDIAccessDefaultTest {
                             AuthData.class,
                             SubclassWithDenyAll.class,
                             SubclassWithoutAnnotations.class,
+                            TestException.class,
                             SubclassWithPermitAll.class,
                             SecurityTestUtils.class));
 
@@ -99,6 +101,18 @@ public class CDIAccessDefaultTest {
                 throw new RuntimeException(e);
             }
         }, "accessibleForAdminOnly", ADMIN);
+    }
+
+    @Test
+    public void testExceptionWrapping() {
+        Executable executable = () -> {
+            try {
+                bean.securedMethodCompletionStageException().toCompletableFuture().get();
+            } catch (ExecutionException e) {
+                throw e.getCause();
+            }
+        };
+        assertFailureFor(executable, TestException.class, ADMIN);
     }
 
     @Test

@@ -37,7 +37,7 @@ public class WiringHelper {
     /**
      * Retrieves the connector name from the given bean.
      * Throws a {@link NoSuchElementException} if the given bean does not have the {@code @Connector} qualifier
-     * 
+     *
      * @param bi the bean
      * @return the connector name
      * @throws NoSuchElementException if the bean does not have the {@code @Connector} qualifier
@@ -73,7 +73,7 @@ public class WiringHelper {
     /**
      * Gets the name of the connector managing the channel if any.
      * This method looks inside the application configuration.
-     * 
+     *
      * @param direction the direction (incoming or outgoing)
      * @param channel the channel name
      * @return an optional with the connector name if the channel is managed, empty otherwise
@@ -100,7 +100,7 @@ public class WiringHelper {
 
     /**
      * Checks if the given class is an inbound (incoming) connector.
-     * 
+     *
      * @param ci the class
      * @return {@code true} if the class implements the inbound connector interface
      */
@@ -111,7 +111,7 @@ public class WiringHelper {
 
     /**
      * Checks if the given class is an outbound (outgoing) connector.
-     * 
+     *
      * @param ci the class
      * @return {@code true} if the class implements the outbound connector interface
      */
@@ -122,7 +122,7 @@ public class WiringHelper {
 
     /**
      * Collects connector attributes from the given connector implementation.
-     * 
+     *
      * @param bi the bean implementing the connector interfaces
      * @param index the index
      * @param directions the attribute direction to includes in the result
@@ -155,7 +155,7 @@ public class WiringHelper {
 
     /**
      * Creates a {@code ConnectorAttribute} literal for the given instance.
-     * 
+     *
      * @param instance the instance
      * @param direction the direction
      * @return the connector attribute.
@@ -194,7 +194,7 @@ public class WiringHelper {
 
     /**
      * Finds a connector by name and direction in the given list.
-     * 
+     *
      * @param connectors the list of connectors
      * @param name the name
      * @param direction the direction
@@ -214,19 +214,26 @@ public class WiringHelper {
     }
 
     static Class<?> toType(String type) throws ClassNotFoundException {
-        if (type.equalsIgnoreCase("string")) {
-            return String.class;
+        switch (type.toLowerCase()) {
+            case "boolean":
+                return Boolean.class;
+            case "int":
+                return Integer.class;
+            case "string":
+                return String.class;
+            case "double":
+                return Double.class;
+            case "float":
+                return Float.class;
+            case "short":
+                return Short.class;
+            case "long":
+                return Long.class;
+            case "byte":
+                return Byte.class;
+            default:
+                return WiringHelper.class.getClassLoader().loadClass(type);
         }
-        if (type.equalsIgnoreCase("int")) {
-            return Integer.class;
-        }
-        if (type.equalsIgnoreCase("long")) {
-            return Long.class;
-        }
-        if (type.equalsIgnoreCase("boolean")) {
-            return Boolean.class;
-        }
-        return WiringHelper.class.getClassLoader().loadClass(type);
     }
 
     static boolean isSynthetic(MethodInfo method) {

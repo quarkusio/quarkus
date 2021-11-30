@@ -1320,7 +1320,7 @@ public class QuteProcessor {
         // ItemResource/item -> -> [ItemResource/item.html, ItemResource/item.xml]
         Map<String, List<String>> baseToVariants = new HashMap<>();
         for (String path : allPaths) {
-            int idx = path.lastIndexOf('.');
+            int idx = path.indexOf('.');
             if (idx != -1) {
                 String base = path.substring(0, idx);
                 List<String> variants = baseToVariants.get(base);

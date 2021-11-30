@@ -9,7 +9,6 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -131,8 +130,7 @@ public class RestClientBaseTest {
         RestClientsConfig configRoot = new RestClientsConfig();
         configRoot.multipartPostEncoderMode = Optional.of("HTML5");
         configRoot.disableSmartProduces = Optional.of(true);
-        configRoot.configs = new HashMap<>();
-        configRoot.configs.put("test-client", clientConfig);
+        configRoot.putClientConfig("test-client", clientConfig);
 
         return configRoot;
     }

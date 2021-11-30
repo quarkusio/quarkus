@@ -1,3 +1,10 @@
+{#if info:devQuteInfos.templates.isEmpty}
+  {#include main}
+    {#body}
+      <h1>No Templates found</h1>
+    {/body}
+  {/include}
+{#else}
 {#include main}
   {#title}Render Preview{/title}
   {#style}
@@ -15,11 +22,9 @@
         <label for="template-select">Template</label>
         <select class="form-control" name="template-select" id="template-select">
         {#for template in info:devQuteInfos.templates}
-          {#let optionIndex=index}
           {#each template.variants}
-          <option value="{it.key}"{#if optionIndex is 0 and index is 0} selected="true"{/if}>{it.key}</option>
+          <option value="{it.key}"{#if template_index is 0 and it_index is 0} selected="true"{/if}>{it.key}</option>
           {/each}
-          {/let}
         {/for}
         </select>
      </div>
@@ -56,26 +61,24 @@
   
   {! Init the template path -> initial data map !}
   {#for template in info:devQuteInfos.templates}
-     {#let dataCount=count}
-     var testData{dataCount};
+     var testData{template_count};
      {#if template.parameters}
-       testData{dataCount} = '{';
+       testData{template_count} = '{';
        {#each template.parameters}
-       testData{dataCount} += '\n  // Template parameter {template_count}: {it.value.raw}\n';
-       testData{dataCount} += '  "{it.key}" : null';
-       {#if hasNext}
-       testData{dataCount} += ',';
+       testData{template_count} += '\n  // Template parameter {it_count}: {it.value.raw}\n';
+       testData{template_count} += '  "{it.key}" : null';
+       {#if it_hasNext}
+       testData{template_count} += ',';
        {/if}
        {/each}
-       testData{dataCount} += '\n}'; 
+       testData{template_count} += '\n}'; 
      {#else}
-       testData{dataCount} = '{}';
+       testData{template_count} = '{}';
      {/if}
      {#each template.variants}
-     templateDataMap['{it.key}'] = testData{dataCount};
+     templateDataMap['{it.key}'] = testData{template_count};
      templateSourceMap['{it.key}'] = '{it.value}';
      {/each}
-     {/let}
   {/for}
 
   const editor = CodeMirror.fromTextArea(document.querySelector('#template-data'), {
@@ -105,4 +108,5 @@
   
 
   {/script}
-{/include}
+  {/include}
+{/if}

@@ -29,7 +29,6 @@ public class MockEventServer implements Closeable {
     public static final int DEFAULT_PORT = 8081;
 
     private Vertx vertx;
-    private int port;
     protected HttpServer httpServer;
     protected Router router;
     protected BlockingQueue<RoutingContext> queue;
@@ -46,12 +45,10 @@ public class MockEventServer implements Closeable {
     }
 
     public void start() {
-        int port = DEFAULT_PORT;
-        start(port);
+        start(DEFAULT_PORT);
     }
 
     public void start(int port) {
-        this.port = port;
         vertx = Vertx.vertx(new VertxOptions().setMaxWorkerExecuteTime(60).setMaxWorkerExecuteTimeUnit(TimeUnit.MINUTES));
         httpServer = vertx.createHttpServer();
         router = Router.router(vertx);

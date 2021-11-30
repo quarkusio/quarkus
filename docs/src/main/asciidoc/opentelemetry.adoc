@@ -217,6 +217,15 @@ Hit `CTRL+C` to stop the application.
 Some use cases will require custom configuration of OpenTelemetry.
 These sections will outline what is necessary to properly configure it.
 
+=== Exporter
+Quarkus currently has support for the following OpenTelemetry exporters:
+
+* OTLP/gRPC (as shown in the example above) provided by the extension `quarkus-opentelemetry-exporter-otlp`
+* OTLP/HTTP provided by the extension `quarkus-opentelemetry-exporter-otlp-http`
+* Jaeger provided by the extension `quarkus-opentelemetry-exporter-jaeger`
+
+The configuration options for each of these are listed under <<configuration-reference>>.
+
 === ID Generator
 The OpenTelemetry extension will use by default a random https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#id-generators[ID Generator]
 when creating the trace and span identifier.
@@ -349,4 +358,12 @@ which retrieves the OpenTelemetry `Context` to extract the current span for prop
 == OpenTelemetry Configuration Reference
 
 include::{generated-dir}/config/quarkus-opentelemetry.adoc[leveloffset=+1, opts=optional]
+
+:no-duration-note: true
 include::{generated-dir}/config/quarkus-opentelemetry-exporter-otlp.adoc[leveloffset=+1, opts=optional]
+
+:no-duration-note: true
+include::{generated-dir}/config/quarkus-opentelemetry-exporter-otlp-http.adoc[leveloffset=+1, opts=optional]
+
+:no-duration-note: false
+include::{generated-dir}/config/quarkus-opentelemetry-exporter-jaeger.adoc[leveloffset=+1, opts=optional]

@@ -51,27 +51,37 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
     public static DevServicesDatasourceConfigurationHandlerBuildItem jdbc(String dbKind) {
         return new DevServicesDatasourceConfigurationHandlerBuildItem(dbKind,
                 new BiFunction<String, DevServicesDatasourceProvider.RunningDevServicesDatasource, Map<String, String>>() {
+
                     @Override
                     public Map<String, String> apply(String dsName,
                             DevServicesDatasourceProvider.RunningDevServicesDatasource runningDevDb) {
                         if (dsName == null) {
                             return Collections.singletonMap("quarkus.datasource.jdbc.url", runningDevDb.getUrl());
                         } else {
-                            return Collections.singletonMap("quarkus.datasource.\"" + dsName + "\".jdbc.url",
-                                    runningDevDb.getUrl());
+                            // we use quoted and unquoted versions because depending on whether a user configured other JDBC properties
+                            // one of the URLs may be ignored
+                            // see https://github.com/quarkusio/quarkus/issues/21387
+                            return Map.of(
+                                    datasourceURLPropName(dsName), runningDevDb.getUrl(),
+                                    datasourceURLPropName("\"" + dsName + "\""), runningDevDb.getUrl());
                         }
                     }
+
                 }, new Predicate<String>() {
                     @Override
                     public boolean test(String dsName) {
                         if (dsName == null) {
                             return ConfigUtils.isPropertyPresent("quarkus.datasource.jdbc.url");
                         } else {
-                            return ConfigUtils.isPropertyPresent("quarkus.datasource.\"" + dsName + "\".jdbc.url") ||
-                                    ConfigUtils.isPropertyPresent("quarkus.datasource." + dsName + ".jdbc.url");
+                            return ConfigUtils.isPropertyPresent(datasourceURLPropName(dsName)) ||
+                                    ConfigUtils.isPropertyPresent(datasourceURLPropName("\"" + dsName + "\""));
                         }
                     }
                 });
+    }
+
+    private static String datasourceURLPropName(String dsName) {
+        return String.format("quarkus.datasource.%s.jdbc.url", dsName);
     }
 
     public static DevServicesDatasourceConfigurationHandlerBuildItem reactive(String dbKind) {

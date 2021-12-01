@@ -295,6 +295,11 @@ class FlywayProcessor {
                 "org.flywaydb.core.internal.database.InsertRowLock");
     }
 
+    @BuildStep
+    public NativeImageResourceBuildItem resources() {
+        return new NativeImageResourceBuildItem("org/flywaydb/database/version.txt");
+    }
+
     public static final class MigrationStateBuildItem extends SimpleBuildItem {
 
         final Set<String> hasMigrations;

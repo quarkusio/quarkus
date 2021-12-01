@@ -93,7 +93,7 @@ public class MockRestEventServer extends MockEventServer {
         if (body != null) {
             String ct = ctx.request().getHeader("content-type");
             if (ct == null || isBinary(ct)) {
-                String encoded = Base64.getMimeEncoder().encodeToString(body.getBytes());
+                String encoded = Base64.getEncoder().encodeToString(body.getBytes());
                 event.setBody(encoded);
                 event.setIsBase64Encoded(true);
             } else {

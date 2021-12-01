@@ -107,7 +107,7 @@ public @interface TemplateExtension {
     String namespace() default "";
 
     /**
-     * Used to annotated a template extension method parameter that should be obtained via
+     * Used to annotate a template extension method parameter that should be obtained via
      * {@link TemplateInstance#getAttribute(String)}. The parameter type must be {@link java.lang.Object}.
      * 
      * <pre>
